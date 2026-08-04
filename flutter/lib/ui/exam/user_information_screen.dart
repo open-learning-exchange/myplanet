@@ -6,10 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/session_provider.dart';
-import '../router.dart';
 
 /// Port of `UserInformationFragment.kt` for team surveys.
-/// 
+///
 /// Collects user profile information (name, email, phone, DOB, gender, level)
 /// and saves it to the submission. Shown after completing team surveys.
 class UserInformationScreen extends ConsumerStatefulWidget {
@@ -25,7 +24,8 @@ class UserInformationScreen extends ConsumerStatefulWidget {
   final bool showAdditionalFields;
 
   @override
-  ConsumerState<UserInformationScreen> createState() => _UserInformationScreenState();
+  ConsumerState<UserInformationScreen> createState() =>
+      _UserInformationScreenState();
 }
 
 class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
@@ -44,8 +44,21 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
   bool _showAdditionalFields = false;
   bool _isSubmitting = false;
 
-  static const _languages = ['English', 'Spanish', 'French', 'Arabic', 'Nepali', 'Somali'];
-  static const _levels = ['Primary', 'Secondary', 'High School', 'College', 'University'];
+  static const _languages = [
+    'English',
+    'Spanish',
+    'French',
+    'Arabic',
+    'Nepali',
+    'Somali',
+  ];
+  static const _levels = [
+    'Primary',
+    'Secondary',
+    'High School',
+    'College',
+    'University',
+  ];
 
   @override
   void initState() {
@@ -89,9 +102,7 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.yourInformation),
-      ),
+      appBar: AppBar(title: Text(l10n.yourInformation)),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -130,7 +141,8 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
               _buildTextField(
                 controller: _fnameController,
                 label: l10n.firstName,
-                validator: (v) => v?.isEmpty == true ? l10n.required : null,
+                validator: (v) =>
+                    v?.isEmpty == true ? l10n.fieldRequired : null,
               ),
               _buildTextField(
                 controller: _mnameController,
@@ -162,7 +174,10 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
                 controller: _yobController,
                 label: l10n.yearOfBirth,
                 keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(4)],
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(4),
+                ],
                 validator: _validateYearOfBirth,
               ),
             ],
@@ -170,29 +185,32 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
             // Gender
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(l10n.gender, style: Theme.of(context).textTheme.titleSmall),
+              child: Text(
+                l10n.gender,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
             ),
-            Row(
-              children: [
-                Expanded(
-                  child: RadioListTile<String?>(
-                    title: Text(l10n.male),
-                    value: 'male',
-                    groupValue: _selectedGender,
-                    onChanged: (v) => setState(() => _selectedGender = v),
-                    contentPadding: EdgeInsets.zero,
+            RadioGroup<String?>(
+              groupValue: _selectedGender,
+              onChanged: (v) => setState(() => _selectedGender = v),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: RadioListTile<String?>(
+                      title: Text(l10n.male),
+                      value: 'male',
+                      contentPadding: EdgeInsets.zero,
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: RadioListTile<String?>(
-                    title: Text(l10n.female),
-                    value: 'female',
-                    groupValue: _selectedGender,
-                    onChanged: (v) => setState(() => _selectedGender = v),
-                    contentPadding: EdgeInsets.zero,
+                  Expanded(
+                    child: RadioListTile<String?>(
+                      title: Text(l10n.female),
+                      value: 'female',
+                      contentPadding: EdgeInsets.zero,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
 
             // Level (for additional fields mode)
@@ -213,7 +231,7 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: _isSubmitting ? null : () => _cancel(context),
-                    child: Text(l10n.buttonCancel),
+                    child: Text(l10n.cancel),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -225,7 +243,7 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
                             dimension: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : Text(l10n.buttonUpdate),
+                        : Text(l10n.save),
                   ),
                 ),
               ],
@@ -267,15 +285,14 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: DropdownButtonFormField<String>(
-        value: value,
+        initialValue: value,
         decoration: InputDecoration(
           labelText: label,
           border: const OutlineInputBorder(),
         ),
-        items: items.map((item) => DropdownMenuItem(
-          value: item,
-          child: Text(item),
-        )).toList(),
+        items: items
+            .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+            .toList(),
         onChanged: onChanged,
       ),
     );
@@ -356,7 +373,8 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
         'language': _selectedLanguage ?? '',
         'level': _selectedLevel ?? '',
         if (_dateOfBirth != null)
-          'dob': '${_dateOfBirth!.year}-${_dateOfBirth!.month.toString().padLeft(2, '0')}-${_dateOfBirth!.day.toString().padLeft(2, '0')}',
+          'dob':
+              '${_dateOfBirth!.year}-${_dateOfBirth!.month.toString().padLeft(2, '0')}-${_dateOfBirth!.day.toString().padLeft(2, '0')}',
       } else ...{
         'birthYear': _yobController.text.trim(),
       },
@@ -364,19 +382,30 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
     };
 
     try {
-      // Update submission with user info
-      // In a full implementation, this would call the submissions repository
+      // Mirrors `saveSubmission` → `markSubmissionComplete` in the Kotlin.
+      // This used to build `profile` and drop it, then thank the user for data
+      // that never left the widget.
+      await ref
+          .read(submissionsRepositoryProvider)
+          .markSubmissionComplete(widget.submissionId, profile);
+      final config = ref.read(serverConfigProvider);
+      final user = ref.read(sessionProvider).valueOrNull;
+      if (config != null && user != null) {
+        await ref
+            .read(submissionsUploaderProvider)
+            .queuePending(config: config, userId: user.id);
+      }
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.thankYouForTakingSurvey)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.thankYouForTakingSurvey)));
         context.pop();
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.errorSavingProfile)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.errorSavingProfile)));
       }
     } finally {
       if (mounted) {

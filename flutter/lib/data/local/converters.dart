@@ -24,3 +24,66 @@ class StringListConverter extends TypeConverter<List<String>, String>
   @override
   String toSql(List<String> value) => jsonEncode(value);
 }
+
+/// One selectable answer on an exam or survey question.
+///
+/// CouchDB stores these as `{"id": "...", "text": "..."}` objects, and both
+/// halves are load-bearing: `text` is what the learner reads, `id` is what the
+/// answer records and what grading compares against. Flattening them to plain
+/// strings — as `JsonUtils.getStringList` does — calls `toString()` on the map
+/// and yields `{id: a, text: Paris}` for the label while destroying the id, so
+/// nothing can ever match a correct answer.
+///
+/// Some documents carry bare strings instead of objects; those are kept with
+/// the text doubling as the id, which is how `ExamTakingFragment.addRadioButton`
+/// treats them.
+class ExamChoice {
+  const ExamChoice({required this.id, required this.text});
+
+  final String id;
+  final String text;
+
+  static ExamChoice? fromJson(Object? raw) {
+    if (raw is String) {
+      return raw.isEmpty ? null : ExamChoice(id: raw, text: raw);
+    }
+    if (raw is Map) {
+      final text = raw['text']?.toString() ?? '';
+      final id = raw['id']?.toString() ?? text;
+      if (id.isEmpty && text.isEmpty) return null;
+      return ExamChoice(id: id.isEmpty ? text : id, text: text);
+    }
+    return null;
+  }
+
+  Map<String, dynamic> toJson() => {'id': id, 'text': text};
+
+  @override
+  bool operator ==(Object other) =>
+      other is ExamChoice && other.id == id && other.text == text;
+
+  @override
+  int get hashCode => Object.hash(id, text);
+}
+
+/// Stores [ExamChoice] lists in the shape CouchDB uses, so a round-trip through
+/// SQLite preserves the id/text pairing rather than collapsing it.
+class ExamChoiceListConverter extends TypeConverter<List<ExamChoice>, String>
+    with JsonTypeConverter<List<ExamChoice>, String> {
+  const ExamChoiceListConverter();
+
+  @override
+  List<ExamChoice> fromSql(String fromDb) {
+    if (fromDb.isEmpty) return const [];
+    final decoded = jsonDecode(fromDb);
+    if (decoded is! List) return const [];
+    return decoded
+        .map(ExamChoice.fromJson)
+        .whereType<ExamChoice>()
+        .toList(growable: false);
+  }
+
+  @override
+  String toSql(List<ExamChoice> value) =>
+      jsonEncode(value.map((choice) => choice.toJson()).toList());
+}

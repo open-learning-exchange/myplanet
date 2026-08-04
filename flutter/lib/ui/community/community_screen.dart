@@ -17,11 +17,7 @@ import 'services_screen.dart';
 /// Services, Finances, and Reports. The tabs vary based on whether the user
 /// is logging in (3 tabs) or already logged in (6 tabs).
 class CommunityScreen extends ConsumerStatefulWidget {
-  const CommunityScreen({
-    this.fromLogin = false,
-    this.communityId,
-    super.key,
-  });
+  const CommunityScreen({this.fromLogin = false, this.communityId, super.key});
 
   /// Whether this screen is shown during login flow.
   final bool fromLogin;
@@ -36,54 +32,21 @@ class CommunityScreen extends ConsumerStatefulWidget {
 class _CommunityScreenState extends ConsumerState<CommunityScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  late int _tabCount;
-  late List<Widget> _tabs;
-  late List<Widget> _tabViews;
+
+  /// The tab set is fixed by `fromLogin` alone, so the controller can be built
+  /// here. The labels cannot: `AppLocalizations.of` is an inherited-widget
+  /// lookup, and doing one in `initState` throws. They are built in [build],
+  /// which also keeps them correct after a locale change.
+  static const _loginTabCount = 3;
+  static const _fullTabCount = 6;
 
   @override
   void initState() {
     super.initState();
-    _buildTabs();
-    _tabController = TabController(length: _tabCount, vsync: this);
-  }
-
-  void _buildTabs() {
-    final l10n = AppLocalizations.of(context);
-    final prefs = ref.read(planetPrefsProvider);
-    final isCommunity = prefs.planetType == 'community';
-
-    _tabs = [];
-    _tabViews = [];
-
-    // Voices tab
-    _tabs.add(Text(l10n.ourVoices));
-    _tabViews.add(const VoicesScreen());
-
-    // Leaders tab
-    final leadersLabel = isCommunity ? l10n.communityLeaders : l10n.nationLeaders;
-    _tabs.add(Text(leadersLabel));
-    _tabViews.add(const LeadersScreen());
-
-    // Calendar tab
-    _tabs.add(Text(l10n.calendar));
-    _tabViews.add(const CalendarScreen());
-
-    // Additional tabs only shown when not from login
-    if (!widget.fromLogin) {
-      // Services tab
-      _tabs.add(Text(l10n.services));
-      _tabViews.add(const ServicesScreen());
-
-      // Finances tab
-      _tabs.add(Text(l10n.finances));
-      _tabViews.add(const _PlaceholderTab(label: l10n.finances));
-
-      // Reports tab
-      _tabs.add(Text(l10n.reports));
-      _tabViews.add(const _PlaceholderTab(label: l10n.reports));
-    }
-
-    _tabCount = _tabs.length;
+    _tabController = TabController(
+      length: widget.fromLogin ? _loginTabCount : _fullTabCount,
+      vsync: this,
+    );
   }
 
   @override
@@ -97,7 +60,28 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen>
     final l10n = AppLocalizations.of(context);
     final prefs = ref.watch(planetPrefsProvider);
     final communityName = prefs.communityName;
-    final planetType = prefs.planetType;
+    final isCommunity = prefs.planetType == 'community';
+
+    final tabs = <Widget>[
+      Text(l10n.ourVoices),
+      Text(isCommunity ? l10n.communityLeaders : l10n.nationLeaders),
+      Text(l10n.calendar),
+      if (!widget.fromLogin) ...[
+        Text(l10n.services),
+        Text(l10n.finances),
+        Text(l10n.reports),
+      ],
+    ];
+    final tabViews = <Widget>[
+      const VoicesScreen(),
+      const LeadersScreen(),
+      const CalendarScreen(),
+      if (!widget.fromLogin) ...[
+        const ServicesScreen(),
+        _PlaceholderTab(label: l10n.finances),
+        _PlaceholderTab(label: l10n.reports),
+      ],
+    ];
 
     return Scaffold(
       appBar: AppBar(
@@ -105,13 +89,10 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen>
         bottom: TabBar(
           isScrollable: true,
           controller: _tabController,
-          tabs: _tabs,
+          tabs: tabs,
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: _tabViews,
-      ),
+      body: TabBarView(controller: _tabController, children: tabViews),
     );
   }
 }
@@ -247,7 +228,9 @@ class _CommunityBottomSheetState extends ConsumerState<CommunityBottomSheet>
                 controller: _tabController,
                 tabs: [
                   Text(l10n.ourVoices),
-                  Text(isCommunity ? l10n.communityLeaders : l10n.nationLeaders),
+                  Text(
+                    isCommunity ? l10n.communityLeaders : l10n.nationLeaders,
+                  ),
                   Text(l10n.calendar),
                 ],
               ),

@@ -615,6 +615,8 @@
   "exitExam": "Exit exam?",
   "exitExamMessage": "Your progress will be lost.",
   "exit": "Exit",
+  "fieldRequired": "Required",
+  "examSubmitFailed": "Could not save your exam. Please try again.",
   "yourInformation": "Your information",
   "showAdditionalFields": "Show additional fields",
   "hideAdditionalFields": "Hide additional fields",

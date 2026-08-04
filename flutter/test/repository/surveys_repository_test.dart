@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
@@ -27,12 +27,13 @@ void main() {
     repository = SurveysRepository(
       api,
       database.surveyDao,
+      database.examDao,
       SubmissionsRepository(api, database.submissionDao),
     );
   });
   tearDown(() => database.close());
 
-  test('sync caches only surveys and their ordered questions', () async {
+  test('sync routes surveys to the survey tables, in question order', () async {
     when(
       () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
     ).thenAnswer((invocation) async {
@@ -73,8 +74,14 @@ void main() {
     final result = await repository.sync(config: config);
 
     expect(result, isA<SyncComplete>());
-    expect((result as SyncComplete).savedCount, 1);
+    // One survey plus one exam: the `exams` database holds both, and the exam
+    // now lands in its own tables instead of being discarded.
+    expect((result as SyncComplete).savedCount, 2);
     expect((await repository.getById('survey-1'))?.name, 'Community needs');
+    // The exam document must not be mistaken for a survey.
+    expect(await repository.getById('exam-1'), isNull);
+    expect((await database.examDao.getById('exam-1'))?.name, 'Not a survey');
+
     final questions = await repository.questionsFor('survey-1');
     expect(questions.map((row) => row.body), [
       'What do you need?',

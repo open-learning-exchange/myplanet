@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
@@ -157,15 +158,19 @@ class _CourseBody extends ConsumerWidget {
   }
 }
 
-class _StepTile extends StatelessWidget {
+class _StepTile extends ConsumerWidget {
   const _StepTile({required this.step, required this.number});
 
   final CourseStepRow step;
   final int number;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    // A step's exam is the only way into `TakeExamScreen`, exactly as
+    // `TakeCourseFragment` is in the Kotlin. Without this the exam screen was
+    // routable but unreachable.
+    final exam = ref.watch(examForStepProvider(step.id));
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -180,8 +185,31 @@ class _StepTile extends StatelessWidget {
               alignment: AlignmentDirectional.centerStart,
               child: Text(step.description!),
             ),
+          if (exam.valueOrNull != null)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: FilledButton.tonalIcon(
+                  icon: const Icon(Icons.assignment_turned_in_outlined),
+                  label: Text(l10n.takeExam),
+                  onPressed: () => context.push(
+                    '/courses/exam/${exam.value!.id}'
+                    '?stepId=${step.id}&courseId=${step.courseId ?? ''}',
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 }
+
+/// The graded exam attached to a course step, if the sync brought one down.
+final examForStepProvider = FutureProvider.family<ExamRow?, String>((
+  ref,
+  stepId,
+) async {
+  return ref.watch(examDaoProvider).getByStepId(stepId);
+});
