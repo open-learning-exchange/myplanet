@@ -416,6 +416,9 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
   Future<List<UserRow>> getSavedUsers() =>
       (select(users)..where((u) => u.isArchived.equals(false))).get();
 
+  /// Returns all users (for sending surveys to selected users).
+  Future<List<UserRow>> getAllUsers() => select(users).get();
+
   /// Port of `UserRepositoryImpl.ensureUserSecurityKeys`.
   ///
   /// The health screens call this before encrypting. Generating lazily rather

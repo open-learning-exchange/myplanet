@@ -105,5 +105,9 @@
   "amountRequired": "El monto debe ser mayor a 0",
   "transactionAdded": "Transacción agregada",
   "noLeadersAvailable": "No hay líderes disponibles",
-  "noServicesAvailable": "No hay servicios disponibles"
+  "noServicesAvailable": "No hay servicios disponibles",
+  "sendSurveyTo": "Seleccionar usuarios para enviar encuesta",
+  "sendSurvey": "Enviar encuesta",
+  "surveySentToUsers": "Encuesta enviada a usuarios seleccionados",
+  "noUsersAvailable": "No hay usuarios disponibles"
 }
