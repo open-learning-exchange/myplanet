@@ -136,21 +136,23 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override suspend fun getAdapter(): ListAdapter<*, *> {
         allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
 
-        val user = userRepository.getUserModel()
-        val factory = adapterFactory ?: DefaultBaseAdapterFactory()
-        adapterLibrary = factory.createResourcesAdapter(
-            context = requireActivity(),
-            isGuest = user?.isGuest() == true,
-            openedResourceIds = emptySet(),
-            currentUserName = user?.name,
-            onEditClick = { model -> openEditResource(model) }
-        )
-
-        val filteredList = applyFilterModels(filterLocalLibraryByTag(allResourceModels, etSearch.text?.toString()?.trim().orEmpty(), searchTags))
-        adapterLibrary.setLibraryList(filteredList)
+        if (!::adapterLibrary.isInitialized) {
+            val user = userRepository.getUserModel()
+            val factory = adapterFactory ?: DefaultBaseAdapterFactory()
+            adapterLibrary = factory.createResourcesAdapter(
+                context = requireActivity(),
+                isGuest = user?.isGuest() == true,
+                openedResourceIds = emptySet(),
+                currentUserName = user?.name,
+                onEditClick = { model -> openEditResource(model) }
+            )
+        }
 
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
+
+        val filteredList = applyFilterModels(filterLocalLibraryByTag(allResourceModels, etSearch.text?.toString()?.trim().orEmpty(), searchTags))
+        adapterLibrary.setLibraryList(filteredList)
 
         checkList(filteredList.size)
         showNoData(tvMessage, filteredList.size, "resources")
@@ -617,6 +619,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             confirmation?.dismiss()
         }
         confirmation = null
+        if (::adapterLibrary.isInitialized) {
+            adapterLibrary.setListener(null)
+            adapterLibrary.setRatingChangeListener(null)
+        }
 
         _binding = null
         super.onDestroyView()
