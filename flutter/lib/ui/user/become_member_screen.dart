@@ -433,25 +433,37 @@ class _BecomeMemberScreenState extends ConsumerState<BecomeMemberScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: RadioListTile<String>(
-                            title: Text(l10n.male),
-                            value: 'male',
-                            groupValue: _selectedGender,
-                            onChanged: (value) {
-                              setState(() => _selectedGender = value!);
-                            },
-                            contentPadding: EdgeInsets.zero,
+                          child: InkWell(
+                            onTap: () => setState(() => _selectedGender = 'male'),
+                            child: Row(
+                              children: [
+                                Radio<String>(
+                                  value: 'male',
+                                  groupValue: _selectedGender,
+                                  onChanged: (value) {
+                                    setState(() => _selectedGender = value!);
+                                  },
+                                ),
+                                Text(l10n.male),
+                              ],
+                            ),
                           ),
                         ),
                         Expanded(
-                          child: RadioListTile<String>(
-                            title: Text(l10n.female),
-                            value: 'female',
-                            groupValue: _selectedGender,
-                            onChanged: (value) {
-                              setState(() => _selectedGender = value!);
-                            },
-                            contentPadding: EdgeInsets.zero,
+                          child: InkWell(
+                            onTap: () => setState(() => _selectedGender = 'female'),
+                            child: Row(
+                              children: [
+                                Radio<String>(
+                                  value: 'female',
+                                  groupValue: _selectedGender,
+                                  onChanged: (value) {
+                                    setState(() => _selectedGender = value!);
+                                  },
+                                ),
+                                Text(l10n.female),
+                              ],
+                            ),
                           ),
                         ),
                       ],
