@@ -160,7 +160,9 @@ Future<void> _showTaskDialog(
           ),
           FilledButton(
             onPressed: () async {
-              final ok = await ref.read(teamTaskActionsProvider).save(
+              final ok = await ref
+                  .read(teamTaskActionsProvider)
+                  .save(
                     id: task?.id,
                     teamId: teamId,
                     title: title.text,

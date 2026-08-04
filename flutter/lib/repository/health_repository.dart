@@ -21,8 +21,8 @@ class HealthRepository {
     this._dao, {
     ServerConfig? config,
     String Function()? createId,
-  })  : _config = config,
-        _createId = createId ?? _defaultId;
+  }) : _config = config,
+       _createId = createId ?? _defaultId;
 
   final PlanetApi _api;
   final HealthExaminationDao _dao;
@@ -119,7 +119,9 @@ class HealthRepository {
     if (existing == null) return;
 
     await _dao.upsert(
-      existing.toCompanion(false).copyWith(
+      existing
+          .toCompanion(false)
+          .copyWith(
             temperature: Value(temperature ?? existing.temperature),
             pulse: Value(pulse ?? existing.pulse),
             bp: Value(bp ?? existing.bp),

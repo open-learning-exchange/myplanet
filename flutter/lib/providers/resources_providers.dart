@@ -35,5 +35,5 @@ class ResourceSyncNotifier extends SyncNotifier {
 
 final resourceSyncProvider =
     NotifierProvider<ResourceSyncNotifier, SyncUiState>(
-  ResourceSyncNotifier.new,
-);
+      ResourceSyncNotifier.new,
+    );

@@ -36,15 +36,16 @@ final communityFeedProvider = StreamProvider<List<NewsRow>>((ref) async* {
     final filtered = query.isEmpty
         ? rows
         : rows
-            .where(
-              (row) =>
-                  (row.message ?? '').toLowerCase().contains(query) ||
-                  (row.userName ?? '').toLowerCase().contains(query),
-            )
-            .toList(growable: false);
+              .where(
+                (row) =>
+                    (row.message ?? '').toLowerCase().contains(query) ||
+                    (row.userName ?? '').toLowerCase().contains(query),
+              )
+              .toList(growable: false);
     // `getCommunityNews` stamps `sortDate` and the adapter orders by it, so a
     // post shared into the community surfaces by when it was shared.
-    final sorted = [...filtered]..sort(
+    final sorted = [...filtered]
+      ..sort(
         (a, b) => VoicesRepository.sortDateOf(
           b,
         ).compareTo(VoicesRepository.sortDateOf(a)),
@@ -113,10 +114,9 @@ class VoicesSyncNotifier extends SyncNotifier {
   Future<SyncResult> runSync(
     ServerConfig config,
     void Function(SyncProgress) onProgress,
-  ) =>
-      ref
-          .read(voicesRepositoryProvider)
-          .sync(config: config, onProgress: onProgress);
+  ) => ref
+      .read(voicesRepositoryProvider)
+      .sync(config: config, onProgress: onProgress);
 }
 
 final voicesSyncProvider = NotifierProvider<VoicesSyncNotifier, SyncUiState>(
@@ -133,7 +133,9 @@ class VoicesActions {
   Future<String?> createPost(String message) async {
     final user = ref.read(sessionProvider).valueOrNull;
     if (user == null) return null;
-    final id = await ref.read(voicesRepositoryProvider).createPost(
+    final id = await ref
+        .read(voicesRepositoryProvider)
+        .createPost(
           message: message,
           userId: user.couchId ?? user.id,
           userName: user.name ?? '',
@@ -152,7 +154,9 @@ class VoicesActions {
   }) async {
     final user = ref.read(sessionProvider).valueOrNull;
     if (user == null) return null;
-    final id = await ref.read(voicesRepositoryProvider).createPost(
+    final id = await ref
+        .read(voicesRepositoryProvider)
+        .createPost(
           message: message,
           userId: user.couchId ?? user.id,
           userName: user.name ?? '',
@@ -174,7 +178,9 @@ class VoicesActions {
   }) async {
     final user = ref.read(sessionProvider).valueOrNull;
     if (user == null) return null;
-    final id = await ref.read(voicesRepositoryProvider).postReply(
+    final id = await ref
+        .read(voicesRepositoryProvider)
+        .postReply(
           parentId: parentId,
           message: message,
           userId: user.couchId ?? user.id,
@@ -220,7 +226,9 @@ class VoicesActions {
   Future<int> queuePending() async {
     final config = ref.read(serverConfigProvider);
     if (config == null) return 0;
-    return ref.read(voicesUploaderProvider).queuePending(
+    return ref
+        .read(voicesUploaderProvider)
+        .queuePending(
           config: config,
           userId: ref.read(sessionProvider).valueOrNull?.id,
         );

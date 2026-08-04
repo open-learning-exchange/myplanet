@@ -130,7 +130,9 @@ class HealthQueue {
   Future<int> queuePending() async {
     final config = _ref.read(serverConfigProvider);
     if (config == null) return 0;
-    return _ref.read(healthUploaderProvider).queuePending(
+    return _ref
+        .read(healthUploaderProvider)
+        .queuePending(
           config: config,
           userId: _ref.read(sessionProvider).valueOrNull?.id,
         );
@@ -147,8 +149,7 @@ class HealthSyncNotifier extends SyncNotifier {
   Future<SyncResult> runSync(
     ServerConfig config,
     void Function(SyncProgress) onProgress,
-  ) =>
-      ref.read(healthRepositoryProvider).sync(onProgress: onProgress);
+  ) => ref.read(healthRepositoryProvider).sync(onProgress: onProgress);
 }
 
 final healthSyncProvider = NotifierProvider<HealthSyncNotifier, SyncUiState>(
@@ -167,8 +168,8 @@ class ExaminationNotifier extends StateNotifier<ExaminationState> {
     this._userId,
     this._examinationId, {
     Future<void> Function()? onSaved,
-  })  : _onSaved = onSaved,
-        super(ExaminationState()) {
+  }) : _onSaved = onSaved,
+       super(ExaminationState()) {
     _loadData();
   }
 
@@ -251,7 +252,8 @@ class ExaminationNotifier extends StateNotifier<ExaminationState> {
           ? null
           : await _repo.encryptData(owner, jsonEncode(examData.toJson()));
 
-      final hasInfo = allergies?.isNotEmpty == true ||
+      final hasInfo =
+          allergies?.isNotEmpty == true ||
           diagnosis?.isNotEmpty == true ||
           medications?.isNotEmpty == true ||
           immunizations?.isNotEmpty == true ||
@@ -304,15 +306,17 @@ class ExaminationNotifier extends StateNotifier<ExaminationState> {
 }
 
 /// Provider for examination form state.
-final examinationNotifierProvider = StateNotifierProvider.autoDispose.family<
-    ExaminationNotifier,
-    ExaminationState,
-    ({String? userId, String? examId})>((ref, params) {
-  final repo = ref.watch(healthRepositoryProvider);
-  return ExaminationNotifier(
-    repo,
-    params.userId,
-    params.examId,
-    onSaved: ref.read(healthQueueProvider).queuePending,
-  );
-});
+final examinationNotifierProvider = StateNotifierProvider.autoDispose
+    .family<
+      ExaminationNotifier,
+      ExaminationState,
+      ({String? userId, String? examId})
+    >((ref, params) {
+      final repo = ref.watch(healthRepositoryProvider);
+      return ExaminationNotifier(
+        repo,
+        params.userId,
+        params.examId,
+        onSaved: ref.read(healthQueueProvider).queuePending,
+      );
+    });

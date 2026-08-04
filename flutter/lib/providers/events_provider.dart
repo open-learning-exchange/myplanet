@@ -34,14 +34,14 @@ final eventsProvider = StreamProvider<List<MeetupRow>>((ref) async* {
     rows.sort(switch (sort) {
       EventsSort.dateAscending => (a, b) => a.startDate.compareTo(b.startDate),
       EventsSort.dateDescending => (a, b) => b.startDate.compareTo(a.startDate),
-      EventsSort.titleAscending => (a, b) =>
-          (a.title ?? '').toLowerCase().compareTo(
-                (b.title ?? '').toLowerCase(),
-              ),
-      EventsSort.titleDescending => (a, b) =>
-          (b.title ?? '').toLowerCase().compareTo(
-                (a.title ?? '').toLowerCase(),
-              ),
+      EventsSort.titleAscending =>
+        (a, b) => (a.title ?? '').toLowerCase().compareTo(
+          (b.title ?? '').toLowerCase(),
+        ),
+      EventsSort.titleDescending =>
+        (a, b) => (b.title ?? '').toLowerCase().compareTo(
+          (a.title ?? '').toLowerCase(),
+        ),
     });
     yield rows;
   }
@@ -121,7 +121,9 @@ class EventsActions {
   Future<int> queuePending() async {
     final config = ref.read(serverConfigProvider);
     if (config == null) return 0;
-    return ref.read(eventsUploaderProvider).queuePending(
+    return ref
+        .read(eventsUploaderProvider)
+        .queuePending(
           config: config,
           userId: ref.read(sessionProvider).valueOrNull?.id,
         );

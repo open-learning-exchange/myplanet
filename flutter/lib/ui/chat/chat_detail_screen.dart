@@ -200,8 +200,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                   ),
                   const SizedBox(width: 8),
                   IconButton.filled(
-                    onPressed:
-                        _isSending || session == null ? null : _sendMessage,
+                    onPressed: _isSending || session == null
+                        ? null
+                        : _sendMessage,
                     icon: _isSending
                         ? const SizedBox.square(
                             dimension: 20,

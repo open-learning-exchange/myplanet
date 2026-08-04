@@ -122,7 +122,9 @@ class FeedbackQueue {
   Future<int> queuePending() async {
     final config = _ref.read(serverConfigProvider);
     if (config == null) return 0;
-    return _ref.read(feedbackUploaderProvider).queuePending(
+    return _ref
+        .read(feedbackUploaderProvider)
+        .queuePending(
           config: config,
           userId: _ref.read(sessionProvider).valueOrNull?.id,
         );
@@ -201,7 +203,9 @@ class FeedbackCreateNotifier extends Notifier<FeedbackCreateState> {
     state = state.copyWith(isSubmitting: true, error: null);
 
     try {
-      await ref.read(feedbackRepositoryProvider).createFeedback(
+      await ref
+          .read(feedbackRepositoryProvider)
+          .createFeedback(
             user: session.name ?? '',
             priority: state.priority,
             type: state.type,
@@ -228,5 +232,5 @@ class FeedbackCreateNotifier extends Notifier<FeedbackCreateState> {
 
 final feedbackCreateProvider =
     NotifierProvider<FeedbackCreateNotifier, FeedbackCreateState>(
-  FeedbackCreateNotifier.new,
-);
+      FeedbackCreateNotifier.new,
+    );

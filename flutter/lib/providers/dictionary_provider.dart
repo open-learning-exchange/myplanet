@@ -70,5 +70,5 @@ class DictionaryNotifier extends AsyncNotifier<DictionaryState> {
 
 final dictionaryProvider =
     AsyncNotifierProvider<DictionaryNotifier, DictionaryState>(
-  DictionaryNotifier.new,
-);
+      DictionaryNotifier.new,
+    );
