@@ -25,6 +25,9 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener, RealtimeSy
     private val binding get() = _binding!!
     private val viewModel: FeedbackListViewModel by viewModels()
 
+    @javax.inject.Inject
+    lateinit var realtimeSyncManager: org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+
     private lateinit var feedbackAdapter: FeedbackAdapter
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
 
@@ -46,7 +49,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener, RealtimeSy
     }
 
     private fun setupRealtimeSync() {
-        realtimeSyncHelper = RealtimeSyncHelper(this, this)
+        realtimeSyncHelper = RealtimeSyncHelper(this, this, realtimeSyncManager)
         realtimeSyncHelper.setupRealtimeSync()
     }
 

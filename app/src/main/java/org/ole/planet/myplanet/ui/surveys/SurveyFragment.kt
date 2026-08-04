@@ -44,6 +44,9 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
     private val bindingDataMap = mutableMapOf<String, SurveyFormState>()
     private val viewModel: SurveysViewModel by viewModels()
 
+    @javax.inject.Inject
+    lateinit var realtimeSyncManager: org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private val adapterMutex = Mutex()
 
@@ -89,7 +92,7 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        realtimeSyncHelper = RealtimeSyncHelper(this, this)
+        realtimeSyncHelper = RealtimeSyncHelper(this, this, realtimeSyncManager)
         realtimeSyncHelper.setupRealtimeSync()
         initializeViews()
         binding.layoutSearch.etSearch.textChanges()

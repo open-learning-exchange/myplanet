@@ -20,8 +20,11 @@ interface RealtimeSyncMixin {
     fun shouldAutoRefresh(table: String): Boolean = true
 }
 
-class RealtimeSyncHelper(private val fragment: Fragment, private val mixin: RealtimeSyncMixin) {
-    private val syncManagerInstance = RealtimeSyncManager.getInstance()
+class RealtimeSyncHelper(
+    private val fragment: Fragment,
+    private val mixin: RealtimeSyncMixin,
+    private val syncManagerInstance: RealtimeSyncManager
+) {
 
     @OptIn(FlowPreview::class)
     fun setupRealtimeSync() {

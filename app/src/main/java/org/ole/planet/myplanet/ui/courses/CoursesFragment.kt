@@ -57,6 +57,9 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     @Inject
     lateinit var userSessionManager: UserSessionManager
 
+    @Inject
+    lateinit var realtimeSyncManager: org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
 
     override fun getLayout(): Int = R.layout.fragment_my_course
@@ -171,7 +174,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
                 }
             }
 
-        realtimeSyncHelper = RealtimeSyncHelper(this, this)
+        realtimeSyncHelper = RealtimeSyncHelper(this, this, realtimeSyncManager)
         realtimeSyncHelper.setupRealtimeSync()
     }
 
