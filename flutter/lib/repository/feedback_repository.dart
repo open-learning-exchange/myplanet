@@ -37,5 +37,5 @@ abstract class FeedbackRepository {
   Future<void> insertFromJson(List<Map<String, dynamic>> docs);
 
   /// Marks feedback as uploaded.
-  Future<void> markUploaded(String id);
+  Future<void> markUploaded(String id, String rev);
 }
