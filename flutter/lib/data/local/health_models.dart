@@ -183,11 +183,7 @@ class MyHealth {
   final String? userKey;
   final int lastExamination;
 
-  MyHealth({
-    this.profile,
-    this.userKey,
-    this.lastExamination = 0,
-  });
+  MyHealth({this.profile, this.userKey, this.lastExamination = 0});
 
   factory MyHealth.fromJson(Map<String, dynamic> json) {
     return MyHealth(

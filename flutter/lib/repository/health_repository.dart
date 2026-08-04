@@ -116,7 +116,9 @@ class HealthRepository {
     if (existing == null) return;
 
     await _dao.upsert(
-      existing.toCompanion(false).copyWith(
+      existing
+          .toCompanion(false)
+          .copyWith(
             temperature: Value(temperature ?? existing.temperature),
             pulse: Value(pulse ?? existing.pulse),
             bp: Value(bp ?? existing.bp),
@@ -269,10 +271,9 @@ class HealthRepository {
       await cacheDocuments(documents);
       synced += documents.length;
       skip += rows.length;
-      onProgress?.call(SyncProgress(
-        completed: skip.clamp(0, total),
-        total: total,
-      ));
+      onProgress?.call(
+        SyncProgress(completed: skip.clamp(0, total), total: total),
+      );
     }
     return SyncComplete(synced);
   }

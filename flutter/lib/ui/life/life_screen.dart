@@ -96,8 +96,9 @@ class _LifeTile extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              tooltip:
-                  row.isVisible ? l10n.hideItem(title) : l10n.showItem(title),
+              tooltip: row.isVisible
+                  ? l10n.hideItem(title)
+                  : l10n.showItem(title),
               onPressed: () => ref
                   .read(lifeActionsProvider)
                   .setVisibility(row, visible: !row.isVisible),
@@ -144,24 +145,22 @@ void _openFeature(BuildContext context, String feature) {
       return;
     default:
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).featureComingSoon),
-        ),
+        SnackBar(content: Text(AppLocalizations.of(context).featureComingSoon)),
       );
       return;
   }
 }
 
 IconData _featureIcon(String feature) => switch (feature) {
-      'health' => Icons.favorite_outline,
-      'achievements' => Icons.emoji_events_outlined,
-      'submissions' => Icons.assignment_outlined,
-      'surveys' => Icons.poll_outlined,
-      'references' => Icons.library_books_outlined,
-      'calendar' => Icons.calendar_month_outlined,
-      'personals' => Icons.lock_person_outlined,
-      _ => Icons.apps,
-    };
+  'health' => Icons.favorite_outline,
+  'achievements' => Icons.emoji_events_outlined,
+  'submissions' => Icons.assignment_outlined,
+  'surveys' => Icons.poll_outlined,
+  'references' => Icons.library_books_outlined,
+  'calendar' => Icons.calendar_month_outlined,
+  'personals' => Icons.lock_person_outlined,
+  _ => Icons.apps,
+};
 
 String _featureTitle(AppLocalizations l10n, String feature, String? fallback) =>
     switch (feature) {
