@@ -19,9 +19,10 @@ class HealthRepository {
   HealthRepository(
     this._api,
     this._dao, {
-    this._config,
+    ServerConfig? config,
     String Function()? createId,
-  }) : _createId = createId ?? _defaultId;
+  }) : _config = config,
+       _createId = createId ?? _defaultId;
 
   final PlanetApi _api;
   final HealthExaminationDao _dao;
@@ -70,6 +71,7 @@ class HealthRepository {
     bool selfExamination = false,
     String? planetCode,
     String? data,
+    bool hasInfo = false,
   }) async {
     final id = _createId();
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -87,6 +89,7 @@ class HealthRepository {
         conditions: Value(conditions),
         selfExamination: Value(selfExamination),
         planetCode: Value(planetCode),
+        hasInfo: Value(hasInfo),
         profileId: Value(profileId),
         gender: Value(gender),
         age: Value(age ?? 0),
