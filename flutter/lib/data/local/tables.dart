@@ -589,6 +589,8 @@ class Teams extends Table {
   TextColumn get services => text().nullable()();
   TextColumn get rules => text().nullable()();
   TextColumn get createdBy => text().nullable()();
+  /// Route for community services - links to other teams or external URLs.
+  TextColumn get route => text().nullable()();
   TextColumn get courses => text()
       .map(const StringListConverter())
       .withDefault(const Constant('[]'))();

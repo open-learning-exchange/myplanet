@@ -21,15 +21,16 @@ class LifeScreen extends ConsumerWidget {
         title: Text(l10n.myLife),
         actions: [
           IconButton(
-            tooltip: l10n.teams,
-            onPressed: () => context.push(Routes.teams),
+            tooltip: l10n.community,
+            onPressed: () => context.push(Routes.community),
             icon: const Icon(Icons.groups_outlined),
           ),
-          // Voices belongs to the Community tab (`CommunityPagerAdapter`),
-          // which is not ported yet. Parked here so the feed is reachable,
-          // rather than added to the My Life list — that list is seeded,
-          // user-reorderable data and inserting a non-Kotlin entry into it
-          // would diverge from what the shipping app shows.
+          IconButton(
+            tooltip: l10n.teams,
+            onPressed: () => context.push(Routes.teams),
+            icon: const Icon(Icons.groups),
+          ),
+          // Voices belongs to the Community tab (`CommunityPagerAdapter`).
           IconButton(
             tooltip: l10n.voices,
             onPressed: () => context.push(Routes.voices),

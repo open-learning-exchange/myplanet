@@ -158,6 +158,17 @@ class TeamsRepository {
   Future<TeamRow?> request(String teamId, String userId) =>
       _dao.getTeamDocument(teamId, userId, 'request');
 
+  /// Check if user is a member of the given team.
+  Future<bool> isMember(String? userId, String teamId) async {
+    if (userId == null || userId.isEmpty) return false;
+    final mem = await membership(teamId, userId);
+    return mem != null;
+  }
+
+  /// Get team links/services from the community.
+  /// These are teams with docType='service' that have a route field.
+  Stream<List<TeamRow>> watchTeamLinks() => _dao.watchTeamDocumentsByType('service');
+
   Future<TeamRow?> createJoinRequest({
     required String teamId,
     required String userId,
@@ -225,6 +236,7 @@ class TeamsRepository {
     if (row.services != null) 'services': row.services,
     if (row.rules != null) 'rules': row.rules,
     if (row.createdBy != null) 'createdBy': row.createdBy,
+    if (row.route != null) 'route': row.route,
     'public': row.isPublic,
     if (row.courses.isNotEmpty) 'courses': row.courses,
     if (row.resourceId != null) 'resourceId': row.resourceId,
