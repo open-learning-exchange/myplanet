@@ -81,6 +81,7 @@ class ChatMapper {
   /// Port of `ChatRepositoryImpl.sendNewChatRequest` document building.
   static Map<String, dynamic> buildNewChatDoc({
     required String id,
+    required String rev,
     required String user,
     required String query,
     required String response,
@@ -89,6 +90,7 @@ class ChatMapper {
     final now = DateTime.now().millisecondsSinceEpoch;
     return {
       '_id': id,
+      if (rev.isNotEmpty) '_rev': rev,
       'user': user,
       'title': query,
       'aiProvider': aiProvider,
