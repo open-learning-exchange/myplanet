@@ -663,3 +663,38 @@ class ChatEntries extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Port of `model/Feedback.kt` — stores user feedback/issues with priority,
+/// type, status, and embedded message list.
+@DataClassName('FeedbackRow')
+@TableIndex(name: 'feedback_owner', columns: {#owner})
+class FeedbackEntries extends Table {
+  @override
+  String get tableName => 'feedback';
+
+  TextColumn get id => text()();
+  TextColumn get rev => text().named('_rev').nullable()();
+
+  TextColumn get title => text().nullable()();
+  TextColumn get source => text().nullable()();
+  TextColumn get status => text().nullable()();
+  TextColumn get priority => text().nullable()();
+  TextColumn get owner => text().nullable()();
+  IntColumn get openTime => integer().withDefault(const Constant(0))();
+  TextColumn get type => text().nullable()();
+  TextColumn get url => text().nullable()();
+  TextColumn get parentCode => text().nullable()();
+
+  /// Whether this feedback has been uploaded to the server.
+  BoolColumn get isUploaded => boolean().withDefault(const Constant(false))();
+
+  /// Embedded list of messages/replies, stored as JSON.
+  /// Each message has `message`, `user`, and `time` fields.
+  TextColumn get messages => text().nullable()();
+
+  TextColumn get item => text().nullable()();
+  TextColumn get state => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
