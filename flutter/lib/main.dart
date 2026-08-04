@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:media_kit/media_kit.dart';
 
 import 'app.dart';
 import 'core/prefs/planet_prefs.dart';
@@ -14,9 +13,6 @@ import 'providers/app_providers.dart';
 /// `docs/kotlin-to-flutter-migration.md`.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize media_kit for video/audio playback.
-  MediaKit.init();
 
   // SharedPreferences is loaded up front so the rest of the graph can read the
   // server config synchronously — the same reason MainApplication initialises

@@ -3,9 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:media_kit/media_kit.dart';
-import 'package:media_kit_video/media_kit_video.dart';
-import 'package:pdfrx/pdfrx.dart';
+import 'package:video_player/video_player.dart';
+import 'package:pdfx/pdfx.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -218,8 +217,7 @@ class _VideoViewer extends StatefulWidget {
 }
 
 class _VideoViewerState extends State<_VideoViewer> {
-  Player? _player;
-  VideoController? _controller;
+  VideoPlayerController? _controller;
   bool _loading = true;
   String? _error;
 
@@ -240,13 +238,12 @@ class _VideoViewerState extends State<_VideoViewer> {
         return;
       }
 
-      final player = Player();
-      await player.open(Media(path));
+      final controller = VideoPlayerController.file(File(path));
+      await controller.initialize();
 
       if (mounted) {
         setState(() {
-          _player = player;
-          _controller = VideoController(player);
+          _controller = controller;
           _loading = false;
         });
       }
@@ -262,7 +259,7 @@ class _VideoViewerState extends State<_VideoViewer> {
 
   @override
   void dispose() {
-    _player?.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -276,13 +273,70 @@ class _VideoViewerState extends State<_VideoViewer> {
       return Center(child: Text(_error!));
     }
 
-    if (_controller == null) {
+    if (_controller == null || !_controller!.value.isInitialized) {
       return const Center(child: Text('Unable to load video'));
     }
 
-    return VideoView(
-      _controller!,
-      controls: MaterialVideoControls,
+    return AspectRatio(
+      aspectRatio: _controller!.value.aspectRatio,
+      child: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          VideoPlayer(_controller!),
+          VideoProgressIndicator(_controller!, allowScrubbing: true),
+          PlayPauseOverlay(controller: _controller!),
+        ],
+      ),
+    );
+  }
+}
+
+class PlayPauseOverlay extends StatefulWidget {
+  const PlayPauseOverlay({super.key, required this.controller});
+
+  final VideoPlayerController controller;
+
+  @override
+  State<PlayPauseOverlay> createState() => _PlayPauseOverlayState();
+}
+
+class _PlayPauseOverlayState extends State<PlayPauseOverlay> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_updateState);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_updateState);
+    super.dispose();
+  }
+
+  void _updateState() {
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        if (widget.controller.value.isPlaying) {
+          widget.controller.pause();
+        } else {
+          widget.controller.play();
+        }
+      },
+      child: Container(
+        color: Colors.transparent,
+        child: Center(
+          child: Icon(
+            widget.controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+            color: Colors.white,
+            size: 64,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -301,7 +355,7 @@ class _AudioViewer extends StatefulWidget {
 }
 
 class _AudioViewerState extends State<_AudioViewer> {
-  Player? _player;
+  VideoPlayerController? _controller;
   bool _loading = true;
   String? _error;
 
@@ -322,12 +376,13 @@ class _AudioViewerState extends State<_AudioViewer> {
         return;
       }
 
-      final player = Player();
-      await player.open(Media(path));
+      // VideoPlayerController can also play audio
+      final controller = VideoPlayerController.file(File(path));
+      await controller.initialize();
 
       if (mounted) {
         setState(() {
-          _player = player;
+          _controller = controller;
           _loading = false;
         });
       }
@@ -343,7 +398,7 @@ class _AudioViewerState extends State<_AudioViewer> {
 
   @override
   void dispose() {
-    _player?.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -357,7 +412,7 @@ class _AudioViewerState extends State<_AudioViewer> {
       return Center(child: Text(_error!));
     }
 
-    if (_player == null) {
+    if (_controller == null || !_controller!.value.isInitialized) {
       return const Center(child: Text('Unable to load audio'));
     }
 
@@ -376,8 +431,25 @@ class _AudioViewerState extends State<_AudioViewer> {
             Text(widget.resource.author!),
           ],
           const SizedBox(height: 32),
-          // AudioView widget from media_kit_video displays audio player
-          AudioView(_player!),
+          // Audio visualization via video player controls (no video shown)
+          Expanded(
+            child: VideoPlayer(_controller!),
+          ),
+          VideoProgressIndicator(_controller!, allowScrubbing: true),
+          IconButton(
+            iconSize: 64,
+            icon: Icon(
+              _controller!.value.isPlaying ? Icons.pause_circle : Icons.play_circle,
+            ),
+            onPressed: () {
+              if (_controller!.value.isPlaying) {
+                _controller!.pause();
+              } else {
+                _controller!.play();
+              }
+              setState(() {});
+            },
+          ),
         ],
       ),
     );
@@ -398,11 +470,9 @@ class _PdfViewer extends StatefulWidget {
 }
 
 class _PdfViewerState extends State<_PdfViewer> {
-  PdfViewerController? _controller;
+  PdfControllerPinch? _controller;
   bool _loading = true;
   String? _error;
-  int _currentPage = 1;
-  int _totalPages = 0;
 
   @override
   void initState() {
@@ -420,6 +490,10 @@ class _PdfViewerState extends State<_PdfViewer> {
         });
         return;
       }
+
+      _controller = PdfControllerPinch(
+        document: PdfDocument.openFile(path),
+      );
 
       if (mounted) {
         setState(() {
@@ -452,41 +526,33 @@ class _PdfViewerState extends State<_PdfViewer> {
       return Center(child: Text(_error!));
     }
 
-    return FutureBuilder<String?>(
-      future: widget.getLocalFilePath(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data == null) {
-          return Center(child: Text(_error ?? 'PDF file not found'));
-        }
+    if (_controller == null) {
+      return const Center(child: Text('Unable to load PDF'));
+    }
 
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                widget.resource.title ?? 'Untitled',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text(
+            widget.resource.title ?? 'Untitled',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+        ),
+        Expanded(
+          child: PdfViewPinch(
+            controller: _controller!,
+            builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
+              options: const DefaultBuilderOptions(),
+              documentLoaderBuilder: (_) =>
+                  const Center(child: CircularProgressIndicator()),
+              pageLoaderBuilder: (_) =>
+                  const Center(child: CircularProgressIndicator()),
+              errorBuilder: (_, error) => Center(child: Text(error.toString())),
             ),
-            Expanded(
-              child: PdfViewer.file(
-                snapshot.data!,
-                controller: _controller,
-                onPageChanged: (page) {
-                  setState(() {
-                    _currentPage = page;
-                  });
-                },
-              ),
-            ),
-            if (_totalPages > 0)
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text('Page $_currentPage of $_totalPages'),
-              ),
-          ],
-        );
-      },
+          ),
+        ),
+      ],
     );
   }
 }
