@@ -293,6 +293,35 @@ class TeamDao extends DatabaseAccessor<AppDatabase> with _$TeamDaoMixin {
             ..orderBy([(t) => OrderingTerm.desc(t.createdDate)]))
           .watch();
 
+  /// Watch all transactions for a team, optionally filtered by date range.
+  Stream<List<TeamRow>> watchTransactions(
+    String teamId, {
+    int? startDate,
+    int? endDate,
+    bool ascending = false,
+  }) {
+    return (select(teams)
+          ..where((t) {
+            var condition =
+                t.teamId.equals(teamId) &
+                t.docType.equals('transaction') &
+                (t.status.isNull() | t.status.equals('archived').not());
+            if (startDate != null) {
+              condition = condition & t.date.isBiggerOrEqualValue(startDate);
+            }
+            if (endDate != null) {
+              condition = condition & t.date.isSmallerOrEqualValue(endDate);
+            }
+            return condition;
+          })
+          ..orderBy([
+            (t) => ascending
+                ? OrderingTerm.asc(t.date)
+                : OrderingTerm.desc(t.date),
+          ]))
+        .watch();
+  }
+
   Future<TeamRow?> getTeamDocument(
     String teamId,
     String userId,
