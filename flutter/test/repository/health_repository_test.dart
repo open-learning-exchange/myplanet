@@ -1,7 +1,9 @@
+import 'package:drift/drift.dart' hide isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/network/network_result.dart';
+import 'package:myplanet/core/sync/sync_result.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/health_repository.dart';
@@ -17,11 +19,6 @@ void main() {
     repository = HealthRepository(
       api,
       database.healthExaminationDao,
-      config: const ServerConfig(
-        serverUrl: 'https://planet.example',
-        couchDbUrl: 'https://satellite:1234@planet.example:443',
-        pin: '1234',
-      ),
       createId: () => 'health-local-1',
     );
   });
@@ -57,6 +54,8 @@ void main() {
       userId: 'user-1',
       temperature: 36.5,
       pulse: 72,
+      height: 175,
+      weight: 70,
     );
 
     await repository.updateExamination(id, temperature: 37.0, pulse: 80);
@@ -174,9 +173,27 @@ void main() {
 
   test('gets examinations by user id', () async {
     // Create examinations directly via repository
-    await repository.createExamination(userId: 'user-1', temperature: 36.5);
-    await repository.createExamination(userId: 'user-1', temperature: 36.6);
-    await repository.createExamination(userId: 'user-2', temperature: 36.7);
+    await repository.createExamination(
+      userId: 'user-1',
+      temperature: 36.5,
+      pulse: 72,
+      height: 175,
+      weight: 70,
+    );
+    await repository.createExamination(
+      userId: 'user-1',
+      temperature: 36.6,
+      pulse: 72,
+      height: 175,
+      weight: 70,
+    );
+    await repository.createExamination(
+      userId: 'user-2',
+      temperature: 36.7,
+      pulse: 75,
+      height: 180,
+      weight: 80,
+    );
 
     final rows = await repository.getForUser('user-1');
     expect(rows.length, 2);
