@@ -184,6 +184,7 @@ class FeedbackCreateNotifier extends Notifier<FeedbackCreateState> {
             item: item,
             state: feedbackState,
           );
+      await queuePending();
       state = const FeedbackCreateState();
       return true;
     } catch (e) {
@@ -194,6 +195,22 @@ class FeedbackCreateNotifier extends Notifier<FeedbackCreateState> {
 
   void reset() {
     state = const FeedbackCreateState();
+  }
+
+  /// Hands every un-uploaded feedback to the durable outbox.
+  ///
+  /// Enqueuing rather than posting directly is what makes filing feedback work
+  /// offline: the row and the queue entry are both on disk, and the drain runs
+  /// when the app next resumes with a reachable server.
+  Future<int> queuePending() async {
+    final config = ref.read(serverConfigProvider);
+    if (config == null) return 0;
+    return ref
+        .read(feedbackUploaderProvider)
+        .queuePending(
+          config: config,
+          userId: ref.read(sessionProvider).valueOrNull?.id,
+        );
   }
 }
 

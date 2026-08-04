@@ -107,7 +107,7 @@ class FeedbackRepositoryImpl implements FeedbackRepository {
   }
 
   @override
-  Future<void> markUploaded(String id) async {
-    await feedbackDao.markUploaded(id);
+  Future<void> markUploaded(String id, String rev) async {
+    await feedbackDao.markUploaded(id, rev);
   }
 }
