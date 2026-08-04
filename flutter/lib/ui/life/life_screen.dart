@@ -47,10 +47,15 @@ class LifeScreen extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 buildDefaultDragHandles: false,
                 itemCount: rows.length,
-                onReorderItem: (oldIndex, newIndex) {
+                onReorder: (oldIndex, newIndex) {
+                  // ReorderableListView adjustment for newIndex being greater
+                  var adjustedNewIndex = newIndex;
+                  if (adjustedNewIndex > oldIndex) {
+                    adjustedNewIndex -= 1;
+                  }
                   final reordered = rows.toList();
                   final moved = reordered.removeAt(oldIndex);
-                  reordered.insert(newIndex, moved);
+                  reordered.insert(adjustedNewIndex, moved);
                   ref.read(lifeActionsProvider).reorder(reordered);
                 },
                 itemBuilder: (context, index) {

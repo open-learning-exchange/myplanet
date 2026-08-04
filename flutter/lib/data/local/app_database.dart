@@ -44,6 +44,7 @@ part 'app_database.g.dart';
     Teams,
     TeamTasks,
     ChatEntries,
+    FeedbackEntries,
   ],
   daos: [
     UserDao,
@@ -63,6 +64,7 @@ part 'app_database.g.dart';
     MeetupDao,
     SurveyDao,
     ChatDao,
+    FeedbackDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -75,7 +77,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 22;
+  int get schemaVersion => 23;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -1522,4 +1524,56 @@ class ChatDao extends DatabaseAccessor<AppDatabase> with _$ChatDaoMixin {
       lastUsed: Value(DateTime.now().millisecondsSinceEpoch),
     ),
   );
+}
+
+/// Port of `data/room/dao/FeedbackDao.kt`.
+@DriftAccessor(tables: [FeedbackEntries])
+class FeedbackDao extends DatabaseAccessor<AppDatabase>
+    with _$FeedbackDaoMixin {
+  FeedbackDao(super.db);
+
+  /// Returns all feedback sorted by open time descending.
+  Stream<List<FeedbackRow>> watchAllSorted() => (select(
+    feedbackEntries,
+  )..orderBy([(f) => OrderingTerm.desc(f.openTime)])).watch();
+
+  /// Returns feedback for a specific owner.
+  Stream<List<FeedbackRow>> watchByOwner(String? owner) =>
+      (select(feedbackEntries)
+            ..where((f) => f.owner.equals(owner ?? ''))
+            ..orderBy([(f) => OrderingTerm.desc(f.openTime)]))
+          .watch();
+
+  /// Pending feedback that needs to be uploaded.
+  Future<List<FeedbackRow>> getPending() =>
+      (select(feedbackEntries)..where((f) => f.isUploaded.equals(false))).get();
+
+  Future<FeedbackRow?> getById(String id) => (select(
+    feedbackEntries,
+  )..where((f) => f.id.equals(id))).getSingleOrNull();
+
+  /// Close feedback by setting status to 'Closed'.
+  Future<int> closeById(String id) =>
+      (update(feedbackEntries)..where((f) => f.id.equals(id))).write(
+        const FeedbackEntriesCompanion(status: Value('Closed')),
+      );
+
+  /// Mark feedback as uploaded.
+  Future<int> markUploaded(String id) =>
+      (update(feedbackEntries)..where((f) => f.id.equals(id))).write(
+        const FeedbackEntriesCompanion(isUploaded: Value(true)),
+      );
+
+  Future<void> upsert(FeedbackEntriesCompanion row) =>
+      into(feedbackEntries).insertOnConflictUpdate(row);
+
+  Future<void> upsertAll(List<FeedbackEntriesCompanion> rows) async {
+    if (rows.isEmpty) return;
+    await batch((b) => b.insertAllOnConflictUpdate(feedbackEntries, rows));
+  }
+
+  /// Update a feedback row (e.g., adding a reply).
+  Future<void> updateRow(FeedbackEntriesCompanion row) => (update(
+    feedbackEntries,
+  )..where((f) => f.id.equals(row.id.value))).write(row);
 }
