@@ -230,6 +230,18 @@ class SubmissionsRepository {
     await _dao.markComplete(id, jsonEncode(user));
   }
 
+  /// Creates empty survey submissions for each selected user.
+  /// Port of `SubmissionsRepositoryImpl.createBulkSurveySubmissions`.
+  Future<void> createBulkSurveySubmissions(
+    String surveyId,
+    List<String> userIds,
+    Future<String> Function(String userId, String parentId) createSubmission,
+  ) async {
+    for (final userId in userIds) {
+      await createSubmission(userId, surveyId);
+    }
+  }
+
   Future<List<SubmissionRow>> pendingUploads(String userId) =>
       _dao.pendingUploads(userId);
 

@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 // Imported for the generated part file, which constructs the type converters
 // declared on the table columns.
 import 'converters.dart';
+import '../../core/crypto/health_cipher.dart';
 import 'tables.dart';
 
 part 'app_database.g.dart';
@@ -82,7 +83,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 23;
+  int get schemaVersion => 24;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -140,6 +141,17 @@ class AppDatabase extends _$AppDatabase {
     // row exists only here, so a schema bump would discard a report the user
     // wrote — and there is no feedback sync to bring it back either.
     'feedback',
+    // Health examinations are recorded on the device — a clinician entering a
+    // reading offline is the whole point of the screen. There is no health
+    // sync running yet either, so the drop-and-resync premise fails twice
+    // over: dropping this table destroys a medical record outright.
+    'health_examinations',
+    // Not a CouchDB cache in the part that matters. `key`/`iv` are generated
+    // on this device and never sent anywhere, so a sync cannot give them back
+    // — and losing them makes every health record already encrypted with them
+    // permanently unreadable. Dropping this table also signs the user out,
+    // since the session restores by looking their id up here.
+    'users',
   };
 
   @override
@@ -403,6 +415,32 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
   /// login screen.
   Future<List<UserRow>> getSavedUsers() =>
       (select(users)..where((u) => u.isArchived.equals(false))).get();
+
+  /// Returns all users (for sending surveys to selected users).
+  Future<List<UserRow>> getAllUsers() => select(users).get();
+
+  /// Port of `UserRepositoryImpl.ensureUserSecurityKeys`.
+  ///
+  /// The health screens call this before encrypting. Generating lazily rather
+  /// than at sign-in means users synced before health was ported still get a
+  /// key, and re-using the stored one is what keeps yesterday's records
+  /// readable.
+  Future<UserRow?> ensureSecurityKeys(
+    String id, {
+    String Function()? createKey,
+    String Function()? createIv,
+  }) async {
+    final user = await getById(id);
+    if (user == null) return null;
+    if (user.key != null && user.iv != null) return user;
+    await (update(users)..where((u) => u.id.equals(id))).write(
+      UsersCompanion(
+        key: Value(user.key ?? (createKey ?? HealthCipher.generateKey)()),
+        iv: Value(user.iv ?? (createIv ?? HealthCipher.generateIv)()),
+      ),
+    );
+    return getById(id);
+  }
 
   Future<int> count() async {
     final query = selectOnly(users)..addColumns([users.id.count()]);
