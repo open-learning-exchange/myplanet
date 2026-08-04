@@ -418,6 +418,37 @@ and every membership, report and resource link carries the team's id in `teamId`
 order, and `addCourses` bails on any row with a `docType` — so adding a course to
 a team silently did nothing, intermittently.
 
+## The preserved-table test is "can a sync restore this?", not "is it local?"
+
+Three packages in a row shipped a table the schema upgrade would drop and
+nothing would refill. The nominal rule — *local intent the server cannot give
+back* — kept passing them, because CouchDB genuinely does hold the data:
+
+- **`teams`** carried offline reports, join requests and resource links mixed
+  in with the server catalog.
+- **`chat_history`** is a pure mirror of CouchDB, but `insertChatHistoryFromSync`
+  has no callers. There is no chat sync, so a drop is permanent.
+- **`feedback`** is filed on the device and, before this slice, uploaded by
+  nothing at all — `getPendingFeedback` existed and was never called.
+
+The operative question is not who authored the row, it is whether the next sync
+can put it back. A cache with no sync path is local-only in practice, whatever
+its provenance. Both later cases were caught by the guard test added after the
+`my_life` omission: adding a name to the preserved set fails the suite until a
+preservation test exists, which is how the coverage held while the set grew from
+nine tables to twelve.
+
+Three related defects clustered around the same code, all from copy-paste:
+
+- `_generateId` appeared twice (chat, feedback) deriving its "random" suffix
+  from the timestamp it was already prefixing — so it was a second copy of the
+  same value, and two rows created in the same millisecond collided.
+- Chat stored rows under a locally-minted id while CouchDB assigned its own, so
+  every follow-up message addressed a document that did not exist.
+- `FeedbackMapper.toDoc` omitted `_id`, turning a reply on an uploaded feedback
+  into a duplicate thread rather than an update, and `markUploaded` recorded no
+  revision, so the update would have conflicted anyway.
+
 ## Remaining UI packages (8 of 28)
 
 `community`, `components`, `enterprises`, `exam`,

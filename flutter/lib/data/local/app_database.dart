@@ -131,6 +131,10 @@ class AppDatabase extends _$AppDatabase {
     // nominal one. A failed continuation also stores the query here with an
     // empty response, which never reaches the server at all.
     'chat_history',
+    // Filed offline and uploaded by the outbox. Until the drain succeeds the
+    // row exists only here, so a schema bump would discard a report the user
+    // wrote — and there is no feedback sync to bring it back either.
+    'feedback',
   };
 
   @override
@@ -1558,11 +1562,39 @@ class FeedbackDao extends DatabaseAccessor<AppDatabase>
         const FeedbackEntriesCompanion(status: Value('Closed')),
       );
 
-  /// Mark feedback as uploaded.
-  Future<int> markUploaded(String id) =>
+  /// Marks the row uploaded and stores the revision CouchDB returned.
+  ///
+  /// Without the `_rev`, the next reply on this feedback would PUT against a
+  /// missing revision and be rejected as a conflict.
+  Future<int> markUploaded(String id, String rev) =>
       (update(feedbackEntries)..where((f) => f.id.equals(id))).write(
-        const FeedbackEntriesCompanion(isUploaded: Value(true)),
+        FeedbackEntriesCompanion(
+          isUploaded: const Value(true),
+          rev: Value(rev),
+        ),
       );
+
+  /// Stale-row cleanup that spares anything not yet on the server.
+  ///
+  /// Difference computed in Dart and deleted in chunks: `NOT IN` cannot be
+  /// split across chunks, since each chunk matches the rows the others keep.
+  Future<int> deleteNotIn(List<String> keepIds) async {
+    final keep = keepIds.toSet();
+    final rows = await (select(
+      feedbackEntries,
+    )..where((f) => f.isUploaded.equals(true))).get();
+    final stale = rows
+        .map((row) => row.id)
+        .where((id) => !keep.contains(id))
+        .toList(growable: false);
+    var deleted = 0;
+    for (final chunk in _chunked(stale, _sqliteVariableChunk)) {
+      deleted += await (delete(
+        feedbackEntries,
+      )..where((f) => f.id.isIn(chunk))).go();
+    }
+    return deleted;
+  }
 
   Future<void> upsert(FeedbackEntriesCompanion row) =>
       into(feedbackEntries).insertOnConflictUpdate(row);

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:drift/drift.dart';
 
@@ -143,6 +144,11 @@ class FeedbackMapper {
   /// Serializes a feedback row to a CouchDB-compatible JSON map.
   static Map<String, dynamic> toDoc(FeedbackRow row) {
     final doc = <String, dynamic>{
+      // The id is device-generated, so CouchDB stores the document under it.
+      // Omitting it made every upload create a *new* document, which turns a
+      // reply on an already-uploaded feedback into a duplicate thread rather
+      // than an update.
+      '_id': row.id,
       'title': row.title,
       'source': row.source,
       'status': row.status,
@@ -169,9 +175,13 @@ class FeedbackMapper {
   }
 
   static String _generateId() {
+    // The suffix must not be derived from the timestamp it is appended to —
+    // that makes it a second copy of the same value, so two feedbacks filed in
+    // the same millisecond collide on the primary key and one overwrites the
+    // other.
     final now = DateTime.now().millisecondsSinceEpoch;
-    final random = (now % 0xFFFFFFFF).toRadixString(16).padLeft(8, '0');
-    return 'feedback_$now$random';
+    final random = Random.secure().nextInt(1 << 32).toRadixString(16);
+    return 'feedback_$now-$random';
   }
 }
 

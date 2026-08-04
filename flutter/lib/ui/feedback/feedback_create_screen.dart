@@ -54,35 +54,33 @@ class _FeedbackCreateScreenState extends ConsumerState<FeedbackCreateScreen> {
             // Priority section
             Text(l10n.isUrgent, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: RadioListTile<String>(
-                    title: Text(l10n.yes),
-                    value: 'Yes',
-                    groupValue: _priority,
-                    onChanged: (value) {
-                      setState(() {
-                        _priority = value!;
-                        _priorityError = null;
-                      });
-                    },
+            // `RadioGroup` rather than per-tile `groupValue`/`onChanged`, which
+            // are deprecated — and which duplicated the same setState twice.
+            RadioGroup<String>(
+              groupValue: _priority,
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() {
+                  _priority = value;
+                  _priorityError = null;
+                });
+              },
+              child: Row(
+                children: [
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: Text(l10n.yes),
+                      value: 'Yes',
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: RadioListTile<String>(
-                    title: Text(l10n.no),
-                    value: 'No',
-                    groupValue: _priority,
-                    onChanged: (value) {
-                      setState(() {
-                        _priority = value!;
-                        _priorityError = null;
-                      });
-                    },
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: Text(l10n.no),
+                      value: 'No',
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             if (_priorityError != null)
               Padding(

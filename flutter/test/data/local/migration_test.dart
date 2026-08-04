@@ -235,6 +235,24 @@ void main() {
     );
   });
 
+  test('feedback filed offline survives a schema upgrade', () async {
+    await database.feedbackDao.upsert(
+      FeedbackEntriesCompanion.insert(
+        id: 'feedback-1',
+        title: const Value('App crashes on sync'),
+        owner: const Value('ada'),
+        isUploaded: const Value(false),
+      ),
+    );
+
+    await runUpgrade();
+
+    expect(
+      (await database.feedbackDao.getById('feedback-1'))?.title,
+      'App crashes on sync',
+    );
+  });
+
   test('every preserved table has a preservation test', () {
     // `my_life` and the submissions tables were added to the preserved set
     // without one. This fails the moment another name is added, so the next
@@ -252,6 +270,7 @@ void main() {
       'team_tasks',
       'teams',
       'chat_history',
+      'feedback',
     };
     expect(
       AppDatabase.localAuthorityTables,

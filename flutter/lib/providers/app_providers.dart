@@ -34,6 +34,7 @@ import '../repository/surveys_repository.dart';
 import '../repository/teams_repository.dart';
 import '../repository/team_tasks_repository.dart';
 import '../repository/team_tasks_uploader.dart';
+import '../repository/feedback_uploader.dart';
 import '../repository/teams_uploader.dart';
 
 /// The dependency graph, replacing the Hilt modules in `di/`.
@@ -161,6 +162,15 @@ final chatRepositoryProvider = Provider<ChatRepository>((ref) {
 
 final feedbackDaoProvider = Provider<FeedbackDao>(
   (ref) => ref.watch(appDatabaseProvider).feedbackDao,
+);
+
+final feedbackUploaderProvider = Provider<FeedbackUploader>(
+  (ref) => FeedbackUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(feedbackRepositoryProvider),
+    ref.watch(feedbackDaoProvider),
+    ref.watch(outboxRepositoryProvider),
+  ),
 );
 
 final feedbackRepositoryProvider = Provider<FeedbackRepository>((ref) {
@@ -308,6 +318,7 @@ final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
       TeamTasksUploader.type: ref.watch(teamTasksUploaderProvider).handler,
       for (final type in TeamsUploader.types)
         type: ref.watch(teamsUploaderProvider).handler,
+      FeedbackUploader.type: ref.watch(feedbackUploaderProvider).handler,
     },
   );
 });
