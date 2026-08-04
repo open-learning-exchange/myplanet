@@ -5,8 +5,8 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 27 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
-**26 of 28 UI packages** are ported (maps is the new package in this phase).
+**Phase 28 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**26 of 28 UI packages** are ported (storage is part of settings, completing the storage management feature).
 
 - **Phase 1** -- skeleton plus the server configuration → login → resources slice.
 - **Phase 2** -- dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -86,6 +86,12 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 - **Phase 27** -- maps: Ported `OfflineMapsActivity.kt` to `OfflineMapsScreen` using `flutter_map`
   with OpenStreetMap tiles. Added `flutter_map` and `latlong2` dependencies. Added localization
   strings for `offlineMaps` and `centerOnDefault`.
+
+**Phase 28** -- storage: Ported `StorageBreakdownFragment.kt` and `StorageCategoryDetailFragment.kt`
+  to `StorageBreakdownScreen` and `StorageCategoryDetailScreen`. These screens show a breakdown of
+  downloaded files by category (videos, audio, PDFs, images, other) and allow users to delete
+  files by category or selection. Added localization strings for storage management, file counts,
+  and deletion confirmations. Linked from the Settings screen.
 
 ## Strategy
 
@@ -557,9 +563,8 @@ flutter pub get 2>&1 | grep -i discontinued
 ## Remaining UI packages (2 of 28)
 
 `components`, `enterprises` -- plus team voices, team/public survey sharing, personal attachments/upload,
-storage/retry, and the
-rest of `settings`, plus profile photo/upload, membership, and the rest of `user`, and the
-rest of `sync` and `dashboard` (the Kotlin dashboard's activity cards, surveys widget and drawer
+storage/retry, and the rest of `settings`, plus profile photo/upload, membership, and the rest of `user`,
+and the rest of `sync` and `dashboard` (the Kotlin dashboard's activity cards, surveys widget and drawer
 are not ported; only the navigation host is).
 
 **Notes on remaining packages:**
@@ -571,6 +576,8 @@ are not ported; only the navigation host is).
 **Completed infrastructure:**
 - Rating upload/sync is now implemented via `RatingsUploader` (Phase 26).
 - Maps: `OfflineMapsScreen` using `flutter_map` package with OpenStreetMap tiles (Phase 27).
+- Storage: `StorageBreakdownScreen` and `StorageCategoryDetailScreen` for viewing and deleting
+  downloaded files by category (Phase 28).
 
 Course progress and certification are deliberately deferred with their own packages rather than bundled
 into the courses slice. `events` and `surveys` are now ported for the individual case; team meetups
@@ -643,4 +650,4 @@ succeeds, it just doesn't do what the Kotlin did.
 ---
 
 **Last updated**: 2026-08-04
-**Phase**: 27 of N (26 of 28 UI packages ported; maps complete)
+**Phase**: 28 of N (26 of 28 UI packages ported; storage management complete)

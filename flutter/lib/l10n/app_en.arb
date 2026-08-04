@@ -716,5 +716,51 @@
   "bp": "BP",
   "unknown": "Unknown",
   "offlineMaps": "Offline Maps",
-  "centerOnDefault": "Center on default location"
+  "centerOnDefault": "Center on default location",
+  "storage": "Storage",
+  "storageManagement": "Storage Management",
+  "storageTotalDownloaded": "Total Downloaded",
+  "storageVideos": "Videos",
+  "storageAudio": "Audio",
+  "storagePdfs": "PDFs",
+  "storageImages": "Images",
+  "storageOther": "Other",
+  "fileCountOne": "1 file",
+  "fileCountMany": "{count} files",
+  "@fileCountMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "storageUnknownResource": "Unknown resource",
+  "storageDeleteSelectedConfirm": "Delete {count} selected items?",
+  "@storageDeleteSelectedConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "storageDeleteConfirm": "Delete all {category} files?",
+  "@storageDeleteConfirm": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "storageSelectedCount": "{count} selected",
+  "@storageSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteSelected": "Delete Selected",
+  "deleteAll": "Delete All",
+  "selectAll": "Select All",
+  "noStorageUsed": "No downloaded files found"
 }
