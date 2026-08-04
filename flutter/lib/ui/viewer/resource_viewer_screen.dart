@@ -2,14 +2,16 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:video_player/video_player.dart';
 import 'package:pdfx/pdfx.dart';
-import 'package:path_provider/path_provider.dart';
 
+import '../../core/files/resource_files.dart';
+import '../../core/network/network_result.dart';
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
+import '../../repository/resource_downloader.dart';
 
 /// Port of `ui/viewer/ResourceViewerActivity.kt` and `ui/viewer/ResourceViewerFragment.kt`.
 ///
@@ -28,6 +30,10 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
   MyLibraryRow? _resource;
   bool _loading = true;
   String? _error;
+  String? _localPath;
+  bool _downloading = false;
+  bool _downloadFailed = false;
+  double? _progress;
 
   @override
   void initState() {
@@ -40,12 +46,24 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
       final resource = await ref
           .read(resourcesRepositoryProvider)
           .getById(widget.resourceId);
-      if (mounted) {
-        setState(() {
-          _resource = resource;
-          _loading = false;
-        });
+      if (!mounted) return;
+      _resource = resource;
+      // Resolved once here rather than per sub-viewer: each of them used to
+      // hit the disk independently on every rebuild.
+      final path = await _getLocalFilePath();
+      if (!mounted) return;
+      // A row flagged offline whose file has since been deleted would otherwise
+      // keep claiming to be downloaded.
+      if (path == null && resource != null && resource.resourceOffline) {
+        await ref
+            .read(myLibraryDaoProvider)
+            .markNotDownloaded(widget.resourceId);
       }
+      if (!mounted) return;
+      setState(() {
+        _localPath = path;
+        _loading = false;
+      });
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -93,17 +111,52 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
     return ResourceType.unknown;
   }
 
+  /// Resolved through [ResourceFiles] so the viewer reads exactly where
+  /// [ResourceDownloader] writes.
   Future<String?> _getLocalFilePath() async {
-    if (_resource == null) return null;
-    final filename = _resource!.filename;
-    if (filename == null || filename.isEmpty) return null;
+    final resource = _resource;
+    if (resource == null) return null;
+    final file = await ResourceFiles.existingFileFor(
+      docId: resource.couchId ?? resource.id,
+      filename: resource.filename ?? '',
+    );
+    return file?.path;
+  }
 
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File('${dir.path}/ole/$filename');
-    if (await file.exists()) {
-      return file.path;
+  Future<void> _download() async {
+    final resource = _resource;
+    final config = ref.read(serverConfigProvider);
+    if (resource == null || config == null) return;
+
+    setState(() {
+      _downloading = true;
+      _progress = null;
+      _error = null;
+    });
+
+    final result = await ref
+        .read(resourceDownloaderProvider)
+        .download(
+          resource,
+          config: config,
+          onProgress: (received, total) {
+            if (!mounted || total <= 0) return;
+            setState(() => _progress = received / total);
+          },
+        );
+
+    if (!mounted) return;
+    if (result case NetworkSuccess<String>(:final data)) {
+      setState(() {
+        _localPath = data;
+        _downloading = false;
+      });
+      return;
     }
-    return null;
+    setState(() {
+      _downloading = false;
+      _downloadFailed = true;
+    });
   }
 
   @override
@@ -131,11 +184,69 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
       );
     }
 
-    final type = _getResourceType();
-
     return Scaffold(
       appBar: AppBar(title: Text(_resource!.title ?? l10n.untitledResource)),
-      body: _buildViewer(context, type),
+      // Nothing can render until the attachment is on disk. Previously every
+      // viewer was built regardless and each showed its own "not downloaded"
+      // message, with no way to actually get the file.
+      body: _localPath == null
+          ? _buildDownloadPrompt(context)
+          : _buildViewer(context, _getResourceType()),
+    );
+  }
+
+  Widget _buildDownloadPrompt(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final config = ref.watch(serverConfigProvider);
+    // No server, or a row that names no attachment, means there is nothing to
+    // fetch — offering a button that cannot work would be worse than saying so.
+    final canDownload =
+        config != null && ResourceDownloader.urlFor(config, _resource!) != null;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              _downloadFailed
+                  ? Icons.cloud_off_outlined
+                  : Icons.cloud_download_outlined,
+              size: 64,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _downloadFailed
+                  ? l10n.downloadFailed
+                  : l10n.resourceNotDownloaded,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 24),
+            if (_downloading) ...[
+              LinearProgressIndicator(value: _progress),
+              const SizedBox(height: 8),
+              Text(
+                _progress == null
+                    ? l10n.downloading
+                    : '${(_progress! * 100).round()}%',
+              ),
+            ] else if (canDownload)
+              FilledButton.icon(
+                onPressed: _download,
+                icon: const Icon(Icons.download),
+                label: Text(_downloadFailed ? l10n.retry : l10n.download),
+              )
+            else
+              Text(
+                l10n.noDataAvailable,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+          ],
+        ),
+      ),
     );
   }
 
