@@ -47,6 +47,7 @@ class LifeScreen extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 buildDefaultDragHandles: false,
                 itemCount: rows.length,
+                // ignore: deprecated_member_use
                 onReorder: (oldIndex, newIndex) {
                   // ReorderableListView adjustment for newIndex being greater
                   var adjustedNewIndex = newIndex;
