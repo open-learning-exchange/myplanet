@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' hide isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/network/network_result.dart';
 import 'package:myplanet/core/sync/sync_result.dart';
 import 'package:myplanet/data/api/planet_api.dart';
@@ -9,22 +10,26 @@ import 'package:myplanet/repository/health_repository.dart';
 
 void main() {
   late AppDatabase database;
-  late HealthRepository repository;
   late MockPlanetApi api;
 
   setUp(() {
     database = AppDatabase.memory();
     api = MockPlanetApi();
-    repository = HealthRepository(
-      api,
-      database.healthExaminationDao,
-      createId: () => 'health-local-1',
-    );
   });
 
   tearDown(() => database.close());
 
+  HealthRepository createRepository({ServerConfig? config}) {
+    return HealthRepository(
+      api,
+      database.healthExaminationDao,
+      config: config,
+      createId: () => 'health-local-1',
+    );
+  }
+
   test('creates and retrieves a health examination', () async {
+    final repository = createRepository();
     final id = await repository.createExamination(
       userId: 'user-1',
       temperature: 36.5,
@@ -49,6 +54,7 @@ void main() {
   });
 
   test('updates an existing examination', () async {
+    final repository = createRepository();
     final id = await repository.createExamination(
       userId: 'user-1',
       temperature: 36.5,
@@ -66,6 +72,7 @@ void main() {
   });
 
   test('parses conditions from JSON', () {
+    final repository = createRepository();
     expect(repository.parseConditions('{"Fever": true, "Cough": false}'), {
       'Fever': true,
       'Cough': false,
@@ -98,6 +105,7 @@ void main() {
   });
 
   test('maps and caches server health documents', () async {
+    final repository = createRepository();
     expect(
       await repository.cacheDocuments([
         {
@@ -122,6 +130,7 @@ void main() {
   });
 
   test('preserves local edits during cache', () async {
+    final repository = createRepository();
     await repository.cacheDocuments([
       {'_id': 'health-1', 'temperature': 36.5, 'pulse': 70},
     ]);
@@ -146,6 +155,7 @@ void main() {
   });
 
   test('serializes examination for upload', () async {
+    final repository = createRepository();
     await repository.cacheDocuments([
       {
         '_id': 'health-1',
@@ -171,6 +181,7 @@ void main() {
   });
 
   test('gets examinations by user id', () async {
+    final repository = createRepository();
     // Create examinations directly via repository
     await repository.createExamination(
       userId: 'user-1',
@@ -200,6 +211,7 @@ void main() {
   });
 
   test('gets updated examinations for sync', () async {
+    final repository = createRepository();
     await repository.cacheDocuments([
       {'_id': 'health-1', 'temperature': 36.5},
     ]);
@@ -213,6 +225,7 @@ void main() {
   });
 
   test('marks examination as uploaded', () async {
+    final repository = createRepository();
     await repository.cacheDocuments([
       {'_id': 'health-1', 'temperature': 36.5},
     ]);
@@ -227,6 +240,13 @@ void main() {
   });
 
   test('sync walks CouchDB pages', () async {
+    final repository = createRepository(
+      config: const ServerConfig(
+        serverUrl: 'https://planet.example',
+        couchDbUrl: 'https://satellite:1234@planet.example:443',
+        pin: '1234',
+      ),
+    );
     when(
       () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
     ).thenAnswer((invocation) async {
