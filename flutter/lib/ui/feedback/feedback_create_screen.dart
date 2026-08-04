@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
-import '../../providers/app_providers.dart';
+import '../../providers/feedback_provider.dart';
 import '../../providers/session_provider.dart';
 
 /// Port of `ui/feedback/FeedbackFragment.kt`.
@@ -202,30 +202,33 @@ class _FeedbackCreateScreenState extends ConsumerState<FeedbackCreateScreen> {
     final session = ref.read(sessionProvider).valueOrNull;
     if (session == null) return;
 
-    try {
-      await ref
-          .read(feedbackRepositoryProvider)
-          .createFeedback(
-            user: session.name ?? '',
-            priority: _priority,
-            type: _type,
-            message: message,
-            item: widget.item,
-            state: widget.state,
-          );
+    final messenger = ScaffoldMessenger.of(context);
 
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.feedbackSaved)));
-        context.pop();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('${l10n.error}: $e')));
-      }
+    // Going through the notifier rather than calling `createFeedback` directly
+    // is what gets the feedback off the device: `submit` follows the write with
+    // `queuePending()`, and nothing else in the app hands feedback to the
+    // outbox. Calling the repository straight from here saved the row to disk
+    // and left it there forever.
+    final notifier = ref.read(feedbackCreateProvider.notifier)
+      ..setPriority(_priority)
+      ..setType(_type)
+      ..setMessage(message);
+
+    final saved = await notifier.submit(
+      item: widget.item,
+      feedbackState: widget.state,
+    );
+    if (!mounted) return;
+
+    if (saved) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.feedbackSaved)));
+      context.pop();
+      return;
     }
+
+    final error = ref.read(feedbackCreateProvider).error;
+    messenger.showSnackBar(
+      SnackBar(content: Text('${l10n.error}: ${error ?? ''}')),
+    );
   }
 }

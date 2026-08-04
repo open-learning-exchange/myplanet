@@ -169,6 +169,9 @@ class _FeedbackDetailScreenState extends ConsumerState<FeedbackDetailScreen> {
       await ref
           .read(feedbackRepositoryProvider)
           .addReply(feedbackId, message, userName);
+      // `addReply` sets `isUploaded = false`; without this the row sits pending
+      // and the reply never reaches the thread on the server.
+      await ref.read(feedbackQueueProvider).queuePending();
       ref.invalidate(feedbackByIdProvider(feedbackId));
       _replyController.clear();
     } finally {
@@ -180,6 +183,9 @@ class _FeedbackDetailScreenState extends ConsumerState<FeedbackDetailScreen> {
 
   Future<void> _closeFeedback(String feedbackId) async {
     await ref.read(feedbackRepositoryProvider).closeFeedback(feedbackId);
+    // Same as a reply: closing re-marks the row un-uploaded, so the status
+    // change has to be queued or the thread stays open for everyone else.
+    await ref.read(feedbackQueueProvider).queuePending();
     ref.invalidate(feedbackByIdProvider(feedbackId));
   }
 }
