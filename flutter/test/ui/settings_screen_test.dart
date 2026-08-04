@@ -62,6 +62,18 @@ void main() {
 
     expect(prefs.themeModeName, ThemeMode.dark.name);
   });
+
+  testWidgets('shows storage management link', (tester) async {
+    final prefs = await _prefs();
+    await tester.pumpWidget(
+      wrapScreen(
+        const SettingsScreen(),
+        overrides: [planetPrefsProvider.overrideWithValue(prefs)],
+      ),
+    );
+
+    expect(find.text('Storage Management'), findsOneWidget);
+  });
 }
 
 Future<PlanetPrefs> _prefs() async {

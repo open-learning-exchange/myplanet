@@ -75,6 +75,12 @@ class SettingsScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push(Routes.dictionary),
           ),
+          ListTile(
+            leading: const Icon(Icons.storage_outlined),
+            title: Text(l10n.storageManagement),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push(Routes.storageManagement),
+          ),
           const Divider(),
           _SectionHeader(title: l10n.about),
           ListTile(
