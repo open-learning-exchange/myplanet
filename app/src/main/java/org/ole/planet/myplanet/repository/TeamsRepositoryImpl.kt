@@ -17,6 +17,7 @@ import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
@@ -74,7 +75,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val appDatabase: AppDatabase,
 ) : TeamsRepository, TeamsSyncRepository {
     override fun getTasksFlow(userId: String?): Flow<List<TeamTask>> {
-        return teamTaskDao.getOpenTasksForUser(userId)
+        return teamTaskDao.getOpenTasksForUser(userId).flowOn(dispatcherProvider.default)
     }
 
     override suspend fun getTeamsForUpload(): List<TeamUploadData> {
@@ -200,7 +201,7 @@ class TeamsRepositoryImpl @Inject constructor(
                         it.isRootTeam()
                 }.map { it }
             }
-        }
+        }.flowOn(dispatcherProvider.default)
     }
 
     private suspend fun getMemberTeamIds(userId: String): Set<String> {
@@ -305,7 +306,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 }.map { it }
             }
             mapToTeamDetails(teams, userId)
-        }
+        }.flowOn(dispatcherProvider.default)
     }
 
     override suspend fun getShareableEnterpriseDetails(userId: String?): List<TeamDetails> {
