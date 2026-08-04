@@ -151,4 +151,22 @@ interface TeamDao {
     @Query("DELETE FROM teams WHERE teamId = :teamId AND userId = :userId AND docType = :docType") suspend fun deleteByTeamIdUserIdAndDocType(teamId: String, userId: String, docType: String): Int
     @Upsert suspend fun upsertAll(items: List<MyTeam>)
     @Upsert suspend fun upsert(item: MyTeam)
+
+    @Query("SELECT * FROM teams WHERE isUpdated = 1")
+    suspend fun getUpdatedTeams(): List<MyTeam>
+
+    @Query("SELECT * FROM teams WHERE (teamId IS NULL OR TRIM(teamId) = '') AND status = 'active'")
+    suspend fun getActiveRootTeams(): List<MyTeam>
+
+    @Query("SELECT * FROM teams WHERE (teamId IS NULL OR TRIM(teamId) = '') AND IFNULL(status, '') != 'archived' AND type = :type")
+    suspend fun getRootTeamsByType(type: String): List<MyTeam>
+
+    @Query("SELECT * FROM teams WHERE (teamId IS NULL OR TRIM(teamId) = '') AND IFNULL(status, '') != 'archived' AND type = :type AND IFNULL(_id, '') IN (:teamIds)")
+    suspend fun getRootTeamsByTypeAndIds(type: String, teamIds: Set<String>): List<MyTeam>
+
+    @Query("SELECT * FROM teams WHERE teamId = :teamId AND resourceId = :resourceId AND docType = 'resourceLink' LIMIT 1")
+    suspend fun getResourceLink(teamId: String, resourceId: String): MyTeam?
+
+    @Query("SELECT EXISTS(SELECT 1 FROM teams WHERE name = :name COLLATE NOCASE AND type = :type AND (teamId IS NULL OR TRIM(teamId) = '') AND IFNULL(status, '') != 'archived' AND (IFNULL(_id, '') != :excludeTeamId OR :excludeTeamId IS NULL))")
+    suspend fun teamNameExists(name: String, type: String, excludeTeamId: String?): Boolean
 }

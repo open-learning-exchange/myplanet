@@ -78,7 +78,7 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getTeamsForUpload(): List<TeamUploadData> {
-        val teams = teamDao.getAll().filter { it.updated }.map { it }
+        val teams = teamDao.getUpdatedTeams()
         val courseIds = teams.flatMap { it.courses.orEmpty() }.filter { it.isNotBlank() }.distinct()
         val courses = getCoursesForSerialization(courseIds)
         val coursesResourcesMap = if (courseIds.isNotEmpty()) {
@@ -177,9 +177,7 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getAllActiveTeams(): List<MyTeam> {
-        return teamDao.getAll()
-            .filter { it.isRootTeam() && it.status == "active" }
-            .map { it }
+        return teamDao.getActiveRootTeams()
     }
 
     override suspend fun getMyTeamsFlow(userId: String): Flow<List<MyTeam>> {
@@ -211,24 +209,14 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     private suspend fun getShareableTeams(userId: String?): List<MyTeam> {
-        val allTeams = teamDao.getAll()
         return if (userId.isNullOrBlank()) {
-            allTeams.filter {
-                it.isRootTeam() &&
-                    it.status != "archived" &&
-                    it.type == "team"
-            }.map { it }
+            teamDao.getRootTeamsByType("team")
         } else {
             val memberIds = getMemberTeamIds(userId)
             if (memberIds.isEmpty()) {
                 emptyList()
             } else {
-                allTeams.filter {
-                    it.isRootTeam() &&
-                        it.status != "archived" &&
-                        it.type == "team" &&
-                        (it._id ?: it.id) in memberIds
-                }.map { it }
+                teamDao.getRootTeamsByTypeAndIds("team", memberIds)
             }
         }
     }
@@ -238,13 +226,7 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     private suspend fun getShareableEnterprises(): List<MyTeam> {
-        return teamDao.getAll()
-            .filter {
-                it.isRootTeam() &&
-                    it.status != "archived" &&
-                    it.type == "enterprise"
-            }
-            .map { it }
+        return teamDao.getRootTeamsByType("enterprise")
     }
 
     private suspend fun mapToTeamDetails(teams: List<MyTeam>, userId: String?): List<TeamDetails> {
@@ -309,24 +291,12 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getShareableEnterpriseDetails(userId: String?): List<TeamDetails> {
-        val all = teamDao.getAll()
-            .filter {
-                it.isRootTeam() &&
-                    it.status != "archived" &&
-                    it.type == "enterprise"
-            }
-            .map { it }
+        val all = teamDao.getRootTeamsByType("enterprise")
         return mapToTeamDetails(all, userId)
     }
 
     override suspend fun getTeamDetails(userId: String?): List<TeamDetails> {
-        val all = teamDao.getAll()
-            .filter {
-                it.isRootTeam() &&
-                    it.status != "archived" &&
-                    it.type == "team"
-            }
-            .map { it }
+        val all = teamDao.getRootTeamsByType("team")
         return mapToTeamDetails(all, userId)
     }
 
@@ -338,12 +308,7 @@ class TeamsRepositoryImpl @Inject constructor(
             if (memberIds.isEmpty()) {
                 emptyList()
             } else {
-                teamDao.getAll().filter {
-                    it.isRootTeam() &&
-                        it.status != "archived" &&
-                        it.type == "enterprise" &&
-                        (it._id ?: it.id) in memberIds
-                }.map { it }
+                teamDao.getRootTeamsByTypeAndIds("enterprise", memberIds)
             }
         }
         return filtered.mapNotNull { it.toSummary() }
@@ -773,9 +738,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun removeResourceLink(teamId: String, resourceId: String) {
         if (teamId.isBlank() || resourceId.isBlank()) return
-        val teamResource = teamDao.getAll().firstOrNull {
-            it.teamId == teamId && it.resourceId == resourceId && it.docType == "resourceLink"
-        } ?: return
+        val teamResource = teamDao.getResourceLink(teamId, resourceId) ?: return
         val updatedResource = teamResource.apply {
             this.resourceId = ""
             updated = true
@@ -1131,13 +1094,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun isTeamNameExists(name: String, type: String, excludeTeamId: String?): Boolean {
         if (name.isBlank()) return false
-        return teamDao.getAll().any {
-            it.name.equals(name, ignoreCase = true) &&
-                it.type == type &&
-                it.isRootTeam() &&
-                it.status != "archived" &&
-                (excludeTeamId == null || (it._id ?: it.id) != excludeTeamId)
-        }
+        return teamDao.teamNameExists(name, type, excludeTeamId)
     }
 
     override suspend fun updateTeamLeader(teamId: String, newLeaderId: String): Boolean {
