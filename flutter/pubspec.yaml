@@ -53,6 +53,9 @@ dependencies:
   pdfx: ^2.6.0
   # Markdown rendering — replaces Markwon. `flutter_markdown` is discontinued.
   flutter_markdown_plus: ^1.0.3
+  # Offline maps — replaces OSMDroid.
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
 
 dev_dependencies:
   flutter_test:

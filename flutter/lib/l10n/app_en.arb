@@ -714,5 +714,7 @@
   "gender": "Gender",
   "temp": "Temp",
   "bp": "BP",
-  "unknown": "Unknown"
+  "unknown": "Unknown",
+  "offlineMaps": "Offline Maps",
+  "centerOnDefault": "Center on default location"
 }
