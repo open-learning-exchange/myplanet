@@ -10,7 +10,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
-import '../../providers/resources_providers.dart';
+import '../../providers/app_providers.dart';
 
 /// Port of `ui/viewer/ResourceViewerActivity.kt` and `ui/viewer/ResourceViewerFragment.kt`.
 ///
@@ -121,7 +121,7 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
     if (_error != null) {
       return Scaffold(
         appBar: AppBar(title: Text(l10n.resources)),
-        body: Center(child: Text('${l10n.syncFailed(_error!)}')),
+        body: Center(child: Text(l10n.syncFailed(_error!))),
       );
     }
 

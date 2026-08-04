@@ -7,7 +7,6 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/resources_providers.dart';
 import '../../providers/sync_state.dart';
 import '../dashboard/dashboard_shell.dart';
-import '../router.dart';
 
 /// Port of `ui/resources/ResourcesFragment.kt`.
 ///
