@@ -343,22 +343,23 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
             .setNegativeButton(R.string.dismiss, null)
             .create()
 
+        val adapter = HealthUsersAdapter { selected ->
+            selected._id?.let { userId ->
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val libraryList = viewModel.getLibraryListForUser(userId)
+                    showDownloadDialog(libraryList)
+                }
+            }
+            dialog.dismiss()
+        }
+        alertHealthListBinding.list.layoutManager = LinearLayoutManager(requireActivity())
+        alertHealthListBinding.list.adapter = adapter
+
         val job = viewLifecycleOwner.lifecycleScope.launch {
             viewModel.uiState.collect {
                 if (dialog.isShowing) {
                     if (it.users.isNotEmpty()) {
-                        val adapter = HealthUsersAdapter { selected ->
-                            selected._id?.let { userId ->
-                                viewLifecycleOwner.lifecycleScope.launch {
-                                    val libraryList = viewModel.getLibraryListForUser(userId)
-                                    showDownloadDialog(libraryList)
-                                }
-                            }
-                            dialog.dismiss()
-                        }
                         adapter.submitList(it.users)
-                        alertHealthListBinding.list.layoutManager = LinearLayoutManager(requireActivity())
-                        alertHealthListBinding.list.adapter = adapter
                         alertHealthListBinding.list.visibility = View.VISIBLE
                     } else {
                         alertHealthListBinding.list.visibility = View.GONE
