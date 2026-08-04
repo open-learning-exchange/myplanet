@@ -53,24 +53,24 @@ class HealthUploader {
   }
 
   OutboxHandler get handler => (row, payload, authHeader) async {
-    final result = await _api.postJsonObject(
-      row.endpoint,
-      payload,
-      authHeader: authHeader,
-    );
-    if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
-      final rev = data['rev'];
-      if (rev is! String) {
-        return const NetworkError<Map<String, dynamic>>(
-          null,
-          'Upload response carried no rev',
+        final result = await _api.postJsonObject(
+          row.endpoint,
+          payload,
+          authHeader: authHeader,
         );
-      }
-      // Recording the revision is what lets the next examination update the
-      // same document instead of conflicting against a stale `_rev`; clearing
-      // `isUpdated` is what stops it being queued a second time.
-      await _dao.markUploaded(row.itemId, rev);
-    }
-    return result;
-  };
+        if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
+          final rev = data['rev'];
+          if (rev is! String) {
+            return const NetworkError<Map<String, dynamic>>(
+              null,
+              'Upload response carried no rev',
+            );
+          }
+          // Recording the revision is what lets the next examination update the
+          // same document instead of conflicting against a stale `_rev`; clearing
+          // `isUpdated` is what stops it being queued a second time.
+          await _dao.markUploaded(row.itemId, rev);
+        }
+        return result;
+      };
 }

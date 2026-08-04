@@ -44,8 +44,8 @@ class ResourceDownloader {
         NetworkError<List<int>>(:final code, :final message) =>
           NetworkError<String>(code, message),
         NetworkException<List<int>>(:final error) => NetworkException<String>(
-          error,
-        ),
+            error,
+          ),
         _ => const NetworkError<String>(null, 'Download failed'),
       };
     }

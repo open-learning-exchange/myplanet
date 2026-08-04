@@ -24,7 +24,8 @@ class TeamVoicesScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final team = ref.watch(teamProvider(teamId)).valueOrNull;
     final voices = ref.watch(teamVoicesProvider(teamId));
-    final memberships = ref.watch(teamMembershipsProvider).valueOrNull ?? const {};
+    final memberships =
+        ref.watch(teamMembershipsProvider).valueOrNull ?? const {};
     final membership = memberships[teamId];
 
     return Scaffold(
@@ -127,7 +128,9 @@ class _VoiceCardContent extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  CircleAvatar(child: Text(_initial(row.userName))),
+                  CircleAvatar(
+                    child: Text(_initial(row.userName)),
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(

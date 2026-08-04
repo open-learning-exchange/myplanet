@@ -17,9 +17,8 @@ class ExamGrading {
     ExamQuestionRow question,
     List<String> choiceIds,
   ) {
-    final correct = question.correctChoices
-        .map((id) => id.toLowerCase())
-        .toSet();
+    final correct =
+        question.correctChoices.map((id) => id.toLowerCase()).toSet();
     // A question whose document carried no answer key cannot be passed;
     // treating "no key" as "anything goes" would score blank exams full marks.
     if (correct.isEmpty) return false;

@@ -35,19 +35,20 @@ class TeamTasksUploader {
   }
 
   OutboxHandler get handler => (row, payload, authHeader) async {
-    final result = await _api.postJsonObject(
-      row.endpoint,
-      payload,
-      authHeader: authHeader,
-    );
-    if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
-      final id = data['id'];
-      final rev = data['rev'];
-      if (id is! String || rev is! String) {
-        return const NetworkError(null, 'Upload response carried no id/rev');
-      }
-      await _tasks.markUploaded(row.itemId, id, rev);
-    }
-    return result;
-  };
+        final result = await _api.postJsonObject(
+          row.endpoint,
+          payload,
+          authHeader: authHeader,
+        );
+        if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
+          final id = data['id'];
+          final rev = data['rev'];
+          if (id is! String || rev is! String) {
+            return const NetworkError(
+                null, 'Upload response carried no id/rev');
+          }
+          await _tasks.markUploaded(row.itemId, id, rev);
+        }
+        return result;
+      };
 }

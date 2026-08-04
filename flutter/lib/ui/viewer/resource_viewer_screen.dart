@@ -134,16 +134,14 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
       _error = null;
     });
 
-    final result = await ref
-        .read(resourceDownloaderProvider)
-        .download(
-          resource,
-          config: config,
-          onProgress: (received, total) {
-            if (!mounted || total <= 0) return;
-            setState(() => _progress = received / total);
-          },
-        );
+    final result = await ref.read(resourceDownloaderProvider).download(
+      resource,
+      config: config,
+      onProgress: (received, total) {
+        if (!mounted || total <= 0) return;
+        setState(() => _progress = received / total);
+      },
+    );
 
     if (!mounted) return;
     if (result case NetworkSuccess<String>(:final data)) {
@@ -758,11 +756,11 @@ class _TextViewerState extends State<_TextViewer> {
           child: _content == null
               ? const Center(child: Text('No content'))
               : isCsv
-              ? _CsvContent(content: _content!)
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: SelectableText(_content!),
-                ),
+                  ? _CsvContent(content: _content!)
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: SelectableText(_content!),
+                    ),
         ),
       ],
     );

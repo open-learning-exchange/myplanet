@@ -19,17 +19,15 @@ class LifeRepository {
   Stream<List<MyLifeRow>> watch(String userId) => _dao.watchForUser(userId);
 
   Future<void> seed(String userId) {
-    final entries = defaultFeatures.indexed
-        .map((entry) {
-          final (index, feature) = entry;
-          return MyLifeEntriesCompanion.insert(
-            id: '${Uri.encodeComponent(userId)}:$feature',
-            feature: feature,
-            userId: userId,
-            weight: index,
-          );
-        })
-        .toList(growable: false);
+    final entries = defaultFeatures.indexed.map((entry) {
+      final (index, feature) = entry;
+      return MyLifeEntriesCompanion.insert(
+        id: '${Uri.encodeComponent(userId)}:$feature',
+        feature: feature,
+        userId: userId,
+        weight: index,
+      );
+    }).toList(growable: false);
     return _dao.seedIfEmpty(userId, entries);
   }
 

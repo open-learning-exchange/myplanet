@@ -57,9 +57,7 @@ class PersonalsScreen extends ConsumerWidget {
             .read(personalActionsProvider)
             .create(title: value.title, description: value.description);
       } else {
-        await ref
-            .read(personalActionsProvider)
-            .update(
+        await ref.read(personalActionsProvider).update(
               id: personal.id,
               title: value.title,
               description: value.description,
@@ -159,8 +157,8 @@ class _PersonalCard extends StatelessWidget {
             if (personal.description != null) Text(personal.description!),
             Text(
               DateFormat.yMMMd().add_jm().format(
-                DateTime.fromMillisecondsSinceEpoch(personal.date),
-              ),
+                    DateTime.fromMillisecondsSinceEpoch(personal.date),
+                  ),
             ),
             if (!personal.isUploaded)
               Text(

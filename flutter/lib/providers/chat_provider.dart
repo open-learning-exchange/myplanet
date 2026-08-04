@@ -42,9 +42,9 @@ final filteredChatHistoryProvider = Provider<AsyncValue<List<ChatRow>>>((ref) {
 /// Normalizes text for search by removing diacritics and lowercasing.
 String _normalizeText(String text) {
   return text.toLowerCase().replaceAll(
-    RegExp(r'\p{InCombiningDiacriticalMarks}+'),
-    '',
-  );
+        RegExp(r'\p{InCombiningDiacriticalMarks}+'),
+        '',
+      );
 }
 
 /// State for a chat conversation.
@@ -107,9 +107,8 @@ class ChatConversationNotifier extends Notifier<ChatConversationState> {
     final repo = ref.read(chatRepositoryProvider);
     final rows = await repo.getChatHistoryForUser(null);
 
-    final chatRow = rows
-        .where((r) => r.id == chatId || r.docId == chatId)
-        .firstOrNull;
+    final chatRow =
+        rows.where((r) => r.id == chatId || r.docId == chatId).firstOrNull;
     if (chatRow == null) return;
 
     final conversations = ChatMapper.parseConversations(chatRow.conversations);
@@ -170,8 +169,7 @@ class ChatConversationNotifier extends Notifier<ChatConversationState> {
       result = await repo.sendNewChatRequest(
         query: message,
         user: session.name ?? '',
-        aiProvider:
-            currentState.aiProvider ??
+        aiProvider: currentState.aiProvider ??
             const AiProviderConfig(name: 'default', model: ''),
       );
     } else {
@@ -179,8 +177,7 @@ class ChatConversationNotifier extends Notifier<ChatConversationState> {
       result = await repo.sendNewChatRequest(
         query: message,
         user: session.name ?? '',
-        aiProvider:
-            currentState.aiProvider ??
+        aiProvider: currentState.aiProvider ??
             const AiProviderConfig(name: 'default', model: ''),
       );
     }
@@ -209,5 +206,5 @@ class ChatConversationNotifier extends Notifier<ChatConversationState> {
 
 final chatConversationProvider =
     NotifierProvider<ChatConversationNotifier, ChatConversationState>(
-      ChatConversationNotifier.new,
-    );
+  ChatConversationNotifier.new,
+);

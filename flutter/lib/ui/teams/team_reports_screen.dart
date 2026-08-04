@@ -17,7 +17,7 @@ class TeamReportsScreen extends ConsumerWidget {
     final reports = ref.watch(teamReportsProvider(teamId));
     final canManage =
         ref.watch(teamMembershipsProvider).valueOrNull?[teamId]?.isLeader ??
-        false;
+            false;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.financialReports)),
       body: reports.when(
@@ -129,9 +129,7 @@ class TeamReportsScreen extends ConsumerWidget {
               onPressed: start > end
                   ? null
                   : () async {
-                      final ok = await ref
-                          .read(teamReportActionsProvider)
-                          .save(
+                      final ok = await ref.read(teamReportActionsProvider).save(
                             id: report?.id,
                             teamId: teamId,
                             description: description.text,
@@ -222,15 +220,15 @@ class _Total extends StatelessWidget {
   final bool bold;
   @override
   Widget build(BuildContext context) => Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      Text(label),
-      Text(
-        '$value',
-        style: bold ? const TextStyle(fontWeight: FontWeight.bold) : null,
-      ),
-    ],
-  );
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label),
+          Text(
+            '$value',
+            style: bold ? const TextStyle(fontWeight: FontWeight.bold) : null,
+          ),
+        ],
+      );
 }
 
 class _MoneyField extends StatelessWidget {
@@ -239,11 +237,11 @@ class _MoneyField extends StatelessWidget {
   final String label;
   @override
   Widget build(BuildContext context) => TextField(
-    controller: controller,
-    decoration: InputDecoration(labelText: label),
-    keyboardType: TextInputType.number,
-    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^-?\d*'))],
-  );
+        controller: controller,
+        decoration: InputDecoration(labelText: label),
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^-?\d*'))],
+      );
 }
 
 class _DateField extends StatelessWidget {
@@ -257,21 +255,21 @@ class _DateField extends StatelessWidget {
   final ValueChanged<int> onChanged;
   @override
   Widget build(BuildContext context) => ListTile(
-    contentPadding: EdgeInsets.zero,
-    title: Text(label),
-    subtitle: Text(
-      MaterialLocalizations.of(
-        context,
-      ).formatShortDate(DateTime.fromMillisecondsSinceEpoch(value)),
-    ),
-    onTap: () async {
-      final date = await showDatePicker(
-        context: context,
-        firstDate: DateTime(2000),
-        lastDate: DateTime(2100),
-        initialDate: DateTime.fromMillisecondsSinceEpoch(value),
+        contentPadding: EdgeInsets.zero,
+        title: Text(label),
+        subtitle: Text(
+          MaterialLocalizations.of(
+            context,
+          ).formatShortDate(DateTime.fromMillisecondsSinceEpoch(value)),
+        ),
+        onTap: () async {
+          final date = await showDatePicker(
+            context: context,
+            firstDate: DateTime(2000),
+            lastDate: DateTime(2100),
+            initialDate: DateTime.fromMillisecondsSinceEpoch(value),
+          );
+          if (date != null) onChanged(date.millisecondsSinceEpoch);
+        },
       );
-      if (date != null) onChanged(date.millisecondsSinceEpoch);
-    },
-  );
 }

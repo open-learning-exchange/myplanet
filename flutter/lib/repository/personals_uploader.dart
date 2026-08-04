@@ -59,28 +59,28 @@ class PersonalsUploader {
   /// drain — one duplicate per drain, forever. Adopting `id`/`rev` on success
   /// is what closes the loop.
   OutboxHandler get handler => (row, payload, authHeader) async {
-    final result = await _api.postJsonObject(
-      row.endpoint,
-      payload,
-      authHeader: authHeader,
-    );
-
-    if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
-      final couchId = data['id'];
-      final rev = data['rev'];
-      if (couchId is! String || rev is! String) {
-        // Reporting success here would delete the outbox row while the note
-        // stays `isUploaded == false`, so the next `queuePending` would POST
-        // it again — a fresh duplicate document on every drain.
-        return const NetworkError<Map<String, dynamic>>(
-          null,
-          'Upload response carried no id/rev',
+        final result = await _api.postJsonObject(
+          row.endpoint,
+          payload,
+          authHeader: authHeader,
         );
-      }
-      await _personals.markUploaded(row.itemId, couchId, rev);
-    }
-    return result;
-  };
+
+        if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
+          final couchId = data['id'];
+          final rev = data['rev'];
+          if (couchId is! String || rev is! String) {
+            // Reporting success here would delete the outbox row while the note
+            // stays `isUploaded == false`, so the next `queuePending` would POST
+            // it again — a fresh duplicate document on every drain.
+            return const NetworkError<Map<String, dynamic>>(
+              null,
+              'Upload response carried no id/rev',
+            );
+          }
+          await _personals.markUploaded(row.itemId, couchId, rev);
+        }
+        return result;
+      };
 
   static String authHeaderFor(ServerConfig config) =>
       UrlUtils.basicAuthHeader('satellite', config.pin);

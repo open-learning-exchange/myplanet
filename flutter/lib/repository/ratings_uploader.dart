@@ -54,25 +54,25 @@ class RatingsUploader {
   }
 
   OutboxHandler get handler => (row, payload, authHeader) async {
-    final result = await _api.postJsonObject(
-      row.endpoint,
-      payload,
-      authHeader: authHeader,
-    );
-    if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
-      if (data['rev'] is! String) {
-        // Reporting success here would retire the outbox entry while the row
-        // stayed pending, so the next `queuePending` would post the same
-        // rating again as a second document.
-        return const NetworkError<Map<String, dynamic>>(
-          null,
-          'Upload response carried no rev',
+        final result = await _api.postJsonObject(
+          row.endpoint,
+          payload,
+          authHeader: authHeader,
         );
-      }
-      await _dao.markUploaded(row.itemId);
-    }
-    return result;
-  };
+        if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
+          if (data['rev'] is! String) {
+            // Reporting success here would retire the outbox entry while the row
+            // stayed pending, so the next `queuePending` would post the same
+            // rating again as a second document.
+            return const NetworkError<Map<String, dynamic>>(
+              null,
+              'Upload response carried no rev',
+            );
+          }
+          await _dao.markUploaded(row.itemId);
+        }
+        return result;
+      };
 
   /// Converts a rating row to a CouchDB document.
   ///

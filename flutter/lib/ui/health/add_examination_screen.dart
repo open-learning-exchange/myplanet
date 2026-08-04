@@ -81,9 +81,8 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
     if (state.examination != null) {
       final exam = state.examination!;
       setState(() {
-        _temperatureController.text = exam.temperature > 0
-            ? exam.temperature.toString()
-            : '';
+        _temperatureController.text =
+            exam.temperature > 0 ? exam.temperature.toString() : '';
         _pulseController.text = exam.pulse > 0 ? exam.pulse.toString() : '';
         _bpController.text = exam.bp ?? '';
         _heightController.text = exam.height > 0 ? exam.height.toString() : '';
@@ -406,9 +405,7 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
       final height = double.tryParse(_heightController.text) ?? 0;
       final weight = double.tryParse(_weightController.text) ?? 0;
 
-      await ref
-          .read(examinationNotifierProvider(params).notifier)
-          .save(
+      await ref.read(examinationNotifierProvider(params).notifier).save(
             temperature: temperature,
             pulse: pulse,
             bp: _bpController.text.trim().isEmpty
@@ -480,8 +477,8 @@ class _SectionHeader extends StatelessWidget {
     return Text(
       title,
       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-        color: Theme.of(context).colorScheme.primary,
-      ),
+            color: Theme.of(context).colorScheme.primary,
+          ),
     );
   }
 }

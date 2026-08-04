@@ -39,25 +39,25 @@ class EventsUploader {
   }
 
   OutboxHandler get handler => (row, payload, authHeader) async {
-    final result = await _api.postJsonObject(
-      row.endpoint,
-      payload,
-      authHeader: authHeader,
-    );
-    if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
-      final couchId = data['id'];
-      final rev = data['rev'];
-      if (couchId is! String || rev is! String) {
-        // Reporting success would drop the outbox row while the meetup stays
-        // `isUploaded == false`, so the next `queuePending` would POST it
-        // again — one duplicate meetup document per drain.
-        return const NetworkError<Map<String, dynamic>>(
-          null,
-          'Upload response carried no id/rev',
+        final result = await _api.postJsonObject(
+          row.endpoint,
+          payload,
+          authHeader: authHeader,
         );
-      }
-      await _events.markUploaded(row.itemId, couchId, rev);
-    }
-    return result;
-  };
+        if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
+          final couchId = data['id'];
+          final rev = data['rev'];
+          if (couchId is! String || rev is! String) {
+            // Reporting success would drop the outbox row while the meetup stays
+            // `isUploaded == false`, so the next `queuePending` would POST it
+            // again — one duplicate meetup document per drain.
+            return const NetworkError<Map<String, dynamic>>(
+              null,
+              'Upload response carried no id/rev',
+            );
+          }
+          await _events.markUploaded(row.itemId, couchId, rev);
+        }
+        return result;
+      };
 }

@@ -100,8 +100,8 @@ class _StorageBreakdownScreenState extends State<StorageBreakdownScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _categories.isEmpty
-          ? Center(child: Text(l10n.noStorageUsed))
-          : _buildContent(context, l10n),
+              ? Center(child: Text(l10n.noStorageUsed))
+              : _buildContent(context, l10n),
     );
   }
 

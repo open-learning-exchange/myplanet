@@ -36,8 +36,7 @@ class _Details extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final joined = row.userId?.isNotEmpty == true;
-    final eventEnded =
-        row.endDate > 0 &&
+    final eventEnded = row.endDate > 0 &&
         DateTime.now().millisecondsSinceEpoch >
             row.endDate + const Duration(days: 1).inMilliseconds - 1;
     return ListView(
@@ -121,9 +120,10 @@ class NewMeetupScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(AppLocalizations.of(context).addMeetup)),
-    body: const Padding(padding: EdgeInsets.all(16), child: _MeetupEditor()),
-  );
+        appBar: AppBar(title: Text(AppLocalizations.of(context).addMeetup)),
+        body:
+            const Padding(padding: EdgeInsets.all(16), child: _MeetupEditor()),
+      );
 }
 
 class _MeetupEditor extends ConsumerStatefulWidget {
@@ -237,9 +237,7 @@ class _MeetupEditorState extends ConsumerState<_MeetupEditor> {
           const SizedBox(height: 16),
           FilledButton(
             onPressed: () async {
-              final id = await ref
-                  .read(eventsActionsProvider)
-                  .save(
+              final id = await ref.read(eventsActionsProvider).save(
                     id: widget.existing?.id,
                     title: title.text,
                     description: description.text,
@@ -306,8 +304,7 @@ class _MeetupEditorState extends ConsumerState<_MeetupEditor> {
     final picked = await showTimePicker(context: context, initialTime: initial);
     if (picked == null || !mounted) return;
     setState(() {
-      controller.text =
-          '${picked.hour.toString().padLeft(2, '0')}:'
+      controller.text = '${picked.hour.toString().padLeft(2, '0')}:'
           '${picked.minute.toString().padLeft(2, '0')}';
     });
   }
