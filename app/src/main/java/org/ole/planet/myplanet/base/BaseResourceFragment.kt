@@ -156,8 +156,11 @@ abstract class BaseResourceFragment : Fragment() {
             val alertDialogBuilder = AlertDialog.Builder(fragmentActivity, R.style.AlertDialogTheme)
             val titleView = TextView(requireContext()).apply {
                 text = getString(R.string.download_suggestion)
-                setPadding(48, 40, 48, 0)
-                textSize = 18f
+                val paddingHorizontal = (24 * resources.displayMetrics.density).toInt()
+                val paddingTop = (16 * resources.displayMetrics.density).toInt()
+                val paddingBottom = (8 * resources.displayMetrics.density).toInt()
+                setPadding(paddingHorizontal, paddingTop, paddingHorizontal, paddingBottom)
+                textSize = 16f
                 maxLines = 5
                 isSingleLine = false
                 setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
@@ -196,7 +199,19 @@ abstract class BaseResourceFragment : Fragment() {
                     downloadSuggestionDialog = null
                 }
                 dialog.show()
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = ((lv?.adapter as? CheckboxAdapter)?.selectedItemsList?.size
+                val posBtn = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                val neuBtn = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
+                val negBtn = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+
+                listOf(posBtn, neuBtn, negBtn).forEach { button ->
+                    button?.apply {
+                        isSingleLine = false
+                        maxLines = 2
+                        textSize = 14f
+                    }
+                }
+
+                posBtn.isEnabled = ((lv?.adapter as? CheckboxAdapter)?.selectedItemsList?.size
                     ?: 0) > 0
             }
         }
