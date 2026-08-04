@@ -77,7 +77,10 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         super.onViewCreated(view, savedInstanceState)
         postponeEnterTransition()
         viewLifecycleOwner.lifecycleScope.launch {
-            model = userRepository.getUserModel()
+            if (model == null) {
+                model = userRepository.getUserModel()
+            }
+            initView(model)
             val adapter = getAdapter()
             recyclerView.adapter = adapter
             if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
@@ -93,6 +96,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             }
         }
     }
+
+    open suspend fun initView(userModel: org.ole.planet.myplanet.model.UserEntity?) {}
 
     private fun initDeleteButton() {
         tvDelete?.let {
@@ -144,7 +149,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val userId = userRepository.getUserModel()?.id ?: return@launch
+                val userId = model?.id ?: return@launch
                 var libraryAdded = false
                 var courseAdded = false
                 var errorOccurred: Throwable? = null

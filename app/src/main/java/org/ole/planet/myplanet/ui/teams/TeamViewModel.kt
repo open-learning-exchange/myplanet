@@ -32,7 +32,8 @@ class TeamViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
     private val teamsSyncRepository: TeamsSyncRepository,
     private val dispatcherProvider: DispatcherProvider,
-    private val realtimeSyncManager: RealtimeSyncManager
+    private val realtimeSyncManager: RealtimeSyncManager,
+    private val userSessionManager: org.ole.planet.myplanet.services.UserSessionManager
 ) : ViewModel() {
     private val _teamData = MutableStateFlow<List<TeamDetails>>(emptyList())
     val teamData: StateFlow<List<TeamDetails>> = _teamData
@@ -60,7 +61,14 @@ class TeamViewModel @Inject constructor(
     private var currentType: String? = null
     private var loadJob: Job? = null
     private var loadTaskJob: Job? = null
+    var userModel: UserEntity? = null
 
+    suspend fun getUserModel(): UserEntity? {
+        if (userModel == null) {
+            userModel = userSessionManager.getUserModel()
+        }
+        return userModel
+    }
 
     fun loadTeams(fromDashboard: Boolean, type: String?, userId: String?) {
         currentFromDashboard = fromDashboard

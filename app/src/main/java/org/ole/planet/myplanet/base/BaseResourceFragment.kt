@@ -299,7 +299,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun removeFromShelf(`object`: Any) {
         lifecycleScope.launch {
-            val userId = userRepository.getUserModel()?.id
+            val userId = model?.id
             if (userId.isNullOrEmpty()) {
                 return@launch
             }
@@ -327,7 +327,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun addToLibrary(libraryItems: List<MyLibrary?>, selectedItems: ArrayList<Int>) {
         lifecycleScope.launch {
-            val userId = userRepository.getUserModel()?.id ?: return@launch
+            val userId = model?.id ?: return@launch
             val resourceIds = selectedItems.mapNotNull { index ->
                 libraryItems.getOrNull(index)?.resourceId
             }
@@ -343,8 +343,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun addAllToLibrary(libraryItems: List<MyLibrary?>) {
         lifecycleScope.launch {
-            val user = userRepository.getUserModel()
-            val userId = user?.id ?: return@launch
+            val userId = model?.id ?: return@launch
             val validLibraryItems = libraryItems.filterNotNull()
             resourcesRepository.addAllResourcesToUserLibrary(validLibraryItems, userId)
                 .onSuccess {

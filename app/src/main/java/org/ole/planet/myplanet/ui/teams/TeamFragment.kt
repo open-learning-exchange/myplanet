@@ -235,7 +235,7 @@ class TeamFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
-            user = userSessionManager.getUserModel()
+            user = viewModel.getUserModel()
             if (user?.isGuest() == true) {
                 binding.addTeam.visibility = View.GONE
             } else {
