@@ -762,5 +762,21 @@
   "deleteSelected": "Delete Selected",
   "deleteAll": "Delete All",
   "selectAll": "Select All",
-  "noStorageUsed": "No downloaded files found"
+  "noStorageUsed": "No downloaded files found",
+  "enterUsername": "Enter username",
+  "enterPassword": "Enter password",
+  "retypePassword": "Retype password",
+  "firstName": "First name",
+  "middleName": "Middle name",
+  "lastName": "Last name",
+  "phoneNumber": "Phone number",
+  "birthDate": "Birth date",
+  "selectDate": "Select date",
+  "becomeMember": "Become a member",
+  "creatingMember": "Creating member account...",
+  "passwordsDoNotMatch": "Passwords do not match",
+  "pleaseSelectGender": "Please select gender",
+  "pleaseEnterPassword": "Please enter a password",
+  "usernameAlreadyExists": "Username already exists",
+  "memberCreatedOffline": "Member account created offline"
 }

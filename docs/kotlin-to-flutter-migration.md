@@ -5,8 +5,8 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 28 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
-**26 of 28 UI packages** are ported (storage is part of settings, completing the storage management feature).
+**Phase 29 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**26 of 28 UI packages** are ported (membership completes the user package portion).
 
 - **Phase 1** -- skeleton plus the server configuration → login → resources slice.
 - **Phase 2** -- dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -92,6 +92,11 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
   downloaded files by category (videos, audio, PDFs, images, other) and allow users to delete
   files by category or selection. Added localization strings for storage management, file counts,
   and deletion confirmations. Linked from the Settings screen.
+
+**Phase 29** -- membership: Ported `BecomeMemberActivity.kt` to `BecomeMemberScreen`. This screen
+  handles new member registration with a form for username, password, name, email, phone, language,
+  level, birth date, and gender. Creates a local user account and queues it for sync to the server.
+  Added localization strings for registration form fields.
 
 ## Strategy
 
