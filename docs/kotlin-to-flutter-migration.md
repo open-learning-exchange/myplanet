@@ -21,9 +21,7 @@ Known gaps:
 - Background work with no user present (`AutoSyncWorker`'s timed sync,
   `TaskNotificationWorker`'s deadline notifications, `DownloadWorker`'s background queue) needs
   OS scheduling and is not ported.
-- Chat and feedback have no *sync-in* direction: `insertChatHistoryFromSync` and
-  `FeedbackRepository.insertFromJson` have no callers, so neither table is ever refilled from
-  the server.
+- ~~Chat and feedback have no *sync-in* direction~~ — now implemented (Phase 26).
 - Team attachments, team voices and team/public survey sharing are unported.
 
 - **Phase 1** -- skeleton plus the server configuration → login → resources slice.
@@ -108,6 +106,13 @@ Known gaps:
     entry while the row stayed pending — the next queue posted a duplicate document.
   - **components**: `CheckboxList` is used by four screens. `ChallengeDialog` and
     `CustomDropdown` are built and called from nowhere.
+
+- **Phase 26** — chat and feedback sync-in. `ChatRepository.sync()` and
+  `FeedbackRepository.sync()` now fetch `chat_history` and `feedback` from CouchDB,
+  calling the previously uncalled `insertChatHistoryFromSync` and `insertFromJson`. Both
+  use the same paginated pull pattern as other repositories: count with `?limit=0`, then
+  walk `?include_docs=true&limit&skip` pages, upserting each document and pruning stale
+  local rows on completion.
 
 ## Strategy
 
@@ -663,6 +668,6 @@ succeeds, it just doesn't do what the Kotlin did.
 
 ---
 
-**Last updated**: 2026-08-04
-**Phase**: 25 of N (27 of 28 UI packages have a screen — see Status for what that does and does
+**Last updated**: 2026-08-04 (Phase 26 complete)
+**Phase**: 26 of N (27 of 28 UI packages have a screen — see Status for what that does and does
 not mean)

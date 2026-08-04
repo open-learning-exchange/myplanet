@@ -1691,6 +1691,25 @@ class ChatDao extends DatabaseAccessor<AppDatabase> with _$ChatDaoMixin {
       lastUsed: Value(DateTime.now().millisecondsSinceEpoch),
     ),
   );
+
+  /// Deletes all chat entries whose `id` is not in [keepIds].
+  Future<int> deleteNotIn(List<String> keepIds) async {
+    if (keepIds.isEmpty) {
+      return (delete(chatEntries)).go();
+    }
+    final keep = keepIds.toSet();
+    final rows = await select(chatEntries).get();
+    final stale = rows
+        .map((row) => row.id)
+        .where((id) => !keep.contains(id))
+        .toList(growable: false);
+    var deleted = 0;
+    for (final chunk in _chunked(stale, _sqliteVariableChunk)) {
+      deleted +=
+          await (delete(chatEntries)..where((c) => c.id.isIn(chunk))).go();
+    }
+    return deleted;
+  }
 }
 
 /// Port of `data/room/dao/FeedbackDao.kt`.
