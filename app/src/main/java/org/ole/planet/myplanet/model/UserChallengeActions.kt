@@ -4,7 +4,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.util.UUID
 
-@Entity(tableName = "user_challenge_actions")
+@Entity(tableName = "user_challenge_actions", indices = [androidx.room.Index("userId"), androidx.room.Index("actionType")])
 open class UserChallengeActions {
     @PrimaryKey
     var id: String = UUID.randomUUID().toString()

@@ -10,7 +10,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
  * uploaded); persistence goes through [org.ole.planet.myplanet.data.room.dao.CertificationDao].
  * `courseIds` stores the certification's course-id array as a JSON string.
  */
-@Entity(tableName = "certification")
+@Entity(tableName = "certification", indices = [androidx.room.Index("courseIds")])
 open class Certification {
     @PrimaryKey
     var _id: String = ""
