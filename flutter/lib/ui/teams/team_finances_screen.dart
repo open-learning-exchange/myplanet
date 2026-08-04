@@ -203,8 +203,9 @@ class _TeamFinancesScreenState extends ConsumerState<TeamFinancesScreen> {
                       DropdownMenuItem(value: 'debit', child: Text(l10n.debit)),
                     ],
                     onChanged: (value) {
-                      if (value != null)
+                      if (value != null) {
                         setDialogState(() => selectedType = value);
+                      }
                     },
                   ),
                   const SizedBox(height: 16),
