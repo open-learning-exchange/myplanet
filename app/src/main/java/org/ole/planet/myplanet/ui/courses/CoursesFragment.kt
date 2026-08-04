@@ -287,11 +287,13 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         orderByTitle.isEnabled = false
         orderByDate.setOnClickListener {
             if (!::adapterCourses.isInitialized) return@setOnClickListener
-            adapterCourses.toggleSortOrder { scrollToTop() }
+            viewModel.toggleSortOrder()
+            scrollToTop()
         }
         orderByTitle.setOnClickListener {
             if (!::adapterCourses.isInitialized) return@setOnClickListener
-            adapterCourses.toggleTitleSortOrder { scrollToTop() }
+            viewModel.toggleTitleSortOrder()
+            scrollToTop()
         }
     }
 

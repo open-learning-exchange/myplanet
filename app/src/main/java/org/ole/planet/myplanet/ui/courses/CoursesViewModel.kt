@@ -32,6 +32,11 @@ class CoursesViewModel @Inject constructor(
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
+    enum class SortMode { NONE, DATE, TITLE }
+    private var sortMode = SortMode.NONE
+    private var isAscending = true
+    private var isTitleAscending = false
+
     private val _coursesState = MutableStateFlow(CoursesUiState())
     val coursesState: StateFlow<CoursesUiState> = _coursesState.asStateFlow()
 
@@ -53,7 +58,34 @@ class CoursesViewModel @Inject constructor(
         }
 
         val mappedCourses = sortedCourseList.map { it.toCourse() }
-        return CoursesUiState(mappedCourses, map, progressMap, tagsMap)
+        return CoursesUiState(applyCurrentSort(mappedCourses), map, progressMap, tagsMap)
+    }
+
+    private fun applyCurrentSort(list: List<Course>): List<Course> {
+        return when (sortMode) {
+            SortMode.DATE -> {
+                if (isAscending) list.sortedBy { it.createdDate }
+                else list.sortedByDescending { it.createdDate }
+            }
+            SortMode.TITLE -> {
+                val withKeys = list.map { it to it.courseTitle.lowercase(java.util.Locale.ROOT) }
+                if (isTitleAscending) withKeys.sortedBy { it.second }.map { it.first }
+                else withKeys.sortedByDescending { it.second }.map { it.first }
+            }
+            SortMode.NONE -> list
+        }
+    }
+
+    fun toggleSortOrder() {
+        sortMode = SortMode.DATE
+        isAscending = !isAscending
+        _coursesState.value = _coursesState.value.copy(courses = applyCurrentSort(_coursesState.value.courses))
+    }
+
+    fun toggleTitleSortOrder() {
+        sortMode = SortMode.TITLE
+        isTitleAscending = !isTitleAscending
+        _coursesState.value = _coursesState.value.copy(courses = applyCurrentSort(_coursesState.value.courses))
     }
 
     fun loadCourses(isMyCourseLib: Boolean, userId: String?) {

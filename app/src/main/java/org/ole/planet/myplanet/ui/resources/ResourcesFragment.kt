@@ -384,7 +384,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
     }
 
-    private fun checkList(listSize: Int = if (::adapterLibrary.isInitialized) adapterLibrary.getLibraryList().size else 0) {
+    private fun checkList(listSize: Int = if (::adapterLibrary.isInitialized) adapterLibrary.currentList.size else 0) {
         val hasAnyLibraryData = allResourceModels.isNotEmpty()
 
         if (!hasAnyLibraryData && listSize == 0) {
@@ -666,13 +666,19 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             bottomSheet.visibility = View.GONE
         }
         binding.orderByDateButton.setOnClickListener {
-            adapterLibrary.toggleSortOrder {
-                recyclerView.scrollToPosition(0)
+            viewLifecycleOwner.lifecycleScope.launch {
+                val sorted = viewModel.toggleSortOrder(adapterLibrary.currentList)
+                adapterLibrary.setLibraryList(sorted) {
+                    recyclerView.scrollToPosition(0)
+                }
             }
         }
         binding.orderByTitleButton.setOnClickListener {
-            adapterLibrary.toggleTitleSortOrder {
-                recyclerView.scrollToPosition(0)
+            viewLifecycleOwner.lifecycleScope.launch {
+                val sorted = viewModel.toggleTitleSortOrder(adapterLibrary.currentList)
+                adapterLibrary.setLibraryList(sorted) {
+                    recyclerView.scrollToPosition(0)
+                }
             }
         }
     }
