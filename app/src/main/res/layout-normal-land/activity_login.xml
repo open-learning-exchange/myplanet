@@ -263,139 +263,145 @@
 
             <LinearLayout
                 android:id="@+id/linearLayout"
-                android:layout_width="200dp"
+                android:layout_width="220dp"
                 android:layout_height="match_parent"
                 android:background="@color/mainColor"
                 android:orientation="vertical">
 
-                <androidx.constraintlayout.widget.ConstraintLayout
+                <ScrollView
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent">
+                    android:layout_height="match_parent"
+                    android:fillViewport="true">
 
-                    <ImageButton
-                        android:id="@+id/themeToggleButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="@null"
-                        android:contentDescription="@string/select_theme_mode"
-                        android:paddingStart="@dimen/_10dp"
-                        android:paddingTop="6dp"
-                        android:paddingEnd="@dimen/_10dp"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:srcCompat="@drawable/moon_35" />
-                    <ImageView
-                        android:id="@+id/logoImageView"
-                        android:layout_width="96dp"
-                        android:layout_height="96dp"
-                        android:layout_marginTop="60dp"
-                        android:contentDescription="@string/ole_logo"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:srcCompat="@drawable/ole_logo" />
-                    <TextView
-                        android:id="@+id/textView"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:contentDescription="@string/system_name"
-                        android:text="@string/system_name"
-                        android:textAlignment="center"
-                        android:textColor="@android:color/white"
-                        android:textSize="20sp"
-                        android:textStyle="bold"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/logoImageView" />
-                    <TextView
-                        android:id="@+id/lblVersion"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:contentDescription="@string/app_version"
-                        android:text="@string/app_version"
-                        android:textAlignment="center"
-                        android:textColor="@android:color/white"
-                        android:textSize="11sp"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/textView" />
-                    <Button
-                        android:id="@+id/btn_lang"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:background="@drawable/bg_lang_button"
-                        android:contentDescription="@string/language"
-                        android:minWidth="120dp"
-                        android:padding="@dimen/padding_normal"
-                        android:text="@string/language"
-                        android:textAllCaps="false"
-                        android:textColor="@android:color/white"
-                        android:textSize="12sp"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/lblVersion" />
-                    <TextView
-                        android:id="@+id/customDeviceName"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:textColor="@android:color/white"
-                        android:textSize="11sp"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/btn_lang" />
-                    <LinearLayout
-                        android:id="@+id/ltAvailablaSpace"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/customDeviceName">
-
-                        <ImageView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:paddingHorizontal="@dimen/padding_small"
-                            app:srcCompat="@drawable/baseline_storage_24" />
-                        <TextView
-                            android:id="@+id/tv_available_space"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/md_white_1000"
-                            android:textSize="11sp"
-                            tools:text="@string/available_space_colon" />
-                    </LinearLayout>
-
-                    <Spinner
-                        android:id="@+id/team"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:layout_marginTop="6dp"
-                        android:textSize="14sp"
-                        android:visibility="gone"
-                        app:backgroundTint="@color/daynight_textColor"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/ltAvailablaSpace" />
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recyclerView"
+                    <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"
-                        android:layout_height="0dp"
-                        android:layout_marginTop="@dimen/_10dp"
-                        android:clipToPadding="false"
-                        android:paddingBottom="8dp"
-                        android:scrollbars="vertical"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/team" />
-                </androidx.constraintlayout.widget.ConstraintLayout>
+                        android:layout_height="wrap_content">
+
+                        <ImageButton
+                            android:id="@+id/themeToggleButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@null"
+                            android:contentDescription="@string/select_theme_mode"
+                            android:paddingStart="@dimen/_10dp"
+                            android:paddingTop="6dp"
+                            android:paddingEnd="@dimen/_10dp"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:srcCompat="@drawable/moon_35" />
+                        <ImageView
+                            android:id="@+id/logoImageView"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:layout_marginTop="16dp"
+                            android:contentDescription="@string/ole_logo"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:srcCompat="@drawable/ole_logo" />
+                        <TextView
+                            android:id="@+id/textView"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:contentDescription="@string/system_name"
+                            android:text="@string/system_name"
+                            android:textAlignment="center"
+                            android:textColor="@android:color/white"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/logoImageView" />
+                        <TextView
+                            android:id="@+id/lblVersion"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:contentDescription="@string/app_version"
+                            android:text="@string/app_version"
+                            android:textAlignment="center"
+                            android:textColor="@android:color/white"
+                            android:textSize="11sp"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/textView" />
+                        <Button
+                            android:id="@+id/btn_lang"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:background="@drawable/bg_lang_button"
+                            android:contentDescription="@string/language"
+                            android:minWidth="110dp"
+                            android:padding="@dimen/padding_small"
+                            android:text="@string/language"
+                            android:textAllCaps="false"
+                            android:textColor="@android:color/white"
+                            android:textSize="11sp"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/lblVersion" />
+                        <TextView
+                            android:id="@+id/customDeviceName"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:textColor="@android:color/white"
+                            android:textSize="11sp"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/btn_lang" />
+                        <LinearLayout
+                            android:id="@+id/ltAvailablaSpace"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/customDeviceName">
+
+                            <ImageView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:paddingHorizontal="@dimen/padding_small"
+                                app:srcCompat="@drawable/baseline_storage_24" />
+                            <TextView
+                                android:id="@+id/tv_available_space"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/md_white_1000"
+                                android:textSize="11sp"
+                                tools:text="@string/available_space_colon" />
+                        </LinearLayout>
+
+                        <Spinner
+                            android:id="@+id/team"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:layout_marginTop="4dp"
+                            android:textSize="14sp"
+                            android:visibility="gone"
+                            app:backgroundTint="@color/daynight_textColor"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/ltAvailablaSpace" />
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/recyclerView"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:clipToPadding="false"
+                            android:paddingBottom="8dp"
+                            android:scrollbars="vertical"
+                            android:nestedScrollingEnabled="false"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/team" />
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+                </ScrollView>
             </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

@@ -92,6 +92,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         if (mAdapter == null) {
             mAdapter = UsersAdapter(this@LoginActivity)
             binding.recyclerView.layoutManager = LinearLayoutManager(this@LoginActivity)
+            binding.recyclerView.isNestedScrollingEnabled = false
             binding.recyclerView.adapter = mAdapter
         }
 
@@ -570,7 +571,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     }
 
     private fun setupAndPopulateRecyclerView() {
-        binding.recyclerView.isNestedScrollingEnabled = true
+        binding.recyclerView.isNestedScrollingEnabled = false
         binding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
         binding.recyclerView.isVerticalScrollBarEnabled = true
     }
