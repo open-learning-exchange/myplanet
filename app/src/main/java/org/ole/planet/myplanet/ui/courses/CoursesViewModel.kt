@@ -17,6 +17,8 @@ import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.Tag
 import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.ProgressRepository
+import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 data class CoursesUiState(
@@ -29,6 +31,8 @@ data class CoursesUiState(
 @HiltViewModel
 class CoursesViewModel @Inject constructor(
     private val coursesRepository: CoursesRepository,
+    private val progressRepository: ProgressRepository,
+    private val ratingsRepository: RatingsRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
@@ -72,9 +76,9 @@ class CoursesViewModel @Inject constructor(
                     val allCourseIds = validCourses.mapNotNull { it.courseId }
 
                     val (map, progressMap) = coroutineScope {
-                        val ratingsDeferred = async { coursesRepository.getCourseRatings(userId) }
+                        val ratingsDeferred = async { ratingsRepository.getCourseRatings(userId) }
                         val progressDeferred = async {
-                            coursesRepository.getCourseProgress(userId, allCourseIds)
+                            progressRepository.getCourseProgress(allCourseIds, userId)
                         }
                         Pair(ratingsDeferred.await(), progressDeferred.await())
                     }
@@ -97,7 +101,7 @@ class CoursesViewModel @Inject constructor(
     suspend fun refreshCourseRatings(userId: String?) {
         val map = withContext(dispatcherProvider.io) {
             try {
-                coursesRepository.getCourseRatings(userId)
+                ratingsRepository.getCourseRatings(userId)
             } catch (e: Exception) {
                 e.printStackTrace()
                 null
