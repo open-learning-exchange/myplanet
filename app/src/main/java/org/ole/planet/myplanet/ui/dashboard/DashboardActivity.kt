@@ -26,9 +26,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.ViewCompat
-import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.updatePadding
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -55,9 +53,9 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnNotificationsListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.ChallengePrompter
 import org.ole.planet.myplanet.services.ThemeManager
@@ -83,10 +81,12 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.ServerConfigUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities.toast
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -98,7 +98,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var isFirstLaunch = false
     private lateinit var binding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null
-    var user: RealmUser? = null
+    var user: UserEntity? = null
     var result: Drawer? = null
     private var tl: TabLayout? = null
     private var dl: DrawerLayout? = null
@@ -108,6 +108,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     override lateinit var dispatcherProvider: DispatcherProvider
     @Inject
     lateinit var userSessionManager: UserSessionManager
+    @Inject
+    override lateinit var timeProvider: TimeProvider
 
     @Inject
     override lateinit var resourcesRepository: ResourcesRepository
@@ -244,18 +246,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun initViews() {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
         binding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        val insetsController = WindowCompat.getInsetsController(window, binding.root)
-        insetsController.isAppearanceLightStatusBars = true
-        insetsController.isAppearanceLightNavigationBars = true
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            binding.myToolbar.updatePadding(top = insets.top)
-            view.updatePadding(left = insets.left, right = insets.right, bottom = insets.bottom)
-            WindowInsetsCompat.CONSUMED
-        }
+        EdgeToEdgeUtils.setupEdgeToEdge(this, window.decorView)
         setupUI(binding.activityDashboardParentLayout, this@DashboardActivity)
         setSupportActionBar(binding.myToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
@@ -335,6 +328,22 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
         dl = result?.drawerLayout
+        dl?.addDrawerListener(object : DrawerLayout.SimpleDrawerListener() {
+            override fun onDrawerStateChanged(newState: Int) {
+                super.onDrawerStateChanged(newState)
+                result?.recyclerView?.scrollToPosition(0)
+            }
+
+            override fun onDrawerClosed(drawerView: View) {
+                super.onDrawerClosed(drawerView)
+                result?.recyclerView?.scrollToPosition(0)
+            }
+
+            override fun onDrawerOpened(drawerView: View) {
+                super.onDrawerOpened(drawerView)
+                result?.recyclerView?.scrollToPosition(0)
+            }
+        })
         topbarSetting()
 
         if (isFirstLaunch) {
@@ -344,6 +353,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 if (!(user?.id?.startsWith("guest") == true && offlineVisits >= 3) &&
                     resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
                 ) {
+                    result?.recyclerView?.scrollToPosition(0)
                     result?.openDrawer()
                 }
             }
@@ -379,7 +389,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun setupToolbarActions() {
         binding.appBarBell.ivSync.setOnClickListener { logSyncInSharedPrefs() }
-        binding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
+        binding.appBarBell.imgLogo.setOnClickListener {
+            result?.recyclerView?.scrollToPosition(0)
+            result?.openDrawer()
+        }
         binding.appBarBell.bellToolbar.setOnMenuItemClickListener { item ->
             handleToolbarMenuItem(item.itemId)
             true
@@ -566,7 +579,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val statusText = if (lastSyncMillis <= 0L) {
             getString(R.string.last_synced_colon) + getString(R.string.last_synced_never)
         } else {
-            getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSyncMillis)
+            getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSyncMillis, timeProvider)
         }
         binding.dashboardLastSyncStatus.text = statusText
     }
@@ -733,22 +746,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun showVisitLimitWarning() {
         // Clear any existing banner first
         binding.bannerContainer.removeAllViews()
-        
+
         // Inflate the banner layout
         val bannerView = LayoutInflater.from(this).inflate(R.layout.banner_offline_visit_warning, binding.bannerContainer, true)
-        
+
         // Set up close button
         val closeButton = bannerView.findViewById<ImageButton>(R.id.banner_close)
         closeButton.setOnClickListener {
-            binding.bannerContainer.removeView(bannerView.parent as? View ?: bannerView)
-        }
-        
-        // Auto-dismiss after 10 seconds
-        lifecycleScope.launch {
-            delay(10000)
-            if (binding.bannerContainer.childCount > 0) {
-                binding.bannerContainer.removeAllViews()
-            }
+            binding.bannerContainer.removeAllViews()
         }
     }
 
@@ -858,6 +863,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     if (drawerItem != null) {
                         result?.setSelection(drawerItem.identifier, false)
                         menuAction((drawerItem as Nameable<*>).name.textRes)
+                        result?.recyclerView?.scrollToPosition(0)
                     }
                     false
                 }.withDrawerWidthDp(200).build()
@@ -948,7 +954,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         openCallFragment(f, tag)
     }
 
-    override fun openLibraryDetailFragment(library: RealmMyLibrary?) {
+    override fun openLibraryDetailFragment(library: MyLibrary?) {
         val f: Fragment = ResourceDetailFragment()
         val b = Bundle()
         b.putString("libraryId", library?.resourceId)
@@ -956,7 +962,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         openCallFragment(f)
     }
 
-    override fun sendSurvey(current: RealmStepExam?) {
+    override fun sendSurvey(current: StepExam?) {
         val f = SendSurveyFragment()
         val b = Bundle()
         b.putString("surveyId", current?.id)

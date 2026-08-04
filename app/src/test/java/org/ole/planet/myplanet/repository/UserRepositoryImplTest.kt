@@ -7,6 +7,7 @@ import com.google.gson.JsonObject
 import dagger.Lazy
 import io.mockk.Runs
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -21,7 +22,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -30,10 +30,10 @@ import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.User
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -43,7 +43,6 @@ import retrofit2.Response
 @OptIn(ExperimentalCoroutinesApi::class)
 class UserRepositoryImplTest {
 
-    private lateinit var databaseService: DatabaseService
     private lateinit var settings: SharedPreferences
     private lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var apiInterface: ApiInterface
@@ -54,6 +53,7 @@ class UserRepositoryImplTest {
     private lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var activitiesRepository: ActivitiesRepository
     private lateinit var activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>
+    private lateinit var userDao: UserDao
 
     private lateinit var repository: UserRepositoryImpl
 
@@ -69,7 +69,6 @@ class UserRepositoryImplTest {
         every { Log.e(any(), any()) } returns 0
         every { Log.e(any(), any(), any()) } returns 0
 
-        databaseService = mockk(relaxed = true)
         settings = mockk(relaxed = true)
         sharedPrefManager = mockk(relaxed = true)
         apiInterface = mockk(relaxed = true)
@@ -88,9 +87,9 @@ class UserRepositoryImplTest {
         every { dispatcherProvider.default } returns testDispatcher
         every { dispatcherProvider.unconfined } returns testDispatcher
 
+        userDao = mockk(relaxed = true)
+
         repository = UserRepositoryImpl(
-            databaseService,
-            UnconfinedTestDispatcher(),
             settings,
             sharedPrefManager,
             apiInterface,
@@ -101,7 +100,14 @@ class UserRepositoryImplTest {
             configurationsRepository,
             appScope,
             dispatcherProvider,
-            activitiesRepositoryLazy
+            activitiesRepositoryLazy,
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            userDao
         )
     }
 
@@ -113,7 +119,7 @@ class UserRepositoryImplTest {
 
     @Test
     fun `getDashboardProfile uses user name if fullName is blank`() = runTest(testDispatcher) {
-        val user = RealmUser().apply { name = "john"; firstName = "  "; lastName = "  " }
+        val user = UserEntity().apply { name = "john"; firstName = "  "; lastName = "  " }
         val spiedRepo = spyk(repository)
         coEvery { spiedRepo.getUserById("123") } returns user
         coEvery { activitiesRepository.getOfflineLoginCount("john") } returns 5
@@ -133,12 +139,12 @@ class UserRepositoryImplTest {
 
         assertEquals(null, result.fullName)
         assertEquals(0, result.offlineLogins)
-        io.mockk.coVerify(exactly = 0) { activitiesRepository.getOfflineLoginCount(any()) }
+        coVerify(exactly = 0) { activitiesRepository.getOfflineLoginCount(any()) }
     }
 
     @Test
     fun `getDashboardProfile handles null user name`() = runTest(testDispatcher) {
-        val user = RealmUser().apply { name = null; firstName = "John"; lastName = "Doe" }
+        val user = UserEntity().apply { name = null; firstName = "John"; lastName = "Doe" }
         val spiedRepo = spyk(repository)
         coEvery { spiedRepo.getUserById("123") } returns user
 
@@ -146,7 +152,7 @@ class UserRepositoryImplTest {
 
         assertEquals("John Doe", result.fullName)
         assertEquals(0, result.offlineLogins)
-        io.mockk.coVerify(exactly = 0) { activitiesRepository.getOfflineLoginCount(any()) }
+        coVerify(exactly = 0) { activitiesRepository.getOfflineLoginCount(any()) }
     }
 
     @Test
@@ -200,9 +206,9 @@ class UserRepositoryImplTest {
         })
         coEvery { apiInterface.getJsonObject("Basic auth", userFetchUrl) } returns userFetchResponse
 
-        // Stub saveUser to return a mocked RealmUser instead of attempting DB operations
+        // Stub saveUser to return a mocked UserEntity instead of attempting DB operations
         val spyRepository = spyk(repository)
-        val mockRealmUser = mockk<RealmUser>(relaxed = true)
+        val mockRealmUser = mockk<UserEntity>(relaxed = true)
         coEvery { spyRepository.saveUser(any(), any(), any()) } returns mockRealmUser
 
         val result = spyRepository.becomeMember(userObj)
@@ -214,14 +220,7 @@ class UserRepositoryImplTest {
 
     @Test
     fun `hasAtLeastOneUser returns true when user exists`() = runTest {
-        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
-        val mockRealmQuery = mockk<io.realm.RealmQuery<RealmUser>>()
-        coEvery { databaseService.withRealmAsync<Long>(any()) } answers {
-            val block = firstArg<(io.realm.Realm) -> Long>()
-            block(mockRealm)
-        }
-        every { mockRealm.where(RealmUser::class.java) } returns mockRealmQuery
-        every { mockRealmQuery.count() } returns 1L
+        coEvery { userDao.count() } returns 1
 
         val result = repository.hasAtLeastOneUser()
         assertEquals(true, result)
@@ -229,14 +228,7 @@ class UserRepositoryImplTest {
 
     @Test
     fun `hasAtLeastOneUser returns false when no user exists`() = runTest {
-        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
-        val mockRealmQuery = mockk<io.realm.RealmQuery<RealmUser>>()
-        coEvery { databaseService.withRealmAsync<Long>(any()) } answers {
-            val block = firstArg<(io.realm.Realm) -> Long>()
-            block(mockRealm)
-        }
-        every { mockRealm.where(RealmUser::class.java) } returns mockRealmQuery
-        every { mockRealmQuery.count() } returns 0L
+        coEvery { userDao.count() } returns 0
 
         val result = repository.hasAtLeastOneUser()
         assertEquals(false, result)

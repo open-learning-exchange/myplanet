@@ -6,8 +6,7 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser.parseString
-import io.realm.RealmList
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.News
 
 object JsonUtils {
     val gson: Gson by lazy {
@@ -23,7 +22,7 @@ object JsonUtils {
         }
     }
 
-    fun extractSharedTeamName(news: RealmNews?): String {
+    fun extractSharedTeamName(news: News?): String {
         if (news == null) return ""
         val ar = news.parsedViewIn ?: if (!news.viewIn.isNullOrEmpty()) {
             try {
@@ -55,15 +54,16 @@ object JsonUtils {
         if (el is JsonNull) "" else el.asString
     }
 
-    fun getAsJsonArray(list: RealmList<String>?): JsonArray {
+    fun getAsJsonArray(list: List<String>?): JsonArray {
         val array = JsonArray()
         list?.forEach { s -> array.add(s) }
         return array
     }
 
     fun getStringAsJsonArray(s: String?): JsonArray {
+        if (s.isNullOrBlank()) return JsonArray()
         val arrayElement = parseString(s)
-        return arrayElement.asJsonArray
+        return if (arrayElement.isJsonArray) arrayElement.asJsonArray else JsonArray()
     }
 
     fun getBoolean(fieldName: String, jsonObject: JsonObject?): Boolean = safeGet(false) {

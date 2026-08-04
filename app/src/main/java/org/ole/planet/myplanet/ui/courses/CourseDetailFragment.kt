@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding
-import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.StepItem
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -99,7 +99,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     private fun setCourseCover(courseId: String?, coverFileName: String?, courseRev: String?) {
-        val coverFile = RealmMyCourse.getCoverImageFile(binding.courseCover.context, courseId, coverFileName)
+        val coverFile = MyCourse.getCoverImageFile(binding.courseCover.context, courseId, coverFileName)
         val model: Any? = if (coverFile?.exists() == true) {
             coverFile
         } else {

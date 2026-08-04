@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.RealmFeedback
+import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 
@@ -20,8 +20,8 @@ class FeedbackListViewModel @Inject constructor(
     private val userSessionManager: UserSessionManager
 ) : ViewModel() {
 
-    private val _feedbackList = MutableStateFlow<List<RealmFeedback>>(emptyList())
-    val feedbackList: StateFlow<List<RealmFeedback>> = _feedbackList.asStateFlow()
+    private val _feedbackList = MutableStateFlow<List<Feedback>>(emptyList())
+    val feedbackList: StateFlow<List<Feedback>> = _feedbackList.asStateFlow()
 
     private var fetchJob: Job? = null
 

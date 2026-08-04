@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.FinanceReportParams
-import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.repository.TeamsRepository
 
 sealed class ReportEvent {
@@ -97,11 +97,11 @@ class EnterprisesViewModel @Inject constructor(
         }
     }
 
-    suspend fun getReportsFlow(teamId: String): Flow<List<RealmMyTeam>> {
+    suspend fun getReportsFlow(teamId: String): Flow<List<MyTeam>> {
         return teamsRepository.getReportsFlow(teamId)
     }
 
-    suspend fun exportReportsAsCsv(reports: List<RealmMyTeam>, teamName: String): String {
+    suspend fun exportReportsAsCsv(reports: List<MyTeam>, teamName: String): String {
         return teamsRepository.exportReportsAsCsv(reports, teamName)
     }
 }

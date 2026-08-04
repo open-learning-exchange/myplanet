@@ -18,7 +18,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityPublicSurveyBinding
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -28,22 +28,14 @@ import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 
-/**
- * Lets anyone respond to a `publicAccess` survey without logging in. Opened from
- * /survey/<teamId>/<surveyId> deep links. Fetches the survey from the server's public
- * API, stores it in Realm, and hosts the standard [ExamTakingFragment] survey form;
- * the completed submission is then posted back through the public API.
- */
 @AndroidEntryPoint
 class PublicSurveyActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPublicSurveyBinding
 
     @Inject
     lateinit var surveysRepository: SurveysRepository
-
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
-
     @Inject
     lateinit var prefData: SharedPrefManager
 
@@ -68,17 +60,12 @@ class PublicSurveyActivity : AppCompatActivity() {
             return
         }
 
-        // The respondent-info dialog (shown at the end of the survey) closing is our signal
-        // to upload the completed submission — regardless of teamId, and without going through
-        // the standard authenticated upload path, which anonymous public respondents can't use.
         supportFragmentManager.registerFragmentLifecycleCallbacks(userInfoDialogCallback, true)
-        // Backing out of the survey before finishing pops the form off the back stack; close then too.
         supportFragmentManager.addOnBackStackChangedListener {
             if (surveyStarted && supportFragmentManager.backStackEntryCount == 0 && !isFinishing) {
                 uploadCompletedSubmission()
             }
         }
-
         loadSurvey()
     }
 
@@ -108,8 +95,6 @@ class PublicSurveyActivity : AppCompatActivity() {
             binding.progressBar.visibility = View.GONE
             launchTime = System.currentTimeMillis()
             surveyStarted = true
-            // isTeam=true so the form ends with the team-survey UserInformationFragment
-            // dialog collecting the (anonymous) respondent's details
             val fragment = ExamTakingFragment().apply {
                 arguments = Bundle().apply {
                     putString("type", "survey")
@@ -134,7 +119,6 @@ class PublicSurveyActivity : AppCompatActivity() {
             val submission = submissionsRepository.getLatestSubmissionByParentId(surveyId, "complete")
             Log.d(TAG, "upload: submission=${submission?.id} lastUpdate=${submission?.lastUpdateTime} launchTime=$launchTime")
             if (submission == null || submission.lastUpdateTime < launchTime) {
-                // User backed out without finishing the survey
                 navigateOnwardAndFinish()
                 return@launch
             }
@@ -158,8 +142,6 @@ class PublicSurveyActivity : AppCompatActivity() {
         }
     }
 
-    // Per product requirement: after the survey ends, send a logged-in user to the dashboard
-    // and a logged-out (anonymous) respondent to the login screen.
     private fun navigateOnwardAndFinish() {
         val next = if (prefData.isLoggedIn()) {
             Intent(this, DashboardActivity::class.java)
@@ -172,8 +154,6 @@ class PublicSurveyActivity : AppCompatActivity() {
         finish()
     }
 
-    // The public API validates user.age as an integer, but the stored profile serializes it
-    // as a string; coerce it (dropping it if non-numeric) so the submission isn't rejected.
     private fun sanitizeRespondent(user: com.google.gson.JsonObject) {
         if (user.has("age")) {
             val age = user.get("age").asString.trim().toIntOrNull()
@@ -181,9 +161,7 @@ class PublicSurveyActivity : AppCompatActivity() {
         }
     }
 
-    // The public API expects one entry per question: a string for text/rating answers,
-    // a {id, text} object for select, and an array of those objects for selectMultiple.
-    private suspend fun buildPublicAnswers(submission: RealmSubmission): JsonArray {
+    private suspend fun buildPublicAnswers(submission: Submission): JsonArray {
         val questions = surveysRepository.getExamQuestions(surveyId)
         val answersByQuestion = submission.answers?.associateBy { it.questionId }.orEmpty()
         val payload = JsonArray()

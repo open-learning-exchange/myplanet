@@ -5,15 +5,10 @@ import android.content.DialogInterface
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
-import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import android.widget.EditText
-import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -24,7 +19,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.LocalResourceRequest
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
@@ -33,6 +28,7 @@ import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.Utilities.toast
+import org.ole.planet.myplanet.utils.setupHintSpinner
 
 @AndroidEntryPoint
 class AddResourceActivity : AppCompatActivity() {
@@ -43,7 +39,7 @@ class AddResourceActivity : AppCompatActivity() {
     @Inject
     lateinit var teamsRepository: TeamsRepository
     private lateinit var binding: ActivityAddResourceBinding
-    var userModel: RealmUser? = null
+    var userModel: UserEntity? = null
     var subjects: MutableList<String>? = null
     var levels: MutableList<String>? = null
     private var resourceFor: MutableList<String>? = null
@@ -103,10 +99,10 @@ class AddResourceActivity : AppCompatActivity() {
         binding.tvResourceFor.setOnClickListener { view: View ->
             showMultiSelectList(resources.getStringArray(R.array.array_resource_for), resourceFor, view,getString(R.string.resource_for))
         }
-        setupHintSpinner(binding.spnLang, getString(R.string.language), resources.getStringArray(R.array.language))
-        setupHintSpinner(binding.spnOpenWith, getString(R.string.select_open_with), resources.getStringArray(R.array.open_With))
-        setupHintSpinner(binding.spnMedia, getString(R.string.select_media), resources.getStringArray(R.array.media))
-        setupHintSpinner(binding.spnResourceType, getString(R.string.select_resource_type), resources.getStringArray(R.array.resource_type))
+        binding.spnLang.setupHintSpinner(getString(R.string.language), resources.getStringArray(R.array.language))
+        binding.spnOpenWith.setupHintSpinner(getString(R.string.select_open_with), resources.getStringArray(R.array.open_With))
+        binding.spnMedia.setupHintSpinner(getString(R.string.select_media), resources.getStringArray(R.array.media))
+        binding.spnResourceType.setupHintSpinner(getString(R.string.select_resource_type), resources.getStringArray(R.array.resource_type))
         binding.etTitle.setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus) {
                 binding.tlTitle.error = null
@@ -124,35 +120,6 @@ class AddResourceActivity : AppCompatActivity() {
         }
         binding.btnSubmit.setOnClickListener { saveResource() }
         binding.btnCancel.setOnClickListener { finish() }
-    }
-
-    private fun setupHintSpinner(spinner: Spinner, hint: String, entries: Array<String>) {
-        val items = listOf(hint) + entries.toList()
-        val hintColor = ContextCompat.getColor(this, R.color.hint_color)
-        val textColor = ContextCompat.getColor(this, R.color.daynight_textColor)
-        val adapter = object : ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, items) {
-            override fun isEnabled(position: Int) = position != 0
-            override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val view = super.getDropDownView(position, convertView, parent) as TextView
-                view.setTextColor(if (position == 0) hintColor else textColor)
-                return view
-            }
-            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val view = super.getView(position, convertView, parent) as TextView
-                view.isSingleLine = false
-                view.maxLines = 2
-                return view
-            }
-        }
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinner.adapter = adapter
-        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                (view as? TextView)?.setTextColor(if (position == 0) hintColor else textColor)
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>) {}
-        }
     }
 
     private suspend fun prefillFields(resourceId: String) {
@@ -195,6 +162,7 @@ class AddResourceActivity : AppCompatActivity() {
                 )
                 if (result.isSuccess) {
                     toast(this@AddResourceActivity, getString(R.string.resource_updated))
+                    setResult(RESULT_OK)
                     finish()
                 } else {
                     toast(this@AddResourceActivity, getString(R.string.failed_to_update_resource))
@@ -234,6 +202,7 @@ class AddResourceActivity : AppCompatActivity() {
                     getString(R.string.added_to_my_library)
                 }
                 toast(this@AddResourceActivity, message)
+                setResult(RESULT_OK)
                 finish()
             } else {
                 binding.tlTitle.error = getString(R.string.resource_title_already_exists)

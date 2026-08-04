@@ -11,20 +11,20 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.model.RealmAchievement
-import org.ole.planet.myplanet.model.RealmCertification
-import org.ole.planet.myplanet.model.RealmCourseProgress
-import org.ole.planet.myplanet.model.RealmFeedback
-import org.ole.planet.myplanet.model.RealmHealthExamination
-import org.ole.planet.myplanet.model.RealmMeetup
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNotification
-import org.ole.planet.myplanet.model.RealmRating
-import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.model.RealmTeamLog
-import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.Achievement
+import org.ole.planet.myplanet.model.AppNotification
+import org.ole.planet.myplanet.model.Certification
+import org.ole.planet.myplanet.model.CourseProgress
+import org.ole.planet.myplanet.model.Feedback
+import org.ole.planet.myplanet.model.HealthExamination
+import org.ole.planet.myplanet.model.Meetup
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.Rating
+import org.ole.planet.myplanet.model.TagEntity
+import org.ole.planet.myplanet.model.TeamLog
+import org.ole.planet.myplanet.model.TeamTask
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -77,20 +77,20 @@ class ConstantsTest {
     fun testClassList() {
         val classList = Constants.classList
         assertEquals(14, classList.size)
-        assertEquals(RealmNews::class.java, classList["news"])
-        assertEquals(RealmTag::class.java, classList["tags"])
-        assertEquals(RealmRating::class.java, classList["ratings"])
-        assertEquals(RealmMyCourse::class.java, classList["courses"])
-        assertEquals(RealmAchievement::class.java, classList["achievements"])
-        assertEquals(RealmFeedback::class.java, classList["feedback"])
-        assertEquals(RealmMyTeam::class.java, classList["teams"])
-        assertEquals(RealmTeamTask::class.java, classList["tasks"])
-        assertEquals(RealmMeetup::class.java, classList["meetups"])
-        assertEquals(RealmHealthExamination::class.java, classList["health"])
-        assertEquals(RealmCertification::class.java, classList["certifications"])
-        assertEquals(RealmTeamLog::class.java, classList["team_activities"])
-        assertEquals(RealmCourseProgress::class.java, classList["courses_progress"])
-        assertEquals(RealmNotification::class.java, classList["notifications"])
+        assertEquals(News::class.java, classList["news"])
+        assertEquals(TagEntity::class.java, classList["tags"])
+        assertEquals(Rating::class.java, classList["ratings"])
+        assertEquals(MyCourse::class.java, classList["courses"])
+        assertEquals(Achievement::class.java, classList["achievements"])
+        assertEquals(Feedback::class.java, classList["feedback"])
+        assertEquals(MyTeam::class.java, classList["teams"])
+        assertEquals(TeamTask::class.java, classList["tasks"])
+        assertEquals(Meetup::class.java, classList["meetups"])
+        assertEquals(HealthExamination::class.java, classList["health"])
+        assertEquals(Certification::class.java, classList["certifications"])
+        assertEquals(TeamLog::class.java, classList["team_activities"])
+        assertEquals(CourseProgress::class.java, classList["courses_progress"])
+        assertEquals(AppNotification::class.java, classList["notifications"])
     }
 
     @Test

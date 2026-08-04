@@ -5,7 +5,7 @@ import android.util.Log
 import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
 import java.net.URLEncoder
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 object UrlUtils {
@@ -29,9 +29,13 @@ object UrlUtils {
     val header: String
         get() {
             val spm = spm()
-            val credentials = "${spm.getUrlUser()}:${spm.getUrlPwd()}".toByteArray()
-            return "Basic ${Base64.encodeToString(credentials, Base64.NO_WRAP)}"
+            return basicAuthHeader(spm.getUrlUser(), spm.getUrlPwd())
         }
+
+    fun basicAuthHeader(username: String, password: String): String {
+        val credentials = "$username:$password".toByteArray()
+        return "Basic ${Base64.encodeToString(credentials, Base64.NO_WRAP)}"
+    }
 
     val hostUrl: String
         get() {
@@ -85,7 +89,7 @@ object UrlUtils {
         return if (base.endsWith("/db")) base else "$base/db"
     }
 
-    fun getUrl(library: RealmMyLibrary?): String {
+    fun getUrl(library: MyLibrary?): String {
         return getUrl(library?.resourceId, library?.resourceLocalAddress)
     }
 

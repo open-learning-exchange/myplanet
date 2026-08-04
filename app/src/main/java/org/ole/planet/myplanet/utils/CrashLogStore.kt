@@ -5,9 +5,8 @@ import java.io.File
 
 /**
  * Synchronous, dependency-free persistence for crash/ANR reports. Reports are written
- * here before any coroutine or Realm machinery runs, because both share the dispatcher
- * and write lock with whatever workload caused the failure — the process may die before
- * an async Realm write commits. Files left behind are swept into RealmApkLog on the
+ * here before any coroutine or Room machinery runs, because app shutdown can happen
+ * before launched coroutines finish persisting rows. Files left behind are swept into ApkLog on the
  * next app start.
  */
 object CrashLogStore {
@@ -19,12 +18,12 @@ object CrashLogStore {
 
     private fun dir(context: Context): File = File(context.filesDir, DIR_NAME)
 
-    fun save(context: Context, type: String, error: String): File? {
+    fun save(context: Context, type: String, error: String, timeProvider: TimeProvider): File? {
         return try {
             val logDir = dir(context)
             if (!logDir.exists() && !logDir.mkdirs()) return null
             if ((logDir.listFiles()?.size ?: 0) >= MAX_PENDING_FILES) return null
-            val file = File(logDir, "${System.currentTimeMillis()}_$type$FILE_EXTENSION")
+            val file = File(logDir, "${timeProvider.now()}_$type$FILE_EXTENSION")
             file.writeText(error)
             file
         } catch (e: Exception) {

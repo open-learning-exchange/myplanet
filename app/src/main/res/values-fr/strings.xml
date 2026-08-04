@@ -16,7 +16,7 @@
     <string name="app_name">My Planet</string>
     <string name="planet">Planet</string>
     <string name="app_project_name">myPlanet</string>
-    <string name="action_settings">paramètres</string>
+    <string name="action_settings">Paramètres</string>
     <string name="hint_name">Nom d\'utilisateur</string>
     <string name="btn_back">Retourner</string>
     <string name="btn_sign_in">Se connecter</string>
@@ -93,8 +93,8 @@
     <string name="your_rating">Votre évaluation</string>
     <string name="loading_user_profile">Préparation de votre profil…</string>
     <string name="your_comment">Laissez votre commentaire</string>
-    <string name="sync_now">synchroniser maintenant</string>
-    <string name="logout">déconnexion</string>
+    <string name="sync_now">Synchroniser maintenant</string>
+    <string name="logout">Déconnexion</string>
     <string name="settings">Paramètres</string>
     <string name="edit_profile">Modifier le profil</string>
     <string name="profile">Profil</string>
@@ -335,8 +335,8 @@
     <string name="clear_data">Effacer les données</string>
     <string name="reset_app">Réinitialiser l\'application</string>
     <string name="freeup_space">Libérer de l\'espace disque</string>
-    <string name="action_disclaimer">avis de non-responsabilité</string>
-    <string name="action_about">à propos de</string>
+    <string name="action_disclaimer">Avis de non-responsabilité</string>
+    <string name="action_about">À propos de</string>
     <string name="english_dictionary">Dictionnaire anglais</string>
 
     <string-array name="team_type">
@@ -1011,6 +1011,11 @@
     <string name="dark_mode_follow_system">Suivre le système</string>
     <string name="theme_mode_light">Clair</string>
     <string name="theme_mode_dark">Sombre</string>
+    <string name="text_size">taille du texte</string>
+    <string name="select_text_size">Sélectionner la taille du texte</string>
+    <string name="text_size_small">Petit</string>
+    <string name="text_size_medium">Moyen</string>
+    <string name="text_size_large">Grand</string>
     <string name="are_you_sure_you_want_to_archive_these_courses">Etes-vous sûr de vouloir archiver ces cours ?</string>
     <string name="are_you_sure_you_want_to_archive_this_course">Êtes-vous sûr de vouloir archiver ce cours ?</string>
     <string name="manual">manuel</string>
@@ -1283,6 +1288,8 @@
     <string name="storage_unknown_resource">Ressource inconnue</string>
     <string name="file_count_one">1 fichier</string>
     <string name="file_count_many">%1$d fichiers</string>
+    <string name="storage_deleting_progress">Suppression des fichiers… %1$d supprimés (%2$s)</string>
+    <string name="storage_freed_summary">%1$s libérés (%2$d fichiers)</string>
     <string name="skip">Passer</string>
     <string name="add_meetup">Ajouter une rencontre</string>
     <string name="download_report">Télécharger le rapport</string>
@@ -1342,6 +1349,8 @@
     <string name="save_changes">Enregistrer les modifications</string>
     <string name="resource_updated">Ressource mise à jour</string>
     <string name="failed_to_update_resource">Échec de la mise à jour de la ressource</string>
+    <string name="join_team_first">Veuillez rejoindre une équipe pour partager cette conversation</string>
+    <string name="join_enterprise_first">Veuillez rejoindre une entreprise pour partager cette conversation</string>
 
     <string name="open_link_with">Ouvrir le lien avec</string>
     <string name="just_once">Une seule fois</string>

@@ -74,4 +74,5 @@
     <color name="medal_silver_fg">#3E434B</color>
     <color name="medal_bronze_bg">#C98A5B</color>
     <color name="medal_bronze_fg">#4E2E14</color>
+    <color name="pending_request_indicator">#9fa0a4</color>
 </resources>

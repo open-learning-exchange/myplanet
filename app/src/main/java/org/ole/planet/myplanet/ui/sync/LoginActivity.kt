@@ -23,7 +23,6 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
-import com.bumptech.glide.Glide
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.ArrayList
@@ -40,9 +39,9 @@ import org.ole.planet.myplanet.callback.OnUserProfileClickListener
 import org.ole.planet.myplanet.databinding.ActivityLoginBinding
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.User
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.sync.LoginSyncManager
@@ -55,6 +54,7 @@ import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
@@ -75,13 +75,13 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
 
     private lateinit var binding: ActivityLoginBinding
     private var guest = false
-    var users: List<RealmUser>? = null
+    var users: List<UserEntity>? = null
     private var mAdapter: UsersAdapter? = null
     private var exitSnackbar: Snackbar? = null
     private var teamList = ArrayList<String?>()
     private var teamAdapter: ArrayAdapter<String?>? = null
     private var isUserInteracting = false
-    private var cachedTeams: List<RealmMyTeam>? = null
+    private var cachedTeams: List<MyTeam>? = null
     private val loginViewModel: LoginViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -439,7 +439,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         loginViewModel.loadTeamsAsync()
     }
 
-    private fun setupTeamDropdown(teams: List<RealmMyTeam>?) {
+    private fun setupTeamDropdown(teams: List<MyTeam>?) {
         if (!teams.isNullOrEmpty()) {
             binding.team.visibility = View.VISIBLE
             teamAdapter = ArrayAdapter(this, R.layout.spinner_item_white, teamList)
@@ -447,16 +447,14 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             teamList.clear()
             teamList.add(getString(R.string.select_team))
             for (team in teams) {
-                if (team.isValid) {
-                    teamList.add(team.name)
-                }
+                teamList.add(team.name)
             }
             binding.team.adapter = teamAdapter
             val lastSelection = prefData.getSelectedTeamId()
             if (!lastSelection.isNullOrEmpty()) {
                 for (i in teams.indices) {
                     val team = teams[i]
-                    if (team._id != null && team._id == lastSelection && team.isValid) {
+                    if (team._id != null && team._id == lastSelection) {
                         val lastSelectedPosition = i + 1
                         binding.team.setSelection(lastSelectedPosition)
                         break
@@ -516,7 +514,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         val languageCodes = arrayOf("en", "es", "so", "ne", "ar", "fr")
         val checkedItem = languageCodes.indexOf(currentLanguage)
 
-        AlertDialog.Builder(this, R.style.AlertDialogTheme)
+        val dialog = AlertDialog.Builder(this, R.style.AlertDialogTheme)
             .setTitle(getString(R.string.select_language))
             .setSingleChoiceItems(
                 ArrayAdapter(this, R.layout.checked_list_item, options),
@@ -532,7 +530,18 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 }
             }
             .setNegativeButton(R.string.cancel, null)
-            .show()
+            .create()
+
+        dialog.show()
+
+        if (resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
+            val maxHeight = (resources.displayMetrics.heightPixels * 0.35).toInt()
+            dialog.listView?.let { listView ->
+                val params = listView.layoutParams
+                params.height = maxHeight
+                listView.layoutParams = params
+            }
+        }
     }
 
     override fun attachBaseContext(newBase: Context) {
@@ -567,11 +576,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     }
     override fun onItemClick(user: User) {
         if (user.password?.isEmpty() == true && user.source != "guest") {
-            Glide.with(this)
-                .load(user.image)
-                .placeholder(R.drawable.profile)
-                .error(R.drawable.profile)
-                .into(binding.userProfile)
+            ImageUtils.loadPlaceholderImage(user.image, binding.userProfile)
 
             binding.inputName.setText(user.name)
         } else {

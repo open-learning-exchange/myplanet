@@ -16,12 +16,13 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.callback.OnMemberActionListener
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCombinedMembersBinding
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.JoinedMemberData
 import org.ole.planet.myplanet.services.UserSessionManager
 
@@ -66,7 +67,7 @@ class MembersFragment : BaseTeamFragment() {
         binding.rvMembers.layoutManager = GridLayoutManager(activity, columns)
         binding.rvMembers.adapter = membersAdapter
 
-        val initialUser = RealmUser()
+        val initialUser = UserEntity()
         requestsAdapter = RequestsAdapter(requireActivity(), initialUser) { reqUser, isAccepted ->
             requestsViewModel.respondToRequest(teamId, reqUser, isAccepted)
         }.apply { setTeamId(teamId) }
@@ -74,7 +75,7 @@ class MembersFragment : BaseTeamFragment() {
         binding.rvRequests.adapter = requestsAdapter
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val resolvedUser = userSessionManager.getUserModel() ?: RealmUser()
+            val resolvedUser = userSessionManager.getUserModel() ?: UserEntity()
             requestsAdapter?.setUser(resolvedUser)
             membersAdapter?.setUserId(resolvedUser.id)
         }
@@ -111,12 +112,7 @@ class MembersFragment : BaseTeamFragment() {
             val isLeader = members.any { it.user.id == currentUserId && it.isLeader }
             membersAdapter?.setUserId(currentUserId)
             membersAdapter?.updateData(members, isLeader)
-            if (members.isEmpty()) {
-                binding.tvNodata.visibility = View.VISIBLE
-                binding.tvNodata.text = getString(R.string.no_data_available_please_check_and_try_again)
-            } else {
-                binding.tvNodata.visibility = View.GONE
-            }
+            BaseRecyclerFragment.showNoData(binding.tvNodata, members.size, "")
         }
     }
 
@@ -177,7 +173,7 @@ class MembersFragment : BaseTeamFragment() {
         }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: News?) {}
 
     override fun clearImages() {
         imageList.clear()

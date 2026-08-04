@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.user
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,8 +10,6 @@ import androidx.core.view.isGone
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
@@ -26,11 +23,12 @@ import org.ole.planet.myplanet.databinding.FragmentAchievementBinding
 import org.ole.planet.myplanet.databinding.LayoutButtonPrimaryBinding
 import org.ole.planet.myplanet.databinding.RowAchievementBinding
 import org.ole.planet.myplanet.model.AchievementData
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
@@ -43,7 +41,7 @@ class AchievementFragment : BaseContainerFragment() {
 
     private var _binding: FragmentAchievementBinding? = null
     private val binding get() = _binding!!
-    var user: RealmUser? = null
+    var user: UserEntity? = null
     var listener: OnHomeItemClickListener? = null
     private var achievementData: AchievementData? = null
 
@@ -101,7 +99,7 @@ class AchievementFragment : BaseContainerFragment() {
         super.onViewCreated(view, savedInstanceState)
         setupRealtimeSync()
         viewLifecycleOwner.lifecycleScope.launch {
-            user = profileDbHandler.getUserModel()
+            user = userRepository.getUserModel()
             setupUserData()
             achievementData = loadAchievementDataAsync()
             updateAchievementUI()
@@ -109,18 +107,7 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun setupUserData() {
-        if (!TextUtils.isEmpty(user?.userImage)) {
-            Glide.with(requireActivity())
-                .load(user?.userImage)
-                .diskCacheStrategy(DiskCacheStrategy.ALL)
-                .override(200, 200)
-                .circleCrop()
-                .placeholder(R.drawable.profile)
-                .error(R.drawable.profile)
-                .into(binding.imageView)
-        } else {
-            binding.imageView.setImageResource(R.drawable.profile)
-        }
+        ImageUtils.loadProfileImage(user?.userImage, binding.imageView, 200)
         val fullName = listOfNotNull(user?.firstName, user?.middleName, user?.lastName)
             .filter { it.isNotBlank() }
             .joinToString(" ")
@@ -160,7 +147,7 @@ class AchievementFragment : BaseContainerFragment() {
         }
     }
 
-    private fun createAchievementView(ob: JsonObject, resourcesMap: Map<String, RealmMyLibrary>): View {
+    private fun createAchievementView(ob: JsonObject, resourcesMap: Map<String, MyLibrary>): View {
         val binding = RowAchievementBinding.inflate(LayoutInflater.from(requireContext()))
         val desc = getString("description", ob)
         binding.tvDescription.text = desc
@@ -201,7 +188,7 @@ class AchievementFragment : BaseContainerFragment() {
         )
     }
 
-    private fun createResourceButton(lib: RealmMyLibrary): View {
+    private fun createResourceButton(lib: MyLibrary): View {
         val btnBinding = LayoutButtonPrimaryBinding.inflate(LayoutInflater.from(requireContext()))
         btnBinding.root.text = lib.title
         btnBinding.root.setCompoundDrawablesWithIntrinsicBounds(

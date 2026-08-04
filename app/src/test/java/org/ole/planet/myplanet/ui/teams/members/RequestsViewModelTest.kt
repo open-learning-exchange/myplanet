@@ -14,7 +14,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -45,14 +45,14 @@ class RequestsViewModelTest {
     @Test
     fun `fetchMembers updates uiState correctly`() = runTest(testDispatcher) {
         val teamId = "team1"
-        val user1 = RealmUser().apply { id = "user1" }
-        val user2 = RealmUser().apply { id = "user2" }
+        val user1 = UserEntity().apply { id = "user1" }
+        val user2 = UserEntity().apply { id = "user2" }
         val members = listOf(user1, user2)
 
         coEvery { teamsRepository.getRequestedMembers(teamId) } returns members
         coEvery { teamsRepository.getJoinedMembers(teamId) } returns listOf(user1)
 
-        val currentUser = RealmUser().apply { id = "currentUser" }
+        val currentUser = UserEntity().apply { id = "currentUser" }
         coEvery { userSessionManager.getUserModel() } returns currentUser
         coEvery { teamsRepository.isTeamLeader(teamId, currentUser.id) } returns true
 
@@ -70,8 +70,8 @@ class RequestsViewModelTest {
     @Test
     fun `respondToRequest success path removes user optimistically and fetches members`() = runTest(testDispatcher) {
         val teamId = "team1"
-        val user1 = RealmUser().apply { id = "user1" }
-        val user2 = RealmUser().apply { id = "user2" }
+        val user1 = UserEntity().apply { id = "user1" }
+        val user2 = UserEntity().apply { id = "user2" }
         val members = listOf(user1, user2)
 
         coEvery { teamsRepository.getRequestedMembers(teamId) } returns members
@@ -109,8 +109,8 @@ class RequestsViewModelTest {
     @Test
     fun `respondToRequest failure path reverts to original list`() = runTest(testDispatcher) {
         val teamId = "team1"
-        val user1 = RealmUser().apply { id = "user1" }
-        val user2 = RealmUser().apply { id = "user2" }
+        val user1 = UserEntity().apply { id = "user1" }
+        val user2 = UserEntity().apply { id = "user2" }
         val members = listOf(user1, user2)
 
         coEvery { teamsRepository.getRequestedMembers(teamId) } returns members

@@ -27,4 +27,25 @@ class VoicePostingPolicyTest {
         assertFalse(privatePolicy.canPost(isGuest = false, isMember = false))
         assertTrue(privatePolicy.canPost(isGuest = false, isMember = true))
     }
+
+    @Test
+    fun `toVoicePostingPolicy maps correctly`() {
+        // When _id is provided
+        val teamWithId = org.ole.planet.myplanet.model.MyTeam().apply {
+            _id = "id_123"
+            teamId = "teamId_456"
+            isPublic = true
+        }
+        val policy1 = teamWithId.toVoicePostingPolicy()
+        org.junit.Assert.assertEquals("id_123", policy1.teamId)
+        assertTrue(policy1.isPublic)
+
+        // Let's also test what happens when we create a default MyTeam.
+        val defaultTeam = org.ole.planet.myplanet.model.MyTeam().apply {
+            isPublic = false
+        }
+        val policyDefault = defaultTeam.toVoicePostingPolicy()
+        org.junit.Assert.assertEquals("", policyDefault.teamId)
+        assertFalse(policyDefault.isPublic)
+    }
 }

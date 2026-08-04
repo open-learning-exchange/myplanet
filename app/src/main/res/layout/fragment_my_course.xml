@@ -307,14 +307,14 @@
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
-    <com.github.clans.fab.FloatingActionButton
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabMyProgress"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/ic_my_progress"
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/padding_large"
         android:contentDescription="@string/my_progress"
-        app:fab_label="@string/my_progress"
-        android:visibility="gone" />
+        android:src="@drawable/ic_my_progress"
+        android:visibility="gone"
+        app:tint="@color/md_white_1000" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

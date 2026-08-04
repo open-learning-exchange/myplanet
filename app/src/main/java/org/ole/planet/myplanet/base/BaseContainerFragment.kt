@@ -31,11 +31,11 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BasePermissionActivity.Companion.hasInstallPermission
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.repository.ResourceUrlsResponse
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.UserSessionManager.Companion.KEY_RESOURCE_DOWNLOAD
-import org.ole.planet.myplanet.services.UserSessionManager.Companion.KEY_RESOURCE_OPEN
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.viewer.WebViewActivity
 import org.ole.planet.myplanet.utils.CourseRatingUtils
@@ -47,16 +47,19 @@ import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class BaseContainerFragment : BaseResourceFragment() {
+    @Inject
+    lateinit var profileDbHandler: UserSessionManager
+    @Inject
+    lateinit var prefData: SharedPrefManager
+
     private var timesRated: TextView? = null
     var rating: TextView? = null
     private var ratingBar: AppCompatRatingBar? = null
     private val installUnknownSourcesRequestCode = 112
     private var hasInstallPermissionValue = false
-    private var currentLibrary: RealmMyLibrary? = null
+    private var currentLibrary: MyLibrary? = null
     private var installApkLauncher: ActivityResultLauncher<Intent>? = null
-    @Inject
-    lateinit var prefData: SharedPrefManager
-    private var pendingAutoOpenLibrary: RealmMyLibrary? = null
+    private var pendingAutoOpenLibrary: MyLibrary? = null
     private var shouldAutoOpenAfterDownload = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -90,7 +93,8 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             DownloadUtils.openPriorityDownloadService(requireContext(), urls)
         }
     }
-    fun startDownloadWithAutoOpen(urls: ArrayList<String>, libraryToOpen: RealmMyLibrary? = null) {
+
+    fun startDownloadWithAutoOpen(urls: ArrayList<String>, libraryToOpen: MyLibrary? = null) {
         if (libraryToOpen != null) {
             pendingAutoOpenLibrary = libraryToOpen
             shouldAutoOpenAfterDownload = true
@@ -99,6 +103,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         startDownload(urls)
         showProgressDialog()
     }
+
     override fun onDownloadComplete() {
         super.onDownloadComplete()
         if (shouldAutoOpenAfterDownload && pendingAutoOpenLibrary != null) {
@@ -120,6 +125,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
         }
     }
+
     fun initRatingView(type: String?, id: String?, title: String?, listener: OnRatingChangeListener?) {
         timesRated = requireView().findViewById(R.id.times_rated)
         rating = requireView().findViewById(R.id.tv_rating)
@@ -133,7 +139,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
             val rb = this
             viewLifecycleOwner.lifecycleScope.launch {
-                val userModel = profileDbHandler.getUserModel()
+                val userModel = userRepository.getUserModel()
                 if (userModel?.isGuest() == false) {
                     rb.setOnClickListener {
                         homeItemClickListener?.showRatingDialog(type, id, title, listener)
@@ -142,6 +148,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
         }
     }
+
     override fun onAttach(context: Context) {
         super.onAttach(context)
         if (context is OnHomeItemClickListener) {
@@ -160,7 +167,8 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             e.printStackTrace()
         }
     }
-    fun openResource(items: RealmMyLibrary) {
+
+    fun openResource(items: MyLibrary) {
         dismissProgressDialog()
         if (items.mediaType == "HTML") {
             openHtmlResource(items)
@@ -169,12 +177,14 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
     }
 
-    private fun openHtmlResource(items: RealmMyLibrary) {
+    private fun openHtmlResource(items: MyLibrary) {
         val directory = File(context?.getExternalFilesDir(null), "ole/${items.resourceId}")
         val indexFile = File(directory, "index.html")
 
         if (indexFile.exists()) {
-            profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_OPEN)
+            viewLifecycleOwner.lifecycleScope.launch {
+                resourcesRepository.trackResourceOpen(items)
+            }
             val intent = Intent(activity, WebViewActivity::class.java)
             intent.putExtra("RESOURCE_ID", items.id)
             intent.putExtra("LOCAL_ADDRESS", items.resourceLocalAddress)
@@ -207,7 +217,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
     }
 
-    private fun openNonHtmlResource(items: RealmMyLibrary) {
+    private fun openNonHtmlResource(items: MyLibrary) {
         viewLifecycleOwner.lifecycleScope.launch {
             val matchingItems = items.resourceLocalAddress?.let {
                 resourcesRepository.getLibraryItemsByLocalAddress(it)
@@ -215,7 +225,8 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
             val offlineItem = matchingItems.firstOrNull { it.isResourceOffline() }
             if (offlineItem != null) {
-                ResourceOpener.openFileType(requireActivity(), offlineItem, "offline", profileDbHandler)
+                resourcesRepository.trackResourceOpen(offlineItem)
+                ResourceOpener.openFileType(requireActivity(), offlineItem, "offline")
                 return@launch
             }
 
@@ -225,11 +236,13 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                     FileUtils.getFileExtension(items.resourceLocalAddress) == "wav"
 
             when {
-                items.isResourceOffline() -> ResourceOpener.openFileType(
-                    requireActivity(), items, "offline", profileDbHandler
-                )
+                items.isResourceOffline() -> {
+                    resourcesRepository.trackResourceOpen(items)
+                    ResourceOpener.openFileType(requireActivity(), items, "offline")
+                }
                 isVideo || isAudio -> {
-                    ResourceOpener.openFileType(requireActivity(), items, "online", profileDbHandler)
+                    resourcesRepository.trackResourceOpen(items)
+                    ResourceOpener.openFileType(requireActivity(), items, "online")
                     val arrayList = arrayListOf(UrlUtils.getUrl(items))
                     DownloadUtils.openPriorityDownloadService(requireContext(), arrayList)
                 }
@@ -242,7 +255,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
     }
 
-    private fun installApk(items: RealmMyLibrary) {
+    private fun installApk(items: MyLibrary) {
         if (BuildConfig.LITE) return
         currentLibrary = items
         val directory = File(requireContext().getExternalFilesDir(null).toString() + "/ole" + "/" + items.id)
@@ -283,10 +296,10 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         installApkLauncher?.launch(intent)
     }
 
-    private fun showResourceList(downloadedResources: List<RealmMyLibrary>) {
+    private fun showResourceList(downloadedResources: List<MyLibrary>) {
         val builderSingle = AlertDialog.Builder(ContextThemeWrapper(requireActivity(), R.style.CustomAlertDialog))
         builderSingle.setTitle(getString(R.string.select_resource_to_open))
-        val arrayAdapter: ArrayAdapter<RealmMyLibrary?> = object : ArrayAdapter<RealmMyLibrary?>(
+        val arrayAdapter: ArrayAdapter<MyLibrary?> = object : ArrayAdapter<MyLibrary?>(
             requireActivity(), android.R.layout.select_dialog_item, downloadedResources
         ) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
@@ -313,7 +326,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         builderSingle.setNegativeButton(R.string.dismiss, null).show()
     }
 
-    fun setOpenResourceButton(downloadedResources: List<RealmMyLibrary>?, btnOpen: Button) {
+    fun setOpenResourceButton(downloadedResources: List<MyLibrary>?, btnOpen: Button) {
         if (downloadedResources.isNullOrEmpty()) {
             btnOpen.visibility = View.GONE
         } else {
@@ -327,7 +340,8 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
         }
     }
-    fun setResourceButton(resources: List<RealmMyLibrary>?, btnResources: Button) {
+
+    fun setResourceButton(resources: List<MyLibrary>?, btnResources: Button) {
         if (resources.isNullOrEmpty()) {
             btnResources.visibility = View.GONE
         } else {

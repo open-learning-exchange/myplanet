@@ -1,9 +1,12 @@
 package org.ole.planet.myplanet.model
 
+import java.util.UUID
+
 data class ChatMessage(
     val message: String,
     val viewType: Int,
-    val source: Int = 0
+    val source: Int = 0,
+    val id: String = UUID.randomUUID().toString()
 ) {
     companion object {
         const val QUERY = 1

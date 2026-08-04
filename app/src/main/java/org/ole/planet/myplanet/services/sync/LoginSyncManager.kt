@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.services.sync
 
 import android.content.Context
-import android.util.Base64
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.net.ConnectException
@@ -36,96 +35,90 @@ class LoginSyncManager @Inject constructor(
     private val dispatcherProvider: DispatcherProvider
 ) {
 
-    fun login(userName: String?, password: String?, listener: OnSyncListener) {
-        applicationScope.launch(dispatcherProvider.io) {
-            try {
-                if (userName.isNullOrBlank() || password.isNullOrBlank()) {
-                    withContext(dispatcherProvider.main) { listener.onSyncFailed("Username and password are required.") }
-                    return@launch
-                }
+    suspend fun login(userName: String?, password: String?, listener: OnSyncListener) {
+        try {
+            if (userName.isNullOrBlank() || password.isNullOrBlank()) {
+                listener.onSyncFailed("Username and password are required.")
+                return
+            }
 
-                withContext(dispatcherProvider.main) { listener.onSyncStarted() }
+            listener.onSyncStarted()
 
-                val authHeader = try {
-                    "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    withContext(dispatcherProvider.main) { listener.onSyncFailed("Authentication encoding failed.") }
-                    return@launch
-                }
-
-                val userUrl = try {
-                    String.format("%s/_users/%s", UrlUtils.getUrl(), "org.couchdb.user:$userName")
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    withContext(dispatcherProvider.main) { listener.onSyncFailed("Invalid server URL.") }
-                    return@launch
-                }
-
-                try {
-                    val response = apiInterface.getJsonObject(authHeader, userUrl)
-                    when {
-                        !response.isSuccessful -> {
-                            val errorMsg = when (response.code()) {
-                                401 -> "Name or password is incorrect."
-                                404 -> "User not found."
-                                500 -> "Server error. Please try again later."
-                                else -> "Login failed. Error code: ${response.code()}"
-                            }
-                            withContext(dispatcherProvider.main) { listener.onSyncFailed(errorMsg) }
-                            return@launch
-                        }
-
-                        response.body() == null -> {
-                            withContext(dispatcherProvider.main) { listener.onSyncFailed("Empty response from server.") }
-                            return@launch
-                        }
-                    }
-
-                    val jsonDoc = response.body()
-                    if (jsonDoc?.has("derived_key") == true && jsonDoc.has("salt")) {
-                        try {
-                            val derivedKey = jsonDoc["derived_key"].asString
-                            val salt = jsonDoc["salt"].asString
-                            val isAuthenticated = withContext(dispatcherProvider.default) {
-                                androidDecrypter(userName, password, derivedKey, salt)
-                            }
-
-                            if (isAuthenticated) {
-                                checkManagerAndInsert(jsonDoc, listener)
-                            } else {
-                                withContext(dispatcherProvider.main) {
-                                    listener.onSyncFailed("Authentication failed. Invalid credentials.")
-                                }
-                            }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                            withContext(dispatcherProvider.main) {
-                                listener.onSyncFailed("Authentication processing failed.")
-                            }
-                        }
-                    } else {
-                        withContext(dispatcherProvider.main) { listener.onSyncFailed("Server response missing authentication data.") }
-                    }
-                } catch (t: Exception) {
-                    try {
-                        t.printStackTrace()
-                        val errorMsg = when (t) {
-                            is UnknownHostException -> "Server not reachable. Check your internet connection."
-                            is SocketTimeoutException -> "Connection timeout. Please try again."
-                            is ConnectException -> "Unable to connect to server."
-                            else -> "Network error: ${t.message ?: "Unknown error"}"
-                        }
-                        withContext(dispatcherProvider.main) { listener.onSyncFailed(errorMsg) }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        withContext(dispatcherProvider.main) { listener.onSyncFailed("Network error occurred.") }
-                    }
-                }
+            val authHeader = try {
+                UrlUtils.basicAuthHeader(userName, password)
             } catch (e: Exception) {
                 e.printStackTrace()
-                withContext(dispatcherProvider.main) { listener.onSyncFailed("Login initialization failed.") }
+                listener.onSyncFailed("Authentication encoding failed.")
+                return
             }
+
+            val userUrl = try {
+                String.format("%s/_users/%s", UrlUtils.getUrl(), "org.couchdb.user:$userName")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                listener.onSyncFailed("Invalid server URL.")
+                return
+            }
+
+            try {
+                val response = apiInterface.getJsonObject(authHeader, userUrl)
+                when {
+                    !response.isSuccessful -> {
+                        val errorMsg = when (response.code()) {
+                            401 -> "Name or password is incorrect."
+                            404 -> "User not found."
+                            500 -> "Server error. Please try again later."
+                            else -> "Login failed. Error code: ${response.code()}"
+                        }
+                        listener.onSyncFailed(errorMsg)
+                        return
+                    }
+
+                    response.body() == null -> {
+                        listener.onSyncFailed("Empty response from server.")
+                        return
+                    }
+                }
+
+                val jsonDoc = response.body()
+                if (jsonDoc?.has("derived_key") == true && jsonDoc.has("salt")) {
+                    try {
+                        val derivedKey = jsonDoc["derived_key"].asString
+                        val salt = jsonDoc["salt"].asString
+                        val isAuthenticated = withContext(dispatcherProvider.default) {
+                            androidDecrypter(userName, password, derivedKey, salt)
+                        }
+
+                        if (isAuthenticated) {
+                            checkManagerAndInsert(jsonDoc, listener)
+                        } else {
+                            listener.onSyncFailed("Authentication failed. Invalid credentials.")
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        listener.onSyncFailed("Authentication processing failed.")
+                    }
+                } else {
+                    listener.onSyncFailed("Server response missing authentication data.")
+                }
+            } catch (t: Exception) {
+                try {
+                    t.printStackTrace()
+                    val errorMsg = when (t) {
+                        is UnknownHostException -> "Server not reachable. Check your internet connection."
+                        is SocketTimeoutException -> "Connection timeout. Please try again."
+                        is ConnectException -> "Unable to connect to server."
+                        else -> "Network error: ${t.message ?: "Unknown error"}"
+                    }
+                    listener.onSyncFailed(errorMsg)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    listener.onSyncFailed("Network error occurred.")
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            listener.onSyncFailed("Login initialization failed.")
         }
     }
 
@@ -150,7 +143,7 @@ class LoginSyncManager @Inject constructor(
                 }
 
                 try {
-                    val response = apiInterface.findDocs(header, "application/json", url, `object`)
+                    val response = apiInterface.postDoc(header, "application/json", url, `object`)
                     if (response.isSuccessful && response.body() != null) {
                         val responseBody = response.body()
                         sharedPrefManager.setCommunityLeaders("$responseBody")
@@ -175,16 +168,12 @@ class LoginSyncManager @Inject constructor(
 
     private suspend fun checkManagerAndInsert(jsonDoc: JsonObject?, listener: OnSyncListener) {
         if (!isManager(jsonDoc)) {
-            withContext(dispatcherProvider.main) {
-                listener.onSyncFailed(context.getString(R.string.user_verification_in_progress))
-            }
+            listener.onSyncFailed(context.getString(R.string.user_verification_in_progress))
             return
         }
 
         userSyncRepository.saveUser(jsonDoc)
-        withContext(dispatcherProvider.main) {
-            listener.onSyncComplete()
-        }
+        listener.onSyncComplete()
     }
 
     private fun isManager(jsonDoc: JsonObject?): Boolean {

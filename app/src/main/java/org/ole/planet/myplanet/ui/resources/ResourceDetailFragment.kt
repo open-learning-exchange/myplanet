@@ -16,9 +16,9 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentLibraryDetailBinding
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.listToString
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.MyLibrary.Companion.listToString
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.FileUtils.getFileExtension
@@ -33,9 +33,9 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private val binding get() = _binding!!
     private var libraryId: String? = null
     private var lastKnownRating: JsonObject? = null
-    private lateinit var library: RealmMyLibrary
-    var userModel: RealmUser? = null
-    private suspend fun fetchLibrary(libraryId: String): RealmMyLibrary? {
+    private lateinit var library: MyLibrary
+    var userModel: UserEntity? = null
+    private suspend fun fetchLibrary(libraryId: String): MyLibrary? {
         return resourcesRepository.getLibraryItemById(libraryId)
             ?: resourcesRepository.getLibraryItemByResourceId(libraryId)
     }
@@ -57,7 +57,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 return@launch
             }
             val id = libraryId ?: return@launch
-            val userId = profileDbHandler.getUserModel()?.id
+            val userId = userRepository.getUserModel()?.id
             try {
                 val backgroundLibrary = fetchLibrary(id)
                 val updatedLibrary = when {
@@ -73,7 +73,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 e.printStackTrace()
             }
             updateDownloadButtonState()
-            val currentUserId = profileDbHandler.getUserModel()?.id
+            val currentUserId = userRepository.getUserModel()?.id
             if (currentUserId != null && library.userId?.contains(currentUserId) != true) {
                 Utilities.toast(activity, getString(R.string.added_to_my_library))
                 binding.btnRemove.setImageResource(R.drawable.close_x)
@@ -91,7 +91,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
-            userModel = profileDbHandler.getUserModel()
+            userModel = userRepository.getUserModel()
             val id = libraryId
             if (id.isNullOrBlank()) {
                 handleLibraryNotFound()
@@ -238,7 +238,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         binding.btnRemove.setOnClickListener {
             viewLifecycleOwner.lifecycleScope.launch {
                 val id = libraryId ?: return@launch
-                val userId = profileDbHandler.getUserModel()?.id
+                val userId = userRepository.getUserModel()?.id
                 if (!isAdded) {
                     return@launch
                 }

@@ -276,12 +276,13 @@
         android:text="@string/no_data_available"
         android:visibility="gone"
         android:textColor="@color/daynight_textColor" />
-    <com.github.clans.fab.FloatingActionButton
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/add_transaction"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|right"
-        android:layout_margin="@dimen/_10dp"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/padding_large"
+        android:contentDescription="@string/add_transaction"
         android:src="@drawable/ic_add_white"
-        app:fab_label="Add Transaction" />
+        app:tint="@color/md_white_1000" />
 </FrameLayout>

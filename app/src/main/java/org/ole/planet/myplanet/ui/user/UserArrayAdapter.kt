@@ -8,21 +8,21 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemUserBinding
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class UserArrayAdapter(
-    private val onItemClick: (RealmUser) -> Unit
-) : ListAdapter<RealmUser, UserArrayAdapter.ViewHolder>(
-    DiffUtils.itemCallback<RealmUser>(
+    private val onItemClick: (UserEntity) -> Unit
+) : ListAdapter<UserEntity, UserArrayAdapter.ViewHolder>(
+    DiffUtils.itemCallback<UserEntity>(
         { oldItem, newItem -> oldItem.id == newItem.id },
         { oldItem, newItem -> oldItem.id == newItem.id && oldItem.name == newItem.name }
     )
 ) {
 
-    var selectedUser: RealmUser? = null
+    var selectedUser: UserEntity? = null
     private var avatarSize = 0
 
     class ViewHolder(val binding: ItemUserBinding) : RecyclerView.ViewHolder(binding.root)
@@ -36,7 +36,7 @@ class UserArrayAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
-        if (payloads.contains(SELECTION_PAYLOAD)) {
+        if (payloads.contains(PAYLOAD_SELECTION)) {
             val user = getItem(position)
             val context = holder.itemView.context
             if (user.id == selectedUser?.id) {
@@ -74,13 +74,13 @@ class UserArrayAdapter(
             val previousUser = selectedUser
             selectedUser = user
             val prevPos = currentList.indexOfFirst { it.id == previousUser?.id }
-            if (prevPos != -1) notifyItemChanged(prevPos, SELECTION_PAYLOAD)
-            notifyItemChanged(currentPos, SELECTION_PAYLOAD)
+            if (prevPos != -1) notifyItemChanged(prevPos, PAYLOAD_SELECTION)
+            notifyItemChanged(currentPos, PAYLOAD_SELECTION)
             onItemClick(user)
         }
     }
 
     companion object {
-        private const val SELECTION_PAYLOAD = "selection_payload"
+        const val PAYLOAD_SELECTION = "selection_payload"
     }
 }

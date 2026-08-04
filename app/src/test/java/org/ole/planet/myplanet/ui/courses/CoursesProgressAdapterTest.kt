@@ -5,11 +5,11 @@ import android.content.Context
 import android.os.Build
 import android.widget.LinearLayout
 import androidx.test.core.app.ApplicationProvider
-import com.google.gson.JsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.model.CoursesProgressRow
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -28,29 +28,32 @@ class CoursesProgressAdapterTest {
 
     @Test
     fun `test holder recycling with different stepMistake counts`() {
-        val manyStepsItem = JsonObject().apply {
-            addProperty("courseId", "1")
-            addProperty("courseName", "Course 1")
-            add("stepMistake", JsonObject().apply {
-                addProperty("0", 1)
-                addProperty("1", 2)
-                addProperty("2", 3)
-            })
-        }
+        val manyStepsItem = CoursesProgressRow(
+            courseId = "1",
+            courseName = "Course 1",
+            progressCurrent = null,
+            progressMax = null,
+            mistakes = null,
+            stepMistake = mapOf("0" to 1, "1" to 2, "2" to 3)
+        )
 
-        val fewerStepsItem = JsonObject().apply {
-            addProperty("courseId", "2")
-            addProperty("courseName", "Course 2")
-            add("stepMistake", JsonObject().apply {
-                addProperty("0", 5)
-            })
-        }
+        val fewerStepsItem = CoursesProgressRow(
+            courseId = "2",
+            courseName = "Course 2",
+            progressCurrent = null,
+            progressMax = null,
+            mistakes = null,
+            stepMistake = mapOf("0" to 5)
+        )
 
-        val noStepsItem = JsonObject().apply {
-            addProperty("courseId", "3")
-            addProperty("courseName", "Course 3")
-            // Intentionally omit stepMistake to test that missing data clears the UI
-        }
+        val noStepsItem = CoursesProgressRow(
+            courseId = "3",
+            courseName = "Course 3",
+            progressCurrent = null,
+            progressMax = null,
+            mistakes = null,
+            stepMistake = null
+        )
 
         adapter.submitList(listOf(manyStepsItem, fewerStepsItem, noStepsItem))
 

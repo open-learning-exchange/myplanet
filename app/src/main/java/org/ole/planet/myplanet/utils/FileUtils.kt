@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets
 import java.util.Locale
 import java.util.UUID
 import kotlin.math.roundToLong
+import org.ole.planet.myplanet.utils.TimeProvider
 
 object FileUtils {
     @Volatile private var cachedExternalFilesDir: File? = null
@@ -174,7 +175,7 @@ object FileUtils {
         }
     }
 
-    fun getDisplayName(context: Context, uri: Uri): String {
+    fun getDisplayName(context: Context, uri: Uri, timeProvider: TimeProvider): String {
         var name: String? = null
         if (uri.scheme == "content") {
             context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
@@ -184,7 +185,7 @@ object FileUtils {
                 }
             }
         }
-        return name ?: uri.lastPathSegment ?: "image_${System.currentTimeMillis()}.jpg"
+        return name ?: uri.lastPathSegment ?: "image_${timeProvider.now()}.jpg"
     }
 
     fun readBytesFromUri(context: Context, uri: Uri): ByteArray? {
