@@ -494,6 +494,7 @@
   "deleteTask": "Delete task",
   "taskTitle": "Task title",
   "assigneeId": "Assignee ID",
+  "teamDiscussions": "Discussions",
   "teamMembers": "Members",
   "members": "Members",
   "joinRequests": "Join requests",

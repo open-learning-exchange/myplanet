@@ -22,7 +22,8 @@ Known gaps:
   `TaskNotificationWorker`'s deadline notifications, `DownloadWorker`'s background queue) needs
   OS scheduling and is not ported.
 - ~~Chat and feedback have no *sync-in* direction~~ — now implemented (Phase 26).
-- Team attachments, team voices and team/public survey sharing are unported.
+- ~~Team voices~~ — now implemented (Phase 27).
+- Team attachments and team/public survey sharing are unported.
 
 - **Phase 1** -- skeleton plus the server configuration → login → resources slice.
 - **Phase 2** -- dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -113,6 +114,11 @@ Known gaps:
   use the same paginated pull pattern as other repositories: count with `?limit=0`, then
   walk `?include_docs=true&limit&skip` pages, upserting each document and pruning stale
   local rows on completion.
+
+- **Phase 27** — team voices. `TeamVoicesScreen` shows discussion posts scoped to a specific
+  team, filtered by team ID in the `viewIn` field. `teamVoicesProvider` streams filtered
+  posts from `VoicesRepository`, and `VoicesActions.createTeamPost()` addresses new posts
+  to the team so they appear only to members.
 
 ## Strategy
 
@@ -668,6 +674,6 @@ succeeds, it just doesn't do what the Kotlin did.
 
 ---
 
-**Last updated**: 2026-08-04 (Phase 26 complete)
-**Phase**: 26 of N (27 of 28 UI packages have a screen — see Status for what that does and does
+**Last updated**: 2026-08-04 (Phase 27 complete)
+**Phase**: 27 of N (27 of 28 UI packages have a screen — see Status for what that does and does
 not mean)

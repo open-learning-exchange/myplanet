@@ -289,6 +289,13 @@ class TeamDetailScreen extends ConsumerWidget {
                     onTap: () =>
                         context.push('${Routes.teams}/${team.id}/tasks'),
                   ),
+                  ListTile(
+                    leading: const Icon(Icons.forum_outlined),
+                    title: Text(l10n.teamDiscussions),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () =>
+                        context.push('${Routes.teams}/${team.id}/voices'),
+                  ),
                 ],
               );
             },
