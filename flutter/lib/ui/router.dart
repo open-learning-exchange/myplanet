@@ -8,6 +8,8 @@ import 'calendar/calendar_screen.dart';
 import 'chat/chat_detail_screen.dart';
 import 'chat/chat_history_screen.dart';
 import 'community/community_screen.dart';
+import 'exam/take_exam_screen.dart';
+import 'exam/user_information_screen.dart';
 import 'courses/course_detail_screen.dart';
 import 'courses/courses_screen.dart';
 import 'dashboard/dashboard_shell.dart';
@@ -75,6 +77,8 @@ class Routes {
   static const String feedbackDetail = '/life/feedback/:feedbackId';
   static const String feedbackCreate = '/life/feedback/create';
   static const String community = '/community';
+  static const String exam = '/courses/exam/:examId';
+  static const String userInfo = '/exam/user-info/:submissionId';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -132,6 +136,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.community,
         builder: (context, state) => const CommunityScreen(
           fromLogin: false,
+        ),
+      ),
+      GoRoute(
+        path: Routes.exam,
+        builder: (context, state) => TakeExamScreen(
+          examId: state.pathParameters['examId']!,
+          stepId: state.uri.queryParameters['stepId'],
+          courseId: state.uri.queryParameters['courseId'],
+        ),
+      ),
+      GoRoute(
+        path: Routes.userInfo,
+        builder: (context, state) => UserInformationScreen(
+          submissionId: state.pathParameters['submissionId']!,
+          teamId: state.uri.queryParameters['teamId'],
         ),
       ),
       StatefulShellRoute.indexedStack(

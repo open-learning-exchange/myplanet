@@ -40,6 +40,8 @@ part 'app_database.g.dart';
     Meetups,
     Surveys,
     SurveyQuestions,
+    Exams,
+    ExamQuestions,
     NewsEntries,
     Teams,
     TeamTasks,
@@ -63,6 +65,7 @@ part 'app_database.g.dart';
     SubmissionDao,
     MeetupDao,
     SurveyDao,
+    ExamDao,
     ChatDao,
     FeedbackDao,
   ],
@@ -1375,6 +1378,59 @@ class SurveyDao extends DatabaseAccessor<AppDatabase> with _$SurveyDaoMixin {
       )..where((row) => row.id.isIn(chunk))).go();
     }
     return deleted;
+  });
+}
+
+/// Port of exam queries for graded course exams.
+@DriftAccessor(tables: [Exams, ExamQuestions])
+class ExamDao extends DatabaseAccessor<AppDatabase> with _$ExamDaoMixin {
+  ExamDao(super.db);
+
+  Future<ExamRow?> getById(String id) =>
+      (select(exams)..where((row) => row.id.equals(id))).getSingleOrNull();
+
+  Future<ExamRow?> getByStepId(String stepId) =>
+      (select(exams)..where((row) => row.stepId.equals(stepId))).getSingleOrNull();
+
+  Future<List<ExamRow>> getByCourseId(String courseId) =>
+      (select(exams)..where((row) => row.courseId.equals(courseId))).get();
+
+  Stream<List<ExamRow>> watchByCourseId(String courseId) =>
+      (select(exams)..where((row) => row.courseId.equals(courseId))).watch();
+
+  Future<List<ExamQuestionRow>> questionsFor(String examId) =>
+      (select(examQuestions)
+            ..where((row) => row.examId.equals(examId))
+            ..orderBy([(row) => OrderingTerm(expression: row.position)]))
+          .get();
+
+  Stream<List<ExamQuestionRow>> watchQuestionsFor(String examId) =>
+      (select(examQuestions)
+            ..where((row) => row.examId.equals(examId))
+            ..orderBy([(row) => OrderingTerm(expression: row.position)]))
+          .watch();
+
+  Future<void> upsertExam(ExamsCompanion row) =>
+      into(exams).insertOnConflictUpdate(row);
+
+  Future<void> upsertQuestion(ExamQuestionsCompanion row) =>
+      into(examQuestions).insertOnConflictUpdate(row);
+
+  Future<void> upsertAll(
+    List<ExamsCompanion> rows,
+    Map<String, List<ExamQuestionsCompanion>> questions,
+  ) => transaction(() async {
+    if (rows.isNotEmpty) {
+      await batch((batch) => batch.insertAllOnConflictUpdate(exams, rows));
+    }
+    for (final entry in questions.entries) {
+      await (delete(
+        examQuestions,
+      )..where((row) => row.examId.equals(entry.key))).go();
+      if (entry.value.isNotEmpty) {
+        await batch((batch) => batch.insertAll(examQuestions, entry.value));
+      }
+    }
   });
 }
 

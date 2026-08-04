@@ -5,8 +5,8 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 21 in progress.** The Flutter app is *not* yet a replacement for the Kotlin app:
-**21 of 28 UI packages** are ported.
+**Phase 22 in progress.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**22 of 28 UI packages** are ported.
 
 - **Phase 1** — skeleton plus the server configuration → login → resources slice.
 - **Phase 2** — dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -51,6 +51,9 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 - **Phase 21** — community: the community/nation tab with voices, leaders, calendar, services tabs.
   Leaders are parsed from the JSON stored in preferences. Services display team links/routes
   from the community. Community/nation info (name, type) is persisted in preferences.
+- **Phase 22** — exam: graded course exams with question navigation, answer types (select,
+  selectMultiple, ratingScale, input, textarea), automatic grading, and score display. User
+  information collection for team surveys. Exams and ExamQuestions tables with Drift persistence.
 
 ## Strategy
 
@@ -112,6 +115,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 | Chat history and conversations | `ChatHistory`, `ChatDao`, `ChatRepositoryImpl`, `ChatHistoryFragment`, `ChatDetailFragment`, `ChatViewModel` | `data/local/chat_mapper.dart`, `repository/chat_repository.dart`, `repository/chat_repository_impl.dart`, `ui/chat/` |
 | Feedback | `Feedback`, `FeedbackReply`, `FeedbackDao`, `FeedbackRepositoryImpl`, `FeedbackListFragment`, `FeedbackFragment`, `FeedbackDetailActivity` | `data/local/feedback_mapper.dart`, `repository/feedback_repository.dart`, `repository/feedback_repository_impl.dart`, `ui/feedback/` |
 | Community (leaders, services, bottom sheet) | `CommunityTabFragment`, `LeadersFragment`, `CommunityServicesFragment`, `HomeCommunityDialogFragment`, `CommunityLeadersAdapter`, `CommunityPagerAdapter` | `ui/community/`, `core/prefs/planet_prefs.dart` (communityLeaders, communityName, planetType) |
+| Exam (graded course exams) | `StepExam`, `ExamQuestion`, `ExamTakingFragment`, `UserInformationFragment`, `BaseExamFragment` | `data/local/exam_mapper.dart`, `data/local/tables.dart` (Exams, ExamQuestions), `ui/exam/` |
 
 `SharedPrefManager.getFirstLaunch()` is misleadingly named: it defaults to `false` and is set to
 `true` once onboarding finishes, so it actually means "onboarding already done". The port stores
@@ -453,7 +457,7 @@ Three related defects clustered around the same code, all from copy-paste:
   into a duplicate thread rather than an update, and `markUploaded` recorded no
   revision, so the update would have conflicted anyway.
 
-## Remaining UI packages (7 of 28)
+## Remaining UI packages (6 of 28)
 
 `components`, `enterprises`, `exam`,
 `health`, `maps`,
@@ -535,4 +539,4 @@ succeeds, it just doesn't do what the Kotlin did.
 ---
 
 **Last updated**: 2026-08-04
-**Phase**: 21 of N (community done)
+**Phase**: 22 of N (exam done)
