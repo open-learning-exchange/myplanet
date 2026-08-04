@@ -135,9 +135,7 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
     final type = _getResourceType();
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_resource!.title ?? l10n.untitledResource),
-      ),
+      appBar: AppBar(title: Text(_resource!.title ?? l10n.untitledResource)),
       body: _buildViewer(context, type),
     );
   }
@@ -190,22 +188,10 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
   }
 }
 
-enum ResourceType {
-  video,
-  audio,
-  pdf,
-  image,
-  text,
-  markdown,
-  csv,
-  unknown,
-}
+enum ResourceType { video, audio, pdf, image, text, markdown, csv, unknown }
 
 class _VideoViewer extends StatefulWidget {
-  const _VideoViewer({
-    required this.resource,
-    required this.getLocalFilePath,
-  });
+  const _VideoViewer({required this.resource, required this.getLocalFilePath});
 
   final MyLibraryRow resource;
   final Future<String?> Function() getLocalFilePath;
@@ -340,10 +326,7 @@ class _PlayPauseOverlayState extends State<PlayPauseOverlay> {
 }
 
 class _AudioViewer extends StatefulWidget {
-  const _AudioViewer({
-    required this.resource,
-    required this.getLocalFilePath,
-  });
+  const _AudioViewer({required this.resource, required this.getLocalFilePath});
 
   final MyLibraryRow resource;
   final Future<String?> Function() getLocalFilePath;
@@ -430,9 +413,7 @@ class _AudioViewerState extends State<_AudioViewer> {
           ],
           const SizedBox(height: 32),
           // Audio visualization via video player controls (no video shown)
-          Expanded(
-            child: VideoPlayer(_controller!),
-          ),
+          Expanded(child: VideoPlayer(_controller!)),
           VideoProgressIndicator(_controller!, allowScrubbing: true),
           IconButton(
             iconSize: 64,
@@ -457,10 +438,7 @@ class _AudioViewerState extends State<_AudioViewer> {
 }
 
 class _PdfViewer extends StatefulWidget {
-  const _PdfViewer({
-    required this.resource,
-    required this.getLocalFilePath,
-  });
+  const _PdfViewer({required this.resource, required this.getLocalFilePath});
 
   final MyLibraryRow resource;
   final Future<String?> Function() getLocalFilePath;
@@ -491,9 +469,7 @@ class _PdfViewerState extends State<_PdfViewer> {
         return;
       }
 
-      _controller = PdfControllerPinch(
-        document: PdfDocument.openFile(path),
-      );
+      _controller = PdfControllerPinch(document: PdfDocument.openFile(path));
 
       if (mounted) {
         setState(() {
@@ -558,10 +534,7 @@ class _PdfViewerState extends State<_PdfViewer> {
 }
 
 class _ImageViewer extends StatelessWidget {
-  const _ImageViewer({
-    required this.resource,
-    required this.getLocalFilePath,
-  });
+  const _ImageViewer({required this.resource, required this.getLocalFilePath});
 
   final MyLibraryRow resource;
   final Future<String?> Function() getLocalFilePath;
@@ -599,10 +572,7 @@ class _ImageViewer extends StatelessWidget {
 }
 
 class _TextViewer extends StatefulWidget {
-  const _TextViewer({
-    required this.resource,
-    required this.getLocalFilePath,
-  });
+  const _TextViewer({required this.resource, required this.getLocalFilePath});
 
   final MyLibraryRow resource;
   final Future<String?> Function() getLocalFilePath;
@@ -678,11 +648,11 @@ class _TextViewerState extends State<_TextViewer> {
           child: _content == null
               ? const Center(child: Text('No content'))
               : isCsv
-                  ? _CsvContent(content: _content!)
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: SelectableText(_content!),
-                    ),
+              ? _CsvContent(content: _content!)
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: SelectableText(_content!),
+                ),
         ),
       ],
     );
@@ -706,8 +676,9 @@ class _CsvContent extends StatelessWidget {
       child: SingleChildScrollView(
         child: DataTable(
           columns: headers.map((h) => DataColumn(label: Text(h))).toList(),
-          rows:
-              lines.skip(1).where((line) => line.trim().isNotEmpty).map((line) {
+          rows: lines.skip(1).where((line) => line.trim().isNotEmpty).map((
+            line,
+          ) {
             final values = line.split(',').map((v) => v.trim()).toList();
             return DataRow(
               cells: List.generate(
@@ -799,12 +770,7 @@ class _MarkdownViewerState extends State<_MarkdownViewer> {
             style: Theme.of(context).textTheme.titleMedium,
           ),
         ),
-        Expanded(
-          child: Markdown(
-            data: _content!,
-            selectable: true,
-          ),
-        ),
+        Expanded(child: Markdown(data: _content!, selectable: true)),
       ],
     );
   }
