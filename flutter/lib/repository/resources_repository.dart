@@ -31,6 +31,9 @@ class ResourcesRepository {
 
   Future<int> localCount() => _dao.count();
 
+  /// Gets a single resource by its local id.
+  Future<MyLibraryRow?> getById(String id) => _dao.getById(id);
+
   /// Port of `SyncManager.syncResources`.
   ///
   /// Counts with `?limit=0`, then walks `?include_docs=true&limit&skip` pages,

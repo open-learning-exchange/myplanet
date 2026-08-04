@@ -41,6 +41,7 @@ import 'teams/team_members_screen.dart';
 import 'teams/team_resources_screen.dart';
 import 'teams/team_courses_screen.dart';
 import 'teams/team_reports_screen.dart';
+import 'viewer/resource_viewer_screen.dart';
 
 /// Replaces the Activity/Fragment navigation in `ui/components/FragmentNavigator`
 /// and the manual `Intent` hops between `SyncActivity` -> `LoginActivity` ->
@@ -57,6 +58,7 @@ class Routes {
   static const String onboarding = '/onboarding';
   static const String login = '/login';
   static const String resources = '/resources';
+  static const String resourceViewer = '/resources/viewer/:resourceId';
   static const String courses = '/courses';
   static const String calendar = '/calendar';
   static const String profile = '/profile';
@@ -131,6 +133,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.login,
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: Routes.resourceViewer,
+        builder: (context, state) => ResourceViewerScreen(
+          resourceId: state.pathParameters['resourceId']!,
+        ),
       ),
       GoRoute(
         path: Routes.community,

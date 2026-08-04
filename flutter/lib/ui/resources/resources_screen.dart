@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/resources_providers.dart';
 import '../../providers/sync_state.dart';
 import '../dashboard/dashboard_shell.dart';
+import '../router.dart';
 
 /// Port of `ui/resources/ResourcesFragment.kt`.
 ///
@@ -129,6 +131,9 @@ class _ResourceTile extends StatelessWidget {
               child: const Icon(Icons.offline_pin_outlined),
             )
           : null,
+      onTap: () {
+        context.push('/resources/viewer/${resource.id}');
+      },
     );
   }
 

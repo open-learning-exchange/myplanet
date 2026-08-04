@@ -479,6 +479,10 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
       return deleted;
     });
   }
+
+  /// Gets a single resource by its local id.
+  Future<MyLibraryRow?> getById(String id) =>
+      (select(myLibraryTable)..where((r) => r.id.equals(id))).getSingleOrNull();
 }
 
 /// Comfortably under SQLite's 999-variable floor.
