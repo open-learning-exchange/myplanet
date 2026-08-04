@@ -127,6 +127,37 @@ class PlanetApi {
     );
   }
 
+  /// Port of `ApiInterface.downloadFile` — an attachment body as raw bytes.
+  ///
+  /// Separate from [_request] because it reports progress and must not apply
+  /// the shared receive timeout: a large resource on a slow link would abort
+  /// mid-transfer, which is precisely the connection myPlanet is built for.
+  Future<NetworkResult<List<int>>> getBytes(
+    String url, {
+    String? authHeader,
+    void Function(int received, int total)? onProgress,
+  }) async {
+    try {
+      final response = await _dio.get<List<int>>(
+        url,
+        onReceiveProgress: onProgress,
+        options: Options(
+          responseType: ResponseType.bytes,
+          receiveTimeout: null,
+          validateStatus: (_) => true,
+          headers: {'Authorization': ?authHeader},
+        ),
+      );
+      final status = response.statusCode ?? 0;
+      if (status < 200 || status >= 300) {
+        return NetworkError<List<int>>(status, response.statusMessage);
+      }
+      return NetworkSuccess<List<int>>(response.data ?? const []);
+    } on DioException catch (e) {
+      return NetworkException<List<int>>(e);
+    }
+  }
+
   Future<NetworkResult<T>> _request<T>(
     String url, {
     required ResponseType responseType,

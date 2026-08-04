@@ -51,14 +51,8 @@ dependencies:
   video_player: ^2.9.2
   # PDF viewing — replaces PdfRenderer.
   pdfx: ^2.6.0
-  # Markdown rendering — replaces Markwon.
-  flutter_markdown: ^0.7.7
-  # Image viewing with zoom — replaces PhotoView.
-  photo_view: ^0.15.0
-  # Audio recording — replaces AudioRecorder.
-  record: ^7.1.1
-  # Text-to-speech — replaces TTSManager.
-  flutter_tts: ^4.2.5
+  # Markdown rendering — replaces Markwon. `flutter_markdown` is discontinued.
+  flutter_markdown_plus: ^1.0.3
 
 dev_dependencies:
   flutter_test:
