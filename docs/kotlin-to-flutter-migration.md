@@ -6,7 +6,17 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 ## Status
 
 **Phase 30 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
-**27 of 28 UI packages** are ported (components package now complete).
+**All 28 UI packages are ported.**
+
+The `components` package is now complete with:
+- `ChallengeDialog` - Daily challenge progress dialog with markdown support
+- `CheckboxList` / `CheckboxStringList` - Reusable checkbox list widgets
+- `CustomDropdownButton` / `AlwaysNotifyDropdown` - Dropdown widgets with same-item selection support
+
+Known gaps:
+- `enterprises` package is covered by the teams slice (Phase 18)
+- Background work scheduling (`WorkManager`) is not ported - `DownloadWorker`'s background queue still needs OS scheduling
+- Full offline functionality for all features needs testing
 
 - **Phase 1** -- skeleton plus the server configuration → login → resources slice.
 - **Phase 2** -- dashboard shell (bottom-tab navigation) plus the courses list and detail.
