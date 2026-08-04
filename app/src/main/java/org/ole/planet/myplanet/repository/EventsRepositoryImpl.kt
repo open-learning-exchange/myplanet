@@ -202,7 +202,7 @@ class EventsRepositoryImpl @Inject constructor(
     override suspend fun deleteMeetup(meetupId: String): Boolean {
         if (meetupId.isBlank()) return false
         return try {
-            val meetup = meetupDao.getById(meetupId) ?: meetupDao.getByMeetupId(meetupId)
+            val meetup = meetupDao.getAnyById(meetupId) ?: meetupDao.getById(meetupId) ?: meetupDao.getByMeetupId(meetupId)
             val currentUserId = userRepository.getUserModel()?.id
 
             val docIdsToLog = mutableSetOf<String>()

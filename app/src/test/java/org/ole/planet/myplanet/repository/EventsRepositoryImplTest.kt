@@ -174,7 +174,9 @@ class EventsRepositoryImplTest {
 
     @Test
     fun deleteMeetup() = runTest {
-        coEvery { meetupDao.getById("m1") } returns Meetup().apply { id = "m1"; userId = "u1" }
+        val mockMeetup = Meetup().apply { id = "m1"; userId = "u1" }
+        coEvery { meetupDao.getAnyById("m1") } returns mockMeetup
+        coEvery { meetupDao.getById("m1") } returns mockMeetup
 
         val result = repository.deleteMeetup("m1")
         assertTrue(result)
