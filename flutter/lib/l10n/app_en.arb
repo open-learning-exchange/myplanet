@@ -588,5 +588,16 @@
   "type": "Type",
   "apply": "Apply",
   "unavailable": "unavailable",
-  "chatsUnavailable": "Chats could not be loaded"
+  "chatsUnavailable": "Chats could not be loaded",
+  "community": "Community",
+  "communityLeaders": "Community Leaders",
+  "nationLeaders": "Nation Leaders",
+  "services": "Services",
+  "ourVoices": "Our Voices",
+  "calendar": "Calendar",
+  "finances": "Finances",
+  "reports": "Reports",
+  "noLeadersAvailable": "No leaders available",
+  "noServicesAvailable": "No services available",
+  "noDescriptionAvailable": "No description available"
 }

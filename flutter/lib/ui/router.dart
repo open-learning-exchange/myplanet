@@ -7,6 +7,7 @@ import '../providers/session_provider.dart';
 import 'calendar/calendar_screen.dart';
 import 'chat/chat_detail_screen.dart';
 import 'chat/chat_history_screen.dart';
+import 'community/community_screen.dart';
 import 'courses/course_detail_screen.dart';
 import 'courses/courses_screen.dart';
 import 'dashboard/dashboard_shell.dart';
@@ -73,6 +74,7 @@ class Routes {
   static const String feedback = '/life/feedback';
   static const String feedbackDetail = '/life/feedback/:feedbackId';
   static const String feedbackCreate = '/life/feedback/create';
+  static const String community = '/community';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -125,6 +127,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.login,
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: Routes.community,
+        builder: (context, state) => const CommunityScreen(
+          fromLogin: false,
+        ),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>

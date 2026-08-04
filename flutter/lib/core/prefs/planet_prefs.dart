@@ -40,6 +40,9 @@ class PlanetPrefs {
   static const String _keyLoggedInUserId = 'loggedInUserId';
   static const String _keyOnboardingComplete = 'onboardingComplete';
   static const String _keyThemeMode = 'themeMode';
+  static const String _keyCommunityLeaders = 'communityLeaders';
+  static const String _keyCommunityName = 'communityName';
+  static const String _keyPlanetType = 'planetType';
 
   static const String _secureKeyServerPin = 'serverPin';
   static const String _secureKeyCouchDbUrl = 'couchdbURL';
@@ -163,4 +166,23 @@ class PlanetPrefs {
     await _prefs.remove(_keyLoggedInUserId);
     await _secureStorage.delete(key: _secureKeyPassword);
   }
+
+  /// JSON string of community leaders fetched from the server.
+  /// Port of `SharedPrefManager.getCommunityLeaders` / `setCommunityLeaders`.
+  String get communityLeaders => _prefs.getString(_keyCommunityLeaders) ?? '';
+
+  Future<void> setCommunityLeaders(String json) =>
+      _prefs.setString(_keyCommunityLeaders, json);
+
+  /// Name of the community/nation.
+  String get communityName => _prefs.getString(_keyCommunityName) ?? '';
+
+  Future<void> setCommunityName(String name) =>
+      _prefs.setString(_keyCommunityName, name);
+
+  /// Type of planet (community, nation, center).
+  String get planetType => _prefs.getString(_keyPlanetType) ?? '';
+
+  Future<void> setPlanetType(String type) =>
+      _prefs.setString(_keyPlanetType, type);
 }

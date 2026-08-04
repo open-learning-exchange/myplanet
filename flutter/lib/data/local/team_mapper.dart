@@ -38,6 +38,7 @@ class TeamMapper {
       services: Value(JsonUtils.getStringOrNull('services', doc)),
       rules: Value(JsonUtils.getStringOrNull('rules', doc)),
       createdBy: Value(JsonUtils.getStringOrNull('createdBy', doc)),
+      route: Value(JsonUtils.getStringOrNull('route', doc)),
       courses: Value(_courseIds(doc['courses'])),
       createdDate: Value(JsonUtils.getLong('createdDate', doc)),
       limit: Value(JsonUtils.getInt('limit', doc)),
