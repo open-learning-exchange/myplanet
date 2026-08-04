@@ -1,8 +1,12 @@
 package org.ole.planet.myplanet.utils
 
 import org.ole.planet.myplanet.model.ResourceListModel
+import java.lang.ref.WeakReference
 
 object ResourceSearchUtils {
+    private var cachedListRef: WeakReference<List<*>>? = null
+    private var cachedTitles: List<String?> = emptyList()
+
     fun <T> searchList(list: List<T>, query: String, titleSelector: (T) -> String?): List<T> {
         if (query.isEmpty()) return list
 
@@ -13,11 +17,17 @@ object ResourceSearchUtils {
         val startsWithQuery = mutableListOf<T>()
         val containsQuery = mutableListOf<T>()
 
-        for (item in list) {
-            val title = titleSelector(item)?.let { Utilities.normalizeText(it) } ?: continue
-            if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+        if (cachedListRef?.get() !== list) {
+            cachedListRef = WeakReference(list)
+            cachedTitles = list.map { titleSelector(it)?.let { t -> Utilities.normalizeText(t) } }
+        }
+
+        for (i in list.indices) {
+            val item = list[i]
+            val title = cachedTitles.getOrNull(i) ?: continue
+            if (title.startsWith(normalizedQuery)) {
                 startsWithQuery.add(item)
-            } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
+            } else if (normalizedQueryParts.all { title.contains(it) }) {
                 containsQuery.add(item)
             }
         }
