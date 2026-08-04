@@ -16,12 +16,7 @@ import 'ratings_repository.dart';
 /// Without this the port saved ratings locally but they never left the device —
 /// `RatingsRepository.pendingUploads()` existed but nothing called it.
 class RatingsUploader {
-  RatingsUploader(
-    this._api,
-    this._repository,
-    this._dao,
-    this._outbox,
-  );
+  RatingsUploader(this._api, this._repository, this._dao, this._outbox);
 
   static const type = 'rating';
 
@@ -37,9 +32,7 @@ class RatingsUploader {
       '${UrlUtils.credentialFreeDbUrl(config)}/ratings';
 
   /// Queues all pending ratings for upload.
-  Future<int> queuePending({
-    required ServerConfig config,
-  }) async {
+  Future<int> queuePending({required ServerConfig config}) async {
     final rows = await _repository.pendingUploads();
     for (final row in rows) {
       await _outbox.enqueue(

@@ -29,12 +29,7 @@ void main() {
     registerFallbackValue(config);
     outbox = OutboxRepository(database.outboxDao);
     repository = RatingsRepository(database.ratingDao);
-    uploader = RatingsUploader(
-      api,
-      repository,
-      database.ratingDao,
-      outbox,
-    );
+    uploader = RatingsUploader(api, repository, database.ratingDao, outbox);
   });
   tearDown(() => database.close());
 
@@ -105,7 +100,8 @@ void main() {
         authHeader: any(named: 'authHeader'),
       ),
     ).thenAnswer(
-      (_) async => NetworkSuccess<Map<String, dynamic>>({'id': 'r1', 'rev': '1-a'}),
+      (_) async =>
+          NetworkSuccess<Map<String, dynamic>>({'id': 'r1', 'rev': '1-a'}),
     );
 
     await uploader.handler(rowFor('rating-1'), {}, 'auth');
