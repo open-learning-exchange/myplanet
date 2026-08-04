@@ -1,16 +1,25 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
+import 'package:mocktail/mocktail.dart';
+import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/data/local/feedback_mapper.dart';
 import 'package:myplanet/repository/feedback_repository_impl.dart';
 
+class MockPlanetApi extends Mock implements PlanetApi {}
+
 void main() {
   late AppDatabase database;
   late FeedbackRepositoryImpl repository;
+  late MockPlanetApi api;
 
   setUp(() {
     database = AppDatabase.memory();
-    repository = FeedbackRepositoryImpl(feedbackDao: database.feedbackDao);
+    api = MockPlanetApi();
+    repository = FeedbackRepositoryImpl(
+      feedbackDao: database.feedbackDao,
+      planetApi: api,
+    );
   });
 
   tearDown(() async {
