@@ -430,45 +430,18 @@ class _BecomeMemberScreenState extends ConsumerState<BecomeMemberScreen> {
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                     const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: InkWell(
-                            onTap: () =>
-                                setState(() => _selectedGender = 'male'),
-                            child: Row(
-                              children: [
-                                Radio<String>(
-                                  value: 'male',
-                                  groupValue: _selectedGender,
-                                  onChanged: (value) {
-                                    setState(() => _selectedGender = value!);
-                                  },
-                                ),
-                                Text(l10n.male),
-                              ],
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: InkWell(
-                            onTap: () =>
-                                setState(() => _selectedGender = 'female'),
-                            child: Row(
-                              children: [
-                                Radio<String>(
-                                  value: 'female',
-                                  groupValue: _selectedGender,
-                                  onChanged: (value) {
-                                    setState(() => _selectedGender = value!);
-                                  },
-                                ),
-                                Text(l10n.female),
-                              ],
-                            ),
-                          ),
+                    SegmentedButton<String>(
+                      segments: [
+                        ButtonSegment(value: 'male', label: Text(l10n.male)),
+                        ButtonSegment(
+                          value: 'female',
+                          label: Text(l10n.female),
                         ),
                       ],
+                      selected: {_selectedGender},
+                      onSelectionChanged: (selection) {
+                        setState(() => _selectedGender = selection.first);
+                      },
                     ),
                     const SizedBox(height: 32),
 
