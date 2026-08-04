@@ -29,6 +29,8 @@ import 'personals/personals_screen.dart';
 import 'resources/resources_screen.dart';
 import 'references/references_screen.dart';
 import 'settings/settings_screen.dart';
+import 'settings/storage_breakdown_screen.dart';
+import 'settings/storage_category_detail_screen.dart';
 import 'sync/login_screen.dart';
 import 'sync/server_config_screen.dart';
 import 'user/profile_screen.dart';
@@ -67,6 +69,8 @@ class Routes {
   static const String profile = '/profile';
   static const String settings = '/profile/settings';
   static const String dictionary = '/profile/settings/dictionary';
+  static const String storageManagement = '/profile/settings/storage';
+  static const String storageCategory = '/profile/settings/storage/category';
   static const String notifications = '/profile/notifications';
   static const String life = '/life';
   static const String references = '/life/references';
@@ -236,6 +240,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                       GoRoute(
                         path: 'dictionary',
                         builder: (context, state) => const DictionaryScreen(),
+                      ),
+                      GoRoute(
+                        path: 'storage',
+                        builder: (context, state) => const StorageBreakdownScreen(),
+                        routes: [
+                          GoRoute(
+                            path: 'category',
+                            builder: (context, state) => StorageCategoryDetailScreen(
+                              extra: state.extra as StorageCategoryExtra,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
