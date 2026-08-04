@@ -51,27 +51,27 @@ class _SendSurveyScreenState extends ConsumerState<SendSurveyScreen> {
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : _users.isEmpty
-                ? Center(child: Text(l10n.noUsersAvailable))
-                : ListView.builder(
-                    itemCount: _users.length,
-                    itemBuilder: (context, index) {
-                      final user = _users[index];
-                      return CheckboxListTile(
-                        title: Text(user.name ?? l10n.unknown),
-                        subtitle: Text(user.email ?? ''),
-                        value: _selectedIndices.contains(index),
-                        onChanged: (selected) {
-                          setState(() {
-                            if (selected == true) {
-                              _selectedIndices.add(index);
-                            } else {
-                              _selectedIndices.remove(index);
-                            }
-                          });
-                        },
-                      );
+            ? Center(child: Text(l10n.noUsersAvailable))
+            : ListView.builder(
+                itemCount: _users.length,
+                itemBuilder: (context, index) {
+                  final user = _users[index];
+                  return CheckboxListTile(
+                    title: Text(user.name ?? l10n.unknown),
+                    subtitle: Text(user.email ?? ''),
+                    value: _selectedIndices.contains(index),
+                    onChanged: (selected) {
+                      setState(() {
+                        if (selected == true) {
+                          _selectedIndices.add(index);
+                        } else {
+                          _selectedIndices.remove(index);
+                        }
+                      });
                     },
-                  ),
+                  );
+                },
+              ),
       ),
       actions: [
         TextButton(
@@ -104,25 +104,24 @@ class _SendSurveyScreenState extends ConsumerState<SendSurveyScreen> {
 
     // Create submissions for each selected user
     for (final userId in selectedUserIds) {
-      final id = '${widget.surveyId}_${userId}_${DateTime.now().millisecondsSinceEpoch}';
-      await ref.read(submissionDaoProvider).upsertAll(
-        [
-          SubmissionsCompanion.insert(
-            id: id,
-            userId: Value(userId),
-            parentId: Value(widget.surveyId),
-            type: const Value('survey'),
-            status: const Value('pending'),
-            isUpdated: const Value(true),
-          ),
-        ],
-      );
+      final id =
+          '${widget.surveyId}_${userId}_${DateTime.now().millisecondsSinceEpoch}';
+      await ref.read(submissionDaoProvider).upsertAll([
+        SubmissionsCompanion.insert(
+          id: id,
+          userId: Value(userId),
+          parentId: Value(widget.surveyId),
+          type: const Value('survey'),
+          status: const Value('pending'),
+          isUpdated: const Value(true),
+        ),
+      ]);
     }
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.surveySentToUsers)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.surveySentToUsers)));
     }
   }
 }
