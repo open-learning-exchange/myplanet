@@ -14,18 +14,15 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.FragmentTeamLeaderboardBinding
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.TeamLeaderboardEntry
 import org.ole.planet.myplanet.repository.JoinedMemberData
 import org.ole.planet.myplanet.repository.ProgressRepository
-import org.ole.planet.myplanet.utils.TimeProvider
 
 @AndroidEntryPoint
 class TeamLeaderboardFragment : BaseTeamFragment() {
     @Inject
     lateinit var progressRepository: ProgressRepository
-    @Inject
-    lateinit var timeProvider: TimeProvider
 
     private var _binding: FragmentTeamLeaderboardBinding? = null
     private val binding get() = _binding!!
@@ -129,7 +126,7 @@ class TeamLeaderboardFragment : BaseTeamFragment() {
         binding.tvTeamProgress.text = getString(R.string.leaderboard_team_progress_value, teamDone, totalPossible)
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: News?) {}
 
     override fun clearImages() {}
 

@@ -5,7 +5,7 @@ import java.util.Calendar
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.JoinedMemberData
 
 class TeamLeaderboardCalculatorTest {
@@ -19,7 +19,7 @@ class TeamLeaderboardCalculatorTest {
     }
 
     private fun member(id: String, name: String): JoinedMemberData {
-        val user = RealmUser().apply {
+        val user = UserEntity().apply {
             this.id = id
             this.name = name
         }

@@ -269,21 +269,16 @@ class ProgressRepositoryImplTest {
     @Test
     fun `getCourseProgress sets completedAt only when the course is fully completed`() = testScope.runTest {
         val courseIds = listOf("course1", "course2")
-        val steps1 = listOf(RealmCourseStep().apply { courseId = "course1" })
-        val steps2 = listOf(RealmCourseStep().apply { courseId = "course2" }, RealmCourseStep().apply { courseId = "course2" })
+        val steps1 = listOf(CourseStep(id = "step1", courseId = "course1"))
+        val steps2 = listOf(CourseStep(id = "step2a", courseId = "course2"), CourseStep(id = "step2b", courseId = "course2"))
 
         // course1: single step, fully completed at createdDate=5000
-        val progresses1 = listOf(RealmCourseProgress().apply { courseId = "course1"; stepNum = 1; createdDate = 5000L })
+        val progresses1 = listOf(CourseProgress().apply { courseId = "course1"; stepNum = 1; createdDate = 5000L })
         // course2: only step 1 of 2 done, not fully completed
-        val progresses2 = listOf(RealmCourseProgress().apply { courseId = "course2"; stepNum = 1; createdDate = 3000L })
+        val progresses2 = listOf(CourseProgress().apply { courseId = "course2"; stepNum = 1; createdDate = 3000L })
 
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmCourseStep::class.java, any<Function1<RealmQuery<RealmCourseStep>, Unit>>())
-        } returns steps1 + steps2
-
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmCourseProgress::class.java, any<Function1<RealmQuery<RealmCourseProgress>, Unit>>())
-        } returns progresses1 + progresses2
+        coEvery { courseStepDao.getByCourseIds(courseIds) } returns steps1 + steps2
+        coEvery { courseProgressDao.getByUserAndCourseIds("user1", courseIds) } returns progresses1 + progresses2
 
         val result = repository.getCourseProgress(courseIds, "user1")
         advanceUntilIdle()

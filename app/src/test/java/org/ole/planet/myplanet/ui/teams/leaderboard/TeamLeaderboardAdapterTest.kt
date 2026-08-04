@@ -3,15 +3,15 @@ package org.ole.planet.myplanet.ui.teams.leaderboard
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamLeaderboardEntry
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.JoinedMemberData
 import org.ole.planet.myplanet.utils.DiffUtils
 
 class TeamLeaderboardAdapterTest {
 
     private fun visitInfo(userId: String): JoinedMemberData {
-        val user = RealmUser().apply { id = userId }
+        val user = UserEntity().apply { id = userId }
         return JoinedMemberData(
             user = user,
             visitCount = 0,

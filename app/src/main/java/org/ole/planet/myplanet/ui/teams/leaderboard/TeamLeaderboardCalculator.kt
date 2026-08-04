@@ -2,8 +2,8 @@ package org.ole.planet.myplanet.ui.teams.leaderboard
 
 import com.google.gson.JsonObject
 import java.util.Calendar
-import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamLeaderboardEntry
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.JoinedMemberData
 
 object TeamLeaderboardCalculator {
@@ -58,7 +58,7 @@ object TeamLeaderboardCalculator {
         return calendar.timeInMillis
     }
 
-    private fun displayName(member: RealmUser): String {
+    private fun displayName(member: UserEntity): String {
         val combined = "${member.firstName.orEmpty()} ${member.lastName.orEmpty()}".trim()
         return combined.ifBlank { member.name.orEmpty() }
     }
