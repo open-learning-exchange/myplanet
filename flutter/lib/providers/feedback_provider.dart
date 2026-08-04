@@ -104,6 +104,35 @@ final filteredFeedbackProvider = Provider<AsyncValue<List<FeedbackRow>>>((ref) {
   });
 });
 
+/// Hands every un-uploaded feedback row to the durable outbox.
+///
+/// Enqueuing rather than posting directly is what makes filing feedback work
+/// offline: the row and the queue entry are both on disk, and the drain runs
+/// when the app next resumes with a reachable server.
+///
+/// This is deliberately reachable outside the create form. A reply or a close
+/// sets `isUploaded = false` on an existing row, and the uploader queues by
+/// pending state rather than by what changed — so those paths need the same
+/// call. Without it they leave a row marked un-uploaded that nothing collects.
+class FeedbackQueue {
+  const FeedbackQueue(this._ref);
+
+  final Ref _ref;
+
+  Future<int> queuePending() async {
+    final config = _ref.read(serverConfigProvider);
+    if (config == null) return 0;
+    return _ref
+        .read(feedbackUploaderProvider)
+        .queuePending(
+          config: config,
+          userId: _ref.read(sessionProvider).valueOrNull?.id,
+        );
+  }
+}
+
+final feedbackQueueProvider = Provider<FeedbackQueue>(FeedbackQueue.new);
+
 /// State for feedback creation.
 class FeedbackCreateState {
   const FeedbackCreateState({
@@ -198,20 +227,7 @@ class FeedbackCreateNotifier extends Notifier<FeedbackCreateState> {
   }
 
   /// Hands every un-uploaded feedback to the durable outbox.
-  ///
-  /// Enqueuing rather than posting directly is what makes filing feedback work
-  /// offline: the row and the queue entry are both on disk, and the drain runs
-  /// when the app next resumes with a reachable server.
-  Future<int> queuePending() async {
-    final config = ref.read(serverConfigProvider);
-    if (config == null) return 0;
-    return ref
-        .read(feedbackUploaderProvider)
-        .queuePending(
-          config: config,
-          userId: ref.read(sessionProvider).valueOrNull?.id,
-        );
-  }
+  Future<int> queuePending() => ref.read(feedbackQueueProvider).queuePending();
 }
 
 final feedbackCreateProvider =
