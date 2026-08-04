@@ -34,6 +34,7 @@ import 'settings/storage_category_detail_screen.dart';
 import 'sync/login_screen.dart';
 import 'sync/server_config_screen.dart';
 import 'user/profile_screen.dart';
+import 'user/become_member_screen.dart';
 import 'submissions/submissions_screen.dart';
 import 'submissions/submission_detail_screen.dart';
 import 'surveys/surveys_screen.dart';
@@ -62,6 +63,7 @@ class Routes {
   static const String server = '/server';
   static const String onboarding = '/onboarding';
   static const String login = '/login';
+  static const String becomeMember = '/become-member';
   static const String resources = '/resources';
   static const String resourceViewer = '/resources/viewer/:resourceId';
   static const String courses = '/courses';
@@ -143,6 +145,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.login,
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: Routes.becomeMember,
+        builder: (context, state) => const BecomeMemberScreen(),
       ),
       GoRoute(
         path: Routes.resourceViewer,
