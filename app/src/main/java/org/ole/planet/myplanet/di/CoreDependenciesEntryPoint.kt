@@ -23,4 +23,5 @@ interface CoreDependenciesEntryPoint {
     fun apkLogDao(): ApkLogDao
     fun timeProvider(): TimeProvider
     fun resourcesRepository(): ResourcesRepository
+    fun realtimeSyncManager(): org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 }
