@@ -19,10 +19,10 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
 }
 
 ThemeMode _fromName(String name) => switch (name) {
-  'light' => ThemeMode.light,
-  'dark' => ThemeMode.dark,
-  _ => ThemeMode.system,
-};
+      'light' => ThemeMode.light,
+      'dark' => ThemeMode.dark,
+      _ => ThemeMode.system,
+    };
 
 final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(
   ThemeModeNotifier.new,

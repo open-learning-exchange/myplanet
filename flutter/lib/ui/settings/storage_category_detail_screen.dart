@@ -90,7 +90,8 @@ class _StorageCategoryDetailScreenState
         files: files,
         totalSizeBytes: totalSize,
       );
-    }).toList()..sortBy((item) => item.title);
+    }).toList()
+      ..sortBy((item) => item.title);
   }
 
   Future<Map<String, String>> _getResourceTitlesMap() async {
@@ -126,9 +127,8 @@ class _StorageCategoryDetailScreenState
   }
 
   Future<void> _deleteSelected() async {
-    final selected = _items
-        .where((i) => _selectedIds.contains(i.resourceId))
-        .toList();
+    final selected =
+        _items.where((i) => _selectedIds.contains(i.resourceId)).toList();
     final confirmed = await _showDeleteConfirmation(
       selected.length,
       'Delete ${selected.length} selected items?',
@@ -235,8 +235,8 @@ class _StorageCategoryDetailScreenState
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _items.isEmpty
-          ? Center(child: Text(l10n.noStorageUsed))
-          : _buildContent(context, l10n),
+              ? Center(child: Text(l10n.noStorageUsed))
+              : _buildContent(context, l10n),
     );
   }
 

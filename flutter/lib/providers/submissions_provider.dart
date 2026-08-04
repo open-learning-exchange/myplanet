@@ -17,10 +17,10 @@ final submissionProvider = StreamProvider.family<SubmissionRow?, String>(
 
 final submissionAnswersProvider =
     StreamProvider.family<List<SubmissionAnswerRow>, String>(
-      (ref, id) => ref.watch(submissionsRepositoryProvider).watchAnswers(id),
-    );
+  (ref, id) => ref.watch(submissionsRepositoryProvider).watchAnswers(id),
+);
 
 final submissionQuestionsProvider =
     StreamProvider.family<List<SubmissionQuestionRow>, String>(
-      (ref, id) => ref.watch(submissionsRepositoryProvider).watchQuestions(id),
-    );
+  (ref, id) => ref.watch(submissionsRepositoryProvider).watchQuestions(id),
+);

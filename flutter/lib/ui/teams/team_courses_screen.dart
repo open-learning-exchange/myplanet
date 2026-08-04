@@ -16,7 +16,7 @@ class TeamCoursesScreen extends ConsumerWidget {
     final courses = ref.watch(teamCoursesProvider(teamId));
     final canManage =
         ref.watch(teamMembershipsProvider).valueOrNull?[teamId]?.isLeader ??
-        false;
+            false;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.teamCourses)),
       body: courses.when(
@@ -58,8 +58,7 @@ class TeamCoursesScreen extends ConsumerWidget {
 
   Future<void> _chooseCourse(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
-    final linked =
-        ref.read(teamCoursesProvider(teamId)).valueOrNull ??
+    final linked = ref.read(teamCoursesProvider(teamId)).valueOrNull ??
         const <CourseRow>[];
     final linkedIds = linked.map((row) => row.id).toSet();
     final all =

@@ -127,11 +127,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 onPressed: _finishing
                     ? null
                     : lastPage
-                    ? _finish
-                    : () => _controller.nextPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOut,
-                      ),
+                        ? _finish
+                        : () => _controller.nextPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeOut,
+                            ),
                 child: Text(lastPage ? l10n.getStarted : l10n.next),
               ),
             ),

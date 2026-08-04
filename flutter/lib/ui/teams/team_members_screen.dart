@@ -46,32 +46,32 @@ class _MembersList extends StatelessWidget {
   final String emptyText;
   @override
   Widget build(BuildContext context) => rows.when(
-    loading: () => const Center(child: CircularProgressIndicator()),
-    error: (_, _) =>
-        Center(child: Text(AppLocalizations.of(context).membersUnavailable)),
-    data: (items) => items.isEmpty
-        ? Center(child: Text(emptyText))
-        : ListView.builder(
-            itemCount: items.length,
-            itemBuilder: (context, index) {
-              final row = items[index];
-              return ListTile(
-                leading: CircleAvatar(
-                  child: Text(
-                    (row.userId ?? '?').characters.first.toUpperCase(),
-                  ),
-                ),
-                title: Text(
-                  row.userId ?? AppLocalizations.of(context).unknownMember,
-                ),
-                subtitle: row.isLeader
-                    ? Text(AppLocalizations.of(context).leader)
-                    : null,
-                trailing: row.isLeader ? const Icon(Icons.star) : null,
-              );
-            },
-          ),
-  );
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, _) => Center(
+            child: Text(AppLocalizations.of(context).membersUnavailable)),
+        data: (items) => items.isEmpty
+            ? Center(child: Text(emptyText))
+            : ListView.builder(
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  final row = items[index];
+                  return ListTile(
+                    leading: CircleAvatar(
+                      child: Text(
+                        (row.userId ?? '?').characters.first.toUpperCase(),
+                      ),
+                    ),
+                    title: Text(
+                      row.userId ?? AppLocalizations.of(context).unknownMember,
+                    ),
+                    subtitle: row.isLeader
+                        ? Text(AppLocalizations.of(context).leader)
+                        : null,
+                    trailing: row.isLeader ? const Icon(Icons.star) : null,
+                  );
+                },
+              ),
+      );
 }
 
 class _RequestsList extends ConsumerWidget {

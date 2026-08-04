@@ -188,7 +188,8 @@ final feedbackUploaderProvider = Provider<FeedbackUploader>(
 
 final feedbackRepositoryProvider = Provider<FeedbackRepository>((ref) {
   final dao = ref.watch(feedbackDaoProvider);
-  return FeedbackRepositoryImpl(feedbackDao: dao);
+  final api = ref.watch(planetApiProvider);
+  return FeedbackRepositoryImpl(feedbackDao: dao, planetApi: api);
 });
 
 final submissionsRepositoryProvider = Provider<SubmissionsRepository>(
@@ -373,8 +374,8 @@ class ServerConfigNotifier extends Notifier<ServerConfig?> {
 
 final serverConfigProvider =
     NotifierProvider<ServerConfigNotifier, ServerConfig?>(
-      ServerConfigNotifier.new,
-    );
+  ServerConfigNotifier.new,
+);
 
 /// First-launch gate used by the declarative router instead of launching and
 /// finishing `OnboardingActivity` imperatively.

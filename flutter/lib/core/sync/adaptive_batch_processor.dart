@@ -10,10 +10,10 @@ class AdaptiveBatchProcessor {
     int? maxSize,
     this.slowThresholdMs = slowThreshold,
     this.fastThresholdMs = fastThreshold,
-  }) : maxSize = (maxSize ?? initialSize) < minSize
-           ? minSize
-           : (maxSize ?? initialSize),
-       _currentSize = initialSize {
+  })  : maxSize = (maxSize ?? initialSize) < minSize
+            ? minSize
+            : (maxSize ?? initialSize),
+        _currentSize = initialSize {
     _currentSize = _currentSize.clamp(minSize, this.maxSize);
   }
 

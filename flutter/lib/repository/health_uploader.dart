@@ -3,45 +3,49 @@ import '../core/network/network_result.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
-import '../data/local/feedback_mapper.dart';
-import 'feedback_repository.dart';
+import 'health_repository.dart';
 import 'outbox_drainer.dart';
 import 'outbox_repository.dart';
 
-/// Durable write-back for the `feedback` database.
+/// Durable write-back for the `health` database.
 ///
-/// Kotlin uploads feedback from `AutoSyncWorker` through
-/// `UploadManager.uploadFeedback`. There is no background scheduling here yet,
-/// so the outbox carries it instead: queued on write, drained on app resume.
-/// Without this the port filed feedback that never left the device —
-/// `getPendingFeedback` existed but nothing called it.
-class FeedbackUploader {
-  FeedbackUploader(this._api, this._repository, this._dao, this._outbox);
+/// Kotlin uploads examinations from `UploadManager.uploadExamResult` via
+/// `AutoSyncWorker`. There is no background scheduling here yet, so the outbox
+/// carries it instead: queued on write, drained on app resume.
+///
+/// Without this the port recorded examinations that never left the device —
+/// `getUpdated()`, `markUploaded()` and `serialize()` all existed and none of
+/// them had a caller. A clinic's readings would have lived on one handset.
+class HealthUploader {
+  HealthUploader(this._api, this._repository, this._dao, this._outbox);
 
-  static const type = 'feedback';
+  static const type = 'health';
 
   final PlanetApi _api;
-  final FeedbackRepository _repository;
-  final FeedbackDao _dao;
+  final HealthRepository _repository;
+  final HealthExaminationDao _dao;
   final OutboxRepository _outbox;
 
   /// Credential-free: this string is persisted in `outbox.endpoint`, a table
   /// that deliberately survives schema upgrades. The PIN travels as the
   /// `Authorization` header at send time instead.
   static String endpointFor(ServerConfig config) =>
-      '${UrlUtils.credentialFreeDbUrl(config)}/feedback';
+      '${UrlUtils.credentialFreeDbUrl(config)}/health';
 
   Future<int> queuePending({
     required ServerConfig config,
     String? userId,
   }) async {
-    final rows = await _repository.getPendingFeedback();
+    final rows = await _repository.getUpdated();
     for (final row in rows) {
       await _outbox.enqueue(
         uploadType: type,
         itemId: row.id,
         endpoint: endpointFor(config),
-        payload: FeedbackMapper.toDoc(row),
+        // `data` is already ciphertext by the time it is stored, so the
+        // payload leaves the device encrypted. Serializing the row rather than
+        // the form state is what keeps that true.
+        payload: HealthRepository.serialize(row),
         userId: userId,
       );
     }
@@ -62,8 +66,9 @@ class FeedbackUploader {
               'Upload response carried no rev',
             );
           }
-          // Recording the revision is what lets a later reply update the same
-          // document instead of conflicting against a stale `_rev`.
+          // Recording the revision is what lets the next examination update the
+          // same document instead of conflicting against a stale `_rev`; clearing
+          // `isUpdated` is what stops it being queued a second time.
           await _dao.markUploaded(row.itemId, rev);
         }
         return result;

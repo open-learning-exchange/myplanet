@@ -104,13 +104,13 @@ class ServerConfig {
 
   @override
   int get hashCode => Object.hash(
-    serverUrl,
-    pin,
-    couchDbUrl,
-    alternativeUrl,
-    isAlternativeUrl,
-    code,
-    id,
-    parentCode,
-  );
+        serverUrl,
+        pin,
+        couchDbUrl,
+        alternativeUrl,
+        isAlternativeUrl,
+        code,
+        id,
+        parentCode,
+      );
 }

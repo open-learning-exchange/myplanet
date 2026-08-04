@@ -179,9 +179,8 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
   Widget _buildRadioGroup(ExamQuestionRow question) {
     final selected = _answers[question.id]?.choiceIds;
     return RadioGroup<String>(
-      groupValue: (selected == null || selected.isEmpty)
-          ? null
-          : selected.first,
+      groupValue:
+          (selected == null || selected.isEmpty) ? null : selected.first,
       onChanged: (value) {
         if (value == null) return;
         setState(() => _recordChoices(question, [value]));
@@ -300,9 +299,7 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
     // Persist before showing anything. The attempt is the deliverable — a
     // dialog the user dismisses is not a record of it.
     try {
-      await ref
-          .read(submissionsRepositoryProvider)
-          .createExamDraft(
+      await ref.read(submissionsRepositoryProvider).createExamDraft(
             exam: exam,
             questions: _questions,
             userId: user.id,
@@ -406,5 +403,5 @@ final examProvider = FutureProvider.family<ExamRow?, String>((
 /// Provider for exam questions by exam ID.
 final examQuestionsProvider =
     FutureProvider.family<List<ExamQuestionRow>, String>((ref, examId) async {
-      return ref.watch(examDaoProvider).questionsFor(examId);
-    });
+  return ref.watch(examDaoProvider).questionsFor(examId);
+});

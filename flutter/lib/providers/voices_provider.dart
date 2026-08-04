@@ -36,16 +36,15 @@ final communityFeedProvider = StreamProvider<List<NewsRow>>((ref) async* {
     final filtered = query.isEmpty
         ? rows
         : rows
-              .where(
-                (row) =>
-                    (row.message ?? '').toLowerCase().contains(query) ||
-                    (row.userName ?? '').toLowerCase().contains(query),
-              )
-              .toList(growable: false);
+            .where(
+              (row) =>
+                  (row.message ?? '').toLowerCase().contains(query) ||
+                  (row.userName ?? '').toLowerCase().contains(query),
+            )
+            .toList(growable: false);
     // `getCommunityNews` stamps `sortDate` and the adapter orders by it, so a
     // post shared into the community surfaces by when it was shared.
-    final sorted = [...filtered]
-      ..sort(
+    final sorted = [...filtered]..sort(
         (a, b) => VoicesRepository.sortDateOf(
           b,
         ).compareTo(VoicesRepository.sortDateOf(a)),
@@ -84,15 +83,9 @@ final voiceReplyCountProvider = FutureProvider.family<int, String>((
 final teamVoicesProvider = StreamProvider.family<List<NewsRow>, String>((
   ref,
   teamId,
-) async* {
-  final user = ref.watch(sessionProvider).valueOrNull;
-  if (user == null) {
-    yield const [];
-    return;
-  }
-  final repository = ref.watch(voicesRepositoryProvider);
-
-  await for (final rows in repository.watchTopLevelMessages()) {
+) {
+  final dao = ref.watch(newsDaoProvider);
+  return dao.watchTopLevelMessages().map((rows) {
     final filtered = rows.where((row) {
       final viewIn = row.viewIn;
       if (viewIn == null || viewIn.isEmpty) return false;
@@ -111,8 +104,8 @@ final teamVoicesProvider = StreamProvider.family<List<NewsRow>, String>((
 
     // Sort newest first using the team post's time (not shared date).
     filtered.sort((a, b) => b.time.compareTo(a.time));
-    yield filtered;
-  }
+    return filtered;
+  });
 });
 
 class VoicesSyncNotifier extends SyncNotifier {
@@ -120,9 +113,10 @@ class VoicesSyncNotifier extends SyncNotifier {
   Future<SyncResult> runSync(
     ServerConfig config,
     void Function(SyncProgress) onProgress,
-  ) => ref
-      .read(voicesRepositoryProvider)
-      .sync(config: config, onProgress: onProgress);
+  ) =>
+      ref
+          .read(voicesRepositoryProvider)
+          .sync(config: config, onProgress: onProgress);
 }
 
 final voicesSyncProvider = NotifierProvider<VoicesSyncNotifier, SyncUiState>(
@@ -139,9 +133,7 @@ class VoicesActions {
   Future<String?> createPost(String message) async {
     final user = ref.read(sessionProvider).valueOrNull;
     if (user == null) return null;
-    final id = await ref
-        .read(voicesRepositoryProvider)
-        .createPost(
+    final id = await ref.read(voicesRepositoryProvider).createPost(
           message: message,
           userId: user.couchId ?? user.id,
           userName: user.name ?? '',
@@ -160,9 +152,7 @@ class VoicesActions {
   }) async {
     final user = ref.read(sessionProvider).valueOrNull;
     if (user == null) return null;
-    final id = await ref
-        .read(voicesRepositoryProvider)
-        .createPost(
+    final id = await ref.read(voicesRepositoryProvider).createPost(
           message: message,
           userId: user.couchId ?? user.id,
           userName: user.name ?? '',
@@ -184,9 +174,7 @@ class VoicesActions {
   }) async {
     final user = ref.read(sessionProvider).valueOrNull;
     if (user == null) return null;
-    final id = await ref
-        .read(voicesRepositoryProvider)
-        .postReply(
+    final id = await ref.read(voicesRepositoryProvider).postReply(
           parentId: parentId,
           message: message,
           userId: user.couchId ?? user.id,
@@ -232,9 +220,7 @@ class VoicesActions {
   Future<int> queuePending() async {
     final config = ref.read(serverConfigProvider);
     if (config == null) return 0;
-    return ref
-        .read(voicesUploaderProvider)
-        .queuePending(
+    return ref.read(voicesUploaderProvider).queuePending(
           config: config,
           userId: ref.read(sessionProvider).valueOrNull?.id,
         );

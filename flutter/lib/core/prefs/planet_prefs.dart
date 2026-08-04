@@ -21,15 +21,15 @@ import '../config/server_config.dart';
 /// during a synchronous `build()`.
 class PlanetPrefs {
   PlanetPrefs(this._prefs, {FlutterSecureStorage? secureStorage})
-    : _secureStorage = secureStorage ?? _defaultSecureStorage;
+      : _secureStorage = secureStorage ?? _defaultSecureStorage;
 
   /// `encryptedSharedPreferences` is opt-in; without it the plugin uses its own
   /// Keystore-backed AES store rather than the `EncryptedSharedPreferences` the
   /// Kotlin app uses via Tink. Requested explicitly so the two match.
   static const FlutterSecureStorage _defaultSecureStorage =
       FlutterSecureStorage(
-        aOptions: AndroidOptions(encryptedSharedPreferences: true),
-      );
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
 
   static const String _keyServerUrl = 'serverURL';
   static const String _keyAlternativeUrl = 'alternativeUrl';
