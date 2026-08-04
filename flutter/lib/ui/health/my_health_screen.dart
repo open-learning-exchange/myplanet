@@ -119,10 +119,11 @@ class _HealthContent extends StatelessWidget {
                     label: l10n.birthDate,
                     value: user.dob ?? '-',
                   ),
-                  _InfoRow(
-                    label: l10n.gender,
-                    value: user.gender ?? '-',
-                  ),
+                  if (user.gender != null)
+                    _InfoRow(
+                      label: l10n.gender,
+                      value: user.gender!,
+                    ),
                   if (user.phoneNumber != null)
                     _InfoRow(
                       label: l10n.phone,

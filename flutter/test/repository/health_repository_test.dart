@@ -82,7 +82,7 @@ void main() {
     expect(repository.parseConditions('invalid'), isEmpty);
   });
 
-  test('converts row to model', () {
+  test('converts row to model', () async {
     final companion = HealthExaminationsCompanion.insert(
       id: 'health-1',
       userId: const Value('user-1'),
@@ -91,10 +91,16 @@ void main() {
     );
 
     // Insert into database and get back
-    database.healthExaminationDao.upsert(companion);
-    final row = database.healthExaminationDao.getById('health-1');
+    await database.healthExaminationDao.upsert(companion);
+    final row = await database.healthExaminationDao.getById('health-1');
 
     expect(row, isNotNull);
+    expect(row!.temperature, 36.5);
+
+    // Test rowToModel conversion
+    final model = HealthRepository.rowToModel(row);
+    expect(model.temperature, 36.5);
+    expect(model.pulse, 72);
   });
 
   test('maps and caches server health documents', () async {
@@ -179,23 +185,19 @@ void main() {
   });
 
   test('gets examinations by user id', () async {
-    await repository.cacheDocuments([
-      {
-        '_id': 'health-1',
-        'userId': 'user-1',
-        'temperature': 36.5,
-      },
-      {
-        '_id': 'health-2',
-        'userId': 'user-1',
-        'temperature': 36.6,
-      },
-      {
-        '_id': 'health-3',
-        'userId': 'user-2',
-        'temperature': 36.7,
-      },
-    ]);
+    // Create examinations directly via repository
+    await repository.createExamination(
+      userId: 'user-1',
+      temperature: 36.5,
+    );
+    await repository.createExamination(
+      userId: 'user-1',
+      temperature: 36.6,
+    );
+    await repository.createExamination(
+      userId: 'user-2',
+      temperature: 36.7,
+    );
 
     final rows = await repository.getForUser('user-1');
     expect(rows.length, 2);
