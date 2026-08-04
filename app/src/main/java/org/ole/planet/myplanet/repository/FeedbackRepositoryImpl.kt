@@ -93,10 +93,6 @@ class FeedbackRepositoryImpl @Inject constructor(
         feedbackDao.upsert(feedback)
     }
 
-    override suspend fun insertFromJson(jsonObject: JsonObject) {
-        feedbackDao.upsert(mapToFeedback(jsonObject))
-    }
-
     override suspend fun insertFeedbackList(jsonObjects: List<JsonObject>) {
         feedbackDao.upsertAll(jsonObjects.map { mapToFeedback(it) })
     }

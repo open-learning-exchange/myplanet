@@ -61,10 +61,6 @@ class LifeRepositoryImpl @Inject constructor(
         return myLifeDao.getByUserId(userId)
     }
 
-    override suspend fun getVisibleMyLifeByUserId(userId: String?, ensureLatest: Boolean): List<MyLife> {
-        return myLifeDao.getVisibleByUserId(userId)
-    }
-
     override suspend fun getMyLifeForDashboard(userId: String, seedBase: List<MyLife>): List<MyLife> {
         val json = sharedPrefManager.rawPreferences.getString("$MY_LIFE_CACHE_PREFIX$userId", null)
         if (json != null) {

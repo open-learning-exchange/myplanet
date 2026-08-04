@@ -21,10 +21,8 @@ interface CoursesRepository {
     fun getCourseByCourseIdFlow(courseId: String): Flow<MyCourse?>
     fun getCourseDetailModel(courseId: String): Flow<CourseDetailModel?>
     suspend fun getCoursesByIds(courseIds: List<String>): List<MyCourse>
-    suspend fun getCourseOnlineResources(courseId: String?): List<MyLibrary>
     suspend fun getCourseOfflineResources(courseId: String?): List<MyLibrary>
     suspend fun getCourseOfflineResources(courseIds: List<String>): List<MyLibrary>
-    suspend fun getCourseExamCount(courseId: String?): Int
     suspend fun getCourseSteps(courseId: String): List<CourseStep>
     suspend fun batchInsertMyCourses(shelfId: String?, documents: List<JsonObject>): Int
     suspend fun markCoursesAdded(courseIds: List<String>, userId: String?): Result<Boolean>

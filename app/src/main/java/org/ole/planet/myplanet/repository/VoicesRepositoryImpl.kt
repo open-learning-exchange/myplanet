@@ -383,11 +383,6 @@ class VoicesRepositoryImpl @Inject constructor(
         saveConcatenatedLinksToPrefs()
     }
 
-    override suspend fun insertNewsFromJson(doc: JsonObject) {
-        newsDao.upsert(buildNewsFromJson(doc))
-        saveConcatenatedLinksToPrefs()
-    }
-
     private suspend fun buildNewsFromJson(doc: JsonObject, existing: Map<String?, News>? = null): News {
         val underscoreId = JsonUtils.getString("_id", doc)
         val news = (existing?.get(underscoreId) ?: newsDao.getByUnderscoreId(underscoreId))
