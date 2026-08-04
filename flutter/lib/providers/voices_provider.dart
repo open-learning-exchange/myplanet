@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/server_config.dart';
@@ -76,6 +78,43 @@ final voiceReplyCountProvider = FutureProvider.family<int, String>((
   return repository.replyCount(row?.docId ?? id);
 });
 
+/// The voice posts for a specific team.
+///
+/// Filters `watchTopLevelMessages` to those whose `viewIn` contains the team id.
+final teamVoicesProvider = StreamProvider.family<List<NewsRow>, String>((
+  ref,
+  teamId,
+) async* {
+  final user = ref.watch(sessionProvider).valueOrNull;
+  if (user == null) {
+    yield const [];
+    return;
+  }
+  final repository = ref.watch(voicesRepositoryProvider);
+
+  await for (final rows in repository.watchTopLevelMessages()) {
+    final filtered = rows.where((row) {
+      final viewIn = row.viewIn;
+      if (viewIn == null || viewIn.isEmpty) return false;
+      try {
+        final decoded = jsonDecode(viewIn);
+        if (decoded is! List) return false;
+        return decoded.any((element) {
+          if (element is! Map<String, dynamic>) return false;
+          final id = element['_id'];
+          return id == teamId;
+        });
+      } catch (_) {
+        return false;
+      }
+    }).toList();
+
+    // Sort newest first using the team post's time (not shared date).
+    filtered.sort((a, b) => b.time.compareTo(a.time));
+    yield filtered;
+  }
+});
+
 class VoicesSyncNotifier extends SyncNotifier {
   @override
   Future<SyncResult> runSync(
@@ -108,6 +147,32 @@ class VoicesActions {
           userName: user.name ?? '',
           planetCode: user.planetCode,
           parentCode: user.parentCode,
+        );
+    await queuePending();
+    return id;
+  }
+
+  /// Creates a voice post visible only to members of the specified team.
+  Future<String?> createTeamPost({
+    required String teamId,
+    required String teamName,
+    required String message,
+  }) async {
+    final user = ref.read(sessionProvider).valueOrNull;
+    if (user == null) return null;
+    final id = await ref
+        .read(voicesRepositoryProvider)
+        .createPost(
+          message: message,
+          userId: user.couchId ?? user.id,
+          userName: user.name ?? '',
+          planetCode: user.planetCode,
+          parentCode: user.parentCode,
+          messageType: 'team',
+          messagePlanetCode: user.planetCode,
+          viewInId: teamId,
+          viewInSection: 'teams',
+          viewInName: teamName,
         );
     await queuePending();
     return id;

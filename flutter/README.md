@@ -52,6 +52,11 @@ Phase 26 adds chat and feedback sync-in:
 - **feedback**: `FeedbackRepository.sync()` fetches `feedback` from CouchDB, calling the previously
   uncalled `insertFromJson`
 
+Phase 27 adds team voices:
+- **team voices**: `TeamVoicesScreen` shows discussion posts scoped to a specific team, with
+  `teamVoicesProvider` filtering by team ID in `viewIn`, and `createTeamPost()` for composing
+  team-specific posts
+
 ## Getting started
 
 ```bash
