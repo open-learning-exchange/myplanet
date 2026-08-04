@@ -115,20 +115,11 @@ class _HealthContent extends StatelessWidget {
                   const SizedBox(height: 16),
                   const Divider(),
                   const SizedBox(height: 8),
-                  _InfoRow(
-                    label: l10n.birthDate,
-                    value: user.dob ?? '-',
-                  ),
+                  _InfoRow(label: l10n.birthDate, value: user.dob ?? '-'),
                   if (user.gender != null)
-                    _InfoRow(
-                      label: l10n.gender,
-                      value: user.gender!,
-                    ),
+                    _InfoRow(label: l10n.gender, value: user.gender!),
                   if (user.phoneNumber != null)
-                    _InfoRow(
-                      label: l10n.phone,
-                      value: user.phoneNumber!,
-                    ),
+                    _InfoRow(label: l10n.phone, value: user.phoneNumber!),
                 ],
               ),
             ),
@@ -318,13 +309,11 @@ class _InfoRow extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
+                color: Theme.of(context).colorScheme.outline,
+              ),
             ),
           ),
-          Expanded(
-            child: Text(value),
-          ),
+          Expanded(child: Text(value)),
         ],
       ),
     );
@@ -357,15 +346,12 @@ class _VitalSignChip extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelSmall,
-              ),
+              Text(label, style: Theme.of(context).textTheme.labelSmall),
               Text(
                 value,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -382,8 +368,9 @@ class _ExaminationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final date =
-        exam.date > 0 ? DateTime.fromMillisecondsSinceEpoch(exam.date) : null;
+    final date = exam.date > 0
+        ? DateTime.fromMillisecondsSinceEpoch(exam.date)
+        : null;
 
     return Container(
       width: 140,
