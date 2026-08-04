@@ -215,7 +215,8 @@ class _HealthContent extends StatelessWidget {
                           label: l10n.weight,
                           value: '${examination.weight} kg',
                         ),
-                        if (examination.bp != null && examination.bp!.isNotEmpty)
+                        if (examination.bp != null &&
+                            examination.bp!.isNotEmpty)
                           _VitalSignChip(
                             icon: Icons.bloodtype,
                             label: l10n.bloodPressure,
@@ -381,9 +382,8 @@ class _ExaminationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final date = exam.date > 0
-        ? DateTime.fromMillisecondsSinceEpoch(exam.date)
-        : null;
+    final date =
+        exam.date > 0 ? DateTime.fromMillisecondsSinceEpoch(exam.date) : null;
 
     return Container(
       width: 140,

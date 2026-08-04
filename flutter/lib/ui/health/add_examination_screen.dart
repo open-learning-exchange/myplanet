@@ -82,21 +82,17 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
       examId: widget.examinationId,
     );
 
-    final state =
-        ref.read(examinationNotifierProvider(params));
+    final state = ref.read(examinationNotifierProvider(params));
 
     if (state.examination != null) {
       final exam = state.examination!;
       setState(() {
-        _temperatureController.text = exam.temperature > 0
-            ? exam.temperature.toString()
-            : '';
+        _temperatureController.text =
+            exam.temperature > 0 ? exam.temperature.toString() : '';
         _pulseController.text = exam.pulse > 0 ? exam.pulse.toString() : '';
         _bpController.text = exam.bp ?? '';
-        _heightController.text =
-            exam.height > 0 ? exam.height.toString() : '';
-        _weightController.text =
-            exam.weight > 0 ? exam.weight.toString() : '';
+        _heightController.text = exam.height > 0 ? exam.height.toString() : '';
+        _weightController.text = exam.weight > 0 ? exam.weight.toString() : '';
         _visionController.text = exam.vision ?? '';
         _hearingController.text = exam.hearing ?? '';
         _selfExamination = exam.selfExamination;

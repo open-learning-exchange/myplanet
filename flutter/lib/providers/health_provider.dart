@@ -245,8 +245,8 @@ class ExaminationNotifier extends StateNotifier<ExaminationState> {
 }
 
 /// Provider for examination form state.
-final examinationNotifierProvider = StateNotifierProvider.autoDispose
-    .family<ExaminationNotifier, ExaminationState, ({String? userId, String? examId})>(
+final examinationNotifierProvider = StateNotifierProvider.autoDispose.family<
+    ExaminationNotifier, ExaminationState, ({String? userId, String? examId})>(
   (ref, params) {
     final repo = ref.watch(healthRepositoryProvider);
     return ExaminationNotifier(repo, params.userId, params.examId);

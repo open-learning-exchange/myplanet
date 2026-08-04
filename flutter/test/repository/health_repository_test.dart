@@ -253,8 +253,12 @@ void main() {
       }
       return NetworkSuccess<Map<String, dynamic>>({
         'rows': [
-          {'doc': {'_id': 'health-1', 'temperature': 36.5}},
-          {'doc': {'_id': 'health-2', 'temperature': 36.6}},
+          {
+            'doc': {'_id': 'health-1', 'temperature': 36.5}
+          },
+          {
+            'doc': {'_id': 'health-2', 'temperature': 36.6}
+          },
         ],
       });
     });
