@@ -228,28 +228,6 @@ class UploadManager @Inject constructor(
         }
     }
 
-    suspend fun uploadMyPersonal(personal: Personal): String {
-        if (!personal.isUploaded) {
-            return withContext(dispatcherProvider.io) {
-                try {
-                    val result = personalsRepository.uploadPersonalDocument(personal)
-                    if (result != null) {
-                        val (id, rev) = result
-                        uploadAttachment(id, rev, personal) { }
-                        "Personal resource uploaded successfully"
-                    } else {
-                        "Failed to upload personal resource: No response"
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Exception in UploadManager", e)
-                    "Unable to upload resource: ${e.message}"
-                }
-            }
-        } else {
-            return "Resource already uploaded"
-        }
-    }
-
     suspend fun uploadTeamTask() {
         uploadCoordinator.uploadRoom(uploadConfigs.TeamTask)
     }
