@@ -23,4 +23,5 @@ interface CoreDependenciesEntryPoint {
     fun apkLogDao(): ApkLogDao
     fun timeProvider(): TimeProvider
     fun resourcesRepository(): ResourcesRepository
+    fun communityRepository(): org.ole.planet.myplanet.repository.CommunityRepository
 }

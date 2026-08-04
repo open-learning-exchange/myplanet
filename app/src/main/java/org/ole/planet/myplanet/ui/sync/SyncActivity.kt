@@ -45,7 +45,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.ServerAddress
-import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.BroadcastService
@@ -123,9 +122,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     private var isProgressDialogShowing = false
     @Inject
     lateinit var configurationsRepository: ConfigurationsRepository
-
-    @Inject
-    lateinit var communityRepository: CommunityRepository
 
     @Inject
     open lateinit var resourcesRepository: ResourcesRepository
