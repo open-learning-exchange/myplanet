@@ -121,6 +121,14 @@ class AppDatabase extends _$AppDatabase {
     // letting the next sync's `deleteNotIn` evict the stale cache rows keeps
     // the drop-and-resync policy without discarding the local writes.
     'teams',
+    // Not local-authority in principle — CouchDB holds every chat — but the
+    // policy's premise is that *the next sync refills the table*, and nothing
+    // calls `insertChatHistoryFromSync`. Until a chat sync exists, dropping
+    // this discards the user's entire history with no way to get it back, so
+    // the practical test ("can a sync restore this?") governs, not the
+    // nominal one. A failed continuation also stores the query here with an
+    // empty response, which never reaches the server at all.
+    'chat_history',
   };
 
   @override

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 
 import '../core/network/network_result.dart';
 import '../data/api/planet_api.dart';
@@ -45,7 +44,6 @@ class ChatRepositoryImpl implements ChatRepository {
     required AiProviderConfig aiProvider,
   }) async {
     try {
-      final id = _generateId();
       final request = {
         'data': {
           'user': user,
@@ -68,10 +66,22 @@ class ChatRepositoryImpl implements ChatRepository {
       final chatResponse = response['chat'] as String? ?? '';
       final couchResponse = response['couchdb'] as Map<String, dynamic>?;
       final rev = couchResponse?['rev'] as String? ?? '';
+      // The server creates the CouchDB document and assigns its `_id`; the id
+      // must come back from that response, as `couchDBResponse.id` does in the
+      // Kotlin. Minting one locally instead left the row addressed by an id no
+      // document has, so every follow-up message — which sends this id as
+      // `_id` — targeted nothing, and a sync could not match the row either.
+      final id = couchResponse?['id'] as String?;
+      if (id == null || id.isEmpty) {
+        // Kotlin falls back to `""`, which stores an unaddressable row that
+        // also collides with any other on the primary key. Failing is closer
+        // to the truth: without an id there is no conversation to continue.
+        return const ChatError('Chat was saved without a document id');
+      }
 
-      // Save to local database
       final doc = ChatMapper.buildNewChatDoc(
         id: id,
+        rev: rev,
         user: user,
         query: query,
         response: chatResponse,
@@ -223,15 +233,5 @@ class ChatRepositoryImpl implements ChatRepository {
       case NetworkException():
         return null;
     }
-  }
-
-  String _generateId() {
-    // The suffix has to be independent of the timestamp: deriving it from
-    // `now` made it a second copy of the same value, so two chats started in
-    // the same millisecond collided on the primary key and the second
-    // overwrote the first.
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final random = Random.secure().nextInt(1 << 32).toRadixString(16);
-    return 'chat_$now-$random';
   }
 }
