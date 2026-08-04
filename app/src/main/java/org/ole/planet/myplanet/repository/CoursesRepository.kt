@@ -65,4 +65,5 @@ interface CoursesRepository {
     suspend fun bulkInsertFromSync(jsonArray: JsonArray)
     suspend fun flushPendingCourseResources()
     suspend fun insertCertificationsFromSync(jsonArray: JsonArray)
+    suspend fun getCoursesWithSteps(courseIds: List<String>): List<MyCourse>
 }

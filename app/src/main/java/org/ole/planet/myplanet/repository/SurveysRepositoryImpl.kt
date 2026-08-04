@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
-import org.ole.planet.myplanet.data.room.dao.TeamDao
+
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
@@ -48,7 +48,7 @@ class SurveysRepositoryImpl @Inject constructor(
     private val examDao: ExamDao,
     private val questionDao: QuestionDao,
     private val submissionDao: SubmissionDao,
-    private val teamDao: TeamDao,
+    private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository>,
 ) : SurveysRepository {
 
     private val reminderPrefs: SharedPreferences by lazy {
@@ -79,7 +79,7 @@ class SurveysRepositoryImpl @Inject constructor(
         val userJsonString = createUserJsonString(userModel, planetCode, isTeam, teamId)
 
         if (isTeam && !teamId.isNullOrEmpty()) {
-            val teamName = teamDao.getById(teamId)?.name ?: teamDao.getByTeamId(teamId)?.name
+            val teamName = teamsRepositoryLazy.get().getTeamNameById(teamId)
             if (!teamName.isNullOrEmpty()) {
                 val existingSurvey = examDao.getByTeamIdAndType(teamId, "surveys")
                     .firstOrNull { it.sourceSurveyId == examId }

@@ -695,6 +695,16 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getCoursesWithSteps(courseIds: List<String>): List<org.ole.planet.myplanet.model.MyCourse> {
+        if (courseIds.isEmpty()) return emptyList()
+        val stepsByCourseId = courseStepDao.getByCourseIds(courseIds)
+            .groupBy { it.courseId }
+            .mapValues { (_, steps) -> steps.map { it } }
+        return courseDao.getByCourseIds(courseIds).map { courseEntity ->
+            courseEntity.apply { val steps = stepsByCourseId[courseId].orEmpty(); courseSteps = steps.toMutableList(); setNumberOfSteps(steps.size) }
+        }
+    }
+
     override suspend fun insertCertificationsFromSync(jsonArray: JsonArray) {
         val certifications = ArrayList<Certification>(jsonArray.size())
         for (j in jsonArray) {

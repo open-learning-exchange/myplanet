@@ -21,9 +21,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.room.AppDatabase
-import org.ole.planet.myplanet.data.room.dao.CourseDao
-import org.ole.planet.myplanet.data.room.dao.CourseStepDao
-import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
@@ -64,13 +61,11 @@ class TeamsRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val userRepository: UserRepository,
     private val resourcesRepositoryLazy: dagger.Lazy<ResourcesRepository>,
+    private val coursesRepositoryLazy: dagger.Lazy<CoursesRepository>,
     private val timeProvider: TimeProvider,
     private val teamLogDao: TeamLogDao,
     private val teamTaskDao: TeamTaskDao,
-    private val myLibraryDao: MyLibraryDao,
     private val teamDao: TeamDao,
-    private val courseDao: CourseDao,
-    private val courseStepDao: CourseStepDao,
     private val appDatabase: AppDatabase,
 ) : TeamsRepository, TeamsSyncRepository {
     override fun getTasksFlow(userId: String?): Flow<List<TeamTask>> {
@@ -80,14 +75,8 @@ class TeamsRepositoryImpl @Inject constructor(
     override suspend fun getTeamsForUpload(): List<TeamUploadData> {
         val teams = teamDao.getAll().filter { it.updated }.map { it }
         val courseIds = teams.flatMap { it.courses.orEmpty() }.filter { it.isNotBlank() }.distinct()
-        val courses = getCoursesForSerialization(courseIds)
-        val coursesResourcesMap = if (courseIds.isNotEmpty()) {
-            myLibraryDao.getByCourseIds(courseIds)
-                .groupBy { it.courseId ?: "" }
-                .mapValues { (_, items) -> items.groupBy { it.stepId } }
-        } else {
-            emptyMap()
-        }
+        val courses = coursesRepositoryLazy.get().getCoursesWithSteps(courseIds)
+        val coursesResourcesMap = resourcesRepositoryLazy.get().getLibraryItemsByCourseIdsGrouped(courseIds)
 
         return teams.map { team ->
             TeamUploadData(
@@ -1183,6 +1172,26 @@ class TeamsRepositoryImpl @Inject constructor(
         return successorMember?.userId?.let { userMap[it] }
     }
 
+
+    override suspend fun getTeamNameById(teamId: String): String? {
+        return teamDao.getById(teamId)?.name ?: teamDao.getByTeamId(teamId)?.name
+    }
+
+    override suspend fun createResourceLink(teamId: String, title: String?, resourceId: String, planetCode: String?) {
+        teamDao.upsert(
+            MyTeam(
+                _id = java.util.UUID.randomUUID().toString(),
+                teamId = teamId,
+                title = title,
+                resourceId = resourceId,
+                sourcePlanet = planetCode,
+                teamType = "local",
+                teamPlanetCode = planetCode,
+                docType = "resourceLink",
+                updated = true,
+            )
+        )
+    }
     override suspend fun getTeamCreator(teamId: String): String? {
         if (teamId.isBlank()) return null
         return teamDao.getById(teamId)?.userId
@@ -1362,16 +1371,6 @@ class TeamsRepositoryImpl @Inject constructor(
             }
         }
         insertTeamLogs(documentList)
-    }
-
-    private suspend fun getCoursesForSerialization(courseIds: List<String>): List<org.ole.planet.myplanet.model.MyCourse> {
-        if (courseIds.isEmpty()) return emptyList()
-        val stepsByCourseId = courseStepDao.getByCourseIds(courseIds)
-            .groupBy { it.courseId }
-            .mapValues { (_, steps) -> steps.map { it } }
-        return courseDao.getByCourseIds(courseIds).map { courseEntity ->
-            courseEntity.apply { val steps = stepsByCourseId[courseId].orEmpty(); courseSteps = steps.toMutableList(); setNumberOfSteps(steps.size) }
-        }
     }
 
     private suspend fun getTeamEntityByAnyId(id: String): MyTeam? {

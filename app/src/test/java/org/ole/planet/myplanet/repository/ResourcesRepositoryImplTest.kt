@@ -46,7 +46,7 @@ class ResourcesRepositoryImplTest {
     private val teamsSyncRepositoryLazy: Lazy<TeamsSyncRepository> = mockk(relaxed = true)
     private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
-    private val teamDao: TeamDao = mockk(relaxed = true)
+    private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository> = dagger.Lazy { mockk<TeamsRepository>(relaxed = true) }
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
 
     private lateinit var repository: ResourcesRepositoryImpl
@@ -67,7 +67,7 @@ class ResourcesRepositoryImplTest {
             teamsSyncRepositoryLazy,
             myLibraryDao,
             userRepository,
-            teamDao,
+            teamsRepositoryLazy,
             userSessionManager
         )
     }

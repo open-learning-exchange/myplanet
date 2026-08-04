@@ -111,4 +111,5 @@ interface UserRepository {
     suspend fun getAchievementData(userId: String, planetCode: String): AchievementData
     suspend fun getAchievementsForUpload(): List<JsonObject>
     suspend fun markAchievementUploaded(id: String, rev: String?)
+    suspend fun upsertUserEntity(user: UserEntity)
 }

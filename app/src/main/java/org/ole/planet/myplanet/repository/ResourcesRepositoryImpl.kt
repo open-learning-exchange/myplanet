@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
-import org.ole.planet.myplanet.data.room.dao.TeamDao
+
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.ResourceItem
@@ -45,7 +45,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val teamsSyncRepositoryLazy: dagger.Lazy<TeamsSyncRepository>,
     private val myLibraryDao: MyLibraryDao,
     private val userRepository: UserRepository,
-    private val teamDao: TeamDao,
+    private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository>,
     private val userSessionManager: UserSessionManager
 ) : ResourcesRepository {
 
@@ -629,6 +629,13 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getLibraryItemsByCourseIdsGrouped(courseIds: List<String>): Map<String, Map<String?, List<MyLibrary>>> {
+        if (courseIds.isEmpty()) return emptyMap()
+        return myLibraryDao.getByCourseIds(courseIds)
+            .groupBy { it.courseId ?: "" }
+            .mapValues { (_, items) -> items.groupBy { it.stepId } }
+    }
+
     override suspend fun getPendingResourceUploads(): List<MyLibrary> {
         return myLibraryDao.getPendingUploads()
     }
@@ -648,18 +655,11 @@ class ResourcesRepositoryImpl @Inject constructor(
         if (library.isPrivate && !library.privateFor.isNullOrBlank()) {
             val resolvedPlanetCode = planetCode?.takeIf { it.isNotBlank() }
                 ?: sharedPrefManager.getPlanetCode()
-            teamDao.upsert(
-                MyTeam(
-                    _id = UUID.randomUUID().toString(),
-                    teamId = library.privateFor,
-                    title = library.title,
-                    resourceId = remoteId,
-                    sourcePlanet = resolvedPlanetCode,
-                    teamType = "local",
-                    teamPlanetCode = resolvedPlanetCode,
-                    docType = "resourceLink",
-                    updated = true,
-                )
+            teamsRepositoryLazy.get().createResourceLink(
+                teamId = library.privateFor ?: "",
+                title = library.title,
+                resourceId = remoteId,
+                planetCode = resolvedPlanetCode
             )
         }
         return true

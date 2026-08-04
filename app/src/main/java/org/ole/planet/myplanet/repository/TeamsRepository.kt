@@ -152,4 +152,6 @@ interface TeamsRepository {
     suspend fun getAvailableResourcesToAdd(teamId: String): List<MyLibrary>
 
     suspend fun getLastVisit(userName: String?, teamId: String?): Long?
+    suspend fun getTeamNameById(teamId: String): String?
+    suspend fun createResourceLink(teamId: String, title: String?, resourceId: String, planetCode: String?)
 }

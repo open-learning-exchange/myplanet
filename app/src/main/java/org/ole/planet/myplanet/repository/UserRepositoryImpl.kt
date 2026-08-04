@@ -1213,6 +1213,10 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun upsertUserEntity(user: UserEntity) {
+        userDao.upsert(user)
+    }
+
     override suspend fun markAchievementUploaded(id: String, rev: String?) {
         achievementDao.markUploaded(id, rev)
     }

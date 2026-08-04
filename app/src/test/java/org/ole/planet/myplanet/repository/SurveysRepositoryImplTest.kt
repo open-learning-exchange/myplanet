@@ -52,7 +52,7 @@ class SurveysRepositoryImplTest {
     private val examDao: ExamDao = mockk(relaxed = true)
     private val questionDao: QuestionDao = mockk(relaxed = true)
     private val submissionDao: SubmissionDao = mockk(relaxed = true)
-    private val teamDao: TeamDao = mockk(relaxed = true)
+    private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository> = dagger.Lazy { mockk<TeamsRepository>(relaxed = true) }
 
     @Before
     fun setup() {
