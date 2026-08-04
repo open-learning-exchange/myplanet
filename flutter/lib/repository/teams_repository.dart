@@ -167,7 +167,8 @@ class TeamsRepository {
 
   /// Get team links/services from the community.
   /// These are teams with docType='service' that have a route field.
-  Stream<List<TeamRow>> watchTeamLinks() => _dao.watchTeamDocumentsByType('service');
+  Stream<List<TeamRow>> watchTeamLinks() =>
+      _dao.watchTeamDocumentsByType('service');
 
   Future<TeamRow?> createJoinRequest({
     required String teamId,

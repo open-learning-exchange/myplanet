@@ -19,9 +19,7 @@ class LeadersScreen extends ConsumerWidget {
     final leaders = _parseLeaders(ref);
 
     if (leaders.isEmpty) {
-      return Scaffold(
-        body: Center(child: Text(l10n.noLeadersAvailable)),
-      );
+      return Scaffold(body: Center(child: Text(l10n.noLeadersAvailable)));
     }
 
     return Scaffold(
@@ -39,7 +37,7 @@ class LeadersScreen extends ConsumerWidget {
     );
   }
 
-  List<_LeaderInfo> _parseLeaders(WidgetRef ref) {
+  List<LeaderInfo> _parseLeaders(WidgetRef ref) {
     final json = ref.read(planetPrefsProvider).communityLeaders;
     if (json.isEmpty) return [];
 
@@ -48,8 +46,10 @@ class LeadersScreen extends ConsumerWidget {
       final docs = doc['docs'] as List<dynamic>? ?? [];
       return docs.map((d) {
         final map = d as Map<String, dynamic>;
-        return _LeaderInfo(
-          id: (map['_id'] as String?) ?? 'org.couchdb.user:${map['name'] ?? ''}',
+        return LeaderInfo(
+          id:
+              (map['_id'] as String?) ??
+              'org.couchdb.user:${map['name'] ?? ''}',
           name: map['name'] as String? ?? '',
           firstName: map['firstName'] as String?,
           lastName: map['lastName'] as String?,
@@ -64,14 +64,14 @@ class LeadersScreen extends ConsumerWidget {
 
 /// Minimal leader info parsed from the community leaders JSON.
 /// Mirrors the fields `LeadersFragment` reads from `UserEntity`.
-class _LeaderInfo {
+class LeaderInfo {
   final String id;
   final String name;
   final String? firstName;
   final String? lastName;
   final String? email;
 
-  const _LeaderInfo({
+  const LeaderInfo({
     required this.id,
     required this.name,
     this.firstName,
@@ -92,7 +92,7 @@ class _LeaderInfo {
 class LeaderCard extends StatelessWidget {
   const LeaderCard({required this.leader, super.key});
 
-  final _LeaderInfo leader;
+  final LeaderInfo leader;
 
   @override
   Widget build(BuildContext context) {

@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../core/utils/json_utils.dart';
 import 'app_database.dart';
+import 'converters.dart';
 
 /// Port of `StepExam.insertCourseStepsExams` and `ExamQuestion.insertExamQuestions`.
 class ExamMapper {
@@ -23,20 +24,27 @@ class ExamMapper {
         final question = rawQuestions[index];
         if (question is! Map<String, dynamic>) continue;
         final questionId = JsonUtils.getString('id', question);
-        final questionIdValue = questionId.isEmpty ? '${id}_$index' : questionId;
+        // `$examId-$index`, matching `ExamQuestion.insertExamQuestions`.
+        final questionIdValue = questionId.isEmpty ? '$id-$index' : questionId;
+        final choices = _parseChoices(question['choices']);
         questions.add(
           ExamQuestionsCompanion.insert(
             id: questionIdValue,
             examId: id,
-            header: Value(JsonUtils.getStringOrNull('header', question)),
+            // The Kotlin reads `title` here, not `header`; a document has no
+            // `header` key, so reading one left every question unlabelled.
+            header: Value(JsonUtils.getStringOrNull('title', question)),
             body: Value(JsonUtils.getStringOrNull('body', question)),
             type: Value(JsonUtils.getStringOrNull('type', question)),
-            choices: Value(JsonUtils.getStringList('choices', question)),
-            correctChoices:
-                Value(_parseCorrectChoices(question['choices'], question)),
+            choices: Value(choices),
+            correctChoices: Value(_parseCorrectChoices(choices, question)),
             marks: Value(JsonUtils.getStringOrNull('marks', question)),
-            hasOtherOption: Value(JsonUtils.getBool('hasOtherOption', question)),
-            scaleMax: Value(JsonUtils.getInt('scaleMax', question).let((v) => v <= 0 ? 9 : v)),
+            hasOtherOption: Value(
+              JsonUtils.getBool('hasOtherOption', question),
+            ),
+            scaleMax: Value(
+              JsonUtils.getInt('scaleMax', question).let((v) => v <= 0 ? 9 : v),
+            ),
             position: index,
           ),
         );
@@ -55,7 +63,9 @@ class ExamMapper {
         adoptionDate: Value(JsonUtils.getLong('adoptionDate', doc)),
         createdBy: Value(JsonUtils.getStringOrNull('createdBy', doc)),
         totalMarks: Value(JsonUtils.getInt('totalMarks', doc)),
-        passingPercentage: Value(JsonUtils.getStringOrNull('passingPercentage', doc)),
+        passingPercentage: Value(
+          JsonUtils.getStringOrNull('passingPercentage', doc),
+        ),
         sourcePlanet: Value(JsonUtils.getStringOrNull('sourcePlanet', doc)),
         isFromNation: Value(JsonUtils.getBool('isFromNation', doc)),
         teamId: Value(JsonUtils.getStringOrNull('teamId', doc)),
@@ -67,47 +77,56 @@ class ExamMapper {
     );
   }
 
-  /// Parse correct choices from the question's choices array.
-  /// The correctChoice is a list of IDs that match choice IDs.
+  static List<ExamChoice> _parseChoices(Object? raw) {
+    if (raw is! List) return const [];
+    return raw
+        .map(ExamChoice.fromJson)
+        .whereType<ExamChoice>()
+        .toList(growable: false);
+  }
+
+  /// The lowercased choice **ids** that count as correct.
+  ///
+  /// `correctChoice` is either a list of ids (multi-select) or a single id
+  /// (single-select). Kotlin's single-id branch stores the choice's `"res"`
+  /// field, but the choice objects carry the display label under `"text"` —
+  /// `ExamTakingFragment.addCompoundButton` reads `getString("text", choice)`
+  /// — so that lookup returns `""` and the question becomes ungradeable.
+  /// Recording the id in both branches keeps grading consistent with what an
+  /// answer actually stores: the id of the chosen option.
   static List<String> _parseCorrectChoices(
-    Object? choicesObj,
+    List<ExamChoice> choices,
     Map<String, dynamic> question,
   ) {
     final correctChoice = question['correctChoice'];
-    if (correctChoice == null) return [];
+    if (correctChoice == null) return const [];
 
-    final List<String> result = [];
-
-    // If correctChoice is an array of IDs
     if (correctChoice is List) {
-      for (var i = 0; i < correctChoice.length; i++) {
-        final id = correctChoice[i]?.toString()?.toLowerCase() ?? '';
-        if (id.isNotEmpty) result.add(id);
-      }
-      return result;
+      return correctChoice
+          .map((entry) => _correctChoiceId(entry, choices))
+          .where((id) => id.isNotEmpty)
+          .toList(growable: false);
     }
 
-    // If correctChoice is a single string ID
-    if (correctChoice is String && correctChoice.isNotEmpty) {
-      // Try to find the matching choice in the choices array
-      if (choicesObj is List) {
-        for (var i = 0; i < choicesObj.length; i++) {
-          final choice = choicesObj[i];
-          if (choice is Map<String, dynamic>) {
-            final choiceId = JsonUtils.getString('id', choice);
-            if (choiceId == correctChoice) {
-              final res = JsonUtils.getString('text', choice);
-              if (res.isNotEmpty) result.add(res.toLowerCase());
-            }
-          }
-        }
-      }
-      if (result.isEmpty) {
-        result.add(correctChoice.toLowerCase());
-      }
-    }
+    final id = _correctChoiceId(correctChoice, choices);
+    return id.isEmpty ? const [] : [id];
+  }
 
-    return result;
+  /// An entry of `correctChoice` is usually the id, but some documents inline
+  /// the whole `{id, text}` object. Both reduce to the id.
+  static String _correctChoiceId(Object? entry, List<ExamChoice> choices) {
+    if (entry is Map) {
+      final parsed = ExamChoice.fromJson(entry);
+      if (parsed != null) return parsed.id.toLowerCase();
+    }
+    final raw = entry?.toString() ?? '';
+    if (raw.isEmpty) return '';
+    // Tolerate a document that names the correct answer by its label.
+    for (final choice in choices) {
+      if (choice.id == raw) return choice.id.toLowerCase();
+      if (choice.text == raw) return choice.id.toLowerCase();
+    }
+    return raw.toLowerCase();
   }
 }
 

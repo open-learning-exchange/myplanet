@@ -6,15 +6,17 @@ import '../core/utils/json_utils.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
+import '../data/local/exam_mapper.dart';
 import '../data/local/survey_mapper.dart';
 import 'submissions_repository.dart';
 
 /// Port of the individual-survey path in `SurveysRepositoryImpl.kt`.
 class SurveysRepository {
-  SurveysRepository(this._api, this._dao, this._submissions);
+  SurveysRepository(this._api, this._dao, this._examDao, this._submissions);
 
   final PlanetApi _api;
   final SurveyDao _dao;
+  final ExamDao _examDao;
   final SubmissionsRepository _submissions;
 
   Stream<List<SurveyRow>> watchAll() => _dao.watchAll();
@@ -53,6 +55,7 @@ class SurveysRepository {
     }
     final total = JsonUtils.getInt('total_rows', count.data);
     final ids = <String>[];
+    final examIds = <String>[];
     var skip = 0;
     var complete = true;
     final sizer = AdaptiveBatchProcessor(initialSize: 100);
@@ -76,23 +79,41 @@ class SurveysRepository {
       }
       final surveys = <SurveysCompanion>[];
       final questions = <String, List<SurveyQuestionsCompanion>>{};
+      final exams = <ExamsCompanion>[];
+      final examQuestions = <String, List<ExamQuestionsCompanion>>{};
       for (final row in rows.whereType<Map<String, dynamic>>()) {
         final doc = JsonUtils.getObject('doc', row);
         if (doc == null) continue;
+        // The `exams` database holds both: surveys are `type: 'surveys'` and
+        // graded course exams are `type: 'exam'`. Each mapper returns null for
+        // the other's documents, so one pass over the page feeds both tables —
+        // the exam documents were already on the wire and were being discarded.
         final mapped = SurveyMapper.fromDoc(doc);
-        if (mapped == null) continue;
-        final id = mapped.survey.id.value;
-        ids.add(id);
-        surveys.add(mapped.survey);
-        questions[id] = mapped.questions;
+        if (mapped != null) {
+          final id = mapped.survey.id.value;
+          ids.add(id);
+          surveys.add(mapped.survey);
+          questions[id] = mapped.questions;
+          continue;
+        }
+        final exam = ExamMapper.fromDoc(doc);
+        if (exam == null) continue;
+        final examId = exam.exam.id.value;
+        examIds.add(examId);
+        exams.add(exam.exam);
+        examQuestions[examId] = exam.questions;
       }
       await _dao.upsertAll(surveys, questions);
+      await _examDao.upsertAll(exams, examQuestions);
       skip += rows.length;
       onProgress?.call(
         SyncProgress(completed: skip.clamp(0, total), total: total),
       );
     }
-    if (total == 0 || complete) await _dao.deleteNotIn(ids);
-    return SyncComplete(ids.length);
+    if (total == 0 || complete) {
+      await _dao.deleteNotIn(ids);
+      await _examDao.deleteNotIn(examIds);
+    }
+    return SyncComplete(ids.length + examIds.length);
   }
 }

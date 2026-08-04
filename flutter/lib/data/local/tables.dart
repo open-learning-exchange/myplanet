@@ -545,13 +545,18 @@ class ExamQuestions extends Table {
   TextColumn get header => text().nullable()();
   TextColumn get body => text().nullable()();
   TextColumn get type => text().nullable()();
-  /// Correct answers for grading (stored as JSON list of strings).
+
+  /// Lowercased choice **ids** that count as correct. Answers record the id of
+  /// the selected choice, so grading compares ids to ids.
   TextColumn get correctChoices => text()
       .map(const StringListConverter())
       .withDefault(const Constant('[]'))();
   TextColumn get marks => text().nullable()();
+
+  /// The `{id, text}` pairs as CouchDB stores them — see [ExamChoice] for why
+  /// this cannot be a plain string list.
   TextColumn get choices => text()
-      .map(const StringListConverter())
+      .map(const ExamChoiceListConverter())
       .withDefault(const Constant('[]'))();
   BoolColumn get hasOtherOption =>
       boolean().withDefault(const Constant(false))();
@@ -644,6 +649,7 @@ class Teams extends Table {
   TextColumn get services => text().nullable()();
   TextColumn get rules => text().nullable()();
   TextColumn get createdBy => text().nullable()();
+
   /// Route for community services - links to other teams or external URLs.
   TextColumn get route => text().nullable()();
   TextColumn get courses => text()

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
@@ -20,7 +21,7 @@ class ServicesScreen extends ConsumerWidget {
     return Scaffold(
       body: links.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => Center(child: Text(l10n.unavailable)),
+        error: (_, _) => Center(child: Text(l10n.unavailable)),
         data: (rows) {
           if (rows.isEmpty) {
             return Center(child: Text(l10n.noServicesAvailable));
@@ -57,9 +58,9 @@ class ServicesScreen extends ConsumerWidget {
   ) {
     if (route.startsWith('http://') || route.startsWith('https://')) {
       // External URL - would open in WebView
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Opening: $title')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Opening: $title')));
       return;
     }
 
@@ -70,9 +71,9 @@ class ServicesScreen extends ConsumerWidget {
       context.push('${Routes.teams}/$teamId');
     } else {
       // Fallback: try opening as external URL
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Opening: $title')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Opening: $title')));
     }
   }
 }
