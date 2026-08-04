@@ -115,7 +115,6 @@ class _ChallengeDialogState extends ConsumerState<ChallengeDialog> {
   }
 
   Widget _buildProgressSection(BuildContext context) {
-    final communityEarnings = widget.allVoiceCount * 2;
     final userEarnings =
         widget.voiceCount * 2 + (widget.hasUnfinishedSurvey ? 0 : 1);
     final progress = ((userEarnings / 11) * 100).clamp(0, 100);
@@ -292,15 +291,6 @@ Future<void> showChallengeDialog({
   required VoidCallback onNext,
   required VoidCallback onSync,
 }) async {
-  final voiceTaskDone = voiceCount >= 5;
-  final prereqsMet =
-      courseStatus.toLowerCase().contains('terminado') && voiceCount >= 5;
-  final syncTaskDone = prereqsMet && hasValidSync;
-  final isCompleted = syncTaskDone && voiceTaskDone;
-
-  // TODO: Check if congratulations was already shown
-  // if (isCompleted && hasShownCongrats) return;
-
   return showDialog<void>(
     context: context,
     builder: (context) => ChallengeDialog(
