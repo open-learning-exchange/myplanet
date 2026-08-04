@@ -5,8 +5,8 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 22 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
-**22 of 28 UI packages** are ported.
+**Phase 23 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**23 of 28 UI packages** are ported.
 
 - **Phase 1** — skeleton plus the server configuration → login → resources slice.
 - **Phase 2** — dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -59,6 +59,11 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
   `type`), reached from a course step's *Take exam* action, and each attempt is written as a
   graded `exam` submission that the outbox uploads. `UserInformationScreen` attaches its profile
   to that submission via `markSubmissionComplete`.
+- **Phase 23** — viewer: the shared resource viewer for video, audio, PDF, image, markdown, text
+  and CSV, reached by tapping a resource. Backed by a new foreground download path
+  (`ResourceDownloader` + `ResourceFiles`) — the port synced resource *metadata* only, so before
+  this every resource reported itself as not downloaded and there was no way to get the file.
+  `DownloadWorker`'s background queue still needs OS scheduling and is not ported.
 
 ## Strategy
 
@@ -507,17 +512,36 @@ choice's `"res"` field, but choice objects carry the label under `"text"` (see
 question cannot be graded. The port records the choice **id** in both branches,
 which is what an answer stores and what the multi-select branch already used.
 
+## New dependencies get the same caller check as new code
+
+The viewer round added six packages to `pubspec.yaml`. Three of them —
+`photo_view`, `record`, `flutter_tts` — were never imported by anything, and
+`flutter_markdown` is discontinued upstream in favour of
+`flutter_markdown_plus`. An unused dependency is not free: `record` alone pulls
+native audio-capture code and its permission into the build for a feature that
+does not exist yet.
+
+Both checks are one command each, and neither is part of `flutter analyze`:
+
+```bash
+# Declared but never imported?
+for p in $(sed -n 's/^  \([a-z_]*\):.*/\1/p' pubspec.yaml); do
+  grep -rq "package:$p/" lib/ || echo "unused: $p"
+done
+# Discontinued or abandoned?
+flutter pub get 2>&1 | grep -i discontinued
+```
+
 ## Remaining UI packages (5 of 28)
 
 `components`, `enterprises`,
-`health`, `maps`,
-`viewer` — plus team voices, team/public survey sharing, personal attachments/upload,
+`health`, `maps`, `dashboard` widgets — plus team voices, team/public survey sharing, personal attachments/upload,
 rating upload/sync, storage/retry, and the
 rest of `settings`, plus profile photo/upload, membership, and the rest of `user`, and the
 rest of `sync` and `dashboard` (the Kotlin dashboard's activity cards, surveys widget and drawer
 are not ported; only the navigation host is).
 
-Suggested order, dependency-first: `viewer` → the rest. Course progress and
+Suggested order, dependency-first: `health` → the rest. Course progress and
 certification are deliberately deferred with their own packages rather than bundled into the
 courses slice. `events` and `surveys` are now ported for the individual case; team meetups and
 team/public survey sharing arrive with `teams`.

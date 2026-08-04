@@ -22,6 +22,7 @@ import '../repository/personals_uploader.dart';
 import '../repository/personals_repository.dart';
 import '../repository/ratings_repository.dart';
 import '../repository/life_repository.dart';
+import '../repository/resource_downloader.dart';
 import '../repository/resources_repository.dart';
 import '../repository/shelf_repository.dart';
 import '../repository/user_repository.dart';
@@ -150,6 +151,13 @@ final surveyDaoProvider = Provider<SurveyDao>(
 
 final examDaoProvider = Provider<ExamDao>(
   (ref) => ref.watch(appDatabaseProvider).examDao,
+);
+
+final resourceDownloaderProvider = Provider<ResourceDownloader>(
+  (ref) => ResourceDownloader(
+    ref.watch(planetApiProvider),
+    ref.watch(myLibraryDaoProvider),
+  ),
 );
 
 final chatDaoProvider = Provider<ChatDao>(

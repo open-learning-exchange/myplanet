@@ -483,6 +483,28 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
   /// Gets a single resource by its local id.
   Future<MyLibraryRow?> getById(String id) =>
       (select(myLibraryTable)..where((r) => r.id.equals(id))).getSingleOrNull();
+
+  /// Records that the attachment is now on disk.
+  ///
+  /// `downloadedRev` is what lets a later sync notice the server replaced the
+  /// attachment: the row's `rev` moves on while this stays put.
+  Future<int> markDownloaded(String id, String path, String? rev) =>
+      (update(myLibraryTable)..where((r) => r.id.equals(id))).write(
+        MyLibraryTableCompanion(
+          resourceLocalAddress: Value(path),
+          resourceOffline: const Value(true),
+          downloadedRev: Value(rev),
+        ),
+      );
+
+  /// Clears the offline flag when the file is gone or unusable.
+  Future<int> markNotDownloaded(String id) =>
+      (update(myLibraryTable)..where((r) => r.id.equals(id))).write(
+        const MyLibraryTableCompanion(
+          resourceLocalAddress: Value(null),
+          resourceOffline: Value(false),
+        ),
+      );
 }
 
 /// Comfortably under SQLite's 999-variable floor.
