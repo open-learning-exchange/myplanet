@@ -119,6 +119,7 @@
   "phone": "Phone",
   "level": "Level",
   "language": "Language",
+  "languages": "Languages",
   "gender": "Gender",
   "dateOfBirth": "Date of birth",
   "planetCode": "Planet code",
@@ -780,6 +781,7 @@
   "pleaseEnterPassword": "Please enter a password",
   "usernameAlreadyExists": "Username already exists",
   "memberCreatedOffline": "Member account created offline",
+  "memberCreatedOnline": "Member account created successfully",
   "communityEarnings": "Community total earnings: **$%1$d** / 500",
   "@communityEarnings": {
     "placeholders": {
@@ -848,5 +850,39 @@
   },
   "noEnrolledCourses": "You are not enrolled in any courses",
   "mistakes": "Mistakes",
-  "step": "Step"
+  "step": "Step",
+  "untitledResource": "Untitled Resource",
+  "author": "Author",
+  "publisher": "Publisher",
+  "license": "License",
+  "addedBy": "Added by",
+  "resourceInformation": "Resource Information",
+  "resourceFor": "For",
+  "mediaType": "Media Type",
+  "resourceType": "Resource Type",
+  "subject": "Subject",
+  "year": "Year",
+  "timesRated": "Times Rated",
+  "description": "Description",
+  "addToMyLibrary": "Add to My Library",
+  "removeFromMyLibrary": "Remove from My Library",
+  "addedToMyLibrary": "Added to My Library",
+  "removedFromMyLibrary": "Removed from My Library",
+  "viewResource": "View Resource",
+  "noRatings": "No ratings yet",
+  "@noRatings": {
+    "description": "Text shown when a resource has no ratings"
+  },
+  "basedOnRatings": "based on {count, plural, =1{1 rating} other{{count} ratings}}",
+  "@basedOnRatings": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "rating": "Rating",
+  "operationFailed": "Operation failed",
+  "filterResources": "Filter Resources",
+  "apply": "Apply"
 }

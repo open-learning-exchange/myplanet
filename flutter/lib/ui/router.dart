@@ -29,6 +29,7 @@ import 'maps/offline_maps_screen.dart';
 import 'onboarding/onboarding_screen.dart';
 import 'notifications/notifications_screen.dart';
 import 'personals/personals_screen.dart';
+import 'resources/resource_detail_screen.dart';
 import 'resources/resources_screen.dart';
 import 'references/references_screen.dart';
 import 'settings/settings_screen.dart';
@@ -73,6 +74,7 @@ class Routes {
   static const String becomeMember = '/become-member';
   static const String offlineMaps = '/life/references/maps';
   static const String resources = '/resources';
+  static const String resourceDetail = '/resources/detail/:resourceId';
   static const String resourceViewer = '/resources/viewer/:resourceId';
   static const String courses = '/courses';
   static const String myProgress = '/courses/progress';
@@ -162,6 +164,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.offlineMaps,
         builder: (context, state) => const OfflineMapsScreen(),
+      ),
+      GoRoute(
+        path: Routes.resourceDetail,
+        builder: (context, state) => ResourceDetailScreen(
+          resourceId: state.pathParameters['resourceId']!,
+        ),
       ),
       GoRoute(
         path: Routes.resourceViewer,

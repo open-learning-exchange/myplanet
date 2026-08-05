@@ -178,13 +178,17 @@ class ChatConversationNotifier extends Notifier<ChatConversationState> {
             const AiProviderConfig(name: 'default', model: ''),
       );
     } else {
-      // Continue existing chat
-      result = await repo.sendNewChatRequest(
+      // Continue existing chat. This branch called `sendNewChatRequest` too,
+      // so every follow-up message opened a fresh conversation instead of
+      // appending to the one on screen.
+      result = await repo.sendContinueChatRequest(
         query: message,
         user: session.name ?? '',
         aiProvider:
             currentState.aiProvider ??
             const AiProviderConfig(name: 'default', model: ''),
+        id: currentState.id,
+        rev: currentState.rev,
       );
     }
 
@@ -200,6 +204,19 @@ class ChatConversationNotifier extends Notifier<ChatConversationState> {
           isLoading: false,
         );
       case ChatError(message: final message):
+        // Keep the message rather than dropping it, and hand it to the outbox.
+        // `ChatUploader` was registered on the drain with nothing ever queuing
+        // for it, because a failed send left no pending row to find.
+        await repo.savePendingChat(
+          user: session.name ?? '',
+          query: message,
+          aiProvider:
+              currentState.aiProvider ??
+              const AiProviderConfig(name: 'default', model: ''),
+          existingId: currentState.id.isEmpty ? null : currentState.id,
+          existingRev: currentState.rev.isEmpty ? null : currentState.rev,
+        );
+        await ref.read(chatQueueProvider).queuePending();
         state = state.copyWith(isLoading: false, error: message);
     }
   }
@@ -219,6 +236,24 @@ final chatConversationProvider =
 /// caller. `insertChatHistoryFromSync` had been written and left unreachable
 /// for long enough that the preserved-table list cited its absence as the
 /// reason chat could not be dropped on a schema upgrade.
+/// Hands every chat the server has not acknowledged to the durable outbox.
+class ChatQueue {
+  const ChatQueue(this._ref);
+
+  final Ref _ref;
+
+  Future<int> queuePending() async {
+    final config = _ref.read(serverConfigProvider);
+    final user = _ref.read(sessionProvider).valueOrNull;
+    if (config == null || user == null) return 0;
+    return _ref
+        .read(chatUploaderProvider)
+        .queuePending(config: config, userId: user.name ?? '');
+  }
+}
+
+final chatQueueProvider = Provider<ChatQueue>(ChatQueue.new);
+
 class ChatSyncNotifier extends SyncNotifier {
   @override
   Future<SyncResult> runSync(

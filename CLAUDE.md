@@ -24,7 +24,7 @@ since then the dashboard shell, courses, calendar, first-launch onboarding, the 
 profile, appearance settings, the dictionary, notifications, My life, references, personals, and
 ratings, offline submissions with question-aware answer review, events/meetups, individual
 surveys, teams, chat, feedback, community, graded course exams, and the resource viewer with
-its download path, encrypted health records, and the chat and feedback sync-in directions have
+its download path, encrypted health records, the chat and feedback sync-in directions, chat upload, and member registration have
 landed. Everything below
 in this document describes the Kotlin app and still applies to it.
 

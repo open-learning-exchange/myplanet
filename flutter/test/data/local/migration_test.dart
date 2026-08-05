@@ -287,6 +287,51 @@ void main() {
     expect(after?.iv, before?.iv);
   });
 
+  test(
+    'a column added to a preserved table reaches an existing install',
+    () async {
+      // `createAll` emits `CREATE TABLE IF NOT EXISTS`, and a preserved table is
+      // skipped by the drop loop — so a new column on one only ever exists on
+      // installs created after the change unless `onUpgrade` adds it by hand.
+      // `chat_history.is_uploaded` arrived without that step; every chat query
+      // then failed on the missing column.
+      await database.customStatement(
+        'ALTER TABLE chat_history DROP COLUMN is_uploaded',
+      );
+
+      await runUpgrade();
+
+      final columns = await database
+          .customSelect('PRAGMA table_info(chat_history)')
+          .get();
+      expect(
+        columns.map((row) => row.read<String>('name')),
+        contains('is_uploaded'),
+      );
+    },
+  );
+
+  test('an already-uploaded chat is not re-queued after the upgrade', () async {
+    // A chat carries a `_rev` only once the server acknowledged it. Leaving
+    // those at the column default would mark every synced conversation pending
+    // and post a duplicate of each on the next drain.
+    await database.chatDao.upsertAll([
+      ChatEntriesCompanion.insert(
+        id: 'chat-1',
+        docId: const Value('chat-1'),
+        rev: const Value('1-a'),
+        user: const Value('ada'),
+      ),
+    ]);
+    await database.customStatement(
+      'ALTER TABLE chat_history DROP COLUMN is_uploaded',
+    );
+
+    await runUpgrade();
+
+    expect(await database.chatDao.getPending(), isEmpty);
+  });
+
   test('every preserved table has a preservation test', () {
     // `my_life` and the submissions tables were added to the preserved set
     // without one. This fails the moment another name is added, so the next

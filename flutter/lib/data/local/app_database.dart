@@ -83,7 +83,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 24;
+  int get schemaVersion => 25;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -177,8 +177,46 @@ class AppDatabase extends _$AppDatabase {
       // not *alter* a preserved table, so changing the shape of one of
       // [_localAuthorityTables] needs a hand-written step here.
       await m.createAll();
+
+      // Hand-written steps for preserved tables, which `createAll` skips.
+      //
+      // `chat_history` gained `is_uploaded` in v25. Without this the column
+      // simply never appears on an existing install and every chat query
+      // fails on it — `createAll` emits `CREATE TABLE IF NOT EXISTS`, and the
+      // table already exists.
+      if (from < 25) {
+        await _addColumnIfMissing(m, chatEntries, chatEntries.isUploaded);
+        // Backfill: a chat carries a `_rev` only once the server has
+        // acknowledged it. Leaving those at the column default would mark
+        // every conversation already on the server as pending and post a
+        // duplicate of each one on the next drain.
+        await customStatement(
+          "UPDATE chat_history SET is_uploaded = 1 "
+          "WHERE _rev IS NOT NULL AND _rev != ''",
+        );
+      }
     },
   );
+
+  /// Adds [column] to [table] unless the running database already has it.
+  ///
+  /// A preserved table is skipped by the drop-and-recreate loop, so a column
+  /// added to one only exists on installs created after the change. Re-running
+  /// `ALTER TABLE ADD COLUMN` on a database that already has it is an error,
+  /// hence the check — an upgrade that spans several versions would otherwise
+  /// abort partway.
+  Future<void> _addColumnIfMissing(
+    Migrator m,
+    TableInfo<Table, dynamic> table,
+    GeneratedColumn<Object> column,
+  ) async {
+    final existing = await customSelect(
+      'PRAGMA table_info(${table.actualTableName})',
+    ).get();
+    final names = existing.map((row) => row.read<String>('name')).toSet();
+    if (names.contains(column.name)) return;
+    await m.addColumn(table, column);
+  }
 
   static LazyDatabase _openConnection() {
     return LazyDatabase(() async {
@@ -445,6 +483,33 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
     final query = selectOnly(users)..addColumns([users.id.count()]);
     final row = await query.getSingle();
     return row.read(users.id.count()) ?? 0;
+  }
+
+  /// Port of `UserRepositoryImpl.updateSecurityData`.
+  ///
+  /// Updates a newly uploaded user with the server-assigned `_id`, `_rev`, and
+  /// the PBKDF2 security data (`password_scheme`, `derived_key`, `salt`,
+  /// `iterations`) so subsequent logins can verify the password with PBKDF2
+  /// rather than requiring a server fetch.
+  Future<void> updateUserSecurityData({
+    required String localId,
+    required String couchId,
+    required String? rev,
+    required String? passwordScheme,
+    required String? derivedKey,
+    required String? salt,
+    required String? iterations,
+  }) async {
+    await (update(users)..where((u) => u.id.equals(localId))).write(
+      UsersCompanion(
+        couchId: Value(couchId),
+        rev: Value(rev),
+        passwordScheme: Value(passwordScheme),
+        derivedKey: Value(derivedKey),
+        salt: Value(salt),
+        iterations: Value(iterations),
+      ),
+    );
   }
 }
 
@@ -1749,6 +1814,20 @@ class ChatDao extends DatabaseAccessor<AppDatabase> with _$ChatDaoMixin {
     }
     return deleted;
   }
+
+  /// Returns pending chats that need to be uploaded.
+  Future<List<ChatRow>> getPending() =>
+      (select(chatEntries)..where((c) => c.isUploaded.equals(false))).get();
+
+  /// Marks a chat as uploaded with the server-assigned id and rev.
+  Future<void> markUploaded(String id, String docId, String rev) =>
+      (update(chatEntries)..where((c) => c.id.equals(id))).write(
+        ChatEntriesCompanion(
+          docId: Value(docId),
+          rev: Value(rev),
+          isUploaded: const Value(true),
+        ),
+      );
 }
 
 /// Port of `data/room/dao/FeedbackDao.kt`.
