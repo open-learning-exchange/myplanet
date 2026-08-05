@@ -128,8 +128,8 @@ Known gaps:
 - **Phase 28** — chat outbox infrastructure. Chat messages were sent directly without retry
   support, so a message typed offline was lost. Added `isUploaded` field to track sync status,
   `ChatUploader` class using the outbox pattern with `OutboxRepository`, and `getPending`/`markUploaded`
-  methods to `ChatDao`. The outbox infrastructure is in place; full integration into the chat
-  sending flow remains.
+  methods to `ChatDao`. The ChatUploader is now registered with the OutboxDrainer in app_providers.dart,
+  enabling retry of failed chat uploads when connectivity returns.
 
 ## Strategy
 
