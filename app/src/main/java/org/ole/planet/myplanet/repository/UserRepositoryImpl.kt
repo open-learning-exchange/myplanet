@@ -1380,9 +1380,17 @@ class UserRepositoryImpl @Inject constructor(
     private fun mergeJsonArray(array1: JsonArray?, array2: JsonArray, removedIds: List<String>): JsonArray {
         val array = JsonArray()
         array.addAll(array1)
+        val removedIdsSet = removedIds.toSet()
+        val existingElements = mutableSetOf<com.google.gson.JsonElement>()
+        if (array1 != null) {
+            for (e in array1) {
+                existingElements.add(e)
+            }
+        }
         for (e in array2) {
-            if (!array.contains(e) && !removedIds.contains(e.asString)) {
+            if (!existingElements.contains(e) && !removedIdsSet.contains(e.asString)) {
                 array.add(e)
+                existingElements.add(e)
             }
         }
         return array
