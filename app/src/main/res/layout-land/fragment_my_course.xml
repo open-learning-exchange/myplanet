@@ -252,8 +252,7 @@
                         <Spinner
                             android:id="@+id/spn_subject"
                             android:layout_width="match_parent"
-                            android:layout_height="0dp"
-                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
                             android:entries="@array/subject_level" />
                     </LinearLayout>
 
@@ -272,8 +271,7 @@
                         <Spinner
                             android:id="@+id/spn_progress"
                             android:layout_width="match_parent"
-                            android:layout_height="0dp"
-                            android:layout_weight="1" />
+                            android:layout_height="wrap_content" />
                     </LinearLayout>
                 </LinearLayout>
 

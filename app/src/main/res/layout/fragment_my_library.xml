@@ -173,114 +173,120 @@
         android:visibility="gone"
         app:cardCornerRadius="8dp">
 
-        <LinearLayout
-            android:id="@+id/ll_filter"
+        <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="right"
-            android:background="@drawable/custom_border"
-            android:gravity="right"
-            android:orientation="vertical"
-            android:padding="@dimen/padding_normal"
-            app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+            android:scrollbars="vertical">
 
             <LinearLayout
+                android:id="@+id/ll_filter"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:layout_gravity="right"
+                android:background="@drawable/custom_border"
+                android:gravity="right"
+                android:orientation="vertical"
+                android:padding="@dimen/padding_normal"
+                app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
 
-                <TextView
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:padding="@dimen/padding_normal"
-                    android:text="@string/filter"
-                    android:textColor="@color/daynight_textColor"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
+                    android:orientation="horizontal">
 
-                <ImageView
-                    android:id="@+id/btn_close_filter"
-                    android:layout_width="wrap_content"
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:padding="@dimen/padding_normal"
+                        android:text="@string/filter"
+                        android:textColor="@color/daynight_textColor"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:id="@+id/btn_close_filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:padding="@dimen/padding_normal"
+                        android:contentDescription="@string/close"
+                        android:src="@drawable/outline_close_24"
+                        app:tint="@color/daynight_textColor" />
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:padding="@dimen/padding_normal"
-                    android:contentDescription="@string/close"
-                    android:src="@drawable/outline_close_24"
-                    app:tint="@color/daynight_textColor" />
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/order_by_date_button"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/buttonblue"
+                        android:text="@string/order_by_date"
+                        android:textColor="@color/textColorPrimary" />
+                    <Button
+                        android:id="@+id/order_by_title_button"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/buttonblue"
+                        android:text="@string/order_by_title"
+                        android:textColor="@color/textColorPrimary" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp">
+
+                    <Button
+                        android:id="@+id/filterCategories"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/buttonblue"
+                        android:text="@string/filter_by_category"
+                        android:textColor="@color/textColorPrimary" />
+                    <Button
+                        android:id="@+id/btn_collections"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/buttonblue"
+                        android:text="@string/collections"
+                        android:textColor="@color/textColorPrimary" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btn_clear_tags"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/buttonblue"
+                        android:text="@string/clear_tags"
+                        android:textColor="@color/textColorPrimary" />
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="4dp"
+                        android:layout_weight="1" />
+                </LinearLayout>
             </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/order_by_date_button"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/buttonblue"
-                    android:text="@string/order_by_date"
-                    android:textColor="@color/textColorPrimary" />
-                <Button
-                    android:id="@+id/order_by_title_button"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/buttonblue"
-                    android:text="@string/order_by_title"
-                    android:textColor="@color/textColorPrimary" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp">
-
-                <Button
-                    android:id="@+id/filterCategories"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/buttonblue"
-                    android:text="@string/filter_by_category"
-                    android:textColor="@color/textColorPrimary" />
-                <Button
-                    android:id="@+id/btn_collections"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/buttonblue"
-                    android:text="@string/collections"
-                    android:textColor="@color/textColorPrimary" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/btn_clear_tags"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/buttonblue"
-                    android:text="@string/clear_tags"
-                    android:textColor="@color/textColorPrimary" />
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    android:layout_weight="1" />
-            </LinearLayout>
-        </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
     </androidx.cardview.widget.CardView>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
