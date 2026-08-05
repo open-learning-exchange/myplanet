@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.Gson
 import com.google.gson.JsonObject
 import java.util.UUID
 import javax.inject.Inject
@@ -117,7 +116,7 @@ class EventsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun createMeetup(params: MeetupCreationParams): Boolean {
-        val gson = Gson()
+        val gson = JsonUtils.gson
         val meetup = Meetup().apply {
             id = "${UUID.randomUUID()}"
             title = params.title
