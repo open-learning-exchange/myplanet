@@ -128,13 +128,30 @@ class _BecomeMemberScreenState extends ConsumerState<BecomeMemberScreen> {
         return;
       }
 
-      // Create member account
-      await _createMember(username, password);
+      // Create member account locally
+      final localId = await _createMember(username, password);
+
+      // Attempt to upload to server. This populates the server-assigned
+      // _id/_rev and the PBKDF2 security data, so the member can log in
+      // on other devices. On failure we fall back to the offline-only account.
+      final serverConfig = ref.read(serverConfigProvider);
+      bool uploadedOnline = false;
+      if (serverConfig != null) {
+        uploadedOnline = await ref.read(userRepositoryProvider).uploadNewUser(
+              localId: localId,
+              config: serverConfig,
+              username: username,
+              password: password,
+            );
+      }
 
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context).memberCreatedOffline),
+            content: Text(uploadedOnline
+                ? l10n.memberCreatedOnline
+                : l10n.memberCreatedOffline),
           ),
         );
         // Navigate to login with new credentials
@@ -201,7 +218,9 @@ class _BecomeMemberScreenState extends ConsumerState<BecomeMemberScreen> {
 
     await db.into(db.users).insertOnConflictUpdate(user);
 
-    // Queue for sync
+    // The server upload is handled in _submit after this returns.
+    // If it succeeds, the user can log in on other devices.
+    // If it fails, the local account still works here.
     await prefs.setLoggedInUserId(id);
     await prefs.savePassword(password);
 
