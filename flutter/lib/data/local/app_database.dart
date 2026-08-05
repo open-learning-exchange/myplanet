@@ -1779,9 +1779,7 @@ class ChatDao extends DatabaseAccessor<AppDatabase> with _$ChatDaoMixin {
 
   /// Returns pending chats that need to be uploaded.
   Future<List<ChatRow>> getPending() =>
-      (select(chatEntries)
-            ..where((c) => c.isUploaded.equals(false)))
-          .get();
+      (select(chatEntries)..where((c) => c.isUploaded.equals(false))).get();
 
   /// Marks a chat as uploaded with the server-assigned id and rev.
   Future<void> markUploaded(String id, String docId, String rev) =>

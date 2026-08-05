@@ -137,7 +137,9 @@ class _BecomeMemberScreenState extends ConsumerState<BecomeMemberScreen> {
       final serverConfig = ref.read(serverConfigProvider);
       bool uploadedOnline = false;
       if (serverConfig != null) {
-        uploadedOnline = await ref.read(userRepositoryProvider).uploadNewUser(
+        uploadedOnline = await ref
+            .read(userRepositoryProvider)
+            .uploadNewUser(
               localId: localId,
               config: serverConfig,
               username: username,
@@ -149,9 +151,11 @@ class _BecomeMemberScreenState extends ConsumerState<BecomeMemberScreen> {
         final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(uploadedOnline
-                ? l10n.memberCreatedOnline
-                : l10n.memberCreatedOffline),
+            content: Text(
+              uploadedOnline
+                  ? l10n.memberCreatedOnline
+                  : l10n.memberCreatedOffline,
+            ),
           ),
         );
         // Navigate to login with new credentials
