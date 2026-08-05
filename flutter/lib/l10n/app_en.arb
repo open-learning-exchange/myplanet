@@ -149,6 +149,14 @@
   "communityCode": "Community code",
   "about": "About",
   "offlineLearningApp": "Offline learning with Planet",
+  "appVersion": "Version {version}",
+  "@appVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "learningTools": "Learning tools",
   "dictionary": "Dictionary",
   "dictionaryDescription": "Search downloaded definitions offline",
