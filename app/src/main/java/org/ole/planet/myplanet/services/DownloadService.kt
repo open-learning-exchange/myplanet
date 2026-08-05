@@ -357,42 +357,7 @@ class DownloadService : Service() {
         try {
             BufferedInputStream(body.byteStream(), 1024 * 8).use { bis ->
                 FileOutputStream(tempFile).use { output ->
-                    val download = Download().apply {
-                        this.fileName = getFileNameFromUrl(url)
-                    }
-
-                    if (fileSize > 0) {
-                        totalFileSize = (fileSize / 1024.0).toInt()
-                        download.totalFileSize = totalFileSize
-                    } else {
-                        download.totalFileSize = 0
-                        download.progress = -1
-                        currentFileProgress = -1
-                    }
-
-                    while (true) {
-                        val readCount = bis.read(data)
-                        if (readCount == -1) break
-
-                        if (readCount > 0) {
-                            total += readCount
-                            val current = (total / 1024.0).roundToInt().toDouble()
-
-                            if (fileSize > 0) {
-                                val progress = (total * 100 / fileSize).toInt()
-                                download.progress = progress
-                                currentFileProgress = progress
-                            }
-
-                            val now = SystemClock.elapsedRealtime()
-                            if (now - lastNotificationUpdateTime >= NOTIFICATION_UPDATE_INTERVAL_MS) {
-                                download.currentFileSize = current.toInt()
-                                sendNotification(download)
-                                lastNotificationUpdateTime = now
-                            }
-                            output.write(data, 0, readCount)
-                        }
-                    }
+                    total = writeStreamContent(bis, output, fileSize, url)
                 }
             }
             if (!tempFile.renameTo(finalFile)) {
@@ -407,6 +372,52 @@ class DownloadService : Service() {
             throw e
         }
         onDownloadComplete(url)
+    }
+
+    private fun writeStreamContent(
+        bis: BufferedInputStream,
+        output: FileOutputStream,
+        fileSize: Long,
+        url: String
+    ): Long {
+        var total: Long = 0
+        val download = Download().apply {
+            this.fileName = getFileNameFromUrl(url)
+        }
+
+        if (fileSize > 0) {
+            totalFileSize = (fileSize / 1024.0).toInt()
+            download.totalFileSize = totalFileSize
+        } else {
+            download.totalFileSize = 0
+            download.progress = -1
+            currentFileProgress = -1
+        }
+
+        while (true) {
+            val readCount = bis.read(data)
+            if (readCount == -1) break
+
+            if (readCount > 0) {
+                total += readCount
+                val current = (total / 1024.0).roundToInt().toDouble()
+
+                if (fileSize > 0) {
+                    val progress = (total * 100 / fileSize).toInt()
+                    download.progress = progress
+                    currentFileProgress = progress
+                }
+
+                val now = SystemClock.elapsedRealtime()
+                if (now - lastNotificationUpdateTime >= NOTIFICATION_UPDATE_INTERVAL_MS) {
+                    download.currentFileSize = current.toInt()
+                    sendNotification(download)
+                    lastNotificationUpdateTime = now
+                }
+                output.write(data, 0, readCount)
+            }
+        }
+        return total
     }
 
     private fun getStorageError(fileSize: Long): String? {
