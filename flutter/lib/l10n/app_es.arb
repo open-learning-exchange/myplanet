@@ -33,6 +33,14 @@
   "username": "Nombre",
   "logOut": "Cerrar sesi\u00f3n",
   "about": "Acerca de",
+  "appVersion": "Versión {version}",
+  "@appVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "lightTheme": "Claro",
   "darkTheme": "Oscuro",
   "profile": "Perfil",
