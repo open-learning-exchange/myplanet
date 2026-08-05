@@ -85,10 +85,10 @@ class RetryInterceptor @Inject constructor(
                 if (remaining <= 0) {
                     return
                 }
-                java.util.concurrent.locks.LockSupport.parkNanos(minOf(remaining, MAX_BACKOFF_SLICE_MS) * 1_000_000)
-                if (Thread.interrupted()) {
-                    throw InterruptedException()
-                }
+                // Thread.sleep is required here because OkHttp Interceptors are strictly synchronous.
+                // This executes on a background dispatcher thread, so it is safe to block.
+                // Asynchronous alternatives cannot be used as we must delay returning the Response.
+                Thread.sleep(minOf(remaining, MAX_BACKOFF_SLICE_MS))
             }
         } catch (e: InterruptedException) {
             Thread.currentThread().interrupt()
