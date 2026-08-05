@@ -544,32 +544,27 @@ class DownloadService : Service() {
                 putExtra("fromSync", fromSync)
             }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val canStart = when {
+            val canStart = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                when {
                     context is Activity -> true
                     Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> {
                         hasValidForegroundServiceContext(context)
                     }
                     else -> true
                 }
-
-                if (canStart) {
-                    try {
-                        ContextCompat.startForegroundService(context, intent)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to start foreground service", e)
-                        handleForegroundServiceError(context, urlsKey, fromSync)
-                    }
-                } else {
-                    startDownloadWork(context, urlsKey, fromSync)
-                }
             } else {
+                true
+            }
+
+            if (canStart) {
                 try {
                     ContextCompat.startForegroundService(context, intent)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to start foreground service", e)
                     handleForegroundServiceError(context, urlsKey, fromSync)
                 }
+            } else {
+                startDownloadWork(context, urlsKey, fromSync)
             }
         }
 
