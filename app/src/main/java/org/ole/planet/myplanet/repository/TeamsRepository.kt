@@ -6,6 +6,7 @@ import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamResourceDto
 import org.ole.planet.myplanet.model.TeamSummary
@@ -152,5 +153,5 @@ interface TeamsRepository {
     suspend fun getAvailableResourcesToAdd(teamId: String): List<MyLibrary>
 
     suspend fun getLastVisit(userName: String?, teamId: String?): Long?
-    fun observeTableUpdates(tableNames: List<String>): Flow<org.ole.planet.myplanet.model.TableDataUpdate>
+    fun observeTableUpdates(tableNames: List<String>): Flow<TableDataUpdate>
 }

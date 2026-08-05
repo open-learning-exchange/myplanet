@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.TeamResourceDto
@@ -1435,7 +1436,7 @@ class TeamsRepositoryImpl @Inject constructor(
         return if (ascending) sortedBy(selector) else sortedByDescending(selector)
     }
 
-    override fun observeTableUpdates(tableNames: List<String>): Flow<org.ole.planet.myplanet.model.TableDataUpdate> {
+    override fun observeTableUpdates(tableNames: List<String>): Flow<TableDataUpdate> {
         return realtimeSyncManager.dataUpdateFlow.filter { tableNames.contains(it.table) }
     }
 }

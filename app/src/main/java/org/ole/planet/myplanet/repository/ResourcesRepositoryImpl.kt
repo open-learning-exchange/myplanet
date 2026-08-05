@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.SearchActivity
@@ -672,7 +673,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         userSessionManager.setResourceOpenCount(item, UserSessionManager.KEY_RESOURCE_OPEN)
     }
 
-    override fun observeTableUpdates(tableNames: List<String>): Flow<org.ole.planet.myplanet.model.TableDataUpdate> {
+    override fun observeTableUpdates(tableNames: List<String>): Flow<TableDataUpdate> {
         return realtimeSyncManager.dataUpdateFlow.filter { tableNames.contains(it.table) }
     }
 }
