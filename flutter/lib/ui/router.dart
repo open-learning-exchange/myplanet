@@ -12,6 +12,7 @@ import 'exam/take_exam_screen.dart';
 import 'exam/user_information_screen.dart';
 import 'courses/course_detail_screen.dart';
 import 'courses/courses_screen.dart';
+import 'courses/take_course_screen.dart';
 import 'dashboard/dashboard_shell.dart';
 import 'dictionary/dictionary_screen.dart';
 import 'events/event_detail_screen.dart';
@@ -204,6 +205,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: ':courseId',
                     builder: (context, state) => CourseDetailScreen(
+                      courseId: state.pathParameters['courseId']!,
+                    ),
+                  ),
+                  GoRoute(
+                    path: ':courseId/take',
+                    builder: (context, state) => TakeCourseScreen(
                       courseId: state.pathParameters['courseId']!,
                     ),
                   ),

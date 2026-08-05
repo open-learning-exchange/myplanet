@@ -850,5 +850,17 @@
   "isPublic": "Public",
   "nameRequired": "Name is required",
   "nameIsRequired": "Please enter a name",
-  "createdOn": "Created on"
+  "createdOn": "Created on",
+  "courseDetails": "Course Details",
+  "addedToCourse": "Added to your courses",
+  "removedFromCourse": "Removed from your courses",
+  "takeCourse": "Take Course",
+  "resourcesInStep": "{count, plural, =0{No resources} =1{1 resource} other{{count} resources}}",
+  "@resourcesInStep": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

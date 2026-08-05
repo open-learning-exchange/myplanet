@@ -128,5 +128,17 @@
   "isPublic": "Público",
   "nameRequired": "El nombre es obligatorio",
   "nameIsRequired": "Por favor ingresa un nombre",
-  "createdOn": "Creado el"
+  "createdOn": "Creado el",
+  "courseDetails": "Detalles del curso",
+  "addedToCourse": "Agregado a tus cursos",
+  "removedFromCourse": "Eliminado de tus cursos",
+  "takeCourse": "Tomar curso",
+  "resourcesInStep": "{count, plural, =0{Sin recursos} =1{1 recurso} other{{count} recursos}}",
+  "@resourcesInStep": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

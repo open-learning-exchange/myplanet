@@ -9,6 +9,7 @@ import '../../providers/courses_providers.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/ratings_provider.dart';
 import '../ratings/rating_dialog.dart';
+import '../router.dart';
 
 /// Port of `ui/courses/CourseDetailFragment.kt`.
 ///
@@ -119,6 +120,13 @@ class _CourseBody extends ConsumerWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
+              FilledButton.icon(
+                onPressed: steps.isNotEmpty
+                    ? () => context.push('${Routes.courses}/${course.id}/take')
+                    : null,
+                icon: const Icon(Icons.play_arrow),
+                label: Text(l10n.takeCourse),
+              ),
               FilledButton.tonalIcon(
                 onPressed: () => _toggleMembership(ref, joined: !isMyCourse),
                 icon: Icon(
