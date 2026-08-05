@@ -56,6 +56,8 @@ dependencies:
   # Offline maps — replaces OSMDroid.
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
+  # Calendar widget — replaces applandeo/materialcalendarview for team calendar.
+  table_calendar: ^3.1.3
 
 dev_dependencies:
   flutter_test:
