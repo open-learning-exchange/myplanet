@@ -383,16 +383,16 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 }
             }
             .debounce(300)
-            .onEach { s ->
-                val input = s?.toString() ?: ""
-                if (input.isNotEmpty()) {
-                    binding.inputName.error = validateUsernameInput(input)
-                } else {
-                    binding.inputName.error = null
-                }
-                updateSignInButtonState()
+
+        collectWhenStarted(usernameFlow) { s ->
+            val input = s?.toString() ?: ""
+            if (input.isNotEmpty()) {
+                binding.inputName.error = validateUsernameInput(input)
+            } else {
+                binding.inputName.error = null
             }
-        collectWhenStarted(usernameFlow) {}
+            updateSignInButtonState()
+        }
 
         if (getUrl().isNotEmpty()) {
             loadTeamsAsync()
@@ -402,16 +402,16 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     private fun setupFormValidation() {
         val passwordFlow = binding.inputPassword.textChanges()
             .debounce(300)
-            .onEach { s ->
-                val input = s?.toString() ?: ""
-                if (input.isNotEmpty()) {
-                    binding.inputPassword.error = validatePasswordInput(input)
-                } else {
-                    binding.inputPassword.error = null
-                }
-                updateSignInButtonState()
+
+        collectWhenStarted(passwordFlow) { s ->
+            val input = s?.toString() ?: ""
+            if (input.isNotEmpty()) {
+                binding.inputPassword.error = validatePasswordInput(input)
+            } else {
+                binding.inputPassword.error = null
             }
-        collectWhenStarted(passwordFlow) {}
+            updateSignInButtonState()
+        }
     }
 
     private fun validateUsernameInput(username: String): String? {
