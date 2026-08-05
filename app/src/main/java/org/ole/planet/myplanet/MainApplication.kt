@@ -230,22 +230,27 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 }
                 val url = URL(formattedUrl)
                 val responseCode = withContext(ioDispatcher) {
-                    TrafficStats.setThreadStatsTag(NETWORK_TRAFFIC_TAG)
-                    val connection = url.openConnection() as HttpURLConnection
-                    try {
-                        connection.requestMethod = "GET"
-                        connection.connectTimeout = 5000
-                        connection.readTimeout = 5000
-                        connection.connect()
-                        connection.responseCode
-                    } finally {
-                        connection.disconnect()
-                        TrafficStats.clearThreadStatsTag()
-                    }
+                    getResponseCode(url)
                 }
                 responseCode in 200..299
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 false
+            }
+        }
+
+        private fun getResponseCode(url: URL): Int {
+            TrafficStats.setThreadStatsTag(NETWORK_TRAFFIC_TAG)
+            val connection = url.openConnection() as HttpURLConnection
+            return try {
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+                connection.connect()
+                connection.responseCode
+            } finally {
+                connection.disconnect()
+                TrafficStats.clearThreadStatsTag()
             }
         }
 
