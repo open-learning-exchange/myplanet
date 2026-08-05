@@ -316,6 +316,17 @@
   "personalsUnavailable": "Personal items are unavailable",
   "noPersonals": "No personal items yet. Add a private note to get started.",
   "duplicateTitle": "A personal item with this title already exists",
+  "attachFile": "Attach file",
+  "attachedFile": "Attached: {name}",
+  "@attachedFile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noFileSelected": "No file selected",
+  "removeFile": "Remove file",
   "savedOffline": "Saved offline \u2014 pending upload",
   "edit": "Edit",
   "title": "Title",

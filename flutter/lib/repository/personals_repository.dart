@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:drift/drift.dart';
+import 'package:path/path.dart' as p;
 
 import '../data/local/app_database.dart';
 
@@ -55,6 +56,7 @@ class PersonalsRepository {
     required String id,
     required String title,
     String? description,
+    String? path,
   }) async {
     final current = await _dao.getById(id);
     if (current == null) return;
@@ -73,6 +75,7 @@ class PersonalsRepository {
             title: trimmedTitle,
             titleNormalized: normalized,
             description: Value(_nullable(description)),
+            path: Value(_nullable(path)),
             isUploaded: false,
           )
           .toCompanion(false),
@@ -80,25 +83,27 @@ class PersonalsRepository {
   }
 
   Future<int> delete(String id) => _dao.deleteById(id);
+  Future<PersonalRow?> getById(String id) => _dao.getById(id);
   Future<List<PersonalRow>> pendingUploads(String userId) =>
       _dao.pendingUploads(userId);
 
   /// Port of `Personal.serialize`.
   ///
-  /// Two Kotlin fields are deliberately absent. `filename` comes from
-  /// `FileUtils.getFileNameFromUrl(path)` and belongs with the attachment
-  /// upload, which is not ported; and the `androidId`/`deviceName`/
-  /// `customDeviceName` trio is device telemetry from `NetworkUtils` that the
-  /// server does not key on. Both are noted in the migration doc rather than
-  /// guessed at.
+  /// The `androidId`/`deviceName`/`customDeviceName` trio is device telemetry
+  /// from `NetworkUtils` that the server does not key on; it is noted in the
+  /// migration doc rather than guessed at.
   static Map<String, dynamic> serialize(
     PersonalRow row, {
     DateTime? uploadedAt,
   }) {
+    final filename = row.path != null && row.path!.isNotEmpty
+        ? p.basename(row.path!)
+        : null;
     return <String, dynamic>{
       'title': row.title,
       'uploadDate': (uploadedAt ?? DateTime.now()).millisecondsSinceEpoch,
       'createdDate': row.date,
+      if (filename != null && filename.isNotEmpty) 'filename': filename,
       'author': row.userName,
       'addedBy': row.userName,
       'description': row.description,

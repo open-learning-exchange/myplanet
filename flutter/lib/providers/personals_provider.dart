@@ -19,7 +19,11 @@ class PersonalActions {
   const PersonalActions(this.ref);
   final Ref ref;
 
-  Future<void> create({required String title, String? description}) async {
+  Future<void> create({
+    required String title,
+    String? description,
+    String? path,
+  }) async {
     final user = ref.read(sessionProvider).valueOrNull;
     if (user == null) return;
     await ref
@@ -29,19 +33,34 @@ class PersonalActions {
           userName: user.name,
           title: title,
           description: description,
+          path: path,
         );
+    await _queuePending();
   }
 
   Future<void> update({
     required String id,
     required String title,
     String? description,
-  }) => ref
-      .read(personalsRepositoryProvider)
-      .update(id: id, title: title, description: description);
+    String? path,
+  }) async {
+    await ref
+        .read(personalsRepositoryProvider)
+        .update(id: id, title: title, description: description, path: path);
+    await _queuePending();
+  }
 
   Future<void> delete(String id) async {
     await ref.read(personalsRepositoryProvider).delete(id);
+  }
+
+  Future<void> _queuePending() async {
+    final user = ref.read(sessionProvider).valueOrNull;
+    final config = ref.read(serverConfigProvider);
+    if (user == null || config == null) return;
+    await ref
+        .read(personalsUploaderProvider)
+        .queuePending(config: config, userId: user.id);
   }
 }
 

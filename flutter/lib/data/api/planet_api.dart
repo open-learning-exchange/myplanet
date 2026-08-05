@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 
 import '../../core/network/network_result.dart';
@@ -146,6 +148,34 @@ class PlanetApi {
     );
   }
 
+  /// Port of `ApiInterface.uploadResource` — PUTs a raw attachment body.
+  ///
+  /// CouchDB stores the bytes at the named slot for the given document and
+  /// returns `{"ok": true, "id": "...", "rev": "..."}`.
+  Future<NetworkResult<Map<String, dynamic>>> uploadAttachment(
+    String url, {
+    required List<int> bytes,
+    String? authHeader,
+    String? contentType,
+    String? ifMatch,
+  }) {
+    return _request<Map<String, dynamic>>(
+      url,
+      method: 'PUT',
+      body: Uint8List.fromList(bytes),
+      authHeader: authHeader,
+      responseType: ResponseType.json,
+      extraHeaders: {
+        if (contentType != null && contentType.isNotEmpty)
+          'Content-Type': contentType,
+        if (ifMatch != null && ifMatch.isNotEmpty) 'If-Match': ifMatch,
+      },
+      convert: (data) => data is Map<String, dynamic>
+          ? data
+          : throw const FormatException('Expected a JSON object'),
+    );
+  }
+
   /// Port of `ApiInterface.downloadFile` — an attachment body as raw bytes.
   ///
   /// Separate from [_request] because it reports progress and must not apply
@@ -184,7 +214,18 @@ class PlanetApi {
     String method = 'GET',
     Object? body,
     String? authHeader,
+    Map<String, dynamic>? extraHeaders,
   }) async {
+    final headers = <String, dynamic>{
+      if (authHeader != null && authHeader.isNotEmpty)
+        'Authorization': authHeader,
+      ...?extraHeaders,
+    };
+    // JSON bodies are the common case for the CouchDB document API; raw byte
+    // bodies (resource attachments) carry their own Content-Type.
+    if (!headers.containsKey('Content-Type') && body is Map<String, dynamic>) {
+      headers['Content-Type'] = 'application/json';
+    }
     try {
       final response = await _dio.request<dynamic>(
         url,
@@ -201,10 +242,7 @@ class PlanetApi {
           // accepts any Dio, and with a default one a 401 would throw and be
           // reported as unreachable rather than as an authentication failure.
           validateStatus: (_) => true,
-          headers: {
-            'Authorization': ?authHeader,
-            if (body != null) 'Content-Type': 'application/json',
-          },
+          headers: headers,
         ),
       );
 
