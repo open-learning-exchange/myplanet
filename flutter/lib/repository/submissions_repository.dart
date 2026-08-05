@@ -230,16 +230,91 @@ class SubmissionsRepository {
     await _dao.markComplete(id, jsonEncode(user));
   }
 
-  /// Creates empty survey submissions for each selected user.
+  /// Creates empty pending survey submissions for each selected user.
   /// Port of `SubmissionsRepositoryImpl.createBulkSurveySubmissions`.
   Future<void> createBulkSurveySubmissions(
     String surveyId,
-    List<String> userIds,
-    Future<String> Function(String userId, String parentId) createSubmission,
-  ) async {
+    List<String> userIds, {
+    DateTime? now,
+    String Function()? createId,
+  }) async {
     for (final userId in userIds) {
-      await createSubmission(userId, surveyId);
+      await getOrCreateSurveySubmission(
+        userId: userId,
+        parentId: surveyId,
+        now: now,
+        createId: createId,
+      );
     }
+  }
+
+  /// Port of `SubmissionsRepositoryImpl.getOrCreateSubmission`.
+  Future<SubmissionRow> getOrCreateSurveySubmission({
+    required String userId,
+    required String parentId,
+    DateTime? now,
+    String Function()? createId,
+  }) async {
+    final existing = await _dao.latestPendingByUserAndParent(userId, parentId);
+    if (existing != null) return existing;
+
+    final timestamp = (now ?? DateTime.now()).millisecondsSinceEpoch;
+    final id =
+        createId?.call() ??
+        sha1.convert(utf8.encode('$userId:$timestamp:$parentId')).toString();
+    await _dao.upsertAll([
+      SubmissionsCompanion.insert(
+        id: id,
+        userId: Value(userId),
+        parentId: Value(parentId),
+        type: const Value('survey'),
+        startTime: Value(timestamp),
+        lastUpdateTime: Value(timestamp),
+        status: const Value('pending'),
+        uploaded: const Value(false),
+        isUpdated: const Value(false),
+      ),
+    ]);
+    return (await _dao.getById(id))!;
+  }
+
+
+  Future<List<SubmissionRow>> submissionsForTeam(String teamId) =>
+      _dao.byTeam(teamId);
+
+  Future<List<SubmissionRow>> submissionsForUserWithoutTeam(String userId) =>
+      _dao.byUserWithoutTeam(userId);
+
+  Future<void> createSurveyAdoptionSubmission({
+    required String id,
+    required String surveyId,
+    required String? userId,
+    required String parentJson,
+    required String userJson,
+    required String source,
+    required String parentCode,
+    String? teamId,
+    DateTime? now,
+  }) async {
+    final timestamp = (now ?? DateTime.now()).millisecondsSinceEpoch;
+    await _dao.upsertAll([
+      SubmissionsCompanion.insert(
+        id: id,
+        parentId: Value(surveyId),
+        parent: Value(parentJson),
+        userId: Value(userId),
+        user: Value(userJson),
+        type: const Value('survey'),
+        status: const Value(''),
+        uploaded: const Value(false),
+        source: Value(source),
+        parentCode: Value(parentCode),
+        teamId: Value(teamId),
+        startTime: Value(timestamp),
+        lastUpdateTime: Value(timestamp),
+        isUpdated: const Value(true),
+      ),
+    ]);
   }
 
   Future<List<SubmissionRow>> pendingUploads(String userId) =>

@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -102,21 +101,9 @@ class _SendSurveyScreenState extends ConsumerState<SendSurveyScreen> {
 
     if (selectedUserIds.isEmpty) return;
 
-    // Create submissions for each selected user
-    for (final userId in selectedUserIds) {
-      final id =
-          '${widget.surveyId}_${userId}_${DateTime.now().millisecondsSinceEpoch}';
-      await ref.read(submissionDaoProvider).upsertAll([
-        SubmissionsCompanion.insert(
-          id: id,
-          userId: Value(userId),
-          parentId: Value(widget.surveyId),
-          type: const Value('survey'),
-          status: const Value('pending'),
-          isUpdated: const Value(true),
-        ),
-      ]);
-    }
+    await ref
+        .read(submissionsRepositoryProvider)
+        .createBulkSurveySubmissions(widget.surveyId, selectedUserIds);
 
     if (mounted) {
       ScaffoldMessenger.of(
