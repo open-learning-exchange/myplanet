@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 28 in progress.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 28 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -20,10 +20,17 @@ Known gaps:
 - Background work with no user present (`AutoSyncWorker`'s timed sync,
   `TaskNotificationWorker`'s deadline notifications, `DownloadWorker`'s background queue) needs
   OS scheduling and is not ported.
-- Chat: a failed send now saves a pending row and queues it, so `ChatUploader` has work. What
-  is still missing is any retry *while composing* — the message reaches the server on the next
-  outbox drain, not immediately.
-- Team attachments are unported. Team survey adoption now has repository and team UI parity; the remaining work is the public anonymous survey deep-link flow.
+- Team attachments are unported. Personal-note attachments are: the note POSTs, then the file
+  PUTs as a CouchDB attachment, best-effort and in that order, as Kotlin does.
+- Public surveys reach `PublicSurveyScreen` only through a deep link whose URI carries an
+  origin. Kotlin reads the host off the raw intent; Flutter sees a go_router location, so a
+  link that arrives path-only falls back to the configured server and, for a respondent who
+  has none, fails to load. Wiring a real deep-link plugin (`app_links` or equivalent) is the
+  fix and is not done.
+- The public-survey response is POSTed straight to the public API rather than through the
+  outbox, so a submission composed offline is lost when the post fails. Kotlin has the same
+  behaviour, so this is parity rather than regression, but it is the weakest write path in the
+  port.
 
 - **Phase 1** -- skeleton plus the server configuration → login → resources slice.
 - **Phase 2** -- dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -118,13 +125,28 @@ Known gaps:
   already spared un-uploaded rows and needed no change.
 
 
-- **Phase 28** — survey send/adoption repository parity. Sending a survey from Flutter now uses
-  the same get-or-create semantics as Kotlin's `createBulkSurveySubmissions` instead of inserting
-  duplicate rows directly from the dialog. The repository also has the Kotlin team survey adoption
-  core: shareable surveys can be copied into a team with copied questions, an adoption submission is
-  queued for upload, and team-owned/adoptable/individual filters share the same rules as
-  `SurveysRepositoryImpl`. The team detail screen now links to the team-survey screen for owned surveys and leader adoption. The anonymous public survey deep-link
-  host remains to be wired.
+- **Phase 28** — team and public survey sharing, personal-note attachments, and an immediate
+  chat retry. Sending a survey uses the same get-or-create semantics as Kotlin's
+  `createBulkSurveySubmissions` instead of inserting duplicate rows from the dialog; shareable
+  surveys can be adopted into a team with their questions copied and an adoption submission
+  queued; team-owned/adoptable/individual filters follow `SurveysRepositoryImpl`; and
+  `PublicSurveyScreen` answers a `publicAccess` survey with no session at all. A chat POST now
+  retries three times at two-second intervals before falling back to the outbox, which is the
+  gap Phase 27 left open. Three defects were fixed on the way in:
+  - The public-survey route read `state.uri.origin` for its base URL. `Uri.origin` **throws**
+    `StateError` on a URI without a scheme and host rather than returning an empty string, and
+    a go_router location is relative whenever the platform did not hand over an absolute one —
+    so the route crashed the moment it was reached. `publicSurveyBaseUrl` now mirrors Kotlin's
+    `"${uri.scheme}://${uri.encodedAuthority}"` when there is an origin and falls back to the
+    configured server when there is not.
+  - The deep-link intent filter matched `<data android:host="*"/>` over both `http` and
+    `https`, registering the app as a candidate handler for every `/survey…` URL on the
+    internet and letting any of them choose the base URL the screen fetches from. It is now
+    scoped to the same eight `autoVerify` Planet hosts the Kotlin manifest declares.
+  - Submissions uploaded `parent` and `user` as JSON *strings*. Kotlin sends both as nested
+    objects, so Planet could resolve neither `parent._id` nor `user.name` on anything this app
+    posted. This predates the phase but survey adoption is built entirely around the user
+    document it carries, which is what surfaced it.
 
 - **Phase 27** — chat upload, member registration against `_users`, and the resource detail
   screen with its filter sheet. Three fixes were needed around it:
