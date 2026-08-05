@@ -130,5 +130,20 @@
     }
   },
   "teamCalendar": "Calendario del equipo",
-  "noMeetupsOnDate": "No hay reuniones en esta fecha"
+  "noMeetupsOnDate": "No hay reuniones en esta fecha",
+  "myProgress": "Mi Progreso",
+  "stepProgress": "{current} de {max} pasos",
+  "@stepProgress": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "noEnrolledCourses": "No est\u00e1s inscrito en ning\u00fan curso",
+  "mistakes": "Errores",
+  "step": "Paso"
 }

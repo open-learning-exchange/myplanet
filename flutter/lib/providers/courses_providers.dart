@@ -128,3 +128,116 @@ class CourseSyncNotifier extends SyncNotifier {
 final courseSyncProvider = NotifierProvider<CourseSyncNotifier, SyncUiState>(
   CourseSyncNotifier.new,
 );
+
+/// Port of `model/CoursesProgressRow` from the Kotlin app.
+///
+/// Represents a single row in the course progress list.
+class CourseProgressRow {
+  const CourseProgressRow({
+    required this.courseId,
+    required this.courseName,
+    this.progressCurrent,
+    this.progressMax,
+    this.mistakes,
+    this.stepMistakes,
+  });
+
+  final String courseId;
+  final String courseName;
+  final int? progressCurrent;
+  final int? progressMax;
+  final int? mistakes;
+  final Map<String, int>? stepMistakes;
+}
+
+/// Course progress data for the current user.
+///
+/// Combines course enrollment, step completion, and exam submissions
+/// to compute progress statistics.
+final courseProgressStreamProvider =
+    StreamProvider<List<CourseProgressRow>>((ref) async* {
+  final userId = ref.watch(sessionProvider).valueOrNull?.id;
+  final coursesRepo = ref.watch(coursesRepositoryProvider);
+
+  // Watch user's courses (shelf membership)
+  final myCourses = await coursesRepo.watchCourses(
+    shelfUserId: userId,
+  ).first;
+  if (myCourses.isEmpty) {
+    yield [];
+    return;
+  }
+
+  final courseIds = myCourses.map((c) => c.id).toList();
+
+  // Get steps and submissions in parallel
+  final db = ref.watch(appDatabaseProvider);
+
+  // Get all steps for these courses
+  final allStepsFutures = courseIds.map((id) => coursesRepo.getCourseSteps(id));
+  final allStepsList = await Future.wait(allStepsFutures);
+  final stepsByCourse = <String, int>{};
+  for (final steps in allStepsList) {
+    for (final step in steps) {
+      if (step.courseId != null) {
+        stepsByCourse[step.courseId!] =
+            (stepsByCourse[step.courseId!] ?? 0) + 1;
+      }
+    }
+  }
+
+  // Get submissions for the user
+  final submissions = await db.submissionDao.watchForUser(userId ?? '').first;
+  final submissionsByCourse = <String, List<SubmissionRow>>{};
+  for (final sub in submissions) {
+    if (sub.parentId != null) {
+      for (final courseId in courseIds) {
+        if (sub.parentId!.contains(courseId)) {
+          submissionsByCourse.putIfAbsent(courseId, () => []).add(sub);
+        }
+      }
+    }
+  }
+
+  // Calculate mistakes per course
+  final mistakesByCourse = <String, int>{};
+  final stepMistakesByCourse = <String, Map<String, int>>{};
+  for (final courseId in courseIds) {
+    int totalMistakes = 0;
+    final stepMistakes = <String, int>{};
+    final subs = submissionsByCourse[courseId] ?? [];
+    for (final sub in subs) {
+      final answers = await db.submissionDao.answersFor(sub.id);
+      for (final answer in answers) {
+        totalMistakes += answer.mistakes;
+        if (answer.examId != null) {
+          stepMistakes[answer.examId!] = answer.mistakes;
+        }
+      }
+    }
+    mistakesByCourse[courseId] = totalMistakes;
+    if (stepMistakes.isNotEmpty) {
+      stepMistakesByCourse[courseId] = stepMistakes;
+    }
+  }
+
+  // Build result rows
+  final rows = <CourseProgressRow>[];
+  for (final course in myCourses) {
+    final stepCount = stepsByCourse[course.id] ?? 0;
+    final submissionCount = submissionsByCourse[course.id]?.length ?? 0;
+    final progressCurrent =
+        stepCount > 0 ? submissionCount.clamp(0, stepCount) : 0;
+
+    rows.add(CourseProgressRow(
+      courseId: course.id,
+      courseName: course.courseTitle ?? 'Untitled Course',
+      progressCurrent: progressCurrent,
+      progressMax: stepCount,
+      mistakes: mistakesByCourse[course.id] ?? 0,
+      stepMistakes: stepMistakesByCourse[course.id],
+    ));
+  }
+
+  yield rows;
+});

@@ -58,6 +58,11 @@ class _CoursesScreenState extends ConsumerState<CoursesScreen> {
         title: Text(l10n.courses),
         actions: [
           IconButton(
+            tooltip: l10n.myProgress,
+            onPressed: () => context.push('${Routes.courses}/progress'),
+            icon: const Icon(Icons.analytics_outlined),
+          ),
+          IconButton(
             tooltip: l10n.sync,
             onPressed: syncState is SyncRunning
                 ? null
