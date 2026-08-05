@@ -325,10 +325,7 @@ class UserRepositoryImpl @Inject constructor(
             val existingUser = if (users != null) users.firstOrNull { it.id == id || it._id == id } else userDao.getByIdOr_Id(id)
             val user = existingUser
                 ?: if (id.startsWith("org.couchdb.user:") && userName.isNotEmpty()) {
-                    if (users != null) migrateGuestUser(id, userName, users) else userDao.getByName(userName)?.takeIf { it._id?.startsWith("guest_") == true }?.let { guestUser ->
-                        userDao.deleteById(guestUser.id)
-                        guestUser.apply { this.id = id; this._id = id }
-                    }
+                    migrateGuestUser(id, userName, users ?: userDao.getAllByName(userName))
                 } else {
                     null
                 }

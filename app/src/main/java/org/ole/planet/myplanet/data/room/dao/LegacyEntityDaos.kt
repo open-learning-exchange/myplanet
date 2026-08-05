@@ -35,6 +35,7 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE id = :id OR _id = :id LIMIT 1")
     suspend fun getByIdOr_Id(id: String): UserEntity?
     @Query("SELECT * FROM users WHERE name = :name LIMIT 1") suspend fun getByName(name: String): UserEntity?
+    @Query("SELECT * FROM users WHERE name = :name") suspend fun getAllByName(name: String): List<UserEntity>
     @Query("SELECT * FROM users WHERE name = :name COLLATE NOCASE LIMIT 1") suspend fun getByNameIgnoreCase(name: String): UserEntity?
     @Query("SELECT * FROM users WHERE name LIKE '%' || :query || '%' OR firstName LIKE '%' || :query || '%' OR lastName LIKE '%' || :query || '%'") suspend fun search(query: String): List<UserEntity>
     @Query("SELECT COUNT(*) FROM users") suspend fun count(): Int
