@@ -356,18 +356,22 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 timeout = 5000L,
                 listener = object : ANRWatchdog.ANRListener {
                     override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
-                        val error = "ANR detected! Duration: ${duration}ms\n $message"
-                        val pendingFile = CrashLogStore.save(context, ANR_LOG_TYPE, error, coreDependenciesEntryPoint.timeProvider())
-                        applicationScope.launch {
-                            if (saveLogToRoom(ANR_LOG_TYPE, error, "${coreDependenciesEntryPoint.timeProvider().now()}")) {
-                                pendingFile?.delete()
-                            }
-                        }
+                        handleAppNotResponding(message, duration)
                     }
                 },
                 dispatcherProvider = dispatcherProvider
             )
             anrWatchdog.start()
+        }
+    }
+
+    private fun handleAppNotResponding(message: String, duration: Long) {
+        val error = "ANR detected! Duration: ${duration}ms\n $message"
+        val pendingFile = CrashLogStore.save(context, ANR_LOG_TYPE, error, coreDependenciesEntryPoint.timeProvider())
+        applicationScope.launch {
+            if (saveLogToRoom(ANR_LOG_TYPE, error, "${coreDependenciesEntryPoint.timeProvider().now()}")) {
+                pendingFile?.delete()
+            }
         }
     }
 
