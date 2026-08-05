@@ -825,5 +825,20 @@
   "removedFromCourse": "Removed from your courses",
   "takeCourse": "Take Course",
   "teamCalendar": "Team Calendar",
-  "noMeetupsOnDate": "No meetups on this date"
+  "noMeetupsOnDate": "No meetups on this date",
+  "myProgress": "My Progress",
+  "stepProgress": "{current} of {max} steps",
+  "@stepProgress": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "noEnrolledCourses": "You are not enrolled in any courses",
+  "mistakes": "Mistakes",
+  "step": "Step"
 }
