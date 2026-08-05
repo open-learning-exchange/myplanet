@@ -28,7 +28,6 @@ class SurveysRepository {
   Future<List<SurveyQuestionRow>> questionsFor(String id) =>
       _dao.questionsFor(id);
 
-
   Future<List<SurveyRow>> individualSurveys() async {
     final rows = await _dao.allRows();
     return rows
@@ -88,7 +87,6 @@ class SurveysRepository {
         await _dao.upsertAll([
           SurveysCompanion.insert(
             id: adoptedId,
-            rev: const Value(null),
             name: Value(
               (teamName == null || teamName.isEmpty)
                   ? survey.name

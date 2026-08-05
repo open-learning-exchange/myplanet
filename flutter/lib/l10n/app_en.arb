@@ -11,7 +11,7 @@
   "connect": "Connect",
   "serverUrlNotConfigured": "Server URL not configured",
   "deviceCouldNotReachLocalServer": "device couldn't reach the server. check if you are connected to the correct Wi-Fi network for the local server (community).",
-  "deviceCouldNotReachNationServer": "device couldn’t reach the server. check if you are connected to the internet and try again",
+  "deviceCouldNotReachNationServer": "device couldn\u2019t reach the server. check if you are connected to the internet and try again",
   "connectionFailed": "Connection failed!",
   "connectedToCommunity": "Connected to {code}",
   "@connectedToCommunity": {
@@ -41,7 +41,7 @@
   "settings": "Settings",
   "logOut": "Log out",
   "noDataAvailable": "No data available",
-  "syncingResources": "Syncing resources… {completed} of {total}",
+  "syncingResources": "Syncing resources\u2026 {completed} of {total}",
   "@syncingResources": {
     "placeholders": {
       "completed": {
@@ -305,7 +305,7 @@
   "addPersonal": "Add personal item",
   "editPersonal": "Edit personal item",
   "deletePersonal": "Delete personal item?",
-  "deletePersonalConfirmation": "Delete “{title}” from this device?",
+  "deletePersonalConfirmation": "Delete \u201c{title}\u201d from this device?",
   "@deletePersonalConfirmation": {
     "placeholders": {
       "title": {
@@ -316,7 +316,7 @@
   "personalsUnavailable": "Personal items are unavailable",
   "noPersonals": "No personal items yet. Add a private note to get started.",
   "duplicateTitle": "A personal item with this title already exists",
-  "savedOffline": "Saved offline — pending upload",
+  "savedOffline": "Saved offline \u2014 pending upload",
   "edit": "Edit",
   "title": "Title",
   "titleRequired": "Enter a title",
@@ -383,11 +383,11 @@
   "onboardingWelcomeDescription": "Your gateway to limitless Learning",
   "onboardingOfflineDescription": "Download resources for offline learning.\nAccess knowledge on the go.",
   "onboardingOpenDescription": "Choose your interests and dive into interactive content.\nCraft your unique learning journey.",
-  "onboardingPowerDescription": "Explore a world of knowledge at your fingertips.\n\n🌍 Offline Access: Learn without borders, anytime.\n🎯 Personalized: Tailor your learning path.\n📚 Interactive: Engage with videos, books, games.\n\nBegin your limitless learning journey with myPlanet!",
+  "onboardingPowerDescription": "Explore a world of knowledge at your fingertips.\n\n\ud83c\udf0d Offline Access: Learn without borders, anytime.\n\ud83c\udfaf Personalized: Tailor your learning path.\n\ud83d\udcda Interactive: Engage with videos, books, games.\n\nBegin your limitless learning journey with myPlanet!",
   "onboardingServerPrepHint": "Before you sign in, you'll need your Planet server address and PIN. Ask your community administrator if you don't have them yet.",
   "pageProgress": "Page {current} of {total}",
   "@pageProgress": {
-    "description": "Screen-reader label for the onboarding page indicator. New string with no strings.xml counterpart, so it has no existing translations — Crowdin must supply them.",
+    "description": "Screen-reader label for the onboarding page indicator. New string with no strings.xml counterpart, so it has no existing translations \u2014 Crowdin must supply them.",
     "placeholders": {
       "current": {
         "type": "int"
@@ -425,8 +425,8 @@
   "sortMeetups": "Sort meetups",
   "newestFirst": "Newest first",
   "oldestFirst": "Oldest first",
-  "titleAscending": "Title A–Z",
-  "titleDescending": "Title Z–A",
+  "titleAscending": "Title A\u2013Z",
+  "titleDescending": "Title Z\u2013A",
   "startDate": "Start date",
   "endDate": "End date",
   "timeNotSet": "Time not set",
@@ -523,7 +523,7 @@
   "teamResources": "Resources",
   "resourcesUnavailable": "Resources are unavailable",
   "noTeamResources": "No resources linked to this team",
-  "untitledResource": "Untitled Resource",
+  "untitledResource": "Untitled resource",
   "removeFromTeam": "Remove from team",
   "addResource": "Add resource",
   "noResourcesToAdd": "All available resources are already linked",
@@ -557,7 +557,7 @@
   "chatConversation": "Conversation",
   "newConversation": "New conversation",
   "startConversation": "Start a new conversation",
-  "typeMessage": "Type a message…",
+  "typeMessage": "Type a message\u2026",
   "selectAiProvider": "Select AI provider",
   "justNow": "Just now",
   "aiProviders": "AI providers",
@@ -643,7 +643,7 @@
   "exitExamMessage": "Your progress will be lost.",
   "exit": "Exit",
   "download": "Download",
-  "downloading": "Downloading…",
+  "downloading": "Downloading\u2026",
   "downloadFailed": "Download failed.",
   "resourceNotDownloaded": "This resource is not on your device yet.",
   "retry": "Retry",
@@ -851,6 +851,7 @@
   "noEnrolledCourses": "You are not enrolled in any courses",
   "mistakes": "Mistakes",
   "step": "Step",
+  "untitledResource": "Untitled Resource",
   "author": "Author",
   "publisher": "Publisher",
   "license": "License",
@@ -862,6 +863,7 @@
   "subject": "Subject",
   "year": "Year",
   "timesRated": "Times Rated",
+  "description": "Description",
   "addToMyLibrary": "Add to My Library",
   "removeFromMyLibrary": "Remove from My Library",
   "addedToMyLibrary": "Added to My Library",
@@ -882,6 +884,7 @@
   "rating": "Rating",
   "operationFailed": "Operation failed",
   "filterResources": "Filter Resources",
+  "apply": "Apply",
   "teamSurveys": "Team surveys",
   "adoptableSurveys": "Surveys available to adopt",
   "noAdoptableSurveys": "No surveys available to adopt",
