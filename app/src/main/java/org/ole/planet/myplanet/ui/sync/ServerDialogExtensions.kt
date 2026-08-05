@@ -298,7 +298,6 @@ fun SyncActivity.setupManualConfigEnabled(binding: DialogServerUrlBinding, dialo
     showConfigurationUIElements(binding, true, dialog)
 
     lifecycleScope.launch {
-        val communityRepository = dagger.hilt.android.EntryPointAccessors.fromApplication(applicationContext, org.ole.planet.myplanet.di.CoreDependenciesEntryPoint::class.java).communityRepository()
         val communities = communityRepository.getAllSorted()
         val nonEmptyCommunities = communities.filter { !TextUtils.isEmpty(it.name) }
         val adapter = ArrayAdapter(this@setupManualConfigEnabled, android.R.layout.simple_spinner_item, nonEmptyCommunities)

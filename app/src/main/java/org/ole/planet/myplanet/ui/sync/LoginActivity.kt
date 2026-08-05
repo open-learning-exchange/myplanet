@@ -72,8 +72,6 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     lateinit var loginSyncManager: LoginSyncManager
     @Inject
     override lateinit var sharedPrefManager: SharedPrefManager
-    @Inject
-    lateinit var communityRepository: org.ole.planet.myplanet.repository.CommunityRepository
 
     private lateinit var binding: ActivityLoginBinding
     private var guest = false
