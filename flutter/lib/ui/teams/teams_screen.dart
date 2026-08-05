@@ -291,6 +291,24 @@ class TeamDetailScreen extends ConsumerWidget {
                       onTap: () =>
                           context.push('${Routes.teams}/${team.id}/reports'),
                     ),
+                  if (membership != null)
+                    ListTile(
+                      leading: const Icon(
+                        Icons.account_balance_wallet_outlined,
+                      ),
+                      title: Text(l10n.finances),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () =>
+                          context.push('${Routes.teams}/${team.id}/finances'),
+                    ),
+                  if (membership != null)
+                    ListTile(
+                      leading: const Icon(Icons.calendar_month_outlined),
+                      title: Text(l10n.teamCalendar),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () =>
+                          context.push('${Routes.teams}/${team.id}/calendar'),
+                    ),
                   ListTile(
                     leading: const Icon(Icons.task_alt),
                     title: Text(l10n.teamTasks),
