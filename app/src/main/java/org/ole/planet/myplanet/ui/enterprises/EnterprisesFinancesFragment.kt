@@ -39,7 +39,6 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     private var _binding: FragmentFinanceBinding? = null
     private val binding get() = _binding!!
     private val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    private val formatters = mutableMapOf<String, SimpleDateFormat>()
     private lateinit var addTransactionBinding: AddTransactionBinding
     private lateinit var financeAdapter: EnterprisesFinancesAdapter
     var date: Calendar? = null
@@ -130,7 +129,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
                 val selectedDate = Calendar.getInstance().apply {
                     set(year, monthOfYear, dayOfMonth)
                 }
-                val formattedDate = selectedDate.formatToString("yyyy-MM-dd")
+                val formattedDate = selectedDate.formatToString()
 
                 if (isFromDate) {
                     binding.tvFromDateCalendar.setText(formattedDate)
@@ -167,9 +166,8 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     }
 
 
-    private fun Calendar.formatToString(pattern: String): String {
-        val dateFormat = if (pattern == "yyyy-MM-dd") dateFormatter else formatters.getOrPut(pattern) { SimpleDateFormat(pattern, Locale.getDefault()) }
-        return dateFormat.format(this.time)
+    private fun Calendar.formatToString(): String {
+        return dateFormatter.format(this.time)
     }
 
     private fun updateToDateState(enabled: Boolean) {
