@@ -587,7 +587,7 @@ class ConfigurationsRepositoryImplTest {
         every { serverUrlMapper.processUrl(url) } returns mapping
 
         val versionsUrl = "$url/versions"
-        coEvery { apiInterface.getConfiguration(versionsUrl) } throws Exception("Network error")
+        coEvery { apiInterface.getConfiguration(versionsUrl) } returns Response.error(500, "".toResponseBody("text/plain".toMediaTypeOrNull()))
 
         every { context.getString(R.string.http_protocol) } returns "http"
         every { context.getString(R.string.device_couldn_t_reach_local_server) } returns "Local server error"
