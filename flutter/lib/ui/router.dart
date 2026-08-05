@@ -51,6 +51,7 @@ import 'teams/team_members_screen.dart';
 import 'teams/team_resources_screen.dart';
 import 'teams/team_courses_screen.dart';
 import 'teams/team_reports_screen.dart';
+import 'teams/team_surveys_screen.dart';
 import 'teams/team_voices_screen.dart';
 import 'teams/team_plan_screen.dart';
 import 'teams/team_finances_screen.dart';
@@ -385,6 +386,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                           GoRoute(
                             path: 'reports',
                             builder: (context, state) => TeamReportsScreen(
+                              teamId: state.pathParameters['teamId']!,
+                            ),
+                          ),
+                          GoRoute(
+                            path: 'surveys',
+                            builder: (context, state) => TeamSurveysScreen(
                               teamId: state.pathParameters['teamId']!,
                             ),
                           ),

@@ -121,4 +121,73 @@ void main() {
       'Clean water',
     );
   });
+
+  test('adopts a shareable survey into a team and creates upload row', () async {
+    await database.surveyDao.upsertAll(
+      [
+        SurveysCompanion.insert(
+          id: 'survey-1',
+          name: const Value('Needs'),
+          teamShareAllowed: const Value(true),
+          sourcePlanet: const Value('nation'),
+        ),
+      ],
+      {
+        'survey-1': [
+          SurveyQuestionsCompanion.insert(
+            id: 'survey-1:q1',
+            surveyId: 'survey-1',
+            questionId: const Value('q1'),
+            body: const Value('Your answer'),
+            position: 0,
+          ),
+        ],
+      },
+    );
+
+    var nextId = 0;
+    await repository.adoptSurvey(
+      surveyId: 'survey-1',
+      userId: 'user-1',
+      teamId: 'team-1',
+      teamName: 'Water Team',
+      isTeam: true,
+      planetCode: 'planet-a',
+      parentCode: 'parent-a',
+      now: DateTime.fromMillisecondsSinceEpoch(5000),
+      createId: () => 'created-${nextId++}',
+    );
+    await repository.adoptSurvey(
+      surveyId: 'survey-1',
+      userId: 'user-1',
+      teamId: 'team-1',
+      teamName: 'Water Team',
+      isTeam: true,
+      now: DateTime.fromMillisecondsSinceEpoch(9000),
+      createId: () => 'created-${nextId++}',
+    );
+
+    final adopted = await database.surveyDao.getById('created-0');
+    expect(adopted?.name, 'Needs - Water Team');
+    expect(adopted?.teamId, 'team-1');
+    expect(adopted?.sourceSurveyId, 'survey-1');
+    expect(adopted?.teamShareAllowed, isFalse);
+    expect(adopted?.adoptionDate, 5000);
+    expect(await database.surveyDao.questionsFor('created-0'), hasLength(1));
+
+    final submissions = await database.submissionDao.byTeam('team-1');
+    expect(submissions, hasLength(1));
+    expect(submissions.single.id, 'created-1');
+    expect(submissions.single.parentId, 'survey-1');
+    expect(submissions.single.status, '');
+    expect(submissions.single.isUpdated, isTrue);
+    expect(submissions.single.source, 'planet-a');
+    expect(submissions.single.parentCode, 'parent-a');
+
+    final adoptable = await repository.adoptableTeamSurveys('team-1');
+    expect(adoptable, isEmpty);
+    final owned = await repository.teamOwnedSurveys('team-1');
+    expect(owned.map((row) => row.id), contains('created-0'));
+  });
+
 }

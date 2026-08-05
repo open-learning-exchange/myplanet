@@ -5,25 +5,25 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 28 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 28 in progress.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
 - `enterprises` has no screens of its own; the teams slice (Phase 18) covers what it did.
 - `components`: `CheckboxList` is used by four screens. `ChallengeDialog` and `CustomDropdown`
   are built and called from nowhere — they are library code waiting for a caller, not features.
-- `user`: `BecomeMemberScreen` is reachable from login, but only Kotlin's *offline* fallback is
-  ported. It writes the account to SQLite and stops, so a member created in this app exists on
-  that handset alone. Kotlin POSTs a `_users` document and PUTs the shelf when the server is
-  reachable; that path is missing.
+- `user`: `BecomeMemberScreen` now POSTs the `_users` document when the server is reachable and
+  adopts the server's PBKDF2 material, falling back to the local-only account when it is not —
+  the shape Kotlin has.
 
 Known gaps:
 - Background work with no user present (`AutoSyncWorker`'s timed sync,
   `TaskNotificationWorker`'s deadline notifications, `DownloadWorker`'s background queue) needs
   OS scheduling and is not ported.
-- Chat outbox infrastructure is in place; full integration into the sending flow remains.
-- Team attachments and team/public survey sharing are unported.
-- ~~`BecomeMemberScreen` still only writes locally~~ — **resolved in Phase 27**
+- Chat: a failed send now saves a pending row and queues it, so `ChatUploader` has work. What
+  is still missing is any retry *while composing* — the message reaches the server on the next
+  outbox drain, not immediately.
+- Team attachments are unported. Team survey adoption now has repository and team UI parity; the remaining work is the public anonymous survey deep-link flow.
 
 - **Phase 1** -- skeleton plus the server configuration → login → resources slice.
 - **Phase 2** -- dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -118,18 +118,28 @@ Known gaps:
   already spared un-uploaded rows and needed no change.
 
 
-- **Phase 27** — `BecomeMemberScreen` server POST. The screen created local accounts but never
-  uploaded them to CouchDB, so members registered in the app existed only on that device.
-  Added `uploadNewUser` to `UserRepository` that PUTs the user document to `/-users`, fetches
-  the created document to retrieve the PBKDF2 security data, and updates the local row with
-  server-assigned `_id`/`_rev`. The screen now attempts the upload after local creation and
-  falls back to the offline-only account if the server is unreachable.
+- **Phase 28** — survey send/adoption repository parity. Sending a survey from Flutter now uses
+  the same get-or-create semantics as Kotlin's `createBulkSurveySubmissions` instead of inserting
+  duplicate rows directly from the dialog. The repository also has the Kotlin team survey adoption
+  core: shareable surveys can be copied into a team with copied questions, an adoption submission is
+  queued for upload, and team-owned/adoptable/individual filters share the same rules as
+  `SurveysRepositoryImpl`. The team detail screen now links to the team-survey screen for owned surveys and leader adoption. The anonymous public survey deep-link
+  host remains to be wired.
 
-- **Phase 28** — chat outbox infrastructure. Chat messages were sent directly without retry
-  support, so a message typed offline was lost. Added `isUploaded` field to track sync status,
-  `ChatUploader` class using the outbox pattern with `OutboxRepository`, and `getPending`/`markUploaded`
-  methods to `ChatDao`. The ChatUploader is now registered with the OutboxDrainer in app_providers.dart,
-  enabling retry of failed chat uploads when connectivity returns.
+- **Phase 27** — chat upload, member registration against `_users`, and the resource detail
+  screen with its filter sheet. Three fixes were needed around it:
+  - `chat_history` gained an `is_uploaded` column with no `schemaVersion` bump and no
+    hand-written migration step. It is a *preserved* table, so `onUpgrade` steps over it and
+    `createAll` emits `CREATE TABLE IF NOT EXISTS` — the column would never have appeared on an
+    existing install, and every chat query would have failed on it. Preserved tables need an
+    explicit `addColumn`; there is now a helper and a test that pins it.
+  - Nothing set `is_uploaded`, so every conversation — including ones the sync had just pulled —
+    read as pending and would have been posted again as a duplicate. Server-origin rows are
+    marked uploaded at the mapper, and the migration backfills by `_rev`.
+  - `ChatUploader` was registered on the drain with nothing queuing for it, because a failed
+    send dropped the message rather than storing it. `savePendingChat` keeps it and queues it.
+  Also: the chat provider called `sendNewChatRequest` on both branches, so every follow-up
+  message opened a fresh conversation instead of continuing the one on screen.
 
 ## Strategy
 
@@ -685,6 +695,6 @@ succeeds, it just doesn't do what the Kotlin did.
 
 ---
 
-**Last updated**: 2026-08-05 (Phase 26 complete)
-**Phase**: 26 of N (27 of 28 UI packages have a screen — see Status for what that does and does
+**Last updated**: 2026-08-05 (Phase 27 complete)
+**Phase**: 27 of N (27 of 28 UI packages have a screen — see Status for what that does and does
 not mean)
