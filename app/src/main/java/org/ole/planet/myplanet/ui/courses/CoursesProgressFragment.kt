@@ -7,11 +7,11 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.databinding.FragmentCoursesProgressBinding
 import org.ole.planet.myplanet.model.CoursesProgressRow
-import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
@@ -43,7 +43,7 @@ class CoursesProgressFragment : Fragment() {
 
                     val stepMistake = if (obj.has("stepMistake")) {
                         val type = object : TypeToken<Map<String, Int>>() {}.type
-                        JsonUtils.gson.fromJson<Map<String, Int>>(obj.get("stepMistake"), type)
+                        Gson().fromJson<Map<String, Int>>(obj.get("stepMistake"), type)
                     } else {
                         null
                     }
