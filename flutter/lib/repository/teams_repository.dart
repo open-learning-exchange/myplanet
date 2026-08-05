@@ -177,6 +177,37 @@ class TeamsRepository {
     return _dao.getById(team.id);
   }
 
+  /// Update team/enterprise details (name, description, services, rules, etc.)
+  Future<TeamRow?> updateTeam({
+    required String teamId,
+    String? name,
+    String? description,
+    String? services,
+    String? rules,
+    String? teamType,
+    bool? isPublic,
+    String? createdBy,
+  }) async {
+    final team = await _dao.getById(teamId);
+    if (team == null) return null;
+    await _dao.upsert(
+      team
+          .toCompanion(false)
+          .copyWith(
+            name: Value(name ?? team.name),
+            description: Value(description ?? team.description),
+            services: Value(services ?? team.services),
+            rules: Value(rules ?? team.rules),
+            teamType: Value(teamType ?? team.teamType),
+            isPublic: Value(isPublic ?? team.isPublic),
+            createdBy: Value(createdBy ?? team.createdBy),
+            isUpdated: const Value(true),
+            updatedDate: Value(DateTime.now().millisecondsSinceEpoch),
+          ),
+    );
+    return _dao.getById(teamId);
+  }
+
   Future<TeamRow?> removeCourse(String teamId, String courseId) async {
     final team = await _dao.getById(teamId);
     if (team == null || team.docType != null) return null;

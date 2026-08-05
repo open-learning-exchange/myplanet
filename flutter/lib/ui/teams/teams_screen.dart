@@ -237,6 +237,15 @@ class TeamDetailScreen extends ConsumerWidget {
                     _DetailSection(title: l10n.services, body: team.services!),
                   if (team.rules?.isNotEmpty == true)
                     _DetailSection(title: l10n.rules, body: team.rules!),
+                  ListTile(
+                    leading: const Icon(Icons.assignment_outlined),
+                    title: Text(
+                      team.type == 'enterprise' ? l10n.mission : l10n.plan,
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () =>
+                        context.push('${Routes.teams}/${team.id}/plan'),
+                  ),
                   if (team.courses.isNotEmpty) ...[
                     const Divider(),
                     Text(
