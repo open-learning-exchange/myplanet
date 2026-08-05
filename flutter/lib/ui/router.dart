@@ -44,6 +44,7 @@ import 'submissions/submission_detail_screen.dart';
 import 'surveys/surveys_screen.dart';
 import 'voices/voice_thread_screen.dart';
 import 'voices/voices_screen.dart';
+import 'surveys/public_survey_screen.dart';
 import 'surveys/take_survey_screen.dart';
 import 'teams/teams_screen.dart';
 import 'teams/team_tasks_screen.dart';
@@ -105,6 +106,7 @@ class Routes {
   static const String community = '/community';
   static const String exam = '/courses/exam/:examId';
   static const String userInfo = '/exam/user-info/:submissionId';
+  static const String publicSurvey = '/survey/:teamId/:surveyId';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -115,6 +117,13 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: Routes.resources,
     refreshListenable: _RouterRefresh(ref),
     redirect: (context, state) {
+      // Public surveys are answerable without onboarding, server config or a
+      // signed-in session. Match before any gating redirects.
+      final pathSegments = state.uri.pathSegments;
+      if (pathSegments.isNotEmpty && pathSegments.first == 'survey') {
+        return null;
+      }
+
       final hasServer = ref.read(serverConfigProvider) != null;
       final onboardingComplete = ref.read(onboardingProvider);
       final session = ref.read(sessionProvider);
@@ -161,6 +170,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.becomeMember,
         builder: (context, state) => const BecomeMemberScreen(),
+      ),
+      GoRoute(
+        path: Routes.publicSurvey,
+        builder: (context, state) => PublicSurveyScreen(
+          baseUrl: state.uri.origin,
+          teamId: state.pathParameters['teamId']!,
+          surveyId: state.pathParameters['surveyId']!,
+        ),
       ),
       GoRoute(
         path: Routes.offlineMaps,

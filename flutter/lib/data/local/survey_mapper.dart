@@ -20,7 +20,9 @@ class SurveyMapper {
       for (var index = 0; index < rawQuestions.length; index++) {
         final question = rawQuestions[index];
         if (question is! Map<String, dynamic>) continue;
-        final remoteId = JsonUtils.getString('_id', question);
+        final remoteId = JsonUtils.getString('id', question).isNotEmpty
+            ? JsonUtils.getString('id', question)
+            : JsonUtils.getString('_id', question);
         questions.add(
           SurveyQuestionsCompanion.insert(
             id: remoteId.isEmpty ? '$id:$index' : '$id:$remoteId',

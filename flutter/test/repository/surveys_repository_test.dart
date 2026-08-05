@@ -1,11 +1,15 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/network/network_result.dart';
+import 'package:myplanet/core/sync/server_url_mapper.dart';
 import 'package:myplanet/core/sync/sync_result.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/data/local/converters.dart';
 import 'package:myplanet/repository/submissions_repository.dart';
 import 'package:myplanet/repository/surveys_repository.dart';
 
@@ -192,4 +196,277 @@ void main() {
       expect(owned.map((row) => row.id), contains('created-0'));
     },
   );
+
+  group('public survey deep link', () {
+    const publicDoc = {
+      '_id': 'survey-1',
+      'type': 'surveys',
+      'name': 'Public survey',
+      'questions': [
+        {
+          'id': 'q1',
+          'body': 'Choose topics',
+          'type': 'selectMultiple',
+          'choices': [
+            {'id': 'water', 'text': 'Water'},
+            {'id': 'health', 'text': 'Health'},
+          ],
+        },
+        {
+          'id': 'q2',
+          'body': 'Gender',
+          'type': 'select',
+          'choices': [
+            {'id': 'male', 'text': 'Male'},
+            {'id': 'female', 'text': 'Female'},
+          ],
+        },
+        {'id': 'q3', 'body': 'Notes', 'type': 'textarea'},
+      ],
+    };
+
+    test('fetches and unwraps a survey wrapped under the survey key', () async {
+      when(() => api.getJsonObject(any())).thenAnswer(
+        (_) async =>
+            NetworkSuccess<Map<String, dynamic>>({'survey': publicDoc}),
+      );
+
+      final result = await repository.fetchPublicSurvey(
+        'http://local.example',
+        'team-1',
+        'survey-1',
+      );
+
+      expect(result?['_id'], 'survey-1');
+      expect(result?['name'], 'Public survey');
+      verify(
+        () => api.getJsonObject(
+          'http://local.example/api/public/surveys/team-1/survey-1',
+        ),
+      ).called(1);
+    });
+
+    test('fetches a bare survey document when there is no wrapper', () async {
+      when(() => api.getJsonObject(any())).thenAnswer(
+        (_) async => NetworkSuccess<Map<String, dynamic>>(publicDoc),
+      );
+
+      final result = await repository.fetchPublicSurvey(
+        'http://local.example',
+        'team-1',
+        'survey-1',
+      );
+
+      expect(result?['_id'], 'survey-1');
+    });
+
+    test('falls back to the configured alternative server', () async {
+      repository = SurveysRepository(
+        api,
+        database.surveyDao,
+        database.examDao,
+        SubmissionsRepository(api, database.submissionDao),
+        urlMapper: ServerUrlMapper(
+          mappings: {'http://local.example': 'https://alt.example'},
+        ),
+      );
+      when(() => api.getJsonObject(any())).thenAnswer((invocation) async {
+        final url = invocation.positionalArguments.single as String;
+        if (url.startsWith('http://local.example')) {
+          return NetworkError<Map<String, dynamic>>(503, 'unreachable');
+        }
+        return NetworkSuccess<Map<String, dynamic>>(publicDoc);
+      });
+
+      final result = await repository.fetchPublicSurvey(
+        'http://local.example',
+        'team-1',
+        'survey-1',
+      );
+
+      expect(result?['_id'], 'survey-1');
+      verify(
+        () => api.getJsonObject(
+          'http://local.example/api/public/surveys/team-1/survey-1',
+        ),
+      ).called(1);
+      verify(
+        () => api.getJsonObject(
+          'https://alt.example/api/public/surveys/team-1/survey-1',
+        ),
+      ).called(1);
+    });
+
+    test('submits public answers and coerces birth year to age', () async {
+      await database.surveyDao.upsertAll(
+        [SurveysCompanion.insert(id: 'survey-1', name: const Value('Needs'))],
+        {
+          'survey-1': [
+            SurveyQuestionsCompanion.insert(
+              id: 'survey-1:q1',
+              surveyId: 'survey-1',
+              questionId: const Value('q1'),
+              body: const Value('Topics'),
+              type: const Value('selectMultiple'),
+              position: 0,
+            ),
+            SurveyQuestionsCompanion.insert(
+              id: 'survey-1:q2',
+              surveyId: 'survey-1',
+              questionId: const Value('q2'),
+              body: const Value('Gender'),
+              type: const Value('select'),
+              position: 1,
+            ),
+            SurveyQuestionsCompanion.insert(
+              id: 'survey-1:q3',
+              surveyId: 'survey-1',
+              questionId: const Value('q3'),
+              body: const Value('Notes'),
+              type: const Value('textarea'),
+              position: 2,
+            ),
+          ],
+        },
+      );
+
+      final id = await repository.submitResponse('survey-1', 'anon', {
+        'survey-1:q1': SubmissionDraftAnswer(
+          questionId: 'q1',
+          choices: [
+            jsonEncode(const ExamChoice(id: 'water', text: 'Water').toJson()),
+            jsonEncode(const ExamChoice(id: 'health', text: 'Health').toJson()),
+          ],
+        ),
+        'survey-1:q2': SubmissionDraftAnswer(
+          questionId: 'q2',
+          choices: [
+            jsonEncode(const ExamChoice(id: 'male', text: 'Male').toJson()),
+          ],
+        ),
+        'survey-1:q3': const SubmissionDraftAnswer(
+          questionId: 'q3',
+          value: 'more water',
+        ),
+      });
+      await SubmissionsRepository(
+        api,
+        database.submissionDao,
+      ).markSubmissionComplete(id!, {'birthYear': '2000', 'gender': 'male'});
+
+      Map<String, dynamic>? capturedBody;
+      when(
+        () => api.sendJsonDynamic(
+          any(),
+          body: any(named: 'body'),
+          method: any(named: 'method'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedBody = invocation.namedArguments[#body] as Map<String, dynamic>;
+        return const NetworkSuccess<dynamic>({});
+      });
+
+      final success = await repository.submitPublicSurvey(
+        baseUrl: 'http://local.example',
+        teamId: 'team-1',
+        surveyId: 'survey-1',
+        submissionId: id,
+      );
+
+      expect(success, isTrue);
+      expect(capturedBody?['answers'], [
+        [
+          {'id': 'water', 'text': 'Water'},
+          {'id': 'health', 'text': 'Health'},
+        ],
+        {'id': 'male', 'text': 'Male'},
+        'more water',
+      ]);
+      final user = capturedBody?['user'] as Map<String, dynamic>?;
+      expect(user?['gender'], 'male');
+      expect(user?['age'], greaterThan(0));
+      expect(user?.containsKey('birthYear'), isFalse);
+      verify(
+        () => api.sendJsonDynamic(
+          'http://local.example/api/public/surveys/team-1/survey-1/submissions',
+          body: any(named: 'body'),
+          method: 'POST',
+        ),
+      ).called(1);
+    });
+
+    test(
+      'submits public answers to the alternative server when primary fails',
+      () async {
+        await database.surveyDao.upsertAll(
+          [SurveysCompanion.insert(id: 'survey-1', name: const Value('Needs'))],
+          {
+            'survey-1': [
+              SurveyQuestionsCompanion.insert(
+                id: 'survey-1:q1',
+                surveyId: 'survey-1',
+                questionId: const Value('q1'),
+                body: const Value('Answer'),
+                position: 0,
+              ),
+            ],
+          },
+        );
+
+        final id = await repository.submitResponse('survey-1', 'anon', {
+          'survey-1:q1': const SubmissionDraftAnswer(
+            questionId: 'q1',
+            value: 'yes',
+          ),
+        });
+
+        repository = SurveysRepository(
+          api,
+          database.surveyDao,
+          database.examDao,
+          SubmissionsRepository(api, database.submissionDao),
+          urlMapper: ServerUrlMapper(
+            mappings: {'http://local.example': 'https://alt.example'},
+          ),
+        );
+
+        when(
+          () => api.sendJsonDynamic(
+            any(),
+            body: any(named: 'body'),
+            method: any(named: 'method'),
+          ),
+        ).thenAnswer((invocation) async {
+          final url = invocation.positionalArguments.single as String;
+          if (url.startsWith('http://local.example')) {
+            return NetworkError<dynamic>(503, 'unreachable');
+          }
+          return const NetworkSuccess<dynamic>({});
+        });
+
+        final success = await repository.submitPublicSurvey(
+          baseUrl: 'http://local.example',
+          teamId: 'team-1',
+          surveyId: 'survey-1',
+          submissionId: id!,
+        );
+
+        expect(success, isTrue);
+        verify(
+          () => api.sendJsonDynamic(
+            'http://local.example/api/public/surveys/team-1/survey-1/submissions',
+            body: any(named: 'body'),
+            method: 'POST',
+          ),
+        ).called(1);
+        verify(
+          () => api.sendJsonDynamic(
+            'https://alt.example/api/public/surveys/team-1/survey-1/submissions',
+            body: any(named: 'body'),
+            method: 'POST',
+          ),
+        ).called(1);
+      },
+    );
+  });
 }
