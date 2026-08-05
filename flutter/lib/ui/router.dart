@@ -48,6 +48,7 @@ import 'teams/team_resources_screen.dart';
 import 'teams/team_courses_screen.dart';
 import 'teams/team_reports_screen.dart';
 import 'teams/team_voices_screen.dart';
+import 'teams/team_plan_screen.dart';
 import 'viewer/resource_viewer_screen.dart';
 
 /// Replaces the Activity/Fragment navigation in `ui/components/FragmentNavigator`
@@ -361,6 +362,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                           GoRoute(
                             path: 'voices',
                             builder: (context, state) => TeamVoicesScreen(
+                              teamId: state.pathParameters['teamId']!,
+                            ),
+                          ),
+                          GoRoute(
+                            path: 'plan',
+                            builder: (context, state) => TeamPlanScreen(
                               teamId: state.pathParameters['teamId']!,
                             ),
                           ),
