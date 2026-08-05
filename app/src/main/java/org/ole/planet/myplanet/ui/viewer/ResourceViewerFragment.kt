@@ -430,15 +430,9 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val file = File(externalFilesDir, "ole/$filePath")
         if (!file.exists()) return
         isExtractingText = true
-        lifecycleScope.launch(dispatcherProvider.io) {
-            pdfText = try {
-                PDFBoxResourceLoader.init(requireContext().applicationContext)
-                val document = PDDocument.load(file)
-                val text = PDFTextStripper().getText(document).trim()
-                document.close()
-                text
-            } catch (e: Exception) { "" }
-            withContext(dispatcherProvider.main) { isExtractingText = false }
+        viewLifecycleOwner.lifecycleScope.launch {
+            pdfText = viewModel.extractPdfText(requireContext().applicationContext, file)
+            isExtractingText = false
         }
     }
 

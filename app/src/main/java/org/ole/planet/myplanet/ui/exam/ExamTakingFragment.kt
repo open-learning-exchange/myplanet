@@ -21,6 +21,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonObject
@@ -67,6 +68,8 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     lateinit var surveysRepository: SurveysRepository
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
+
+    private val viewModel: ExamTakingViewModel by viewModels()
 
     data class AnswerData(
         var singleAnswer: String = "",
@@ -120,22 +123,18 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                     val examCourseIdValue = exam?.courseId
                     val userIdValue = user?.id
 
-                    viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
+                    viewLifecycleOwner.lifecycleScope.launch {
                         try {
-                            submissionsRepository.deleteExamSubmissions(
-                                examIdValue ?: id ?: "", examCourseIdValue, userIdValue
-                            )
+                            viewModel.deleteExamSubmissions(examIdValue ?: id ?: "", examCourseIdValue, userIdValue)
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
 
-                        withContext(dispatcherProvider.main) {
-                            answerCache.clear()
-                            clearAnswer()
-                            ans = ""
-                            listAns?.clear()
-                            sub = null
-                        }
+                        answerCache.clear()
+                        clearAnswer()
+                        ans = ""
+                        listAns?.clear()
+                        sub = null
 
                         val currentExam = exam
                         if (currentExam != null) {
@@ -166,7 +165,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                                 populateCacheFromSavedAnswers(sub)
                                 currentIndex = findFirstUnansweredIndex()
                             } else {
-                                submissionsRepository.deleteExamSubmissions(
+                                viewModel.deleteExamSubmissions(
                                     exam?.id ?: id ?: "", exam?.courseId, user?.id
                                 )
                                 answerCache.clear()

@@ -524,16 +524,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                         createLog("synced successfully", "")
                     }
 
-                    lifecycleScope.launch(dispatcherProvider.io) {
-                        val pendingLanguage = prefData.getPendingLanguageChange()
-                        if (pendingLanguage != null) {
-                            withContext(dispatcherProvider.main) {
-                                prefData.setPendingLanguageChange(null)
-
-                                LocaleUtils.setLocale(this@SyncActivity, pendingLanguage)
-                                recreate()
-                            }
-                        }
+                    val pendingLanguage = prefData.getPendingLanguageChange()
+                    if (pendingLanguage != null) {
+                        prefData.setPendingLanguageChange(null)
+                        LocaleUtils.setLocale(this@SyncActivity, pendingLanguage)
+                        recreate()
                     }
 
                     showSnack(activityContext.findViewById(android.R.id.content), getString(R.string.sync_completed))
@@ -751,7 +746,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     continueSyncProcess()
                 }
             } else {
-                lifecycleScope.launch(dispatcherProvider.io) {
+                withContext(dispatcherProvider.io) {
                     configurationsRepository.clearAllData()
                 }
             }

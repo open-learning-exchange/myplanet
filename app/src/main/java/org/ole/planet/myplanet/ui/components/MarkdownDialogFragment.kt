@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.mikepenz.materialdrawer.Drawer
 import dagger.hilt.android.AndroidEntryPoint
@@ -30,8 +31,7 @@ class MarkdownDialogFragment : DialogFragment() {
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
 
-    @Inject
-    lateinit var userRepository: UserRepository
+    private val viewModel: MarkdownViewModel by viewModels()
     private lateinit var dialogCampaignChallengeBinding: DialogCampaignChallengeBinding
     private var markdownContent: String = ""
     private var courseStatus: String = ""
@@ -123,9 +123,9 @@ class MarkdownDialogFragment : DialogFragment() {
             text = buttonText
 
             viewLifecycleOwner.lifecycleScope.launch {
-                val userId = userRepository.getActiveUserIdSuspending()
+                val userId = viewModel.getActiveUserIdSuspending()
                 val hasSyncAction = if (userId.isNotEmpty()) {
-                    userRepository.hasUserSyncAction(userId)
+                    viewModel.hasUserSyncAction(userId)
                 } else {
                     false
                 }
@@ -149,9 +149,7 @@ class MarkdownDialogFragment : DialogFragment() {
                         (activity as DashboardActivity).openCallFragment(CommunityTabFragment())
                     }
                     context.getString(R.string.sync) -> {
-                        viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
-                            (activity as DashboardElementActivity).logSyncInSharedPrefs()
-                        }
+                        viewModel.logSyncInSharedPrefs(activity as DashboardElementActivity)
                     }
                 }
                 if (drawer != null && drawer.isDrawerOpen) {

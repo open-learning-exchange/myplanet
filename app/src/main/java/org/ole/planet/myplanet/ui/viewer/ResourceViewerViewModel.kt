@@ -40,4 +40,14 @@ class ResourceViewerViewModel @Inject constructor(
     suspend fun updateLibraryItemTranslationAudioPath(id: String, outputFile: String?) {
         resourcesRepository.updateLibraryItem(id) { it.translationAudioPath = outputFile }
     }
+
+    suspend fun extractPdfText(context: android.content.Context, file: java.io.File): String = kotlinx.coroutines.withContext(dispatcherProvider.io) {
+        try {
+            com.tom_roush.pdfbox.android.PDFBoxResourceLoader.init(context)
+            val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(file)
+            val text = com.tom_roush.pdfbox.text.PDFTextStripper().getText(document).trim()
+            document.close()
+            text
+        } catch (e: Exception) { "" }
+    }
 }
