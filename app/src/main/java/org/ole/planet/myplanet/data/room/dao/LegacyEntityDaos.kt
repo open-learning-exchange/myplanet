@@ -161,12 +161,12 @@ interface TeamDao {
     @Query("SELECT * FROM teams WHERE (teamId IS NULL OR TRIM(teamId) = '') AND IFNULL(status, '') != 'archived' AND type = :type")
     suspend fun getRootTeamsByType(type: String): List<MyTeam>
 
-    @Query("SELECT * FROM teams WHERE (teamId IS NULL OR TRIM(teamId) = '') AND IFNULL(status, '') != 'archived' AND type = :type AND (CASE WHEN _id IS NULL OR _id = '' THEN '' ELSE _id END) IN (:teamIds)")
+    @Query("SELECT * FROM teams WHERE (teamId IS NULL OR TRIM(teamId) = '') AND IFNULL(status, '') != 'archived' AND type = :type AND _id IN (:teamIds)")
     suspend fun getRootTeamsByTypeAndIds(type: String, teamIds: Set<String>): List<MyTeam>
 
     @Query("SELECT * FROM teams WHERE teamId = :teamId AND resourceId = :resourceId AND docType = 'resourceLink' LIMIT 1")
     suspend fun getResourceLink(teamId: String, resourceId: String): MyTeam?
 
-    @Query("SELECT EXISTS(SELECT 1 FROM teams WHERE name = :name COLLATE NOCASE AND type = :type AND (teamId IS NULL OR TRIM(teamId) = '') AND IFNULL(status, '') != 'archived' AND ((CASE WHEN _id IS NULL OR _id = '' THEN '' ELSE _id END) != :excludeTeamId OR :excludeTeamId IS NULL))")
+    @Query("SELECT EXISTS(SELECT 1 FROM teams WHERE name = :name COLLATE NOCASE AND type = :type AND (teamId IS NULL OR TRIM(teamId) = '') AND IFNULL(status, '') != 'archived' AND (_id != :excludeTeamId OR :excludeTeamId IS NULL))")
     suspend fun teamNameExists(name: String, type: String, excludeTeamId: String?): Boolean
 }
