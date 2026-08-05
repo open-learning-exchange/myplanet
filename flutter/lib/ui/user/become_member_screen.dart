@@ -128,13 +128,30 @@ class _BecomeMemberScreenState extends ConsumerState<BecomeMemberScreen> {
         return;
       }
 
-      // Create member account
-      await _createMember(username, password);
+      // Create member account locally
+      final localId = await _createMember(username, password);
+
+      // Attempt to upload to server. This populates the server-assigned
+      // _id/_rev and the PBKDF2 security data, so the member can log in
+      // on other devices. On failure we fall back to the offline-only account.
+      final serverConfig = ref.read(serverConfigProvider);
+      bool uploadedOnline = false;
+      if (serverConfig != null) {
+        uploadedOnline = await ref.read(userRepositoryProvider).uploadNewUser(
+              localId: localId,
+              config: serverConfig,
+              username: username,
+              password: password,
+            );
+      }
 
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context).memberCreatedOffline),
+            content: Text(uploadedOnline
+                ? l10n.memberCreatedOnline
+                : l10n.memberCreatedOffline),
           ),
         );
         // Navigate to login with new credentials
@@ -201,13 +218,9 @@ class _BecomeMemberScreenState extends ConsumerState<BecomeMemberScreen> {
 
     await db.into(db.users).insertOnConflictUpdate(user);
 
-    // NOT queued for sync. Kotlin's `UserRepositoryImpl.createUser` POSTs a
-    // CouchDB `_users` document and PUTs the shelf when the server is
-    // reachable, falling back to a local-only account when it is not. Only
-    // that fallback is ported, so every account made here exists on this
-    // handset alone: the member cannot sign in on another device and Planet
-    // never learns they exist. The snackbar says "created offline", which is
-    // at least honest, but the online path is still missing.
+    // The server upload is handled in _submit after this returns.
+    // If it succeeds, the user can log in on other devices.
+    // If it fails, the local account still works here.
     await prefs.setLoggedInUserId(id);
     await prefs.savePassword(password);
 

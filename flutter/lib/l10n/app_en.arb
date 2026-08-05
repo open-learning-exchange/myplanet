@@ -780,6 +780,7 @@
   "pleaseEnterPassword": "Please enter a password",
   "usernameAlreadyExists": "Username already exists",
   "memberCreatedOffline": "Member account created offline",
+  "memberCreatedOnline": "Member account created successfully",
   "communityEarnings": "Community total earnings: **$%1$d** / 500",
   "@communityEarnings": {
     "placeholders": {

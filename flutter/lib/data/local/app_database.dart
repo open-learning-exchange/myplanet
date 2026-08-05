@@ -446,6 +446,33 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
     final row = await query.getSingle();
     return row.read(users.id.count()) ?? 0;
   }
+
+  /// Port of `UserRepositoryImpl.updateSecurityData`.
+  ///
+  /// Updates a newly uploaded user with the server-assigned `_id`, `_rev`, and
+  /// the PBKDF2 security data (`password_scheme`, `derived_key`, `salt`,
+  /// `iterations`) so subsequent logins can verify the password with PBKDF2
+  /// rather than requiring a server fetch.
+  Future<void> updateUserSecurityData({
+    required String localId,
+    required String couchId,
+    required String? rev,
+    required String? passwordScheme,
+    required String? derivedKey,
+    required String? salt,
+    required String? iterations,
+  }) async {
+    await (update(users)..where((u) => u.id.equals(localId))).write(
+      UsersCompanion(
+        couchId: Value(couchId),
+        rev: Value(rev),
+        passwordScheme: Value(passwordScheme),
+        derivedKey: Value(derivedKey),
+        salt: Value(salt),
+        iterations: Value(iterations),
+      ),
+    );
+  }
 }
 
 /// Port of `data/room/dao/MyLibraryDao.kt`.
