@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
@@ -399,7 +398,7 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(l10n.thankYouForTakingSurvey)));
-        context.pop();
+        Navigator.of(context).pop();
       }
     } catch (e) {
       if (context.mounted) {

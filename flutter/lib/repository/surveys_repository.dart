@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import '../core/config/server_config.dart';
 import '../core/network/network_result.dart';
 import '../core/sync/adaptive_batch_processor.dart';
+import '../core/sync/server_url_mapper.dart';
 import '../core/sync/sync_result.dart';
 import '../core/utils/json_utils.dart';
 import '../core/utils/url_utils.dart';
@@ -14,14 +15,22 @@ import '../data/local/exam_mapper.dart';
 import '../data/local/survey_mapper.dart';
 import 'submissions_repository.dart';
 
-/// Port of the individual-survey path in `SurveysRepositoryImpl.kt`.
+/// Port of the individual-survey and public-survey paths in
+/// `SurveysRepositoryImpl.kt`.
 class SurveysRepository {
-  SurveysRepository(this._api, this._dao, this._examDao, this._submissions);
+  SurveysRepository(
+    this._api,
+    this._dao,
+    this._examDao,
+    this._submissions, {
+    ServerUrlMapper? urlMapper,
+  }) : _urlMapper = urlMapper ?? ServerUrlMapper();
 
   final PlanetApi _api;
   final SurveyDao _dao;
   final ExamDao _examDao;
   final SubmissionsRepository _submissions;
+  final ServerUrlMapper _urlMapper;
 
   Stream<List<SurveyRow>> watchAll() => _dao.watchAll();
   Future<SurveyRow?> getById(String id) => _dao.getById(id);
@@ -281,4 +290,221 @@ class SurveysRepository {
     }
     return SyncComplete(ids.length + examIds.length);
   }
+
+  // Public surveys ----------------------------------------------------------------
+
+  /// Fetches a public-access survey from the server's public API, trying the
+  /// configured alternative mirror if the primary is unreachable.
+  ///
+  /// The response is either the survey document directly or wrapped under the
+  /// `survey` key; this matches `SurveysRepositoryImpl.fetchPublicSurvey`.
+  Future<Map<String, dynamic>?> fetchPublicSurvey(
+    String baseUrl,
+    String teamId,
+    String surveyId,
+  ) async {
+    final mapping = _urlMapper.processUrl(baseUrl);
+    final doc = await _fetchPublicSurveyFrom(
+      mapping.primaryUrl,
+      teamId,
+      surveyId,
+    );
+    if (doc != null) return doc;
+    if (mapping.alternativeUrl case final alt?) {
+      return _fetchPublicSurveyFrom(alt, teamId, surveyId);
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> _fetchPublicSurveyFrom(
+    String baseUrl,
+    String teamId,
+    String surveyId,
+  ) async {
+    if (baseUrl.isEmpty) return null;
+    final url =
+        '${_trimTrailingSlash(baseUrl)}/api/public/surveys/$teamId/$surveyId';
+    final result = await _api.getJsonObject(url);
+    if (result is! NetworkSuccess<Map<String, dynamic>>) return null;
+    final data = result.data;
+    final survey = data['survey'];
+    if (survey is Map<String, dynamic>) return survey;
+    return data;
+  }
+
+  /// Stores a survey fetched from the public API so the local survey form can
+  /// read it. Returns the persisted row, or `null` if the document was not a
+  /// valid survey.
+  Future<SurveyRow?> saveSurveyFromPublicApi(Map<String, dynamic> doc) async {
+    final mapped = SurveyMapper.fromDoc(doc);
+    if (mapped == null) return null;
+    final surveyId = mapped.survey.id.value;
+    await _dao.upsertAll([mapped.survey], {surveyId: mapped.questions});
+    return _dao.getById(surveyId);
+  }
+
+  /// Submits a completed anonymous public survey response to the server. The
+  /// [submissionId] must already have been marked complete with the respondent's
+  /// profile (via `UserInformationScreen` / `markSubmissionComplete`).
+  Future<bool> submitPublicSurvey({
+    required String baseUrl,
+    required String teamId,
+    required String surveyId,
+    required String submissionId,
+  }) async {
+    final submission = await _submissions.getById(submissionId);
+    if (submission == null) return false;
+
+    final answers = await _buildPublicAnswers(surveyId, submissionId);
+    final userJson = submission.user;
+    Map<String, dynamic>? respondent;
+    if (userJson != null && userJson.isNotEmpty && userJson != '{}') {
+      try {
+        respondent = jsonDecode(userJson) as Map<String, dynamic>;
+      } on FormatException {
+        respondent = null;
+      }
+    }
+    _sanitizeRespondent(respondent);
+
+    final body = <String, dynamic>{'answers': answers};
+    if (respondent != null && respondent.isNotEmpty) {
+      body['user'] = respondent;
+    }
+
+    return _submitPublicSurveyTo(baseUrl, teamId, surveyId, body);
+  }
+
+  Future<List<dynamic>> _buildPublicAnswers(
+    String surveyId,
+    String submissionId,
+  ) async {
+    final questions = await _dao.questionsFor(surveyId);
+    final answers = await _submissions.answersFor(submissionId);
+    final byQuestion = <String, SubmissionAnswerRow>{};
+    for (final answer in answers) {
+      byQuestion[answer.questionId ?? answer.id] = answer;
+    }
+
+    final payload = <dynamic>[];
+    for (final question in questions) {
+      final key = question.questionId ?? question.id;
+      final answer = byQuestion[key];
+      final choices = answer?.valueChoices ?? const [];
+      if (_typeEquals(question.type, 'selectMultiple')) {
+        payload.add(
+          choices.map(_choiceObject).whereType<Map<String, dynamic>>().toList(),
+        );
+      } else if (_typeEquals(question.type, 'select') && choices.isNotEmpty) {
+        payload.add(_choiceObject(choices.first) ?? choices.first);
+      } else {
+        payload.add(answer?.value ?? '');
+      }
+    }
+    return payload;
+  }
+
+  Map<String, dynamic>? _choiceObject(String raw) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) return decoded;
+    } on FormatException {
+      // Fall through and send the raw string.
+    }
+    return null;
+  }
+
+  /// The public API validates `age` as an integer, but the profile collected
+  /// by `UserInformationScreen` stores a birth year or date. Coerce `birthYear`
+  /// to `age`, leave a pre-existing `dob` as `birthDate`, and remove any
+  /// non-numeric `age` so the submission is not rejected.
+  void _sanitizeRespondent(Map<String, dynamic>? user) {
+    if (user == null) return;
+    final age = _computeAge(user);
+    if (age != null) {
+      user['age'] = age;
+    } else if (user.containsKey('age')) {
+      final parsed = int.tryParse(user['age'].toString().trim());
+      if (parsed != null) {
+        user['age'] = parsed;
+      } else {
+        user.remove('age');
+      }
+    }
+    user.remove('birthYear');
+    if (user.containsKey('dob')) {
+      final dob = user['dob'];
+      if (dob is String && dob.isNotEmpty) {
+        user['birthDate'] = dob;
+      }
+      user.remove('dob');
+    }
+  }
+
+  int? _computeAge(Map<String, dynamic> user) {
+    final birthYear = user['birthYear'];
+    if (birthYear is String && birthYear.isNotEmpty) {
+      final year = int.tryParse(birthYear.trim());
+      if (year != null) {
+        return DateTime.now().year - year;
+      }
+    }
+    final dob = user['dob'];
+    if (dob is String && dob.isNotEmpty) {
+      final parsed = DateTime.tryParse(dob);
+      if (parsed != null) {
+        final now = DateTime.now();
+        var age = now.year - parsed.year;
+        if (now.month < parsed.month ||
+            (now.month == parsed.month && now.day < parsed.day)) {
+          age--;
+        }
+        return age;
+      }
+    }
+    final ageValue = user['age'];
+    if (ageValue is int) return ageValue;
+    if (ageValue is String && ageValue.isNotEmpty) {
+      return int.tryParse(ageValue.trim());
+    }
+    return null;
+  }
+
+  Future<bool> _submitPublicSurveyTo(
+    String baseUrl,
+    String teamId,
+    String surveyId,
+    Map<String, dynamic> body,
+  ) async {
+    final mapping = _urlMapper.processUrl(baseUrl);
+    if (mapping.primaryUrl.isEmpty) return false;
+    if (await _postPublicSurvey(mapping.primaryUrl, teamId, surveyId, body)) {
+      return true;
+    }
+    if (mapping.alternativeUrl case final alt?) {
+      return _postPublicSurvey(alt, teamId, surveyId, body);
+    }
+    return false;
+  }
+
+  Future<bool> _postPublicSurvey(
+    String baseUrl,
+    String teamId,
+    String surveyId,
+    Map<String, dynamic> body,
+  ) async {
+    final url =
+        '${_trimTrailingSlash(baseUrl)}/api/public/surveys/$teamId/$surveyId/submissions';
+    final result = await _api.sendJsonDynamic(url, body: body, method: 'POST');
+    return result is NetworkSuccess<dynamic>;
+  }
 }
+
+String _trimTrailingSlash(String url) {
+  if (url.isEmpty) return url;
+  if (url.endsWith('/')) return url.substring(0, url.length - 1);
+  return url;
+}
+
+bool _typeEquals(String? type, String other) =>
+    type?.toLowerCase() == other.toLowerCase();

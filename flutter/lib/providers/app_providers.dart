@@ -216,6 +216,7 @@ final surveysRepositoryProvider = Provider<SurveysRepository>(
     ref.watch(surveyDaoProvider),
     ref.watch(examDaoProvider),
     ref.watch(submissionsRepositoryProvider),
+    urlMapper: ref.watch(serverUrlMapperProvider),
   ),
 );
 
