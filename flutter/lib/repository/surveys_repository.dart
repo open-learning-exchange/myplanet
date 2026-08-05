@@ -84,43 +84,46 @@ class SurveysRepository {
       if (existing == null) {
         final adoptedId = createId?.call() ?? '${surveyId}_$teamId';
         final questions = await _dao.questionsFor(surveyId);
-        await _dao.upsertAll([
-          SurveysCompanion.insert(
-            id: adoptedId,
-            name: Value(
-              (teamName == null || teamName.isEmpty)
-                  ? survey.name
-                  : '${survey.name} - $teamName',
-            ),
-            description: Value(survey.description),
-            createdDate: Value(timestamp),
-            updatedDate: Value(timestamp),
-            adoptionDate: Value(timestamp),
-            createdBy: Value(userId),
-            totalMarks: Value(survey.totalMarks),
-            passingPercentage: Value(survey.passingPercentage),
-            sourcePlanet: Value(survey.sourcePlanet),
-            isFromNation: Value(survey.isFromNation),
-            teamId: Value(teamId),
-            teamShareAllowed: const Value(false),
-            sourceSurveyId: Value(surveyId),
-          ),
-        ], {
-          adoptedId: [
-            for (final question in questions)
-              SurveyQuestionsCompanion.insert(
-                id: '$adoptedId:${question.questionId ?? question.id}',
-                surveyId: adoptedId,
-                questionId: Value(question.questionId),
-                header: Value(question.header),
-                body: Value(question.body),
-                type: Value(question.type),
-                choices: Value(question.choices),
-                required: Value(question.required),
-                position: question.position,
+        await _dao.upsertAll(
+          [
+            SurveysCompanion.insert(
+              id: adoptedId,
+              name: Value(
+                (teamName == null || teamName.isEmpty)
+                    ? survey.name
+                    : '${survey.name} - $teamName',
               ),
+              description: Value(survey.description),
+              createdDate: Value(timestamp),
+              updatedDate: Value(timestamp),
+              adoptionDate: Value(timestamp),
+              createdBy: Value(userId),
+              totalMarks: Value(survey.totalMarks),
+              passingPercentage: Value(survey.passingPercentage),
+              sourcePlanet: Value(survey.sourcePlanet),
+              isFromNation: Value(survey.isFromNation),
+              teamId: Value(teamId),
+              teamShareAllowed: const Value(false),
+              sourceSurveyId: Value(surveyId),
+            ),
           ],
-        });
+          {
+            adoptedId: [
+              for (final question in questions)
+                SurveyQuestionsCompanion.insert(
+                  id: '$adoptedId:${question.questionId ?? question.id}',
+                  surveyId: adoptedId,
+                  questionId: Value(question.questionId),
+                  header: Value(question.header),
+                  body: Value(question.body),
+                  type: Value(question.type),
+                  choices: Value(question.choices),
+                  required: Value(question.required),
+                  position: question.position,
+                ),
+            ],
+          },
+        );
       }
     }
 

@@ -53,33 +53,36 @@ void main() {
     expect(rows.last.type, 'exam');
   });
 
-  test('bulk survey send creates one reusable pending survey per user', () async {
-    var nextId = 0;
-    await repository.createBulkSurveySubmissions(
-      'survey-1',
-      ['user-1', 'user-2'],
-      now: DateTime.fromMillisecondsSinceEpoch(1234),
-      createId: () => 'local-${nextId++}',
-    );
-    await repository.createBulkSurveySubmissions(
-      'survey-1',
-      ['user-1'],
-      now: DateTime.fromMillisecondsSinceEpoch(9999),
-      createId: () => 'local-${nextId++}',
-    );
+  test(
+    'bulk survey send creates one reusable pending survey per user',
+    () async {
+      var nextId = 0;
+      await repository.createBulkSurveySubmissions(
+        'survey-1',
+        ['user-1', 'user-2'],
+        now: DateTime.fromMillisecondsSinceEpoch(1234),
+        createId: () => 'local-${nextId++}',
+      );
+      await repository.createBulkSurveySubmissions(
+        'survey-1',
+        ['user-1'],
+        now: DateTime.fromMillisecondsSinceEpoch(9999),
+        createId: () => 'local-${nextId++}',
+      );
 
-    final userOne = await repository.watchForUser('user-1').first;
-    final userTwo = await repository.watchForUser('user-2').first;
+      final userOne = await repository.watchForUser('user-1').first;
+      final userTwo = await repository.watchForUser('user-2').first;
 
-    expect(userOne, hasLength(1));
-    expect(userOne.single.id, 'local-0');
-    expect(userOne.single.parentId, 'survey-1');
-    expect(userOne.single.status, 'pending');
-    expect(userOne.single.type, 'survey');
-    expect(userOne.single.isUpdated, isFalse);
-    expect(userOne.single.startTime, 1234);
-    expect(userTwo.single.id, 'local-1');
-  });
+      expect(userOne, hasLength(1));
+      expect(userOne.single.id, 'local-0');
+      expect(userOne.single.parentId, 'survey-1');
+      expect(userOne.single.status, 'pending');
+      expect(userOne.single.type, 'survey');
+      expect(userOne.single.isUpdated, isFalse);
+      expect(userOne.single.startTime, 1234);
+      expect(userTwo.single.id, 'local-1');
+    },
+  );
 
   test('hydrates scalar and choice answers into the related cache', () async {
     await repository.upsertDocuments([
