@@ -380,8 +380,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private fun resolveAudioPath(originalPath: String?): String {
         if (isFullPath) return originalPath ?: ""
         val processedPath = originalPath?.let {
-            val uuidPattern = Pattern.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/")
-            val matcher = uuidPattern.matcher(it)
+            val matcher = UUID_PATTERN.matcher(it)
             if (matcher.find()) it.substring(matcher.end()) else it
         }
         return File(externalFilesDir, "ole/$processedPath").absolutePath
@@ -586,6 +585,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     }
 
     companion object {
+        private val UUID_PATTERN = Pattern.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/")
         private const val MIN_PIP_ASPECT_RATIO = 1.0 / 2.39
         private const val MAX_PIP_ASPECT_RATIO = 2.39 / 1.0
         private const val PIP_ASPECT_RATIO_DENOMINATOR = 1000
