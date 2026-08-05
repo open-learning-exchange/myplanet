@@ -17,17 +17,17 @@
     <string name="planet">Planet</string>
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">Settings</string>
-    <string name="hint_name">username</string>
+    <string name="hint_name">Username</string>
     <string name="btn_back">Back</string>
     <string name="btn_sign_in">Sign In</string>
-    <string name="select_team">select team</string>
+    <string name="select_team">Select team</string>
     <string name="loading">Loading…</string>
     <string name="btn_sync_save">Save</string>
     <string name="err_msg_name">Enter your username</string>
     <string name="err_msg_password">Enter the password</string>
     <string name="err_msg_login">Username and/or password do not match</string>
-    <string name="hint_serverURL">planet ip</string>
-    <string name="hint_serverPin">server pin</string>
+    <string name="hint_serverURL">Planet ip</string>
+    <string name="hint_serverPin">Server pin</string>
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>
     <string name="title_activity_dashboard">Dashboard</string>
@@ -71,8 +71,8 @@
     <string name="button_update">Update</string>
     <string name="level">level</string>
     <string name="select_level">Select Level</string>
-    <string name="male">male</string>
-    <string name="female">female</string>
+    <string name="male">Male</string>
+    <string name="female">Female</string>
     <string name="gender">Gender</string>
     <string name="birth_date">Birth Date</string>
     <string name="phone_number">Phone Number</string>
@@ -185,12 +185,12 @@
         <item>Somali</item>
     </string-array>
 
-    <string name="english">english</string>
-    <string name="spanish">español</string>
+    <string name="english">English</string>
+    <string name="spanish">Español</string>
     <string name="somali">somali</string>
     <string name="nepali">नेपाली</string>
     <string name="arabic">عربى</string>
-    <string name="french">français</string>
+    <string name="french">Français</string>
 
     <string-array name="open_With">
         <item>HTML</item>
@@ -470,7 +470,7 @@
     <string name="add_label">Add Label</string>
     <string name="share_with_community">Share with community</string>
     <string name="add_res">Add Resource</string>
-    <string name="password">password</string>
+    <string name="password">Password</string>
     <string name="retype_password">Confirm Password</string>
     <string name="become_a_member">Become a member</string>
     <string name="change_member">Change Member</string>
@@ -527,7 +527,7 @@
     <string name="attached_resources">Attached resources:</string>
     <string name="edit">Edit</string>
     <string name="my_achievements">My Achievements</string>
-    <string name="open_resource">open resource</string>
+    <string name="open_resource">Open resource</string>
     <string name="zero_total">0 total</string>
     <string name="average">Average</string>
     <string name="zero_point_zero">0.0</string>
@@ -539,8 +539,8 @@
     <string name="method">Method:</string>
     <string name="number_of_exams">Number of exams:</string>
     <string name="description_colon">Description:&#160;</string>
-    <string name="download_resources">download Resources</string>
-    <string name="take_test">take test [%d]</string>
+    <string name="download_resources">Download Resources</string>
+    <string name="take_test">Take test [%d]</string>
     <string name="search">search</string>
     <string name="submit_feedback">Submit Feedback</string>
     <string name="media">Media:</string>
@@ -576,8 +576,8 @@
     <string name="shared_to_community">Shared to community</string>
     <string name="no_data_available_please_check_and_try_again">No data available, please check and try again.</string>
     <string name="no_course_matched_filter">No courses matched filter</string>
-    <string name="added_to_my_library">added to myLibrary</string>
-    <string name="added_to_my_courses">added to myCourses</string>
+    <string name="added_to_my_library">Added to myLibrary</string>
+    <string name="added_to_my_courses">Added to myCourses</string>
     <string name="do_you_want_to_stay_online">Do you want to stay online?</string>
     <string name="device_not_connected_to_planet">Device not connected to planet.</string>
     <string name="all_files_downloaded_successfully">All files downloaded successfully</string>
@@ -644,7 +644,7 @@
     <string name="return_to_the_home_tab_to_access_mylibrary">\n\nReturn to the Home tab to access myLibrary.\n</string>
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">\nNote: You may still need to download the newly added resources.</string>
     <string name="self_examination">%s\nSelf Examination</string>
-    <string name="pending_survey_notification">you have a pending survey:</string>
+    <string name="pending_survey_notification">You have a pending survey:</string>
     <string name="task_notification">%1$s is due in %2$s</string>
     <string name="resource_notification">You have %1$d resources not downloaded</string>
 
@@ -709,7 +709,7 @@
     <string name="please_enter_server_url_first">Please enter server url first.</string>
     <string name="username_cannot_be_empty">Username cannot be empty</string>
     <string name="unable_to_login">Unable to login</string>
-    <string name="select_language">select language</string>
+    <string name="select_language">Select language</string>
     <string name="thank_you">Thank You!</string>
     <string name="please_wait">Please wait…</string>
     <string name="update_later">Update Later</string>
@@ -719,8 +719,8 @@
     <string name="please_enter_valid_url_to_continue">Please enter valid url to continue.</string>
     <string name="uploading_data_to_server_please_wait">Uploading data to server, please wait.....</string>
     <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">Check the server address again. What i connected to wasn\'t the Planet Server</string>
-    <string name="device_couldn_t_reach_local_server">device couldn\'t reach the server. check if you are connected to the correct Wi-Fi network for the local server (community).</string>
-    <string name="device_couldn_t_reach_nation_server">device couldn’t reach the server. check if you are connected to the internet and try again</string>
+    <string name="device_couldn_t_reach_local_server">Device couldn\'t reach the server. check if you are connected to the correct Wi-Fi network for the local server (community).</string>
+    <string name="device_couldn_t_reach_nation_server">Device couldn’t reach the server. check if you are connected to the internet and try again</string>
     <string name="server_not_configured_properly_connect_this_device_with_planet_server">Server not configured properly. Connect this device with Planet server</string>
     <string name="syncing_data_please_wait">Syncing data, Please wait…</string>
     <string name="sync_failed">Sync Failed</string>
@@ -752,7 +752,7 @@
     <string name="what_is_your_team_s_plan">What is your team\'s plan?</string>
     <string name="enter_team_s_name">Enter team\'s name</string>
     <string name="enter">"Enter "</string>
-    <string name="detail">detail</string>
+    <string name="detail">Detail</string>
     <string name="please_enter_a_name">Please enter a name</string>
     <string name="name_is_required">Name is required</string>
     <string name="team_created">Team Created</string>
@@ -761,7 +761,7 @@
     <string name="please_enter_a_password">Please enter a password</string>
     <string name="password_doesn_t_match">Password doesn\'t match</string>
     <string name="invalid_email">Invalid email.</string>
-    <string name="username_taken">username taken</string>
+    <string name="username_taken">Username taken</string>
     <string name="add_reference">Add Reference</string>
     <string name="add_achievement">Add Achievement</string>
     <string name="select_resources">"Select resources: "</string>
@@ -776,8 +776,8 @@
     <string name="data_cleared">Data cleared</string>
     <string name="are_you_sure_want_to_delete_all_the_files">Are you sure want to delete all the files?</string>
     <string name="unable_to_clear_files">Unable to clear files</string>
-    <string name="last_synced_never">never synced</string>
-    <string name="last_synced_colon">last synced: </string>
+    <string name="last_synced_never">Never synced</string>
+    <string name="last_synced_colon">Last synced:\u0020</string>
 
     <string name="disclaimer">
     <![CDATA[
