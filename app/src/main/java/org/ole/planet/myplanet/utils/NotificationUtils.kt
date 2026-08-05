@@ -257,8 +257,8 @@ object NotificationUtils {
     class NotificationManager(private val context: Context, private val timeProvider: TimeProvider) {
         private val notificationManager = NotificationManagerCompat.from(context)
         private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        private val activeNotifications = mutableSetOf<String>()
-        private val sessionShownNotifications = mutableSetOf<String>()
+        private val activeNotifications = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+        private val sessionShownNotifications = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
 
         init {
             loadActiveNotifications()
