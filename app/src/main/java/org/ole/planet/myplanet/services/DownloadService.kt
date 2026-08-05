@@ -288,27 +288,25 @@ class DownloadService : Service() {
                 val contentLength = result.body.contentLength()
                 Log.d(TAG, "tryDownload [$source]: $fileName responded contentLength=${if (contentLength == -1L) "unknown" else "${contentLength}B"}")
                 val storageError = getStorageError(contentLength)
-                when {
-                    storageError != null -> {
-                        Log.e(TAG, "tryDownload [$source]: storage check failed — $storageError")
-                        downloadFailed(storageError, fromSync)
-                        false
-                    }
-                    contentLength == 0L -> {
-                        Log.e(TAG, "tryDownload [$source]: server returned empty body for $fileName")
-                        downloadFailed("Empty file from server", fromSync)
-                        false
-                    }
-                    else -> {
-                        try {
-                            downloadFile(result.body, url)
-                            true
-                        } catch (e: Exception) {
-                            Log.e(TAG, "tryDownload [$source]: write failed for $fileName", e)
-                            downloadFailed(e.localizedMessage ?: "Write failed", fromSync)
-                            false
-                        }
-                    }
+                if (storageError != null) {
+                    Log.e(TAG, "tryDownload [$source]: storage check failed — $storageError")
+                    downloadFailed(storageError, fromSync)
+                    return false
+                }
+
+                if (contentLength == 0L) {
+                    Log.e(TAG, "tryDownload [$source]: server returned empty body for $fileName")
+                    downloadFailed("Empty file from server", fromSync)
+                    return false
+                }
+
+                return try {
+                    downloadFile(result.body, url)
+                    true
+                } catch (e: Exception) {
+                    Log.e(TAG, "tryDownload [$source]: write failed for $fileName", e)
+                    downloadFailed(e.localizedMessage ?: "Write failed", fromSync)
+                    false
                 }
             }
             is DownloadResult.Error -> {
