@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
-import androidx.sqlite.db.SimpleSQLiteQuery
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -81,29 +80,21 @@ class ResourcesRepositoryImpl @Inject constructor(
         val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
         val normalizedQuery = Utilities.normalizeText(query)
 
-        val queryBuilder = StringBuilder("SELECT * FROM my_library WHERE isPrivate = 0")
-        val bindArgs = mutableListOf<Any>()
-
-        if (userId != null) {
-            if (isMyCourseLib) {
-                queryBuilder.append(" AND userId LIKE ? ESCAPE '\\'")
-                bindArgs.add(userIdPattern(userId))
+        val baseList = when {
+            userId != null -> if (isMyCourseLib) {
+                myLibraryDao.getPublicForUserPattern(userIdPattern(userId))
             } else {
-                queryBuilder.append(" AND (userId IS NULL OR userId NOT LIKE ? ESCAPE '\\')")
-                bindArgs.add(userIdPattern(userId))
+                myLibraryDao.getPublicNotUserPattern(userIdPattern(userId))
+            }
+            else -> myLibraryDao.getPublic()
+        }
+
+        val matching = baseList.filter { library ->
+            val titleNormal = library.titleNormal ?: return@filter false
+            normalizedQueryParts.all { token ->
+                titleNormal.contains(token)
             }
         }
-
-        normalizedQueryParts.forEach { token ->
-            val escapedToken = token
-                .replace("\\", "\\\\")
-                .replace("%", "\\%")
-                .replace("_", "\\_")
-            queryBuilder.append(" AND titleNormal LIKE ? ESCAPE '\\'")
-            bindArgs.add("%${escapedToken}%")
-        }
-
-        val matching = myLibraryDao.filterByTitleNormal(SimpleSQLiteQuery(queryBuilder.toString(), bindArgs.toTypedArray()))
 
         val startsWithQuery = mutableListOf<MyLibrary>()
         val containsQuery = mutableListOf<MyLibrary>()
