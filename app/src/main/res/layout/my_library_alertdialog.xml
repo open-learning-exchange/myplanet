@@ -9,9 +9,7 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/alertDialog_listView"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        app:layout_constrainedHeight="true"
-        app:layout_constraintHeight_max="120dp"
+        android:layout_height="120dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
