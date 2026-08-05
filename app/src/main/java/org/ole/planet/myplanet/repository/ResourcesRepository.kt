@@ -80,6 +80,7 @@ interface ResourcesRepository {
     suspend fun downloadResources(resources: List<MyLibrary>): Boolean
     suspend fun downloadResourcesPriority(resources: List<MyLibrary>): Boolean
     suspend fun getAllLibrariesToSync(): List<MyLibrary>
+    suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrary>
     suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String): Result<Unit>
     suspend fun addAllResourcesToUserLibrary(resources: List<MyLibrary>, userId: String): Result<Unit>
     suspend fun observeOpenedResourceIds(userId: String): Flow<Set<String>>
