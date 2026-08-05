@@ -370,29 +370,7 @@ class DownloadService : Service() {
                         currentFileProgress = -1
                     }
 
-                    while (true) {
-                        val readCount = bis.read(data)
-                        if (readCount == -1) break
-
-                        if (readCount > 0) {
-                            total += readCount
-                            val current = (total / 1024.0).roundToInt().toDouble()
-
-                            if (fileSize > 0) {
-                                val progress = (total * 100 / fileSize).toInt()
-                                download.progress = progress
-                                currentFileProgress = progress
-                            }
-
-                            val now = SystemClock.elapsedRealtime()
-                            if (now - lastNotificationUpdateTime >= NOTIFICATION_UPDATE_INTERVAL_MS) {
-                                download.currentFileSize = current.toInt()
-                                sendNotification(download)
-                                lastNotificationUpdateTime = now
-                            }
-                            output.write(data, 0, readCount)
-                        }
-                    }
+                    total = writeStreamToOutput(bis, output, download, fileSize)
                 }
             }
             if (!tempFile.renameTo(finalFile)) {
@@ -407,6 +385,39 @@ class DownloadService : Service() {
             throw e
         }
         onDownloadComplete(url)
+    }
+
+    private fun writeStreamToOutput(
+        bis: java.io.BufferedInputStream,
+        output: java.io.FileOutputStream,
+        download: Download,
+        fileSize: Long
+    ): Long {
+        var total: Long = 0
+        while (true) {
+            val readCount = bis.read(data)
+            if (readCount == -1) break
+
+            if (readCount > 0) {
+                total += readCount
+                val current = (total / 1024.0).roundToInt().toDouble()
+
+                if (fileSize > 0) {
+                    val progress = (total * 100 / fileSize).toInt()
+                    download.progress = progress
+                    currentFileProgress = progress
+                }
+
+                val now = android.os.SystemClock.elapsedRealtime()
+                if (now - lastNotificationUpdateTime >= NOTIFICATION_UPDATE_INTERVAL_MS) {
+                    download.currentFileSize = current.toInt()
+                    sendNotification(download)
+                    lastNotificationUpdateTime = now
+                }
+                output.write(data, 0, readCount)
+            }
+        }
+        return total
     }
 
     private fun getStorageError(fileSize: Long): String? {
