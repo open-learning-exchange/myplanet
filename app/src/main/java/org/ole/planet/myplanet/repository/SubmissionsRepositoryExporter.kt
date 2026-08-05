@@ -30,11 +30,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
 ) {
 
     companion object {
-        private val dateFormatter = object : ThreadLocal<java.text.SimpleDateFormat>() {
-        override fun initialValue(): java.text.SimpleDateFormat {
-            return java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
-        }
-    }
+        private val dateFormatter = ThreadLocal.withInitial { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
 
         private const val PAGE_WIDTH = 595
         private const val PAGE_HEIGHT = 842

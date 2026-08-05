@@ -73,11 +73,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val courseStepDao: CourseStepDao,
     private val appDatabase: AppDatabase,
 ) : TeamsRepository, TeamsSyncRepository {
-    private val dateFormatter = object : ThreadLocal<java.text.SimpleDateFormat>() {
-        override fun initialValue(): java.text.SimpleDateFormat {
-            return java.text.SimpleDateFormat("MMMM dd, yyyy hh:mm a", java.util.Locale.getDefault())
-        }
-    }
+    private val dateFormatter = ThreadLocal.withInitial { SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()) }
 
     override fun getTasksFlow(userId: String?): Flow<List<TeamTask>> {
         return teamTaskDao.getOpenTasksForUser(userId)

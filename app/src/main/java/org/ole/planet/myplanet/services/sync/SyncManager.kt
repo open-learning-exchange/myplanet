@@ -14,7 +14,9 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
@@ -78,11 +80,7 @@ class SyncManager @Inject constructor(
     private val eventsRepository: EventsRepository,
     private val userSyncRepository: UserSyncRepository
 ) {
-    private val dateFormatter = object : ThreadLocal<java.text.SimpleDateFormat>() {
-        override fun initialValue(): java.text.SimpleDateFormat {
-            return java.text.SimpleDateFormat("HH:mm:ss.SSS", java.util.Locale.getDefault())
-        }
-    }
+    private val dateFormatter = ThreadLocal.withInitial { SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()) }
 
     private val isSyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)

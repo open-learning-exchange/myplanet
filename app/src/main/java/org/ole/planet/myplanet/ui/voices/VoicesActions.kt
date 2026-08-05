@@ -30,11 +30,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 object VoicesActions {
-    private val dateFormatter = object : ThreadLocal<java.text.SimpleDateFormat>() {
-        override fun initialValue(): java.text.SimpleDateFormat {
-            return java.text.SimpleDateFormat("MMMM dd, yyyy hh:mm a", java.util.Locale.getDefault())
-        }
-    }
+    private val dateFormatter = ThreadLocal.withInitial { SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()) }
 
     data class EditDialogComponents(
         val view: View,
