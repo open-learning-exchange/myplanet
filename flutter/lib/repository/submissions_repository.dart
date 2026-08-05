@@ -278,7 +278,6 @@ class SubmissionsRepository {
     return (await _dao.getById(id))!;
   }
 
-
   Future<List<SubmissionRow>> submissionsForTeam(String teamId) =>
       _dao.byTeam(teamId);
 
