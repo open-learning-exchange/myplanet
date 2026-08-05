@@ -1776,6 +1776,22 @@ class ChatDao extends DatabaseAccessor<AppDatabase> with _$ChatDaoMixin {
     }
     return deleted;
   }
+
+  /// Returns pending chats that need to be uploaded.
+  Future<List<ChatRow>> getPending() =>
+      (select(chatEntries)
+            ..where((c) => c.isUploaded.equals(false)))
+          .get();
+
+  /// Marks a chat as uploaded with the server-assigned id and rev.
+  Future<void> markUploaded(String id, String docId, String rev) =>
+      (update(chatEntries)..where((c) => c.id.equals(id))).write(
+        ChatEntriesCompanion(
+          docId: Value(docId),
+          rev: Value(rev),
+          isUploaded: const Value(true),
+        ),
+      );
 }
 
 /// Port of `data/room/dao/FeedbackDao.kt`.
