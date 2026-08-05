@@ -8,6 +8,7 @@ import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
 import '../repository/chat_repository.dart';
 import '../repository/chat_repository_impl.dart';
+import '../repository/chat_uploader.dart';
 import '../repository/configurations_repository.dart';
 import '../repository/courses_repository.dart';
 import '../repository/dictionary_repository.dart';
@@ -16,6 +17,8 @@ import '../repository/events_uploader.dart';
 import '../repository/feedback_repository.dart';
 import '../repository/feedback_repository_impl.dart';
 import '../repository/health_repository.dart';
+import '../repository/health_uploader.dart';
+import '../repository/ratings_uploader.dart';
 import '../repository/notifications_repository.dart';
 import '../repository/outbox_drainer.dart';
 import '../repository/outbox_repository.dart';
@@ -172,6 +175,14 @@ final chatRepositoryProvider = Provider<ChatRepository>((ref) {
   final serverUrl = config == null ? '' : UrlUtils.credentialFreeDbUrl(config);
   return ChatRepositoryImpl(planetApi: api, chatDao: dao, serverUrl: serverUrl);
 });
+
+final chatUploaderProvider = Provider<ChatUploader>(
+  (ref) => ChatUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(chatDaoProvider),
+    ref.watch(outboxRepositoryProvider),
+  ),
+);
 
 final feedbackDaoProvider = Provider<FeedbackDao>(
   (ref) => ref.watch(appDatabaseProvider).feedbackDao,
@@ -334,6 +345,9 @@ final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
       for (final type in TeamsUploader.types)
         type: ref.watch(teamsUploaderProvider).handler,
       FeedbackUploader.type: ref.watch(feedbackUploaderProvider).handler,
+      HealthUploader.type: ref.watch(healthUploaderProvider).handler,
+      RatingsUploader.type: ref.watch(ratingsUploaderProvider).handler,
+      ChatUploader.type: ref.watch(chatUploaderProvider).handler,
     },
   );
 });
@@ -403,5 +417,24 @@ final healthRepositoryProvider = Provider<HealthRepository>((ref) {
   final api = ref.watch(planetApiProvider);
   final dao = ref.watch(healthExaminationDaoProvider);
   final config = ref.watch(serverConfigProvider);
-  return HealthRepository(api, dao, config: config);
+  return HealthRepository(api, dao, ref.watch(userDaoProvider), config: config);
 });
+
+final ratingsUploaderProvider = Provider<RatingsUploader>(
+  (ref) => RatingsUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(ratingsRepositoryProvider),
+    ref.watch(appDatabaseProvider).ratingDao,
+    ref.watch(userDaoProvider),
+    ref.watch(outboxRepositoryProvider),
+  ),
+);
+
+final healthUploaderProvider = Provider<HealthUploader>(
+  (ref) => HealthUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(healthRepositoryProvider),
+    ref.watch(healthExaminationDaoProvider),
+    ref.watch(outboxRepositoryProvider),
+  ),
+);
