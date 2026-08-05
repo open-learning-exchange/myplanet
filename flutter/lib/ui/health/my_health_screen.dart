@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/health_provider.dart';
+import '../../providers/sync_state.dart';
 import '../router.dart';
 
 /// Port of `ui/health/MyHealthFragment.kt`.
@@ -18,11 +19,22 @@ class MyHealthScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final healthData = ref.watch(healthDataProvider);
+    final syncState = ref.watch(healthSyncProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.myHealth),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.sync),
+            tooltip: l10n.sync,
+            onPressed: syncState is SyncRunning
+                ? null
+                : () async {
+                    await ref.read(healthSyncProvider.notifier).sync();
+                    ref.invalidate(healthDataProvider);
+                  },
+          ),
           IconButton(
             icon: const Icon(Icons.edit),
             tooltip: l10n.updateHealth,

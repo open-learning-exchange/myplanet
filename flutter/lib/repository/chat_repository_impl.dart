@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:drift/drift.dart' show Value;
+
 import '../core/config/server_config.dart';
 import '../core/network/network_result.dart';
 import '../core/sync/adaptive_batch_processor.dart';
@@ -118,6 +120,44 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
+  @override
+  Future<String> savePendingChat({
+    required String user,
+    required String query,
+    required AiProviderConfig aiProvider,
+    String? existingId,
+    String? existingRev,
+  }) async {
+    // A local id is safe here precisely because the row is pending: when the
+    // outbox drains, `ChatDao.markUploaded` replaces `docId`/`rev` with the
+    // server's. That is not true of the success path, which must use the id
+    // the server assigned.
+    final id =
+        existingId ?? 'local-chat-\${DateTime.now().microsecondsSinceEpoch}';
+    final existing = existingId == null
+        ? null
+        : await chatDao.findByDocId(existingId);
+    final conversations = [
+      ...ChatMapper.parseConversations(existing?.conversations),
+      const ChatConversation().copyWith(query: query, response: ''),
+    ];
+    await chatDao.upsertAll([
+      ChatEntriesCompanion(
+        id: Value(id),
+        docId: Value(existingId),
+        rev: Value(existingRev),
+        user: Value(user),
+        aiProvider: Value(aiProvider.name),
+        title: Value(existing?.title ?? query),
+        conversations: Value(ChatMapper.encodeConversations(conversations)),
+        lastUsed: Value(DateTime.now().millisecondsSinceEpoch),
+        isUploaded: const Value(false),
+      ),
+    ]);
+    return id;
+  }
+
+  @override
   Future<ChatResult> sendContinueChatRequest({
     required String query,
     required String user,
@@ -208,8 +248,29 @@ class ChatRepositoryImpl implements ChatRepository {
 
   Future<void> _insertChatsInternal(List<Map<String, dynamic>> docs) async {
     if (docs.isEmpty) return;
-    final companions = docs.map(ChatMapper.fromDoc).toList();
+    final companions = <ChatEntriesCompanion>[];
+    for (final doc in docs) {
+      final companion = ChatMapper.fromDoc(doc);
+      // A continuation whose answer never arrived is stored locally as a
+      // trailing query with an empty response, and it exists nowhere else —
+      // `_continueConversation(id, query, '', rev)` on the error path. Letting
+      // the sync overwrite `conversations` wholesale would replace it with the
+      // server's older copy and drop the question the user asked.
+      if (await _hasUnansweredQuery(companion.id.value)) continue;
+      companions.add(companion);
+    }
+    if (companions.isEmpty) return;
     await chatDao.upsertAll(companions);
+  }
+
+  Future<bool> _hasUnansweredQuery(String id) async {
+    final local = await chatDao.findByDocId(id);
+    if (local == null) return false;
+    final conversations = ChatMapper.parseConversations(local.conversations);
+    if (conversations.isEmpty) return false;
+    final last = conversations.last;
+    return (last.query?.isNotEmpty ?? false) &&
+        (last.response == null || last.response!.isEmpty);
   }
 
   Future<void> _saveChat(ChatEntriesCompanion chat) async {

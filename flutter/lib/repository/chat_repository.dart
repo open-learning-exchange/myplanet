@@ -16,6 +16,20 @@ abstract class ChatRepository {
   });
 
   /// Sends a continuation message to an existing chat.
+  /// Stores a message the server did not accept, so the outbox can retry it.
+  ///
+  /// Returns the local row id. Until this existed a failed send dropped the
+  /// message on the floor and `ChatDao.getPending()` was always empty, which
+  /// left `ChatUploader` with nothing to do — the offline case it was written
+  /// for could not arise.
+  Future<String> savePendingChat({
+    required String user,
+    required String query,
+    required AiProviderConfig aiProvider,
+    String? existingId,
+    String? existingRev,
+  });
+
   Future<ChatResult> sendContinueChatRequest({
     required String query,
     required String user,

@@ -346,9 +346,9 @@ class SubmissionsRepository {
       if (row.rev != null && row.rev!.isNotEmpty) '_rev': row.rev,
       'type': row.type,
       'userId': row.userId,
-      'user': row.user,
+      'user': _asDocument(row.user),
       'parentId': row.parentId,
-      'parent': row.parent,
+      'parent': _asDocument(row.parent),
       'startTime': row.startTime,
       'lastUpdateTime': row.lastUpdateTime,
       'status': row.status,
@@ -365,6 +365,28 @@ class SubmissionsRepository {
           },
       ],
     };
+  }
+
+  /// `parent` and `user` are stored locally as JSON *text*, but Kotlin uploads
+  /// them as nested objects — `object.add("parent", ...)` and
+  /// `object.add("user", JsonParser.parseString(submission.user))` in
+  /// `SubmissionsRepositoryImpl`. Posting the string instead produces a
+  /// document whose `parent._id` and `user.name` do not exist as far as Planet
+  /// is concerned, so it can attribute the submission neither to its survey nor
+  /// to its respondent. Survey adoption makes this unmissable: the whole point
+  /// of the adoption document is the user object it carries.
+  ///
+  /// `createDraft` stores a plain title in `parent` rather than JSON, so
+  /// anything that does not decode to an object is sent through untouched.
+  static Object? _asDocument(String? raw) {
+    if (raw == null || raw.isEmpty) return raw;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) return decoded;
+    } on FormatException {
+      // Not JSON — fall through and send the raw string.
+    }
+    return raw;
   }
 
   /// Stores a CouchDB page. Answers and exam details remain with the later

@@ -286,4 +286,44 @@ void main() {
     expect(await repository.sync(config: config), isA<SyncFailed>());
     expect(await repository.localCount(), 100);
   });
+
+  test('parent and user upload as objects, not as JSON text', () async {
+    // Kotlin sends both as nested documents (`object.add("user",
+    // JsonParser.parseString(submission.user))`). Sending the stored string
+    // instead gives Planet a `user` it cannot read `name` or `_id` off, so the
+    // submission is attributable to neither its respondent nor its survey.
+    await repository.createSurveyAdoptionSubmission(
+      id: 'adoption-1',
+      surveyId: 'survey-1',
+      userId: 'user-1',
+      parentJson: '{"_id":"survey-1","name":"Water quality"}',
+      userJson: '{"doc":{"_id":"user-1","userId":"user-1"}}',
+      source: 'planet-1',
+      parentCode: 'parent-1',
+    );
+
+    final payload = await repository.serialize(
+      (await repository.getById('adoption-1'))!,
+    );
+
+    expect(payload['parent'], isA<Map<String, dynamic>>());
+    expect((payload['parent'] as Map)['_id'], 'survey-1');
+    expect(payload['user'], isA<Map<String, dynamic>>());
+    expect(((payload['user'] as Map)['doc'] as Map)['userId'], 'user-1');
+  });
+
+  test('a parent that is a plain title survives serialization', () async {
+    // `createDraft` stores the title there rather than a JSON document, and
+    // decoding must not turn that into a dropped or mangled field.
+    final id = await repository.createDraft(
+      userId: 'user-1',
+      type: 'feedback',
+      title: 'Broken projector',
+      answers: const [],
+    );
+
+    final payload = await repository.serialize((await repository.getById(id))!);
+
+    expect(payload['parent'], 'Broken projector');
+  });
 }

@@ -253,6 +253,85 @@ void main() {
     );
   });
 
+  test('a health examination survives a schema upgrade', () async {
+    // A clinician's reading, recorded offline. No health sync had a caller
+    // until this slice, and even with one the record is authored here — the
+    // server has nothing to give back.
+    await database.healthExaminationDao.upsert(
+      HealthExaminationsCompanion.insert(
+        id: 'exam-1',
+        userId: const Value('user-1'),
+        pulse: const Value(72),
+      ),
+    );
+
+    await runUpgrade();
+
+    expect((await database.healthExaminationDao.getById('exam-1'))?.pulse, 72);
+  });
+
+  test('the health encryption key survives a schema upgrade', () async {
+    // `key`/`iv` are generated on this device and never uploaded. Dropping
+    // them would leave every health record already encrypted with them
+    // unreadable — and would sign the user out, since the session restores by
+    // looking their id up in this table.
+    await database.userDao.upsert(
+      UsersCompanion.insert(id: 'user-1', name: const Value('ada')),
+    );
+    final before = await database.userDao.ensureSecurityKeys('user-1');
+
+    await runUpgrade();
+
+    final after = await database.userDao.getById('user-1');
+    expect(after?.key, before?.key);
+    expect(after?.iv, before?.iv);
+  });
+
+  test(
+    'a column added to a preserved table reaches an existing install',
+    () async {
+      // `createAll` emits `CREATE TABLE IF NOT EXISTS`, and a preserved table is
+      // skipped by the drop loop — so a new column on one only ever exists on
+      // installs created after the change unless `onUpgrade` adds it by hand.
+      // `chat_history.is_uploaded` arrived without that step; every chat query
+      // then failed on the missing column.
+      await database.customStatement(
+        'ALTER TABLE chat_history DROP COLUMN is_uploaded',
+      );
+
+      await runUpgrade();
+
+      final columns = await database
+          .customSelect('PRAGMA table_info(chat_history)')
+          .get();
+      expect(
+        columns.map((row) => row.read<String>('name')),
+        contains('is_uploaded'),
+      );
+    },
+  );
+
+  test('an already-uploaded chat is not re-queued after the upgrade', () async {
+    // A chat carries a `_rev` only once the server acknowledged it. Leaving
+    // those at the column default would mark every synced conversation pending
+    // and post a duplicate of each on the next drain.
+    await database.chatDao.upsertAll([
+      ChatEntriesCompanion.insert(
+        id: 'chat-1',
+        docId: const Value('chat-1'),
+        rev: const Value('1-a'),
+        user: const Value('ada'),
+      ),
+    ]);
+    await database.customStatement(
+      'ALTER TABLE chat_history DROP COLUMN is_uploaded',
+    );
+
+    await runUpgrade();
+
+    expect(await database.chatDao.getPending(), isEmpty);
+  });
+
   test('every preserved table has a preservation test', () {
     // `my_life` and the submissions tables were added to the preserved set
     // without one. This fails the moment another name is added, so the next
@@ -271,6 +350,8 @@ void main() {
       'teams',
       'chat_history',
       'feedback',
+      'health_examinations',
+      'users',
     };
     expect(
       AppDatabase.localAuthorityTables,
@@ -294,17 +375,28 @@ void main() {
   test(
     'a CouchDB cache is still dropped and refilled by the next sync',
     () async {
-      await database.userDao.upsert(
-        UsersCompanion.insert(id: 'user-1', name: const Value('ada')),
+      // `users` used to be the example here. It is preserved now — it carries
+      // the locally-generated health key — so the rule needs a table that is
+      // genuinely nothing but a cache.
+      await database.myLibraryDao.upsertAll([
+        MyLibraryTableCompanion.insert(
+          id: 'resource-1',
+          title: const Value('Algebra'),
+        ),
+      ]);
+      expect(
+        (await database.myLibraryDao.getById('resource-1'))?.id,
+        'resource-1',
       );
-      expect(await database.userDao.count(), 1);
 
       await runUpgrade();
 
       expect(
-        await database.userDao.count(),
-        0,
-        reason: 'users are a cache; the drop-and-resync policy still applies',
+        await database.myLibraryDao.getById('resource-1'),
+        equals(null),
+        reason:
+            'the resource cache is refilled by the next sync, so the '
+            'drop-and-resync policy still applies',
       );
     },
   );

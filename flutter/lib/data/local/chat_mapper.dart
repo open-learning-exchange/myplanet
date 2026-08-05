@@ -35,6 +35,11 @@ class ChatMapper {
         conversations != null ? jsonEncode(conversations) : null,
       ),
       lastUsed: Value(DateTime.now().millisecondsSinceEpoch),
+      // This document came from the server, so it is by definition already
+      // there. `is_uploaded` defaults to false, and nothing else sets it —
+      // leaving it would make `getPending()` return every synced conversation
+      // and post a duplicate of each on the next drain.
+      isUploaded: const Value(true),
     );
   }
 
