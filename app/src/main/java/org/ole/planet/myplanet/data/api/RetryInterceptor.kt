@@ -85,7 +85,10 @@ class RetryInterceptor @Inject constructor(
                 if (remaining <= 0) {
                     return
                 }
-                Thread.sleep(minOf(remaining, MAX_BACKOFF_SLICE_MS))
+                java.util.concurrent.locks.LockSupport.parkNanos(minOf(remaining, MAX_BACKOFF_SLICE_MS) * 1_000_000)
+                if (Thread.interrupted()) {
+                    throw InterruptedException()
+                }
             }
         } catch (e: InterruptedException) {
             Thread.currentThread().interrupt()
