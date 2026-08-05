@@ -48,43 +48,20 @@ class Achievement {
         get() = parseStringListToJsonArray(otherInfo)
 
     fun setLinks(la: JsonArray?) {
-        links = mutableListOf()
-        if (la == null) return
-        for (el in la) {
-            val e = JsonUtils.gson.toJson(el)
-            if (links?.contains(e) != true) links = links.orEmpty() + e
-        }
+        links = la?.map { JsonUtils.gson.toJson(it) }?.distinct() ?: emptyList()
     }
 
     fun setOtherInfo(oi: JsonArray?) {
-        otherInfo = mutableListOf()
-        if (oi == null) return
-        for (el in oi) {
-            val e = JsonUtils.gson.toJson(el)
-            if (otherInfo?.contains(e) != true) otherInfo = otherInfo.orEmpty() + e
-        }
+        otherInfo = oi?.map { JsonUtils.gson.toJson(it) }?.distinct() ?: emptyList()
     }
 
     fun setAchievements(ac: JsonArray) {
-        achievements = mutableListOf()
-        for (el in ac) {
-            val achievement = JsonUtils.gson.toJson(el)
-            if (achievements?.contains(achievement) != true) {
-                achievements = achievements.orEmpty() + achievement
-            }
-        }
+        achievements = ac.map { JsonUtils.gson.toJson(it) }.distinct()
     }
 
     fun setReferences(of: JsonArray?) {
         cachedReferencesArray = null
-        references = mutableListOf()
-        if (of == null) return
-        for (el in of) {
-            val e = JsonUtils.gson.toJson(el)
-            if (references?.contains(e) != true) {
-                references = references.orEmpty() + e
-            }
-        }
+        references = of?.map { JsonUtils.gson.toJson(it) }?.distinct() ?: emptyList()
     }
 
     companion object {
