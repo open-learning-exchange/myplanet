@@ -283,6 +283,13 @@ class TeamDetailScreen extends ConsumerWidget {
                     onTap: () =>
                         context.push('${Routes.teams}/${team.id}/courses'),
                   ),
+                  ListTile(
+                    leading: const Icon(Icons.poll_outlined),
+                    title: Text(l10n.teamSurveys),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () =>
+                        context.push('${Routes.teams}/${team.id}/surveys'),
+                  ),
                   if (team.type == 'enterprise')
                     ListTile(
                       leading: const Icon(Icons.assessment_outlined),

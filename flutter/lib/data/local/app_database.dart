@@ -1318,6 +1318,27 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
             ..limit(1))
           .watchSingleOrNull();
 
+  Future<SubmissionRow?> latestPendingByUserAndParent(
+    String userId,
+    String parentId,
+  ) =>
+      (select(submissions)
+            ..where(
+              (row) =>
+                  row.userId.equals(userId) &
+                  row.parentId.equals(parentId) &
+                  row.type.equals('survey') &
+                  row.status.equals('pending'),
+            )
+            ..orderBy([
+              (row) => OrderingTerm(
+                expression: row.lastUpdateTime,
+                mode: OrderingMode.desc,
+              ),
+            ])
+            ..limit(1))
+          .getSingleOrNull();
+
   Stream<List<SubmissionAnswerRow>> watchAnswers(String submissionId) =>
       (select(submissionAnswers)
             ..where((row) => row.submissionId.equals(submissionId))
@@ -1346,6 +1367,17 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
     )..addColumns([count])).getSingle();
     return row.read(count) ?? 0;
   }
+
+  Future<List<SubmissionRow>> byTeam(String teamId) =>
+      (select(submissions)..where((row) => row.teamId.equals(teamId))).get();
+
+  Future<List<SubmissionRow>> byUserWithoutTeam(String userId) =>
+      (select(submissions)..where(
+            (row) =>
+                row.userId.equals(userId) &
+                (row.teamId.isNull() | row.teamId.equals('')),
+          ))
+          .get();
 
   Future<List<SubmissionRow>> pendingUploads(String userId) =>
       (select(submissions)..where(
@@ -1512,6 +1544,18 @@ class SurveyDao extends DatabaseAccessor<AppDatabase> with _$SurveyDaoMixin {
 
   Future<SurveyRow?> getById(String id) =>
       (select(surveys)..where((row) => row.id.equals(id))).getSingleOrNull();
+
+  Future<List<SurveyRow>> allRows() => select(surveys).get();
+
+  Future<SurveyRow?> adoptedTeamSurvey(String teamId, String sourceSurveyId) =>
+      (select(surveys)
+            ..where(
+              (row) =>
+                  row.teamId.equals(teamId) &
+                  row.sourceSurveyId.equals(sourceSurveyId),
+            )
+            ..limit(1))
+          .getSingleOrNull();
 
   Future<List<SurveyQuestionRow>> questionsFor(String surveyId) =>
       (select(surveyQuestions)

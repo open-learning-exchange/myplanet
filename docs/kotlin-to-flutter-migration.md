@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 27 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 28 in progress.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -23,7 +23,7 @@ Known gaps:
 - Chat: a failed send now saves a pending row and queues it, so `ChatUploader` has work. What
   is still missing is any retry *while composing* — the message reaches the server on the next
   outbox drain, not immediately.
-- Team attachments and team/public survey sharing are unported.
+- Team attachments are unported. Team survey adoption now has repository and team UI parity; the remaining work is the public anonymous survey deep-link flow.
 
 - **Phase 1** -- skeleton plus the server configuration → login → resources slice.
 - **Phase 2** -- dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -117,6 +117,14 @@ Known gaps:
   wholesale, discarding a question whose answer had not yet arrived. Feedback's `deleteNotIn`
   already spared un-uploaded rows and needed no change.
 
+
+- **Phase 28** — survey send/adoption repository parity. Sending a survey from Flutter now uses
+  the same get-or-create semantics as Kotlin's `createBulkSurveySubmissions` instead of inserting
+  duplicate rows directly from the dialog. The repository also has the Kotlin team survey adoption
+  core: shareable surveys can be copied into a team with copied questions, an adoption submission is
+  queued for upload, and team-owned/adoptable/individual filters share the same rules as
+  `SurveysRepositoryImpl`. The team detail screen now links to the team-survey screen for owned surveys and leader adoption. The anonymous public survey deep-link
+  host remains to be wired.
 
 - **Phase 27** — chat upload, member registration against `_users`, and the resource detail
   screen with its filter sheet. Three fixes were needed around it:
