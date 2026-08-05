@@ -729,6 +729,9 @@ class ChatEntries extends Table {
   /// Each conversation has `query` and `response` fields.
   TextColumn get conversations => text().nullable()();
 
+  /// Whether this chat has been uploaded to the server.
+  BoolColumn get isUploaded => boolean().withDefault(const Constant(false))();
+
   @override
   Set<Column> get primaryKey => {id};
 }
