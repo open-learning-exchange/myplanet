@@ -203,11 +203,13 @@ abstract class BaseResourceFragment : Fragment() {
                         downloadSuggestionDialog = null
                     }
                 }
+                dialog.setOnShowListener {
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled =
+                        ((lv?.adapter as? CheckboxAdapter)?.selectedItemsList?.size ?: 0) > 0
+                }
                 oldDialog?.setOnDismissListener(null)
                 oldDialog?.dismiss()
                 dialog.show()
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = ((lv?.adapter as? CheckboxAdapter)?.selectedItemsList?.size
-                    ?: 0) > 0
             }
         }
     }
