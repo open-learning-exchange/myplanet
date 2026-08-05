@@ -26,7 +26,8 @@ class TeamSurveysScreen extends ConsumerWidget {
     final userId = ref.watch(sessionProvider).valueOrNull?.id;
     final memberships =
         ref.watch(teamMembershipsProvider).valueOrNull ?? const {};
-    final membership = memberships[teamId] ??
+    final membership =
+        memberships[teamId] ??
         (team?.teamId == null ? null : memberships[team!.teamId]);
     final canAdopt = membership?.isLeader == true;
 
@@ -86,9 +87,7 @@ class TeamSurveysScreen extends ConsumerWidget {
                                 isTeam: true,
                               );
                           ref.invalidate(teamOwnedSurveysProvider(teamId));
-                          ref.invalidate(
-                            teamAdoptableSurveysProvider(teamId),
-                          );
+                          ref.invalidate(teamAdoptableSurveysProvider(teamId));
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text(l10n.surveyAdopted)),
@@ -123,25 +122,24 @@ class _SurveySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          rows.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (_, _) =>
-                Text(AppLocalizations.of(context).surveysUnavailable),
-            data: (surveys) => surveys.isEmpty
-                ? Card(
-                    child: ListTile(
-                      leading: const Icon(Icons.info_outline),
-                      title: Text(emptyText),
-                    ),
-                  )
-                : Column(children: surveys.map(itemBuilder).toList()),
-          ),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(title, style: Theme.of(context).textTheme.titleMedium),
+      const SizedBox(height: 8),
+      rows.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, _) => Text(AppLocalizations.of(context).surveysUnavailable),
+        data: (surveys) => surveys.isEmpty
+            ? Card(
+                child: ListTile(
+                  leading: const Icon(Icons.info_outline),
+                  title: Text(emptyText),
+                ),
+              )
+            : Column(children: surveys.map(itemBuilder).toList()),
+      ),
+    ],
+  );
 }
 
 class _SurveyTile extends StatelessWidget {

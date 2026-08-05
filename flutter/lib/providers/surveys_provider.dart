@@ -17,11 +17,10 @@ final surveysProvider = StreamProvider<List<SurveyRow>>((ref) async* {
   final query = ref.watch(surveySearchProvider).trim().toLowerCase();
   final sort = ref.watch(surveySortProvider);
   await for (final cached in ref.watch(surveysRepositoryProvider).watchAll()) {
-    final individualIds = (await ref
-            .watch(surveysRepositoryProvider)
-            .individualSurveys())
-        .map((row) => row.id)
-        .toSet();
+    final individualIds =
+        (await ref.watch(surveysRepositoryProvider).individualSurveys())
+            .map((row) => row.id)
+            .toSet();
     final rows = cached
         .where(
           (row) =>
