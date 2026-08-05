@@ -149,7 +149,7 @@ class MarkdownDialogFragment : DialogFragment() {
                         (activity as DashboardActivity).openCallFragment(CommunityTabFragment())
                     }
                     context.getString(R.string.sync) -> {
-                        viewModel.logSyncInSharedPrefs(activity as DashboardElementActivity)
+                        (activity as DashboardElementActivity).logSyncInSharedPrefs()
                     }
                 }
                 if (drawer != null && drawer.isDrawerOpen) {

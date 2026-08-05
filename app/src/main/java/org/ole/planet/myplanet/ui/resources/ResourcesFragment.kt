@@ -718,12 +718,14 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val itemsToDelete = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToDelete.isNotEmpty()) {
-            viewModel.deleteResources(userId, itemsToDelete)
-            Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
-            refreshResourcesData()
-            selectedItems?.clear()
-            changeButtonStatus()
-            hideButton()
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewModel.deleteResources(userId, itemsToDelete)
+                Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+                refreshResourcesData()
+                selectedItems?.clear()
+                changeButtonStatus()
+                hideButton()
+            }
         }
     }
 

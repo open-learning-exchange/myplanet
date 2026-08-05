@@ -53,7 +53,7 @@ class ResourcesViewModel @Inject constructor(
         return resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
     }
 
-    suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> = kotlinx.coroutines.withContext(dispatcherProvider.io) {
+    suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> = withContext(dispatcherProvider.io) {
         resourcesRepository.getResourceListModels(isMyCourseLib, modelId)
     }
 
@@ -83,8 +83,8 @@ class ResourcesViewModel @Inject constructor(
         }
     }
 
-    fun deleteResources(userId: String, itemsToDelete: List<String>) {
-        viewModelScope.launch(dispatcherProvider.io) {
+    suspend fun deleteResources(userId: String, itemsToDelete: List<String>) {
+        withContext(dispatcherProvider.io) {
             itemsToDelete.forEach { resourceId ->
                 resourcesRepository.removeResourceFromShelf(resourceId, userId)
             }
