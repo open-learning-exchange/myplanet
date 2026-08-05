@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 25 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 27 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -21,9 +21,11 @@ Known gaps:
 - Background work with no user present (`AutoSyncWorker`'s timed sync,
   `TaskNotificationWorker`'s deadline notifications, `DownloadWorker`'s background queue) needs
   OS scheduling and is not ported.
-- ~~Chat and feedback have no *sync-in* direction~~ — now implemented (Phase 26).
-- ~~Team voices~~ — now implemented (Phase 27).
+- Chat has no *upload* direction at all: a conversation exists only on the device it was typed
+  on, which is why its sync must never delete a row the server has not confirmed.
 - Team attachments and team/public survey sharing are unported.
+- ~~`BecomeMemberScreen` still only writes locally~~ — **resolved in Phase 27**: now attempts
+  server POST after local creation; falls back to local-only account if offline.
 
 - **Phase 1** -- skeleton plus the server configuration → login → resources slice.
 - **Phase 2** -- dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -108,18 +110,22 @@ Known gaps:
   - **components**: `CheckboxList` is used by four screens. `ChallengeDialog` and
     `CustomDropdown` are built and called from nowhere.
 
-- **Phase 26** — chat and feedback sync-in. `ChatRepository.sync()` and
-  `FeedbackRepository.sync()` now fetch `chat_history` and `feedback` from CouchDB,
-  calling the previously uncalled `insertChatHistoryFromSync` and `insertFromJson`. Both
-  use the same paginated pull pattern as other repositories: count with `?limit=0`, then
-  walk `?include_docs=true&limit&skip` pages, upserting each document and pruning stale
-  local rows on completion.
+- **Phase 26** — chat and feedback sync-in, team plan/finances/calendar/voices, take-course and
+  course progress, and survey sending. The two syncs arrived with no caller on either side, as
+  the uploaders before them had; both are now reachable from their screens. The chat sync needed
+  two guards before it was safe to run at all: it called `deleteNotIn` on a table with no
+  uploader — so every conversation the server had not confirmed would have been destroyed, and
+  an empty keep list emptied the table outright — and its upsert overwrote `conversations`
+  wholesale, discarding a question whose answer had not yet arrived. Feedback's `deleteNotIn`
+  already spared un-uploaded rows and needed no change.
 
-- **Phase 27** — team voices. `TeamVoicesScreen` shows discussion posts scoped to a specific
-  team, filtered by team ID in the `viewIn` field. `teamVoicesProvider` streams filtered
-  posts from `VoicesRepository`, and `VoicesActions.createTeamPost()` addresses new posts
-  to the team so they appear only to members.
 
+- **Phase 27** — `BecomeMemberScreen` server POST. The screen created local accounts but never
+  uploaded them to CouchDB, so members registered in the app existed only on that device.
+  Added `uploadNewUser` to `UserRepository` that PUTs the user document to `/-users`, fetches
+  the created document to retrieve the PBKDF2 security data, and updates the local row with
+  server-assigned `_id`/`_rev`. The screen now attempts the upload after local creation and
+  falls back to the offline-only account if the server is unreachable.
 ## Strategy
 
 - **Coexistence, green at every commit.** The Flutter app lives in `flutter/` alongside the
@@ -674,6 +680,6 @@ succeeds, it just doesn't do what the Kotlin did.
 
 ---
 
-**Last updated**: 2026-08-04 (Phase 27 complete)
-**Phase**: 27 of N (27 of 28 UI packages have a screen — see Status for what that does and does
+**Last updated**: 2026-08-05 (Phase 26 complete)
+**Phase**: 26 of N (27 of 28 UI packages have a screen — see Status for what that does and does
 not mean)
