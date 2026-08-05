@@ -187,7 +187,7 @@
         <item name="android:popupBackground">@color/daynight_grey</item>
     </style>
 
-    <style name="AlertDialogTheme" parent="ThemeOverlay.AppCompat.Dialog.Alert">
+    <style name="AlertDialogTheme" parent="ThemeOverlay.MaterialComponents.Dialog.Alert">
         <item name="android:background">@color/secondary_bg</item>
         <item name="android:textColorPrimary">@color/daynight_textColor</item>
         <item name="android:textColor">@color/daynight_textColor</item>
