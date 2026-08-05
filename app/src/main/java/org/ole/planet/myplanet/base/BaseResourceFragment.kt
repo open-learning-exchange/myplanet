@@ -159,12 +159,12 @@ abstract class BaseResourceFragment : Fragment() {
             val alertDialogBuilder = AlertDialog.Builder(fragmentActivity, R.style.AlertDialogTheme)
             val titleView = TextView(requireContext()).apply {
                 text = getString(R.string.download_suggestion)
-                val paddingHorizontal = (24 * resources.displayMetrics.density).toInt()
-                val paddingTop = (16 * resources.displayMetrics.density).toInt()
-                val paddingBottom = (8 * resources.displayMetrics.density).toInt()
+                val paddingHorizontal = (16 * resources.displayMetrics.density).toInt()
+                val paddingTop = (12 * resources.displayMetrics.density).toInt()
+                val paddingBottom = (4 * resources.displayMetrics.density).toInt()
                 setPadding(paddingHorizontal, paddingTop, paddingHorizontal, paddingBottom)
-                textSize = 16f
-                maxLines = 5
+                textSize = 15f
+                maxLines = 4
                 isSingleLine = false
                 setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
             }

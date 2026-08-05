@@ -4,14 +4,14 @@
     android:layout_height="wrap_content"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@color/card_bg"
-    android:padding="10dp">
+    android:padding="8dp">
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/alertDialog_listView"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         app:layout_constrainedHeight="true"
-        app:layout_constraintHeight_max="220dp"
+        app:layout_constraintHeight_max="150dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
