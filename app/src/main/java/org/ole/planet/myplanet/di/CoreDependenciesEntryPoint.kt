@@ -8,6 +8,7 @@ import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TimeProvider
@@ -23,5 +24,5 @@ interface CoreDependenciesEntryPoint {
     fun apkLogDao(): ApkLogDao
     fun timeProvider(): TimeProvider
     fun resourcesRepository(): ResourcesRepository
-    fun realtimeSyncManager(): org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+    fun realtimeSyncManager(): RealtimeSyncManager
 }
