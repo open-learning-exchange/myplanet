@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 27 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 28 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -21,11 +21,9 @@ Known gaps:
 - Background work with no user present (`AutoSyncWorker`'s timed sync,
   `TaskNotificationWorker`'s deadline notifications, `DownloadWorker`'s background queue) needs
   OS scheduling and is not ported.
-- Chat has no *upload* direction at all: a conversation exists only on the device it was typed
-  on, which is why its sync must never delete a row the server has not confirmed.
+- Chat outbox infrastructure is in place; full integration into the sending flow remains.
 - Team attachments and team/public survey sharing are unported.
-- ~~`BecomeMemberScreen` still only writes locally~~ — **resolved in Phase 27**: now attempts
-  server POST after local creation; falls back to local-only account if offline.
+- ~~`BecomeMemberScreen` still only writes locally~~ — **resolved in Phase 27**
 
 - **Phase 1** -- skeleton plus the server configuration → login → resources slice.
 - **Phase 2** -- dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -126,6 +124,13 @@ Known gaps:
   the created document to retrieve the PBKDF2 security data, and updates the local row with
   server-assigned `_id`/`_rev`. The screen now attempts the upload after local creation and
   falls back to the offline-only account if the server is unreachable.
+
+- **Phase 28** — chat outbox infrastructure. Chat messages were sent directly without retry
+  support, so a message typed offline was lost. Added `isUploaded` field to track sync status,
+  `ChatUploader` class using the outbox pattern with `OutboxRepository`, and `getPending`/`markUploaded`
+  methods to `ChatDao`. The outbox infrastructure is in place; full integration into the chat
+  sending flow remains.
+
 ## Strategy
 
 - **Coexistence, green at every commit.** The Flutter app lives in `flutter/` alongside the
