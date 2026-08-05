@@ -154,15 +154,14 @@ class CourseProgressRow {
 ///
 /// Combines course enrollment, step completion, and exam submissions
 /// to compute progress statistics.
-final courseProgressStreamProvider =
-    StreamProvider<List<CourseProgressRow>>((ref) async* {
+final courseProgressStreamProvider = StreamProvider<List<CourseProgressRow>>((
+  ref,
+) async* {
   final userId = ref.watch(sessionProvider).valueOrNull?.id;
   final coursesRepo = ref.watch(coursesRepositoryProvider);
 
   // Watch user's courses (shelf membership)
-  final myCourses = await coursesRepo.watchCourses(
-    shelfUserId: userId,
-  ).first;
+  final myCourses = await coursesRepo.watchCourses(shelfUserId: userId).first;
   if (myCourses.isEmpty) {
     yield [];
     return;
@@ -226,17 +225,20 @@ final courseProgressStreamProvider =
   for (final course in myCourses) {
     final stepCount = stepsByCourse[course.id] ?? 0;
     final submissionCount = submissionsByCourse[course.id]?.length ?? 0;
-    final progressCurrent =
-        stepCount > 0 ? submissionCount.clamp(0, stepCount) : 0;
+    final progressCurrent = stepCount > 0
+        ? submissionCount.clamp(0, stepCount)
+        : 0;
 
-    rows.add(CourseProgressRow(
-      courseId: course.id,
-      courseName: course.courseTitle ?? 'Untitled Course',
-      progressCurrent: progressCurrent,
-      progressMax: stepCount,
-      mistakes: mistakesByCourse[course.id] ?? 0,
-      stepMistakes: stepMistakesByCourse[course.id],
-    ));
+    rows.add(
+      CourseProgressRow(
+        courseId: course.id,
+        courseName: course.courseTitle ?? 'Untitled Course',
+        progressCurrent: progressCurrent,
+        progressMax: stepCount,
+        mistakes: mistakesByCourse[course.id] ?? 0,
+        stepMistakes: stepMistakesByCourse[course.id],
+      ),
+    );
   }
 
   yield rows;
