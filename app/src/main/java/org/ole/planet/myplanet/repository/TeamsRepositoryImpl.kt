@@ -9,7 +9,9 @@ import androidx.room.withTransaction
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Date
 import java.util.LinkedHashSet
@@ -1097,7 +1099,7 @@ class TeamsRepositoryImpl @Inject constructor(
             val lastVisitTimestamp = lastVisits[member.name]
             val lastLogoutTimestamp = activitiesRepository.getLastVisit(member.name ?: "")
             val profileLastVisit = if (lastLogoutTimestamp != null) {
-                DATE_TIME_FORMATTER.format(java.time.Instant.ofEpochMilli(lastLogoutTimestamp))
+                DATE_TIME_FORMATTER.format(Instant.ofEpochMilli(lastLogoutTimestamp))
             } else {
                 "No logout record found"
             }
@@ -1432,6 +1434,6 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     companion object {
-        private val DATE_TIME_FORMATTER = java.time.format.DateTimeFormatter.ofPattern("MMMM dd, yyyy hh:mm a", Locale.getDefault()).withZone(java.time.ZoneId.systemDefault())
+        private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("MMMM dd, yyyy hh:mm a", Locale.getDefault()).withZone(ZoneId.systemDefault())
     }
 }
