@@ -206,19 +206,7 @@ abstract class BaseResourceFragment : Fragment() {
                 oldDialog?.setOnDismissListener(null)
                 oldDialog?.dismiss()
                 dialog.show()
-                val posBtn = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                val neuBtn = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
-                val negBtn = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
-
-                listOf(posBtn, neuBtn, negBtn).forEach { button ->
-                    button?.apply {
-                        isSingleLine = false
-                        maxLines = 2
-                        textSize = 14f
-                    }
-                }
-
-                posBtn.isEnabled = ((lv?.adapter as? CheckboxAdapter)?.selectedItemsList?.size
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = ((lv?.adapter as? CheckboxAdapter)?.selectedItemsList?.size
                     ?: 0) > 0
             }
         }
