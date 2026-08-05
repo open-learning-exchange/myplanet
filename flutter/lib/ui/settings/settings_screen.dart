@@ -88,6 +88,11 @@ class SettingsScreen extends ConsumerWidget {
             title: Text(l10n.appTitle),
             subtitle: Text(l10n.offlineLearningApp),
           ),
+          ListTile(
+            leading: const Icon(Icons.new_releases_outlined),
+            title: Text(l10n.appVersion('0.62.97')),
+            subtitle: const Text('Build 6297'),
+          ),
         ],
       ),
     );
