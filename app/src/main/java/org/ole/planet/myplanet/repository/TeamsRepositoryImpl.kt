@@ -1091,14 +1091,13 @@ class TeamsRepositoryImpl @Inject constructor(
 
         val visitCounts = logs.groupingBy { it.user }.eachCount()
         val lastVisits = logs.groupBy { it.user }.mapValues { (_, userLogs) -> userLogs.maxOfOrNull { it.time ?: 0 } }
-        val formatter = SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault())
 
         return orderedMembers.map { member ->
             val visitCount = visitCounts[member.name]?.toLong() ?: 0L
             val lastVisitTimestamp = lastVisits[member.name]
             val lastLogoutTimestamp = activitiesRepository.getLastVisit(member.name ?: "")
             val profileLastVisit = if (lastLogoutTimestamp != null) {
-                formatter.format(Date(lastLogoutTimestamp))
+                DATE_TIME_FORMATTER.format(java.time.Instant.ofEpochMilli(lastLogoutTimestamp))
             } else {
                 "No logout record found"
             }
@@ -1430,5 +1429,9 @@ class TeamsRepositoryImpl @Inject constructor(
         selector: (MyTeam) -> T,
     ): List<MyTeam> {
         return if (ascending) sortedBy(selector) else sortedByDescending(selector)
+    }
+
+    companion object {
+        private val DATE_TIME_FORMATTER = java.time.format.DateTimeFormatter.ofPattern("MMMM dd, yyyy hh:mm a", Locale.getDefault()).withZone(java.time.ZoneId.systemDefault())
     }
 }
