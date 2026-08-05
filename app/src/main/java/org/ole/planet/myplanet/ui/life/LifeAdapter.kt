@@ -144,11 +144,7 @@ class LifeAdapter(
     companion object {
         private val DIFF_CALLBACK = DiffUtils.itemCallback<MyLife>(
             areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
-            areContentsTheSame = { oldItem, newItem ->
-                oldItem._id == newItem._id &&
-                        oldItem.imageId == newItem.imageId &&
-                        oldItem.title == newItem.title
-            }
+            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
         )
         private val fragmentCache = mapOf<String, () -> Fragment>(
             "ic_mypersonals" to { PersonalsFragment() },

@@ -103,15 +103,7 @@ class EnterprisesReportsAdapter(
     companion object {
         val diffCallback = DiffUtils.itemCallback<MyTeam>(
             areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
-            areContentsTheSame = { oldItem, newItem ->
-                oldItem.sales == newItem.sales &&
-                        oldItem.otherIncome == newItem.otherIncome &&
-                        oldItem.wages == newItem.wages &&
-                        oldItem.otherExpenses == newItem.otherExpenses &&
-                        oldItem.startDate == newItem.startDate &&
-                        oldItem.endDate == newItem.endDate &&
-                        oldItem.beginningBalance == newItem.beginningBalance
-            }
+            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
         )
     }
 }
