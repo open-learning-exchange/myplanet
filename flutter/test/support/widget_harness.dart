@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/l10n/app_localizations.dart';
 import 'package:myplanet/providers/app_providers.dart';
@@ -20,11 +21,28 @@ import 'package:myplanet/providers/app_providers.dart';
 /// was disposed", that is this backstop firing: the screen opened a drift
 /// stream against the fallback database. Override the provider the screen
 /// actually reads rather than reaching for `tester.runAsync`.
+/// [pushTargets] maps a route path the screen navigates to onto the widget it
+/// should land on. Supply it whenever the screen calls `context.push`/`pop` —
+/// those are go_router extensions and assert "No GoRouter found in context"
+/// under a bare `home:`.
 Widget wrapScreen(
   Widget child, {
   List<Override> overrides = const [],
   Locale? locale,
+  Map<String, WidgetBuilder> pushTargets = const {},
 }) {
+  final router = pushTargets.isEmpty
+      ? null
+      : GoRouter(
+          routes: [
+            GoRoute(path: '/', builder: (context, _) => child),
+            for (final entry in pushTargets.entries)
+              GoRoute(
+                path: entry.key,
+                builder: (context, _) => entry.value(context),
+              ),
+          ],
+        );
   return ProviderScope(
     overrides: [
       appDatabaseProvider.overrideWith((ref) {
@@ -34,19 +52,28 @@ Widget wrapScreen(
       }),
       ...overrides,
     ],
-    child: MaterialApp(
-      locale: locale,
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: child,
-    ),
+    child: router == null
+        ? MaterialApp(
+            locale: locale,
+            localizationsDelegates: _delegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: child,
+          )
+        : MaterialApp.router(
+            locale: locale,
+            localizationsDelegates: _delegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
   );
 }
+
+const _delegates = <LocalizationsDelegate<Object?>>[
+  AppLocalizations.delegate,
+  GlobalMaterialLocalizations.delegate,
+  GlobalWidgetsLocalizations.delegate,
+  GlobalCupertinoLocalizations.delegate,
+];
 
 MyLibraryRow buildLibraryRow({
   required String id,

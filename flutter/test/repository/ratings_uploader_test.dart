@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -29,7 +31,13 @@ void main() {
     registerFallbackValue(config);
     outbox = OutboxRepository(database.outboxDao);
     repository = RatingsRepository(database.ratingDao);
-    uploader = RatingsUploader(api, repository, database.ratingDao, outbox);
+    uploader = RatingsUploader(
+      api,
+      repository,
+      database.ratingDao,
+      database.userDao,
+      outbox,
+    );
   });
   tearDown(() => database.close());
 
@@ -110,7 +118,7 @@ void main() {
     expect(row?.isUpdated, isFalse);
   });
 
-  test('a response without id and rev is not treated as uploaded', () async {
+  test('a response without a rev is not treated as uploaded', () async {
     await seedPendingRating();
     when(
       () => api.postJsonObject(
@@ -124,10 +132,37 @@ void main() {
 
     final result = await uploader.handler(rowFor('rating-1'), {}, 'auth');
 
-    expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
-    // Without id/rev, the markUploaded won't be called
+    // Reporting success would retire the outbox entry while the row stayed
+    // pending, and the next `queuePending` would post the rating a second
+    // time as a fresh document. This asserted the opposite.
+    expect(result, isA<NetworkError<Map<String, dynamic>>>());
     final row = await database.ratingDao.findById('rating-1');
     expect(row?.isUpdated, isTrue);
+  });
+  test('the queued document names its author', () async {
+    // Kotlin sends the serialized user; Planet groups ratings by it, so a
+    // document without one cannot be attributed or deduplicated. The port
+    // omitted the field entirely.
+    await database.userDao.upsert(
+      UsersCompanion.insert(
+        id: 'user-1',
+        couchId: const Value('org.couchdb.user:ada'),
+        name: const Value('ada'),
+        planetCode: const Value('planet-a'),
+        parentCode: const Value('nation'),
+      ),
+    );
+    await seedPendingRating();
+
+    await uploader.queuePending(config: config);
+    final entry = await database.outboxDao.findOpen(
+      RatingsUploader.type,
+      'rating-1',
+    );
+
+    final user = jsonDecode(entry!.payload)['user'] as Map<String, dynamic>;
+    expect(user['_id'], 'org.couchdb.user:ada');
+    expect(user['name'], 'ada');
   });
 }
 

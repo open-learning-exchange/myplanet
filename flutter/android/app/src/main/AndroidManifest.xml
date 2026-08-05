@@ -30,13 +30,24 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <intent-filter>
+            <!-- Public-survey deep links, scoped to the same Planet hosts the
+                 Kotlin app verifies in its own manifest. A wildcard host would
+                 register this app as a candidate handler for every http(s)
+                 URL on the internet whose path starts with /survey, putting it
+                 in the disambiguation chooser for unrelated sites and letting
+                 any of them drive PublicSurveyScreen's baseUrl. -->
+            <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="http"/>
-                <data android:scheme="https"/>
-                <data android:host="*"/>
+                <data android:scheme="https" android:host="planet.learning.ole.org"/>
+                <data android:scheme="https" android:host="planet.earth.ole.org"/>
+                <data android:scheme="https" android:host="planet.somalia.ole.org"/>
+                <data android:scheme="https" android:host="planet.vi.ole.org"/>
+                <data android:scheme="https" android:host="planet.gt"/>
+                <data android:scheme="https" android:host="sanpablo.planet.gt"/>
+                <data android:scheme="https" android:host="uriur.planet.gt"/>
+                <data android:scheme="https" android:host="embakasi.planet.gt"/>
                 <data android:pathPrefix="/survey"/>
             </intent-filter>
         </activity>

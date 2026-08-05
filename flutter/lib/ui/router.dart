@@ -109,6 +109,29 @@ class Routes {
   static const String publicSurvey = '/survey/:teamId/:surveyId';
 }
 
+/// The server a public-survey deep link points at.
+///
+/// Kotlin reads this straight off the incoming intent
+/// (`"${uri.scheme}://${uri.encodedAuthority}"` in
+/// `OnboardingActivity.maybeLaunchPublicSurvey`), which it can do because the
+/// activity receives the raw `Intent.getData()`. Here the link arrives as a
+/// go_router location, and that is only an absolute URI when the platform
+/// hands one over. A relative location — an in-app `context.go('/survey/...')`,
+/// or an engine that forwards the path alone — has no origin at all, and
+/// `Uri.origin` *throws* `StateError` rather than returning an empty string,
+/// so reading it unguarded crashes the route it is meant to build.
+///
+/// Falling back to the configured server keeps the screen on its own failure
+/// path: it reports "survey could not be loaded" instead of taking the app
+/// down. An anonymous respondent with no server configured lands there too,
+/// which is the honest outcome — there is nowhere to fetch the survey from.
+String publicSurveyBaseUrl(Uri uri, String? configuredServerUrl) {
+  if (uri.hasScheme && uri.host.isNotEmpty) {
+    return '${uri.scheme}://${uri.authority}';
+  }
+  return configuredServerUrl ?? '';
+}
+
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -174,7 +197,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.publicSurvey,
         builder: (context, state) => PublicSurveyScreen(
-          baseUrl: state.uri.origin,
+          baseUrl: publicSurveyBaseUrl(
+            state.uri,
+            ref.read(serverConfigProvider)?.serverUrl,
+          ),
           teamId: state.pathParameters['teamId']!,
           surveyId: state.pathParameters['surveyId']!,
         ),

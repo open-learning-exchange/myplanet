@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/session_provider.dart';
 import '../../repository/user_repository.dart';
+import '../router.dart';
 
 /// Port of `ui/sync/LoginActivity.kt` (the credential form only — the guest and
 /// become-member flows come with the `ui/user` package).
@@ -169,6 +171,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ? null
                           : () => _submit(offline: true),
                       child: Text(l10n.signInOffline),
+                    ),
+                    // Kotlin puts this on `LoginActivity`. The screen was
+                    // built and routed with nothing pointing at it.
+                    TextButton(
+                      onPressed: _isSubmitting
+                          ? null
+                          : () => context.push(Routes.becomeMember),
+                      child: Text(l10n.becomeMember),
                     ),
                   ],
                 ),

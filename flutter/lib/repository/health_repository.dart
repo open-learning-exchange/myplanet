@@ -9,6 +9,7 @@ import '../core/utils/json_utils.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
+import '../core/crypto/health_cipher.dart';
 import '../data/local/health_models.dart';
 
 /// Port of `repository/HealthRepositoryImpl.kt`.
@@ -18,7 +19,8 @@ import '../data/local/health_models.dart';
 class HealthRepository {
   HealthRepository(
     this._api,
-    this._dao, {
+    this._dao,
+    this._userDao, {
     ServerConfig? config,
     String Function()? createId,
   }) : _config = config,
@@ -26,6 +28,7 @@ class HealthRepository {
 
   final PlanetApi _api;
   final HealthExaminationDao _dao;
+  final UserDao _userDao;
   final ServerConfig? _config;
   final String Function() _createId;
 
@@ -158,6 +161,26 @@ class HealthRepository {
   /// Update the userId for an examination.
   Future<void> updateUserId(String id, String userId) =>
       _dao.updateUserId(id, userId);
+
+  /// Encrypts an examination payload with the user's key, generating one on
+  /// first use.
+  ///
+  /// Kotlin does this in `HealthExaminationActivity` before the record is
+  /// saved; doing it here instead keeps every write path — form, sync,
+  /// upload — on the same side of the cipher.
+  Future<String?> encryptData(String userId, String plainJson) async {
+    final user = await _userDao.ensureSecurityKeys(userId);
+    if (user == null) return null;
+    return HealthCipher.encrypt(plainJson, user.key, user.iv);
+  }
+
+  /// Reverses [encryptData], returning null for a blob this user cannot read.
+  Future<String?> decryptData(String userId, String? encrypted) async {
+    if (encrypted == null || encrypted.isEmpty) return null;
+    final user = await _userDao.getById(userId);
+    if (user == null) return null;
+    return HealthCipher.decrypt(encrypted, user.key, user.iv);
+  }
 
   /// Parse examination conditions from JSON string.
   Map<String, bool> parseConditions(String? conditionsJson) {

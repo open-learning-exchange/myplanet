@@ -43,6 +43,18 @@ class RatingActions {
           parentCode: user.parentCode,
           planetCode: user.planetCode,
         );
+    await queuePending();
+  }
+
+  /// Hands every un-uploaded rating to the durable outbox.
+  ///
+  /// `RatingsRepository.pendingUploads()` and `RatingsUploader` both existed
+  /// with no caller between them, so a rating was saved locally and stopped
+  /// there. Queued from inside `submit` so no rating screen can forget.
+  Future<int> queuePending() async {
+    final config = ref.read(serverConfigProvider);
+    if (config == null) return 0;
+    return ref.read(ratingsUploaderProvider).queuePending(config: config);
   }
 }
 

@@ -43,6 +43,16 @@ class Users extends Table {
 
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
 
+  /// AES key and IV for the user's health records, porting `UserEntity.key`
+  /// and `UserEntity.iv`.
+  ///
+  /// Generated on this device by `ensureUserSecurityKeys` and never uploaded —
+  /// the server stores the ciphertext and cannot read it. That is also why
+  /// `users` is a preserved table: a sync cannot restore these, and without
+  /// them the records they encrypted are lost for good.
+  TextColumn get key => text().nullable()();
+  TextColumn get iv => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }

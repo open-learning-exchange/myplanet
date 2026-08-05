@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../providers/chat_provider.dart';
+import '../../providers/sync_state.dart';
 import '../router.dart';
 
 /// Port of `ui/chat/ChatHistoryFragment.kt`.
@@ -24,6 +25,13 @@ class ChatHistoryScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.chatHistory),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.sync),
+            tooltip: l10n.sync,
+            onPressed: ref.watch(chatSyncProvider) is SyncRunning
+                ? null
+                : () => ref.read(chatSyncProvider.notifier).sync(),
+          ),
           IconButton(
             icon: const Icon(Icons.add),
             tooltip: l10n.newChat,

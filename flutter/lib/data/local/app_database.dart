@@ -83,7 +83,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 24;
+  int get schemaVersion => 25;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -129,17 +129,16 @@ class AppDatabase extends _$AppDatabase {
     // letting the next sync's `deleteNotIn` evict the stale cache rows keeps
     // the drop-and-resync policy without discarding the local writes.
     'teams',
-    // Not local-authority in principle — CouchDB holds every chat — but the
-    // policy's premise is that *the next sync refills the table*, and nothing
-    // calls `insertChatHistoryFromSync`. Until a chat sync exists, dropping
-    // this discards the user's entire history with no way to get it back, so
-    // the practical test ("can a sync restore this?") governs, not the
-    // nominal one. A failed continuation also stores the query here with an
-    // empty response, which never reaches the server at all.
+    // A chat sync exists now, so most of this table can be refilled. It stays
+    // preserved for the rows that cannot be: a continuation whose answer never
+    // arrived is stored here as a trailing query with an empty response, and
+    // there is no chat uploader to carry it anywhere. Dropping the table would
+    // discard the question outright.
     'chat_history',
     // Filed offline and uploaded by the outbox. Until the drain succeeds the
     // row exists only here, so a schema bump would discard a report the user
-    // wrote — and there is no feedback sync to bring it back either.
+    // wrote. A feedback sync exists now, but it only refills what already
+    // reached the server — which is precisely not these rows.
     'feedback',
     // Health examinations are recorded on the device — a clinician entering a
     // reading offline is the whole point of the screen. There is no health
@@ -178,8 +177,46 @@ class AppDatabase extends _$AppDatabase {
       // not *alter* a preserved table, so changing the shape of one of
       // [_localAuthorityTables] needs a hand-written step here.
       await m.createAll();
+
+      // Hand-written steps for preserved tables, which `createAll` skips.
+      //
+      // `chat_history` gained `is_uploaded` in v25. Without this the column
+      // simply never appears on an existing install and every chat query
+      // fails on it — `createAll` emits `CREATE TABLE IF NOT EXISTS`, and the
+      // table already exists.
+      if (from < 25) {
+        await _addColumnIfMissing(m, chatEntries, chatEntries.isUploaded);
+        // Backfill: a chat carries a `_rev` only once the server has
+        // acknowledged it. Leaving those at the column default would mark
+        // every conversation already on the server as pending and post a
+        // duplicate of each one on the next drain.
+        await customStatement(
+          "UPDATE chat_history SET is_uploaded = 1 "
+          "WHERE _rev IS NOT NULL AND _rev != ''",
+        );
+      }
     },
   );
+
+  /// Adds [column] to [table] unless the running database already has it.
+  ///
+  /// A preserved table is skipped by the drop-and-recreate loop, so a column
+  /// added to one only exists on installs created after the change. Re-running
+  /// `ALTER TABLE ADD COLUMN` on a database that already has it is an error,
+  /// hence the check — an upgrade that spans several versions would otherwise
+  /// abort partway.
+  Future<void> _addColumnIfMissing(
+    Migrator m,
+    TableInfo<Table, dynamic> table,
+    GeneratedColumn<Object> column,
+  ) async {
+    final existing = await customSelect(
+      'PRAGMA table_info(${table.actualTableName})',
+    ).get();
+    final names = existing.map((row) => row.read<String>('name')).toSet();
+    if (names.contains(column.name)) return;
+    await m.addColumn(table, column);
+  }
 
   static LazyDatabase _openConnection() {
     return LazyDatabase(() async {
@@ -1796,12 +1833,19 @@ class ChatDao extends DatabaseAccessor<AppDatabase> with _$ChatDaoMixin {
   );
 
   /// Deletes all chat entries whose `id` is not in [keepIds].
+  /// Removes cached conversations the server no longer has.
+  ///
+  /// Rows without a server revision are spared. A conversation is created by
+  /// the AI endpoint, so a row with no `_rev` is one whose document this device
+  /// never saw confirmed — deleting it would discard the only copy, and there
+  /// is no chat uploader to put it back. The unguarded version of this deleted
+  /// the whole table when `keepIds` was empty, which is what a server with an
+  /// emptied `chat_history` looks like.
   Future<int> deleteNotIn(List<String> keepIds) async {
-    if (keepIds.isEmpty) {
-      return (delete(chatEntries)).go();
-    }
     final keep = keepIds.toSet();
-    final rows = await select(chatEntries).get();
+    final rows = await (select(
+      chatEntries,
+    )..where((c) => c.rev.isNotNull() & c.rev.equals('').not())).get();
     final stale = rows
         .map((row) => row.id)
         .where((id) => !keep.contains(id))

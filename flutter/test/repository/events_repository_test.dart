@@ -162,7 +162,33 @@ void main() {
     final payload = EventsRepository.serialize(row!);
     expect(payload.containsKey('_id'), isFalse);
     expect(payload['link'], {'teams': 'team-1'});
-    expect(payload['sync'], {'type': 'local', 'planetCode': 'earth'});
+    // `Meetup.serialize` pushes the raw column via `addProperty`, so `sync`
+    // reaches CouchDB as a JSON string rather than an object. Reproduced
+    // deliberately: both apps write this database.
+    expect(payload['sync'], '{"type":"local","planetCode":"earth"}');
+  });
+
+  test('omits link entirely when the meetup belongs to no team', () async {
+    final id = await repository.create(
+      title: 'Solo meetup',
+      description: '',
+      startDate: 0,
+      endDate: 0,
+      startTime: '',
+      endTime: '',
+      location: '',
+      link: '',
+      recurring: 'none',
+      creator: 'Ada',
+    );
+    final payload = EventsRepository.serialize(
+      (await repository.getById(id!))!,
+    );
+
+    // Kotlin guards with `if (!meetup.link.isNullOrEmpty())`; writing an
+    // explicit null would put a key in the document that Kotlin never writes.
+    expect(payload.containsKey('link'), isFalse);
+    expect(payload['sync'], isNull);
   });
 
   test('sync walks CouchDB pages and removes stale server rows', () async {

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../providers/feedback_provider.dart';
+import '../../providers/sync_state.dart';
 import '../router.dart';
 
 /// Port of `ui/feedback/FeedbackListFragment.kt`.
@@ -22,6 +23,13 @@ class FeedbackListScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.feedback),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.sync),
+            tooltip: l10n.sync,
+            onPressed: ref.watch(feedbackSyncProvider) is SyncRunning
+                ? null
+                : () => ref.read(feedbackSyncProvider.notifier).sync(),
+          ),
           IconButton(
             icon: const Icon(Icons.filter_list),
             tooltip: l10n.filter,

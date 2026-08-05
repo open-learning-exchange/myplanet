@@ -23,6 +23,7 @@ void main() {
     return HealthRepository(
       api,
       database.healthExaminationDao,
+      database.userDao,
       config: config,
       createId: () => 'health-local-${++counter}',
     );
