@@ -2,9 +2,10 @@ package org.ole.planet.myplanet.ui.teams
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.callback.OnTeamUpdateListener
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ApplicantsPage
@@ -19,8 +20,6 @@ import org.ole.planet.myplanet.ui.teams.courses.TeamCoursesFragment
 import org.ole.planet.myplanet.ui.teams.members.MembersFragment
 import org.ole.planet.myplanet.ui.teams.members.RequestsFragment
 import org.ole.planet.myplanet.ui.teams.resources.TeamResourcesFragment
-
-import androidx.recyclerview.widget.RecyclerView
 
 class TeamPagerAdapter(
     private val parentFragment: Fragment,
