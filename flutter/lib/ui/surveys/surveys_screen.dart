@@ -6,6 +6,7 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/surveys_provider.dart';
 import '../../providers/sync_state.dart';
 import '../router.dart';
+import 'send_survey_screen.dart';
 
 /// Port of `ui/surveys/SurveyFragment.kt` for individual offline surveys.
 class SurveysScreen extends ConsumerWidget {
@@ -104,7 +105,23 @@ class SurveysScreen extends ConsumerWidget {
                   leading: const Icon(Icons.poll_outlined),
                   title: Text(row.name ?? l10n.untitledSurvey),
                   subtitle: Text(row.description ?? ''),
-                  trailing: const Icon(Icons.chevron_right),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.send),
+                        tooltip: l10n.sendSurvey,
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) =>
+                                SendSurveyScreen(surveyId: row.id),
+                          );
+                        },
+                      ),
+                      const Icon(Icons.chevron_right),
+                    ],
+                  ),
                   onTap: () => context.push('${Routes.surveys}/${row.id}'),
                 ),
               );
