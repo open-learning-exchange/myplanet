@@ -8,14 +8,19 @@ object ResourceSearchUtils {
 
         val queryParts = query.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }.distinct()
+        if (normalizedQueryParts.isEmpty()) return list
 
         val normalizedQuery = Utilities.normalizeText(query)
 
         val startsWithQuery = mutableListOf<T>()
         val containsQuery = mutableListOf<T>()
 
-        for (item in list) {
-            val title = titleSelector(item)?.let { Utilities.normalizeText(it) } ?: continue
+        // Cache normalized titles to avoid repeatedly normalizing the same strings
+        val cachedTitles = list.mapNotNull { item ->
+            titleSelector(item)?.let { item to Utilities.normalizeText(it) }
+        }
+
+        for ((item, title) in cachedTitles) {
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {
                 startsWithQuery.add(item)
             } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
