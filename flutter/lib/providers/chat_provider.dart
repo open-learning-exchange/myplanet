@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/local/app_database.dart';
 import '../data/local/chat_mapper.dart';
 import '../repository/chat_repository.dart';
+import '../core/config/server_config.dart';
+import '../core/sync/sync_result.dart';
 import 'app_providers.dart';
+import 'sync_state.dart';
 import 'session_provider.dart';
 
 /// Provider for available AI providers.
@@ -211,3 +214,21 @@ final chatConversationProvider =
     NotifierProvider<ChatConversationNotifier, ChatConversationState>(
       ChatConversationNotifier.new,
     );
+
+/// Pull of the `chat_history` database, giving `ChatRepository.sync` its first
+/// caller. `insertChatHistoryFromSync` had been written and left unreachable
+/// for long enough that the preserved-table list cited its absence as the
+/// reason chat could not be dropped on a schema upgrade.
+class ChatSyncNotifier extends SyncNotifier {
+  @override
+  Future<SyncResult> runSync(
+    ServerConfig config,
+    void Function(SyncProgress) onProgress,
+  ) => ref
+      .read(chatRepositoryProvider)
+      .sync(config: config, onProgress: onProgress);
+}
+
+final chatSyncProvider = NotifierProvider<ChatSyncNotifier, SyncUiState>(
+  ChatSyncNotifier.new,
+);

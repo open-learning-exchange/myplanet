@@ -16,7 +16,7 @@ ratings with upload, offline submission creation/durable upload/list/detail/ques
 offline events/meetups, individual surveys, voices/discussions, teams/enterprises management,
 AI chat conversations, user feedback/review system, community/nation tabs, graded course exams,
 resource viewer with download path, My health with AES-256-CBC encryption, and offline maps.
-**26 of 28 UI packages are ported**, offline-first, against the real CouchDB API.
+**27 of 28 UI packages have a screen**, offline-first, against the real CouchDB API.
 
 Phase 13 added the durable write-back path — an `outbox` table replacing `RetryQueue`, drained
 on app resume by `OutboxDrainer` instead of by `WorkManager`. Writes made offline survive
@@ -36,11 +36,26 @@ Phase 24 adds My health: the health profile form and examination form with AES-2
 encryption matching the Kotlin's `AndroidDecrypter` scheme, preserving `users.key`/`users.iv`
 across schema upgrades.
 
-Phase 26 adds ratings upload: `RatingsUploader` queues pending ratings to the durable outbox,
-completing the ratings write-back path that existed in Kotlin but had no Flutter caller.
+Phase 25 adds offline maps, storage management, become-a-member, shared components, and the
+ratings upload path:
+- **maps**: `OfflineMapsScreen` using `flutter_map` with OpenStreetMap tiles, porting the Kotlin's
+  OSMDroid-based `OfflineMapsActivity`
+- **storage**: `StorageBreakdownScreen` and `StorageCategoryDetailScreen` for per-category file
+  sizes and deletion
+- **user**: `BecomeMemberScreen` with offline account creation (server sync pending)
+- **ratings**: `RatingsUploader` completes the ratings write-back path that existed in Kotlin
+  but had no Flutter caller
 
-Phase 27 adds offline maps: `OfflineMapsScreen` using `flutter_map` with OpenStreetMap tiles,
-porting the Kotlin's OSMDroid-based `OfflineMapsActivity`.
+Phase 26 adds chat and feedback sync-in:
+- **chat**: `ChatRepository.sync()` fetches `chat_history` from CouchDB, calling the previously
+  uncalled `insertChatHistoryFromSync`
+- **feedback**: `FeedbackRepository.sync()` fetches `feedback` from CouchDB, calling the previously
+  uncalled `insertFromJson`
+
+Phase 27 adds team voices:
+- **team voices**: `TeamVoicesScreen` shows discussion posts scoped to a specific team, with
+  `teamVoicesProvider` filtering by team ID in `viewIn`, and `createTeamPost()` for composing
+  team-specific posts
 
 ## Getting started
 

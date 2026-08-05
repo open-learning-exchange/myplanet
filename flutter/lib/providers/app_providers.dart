@@ -190,7 +190,8 @@ final feedbackUploaderProvider = Provider<FeedbackUploader>(
 
 final feedbackRepositoryProvider = Provider<FeedbackRepository>((ref) {
   final dao = ref.watch(feedbackDaoProvider);
-  return FeedbackRepositoryImpl(feedbackDao: dao);
+  final api = ref.watch(planetApiProvider);
+  return FeedbackRepositoryImpl(feedbackDao: dao, planetApi: api);
 });
 
 final submissionsRepositoryProvider = Provider<SubmissionsRepository>(

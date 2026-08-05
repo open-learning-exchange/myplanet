@@ -1,10 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/config/server_config.dart';
+import '../core/sync/sync_result.dart';
 import '../data/local/app_database.dart';
 import '../data/local/feedback_mapper.dart';
 import '../data/local/user_mapper.dart';
 import 'app_providers.dart';
 import 'session_provider.dart';
+import 'sync_state.dart';
 
 /// Provider for the current user's feedback list.
 final feedbackListProvider = StreamProvider<List<FeedbackRow>>((ref) {
@@ -132,6 +135,24 @@ class FeedbackQueue {
 }
 
 final feedbackQueueProvider = Provider<FeedbackQueue>(FeedbackQueue.new);
+
+/// Pull of the `feedback` database, giving `FeedbackRepository.sync` its first
+/// caller. Without it the list only ever showed threads filed on this device —
+/// a reply written on the web or by a manager elsewhere never appeared.
+class FeedbackSyncNotifier extends SyncNotifier {
+  @override
+  Future<SyncResult> runSync(
+    ServerConfig config,
+    void Function(SyncProgress) onProgress,
+  ) => ref
+      .read(feedbackRepositoryProvider)
+      .sync(config: config, onProgress: onProgress);
+}
+
+final feedbackSyncProvider =
+    NotifierProvider<FeedbackSyncNotifier, SyncUiState>(
+      FeedbackSyncNotifier.new,
+    );
 
 /// State for feedback creation.
 class FeedbackCreateState {

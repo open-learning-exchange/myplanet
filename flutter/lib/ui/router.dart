@@ -12,6 +12,8 @@ import 'exam/take_exam_screen.dart';
 import 'exam/user_information_screen.dart';
 import 'courses/course_detail_screen.dart';
 import 'courses/courses_screen.dart';
+import 'courses/courses_progress_screen.dart';
+import 'courses/take_course_screen.dart';
 import 'dashboard/dashboard_shell.dart';
 import 'dictionary/dictionary_screen.dart';
 import 'events/event_detail_screen.dart';
@@ -48,6 +50,10 @@ import 'teams/team_members_screen.dart';
 import 'teams/team_resources_screen.dart';
 import 'teams/team_courses_screen.dart';
 import 'teams/team_reports_screen.dart';
+import 'teams/team_voices_screen.dart';
+import 'teams/team_plan_screen.dart';
+import 'teams/team_finances_screen.dart';
+import 'teams/team_calendar_screen.dart';
 import 'viewer/resource_viewer_screen.dart';
 
 /// Replaces the Activity/Fragment navigation in `ui/components/FragmentNavigator`
@@ -69,6 +75,7 @@ class Routes {
   static const String resources = '/resources';
   static const String resourceViewer = '/resources/viewer/:resourceId';
   static const String courses = '/courses';
+  static const String myProgress = '/courses/progress';
   static const String calendar = '/calendar';
   static const String profile = '/profile';
   static const String settings = '/profile/settings';
@@ -200,8 +207,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                 builder: (context, state) => const CoursesScreen(),
                 routes: [
                   GoRoute(
+                    path: 'progress',
+                    builder: (context, state) => const CoursesProgressScreen(),
+                  ),
+                  GoRoute(
                     path: ':courseId',
                     builder: (context, state) => CourseDetailScreen(
+                      courseId: state.pathParameters['courseId']!,
+                    ),
+                  ),
+                  GoRoute(
+                    path: ':courseId/take',
+                    builder: (context, state) => TakeCourseScreen(
                       courseId: state.pathParameters['courseId']!,
                     ),
                   ),
@@ -360,6 +377,30 @@ final routerProvider = Provider<GoRouter>((ref) {
                           GoRoute(
                             path: 'reports',
                             builder: (context, state) => TeamReportsScreen(
+                              teamId: state.pathParameters['teamId']!,
+                            ),
+                          ),
+                          GoRoute(
+                            path: 'voices',
+                            builder: (context, state) => TeamVoicesScreen(
+                              teamId: state.pathParameters['teamId']!,
+                            ),
+                          ),
+                          GoRoute(
+                            path: 'plan',
+                            builder: (context, state) => TeamPlanScreen(
+                              teamId: state.pathParameters['teamId']!,
+                            ),
+                          ),
+                          GoRoute(
+                            path: 'finances',
+                            builder: (context, state) => TeamFinancesScreen(
+                              teamId: state.pathParameters['teamId']!,
+                            ),
+                          ),
+                          GoRoute(
+                            path: 'calendar',
+                            builder: (context, state) => TeamCalendarScreen(
                               teamId: state.pathParameters['teamId']!,
                             ),
                           ),

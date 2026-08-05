@@ -129,17 +129,16 @@ class AppDatabase extends _$AppDatabase {
     // letting the next sync's `deleteNotIn` evict the stale cache rows keeps
     // the drop-and-resync policy without discarding the local writes.
     'teams',
-    // Not local-authority in principle — CouchDB holds every chat — but the
-    // policy's premise is that *the next sync refills the table*, and nothing
-    // calls `insertChatHistoryFromSync`. Until a chat sync exists, dropping
-    // this discards the user's entire history with no way to get it back, so
-    // the practical test ("can a sync restore this?") governs, not the
-    // nominal one. A failed continuation also stores the query here with an
-    // empty response, which never reaches the server at all.
+    // A chat sync exists now, so most of this table can be refilled. It stays
+    // preserved for the rows that cannot be: a continuation whose answer never
+    // arrived is stored here as a trailing query with an empty response, and
+    // there is no chat uploader to carry it anywhere. Dropping the table would
+    // discard the question outright.
     'chat_history',
     // Filed offline and uploaded by the outbox. Until the drain succeeds the
     // row exists only here, so a schema bump would discard a report the user
-    // wrote — and there is no feedback sync to bring it back either.
+    // wrote. A feedback sync exists now, but it only refills what already
+    // reached the server — which is precisely not these rows.
     'feedback',
     // Health examinations are recorded on the device — a clinician entering a
     // reading offline is the whole point of the screen. There is no health
@@ -293,6 +292,35 @@ class TeamDao extends DatabaseAccessor<AppDatabase> with _$TeamDaoMixin {
             ..orderBy([(t) => OrderingTerm.desc(t.createdDate)]))
           .watch();
 
+  /// Watch all transactions for a team, optionally filtered by date range.
+  Stream<List<TeamRow>> watchTransactions(
+    String teamId, {
+    int? startDate,
+    int? endDate,
+    bool ascending = false,
+  }) {
+    return (select(teams)
+          ..where((t) {
+            var condition =
+                t.teamId.equals(teamId) &
+                t.docType.equals('transaction') &
+                (t.status.isNull() | t.status.equals('archived').not());
+            if (startDate != null) {
+              condition = condition & t.date.isBiggerOrEqualValue(startDate);
+            }
+            if (endDate != null) {
+              condition = condition & t.date.isSmallerOrEqualValue(endDate);
+            }
+            return condition;
+          })
+          ..orderBy([
+            (t) => ascending
+                ? OrderingTerm.asc(t.date)
+                : OrderingTerm.desc(t.date),
+          ]))
+        .watch();
+  }
+
   Future<TeamRow?> getTeamDocument(
     String teamId,
     String userId,
@@ -386,6 +414,9 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
   /// login screen.
   Future<List<UserRow>> getSavedUsers() =>
       (select(users)..where((u) => u.isArchived.equals(false))).get();
+
+  /// Returns all users (for sending surveys to selected users).
+  Future<List<UserRow>> getAllUsers() => select(users).get();
 
   /// Port of `UserRepositoryImpl.ensureUserSecurityKeys`.
   ///
@@ -1691,6 +1722,33 @@ class ChatDao extends DatabaseAccessor<AppDatabase> with _$ChatDaoMixin {
       lastUsed: Value(DateTime.now().millisecondsSinceEpoch),
     ),
   );
+
+  /// Deletes all chat entries whose `id` is not in [keepIds].
+  /// Removes cached conversations the server no longer has.
+  ///
+  /// Rows without a server revision are spared. A conversation is created by
+  /// the AI endpoint, so a row with no `_rev` is one whose document this device
+  /// never saw confirmed — deleting it would discard the only copy, and there
+  /// is no chat uploader to put it back. The unguarded version of this deleted
+  /// the whole table when `keepIds` was empty, which is what a server with an
+  /// emptied `chat_history` looks like.
+  Future<int> deleteNotIn(List<String> keepIds) async {
+    final keep = keepIds.toSet();
+    final rows = await (select(
+      chatEntries,
+    )..where((c) => c.rev.isNotNull() & c.rev.equals('').not())).get();
+    final stale = rows
+        .map((row) => row.id)
+        .where((id) => !keep.contains(id))
+        .toList(growable: false);
+    var deleted = 0;
+    for (final chunk in _chunked(stale, _sqliteVariableChunk)) {
+      deleted += await (delete(
+        chatEntries,
+      )..where((c) => c.id.isIn(chunk))).go();
+    }
+    return deleted;
+  }
 }
 
 /// Port of `data/room/dao/FeedbackDao.kt`.

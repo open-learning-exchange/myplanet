@@ -237,6 +237,15 @@ class TeamDetailScreen extends ConsumerWidget {
                     _DetailSection(title: l10n.services, body: team.services!),
                   if (team.rules?.isNotEmpty == true)
                     _DetailSection(title: l10n.rules, body: team.rules!),
+                  ListTile(
+                    leading: const Icon(Icons.assignment_outlined),
+                    title: Text(
+                      team.type == 'enterprise' ? l10n.mission : l10n.plan,
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () =>
+                        context.push('${Routes.teams}/${team.id}/plan'),
+                  ),
                   if (team.courses.isNotEmpty) ...[
                     const Divider(),
                     Text(
@@ -282,12 +291,37 @@ class TeamDetailScreen extends ConsumerWidget {
                       onTap: () =>
                           context.push('${Routes.teams}/${team.id}/reports'),
                     ),
+                  if (membership != null)
+                    ListTile(
+                      leading: const Icon(
+                        Icons.account_balance_wallet_outlined,
+                      ),
+                      title: Text(l10n.finances),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () =>
+                          context.push('${Routes.teams}/${team.id}/finances'),
+                    ),
+                  if (membership != null)
+                    ListTile(
+                      leading: const Icon(Icons.calendar_month_outlined),
+                      title: Text(l10n.teamCalendar),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () =>
+                          context.push('${Routes.teams}/${team.id}/calendar'),
+                    ),
                   ListTile(
                     leading: const Icon(Icons.task_alt),
                     title: Text(l10n.teamTasks),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () =>
                         context.push('${Routes.teams}/${team.id}/tasks'),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.forum_outlined),
+                    title: Text(l10n.teamDiscussions),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () =>
+                        context.push('${Routes.teams}/${team.id}/voices'),
                   ),
                 ],
               );

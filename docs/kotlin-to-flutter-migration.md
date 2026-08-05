@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 25 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 26 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -21,10 +21,10 @@ Known gaps:
 - Background work with no user present (`AutoSyncWorker`'s timed sync,
   `TaskNotificationWorker`'s deadline notifications, `DownloadWorker`'s background queue) needs
   OS scheduling and is not ported.
-- Chat and feedback have no *sync-in* direction: `insertChatHistoryFromSync` and
-  `FeedbackRepository.insertFromJson` have no callers, so neither table is ever refilled from
-  the server.
-- Team attachments, team voices and team/public survey sharing are unported.
+- Chat has no *upload* direction at all: a conversation exists only on the device it was typed
+  on, which is why its sync must never delete a row the server has not confirmed.
+- Team attachments and team/public survey sharing are unported.
+- `BecomeMemberScreen` still only writes locally — see above.
 
 - **Phase 1** -- skeleton plus the server configuration → login → resources slice.
 - **Phase 2** -- dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -108,6 +108,15 @@ Known gaps:
     entry while the row stayed pending — the next queue posted a duplicate document.
   - **components**: `CheckboxList` is used by four screens. `ChallengeDialog` and
     `CustomDropdown` are built and called from nowhere.
+
+- **Phase 26** — chat and feedback sync-in, team plan/finances/calendar/voices, take-course and
+  course progress, and survey sending. The two syncs arrived with no caller on either side, as
+  the uploaders before them had; both are now reachable from their screens. The chat sync needed
+  two guards before it was safe to run at all: it called `deleteNotIn` on a table with no
+  uploader — so every conversation the server had not confirmed would have been destroyed, and
+  an empty keep list emptied the table outright — and its upsert overwrote `conversations`
+  wholesale, discarding a question whose answer had not yet arrived. Feedback's `deleteNotIn`
+  already spared un-uploaded rows and needed no change.
 
 ## Strategy
 
@@ -663,6 +672,6 @@ succeeds, it just doesn't do what the Kotlin did.
 
 ---
 
-**Last updated**: 2026-08-04
-**Phase**: 25 of N (27 of 28 UI packages have a screen — see Status for what that does and does
+**Last updated**: 2026-08-05 (Phase 26 complete)
+**Phase**: 26 of N (27 of 28 UI packages have a screen — see Status for what that does and does
 not mean)

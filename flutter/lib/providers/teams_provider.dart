@@ -66,6 +66,87 @@ final teamReportsProvider = StreamProvider.family<List<TeamRow>, String>(
   (ref, teamId) => ref.watch(teamsRepositoryProvider).watchReports(teamId),
 );
 
+/// A financial transaction with computed balance.
+class TransactionRow {
+  final TeamRow row;
+  final int balance;
+  TransactionRow({required this.row, required this.balance});
+}
+
+final teamTransactionsProvider =
+    StreamProvider.family<
+      List<TransactionRow>,
+      ({String teamId, int? startDate, int? endDate, bool ascending})
+    >((ref, params) {
+      final repo = ref.watch(teamsRepositoryProvider);
+      return repo
+          .watchTransactions(
+            params.teamId,
+            startDate: params.startDate,
+            endDate: params.endDate,
+            ascending: params.ascending,
+          )
+          .map((rows) {
+            var balance = 0;
+            final result = <TransactionRow>[];
+            for (final row in params.ascending ? rows : rows) {
+              if (row.type?.toLowerCase() == 'debit') {
+                balance -= row.amount;
+              } else {
+                balance += row.amount;
+              }
+              result.add(TransactionRow(row: row, balance: balance));
+            }
+            return params.ascending ? result : result.reversed.toList();
+          });
+    });
+
+class TeamFinancesActions {
+  TeamFinancesActions(this.ref);
+  final Ref ref;
+
+  Future<bool> createTransaction({
+    required String teamId,
+    required String type,
+    required String note,
+    required int amount,
+    required int date,
+  }) async {
+    final config = ref.read(serverConfigProvider);
+    if (config == null) return false;
+    final ok = await ref
+        .read(teamsRepositoryProvider)
+        .createTransaction(
+          teamId: teamId,
+          type: type,
+          note: note,
+          amount: amount,
+          date: date,
+        );
+    if (!ok) return false;
+    await ref
+        .read(outboxRepositoryProvider)
+        .enqueue(
+          uploadType: 'teamFinances',
+          itemId: teamId,
+          endpoint: '${UrlUtils.credentialFreeDbUrl(config)}/teams',
+          payload: {
+            'teamId': teamId,
+            'type': type,
+            'note': note,
+            'amount': amount,
+            'date': date,
+          },
+          userId: ref.read(sessionProvider).valueOrNull?.id,
+        );
+    return true;
+  }
+}
+
+final teamFinancesActionsProvider = Provider<TeamFinancesActions>(
+  TeamFinancesActions.new,
+);
+
 class TeamMembershipActions {
   TeamMembershipActions(this.ref);
   final Ref ref;

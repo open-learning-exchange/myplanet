@@ -1,3 +1,5 @@
+import '../core/config/server_config.dart';
+import '../core/sync/sync_result.dart';
 import '../data/local/app_database.dart';
 import '../data/local/chat_mapper.dart';
 
@@ -33,6 +35,15 @@ abstract class ChatRepository {
 
   /// Inserts chat history from sync documents (wrapped in 'doc').
   Future<void> insertChatHistoryFromSync(List<Map<String, dynamic>> docs);
+
+  /// Syncs chat history from CouchDB.
+  ///
+  /// Counts with `?limit=0`, then walks pages, upserting each chat document.
+  /// Port of the `chat_history` table pull in `TransactionSyncManager.kt`.
+  Future<SyncResult> sync({
+    required ServerConfig config,
+    void Function(SyncProgress)? onProgress,
+  });
 }
 
 /// Result of a chat API request.

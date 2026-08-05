@@ -35,6 +35,45 @@ class TeamsRepository {
   Stream<List<TeamRow>> watchReports(String teamId) =>
       _dao.watchReports(teamId);
 
+  /// Watch all transactions for a team.
+  Stream<List<TeamRow>> watchTransactions(
+    String teamId, {
+    int? startDate,
+    int? endDate,
+    bool ascending = false,
+  }) => _dao.watchTransactions(
+    teamId,
+    startDate: startDate,
+    endDate: endDate,
+    ascending: ascending,
+  );
+
+  /// Create a new transaction (debit or credit entry).
+  Future<bool> createTransaction({
+    required String teamId,
+    required String type, // 'debit' or 'credit'
+    required String note,
+    required int amount,
+    required int date,
+  }) async {
+    if (teamId.isEmpty) return false;
+    final id = _createId();
+    await _dao.upsert(
+      TeamsCompanion.insert(
+        id: id,
+        teamId: Value(teamId),
+        docType: const Value('transaction'),
+        type: Value(type),
+        description: Value(note),
+        amount: Value(amount),
+        date: Value(date),
+        status: const Value('active'),
+        isUpdated: const Value(true),
+      ),
+    );
+    return true;
+  }
+
   Future<TeamRow?> saveReport({
     String? id,
     required String teamId,
@@ -136,6 +175,37 @@ class TeamsRepository {
           .copyWith(courses: Value(merged), isUpdated: const Value(true)),
     );
     return _dao.getById(team.id);
+  }
+
+  /// Update team/enterprise details (name, description, services, rules, etc.)
+  Future<TeamRow?> updateTeam({
+    required String teamId,
+    String? name,
+    String? description,
+    String? services,
+    String? rules,
+    String? teamType,
+    bool? isPublic,
+    String? createdBy,
+  }) async {
+    final team = await _dao.getById(teamId);
+    if (team == null) return null;
+    await _dao.upsert(
+      team
+          .toCompanion(false)
+          .copyWith(
+            name: Value(name ?? team.name),
+            description: Value(description ?? team.description),
+            services: Value(services ?? team.services),
+            rules: Value(rules ?? team.rules),
+            teamType: Value(teamType ?? team.teamType),
+            isPublic: Value(isPublic ?? team.isPublic),
+            createdBy: Value(createdBy ?? team.createdBy),
+            isUpdated: const Value(true),
+            updatedDate: Value(DateTime.now().millisecondsSinceEpoch),
+          ),
+    );
+    return _dao.getById(teamId);
   }
 
   Future<TeamRow?> removeCourse(String teamId, String courseId) async {

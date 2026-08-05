@@ -678,6 +678,12 @@ class Teams extends Table {
   IntColumn get endDate => integer().withDefault(const Constant(0))();
   IntColumn get updatedDate => integer().withDefault(const Constant(0))();
 
+  /// For transactions: the transaction date.
+  IntColumn get date => integer().withDefault(const Constant(0))();
+
+  /// For transactions: the transaction amount (positive = credit, negative = debit).
+  IntColumn get amount => integer().withDefault(const Constant(0))();
+
   /// Set by every local write. The `teams` database mixes the server catalog
   /// with documents the user authors offline — a join request, a membership,
   /// a financial report, a resource link — and they are otherwise
