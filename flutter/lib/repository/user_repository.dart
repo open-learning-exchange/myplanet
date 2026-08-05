@@ -174,4 +174,110 @@ class UserRepository {
         return LoginFailureReason.serverError;
     }
   }
+
+  /// Port of `UserRepositoryImpl.uploadNewUser`.
+  ///
+  /// Uploads a newly registered member to the CouchDB `_users` database so
+  /// they can sign in on other devices and Planet knows they exist.
+  ///
+  /// After a successful upload, fetches the created document to retrieve
+  /// the server-assigned `derived_key`, `salt`, `password_scheme`, and
+  /// `iterations`, then updates the local row so subsequent logins use
+  /// PBKDF2 verification.
+  ///
+  /// Returns `true` on success, `false` on failure. On failure the local
+  /// account still exists (the BecomeMemberScreen wrote it), but the member
+  /// cannot log in on another device until the account syncs.
+  Future<bool> uploadNewUser({
+    required String localId,
+    required ServerConfig config,
+    required String username,
+    required String password,
+  }) async {
+    // Build the user document. Excludes _id/_rev because this is a new user;
+    // CouchDB will assign them.
+    final doc = _buildNewUserDoc(
+      username: username,
+      password: password,
+      planetCode: config.code,
+      parentCode: config.parentCode,
+    );
+
+    final url = UrlUtils.userDocUrl(config, username);
+
+    // PUT the user document (no auth header — CouchDB accepts creation without it)
+    final putResult = await _api.putJsonObject(url, doc);
+
+    String? serverId;
+    String? serverRev;
+    switch (putResult) {
+      case NetworkSuccess(data: final data):
+        serverId = data['id'] as String?;
+        serverRev = data['rev'] as String?;
+      case NetworkError() || NetworkException():
+        // PUT failed — the account exists locally but not on the server.
+        return false;
+    }
+
+    if (serverId == null || serverId.isEmpty) {
+      return false;
+    }
+
+    // Fetch the created document to get the server-side security data.
+    final authHeader = UrlUtils.basicAuthHeader(username, password);
+    final fetchResult = await _api.getJsonObject(
+      '${UrlUtils.dbUrl(config)}/_users/$serverId',
+      authHeader: authHeader,
+    );
+
+    String? passwordScheme;
+    String? derivedKey;
+    String? salt;
+    String? iterations;
+
+    switch (fetchResult) {
+      case NetworkSuccess(data: final data):
+        passwordScheme = JsonUtils.getStringOrNull('password_scheme', data);
+        derivedKey = JsonUtils.getStringOrNull('derived_key', data);
+        salt = JsonUtils.getStringOrNull('salt', data);
+        iterations = JsonUtils.getStringOrNull('iterations', data);
+      case NetworkError() || NetworkException():
+        // Security data not retrieved — login will still work via server fetch.
+        break;
+    }
+
+    // Update the local row with server data.
+    await _userDao.updateUserSecurityData(
+      localId: localId,
+      couchId: serverId,
+      rev: serverRev,
+      passwordScheme: passwordScheme,
+      derivedKey: derivedKey,
+      salt: salt,
+      iterations: iterations,
+    );
+
+    return true;
+  }
+
+  /// Builds the CouchDB user document for a new member.
+  ///
+  /// Matches the shape `UserEntity.serialize()` produces when `_id` is empty.
+  Map<String, dynamic> _buildNewUserDoc({
+    required String username,
+    required String password,
+    required String? planetCode,
+    required String? parentCode,
+  }) {
+    return {
+      'name': username,
+      'password': password,
+      'type': 'user',
+      'roles': <String>[],
+      'isUserAdmin': false,
+      'joinDate': DateTime.now().millisecondsSinceEpoch,
+      'planetCode': planetCode,
+      'parentCode': parentCode,
+    };
+  }
 }
