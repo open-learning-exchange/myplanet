@@ -235,23 +235,24 @@ class DownloadService : Service() {
                 val altBase = mapping.alternativeUrl
                 val primaryBase = mapping.extractedBaseUrl
 
-                val resolvedAltBase: String?
-                val resolvedPrimaryBase: String?
-                if (altBase != null && primaryBase != null) {
-                    resolvedAltBase = altBase
-                    resolvedPrimaryBase = primaryBase
-                    Log.d(TAG, "initDownload: found hardcoded mapping $primaryBase → $altBase")
-                } else {
-                    val storedAlt = sharedPrefManager.getProcessedAlternativeUrl()
-                    if (storedAlt.isNotEmpty() && primaryBase != null) {
-                        resolvedAltBase = storedAlt.trimEnd('/')
-                        resolvedPrimaryBase = primaryBase
-                        Log.d(TAG, "initDownload: no hardcoded mapping for $primaryBase — using stored alternative $resolvedAltBase")
-                    } else {
-                        resolvedAltBase = null
-                        resolvedPrimaryBase = null
-                        Log.w(TAG, "initDownload: no alternative URL available for primary base '$primaryBase', giving up")
+                val storedAlt = sharedPrefManager.getProcessedAlternativeUrl()
+                val resolvedAltBase: String? = when {
+                    primaryBase == null -> null
+                    altBase != null -> {
+                        Log.d(TAG, "initDownload: found hardcoded mapping $primaryBase → $altBase")
+                        altBase
                     }
+                    storedAlt.isNotEmpty() -> {
+                        val trimmedAlt = storedAlt.trimEnd('/')
+                        Log.d(TAG, "initDownload: no hardcoded mapping for $primaryBase — using stored alternative $trimmedAlt")
+                        trimmedAlt
+                    }
+                    else -> null
+                }
+
+                val resolvedPrimaryBase: String? = if (resolvedAltBase != null) primaryBase else null
+                if (resolvedAltBase == null || resolvedPrimaryBase == null) {
+                    Log.w(TAG, "initDownload: no alternative URL available for primary base '$primaryBase', giving up")
                 }
 
                 if (resolvedAltBase != null && resolvedPrimaryBase != null) {
