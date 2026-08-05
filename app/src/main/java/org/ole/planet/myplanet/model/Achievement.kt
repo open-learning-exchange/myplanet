@@ -48,41 +48,54 @@ class Achievement {
         get() = parseStringListToJsonArray(otherInfo)
 
     fun setLinks(la: JsonArray?) {
-        links = mutableListOf()
+        val newLinks = mutableListOf<String>()
+        links = newLinks
         if (la == null) return
+        val seen = HashSet<String>()
         for (el in la) {
             val e = JsonUtils.gson.toJson(el)
-            if (links?.contains(e) != true) links = links.orEmpty() + e
+            if (seen.add(e)) {
+                newLinks.add(e)
+            }
         }
     }
 
     fun setOtherInfo(oi: JsonArray?) {
-        otherInfo = mutableListOf()
+        val newOtherInfo = mutableListOf<String>()
+        otherInfo = newOtherInfo
         if (oi == null) return
+        val seen = HashSet<String>()
         for (el in oi) {
             val e = JsonUtils.gson.toJson(el)
-            if (otherInfo?.contains(e) != true) otherInfo = otherInfo.orEmpty() + e
+            if (seen.add(e)) {
+                newOtherInfo.add(e)
+            }
         }
     }
 
-    fun setAchievements(ac: JsonArray) {
-        achievements = mutableListOf()
+    fun setAchievements(ac: JsonArray?) {
+        val newAchievements = mutableListOf<String>()
+        achievements = newAchievements
+        if (ac == null) return
+        val seen = HashSet<String>()
         for (el in ac) {
             val achievement = JsonUtils.gson.toJson(el)
-            if (achievements?.contains(achievement) != true) {
-                achievements = achievements.orEmpty() + achievement
+            if (seen.add(achievement)) {
+                newAchievements.add(achievement)
             }
         }
     }
 
     fun setReferences(of: JsonArray?) {
         cachedReferencesArray = null
-        references = mutableListOf()
+        val newReferences = mutableListOf<String>()
+        references = newReferences
         if (of == null) return
+        val seen = HashSet<String>()
         for (el in of) {
             val e = JsonUtils.gson.toJson(el)
-            if (references?.contains(e) != true) {
-                references = references.orEmpty() + e
+            if (seen.add(e)) {
+                newReferences.add(e)
             }
         }
     }
