@@ -486,4 +486,112 @@ class ProgressRepositoryImplTest {
         val result = repository.findProgressForCourse(jsonArray, "course1")
         assertNull(result)
     }
+
+    @Test
+    fun testFetchCourseData_EmptyCourses() = testScope.runTest {
+        coEvery { mockCoursesRepository.getMyCourses("user1") } returns emptyList()
+
+        val data = repository.fetchCourseData("user1")
+        advanceUntilIdle()
+
+        assertEquals(0, data.size())
+    }
+
+    @Test
+    fun testGetCurrentProgress_OutOfBoundsStepNum() = testScope.runTest {
+        val steps = listOf(
+            CourseStep().apply { id = "step1" },
+            CourseStep().apply { id = "step2" }
+        )
+
+        // Step numbers are 1-indexed for calculateCurrentProgress,
+        // 0 and 3 are out of bounds for size 2
+        val progresses = listOf(
+            CourseProgress().apply { stepNum = 0 },
+            CourseProgress().apply { stepNum = 3 }
+        )
+
+        coEvery { courseProgressDao.getByUserAndCourse("user1", "course1") } returns progresses
+
+        val progress = repository.getCurrentProgress(steps, "user1", "course1")
+        advanceUntilIdle()
+
+        // Progress should be 0 because valid steps (1 and 2) are not completed
+        assertEquals(0, progress)
+    }
+
+    @Test
+    fun testGetCompletedCourses_InvalidIdOrTitle() = testScope.runTest {
+        val myCourses = listOf(
+            MyCourse().apply {
+                courseId = "" // Invalid ID
+                courseTitle = "Course 1"
+                courseSteps = mutableListOf(CourseStep().apply { courseId = "" })
+            },
+            MyCourse().apply {
+                courseId = "course2"
+                courseTitle = "" // Invalid title
+                courseSteps = mutableListOf(CourseStep().apply { courseId = "course2" })
+            },
+            MyCourse().apply {
+                courseId = "course3"
+                courseTitle = "Course 3"
+                courseSteps = mutableListOf(CourseStep().apply { courseId = "course3" })
+            }
+        )
+
+        val progresses = listOf(
+            CourseProgress().apply { courseId = ""; stepNum = 1; passed = true },
+            CourseProgress().apply { courseId = "course2"; stepNum = 1; passed = true },
+            CourseProgress().apply { courseId = "course3"; stepNum = 1; passed = true }
+        )
+
+        coEvery { mockCoursesRepository.getMyCourses("user1") } returns myCourses
+        coEvery { courseProgressDao.getByUser("user1") } returns progresses
+
+        val result = repository.getCompletedCourses("user1")
+        advanceUntilIdle()
+
+        assertEquals(1, result.size)
+        assertEquals("course3", result[0].courseId)
+        assertEquals("Course 3", result[0].courseTitle)
+    }
+
+    @Test
+    fun testSaveCourseProgress_UpdatesExistingRecord() = testScope.runTest {
+        val existingProgress = CourseProgress().apply {
+            id = "existingId"
+            courseId = "course1"
+            userId = "user1"
+            stepNum = 1
+            passed = true
+        }
+
+        coEvery { courseProgressDao.findByCourseUserAndStep("course1", "user1", 1) } returns existingProgress
+
+        // Save progress with passed = null, existing passed should remain true
+        repository.saveCourseProgress("user1", "planet1", "parent1", "course1", 1, null)
+        advanceUntilIdle()
+
+        coVerify {
+            courseProgressDao.upsert(match { progress ->
+                progress.id == "existingId" &&
+                    progress.courseId == "course1" &&
+                    progress.userId == "user1" &&
+                    progress.stepNum == 1 &&
+                    progress.passed == true && // passed should remain true
+                    progress.createdOn == "planet1" &&
+                    progress.parentCode == "parent1"
+            })
+        }
+    }
+
+    @Test
+    fun testInsertCourseProgressFromSync_EmptyDocs() = testScope.runTest {
+        repository.insertCourseProgressFromSync(emptyList())
+        advanceUntilIdle()
+
+        // DAO methods should not be called with an empty list
+        coVerify(exactly = 0) { courseProgressDao.upsertAll(any()) }
+    }
 }
