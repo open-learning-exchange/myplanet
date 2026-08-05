@@ -24,7 +24,8 @@ class TeamSurveysScreen extends ConsumerWidget {
     final adoptable = ref.watch(teamAdoptableSurveysProvider(teamId));
     final team = ref.watch(teamProvider(teamId)).valueOrNull;
     final userId = ref.watch(sessionProvider).valueOrNull?.id;
-    final memberships = ref.watch(teamMembershipsProvider).valueOrNull ?? const {};
+    final memberships =
+        ref.watch(teamMembershipsProvider).valueOrNull ?? const {};
     final membership = memberships[teamId] ??
         (team?.teamId == null ? null : memberships[team!.teamId]);
     final canAdopt = membership?.isLeader == true;
@@ -75,7 +76,9 @@ class TeamSurveysScreen extends ConsumerWidget {
                 trailing: FilledButton.icon(
                   onPressed: canAdopt && userId != null
                       ? () async {
-                          await ref.read(surveysRepositoryProvider).adoptSurvey(
+                          await ref
+                              .read(surveysRepositoryProvider)
+                              .adoptSurvey(
                                 surveyId: survey.id,
                                 userId: userId,
                                 teamId: teamId,
@@ -83,7 +86,9 @@ class TeamSurveysScreen extends ConsumerWidget {
                                 isTeam: true,
                               );
                           ref.invalidate(teamOwnedSurveysProvider(teamId));
-                          ref.invalidate(teamAdoptableSurveysProvider(teamId));
+                          ref.invalidate(
+                            teamAdoptableSurveysProvider(teamId),
+                          );
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text(l10n.surveyAdopted)),
@@ -124,7 +129,8 @@ class _SurveySection extends StatelessWidget {
           const SizedBox(height: 8),
           rows.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (_, _) => Text(AppLocalizations.of(context).surveysUnavailable),
+            error: (_, _) =>
+                Text(AppLocalizations.of(context).surveysUnavailable),
             data: (surveys) => surveys.isEmpty
                 ? Card(
                     child: ListTile(
