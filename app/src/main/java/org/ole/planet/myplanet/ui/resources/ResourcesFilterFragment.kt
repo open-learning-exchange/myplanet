@@ -80,6 +80,7 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
             )
             isLevelsExpanded = !isLevelsExpanded
         }
+        binding.btnApplyFilter.setOnClickListener { dismiss() }
         return binding.root
     }
 
