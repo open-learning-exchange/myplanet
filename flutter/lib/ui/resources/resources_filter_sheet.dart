@@ -20,7 +20,10 @@ class ResourceFilter {
   });
 
   bool get isEmpty =>
-      languages.isEmpty && subjects.isEmpty && mediaTypes.isEmpty && levels.isEmpty;
+      languages.isEmpty &&
+      subjects.isEmpty &&
+      mediaTypes.isEmpty &&
+      levels.isEmpty;
 
   ResourceFilter copyWith({
     Set<String>? languages,
@@ -44,30 +47,33 @@ final resourceFilterProvider = StateProvider<ResourceFilter>((ref) {
 
 /// Provider that computes available filter options from the resource list.
 final resourceFilterOptionsProvider =
-    Provider.family<ResourceFilterOptions, List<MyLibraryRow>>((ref, resources) {
-  final languages = <String>{};
-  final subjects = <String>{};
-  final mediaTypes = <String>{};
-  final levels = <String>{};
+    Provider.family<ResourceFilterOptions, List<MyLibraryRow>>((
+      ref,
+      resources,
+    ) {
+      final languages = <String>{};
+      final subjects = <String>{};
+      final mediaTypes = <String>{};
+      final levels = <String>{};
 
-  for (final r in resources) {
-    if (r.language != null && r.language!.isNotEmpty) {
-      languages.add(r.language!);
-    }
-    subjects.addAll(r.subject);
-    if (r.mediaType != null && r.mediaType!.isNotEmpty) {
-      mediaTypes.add(r.mediaType!);
-    }
-    levels.addAll(r.level);
-  }
+      for (final r in resources) {
+        if (r.language != null && r.language!.isNotEmpty) {
+          languages.add(r.language!);
+        }
+        subjects.addAll(r.subject);
+        if (r.mediaType != null && r.mediaType!.isNotEmpty) {
+          mediaTypes.add(r.mediaType!);
+        }
+        levels.addAll(r.level);
+      }
 
-  return ResourceFilterOptions(
-    languages: languages.toList()..sort(),
-    subjects: subjects.toList()..sort(),
-    mediaTypes: mediaTypes.toList()..sort(),
-    levels: levels.toList()..sort(),
-  );
-});
+      return ResourceFilterOptions(
+        languages: languages.toList()..sort(),
+        subjects: subjects.toList()..sort(),
+        mediaTypes: mediaTypes.toList()..sort(),
+        levels: levels.toList()..sort(),
+      );
+    });
 
 /// Available filter options.
 class ResourceFilterOptions {
@@ -257,10 +263,7 @@ class _ResourcesFilterSheetState extends ConsumerState<ResourcesFilterSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
+        Text(title, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
