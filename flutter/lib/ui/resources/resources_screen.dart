@@ -122,7 +122,8 @@ class ResourcesScreen extends ConsumerWidget {
           return ListView.separated(
             itemCount: filteredItems.length,
             separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (context, index) => _ResourceTile(filteredItems[index]),
+            itemBuilder: (context, index) =>
+                _ResourceTile(filteredItems[index]),
           );
         },
       ),

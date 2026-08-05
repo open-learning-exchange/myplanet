@@ -80,9 +80,7 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_resource!.title ?? l10n.untitledResource),
-      ),
+      appBar: AppBar(title: Text(_resource!.title ?? l10n.untitledResource)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -128,7 +126,8 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
             ],
 
             // Added by
-            if (_resource!.addedBy != null && _resource!.addedBy!.isNotEmpty) ...[
+            if (_resource!.addedBy != null &&
+                _resource!.addedBy!.isNotEmpty) ...[
               _buildInfoRow(
                 context,
                 l10n.addedBy,
@@ -150,9 +149,9 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
   Widget _buildRatingSection(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final resource = _resource!;
-    final summary = ref.watch(ratingSummaryProvider(
-      (type: 'resource', itemId: resource.id),
-    ));
+    final summary = ref.watch(
+      ratingSummaryProvider((type: 'resource', itemId: resource.id)),
+    );
 
     return Card(
       child: Padding(
@@ -230,20 +229,19 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
               children: [
                 if (resource.author != null && resource.author!.isNotEmpty)
                   _buildMetadataRow(l10n.author, resource.author!),
-                if (resource.publisher != null && resource.publisher!.isNotEmpty)
+                if (resource.publisher != null &&
+                    resource.publisher!.isNotEmpty)
                   _buildMetadataRow(l10n.publisher, resource.publisher!),
                 if (resource.language != null && resource.language!.isNotEmpty)
                   _buildMetadataRow(l10n.language, resource.language!),
-                if (resource.mediaType != null && resource.mediaType!.isNotEmpty)
+                if (resource.mediaType != null &&
+                    resource.mediaType!.isNotEmpty)
                   _buildMetadataRow(l10n.mediaType, resource.mediaType!),
                 if (resource.resourceType != null &&
                     resource.resourceType!.isNotEmpty)
                   _buildMetadataRow(l10n.resourceType, resource.resourceType!),
                 if (resource.subject.isNotEmpty)
-                  _buildMetadataRow(
-                    l10n.subject,
-                    resource.subject.join(', '),
-                  ),
+                  _buildMetadataRow(l10n.subject, resource.subject.join(', ')),
                 if (resource.level.isNotEmpty)
                   _buildMetadataRow(l10n.level, resource.level.join(', ')),
                 if (resource.languages.isNotEmpty)
@@ -284,9 +282,7 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
-          Expanded(
-            child: Text(value),
-          ),
+          Expanded(child: Text(value)),
         ],
       ),
     );
@@ -302,10 +298,7 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
       children: [
         Icon(icon, size: 20),
         const SizedBox(width: 8),
-        Text(
-          '$label: ',
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        Text('$label: ', style: const TextStyle(fontWeight: FontWeight.bold)),
         Expanded(child: Text(value)),
       ],
     );
@@ -381,7 +374,9 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
 
       // Update the resource - convert row to companion for upsert
       final updated = _resource!.copyWith(userId: newUserIds);
-      await ref.read(myLibraryDaoProvider).upsertAll([updated.toCompanion(true)]);
+      await ref.read(myLibraryDaoProvider).upsertAll([
+        updated.toCompanion(true),
+      ]);
 
       // Reload
       await _loadResource();
