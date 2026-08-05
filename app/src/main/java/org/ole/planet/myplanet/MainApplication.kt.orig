@@ -178,7 +178,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 ThemeMode.FOLLOW_SYSTEM -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
             }
         }
-        
+
         private const val REACHABILITY_CACHE_TTL_MS = 30_000L
         private val reachabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
@@ -230,26 +230,22 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 }
                 val url = URL(formattedUrl)
                 val responseCode = withContext(ioDispatcher) {
-                    executePingRequest(url)
+                    TrafficStats.setThreadStatsTag(NETWORK_TRAFFIC_TAG)
+                    val connection = url.openConnection() as HttpURLConnection
+                    try {
+                        connection.requestMethod = "GET"
+                        connection.connectTimeout = 5000
+                        connection.readTimeout = 5000
+                        connection.connect()
+                        connection.responseCode
+                    } finally {
+                        connection.disconnect()
+                        TrafficStats.clearThreadStatsTag()
+                    }
                 }
                 responseCode in 200..299
             } catch (e: Exception) {
                 false
-            }
-        }
-
-        private suspend fun executePingRequest(url: URL): Int {
-            TrafficStats.setThreadStatsTag(NETWORK_TRAFFIC_TAG)
-            val connection = url.openConnection() as HttpURLConnection
-            return try {
-                connection.requestMethod = "GET"
-                connection.connectTimeout = 5000
-                connection.readTimeout = 5000
-                connection.connect()
-                connection.responseCode
-            } finally {
-                connection.disconnect()
-                TrafficStats.clearThreadStatsTag()
             }
         }
 
