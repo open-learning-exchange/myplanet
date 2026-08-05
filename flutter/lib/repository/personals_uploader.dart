@@ -1,7 +1,14 @@
+import 'dart:developer';
+import 'dart:io';
+
+import 'package:mime/mime.dart';
+import 'package:path/path.dart' as p;
+
 import '../core/config/server_config.dart';
 import '../core/network/network_result.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
+import '../data/local/app_database.dart';
 import 'outbox_drainer.dart';
 import 'outbox_repository.dart';
 import 'personals_repository.dart';
@@ -14,6 +21,12 @@ import 'personals_repository.dart';
 /// truth, so a dropped push costs nothing. A personal note is the opposite: it
 /// exists only locally until it is POSTed, and a push lost to a dead network is
 /// lost outright unless something durable remembers to send it again.
+///
+/// When a note carries a local [PersonalRow.path] the Kotlin flow POSTs the
+/// document and then PUTs the file as a CouchDB attachment. That second step
+/// is best-effort in the Kotlin source: the document is already uploaded before
+/// the attachment is attempted, and an attachment failure does not roll the
+/// document back. This handler mirrors that ordering.
 class PersonalsUploader {
   PersonalsUploader(this._api, this._personals, this._outbox);
 
@@ -78,9 +91,53 @@ class PersonalsUploader {
         );
       }
       await _personals.markUploaded(row.itemId, couchId, rev);
+      await _uploadAttachment(row, couchId, rev, authHeader);
     }
     return result;
   };
+
+  Future<void> _uploadAttachment(
+    OutboxRow row,
+    String couchId,
+    String rev,
+    String? authHeader,
+  ) async {
+    final localPath = (await _personals.getById(row.itemId))?.path;
+    if (localPath == null || localPath.isEmpty) return;
+
+    final file = File(localPath);
+    if (!await file.exists()) return;
+
+    late final List<int> bytes;
+    try {
+      bytes = await file.readAsBytes();
+    } on FileSystemException catch (e, stack) {
+      log('Could not read personal attachment', error: e, stackTrace: stack);
+      return;
+    }
+
+    final filename = p.basename(localPath);
+    if (filename.isEmpty) return;
+
+    final base = row.endpoint.endsWith('/resources')
+        ? row.endpoint.substring(0, row.endpoint.length - 10)
+        : row.endpoint;
+    final attachmentUrl =
+        '$base/resources'
+        '/${Uri.encodeComponent(couchId)}/${Uri.encodeComponent(filename)}';
+    final contentType = lookupMimeType(localPath) ?? 'application/octet-stream';
+
+    final attachResult = await _api.uploadAttachment(
+      attachmentUrl,
+      bytes: bytes,
+      authHeader: authHeader,
+      contentType: contentType,
+      ifMatch: rev,
+    );
+    if (attachResult is! NetworkSuccess<Map<String, dynamic>>) {
+      log('Personal attachment upload failed: $attachResult');
+    }
+  }
 
   static String authHeaderFor(ServerConfig config) =>
       UrlUtils.basicAuthHeader('satellite', config.pin);

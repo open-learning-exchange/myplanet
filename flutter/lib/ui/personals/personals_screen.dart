@@ -1,6 +1,8 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:path/path.dart' as p;
 
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
@@ -55,7 +57,11 @@ class PersonalsScreen extends ConsumerWidget {
       if (personal == null) {
         await ref
             .read(personalActionsProvider)
-            .create(title: value.title, description: value.description);
+            .create(
+              title: value.title,
+              description: value.description,
+              path: value.path,
+            );
       } else {
         await ref
             .read(personalActionsProvider)
@@ -63,6 +69,7 @@ class PersonalsScreen extends ConsumerWidget {
               id: personal.id,
               title: value.title,
               description: value.description,
+              path: value.path,
             );
       }
     } on DuplicatePersonalTitle {
@@ -216,12 +223,14 @@ class _PersonalDialogState extends State<_PersonalDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _title;
   late final TextEditingController _description;
+  String? _path;
 
   @override
   void initState() {
     super.initState();
     _title = TextEditingController(text: widget.personal?.title);
     _description = TextEditingController(text: widget.personal?.description);
+    _path = widget.personal?.path;
   }
 
   @override
@@ -258,6 +267,12 @@ class _PersonalDialogState extends State<_PersonalDialog> {
               minLines: 2,
               maxLines: 5,
             ),
+            const SizedBox(height: 12),
+            _AttachmentField(
+              path: _path,
+              onPick: _pickFile,
+              onClear: _clearFile,
+            ),
           ],
         ),
       ),
@@ -271,6 +286,18 @@ class _PersonalDialogState extends State<_PersonalDialog> {
     );
   }
 
+  Future<void> _pickFile() async {
+    final result = await FilePicker.pickFiles(
+      type: FileType.any,
+      allowMultiple: false,
+    );
+    if (result == null || result.files.isEmpty) return;
+    final picked = result.files.single.path;
+    if (picked != null) setState(() => _path = picked);
+  }
+
+  void _clearFile() => setState(() => _path = null);
+
   void _submit() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     Navigator.pop(
@@ -278,13 +305,54 @@ class _PersonalDialogState extends State<_PersonalDialog> {
       _PersonalFormValue(
         title: _title.text.trim(),
         description: _description.text.trim(),
+        path: _path,
       ),
     );
   }
 }
 
+class _AttachmentField extends StatelessWidget {
+  const _AttachmentField({
+    required this.path,
+    required this.onPick,
+    required this.onClear,
+  });
+
+  final String? path;
+  final VoidCallback onPick;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(
+        path == null ? Icons.attach_file_outlined : Icons.attachment_outlined,
+      ),
+      title: Text(
+        path == null ? l10n.attachFile : l10n.attachedFile(p.basename(path!)),
+      ),
+      subtitle: path == null ? Text(l10n.noFileSelected) : null,
+      trailing: path != null
+          ? IconButton(
+              icon: const Icon(Icons.close),
+              tooltip: l10n.removeFile,
+              onPressed: onClear,
+            )
+          : null,
+      onTap: onPick,
+    );
+  }
+}
+
 class _PersonalFormValue {
-  const _PersonalFormValue({required this.title, required this.description});
+  const _PersonalFormValue({
+    required this.title,
+    required this.description,
+    this.path,
+  });
   final String title;
   final String description;
+  final String? path;
 }

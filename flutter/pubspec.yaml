@@ -29,6 +29,8 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.26
   path_provider: ^2.1.5
   path: ^1.9.0
+  file_picker: 11.0.2
+  mime: ^2.0.0
 
   # Navigation — replaces the Activity/Fragment + FragmentNavigator stack.
   go_router: ^14.6.2

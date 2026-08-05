@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
@@ -87,6 +90,22 @@ void main() {
     );
   });
 
+  test('serialize includes filename when a local path is present', () {
+    final row = PersonalRow(
+      id: 'note-2',
+      isUploaded: false,
+      title: 'Field notes',
+      titleNormalized: 'field notes',
+      date: 555,
+      userId: 'user-1',
+      userName: 'ada',
+      path: '/storage/notes/photo.jpg',
+    );
+
+    final serialized = PersonalsRepository.serialize(row);
+    expect(serialized['filename'], 'photo.jpg');
+  });
+
   test('queuePending queues each un-uploaded note exactly once', () async {
     await personals.create(userId: 'user-1', userName: 'ada', title: 'One');
     await personals.create(userId: 'user-1', userName: 'ada', title: 'Two');
@@ -146,6 +165,56 @@ void main() {
           'without adopting the ids this note would be posted again '
           'on every drain, one duplicate per drain',
     );
+  });
+
+  test('uploads the file attachment after the document succeeds', () async {
+    final tempDir = await Directory.systemTemp.createTemp('personals_test');
+    addTearDown(() => tempDir.delete(recursive: true));
+    final file = File('${tempDir.path}/attach.txt')
+      ..writeAsBytesSync(utf8.encode('hello'));
+
+    await personals.create(
+      userId: 'user-1',
+      userName: 'ada',
+      title: 'Note with file',
+      path: file.path,
+    );
+    await uploader.queuePending(config: config, userId: 'user-1');
+
+    stubPost(
+      const NetworkSuccess<Map<String, dynamic>>({'id': 'srv-1', 'rev': '1-a'}),
+    );
+    when(
+      () => api.uploadAttachment(
+        'https://planet.example.org/db/resources/srv-1/attach.txt',
+        bytes: any(named: 'bytes'),
+        authHeader: any(named: 'authHeader'),
+        contentType: 'text/plain',
+        ifMatch: '1-a',
+      ),
+    ).thenAnswer(
+      (_) async => const NetworkSuccess<Map<String, dynamic>>({
+        'ok': true,
+        'id': 'srv-1',
+        'rev': '2-b',
+      }),
+    );
+
+    expect(await drainer().drain(), [OutboxOutcome.completed]);
+    verify(
+      () => api.uploadAttachment(
+        'https://planet.example.org/db/resources/srv-1/attach.txt',
+        bytes: any(named: 'bytes'),
+        authHeader: any(named: 'authHeader'),
+        contentType: 'text/plain',
+        ifMatch: '1-a',
+      ),
+    ).called(1);
+
+    final saved = await database.personalDao.getById('note-0');
+    expect(saved?.isUploaded, isTrue);
+    expect(saved?.couchId, 'srv-1');
+    expect(saved?.rev, '1-a');
   });
 
   test('a failed upload leaves the note pending for the next drain', () async {
