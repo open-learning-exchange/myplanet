@@ -882,5 +882,7 @@
     }
   },
   "rating": "Rating",
-  "operationFailed": "Operation failed"
+  "operationFailed": "Operation failed",
+  "filterResources": "Filter Resources",
+  "apply": "Apply"
 }

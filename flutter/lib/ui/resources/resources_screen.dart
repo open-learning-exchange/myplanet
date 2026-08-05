@@ -7,6 +7,7 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/resources_providers.dart';
 import '../../providers/sync_state.dart';
 import '../dashboard/dashboard_shell.dart';
+import 'resources_filter_sheet.dart';
 
 /// Port of `ui/resources/ResourcesFragment.kt`.
 ///
@@ -22,6 +23,7 @@ class ResourcesScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final resources = ref.watch(resourcesStreamProvider);
     final syncState = ref.watch(resourceSyncProvider);
+    final filter = ref.watch(resourceFilterProvider);
 
     ref.listen<SyncUiState>(resourceSyncProvider, (previous, next) {
       final messenger = ScaffoldMessenger.of(context);
@@ -44,6 +46,20 @@ class ResourcesScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.resources),
         actions: [
+          IconButton(
+            tooltip: l10n.filterResources,
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                builder: (context) => const ResourcesFilterSheet(),
+              );
+            },
+            icon: Badge(
+              isLabelVisible: !filter.isEmpty,
+              child: const Icon(Icons.filter_list),
+            ),
+          ),
           IconButton(
             tooltip: l10n.sync,
             onPressed: syncState is SyncRunning
@@ -81,13 +97,32 @@ class ResourcesScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text(l10n.syncFailed('$error'))),
         data: (items) {
-          if (items.isEmpty) {
-            return Center(child: Text(l10n.noDataAvailable));
+          // Apply filter if active
+          final filteredItems = items.applyFilter(filter);
+          if (filteredItems.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(l10n.noDataAvailable),
+                  if (!filter.isEmpty) ...[
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () {
+                        ref.read(resourceFilterProvider.notifier).state =
+                            const ResourceFilter();
+                      },
+                      child: Text(l10n.clearFilters),
+                    ),
+                  ],
+                ],
+              ),
+            );
           }
           return ListView.separated(
-            itemCount: items.length,
+            itemCount: filteredItems.length,
             separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (context, index) => _ResourceTile(items[index]),
+            itemBuilder: (context, index) => _ResourceTile(filteredItems[index]),
           );
         },
       ),
