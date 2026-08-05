@@ -117,6 +117,25 @@ class PlanetApi {
     );
   }
 
+  /// Same as [sendJsonObject], but returns the raw decoded response without
+  /// forcing it to be a JSON object. Used by the public survey API, where the
+  /// success body shape is not important — only the HTTP status matters.
+  Future<NetworkResult<dynamic>> sendJsonDynamic(
+    String url, {
+    required Map<String, dynamic> body,
+    String method = 'POST',
+    String? authHeader,
+  }) {
+    return _request<dynamic>(
+      url,
+      method: method,
+      body: body,
+      authHeader: authHeader,
+      responseType: ResponseType.json,
+      convert: (data) => data,
+    );
+  }
+
   /// Port of `ApiInterface.getApkVersion` / `getChecksum` — raw text bodies.
   Future<NetworkResult<String>> getRaw(String url, {String? authHeader}) {
     return _request<String>(

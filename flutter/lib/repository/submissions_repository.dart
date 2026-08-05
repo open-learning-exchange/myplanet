@@ -29,6 +29,8 @@ class SubmissionsRepository {
   Stream<List<SubmissionQuestionRow>> watchQuestions(String submissionId) =>
       _dao.watchQuestions(submissionId);
   Future<SubmissionRow?> getById(String id) => _dao.getById(id);
+  Future<List<SubmissionAnswerRow>> answersFor(String submissionId) =>
+      _dao.answersFor(submissionId);
   Future<int> localCount() => _dao.count();
 
   Future<String> createDraft({
