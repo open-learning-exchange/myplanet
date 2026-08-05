@@ -147,6 +147,9 @@ abstract class BaseResourceFragment : Fragment() {
         if (dbMyLibrary.isEmpty()) {
             return
         }
+        if (downloadSuggestionDialog?.isShowing == true) {
+            return
+        }
 
         activity?.let { fragmentActivity ->
             val inflater = fragmentActivity.layoutInflater
