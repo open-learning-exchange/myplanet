@@ -42,8 +42,6 @@ class SyncRepositoryImpl @Inject constructor(
     private val teamsSyncRepository: TeamsSyncRepository,
     private val transactionSyncManager: dagger.Lazy<org.ole.planet.myplanet.services.sync.TransactionSyncManager>
 ) : SyncRepository {
-    private val stringArray = arrayOfNulls<String>(4)
-
     override fun uploadLoginData(): Flow<SyncUiState> {
         val workRequest = OneTimeWorkRequest.Builder(UserDataWorker::class.java)
             .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to UserDataWorker.UPLOAD_TYPE_LOGIN))
