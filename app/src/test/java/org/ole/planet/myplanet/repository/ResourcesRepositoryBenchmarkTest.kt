@@ -31,7 +31,7 @@ class ResourcesRepositoryBenchmarkTest {
     private val teamsSyncRepositoryLazy: dagger.Lazy<TeamsSyncRepository> = mockk(relaxed = true)
     private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
-    private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository> = dagger.Lazy { mockk<TeamsRepository>(relaxed = true) }
+    private val teamDao: TeamDao = mockk(relaxed = true)
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
 
     @Before
@@ -48,7 +48,7 @@ class ResourcesRepositoryBenchmarkTest {
             teamsSyncRepositoryLazy,
             myLibraryDao,
             userRepository,
-            teamsRepositoryLazy,
+            teamDao,
             userSessionManager
         )
     }
