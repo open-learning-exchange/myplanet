@@ -318,9 +318,9 @@ class VoicesRepositoryImpl @Inject constructor(
         newsDao.upsert(reply)
     }
 
-    override suspend fun editPost(newsId: String, message: String, imagesToRemove: Set<String>, newImages: List<String>?) {
-        if (message.isEmpty()) return
-        val news = newsDao.getById(newsId) ?: return
+    override suspend fun editPost(newsId: String, message: String, imagesToRemove: Set<String>, newImages: List<String>?): News? {
+        if (message.isEmpty()) return null
+        val news = newsDao.getById(newsId) ?: return null
         val urls = (news.imageUrls ?: emptyList()).toMutableList()
         if (imagesToRemove.isNotEmpty()) {
             val updatedUrls = urls.filter { imageUrlJson ->
@@ -339,6 +339,7 @@ class VoicesRepositoryImpl @Inject constructor(
         news.imageUrls = urls
         news.updateMessage(message)
         newsDao.upsert(news)
+        return newsDao.getById(newsId)
     }
 
     private fun isCommunitySection(news: News): Boolean {

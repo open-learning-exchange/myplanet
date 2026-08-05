@@ -273,6 +273,9 @@ class VoicesAdapter(
                     PAYLOAD_EDIT_ACTION -> {
                         configureEditDeleteButtons(holder, news)
                         showReplyButton(holder, news, position)
+                        val sharedTeamName = JsonUtils.extractSharedTeamName(news)
+                        setMessageAndDate(holder, news, sharedTeamName)
+                        loadImage(holder.binding, news)
                     }
                 }
             }
@@ -467,8 +470,18 @@ class VoicesAdapter(
                         holder,
                         voicesRepository,
                         { h, updatedNews, pos ->
-                            showReplyButton(h, updatedNews, pos)
-                            safeNotifyItemChanged(pos, PAYLOAD_EDIT_ACTION)
+                            val targetNews = updatedNews ?: news
+                            preParseNews(targetNews)
+                            if (pos in 0 until itemCount) {
+                                val newList = currentList.toMutableList()
+                                newList[pos] = targetNews
+                                submitList(newList) {
+                                    safeNotifyItemChanged(pos, PAYLOAD_EDIT_ACTION)
+                                }
+                            } else {
+                                showReplyButton(h, targetNews, pos)
+                                safeNotifyItemChanged(pos, PAYLOAD_EDIT_ACTION)
+                            }
                         },
                         onEditAction
                     )
