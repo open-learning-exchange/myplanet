@@ -39,7 +39,8 @@ class SyncRepositoryImpl @Inject constructor(
     private val resourcesRepository: ResourcesRepository,
     private val coursesRepository: CoursesRepository,
     private val eventsRepository: EventsRepository,
-    private val teamsSyncRepository: TeamsSyncRepository
+    private val teamsSyncRepository: TeamsSyncRepository,
+    private val transactionSyncManager: dagger.Lazy<org.ole.planet.myplanet.services.sync.TransactionSyncManager>
 ) : SyncRepository {
     private val stringArray = arrayOfNulls<String>(4)
 
@@ -127,17 +128,13 @@ class SyncRepositoryImpl @Inject constructor(
         return processedItems
     }
 
-    override suspend fun processShelfDataOptimizedSync(shelfId: String?, shelfData: Constants.ShelfData, shelfDoc: JsonObject?, apiInterface: ApiInterface): Int {
+    private suspend fun processShelfDataOptimizedSync(shelfId: String?, shelfData: Constants.ShelfData, shelfDoc: JsonObject?, apiInterface: ApiInterface): Int {
         var processedCount = 0
         val logger = SyncTimeLogger
 
         try {
             val array = getJsonArray(shelfData.key, shelfDoc)
             if (array.size() == 0) return 0
-
-            stringArray[0] = shelfId
-            stringArray[1] = shelfData.categoryKey
-            stringArray[2] = shelfData.type
 
             val validIds = mutableListOf<String>()
             for (i in 0 until array.size()) {
@@ -217,5 +214,9 @@ class SyncRepositoryImpl @Inject constructor(
             logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} failed: ${e.message}")
         }
         return processedCount
+    }
+
+    override fun syncDashboardKeyId(role: String?, listener: org.ole.planet.myplanet.callback.OnSyncListener) {
+        transactionSyncManager.get().syncDashboardKeyId(role, listener)
     }
 }

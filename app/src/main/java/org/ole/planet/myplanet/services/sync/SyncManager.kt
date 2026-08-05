@@ -80,7 +80,6 @@ class SyncManager @Inject constructor(
     private val syncRepository: org.ole.planet.myplanet.repository.SyncRepository
 ) {
     private val isSyncing = AtomicBoolean(false)
-    private val stringArray = arrayOfNulls<String>(4)
     private var listener: OnSyncListener? = null
     private var backgroundSync: Job? = null
     private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
