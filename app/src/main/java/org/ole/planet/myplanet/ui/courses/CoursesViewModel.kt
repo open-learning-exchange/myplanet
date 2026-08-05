@@ -37,7 +37,7 @@ class CoursesViewModel @Inject constructor(
 
     private var isTitleAscending = true
     private var isDateAscending = true
-    private var activeSort = SortType.TITLE
+    private var activeSort: SortType? = null
 
     enum class SortType { TITLE, DATE }
 
@@ -65,6 +65,7 @@ class CoursesViewModel @Inject constructor(
             } else {
                 courses.sortedByDescending { it.createdDate }
             }
+            null -> courses
         }
     }
 

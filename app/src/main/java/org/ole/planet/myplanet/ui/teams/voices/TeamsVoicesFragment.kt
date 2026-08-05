@@ -231,6 +231,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     deletePostFn = { newsId ->
                         viewLifecycleOwner.lifecycleScope.launch {
                             viewModel.deletePost(newsId, getEffectiveTeamName())
+                            (binding.rvDiscussion.adapter as? VoicesAdapter)?.removePost(newsId)
                         }
                     },
                     shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->

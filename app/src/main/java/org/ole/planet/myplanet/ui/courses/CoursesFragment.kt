@@ -217,11 +217,13 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
                 val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
                 deleteSelected(true)
                 selectionController.clearAll(adapterCourses)
+                viewModel.loadCourses(isMyCourseLib, model?.id)
             },
             onArchiveConfirmed = {
                 val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
                 deleteSelected(true)
                 selectionController.clearAll(adapterCourses)
+                viewModel.loadCourses(isMyCourseLib, model?.id)
             },
             onAddToLib = {
                 if ((selectedItems?.size ?: 0) > 0) {

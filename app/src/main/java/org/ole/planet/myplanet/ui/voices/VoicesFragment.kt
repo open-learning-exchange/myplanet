@@ -257,6 +257,7 @@ class VoicesFragment : BaseVoicesFragment() {
             },
             deletePostFn = { newsId ->
                 voicesViewModel.deletePost(newsId, "") {
+                    adapterNews?.removePost(newsId)
                 }
             },
             shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->

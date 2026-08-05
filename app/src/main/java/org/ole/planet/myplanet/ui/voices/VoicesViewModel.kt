@@ -138,6 +138,8 @@ class VoicesViewModel @Inject constructor(
     fun deletePost(newsId: String, teamName: String, onComplete: () -> Unit) {
         viewModelScope.launch {
             voicesRepository.deletePost(newsId, teamName)
+            val updatedList = _baseNewsList.value.filter { it?.id != newsId }
+            _baseNewsList.value = updatedList
             onComplete()
         }
     }

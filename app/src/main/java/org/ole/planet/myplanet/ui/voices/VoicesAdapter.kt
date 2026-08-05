@@ -303,7 +303,12 @@ class VoicesAdapter(
     }
 
     fun removePost(newsId: String) {
-        // Handled by upstream reloading data in ViewModel and submitting it here.
+        parentNews?.id?.let { pid ->
+            val current = replyCountCache[pid]
+            replyCountCache[pid] = if (current != null) maxOf(0, current - 1) else 0
+            notifyItemChanged(0, PAYLOAD_REPLY_COUNT)
+        }
+        listener?.onDataChanged()
     }
 
     fun updateReplyBadge(newsId: String?) {

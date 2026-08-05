@@ -41,7 +41,6 @@ class LifeAdapter(
     private val show = 1f
 
     private val drawableCache = mutableMapOf<String, Int>()
-    private var dragList: MutableList<MyLife>? = null
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val v = LayoutInflater.from(context).inflate(R.layout.row_life, parent, false)
@@ -95,6 +94,8 @@ class LifeAdapter(
         (holder as LifeViewHolder).visibility.setImageResource(imageId)
         holder.rvItemContainer.alpha = alpha
     }
+
+    private var dragList: MutableList<MyLife>? = null
 
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
         if (dragList == null) {
