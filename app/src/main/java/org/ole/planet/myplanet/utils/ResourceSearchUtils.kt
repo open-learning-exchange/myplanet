@@ -17,7 +17,7 @@ object ResourceSearchUtils {
             val title = titleSelector(item)?.let { Utilities.normalizeText(it) } ?: continue
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {
                 startsWithQuery.add(item)
-            } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
+            } else if (normalizedQueryParts.all { title.indexOf(it, ignoreCase = true) >= 0 }) {
                 containsQuery.add(item)
             }
         }
