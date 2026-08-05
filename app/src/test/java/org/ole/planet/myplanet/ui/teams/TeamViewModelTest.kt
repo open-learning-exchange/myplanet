@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
-import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -29,14 +28,13 @@ class TeamViewModelTest {
     private lateinit var viewModel: TeamViewModel
     private val teamsRepository = mockk<TeamsRepository>()
     private val teamsSyncRepository = mockk<TeamsSyncRepository>()
-    private val realtimeSyncManager: RealtimeSyncManager = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private val testDispatcherProvider = TestDispatcherProvider(testDispatcher)
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        viewModel = TeamViewModel(teamsRepository, teamsSyncRepository, testDispatcherProvider, realtimeSyncManager)
+        viewModel = TeamViewModel(teamsRepository, teamsSyncRepository, testDispatcherProvider)
     }
 
     @After

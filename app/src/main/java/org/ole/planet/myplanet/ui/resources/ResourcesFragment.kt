@@ -28,6 +28,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
@@ -47,8 +49,6 @@ import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
-import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.ResourceSearchUtils
@@ -58,7 +58,7 @@ import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
 class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelectedListener,
-    ChipDeletedListener, OnTagClickListener, OnFilterListener, RealtimeSyncMixin {
+    ChipDeletedListener, OnTagClickListener, OnFilterListener {
     private var _binding: FragmentMyLibraryBinding? = null
     private val binding get() = _binding!!
     private val tvAddToLib get() = binding.tvAdd
@@ -88,7 +88,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private val viewModel: ResourcesViewModel by viewModels()
     
-    private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private var refreshJob: Job? = null
 
     internal val addResourceLauncher = registerForActivityResult(
@@ -224,8 +223,22 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         tvFragmentInfo = binding.tvFragmentInfo
         if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
         
-        realtimeSyncHelper = RealtimeSyncHelper(this, this)
-        realtimeSyncHelper.setupRealtimeSync()
+        setupRealtimeSync()
+    }
+
+    @OptIn(kotlinx.coroutines.FlowPreview::class)
+    private fun setupRealtimeSync() {
+        collectWhenStarted(
+            viewModel.getResourceUpdates()
+                .distinctUntilChanged { old, new ->
+                    old.table == new.table &&
+                    old.newItemsCount == new.newItemsCount &&
+                    old.updatedItemsCount == new.updatedItemsCount
+                }
+                .debounce(300)
+        ) { _ ->
+            refreshResourcesData()
+        }
     }
 
     private fun initializeViews() {
@@ -677,19 +690,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
     }
     
-    override fun getWatchedTables(): List<String> {
-        return listOf("resources")
-    }
     
-    override fun onDataUpdated(table: String, update: TableDataUpdate) {
-        refreshResourcesData()
-    }
 
-    override fun shouldAutoRefresh(table: String): Boolean = false
-    
-    override fun getSyncRecyclerView(): RecyclerView? {
-        return if (::recyclerView.isInitialized) recyclerView else null
-    }
 
     private fun filterLocalLibraryByTag(models: List<ResourceListModel>, s: String, tags: List<TagEntity>): List<ResourceListModel> {
         var filteredList = ResourceSearchUtils.searchLocalModels(models, s)

@@ -30,6 +30,8 @@ class ResourcesViewModel @Inject constructor(
     private var observeOpenedResourcesJob: Job? = null
     private var currentObservedUserId: String? = null
 
+    fun getResourceUpdates() = resourcesRepository.observeTableUpdates(listOf("resources"))
+
     fun notifyDownloadComplete() {
         _downloadComplete.value = true
         _downloadComplete.value = false
