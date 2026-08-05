@@ -81,7 +81,7 @@ class LifeAdapter(
             }
             holder.visibility.setOnClickListener {
                 holder.visibility.contentDescription = context.getString(R.string.visibility_of, myLife.title)
-                updateVisibility(holder.bindingAdapterPosition, myLife.isVisible)
+                updateVisibility(holder)
             }
             if (!myLife.isVisible) {
                 changeVisibility(holder, R.drawable.ic_visibility, hide)
@@ -91,9 +91,18 @@ class LifeAdapter(
         }
     }
 
-    private fun updateVisibility(position: Int, isVisible: Boolean) {
+    private fun updateVisibility(holder: LifeViewHolder) {
+        val position = holder.bindingAdapterPosition
+        if (position == RecyclerView.NO_POSITION) return
         val myLife = getItem(position)
-        visibilityCallback(myLife, !isVisible)
+        val newVisibility = !myLife.isVisible
+        myLife.isVisible = newVisibility
+        if (newVisibility) {
+            changeVisibility(holder, R.drawable.ic_visibility_off, show)
+        } else {
+            changeVisibility(holder, R.drawable.ic_visibility, hide)
+        }
+        visibilityCallback(myLife, newVisibility)
     }
 
     private fun changeVisibility(holder: RecyclerView.ViewHolder, imageId: Int, alpha: Float) {
@@ -146,7 +155,7 @@ class LifeAdapter(
             areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
             areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
         )
-        private val fragmentCache = mapOf<String, () -> Fragment>(
+        private val fragmentCache = mapOf(
             "ic_mypersonals" to { PersonalsFragment() },
             "ic_submissions" to { SubmissionsFragment() },
             "ic_my_survey" to { newInstance("survey") },

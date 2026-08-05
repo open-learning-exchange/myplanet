@@ -252,6 +252,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
     }
 
     private suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
+        flexboxLayout.removeAllViews()
         val userId = prefData.getUserId().ifEmpty { "--" }
         val visibleItems = lifeRepository.getMyLifeForDashboard(userId, getMyLifeListBase(userId))
         for ((itemCnt, items) in visibleItems.withIndex()) {
@@ -259,6 +260,13 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
             flexboxLayout.addView(getLayout(itemCnt, dashboardItem, 0), params)
         }
         updateMyLifeSurveyCount()
+    }
+
+    fun refreshMyLifeList() {
+        val myLifeFlex = view?.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife) ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            myLifeListInit(myLifeFlex)
+        }
     }
 
     private fun updateMyLifeSurveyCount() {

@@ -390,6 +390,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     override fun onResume() {
         super.onResume()
+        refreshMyLifeList()
         user?.let { u ->
             if (u.id?.startsWith("guest") != true && !DashboardActivity.isFromNotificationAction) {
                 checkPendingSurveys()
