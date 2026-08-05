@@ -18,9 +18,7 @@ class CoursesProgressScreen extends ConsumerWidget {
     final progress = ref.watch(courseProgressStreamProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.myProgress),
-      ),
+      appBar: AppBar(title: Text(l10n.myProgress)),
       body: progress.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text(l10n.unavailable)),
@@ -55,7 +53,9 @@ class _CourseProgressCard extends StatelessWidget {
 
     return Card(
       child: InkWell(
-        onTap: () => context.push('${Routes.courses}/${Uri.encodeComponent(row.courseId)}'),
+        onTap: () => context.push(
+          '${Routes.courses}/${Uri.encodeComponent(row.courseId)}',
+        ),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -118,10 +118,7 @@ class _CourseProgressCard extends StatelessWidget {
               // Step mistakes section
               if (row.stepMistakes != null && row.stepMistakes!.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                _StepMistakesTable(
-                  stepMistakes: row.stepMistakes!,
-                  l10n: l10n,
-                ),
+                _StepMistakesTable(stepMistakes: row.stepMistakes!, l10n: l10n),
               ],
             ],
           ),
@@ -132,10 +129,7 @@ class _CourseProgressCard extends StatelessWidget {
 }
 
 class _StepMistakesTable extends StatelessWidget {
-  const _StepMistakesTable({
-    required this.stepMistakes,
-    required this.l10n,
-  });
+  const _StepMistakesTable({required this.stepMistakes, required this.l10n});
   final Map<String, int> stepMistakes;
   final AppLocalizations l10n;
 
@@ -183,20 +177,12 @@ class _StepMistakesTable extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
             decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(
-                  color: theme.dividerColor,
-                  width: 1,
-                ),
+                bottom: BorderSide(color: theme.dividerColor, width: 1),
               ),
             ),
             child: Row(
               children: [
-                Expanded(
-                  child: Text(
-                    '$stepNum',
-                    textAlign: TextAlign.center,
-                  ),
-                ),
+                Expanded(child: Text('$stepNum', textAlign: TextAlign.center)),
                 Expanded(
                   child: Text(
                     '${entry.value}',
