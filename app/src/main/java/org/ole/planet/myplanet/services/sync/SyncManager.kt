@@ -14,9 +14,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
@@ -80,8 +78,6 @@ class SyncManager @Inject constructor(
     private val eventsRepository: EventsRepository,
     private val userSyncRepository: UserSyncRepository
 ) {
-    private val dateFormatter = ThreadLocal.withInitial { SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()) }
-
     private val isSyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)
     private var listener: OnSyncListener? = null
@@ -146,7 +142,7 @@ class SyncManager @Inject constructor(
         val logger = SyncTimeLogger
         logger.startLogging()
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-        Log.d("SyncPerf", "FULL SYNC STARTED at ${dateFormatter.get()?.format(Date())}")
+        Log.d("SyncPerf", "FULL SYNC STARTED at ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(Date())}")
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
         try {
 
@@ -215,7 +211,7 @@ class SyncManager @Inject constructor(
             val minutes = totalSyncTime / 60000
             val seconds = (totalSyncTime % 60000) / 1000
             Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-            Log.d("SyncPerf", "FULL SYNC COMPLETED at ${dateFormatter.get()?.format(Date())}")
+            Log.d("SyncPerf", "FULL SYNC COMPLETED at ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(Date())}")
             Log.d("SyncPerf", "TOTAL SYNC TIME: ${minutes}m ${seconds}s (${totalSyncTime}ms)")
             Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
         } catch (err: Exception) {
