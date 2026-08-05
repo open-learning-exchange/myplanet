@@ -107,7 +107,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
 
     private fun observeUiState() {
         viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.uiState
                         .map { it.library }
