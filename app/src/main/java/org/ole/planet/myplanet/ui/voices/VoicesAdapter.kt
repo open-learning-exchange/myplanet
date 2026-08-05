@@ -102,7 +102,10 @@ class VoicesAdapter(
                 payloads.add(PAYLOAD_EDIT_ACTION)
             }
 
-            if (payloads.isNotEmpty()) payloads else PAYLOAD_REPLY_COUNT
+            // Every field checked in areContentsTheSame is covered by the buckets above.
+            // If payloads is empty here, it means a future field was added to areContentsTheSame
+            // without a corresponding bucket. We MUST return null to trigger a full rebind to prevent stale UI.
+            if (payloads.isNotEmpty()) payloads else null
         }
     )
 ) {
@@ -243,7 +246,6 @@ class VoicesAdapter(
 
 
     @SuppressLint("SetTextI18n")
-    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
         if (payloads.isEmpty()) {
             super.onBindViewHolder(holder, position, payloads)
@@ -288,9 +290,10 @@ class VoicesAdapter(
                         val currentLeader = getCurrentLeader(userModel, news)
                         setMemberClickListeners(holder, userModel, currentLeader)
                         loadImage(holder.binding, news)
+                        configureEditDeleteButtons(holder, news)
                     }
                     PAYLOAD_EDIT_ACTION -> {
-                        val sharedTeamName = org.ole.planet.myplanet.utils.JsonUtils.extractSharedTeamName(news)
+                        val sharedTeamName = JsonUtils.extractSharedTeamName(news)
                         setMessageAndDate(holder, news, sharedTeamName)
                         configureEditDeleteButtons(holder, news)
                         showReplyButton(holder, news, position)
