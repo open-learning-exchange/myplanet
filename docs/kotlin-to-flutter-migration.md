@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 26 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 27 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -24,7 +24,8 @@ Known gaps:
 - Chat has no *upload* direction at all: a conversation exists only on the device it was typed
   on, which is why its sync must never delete a row the server has not confirmed.
 - Team attachments and team/public survey sharing are unported.
-- `BecomeMemberScreen` still only writes locally — see above.
+- ~~`BecomeMemberScreen` still only writes locally~~ — **resolved in Phase 27**: now attempts
+  server POST after local creation; falls back to local-only account if offline.
 
 - **Phase 1** -- skeleton plus the server configuration → login → resources slice.
 - **Phase 2** -- dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -118,6 +119,13 @@ Known gaps:
   wholesale, discarding a question whose answer had not yet arrived. Feedback's `deleteNotIn`
   already spared un-uploaded rows and needed no change.
 
+
+- **Phase 27** — `BecomeMemberScreen` server POST. The screen created local accounts but never
+  uploaded them to CouchDB, so members registered in the app existed only on that device.
+  Added `uploadNewUser` to `UserRepository` that PUTs the user document to `/-users`, fetches
+  the created document to retrieve the PBKDF2 security data, and updates the local row with
+  server-assigned `_id`/`_rev`. The screen now attempts the upload after local creation and
+  falls back to the offline-only account if the server is unreachable.
 ## Strategy
 
 - **Coexistence, green at every commit.** The Flutter app lives in `flutter/` alongside the
