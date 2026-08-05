@@ -82,10 +82,27 @@ class VoicesAdapter(
                 oldItem.id == newItem.id && oldItem.time == newItem.time &&
                         oldItem.isEdited == newItem.isEdited && oldItem.message == newItem.message &&
                         oldItem.userName == newItem.userName && oldItem.userId == newItem.userId &&
-                        oldItem.sharedBy == newItem.sharedBy && oldItem.labels?.toList() == newItem.labels?.toList()
+                        oldItem.sharedBy == newItem.sharedBy && oldItem.labels?.toList() == newItem.labels?.toList() &&
+                        oldItem.avatar == newItem.avatar && oldItem.imageUrls?.toList() == newItem.imageUrls?.toList() &&
+                        oldItem.images == newItem.images && oldItem.replyTo == newItem.replyTo
             } catch (e: Exception) {
                 false
             }
+        },
+        getChangePayload = { oldItem, newItem ->
+            val payloads = mutableListOf<String>()
+
+            if (oldItem.labels?.toList() != newItem.labels?.toList()) {
+                payloads.add(PAYLOAD_TEAM_LEADER_CHANGED)
+            }
+            if (oldItem.userId != newItem.userId || oldItem.userName != newItem.userName || oldItem.avatar != newItem.avatar || oldItem.imageUrls?.toList() != newItem.imageUrls?.toList() || oldItem.images != newItem.images || oldItem.parsedImageUrls != newItem.parsedImageUrls) {
+                payloads.add(PAYLOAD_USER_FETCHED)
+            }
+            if (oldItem.message != newItem.message || oldItem.isEdited != newItem.isEdited || oldItem.time != newItem.time || oldItem.sharedBy != newItem.sharedBy || oldItem.replyTo != newItem.replyTo) {
+                payloads.add(PAYLOAD_EDIT_ACTION)
+            }
+
+            if (payloads.isNotEmpty()) payloads else PAYLOAD_REPLY_COUNT
         }
     )
 ) {
@@ -236,7 +253,9 @@ class VoicesAdapter(
         if (holder is VoicesViewHolder) {
             val news = getNews(holder, position)
 
-            for (payload in payloads) {
+            val flattenedPayloads = payloads.flatMap { if (it is List<*>) it.filterNotNull() else listOf(it) }
+
+            for (payload in flattenedPayloads) {
                 when (payload) {
                     PAYLOAD_TEAM_LEADER_CHANGED -> {
                         configureEditDeleteButtons(holder, news)
@@ -268,10 +287,14 @@ class VoicesAdapter(
                         val userModel = configureUser(holder, news)
                         val currentLeader = getCurrentLeader(userModel, news)
                         setMemberClickListeners(holder, userModel, currentLeader)
+                        loadImage(holder.binding, news)
                     }
                     PAYLOAD_EDIT_ACTION -> {
+                        val sharedTeamName = org.ole.planet.myplanet.utils.JsonUtils.extractSharedTeamName(news)
+                        setMessageAndDate(holder, news, sharedTeamName)
                         configureEditDeleteButtons(holder, news)
                         showReplyButton(holder, news, position)
+                        handleChat(holder, news)
                     }
                 }
             }

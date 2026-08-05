@@ -186,7 +186,9 @@ class VoicesFragment : BaseVoicesFragment() {
             val sortedList = sortNews(list)
             setupVoicesAdapter(sortedList.filterNotNull())
         } else {
-            (binding.rvNews.adapter as? VoicesAdapter)?.submitList(list.filterNotNull()) {
+            // Recompute sorting to prevent constant adapter refresh cycles
+            val sortedList = sortNews(list)
+            (binding.rvNews.adapter as? VoicesAdapter)?.submitList(sortedList.filterNotNull()) {
                 if (shouldScrollToTopNextUpdate) {
                     scrollToTop()
                     shouldScrollToTopNextUpdate = false
