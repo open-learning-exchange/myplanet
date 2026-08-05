@@ -9,6 +9,12 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import android.content.Context
+import java.io.File
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.text.PDFTextStripper
+import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class ResourceViewerViewModel @Inject constructor(
@@ -39,5 +45,15 @@ class ResourceViewerViewModel @Inject constructor(
 
     suspend fun updateLibraryItemTranslationAudioPath(id: String, outputFile: String?) {
         resourcesRepository.updateLibraryItem(id) { it.translationAudioPath = outputFile }
+    }
+
+    suspend fun extractPdfText(context: Context, file: File): String = withContext(dispatcherProvider.io) {
+        try {
+            PDFBoxResourceLoader.init(context)
+            val document = PDDocument.load(file)
+            val text = PDFTextStripper().getText(document).trim()
+            document.close()
+            text
+        } catch (e: Exception) { "" }
     }
 }

@@ -14,6 +14,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.model.TagEntity
 
 @HiltViewModel
 class ResourcesViewModel @Inject constructor(
@@ -54,5 +55,39 @@ class ResourcesViewModel @Inject constructor(
 
     suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> = withContext(dispatcherProvider.io) {
         resourcesRepository.getResourceListModels(isMyCourseLib, modelId)
+    }
+
+    fun saveSearchActivity(
+        userName: String,
+        searchText: String,
+        planetCode: String,
+        parentCode: String,
+        searchTags: List<TagEntity>,
+        subjects: Set<String>,
+        languages: Set<String>,
+        levels: Set<String>,
+        mediums: Set<String>
+    ) {
+        viewModelScope.launch(dispatcherProvider.io) {
+            resourcesRepository.saveSearchActivity(
+                userName,
+                searchText,
+                planetCode,
+                parentCode,
+                searchTags,
+                subjects,
+                languages,
+                levels,
+                mediums
+            )
+        }
+    }
+
+    suspend fun deleteResources(userId: String, itemsToDelete: List<String>) {
+        withContext(dispatcherProvider.io) {
+            itemsToDelete.forEach { resourceId ->
+                resourcesRepository.removeResourceFromShelf(resourceId, userId)
+            }
+        }
     }
 }
