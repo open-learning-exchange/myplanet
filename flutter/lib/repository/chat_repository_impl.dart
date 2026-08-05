@@ -20,12 +20,25 @@ class ChatRepositoryImpl implements ChatRepository {
     required this.chatDao,
     required this.serverUrl,
     this.timeout = const Duration(seconds: 60),
+    this.maxAttempts = 3,
+    this.retryDelay = const Duration(seconds: 2),
   });
 
   final PlanetApi planetApi;
   final ChatDao chatDao;
   final String serverUrl;
   final Duration timeout;
+
+  /// Number of attempts for one chat POST before falling back to the outbox.
+  ///
+  /// Port of `RetryUtils.retry(maxAttempts = 3, delayMs = 2000L)` used around
+  /// the Kotlin chat calls. A transient failure while the user is still
+  /// composing should retry immediately instead of waiting for the next outbox
+  /// drain.
+  final int maxAttempts;
+
+  /// Delay between retry attempts.
+  final Duration retryDelay;
 
   /// Chat documents are smaller than courses/resources, so a standard starting
   /// page size works well.
@@ -290,19 +303,23 @@ class ChatRepositoryImpl implements ChatRepository {
 
   Future<Map<String, dynamic>?> _postChat(Map<String, dynamic> request) async {
     final url = '$serverUrl/chat';
-    final result = await planetApi.sendJsonObject(
-      url,
-      method: 'POST',
-      body: request,
-    );
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      final result = await planetApi.sendJsonObject(
+        url,
+        method: 'POST',
+        body: request,
+      );
 
-    switch (result) {
-      case NetworkSuccess(data: final data):
-        return data;
-      case NetworkError():
-      case NetworkException():
-        return null;
+      switch (result) {
+        case NetworkSuccess(data: final data):
+          return data;
+        case NetworkError():
+        case NetworkException():
+          if (attempt == maxAttempts) return null;
+          await Future.delayed(retryDelay);
+      }
     }
+    return null;
   }
 
   @override

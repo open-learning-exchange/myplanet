@@ -22,6 +22,7 @@ void main() {
       planetApi: api,
       chatDao: database.chatDao,
       serverUrl: 'https://planet.example',
+      retryDelay: Duration.zero,
     );
   });
   tearDown(() => database.close());
@@ -102,6 +103,105 @@ void main() {
 
       expect(result, isA<ChatError>());
       expect(await repository.getChatHistoryForUser('ada'), isEmpty);
+    });
+  });
+
+  group('retry while composing', () {
+    void stubSequential(List<NetworkResult<Map<String, dynamic>>> responses) {
+      when(
+        () => api.sendJsonObject(
+          any(),
+          body: any(named: 'body'),
+          method: any(named: 'method'),
+        ),
+      ).thenAnswer((_) async => responses.removeAt(0));
+    }
+
+    test(
+      'retries transient failures and succeeds on the third attempt',
+      () async {
+        stubSequential([
+          const NetworkError<Map<String, dynamic>>(null, 'timeout'),
+          const NetworkError<Map<String, dynamic>>(503, 'unavailable'),
+          NetworkSuccess<Map<String, dynamic>>({
+            'status': 'Success',
+            'chat': 'Reykjavik.',
+            'couchdb': {'id': 'server-doc-2', 'rev': '1-b'},
+          }),
+        ]);
+
+        final result = await repository.sendNewChatRequest(
+          query: 'Capital of Iceland?',
+          user: 'ada',
+          aiProvider: const AiProviderConfig(name: 'default', model: ''),
+        );
+
+        expect((result as ChatSuccess).response, 'Reykjavik.');
+        verify(
+          () => api.sendJsonObject(
+            any(),
+            body: any(named: 'body'),
+            method: any(named: 'method'),
+          ),
+        ).called(3);
+      },
+    );
+
+    test('gives up after maxAttempts and returns ChatError', () async {
+      when(
+        () => api.sendJsonObject(
+          any(),
+          body: any(named: 'body'),
+          method: any(named: 'method'),
+        ),
+      ).thenAnswer(
+        (_) async => const NetworkError<Map<String, dynamic>>(500, 'error'),
+      );
+
+      final result = await repository.sendNewChatRequest(
+        query: 'Capital of Iceland?',
+        user: 'ada',
+        aiProvider: const AiProviderConfig(name: 'default', model: ''),
+      );
+
+      expect(result, isA<ChatError>());
+      verify(
+        () => api.sendJsonObject(
+          any(),
+          body: any(named: 'body'),
+          method: any(named: 'method'),
+        ),
+      ).called(3);
+    });
+
+    test('retries on NetworkException too', () async {
+      when(
+        () => api.sendJsonObject(
+          any(),
+          body: any(named: 'body'),
+          method: any(named: 'method'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            NetworkException<Map<String, dynamic>>(Exception('no route')),
+      );
+
+      final result = await repository.sendContinueChatRequest(
+        query: 'Follow-up',
+        user: 'ada',
+        aiProvider: const AiProviderConfig(name: 'default', model: ''),
+        id: 'chat-1',
+        rev: '1-a',
+      );
+
+      expect(result, isA<ChatError>());
+      verify(
+        () => api.sendJsonObject(
+          any(),
+          body: any(named: 'body'),
+          method: any(named: 'method'),
+        ),
+      ).called(3);
     });
   });
 }
