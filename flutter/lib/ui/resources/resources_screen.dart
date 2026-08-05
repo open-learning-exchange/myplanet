@@ -131,7 +131,7 @@ class _ResourceTile extends StatelessWidget {
             )
           : null,
       onTap: () {
-        context.push('/resources/viewer/${resource.id}');
+        context.push('/resources/detail/${resource.id}');
       },
     );
   }
