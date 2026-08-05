@@ -20,17 +20,14 @@ subprojects {
 }
 
 subprojects {
-    afterEvaluate {
-        // file_picker 11.0.x conditionally skips the Kotlin Android plugin when
-        // AGP is 9+, but this project keeps `android.builtInKotlin=false` in
-        // gradle.properties. Without either built-in Kotlin or KGP, the plugin's
-        // .kt sources are never compiled and the app fails to find the class at
-        // `:app:compileDebugJavaWithJavac`. Apply KGP to any library module that
-        // still needs it after evaluation.
-        if (
-            plugins.hasPlugin("com.android.library") &&
-            !plugins.hasPlugin("org.jetbrains.kotlin.android")
-        ) {
+    // file_picker 11.0.x conditionally skips the Kotlin Android plugin when
+    // AGP is 9+, but this project keeps `android.builtInKotlin=false` in
+    // gradle.properties. Without either built-in Kotlin or KGP, the plugin's
+    // .kt sources are never compiled and the app fails to find the class at
+    // `:app:compileDebugJavaWithJavac`. Apply KGP to any library module as soon
+    // as the Android library plugin is applied.
+    plugins.withId("com.android.library") {
+        if (!plugins.hasPlugin("org.jetbrains.kotlin.android")) {
             plugins.apply("org.jetbrains.kotlin.android")
         }
     }
