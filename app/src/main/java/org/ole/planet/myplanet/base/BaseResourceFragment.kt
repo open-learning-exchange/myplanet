@@ -194,13 +194,17 @@ abstract class BaseResourceFragment : Fragment() {
                         }
                     }
                 }.setNegativeButton(R.string.txt_cancel, null)
-            downloadSuggestionDialog?.dismiss()
+            val oldDialog = downloadSuggestionDialog
             downloadSuggestionDialog = alertDialogBuilder.create()
             downloadSuggestionDialog?.let { dialog ->
                 createListView(dbMyLibrary, dialog)
                 dialog.setOnDismissListener {
-                    downloadSuggestionDialog = null
+                    if (downloadSuggestionDialog === dialog) {
+                        downloadSuggestionDialog = null
+                    }
                 }
+                oldDialog?.setOnDismissListener(null)
+                oldDialog?.dismiss()
                 dialog.show()
                 val posBtn = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
                 val neuBtn = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
