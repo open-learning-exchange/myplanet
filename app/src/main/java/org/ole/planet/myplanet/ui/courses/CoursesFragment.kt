@@ -182,7 +182,9 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         val index = parent.indexOfChild(currentView)
         parent.removeView(currentView)
 
-        val newView = layoutInflater.inflate(getLayout(), parent, false)
+        val configContext = requireContext().createConfigurationContext(newConfig)
+        val inflater = android.view.LayoutInflater.from(configContext)
+        val newView = inflater.inflate(getLayout(), parent, false)
         parent.addView(newView, index)
 
         recyclerView = newView.findViewById(R.id.recycler)
