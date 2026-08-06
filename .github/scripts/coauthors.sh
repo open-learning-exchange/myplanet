@@ -1,29 +1,21 @@
 #!/usr/bin/env bash
 #
-# Build the squash commit body for a PR: one Co-authored-by line per real
-# person who worked on it and is a collaborator here, then the repo owner on
-# anything they did not author themselves. The PR description is discarded.
+# Build the squash commit body: one Co-authored-by per collaborator who
+# worked on the PR, then $OWNER_LOGIN if they did not author it. The PR
+# description is discarded. Coding agents fall out for free -- they commit as
+# Bot accounts or leave trailers that tie back to no GitHub account.
 #
-# Dropped: the PR author (already the commit author), non-collaborators, and
-# coding agents -- an agent either commits as a Bot account or leaves a
-# trailer whose address is not a GitHub account, so only trailers that tie
-# back to a real account survive and no denylist is needed.
-#
-# Usage: REPO=owner/name PR=123 coauthors.sh
-# Prints the body on stdout; empty output is a legitimate result.
+# Usage: REPO=owner/name PR=123 coauthors.sh   (empty output is legitimate)
 #
 set -euo pipefail
 
 REPO="${REPO:?}"
 PR="${PR:?}"
-# Appended to every PR this person did not author themselves.
 OWNER_LOGIN="${OWNER_LOGIN:-dogi}"
 
 lower() { printf '%s' "$1" | tr '[:upper:]' '[:lower:]'; }
 
 noreply_for() { printf '%s <%s@users.noreply.github.com>' "$1" "$1"; }
-
-# ------------------------------------------------------------- gather
 
 # Needs push access; failing here beats crediting nobody.
 collaborators=$(
@@ -39,14 +31,12 @@ commits=$(gh api "repos/$REPO/pulls/$PR/commits?per_page=100" --paginate)
 
 candidates=""
 
-# Commit authors GitHub resolved to an account; type "Bot" is skipped.
 while IFS= read -r login; do
     if [ -n "$login" ]; then
         candidates+="$login"$'\n'
     fi
 done < <(jq -r '.[] | select(.author != null) | select(.author.type == "User") | .author.login' <<<"$commits")
 
-# Co-authored-by trailers, from both the commit messages and the PR body.
 trailers=$(
     { jq -r '.[].commit.message' <<<"$commits"; printf '%s\n' "$pr_body"; } \
     | grep -iE '^[[:space:]]*co-authored-by:[[:space:]]*' || true
@@ -64,13 +54,10 @@ while IFS= read -r line; do
             candidates+="$login"$'\n'
             ;;
         *)
-            # Not a GitHub address -- cannot be tied to an account. This is
-            # the branch that removes the coding agents.
+            # Not a GitHub address -- this is what drops the coding agents.
             ;;
     esac
 done <<<"$trailers"
-
-# ------------------------------------------------------------- filter
 
 author_l=$(lower "$author_login")
 owner_l=$(lower "$OWNER_LOGIN")

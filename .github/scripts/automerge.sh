@@ -7,12 +7,10 @@
 #   3. push, and wait for build + test on that prepared commit
 #   4. wait for $BASE to be settled and green, then squash merge
 #
-# Stop on the first failure, otherwise until no labelled PR is left. Both
-# waits sit in front of step 4 so they overlap: $BASE runs test and release
-# for the previous merge while this PR is prepared and built.
+# Stop on the first failure. Both waits sit in front of step 4 so they
+# overlap: $BASE releases the previous merge while this PR builds.
 #
-# Runs from a copy outside the work tree (see automerge.yml) -- it checks out
-# PR branches, and a script whose file is swapped underneath it is a bad time.
+# Runs from a copy outside the work tree -- it checks out PR branches.
 #
 set -euo pipefail
 
@@ -30,7 +28,6 @@ MAX_MERGES="${MAX_MERGES:-0}"
 WAIT_TIMEOUT_MIN="${WAIT_TIMEOUT_MIN:-45}"
 USING_PAT="${USING_PAT:-false}"
 
-# Grace period for a push's workflow runs to get queued.
 RUN_APPEAR_TIMEOUT_SEC=300
 
 log()     { printf '%s | %s\n' "$(date -u +%H:%M:%S)" "$*"; }
@@ -40,7 +37,6 @@ merged_count=0
 merged_list=""
 last_base_sha=""
 
-# Bounded so a $BASE that keeps moving cannot spin the drain forever.
 MAX_REPREPARES=2
 reprep_pr=""
 reprep_n=0
@@ -58,8 +54,7 @@ pick_pr() {
       | jq -c 'map(select(.isDraft | not)) | sort_by(.number) | first'
 }
 
-# Cheap early exit; UNKNOWN just means GitHub has not computed it yet. The
-# real conflict test is step 1.
+# Cheap early exit; the real conflict test is step 1.
 check_mergeable() {
     local pr=$1 state=""
     for _ in 1 2 3 4 5; do
@@ -73,7 +68,6 @@ check_mergeable() {
     fi
 }
 
-# Fetch the Actions runs for a commit as [{name, status, conclusion}].
 runs_for() {
     gh api "repos/$REPO/actions/runs?head_sha=$1&per_page=100" \
         --jq '[.workflow_runs[] | {name, status, conclusion}]' 2>/dev/null || echo '[]'
@@ -82,7 +76,7 @@ runs_for() {
 runs_failed()  { jq '[.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")] | length' <<<"$1"; }
 runs_pending() { jq '[.[] | select(.status != "completed")] | length' <<<"$1"; }
 
-# Comma-separated names in $2 with no successful run yet; blank $2 = none.
+# Names in $2 with no successful run yet; blank $2 = none.
 runs_missing() {
     jq -r --arg req "$2" '
         [ ($req | split(",")[] | gsub("^\\s+|\\s+$"; "")) | select(length > 0) ] as $need
@@ -92,10 +86,8 @@ runs_missing() {
     ' <<<"$1"
 }
 
-# Wait for the workflows on $sha: green means nothing failed, nothing still
-# running, and every workflow named in $need passed. Fails fast on the first
-# failure. $absent is what "no runs at all" means -- 'fail' for a commit we
-# pushed (never verified), 'pass' for $BASE (nothing in flight).
+# Green: nothing failed, nothing running, every workflow in $need passed.
+# $absent = what no runs at all means: 'fail' (we pushed it), 'pass' ($BASE).
 wait_for_runs() {
     local sha=$1 need=$2 absent=$3
     local deadline=$(( SECONDS + WAIT_TIMEOUT_MIN * 60 ))
@@ -130,7 +122,6 @@ wait_for_runs() {
             fi
         fi
 
-        # Nothing running and something still absent: allow the grace period.
         if [ "$total" -eq 0 ] || { [ "${pending:-0}" -eq 0 ] && [ -n "${missing:-}" ]; }; then
             if [ "$SECONDS" -ge "$appear_deadline" ]; then
                 if [ "$total" -eq 0 ]; then
@@ -159,8 +150,7 @@ wait_for_runs() {
     done
 }
 
-# Non-blocking peek at the top of the loop, so an already-red $BASE stops the
-# drain before it spends a build. Step 4 does the blocking version.
+# Non-blocking peek; step 4 does the blocking version.
 base_already_failed() {
     local sha=$1 runs bad
     runs=$(runs_for "$sha")
@@ -171,8 +161,7 @@ base_already_failed() {
     return 0
 }
 
-# Guard against a broken version.sh: the bump must touch nothing but the two
-# version lines.
+# Guard against a broken version.sh.
 verify_version_only_diff() {
     local from=$1 to=$2 files bad
 
@@ -262,7 +251,6 @@ while :; do
     git fetch --quiet origin "$HEAD"
 
     if [ "$DRY_RUN" = 'true' ]; then
-        # Merge locally and detached so the report is real. Nothing is pushed.
         git checkout --quiet --detach "origin/$HEAD"
         if git merge --quiet --no-edit "origin/$BASE"; then
             log "  dry run: merges cleanly with $BASE, would bump to $new_name,"
@@ -279,9 +267,8 @@ while :; do
 
     git checkout --quiet -B "$HEAD" "origin/$HEAD"
 
-    # 1. Merge the base in first: it moves the version on every merge, so a
-    #    branch cut earlier collides on the exact lines step 2 rewrites. It
-    #    also makes the tree CI tests in step 3 the tree that lands.
+    # 1. Base first: a branch cut earlier collides on the exact version lines
+    #    step 2 rewrites, and this makes step 3 test what actually lands.
     if ! git merge --quiet --no-edit "origin/$BASE"; then
         git merge --abort || true
         log "  #$NUMBER conflicts with $BASE -- needs a human"
@@ -289,15 +276,11 @@ while :; do
         exit 1
     fi
 
-    # 2. Bump. Every merge into $BASE publishes a release tagged from
-    #    versionName, so every merge needs its own number. Writing it here
-    #    puts it inside the squash commit -- one commit per PR. Bumping $BASE
-    #    separately would push two, the first releasing an already-tagged
-    #    version.
+    # 2. Bump. Every merge publishes a release tagged from versionName, so
+    #    each needs its own number; writing it here puts it in the squash.
     pre_bump_sha=$(git rev-parse HEAD)
     "$VERSION_SH" apply "$GRADLE_FILE" "$new_code" "$new_name"
 
-    # Already right when an earlier dispatch prepared this PR and then stopped.
     merge_sha="$pre_bump_sha"
     if git diff --quiet -- "$GRADLE_FILE"; then
         log "  $GRADLE_FILE already at $new_name, nothing to commit"
@@ -324,15 +307,13 @@ while :; do
         log "  require_checks is off -- merging ${merge_sha:0:7} unverified"
     fi
 
-    # 4. Merge, but only onto a settled green base. Asking here rather than
-    #    right after the previous merge is what buys the overlap.
+    # 4. Merge, but only onto a settled green base.
     if [ "$REQUIRE_CHECKS" = 'true' ]; then
         git fetch --quiet origin "$BASE"
         wait_for_runs "$(git rev-parse "origin/$BASE")" '' pass \
             || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: \`$BASE\` is red |"; exit 1; }
 
-        # $BASE moved under us: the prepared commit was built against a base
-        # that no longer exists and its version may be taken. Prepare again.
+        # Prepared against a base that no longer exists; prepare again.
         git fetch --quiet origin "$BASE"
         base_now=$(git rev-parse "origin/$BASE")
         if [ "$base_now" != "$base_at_prepare" ]; then
@@ -351,7 +332,6 @@ while :; do
         fi
     fi
 
-    # Only the attribution belongs in the commit log, not the PR description.
     commit_body=$(REPO="$REPO" PR="$NUMBER" "$COAUTHORS_SH")
     if [ -n "$commit_body" ]; then
         log "  co-authors:"

@@ -1,19 +1,12 @@
 #!/usr/bin/env bash
 #
-# myPlanet version helper. The two fields in app/build.gradle are kept in
-# lockstep -- versionCode = major*10000 + minor*100 + patch -- with each block
-# 0..99, so a patch rollover carries into the minor block:
+# myPlanet version helper. versionCode = major*10000 + minor*100 + patch,
+# each block 0..99, so a patch rollover carries:  0.62.99/6299 -> 0.63.0/6300.
+# The bumped code is therefore always the old code plus one, which `next`
+# asserts to catch a file where the two have drifted apart.
 #
-#   0.62.97 / 6297  ->  0.62.98 / 6298
-#   0.62.99 / 6299  ->  0.63.0  / 6300
-#
-# That encoding makes the bumped code always the old code plus one, which the
-# script asserts to catch a hand-edited file where the two have drifted apart.
-#
-# Usage:
-#   version.sh read  <gradle-file>          print code= and name= as they are
-#   version.sh next  <gradle-file>          print code= and name= for the next
-#   version.sh apply <gradle-file> <code> <name>    rewrite them in place
+#   version.sh {read|next} <gradle-file>
+#   version.sh apply <gradle-file> <code> <name>
 #
 set -euo pipefail
 
@@ -34,8 +27,7 @@ next_version() {
     local file=$1
     read_version "$file"
 
-    # minor and patch are the carry blocks and stay at two digits; major is
-    # left wider so the script does not become the thing that breaks at 1.0.0.
+    # major is left wider so this is not the thing that breaks at 1.0.0.
     [[ "$cur_name" =~ ^([0-9]{1,3})\.([0-9]{1,2})\.([0-9]{1,2})$ ]] \
         || die "versionName '$cur_name' is not <major>.<minor>.<patch> with 1-2 digits in the minor and patch blocks"
 
