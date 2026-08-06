@@ -78,7 +78,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
     }
 
     override fun onDataChanged() {
-        adapterNews?.notifyDataSetChanged()
+        adapterNews?.submitList(adapterNews?.currentList?.toList())
     }
 
     override fun onReplyPosted(newsId: String?) {

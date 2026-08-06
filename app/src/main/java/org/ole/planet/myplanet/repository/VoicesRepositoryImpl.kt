@@ -158,7 +158,9 @@ class VoicesRepositoryImpl @Inject constructor(
                     o.id == n.id && o.time == n.time &&
                             o.labels?.toSet() == n.labels?.toSet() &&
                             o.message == n.message &&
-                            o.isEdited == n.isEdited
+                            o.isEdited == n.isEdited &&
+                            o.imageUrls?.toList() == n.imageUrls?.toList() &&
+                            o.images == n.images
                 }
             }
             .map { allNews ->
@@ -174,7 +176,14 @@ class VoicesRepositoryImpl @Inject constructor(
     override suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<News>> {
         return newsDao.getTopLevelByTeamFlow(teamId, teamIdPattern(teamId))
             .distinctUntilChanged { old, new ->
-                old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.time == n.time }
+                old.size == new.size && old.zip(new).all { (o, n) ->
+                    o.id == n.id && o.time == n.time &&
+                            o.message == n.message &&
+                            o.isEdited == n.isEdited &&
+                            o.imageUrls?.toList() == n.imageUrls?.toList() &&
+                            o.images == n.images &&
+                            o.labels?.toSet() == n.labels?.toSet()
+                }
             }
             .flowOn(dispatcherProvider.default)
     }
