@@ -89,12 +89,19 @@ class EventsRepositoryImpl @Inject constructor(
         val currentUser = getCurrentUser()
         val currentUserId = currentUser?.id
 
+        if (currentUserId.isNullOrBlank()) {
+            return getMeetupById(meetupId)
+        }
+
         val meetup = meetupDao.getByMeetupId(meetupId) ?: return null
         val isJoined = !meetup.userId.isNullOrEmpty()
-        if (isJoined || !currentUserId.isNullOrEmpty()) {
-            meetup.userId = if (isJoined) "" else currentUserId
-            meetupDao.upsert(meetup)
+        if (isJoined) {
+            meetup.userId = ""
+        } else {
+            meetup.userId = currentUserId
         }
+        meetupDao.upsert(meetup)
+
         return getMeetupById(meetupId)
     }
 

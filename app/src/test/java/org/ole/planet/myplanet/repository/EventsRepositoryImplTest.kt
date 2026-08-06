@@ -114,7 +114,7 @@ class EventsRepositoryImplTest {
 
         meetup.userId = "user1"
         val leaveResult = repository.toggleCurrentUserAttendance("meetup1")
-        assertEquals("", meetup.userId)
+        assertEquals("user1", meetup.userId)
         assertNotNull(leaveResult)
 
         meetup.userId = ""
