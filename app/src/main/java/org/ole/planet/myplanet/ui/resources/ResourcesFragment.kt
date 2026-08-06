@@ -659,9 +659,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         filter.setOnClickListener {
             bottomSheet.visibility = if (bottomSheet.isVisible) View.GONE else View.VISIBLE
         }
-        binding.btnCloseFilter?.setOnClickListener {
-            bottomSheet.visibility = View.GONE
-        }
         binding.filterCategories?.setOnClickListener {
             val f = ResourcesFilterFragment()
             f.setListener(this)

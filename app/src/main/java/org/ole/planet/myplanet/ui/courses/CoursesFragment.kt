@@ -175,6 +175,35 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         realtimeSyncHelper.setupRealtimeSync()
     }
 
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val currentView = view ?: return
+        val parent = currentView.parent as? android.view.ViewGroup ?: return
+        val index = parent.indexOfChild(currentView)
+        parent.removeView(currentView)
+
+        val newView = layoutInflater.inflate(getLayout(), parent, false)
+        parent.addView(newView, index)
+
+        recyclerView = newView.findViewById(R.id.recycler)
+        recyclerView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(activity)
+        if (::adapterCourses.isInitialized) {
+            recyclerView.adapter = adapterCourses
+        }
+        if (isMyCourseLib) {
+            tvDelete = newView.findViewById(R.id.tv_delete)
+            tvDelete?.let {
+                it.visibility = View.VISIBLE
+                it.setOnClickListener {
+                    deleteSelected(true)
+                }
+            }
+            newView.findViewById<android.widget.TextView>(R.id.tv_add)?.visibility = View.GONE
+        }
+        tvMessage = newView.findViewById(R.id.tv_message)
+        onViewCreated(newView, null)
+    }
+
     private fun initializeView() {
         tvMessage = requireView().findViewById(R.id.tv_message)
         requireView().findViewById<View>(R.id.tl_tags).visibility = View.GONE
