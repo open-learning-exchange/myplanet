@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.notifications
 
-import android.text.Html
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -110,7 +109,7 @@ class NotificationsAdapter(
 
         fun bind(item: NotificationListItem.Item) {
             val notification = item.notification
-            binding.title.text = Html.fromHtml(notification.formattedText.toString(), Html.FROM_HTML_MODE_LEGACY)
+            binding.title.text = item.parsedText
             binding.timestamp.text = formatRelativeTime(notification.createdAt)
             binding.root.alpha = if (notification.isRead) 0.6f else 1.0f
 
@@ -156,7 +155,6 @@ internal fun iconResFor(type: String): Int = when (type.lowercase()) {
     "join_request" -> R.drawable.ic_join_request
     "team_join" -> R.drawable.ic_activity
     "task" -> R.drawable.ic_date
-    "survey" -> R.drawable.ic_my_survey
     "chat" -> R.drawable.ic_mic
     "voice_reply" -> R.drawable.ic_send
     "resource" -> R.drawable.ic_folder

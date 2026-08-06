@@ -162,8 +162,9 @@ object ServiceModule {
         progressRepository: ProgressRepository,
         surveysRepository: SurveysRepository,
         @ApplicationScope scope: CoroutineScope,
-        dispatcherProvider: DispatcherProvider
+        dispatcherProvider: DispatcherProvider,
+        userSessionManager: org.ole.planet.myplanet.services.UserSessionManager
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, scope, dispatcherProvider)
+        return TransactionSyncManager(apiInterface, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, scope, dispatcherProvider, userSessionManager)
     }
 }

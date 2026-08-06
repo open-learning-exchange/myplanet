@@ -31,6 +31,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
+import org.ole.planet.myplanet.base.DefaultBaseAdapterFactory
 import org.ole.planet.myplanet.callback.OnFilterListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
@@ -135,11 +136,12 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override suspend fun getAdapter(): ListAdapter<*, *> {
         allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
 
-        val user = profileDbHandler.getUserModel()
-        adapterLibrary = ResourcesAdapter(
-            requireActivity(),
-            user?.isGuest() == true,
-            emptySet(),
+        val user = userRepository.getUserModel()
+        val factory = adapterFactory ?: DefaultBaseAdapterFactory()
+        adapterLibrary = factory.createResourcesAdapter(
+            context = requireActivity(),
+            isGuest = user?.isGuest() == true,
+            openedResourceIds = emptySet(),
             currentUserName = user?.name,
             onEditClick = { model -> openEditResource(model) }
         )
@@ -194,7 +196,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             }
         }
         lifecycleScope.launch {
-            userModel = profileDbHandler.getUserModel()
+            userModel = userRepository.getUserModel()
             setupGuestUserRestrictions()
 
             val userId = userModel?.id

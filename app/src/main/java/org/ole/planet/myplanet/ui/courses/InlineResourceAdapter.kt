@@ -22,6 +22,8 @@ import java.io.FileReader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -47,9 +49,9 @@ class InlineResourceAdapter(
         },
         getChangePayload = { old, new ->
             val payloads = mutableListOf<String>()
-            if (old.title != new.title) payloads.add("TITLE")
-            if (old.resourceLocalAddress != new.resourceLocalAddress) payloads.add("ADDRESS")
-            if (old.isResourceOffline() != new.isResourceOffline()) payloads.add("STATUS")
+            if (old.title != new.title) payloads.add(PAYLOAD_TITLE)
+            if (old.resourceLocalAddress != new.resourceLocalAddress) payloads.add(PAYLOAD_ADDRESS)
+            if (old.isResourceOffline() != new.isResourceOffline()) payloads.add(PAYLOAD_STATUS)
             if (payloads.isEmpty()) null else payloads
         }
     )
@@ -65,10 +67,17 @@ class InlineResourceAdapter(
         }
     }
 
-    class ViewHolder(val binding: ItemInlineResourceBinding, dispatcherProvider: DispatcherProvider) : RecyclerView.ViewHolder(binding.root) {
+    private var adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
+
+    override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
+        super.onAttachedToRecyclerView(recyclerView)
+        if (!adapterScope.isActive) {
+            adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
+        }
+    }
+
+    class ViewHolder(val binding: ItemInlineResourceBinding) : RecyclerView.ViewHolder(binding.root) {
         private var previewJob: Job? = null
-        // Scope intentionally left alive across recycles (only previewJob is cancelled) so reused holders can still launch previews
-        val scope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
 
         fun cancelPreviousPreviews() {
             previewJob?.cancel()
@@ -83,8 +92,18 @@ class InlineResourceAdapter(
 
     override fun onCurrentListChanged(previousList: MutableList<MyLibrary>, currentList: MutableList<MyLibrary>) {
         super.onCurrentListChanged(previousList, currentList)
-        textCache.clear()
-        bitmapCache.evictAll()
+        val dir = externalFilesDir ?: return
+        val currentMap = currentList.associateBy { it.id }
+
+        previousList.forEach { prev ->
+            val current = currentMap[prev.id]
+            if (current == null || current.resourceLocalAddress != prev.resourceLocalAddress) {
+                val file = File(dir, "ole/${prev.id}/${prev.resourceLocalAddress}")
+                val prefix = file.absolutePath
+                textCache.keys.filter { it.startsWith(prefix) }.forEach { textCache.remove(it) }
+                bitmapCache.snapshot().keys.filter { it.startsWith(prefix) }.forEach { bitmapCache.remove(it) }
+            }
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -92,18 +111,14 @@ class InlineResourceAdapter(
         val binding = ItemInlineResourceBinding.inflate(
             LayoutInflater.from(parent.context), parent, false
         )
-        return ViewHolder(binding, dispatcherProvider)
+        return ViewHolder(binding)
     }
 
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
+        adapterScope.cancel()
         textCache.clear()
         bitmapCache.evictAll()
-        for (i in 0 until recyclerView.childCount) {
-            val child = recyclerView.getChildAt(i)
-            val holder = recyclerView.getChildViewHolder(child) as? ViewHolder
-            holder?.cancelPreviousPreviews()
-        }
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
@@ -124,12 +139,12 @@ class InlineResourceAdapter(
             if (payloadList is List<*>) {
                 payloadList.forEach { payload ->
                     when (payload) {
-                        "TITLE" -> holder.binding.tvResourceTitle.text = resource.title ?: resource.resourceLocalAddress ?: ""
-                        "ADDRESS" -> {
+                        PAYLOAD_TITLE -> holder.binding.tvResourceTitle.text = resource.title ?: resource.resourceLocalAddress ?: ""
+                        PAYLOAD_ADDRESS -> {
                             holder.binding.tvResourceTitle.text = resource.title ?: resource.resourceLocalAddress ?: ""
                             updateStatusAndPreview(holder, context, resource)
                         }
-                        "STATUS" -> updateStatusAndPreview(holder, context, resource)
+                        PAYLOAD_STATUS -> updateStatusAndPreview(holder, context, resource)
                     }
                 }
             }
@@ -180,7 +195,7 @@ class InlineResourceAdapter(
                 mimeType?.startsWith("image") == true -> showImagePreview(binding, context, resourceFile)
                 mimeType?.startsWith("video") == true -> showVideoPreview(binding, context, resourceFile)
                 else -> {
-                    holder.setPreviewJob(holder.scope.launch {
+                    holder.setPreviewJob(adapterScope.launch {
                         when {
                             mimeType?.contains("pdf") == true -> showPdfPreview(holder, resourceFile)
                             mimeType?.startsWith("audio") == true -> showAudioPreview(holder, resourceFile)
@@ -334,4 +349,10 @@ class InlineResourceAdapter(
     }
 
     private fun getCacheKey(file: File): String = "${file.absolutePath}_${file.lastModified()}_${file.length()}"
+
+    companion object {
+        const val PAYLOAD_TITLE = "PAYLOAD_TITLE"
+        const val PAYLOAD_ADDRESS = "PAYLOAD_ADDRESS"
+        const val PAYLOAD_STATUS = "PAYLOAD_STATUS"
+    }
 }

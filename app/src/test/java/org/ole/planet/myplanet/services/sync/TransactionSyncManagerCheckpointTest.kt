@@ -129,7 +129,8 @@ class TransactionSyncManagerCheckpointTest {
             // syncDb confines its work to dispatcherProvider.io, not this scope; a throwaway
             // scope is enough and keeps each test isolated (no shared leaked-exception state).
             CoroutineScope(Dispatchers.Unconfined),
-            dispatcherProvider
+            dispatcherProvider,
+            mockk<org.ole.planet.myplanet.services.UserSessionManager>(relaxed = true)
         )
     }
 
@@ -141,7 +142,7 @@ class TransactionSyncManagerCheckpointTest {
 
     @Test
     fun `checkpoint persists the committed batch boundary`() = runBlocking {
-        coEvery { apiInterface.findDocs(any(), any(), any(), any()) } returnsMany
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returnsMany
             listOf(rowsResponse(20), rowsResponse(0))
         coEvery { ratingsRepository.insertRatingsFromSync(any()) } returns Unit
 
@@ -157,7 +158,7 @@ class TransactionSyncManagerCheckpointTest {
     // re-flagged by runTest's uncaught-exception detection as it unwinds the withContext child.
     @Test
     fun `checkpoint does not advance past a batch that failed to commit`() = runBlocking {
-        coEvery { apiInterface.findDocs(any(), any(), any(), any()) } returns rowsResponse(20)
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns rowsResponse(20)
         coEvery { ratingsRepository.insertRatingsFromSync(any()) } throws RuntimeException("insert boom")
 
         val total = transactionSyncManager.syncDb("ratings", useCheckpoint = true)
@@ -173,7 +174,7 @@ class TransactionSyncManagerCheckpointTest {
     // withContext boundary isn't misread by runTest's uncaught-exception detection.
     @Test
     fun `cancellation propagates instead of being swallowed`() = runBlocking {
-        coEvery { apiInterface.findDocs(any(), any(), any(), any()) } throws
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } throws
             CancellationException("worker stopped")
 
         try {
