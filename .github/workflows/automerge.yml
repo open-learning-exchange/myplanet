@@ -80,7 +80,7 @@ on:
         default: '0'
         type: string
       wait_timeout_minutes:
-        description: 'how long to wait for the base branch workflows after each merge'
+        description: 'how long to wait for running checks: on a PR before merging, and on the base branch after'
         required: false
         default: '45'
         type: string

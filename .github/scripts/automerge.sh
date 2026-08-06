@@ -61,22 +61,55 @@ check_mergeable() {
     fi
 }
 
+# A PR whose CI is still running is not a failure, it is just not ready yet
+# -- so wait it out rather than stopping the drain. This is the normal state
+# for a PR that was pushed to moments ago, including by the drain's own bump
+# commit when the token re-triggers CI.
 check_green() {
-    local pr=$1 checks bad
-    checks=$(gh pr checks "$pr" --repo "$REPO" --json name,bucket 2>/dev/null || true)
+    local pr=$1
+    local deadline=$(( SECONDS + WAIT_TIMEOUT_MIN * 60 ))
+    local checks bad pending announced=0
 
-    if [ -z "$checks" ] || [ "$checks" = "[]" ]; then
-        log "  #$pr reports no checks -- refusing to merge blind"
-        return 1
-    fi
+    while :; do
+        checks=$(gh pr checks "$pr" --repo "$REPO" --json name,bucket 2>/dev/null || true)
 
-    bad=$(jq -r '[.[] | select(.bucket != "pass" and .bucket != "skipping")] | length' <<<"$checks")
-    if [ "$bad" -ne 0 ]; then
-        jq -r '.[] | select(.bucket != "pass" and .bucket != "skipping") | "    \(.bucket)\t\(.name)"' <<<"$checks"
-        log "  #$pr has $bad check(s) not passing"
-        return 1
-    fi
-    log "  #$pr checks green"
+        if [ -z "$checks" ] || [ "$checks" = "[]" ]; then
+            log "  #$pr reports no checks -- refusing to merge blind"
+            return 1
+        fi
+
+        bad=$(jq '[.[] | select(.bucket == "fail" or .bucket == "cancel")] | length' <<<"$checks")
+        if [ "$bad" -ne 0 ]; then
+            jq -r '.[] | select(.bucket == "fail" or .bucket == "cancel") | "    \(.bucket)\t\(.name)"' <<<"$checks"
+            log "  #$pr has $bad check(s) failing"
+            return 1
+        fi
+
+        pending=$(jq '[.[] | select(.bucket == "pending")] | length' <<<"$checks")
+        if [ "$pending" -eq 0 ]; then
+            log "  #$pr checks green"
+            return 0
+        fi
+
+        # A dry run is a report, not a gate -- say what is happening and move
+        # on rather than blocking for however long CI takes.
+        if [ "$DRY_RUN" = 'true' ]; then
+            jq -r '.[] | select(.bucket == "pending") | "    pending\t\(.name)"' <<<"$checks"
+            log "  #$pr has $pending check(s) still running (dry run does not wait)"
+            return 0
+        fi
+
+        if [ "$SECONDS" -ge "$deadline" ]; then
+            log "  #$pr still has $pending pending check(s) after ${WAIT_TIMEOUT_MIN}m"
+            return 1
+        fi
+
+        if [ "$announced" -eq 0 ]; then
+            log "  #$pr has $pending check(s) running, waiting (timeout ${WAIT_TIMEOUT_MIN}m)"
+            announced=1
+        fi
+        sleep 20
+    done
 }
 
 # The pre-merge checks ran on the PR head, but we merge the SHA *after* the
@@ -198,7 +231,7 @@ while :; do
 
     check_mergeable "$NUMBER" || { summary "| #$NUMBER | | **stopped**: not mergeable |"; exit 1; }
     if [ "$REQUIRE_CHECKS" = 'true' ]; then
-        check_green "$NUMBER" || { summary "| #$NUMBER | | **stopped**: checks not green |"; exit 1; }
+        check_green "$NUMBER" || { summary "| #$NUMBER | | **stopped**: checks failing or stuck |"; exit 1; }
     fi
 
     # Next version always comes off the base branch: the base is what the
