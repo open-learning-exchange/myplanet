@@ -1,12 +1,11 @@
 package org.ole.planet.myplanet.ui.feedback
 
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import android.content.res.ColorStateList
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
-import androidx.core.content.res.ResourcesCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R

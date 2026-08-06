@@ -4,13 +4,13 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.HashMap
 import kotlinx.coroutines.flow.Flow
+import org.ole.planet.myplanet.model.CourseDetailModel
 import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.TagEntity
-import org.ole.planet.myplanet.model.CourseDetailModel
 
 interface CoursesRepository {
     suspend fun getAllCourses(): List<MyCourse>
