@@ -2,10 +2,15 @@ name: myPlanet automerge
 
 # Manually started queue drainer.
 #
-# Loops: pick the lowest-numbered open non-draft PR carrying the `automerge`
-# label, bump the version in app/build.gradle, squash merge it, wait for the
-# workflows the merge triggers on the base branch (test + release on master),
-# and stop on the first failure. Keeps going until no labelled PR is left.
+# Loops over the open non-draft PRs carrying the `automerge` label, lowest
+# number first, and takes each one through four steps in this order:
+#
+#   1. merge the base branch into the PR branch   (a conflict stops the drain)
+#   2. bump the version in app/build.gradle
+#   3. push, and wait for build + test on that prepared commit
+#   4. squash merge
+#
+# Stops on the first failure; keeps going until no labelled PR is left.
 #
 # The label is the safety rail: the drainer only ever touches PRs somebody
 # deliberately marked, never "every open PR".
@@ -16,35 +21,32 @@ name: myPlanet automerge
 # twice -- with the repo owner credited on anything they did not author. See
 # scripts/coauthors.sh.
 #
-# THREE THINGS WORTH KNOWING:
+# FOUR THINGS WORTH KNOWING:
+#
+# * Verification happens before the merge, not after it. Because the base is
+#   merged in first (step 1) and the bump lands on top of it (step 2), the
+#   commit CI tests in step 3 is exactly the tree that gets squashed onto the
+#   base -- so this behaves like a merge queue rather than trusting a verdict
+#   from whenever the PR last ran against an older base.
+#
+# * Nothing waits on the base branch afterwards. release.yml only runs on
+#   master, and it publishes rather than gates; holding every PR behind a
+#   full signed release build was the slow part. The next PR is prepared
+#   while that release runs. The drain still refuses to stack a merge on top
+#   of a base that has *already* reported a failure -- that is a free lookup,
+#   not a wait.
 #
 # * The bump has to ride along inside the squash commit. Bumping the base
 #   separately would push two commits per PR, and the first would re-run
-#   release.yml at a version that was already tagged and published. So the
-#   drainer bumps on the PR branch -- and therefore has to bring the branch
-#   up to the current base first, since every merge moves the version and an
-#   older branch would collide on exactly those two lines.
+#   release.yml at a version that was already tagged and published.
 #
-# * GITHUB_TOKEN cannot merge into a protected branch. Verified against
-#   master: everything up to the merge works, then GitHub answers "You're not
-#   authorized to push to this branch". Set the AUTOMERGE_TOKEN secret to a
-#   PAT or GitHub App token belonging to someone allowed to merge there.
-#   Without it the drainer is dry-run-only against a protected base.
-#
-# * CI does not re-run on the bump when GITHUB_TOKEN pushes it -- pushes made
-#   with that token deliberately do not trigger workflow runs, so the bump
-#   commit arrives without its own build. The drainer proves the bump changed
-#   nothing but the two version lines before carrying the PR's green verdict
-#   across it (see verify_version_only_diff). An AUTOMERGE_TOKEN push *does*
-#   re-trigger CI; if the base also requires status checks, turn on
-#   wait_for_bump_checks so the drain waits for the bumped SHA instead of
-#   racing its own pending checks.
-#
-# * Checks are per-PR, not per-merged-state. Each PR was tested against the
-#   base as it was when the PR ran, not against the base as the drain leaves
-#   it. That is the tradeoff versus a real merge queue; it is why the drain
-#   waits for the base branch to go green after every single merge and stops
-#   dead on the first failure.
+# * A PAT is not optional here. GITHUB_TOKEN pushes deliberately do not
+#   trigger workflow runs, so the prepared commit would never get the build
+#   and test run step 3 waits for -- and GITHUB_TOKEN cannot merge into a
+#   protected branch anyway ("You're not authorized to push to this branch",
+#   verified against master). Set the AUTOMERGE_TOKEN secret to a PAT or
+#   GitHub App token belonging to someone allowed to merge there. Without it
+#   the drainer is dry-run-only.
 
 on:
   workflow_dispatch:
@@ -65,10 +67,15 @@ on:
         default: 'dogi'
         type: string
       require_checks:
-        description: 'refuse to merge unless the PR checks are green'
+        description: 'refuse to merge unless the prepared commit (base merged in + version bumped) is green'
         required: false
         default: true
         type: boolean
+      required_workflows:
+        description: 'comma-separated workflows that must have passed on the prepared commit (blank = judge whatever ran)'
+        required: false
+        default: 'myPlanet build, myPlanet test'
+        type: string
       delete_branch:
         description: 'delete each head branch after merging'
         required: false
@@ -80,15 +87,10 @@ on:
         default: '0'
         type: string
       wait_timeout_minutes:
-        description: 'how long to wait for running checks: on a PR before merging, and on the base branch after'
+        description: 'how long to wait for the prepared commit to finish build and test'
         required: false
         default: '45'
         type: string
-      wait_for_bump_checks:
-        description: 'wait for CI on the bump commit before merging (needed only when AUTOMERGE_TOKEN re-triggers CI and the base requires checks)'
-        required: false
-        default: false
-        type: boolean
       dry_run:
         description: 'report what would happen, change nothing'
         required: false
@@ -110,8 +112,9 @@ jobs:
   automerge:
     name: myPlanet automerge
     runs-on: ubuntu-24.04
-    # A full drain is many merges, each waiting on a release build. GitHub
-    # caps a job at 6h; stay under it and re-dispatch to continue.
+    # A full drain is many merges, each waiting on a build and test run for
+    # its prepared commit. GitHub caps a job at 6h; stay under it and
+    # re-dispatch to continue.
     timeout-minutes: 350
     steps:
       - name: checkout repository code
@@ -146,11 +149,11 @@ jobs:
           BASE: ${{ inputs.base || env.DEFAULT_BASE }}
           LABEL: ${{ inputs.label }}
           REQUIRE_CHECKS: ${{ inputs.require_checks }}
+          REQUIRED_WORKFLOWS: ${{ inputs.required_workflows }}
           DELETE_BRANCH: ${{ inputs.delete_branch }}
           DRY_RUN: ${{ inputs.dry_run }}
           MAX_MERGES: ${{ inputs.max_merges }}
           WAIT_TIMEOUT_MIN: ${{ inputs.wait_timeout_minutes }}
-          WAIT_FOR_BUMP_CHECKS: ${{ inputs.wait_for_bump_checks }}
           VERSION_SH: ${{ steps.stage.outputs.dir }}/version.sh
           COAUTHORS_SH: ${{ steps.stage.outputs.dir }}/coauthors.sh
           OWNER_LOGIN: ${{ inputs.owner_login }}
