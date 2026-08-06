@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
 import androidx.core.content.ContextCompat
-import androidx.work.WorkManager
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -182,6 +181,37 @@ class DownloadServiceTest {
         every { mockActivityManager.isBackgroundRestricted } returns false
         mockkStatic(ContextCompat::class)
         every { ContextCompat.startForegroundService(any(), any()) } returns mockk()
+        ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+
+        DownloadService.startService(mockContext, "test_urls", false)
+
+        verify { ContextCompat.startForegroundService(mockContext, any()) }
+    }
+
+    @Test
+    fun `test startService starts worker on Android 14 when background restricted is true`() {
+        val mockContext = mockk<Context>(relaxed = true)
+        val mockActivityManager = mockk<ActivityManager>(relaxed = true)
+        every { mockContext.getSystemService(Context.ACTIVITY_SERVICE) } returns mockActivityManager
+        every { mockActivityManager.isBackgroundRestricted } returns true
+        mockkStatic(ContextCompat::class)
+        every { ContextCompat.startForegroundService(any(), any()) } returns mockk()
+        ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+
+        DownloadService.startService(mockContext, "test_urls", false)
+
+        verify(exactly = 0) { ContextCompat.startForegroundService(any(), any()) }
+    }
+
+    @Test
+    fun `test startService fallbacks to worker if startForegroundService throws exception`() {
+        val mockContext = mockk<Context>(relaxed = true)
+        val mockActivityManager = mockk<ActivityManager>(relaxed = true)
+        every { mockContext.getSystemService(Context.ACTIVITY_SERVICE) } returns mockActivityManager
+        every { mockActivityManager.isBackgroundRestricted } returns false
+        mockkStatic(ContextCompat::class)
+        every { ContextCompat.startForegroundService(any(), any()) } throws IllegalStateException("Foreground exception")
+        every { mockContext.startService(any()) } throws IllegalStateException("Service exception")
         ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 
         DownloadService.startService(mockContext, "test_urls", false)
