@@ -8,7 +8,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import org.ole.planet.myplanet.model.UserEntity
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
