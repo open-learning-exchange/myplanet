@@ -8,7 +8,7 @@ name: myPlanet automerge
 #   1. merge the base branch into the PR branch   (a conflict stops the drain)
 #   2. bump the version in app/build.gradle
 #   3. push, and wait for build + test on that prepared commit
-#   4. squash merge
+#   4. wait for the base branch to be settled and green, then squash merge
 #
 # Stops on the first failure; keeps going until no labelled PR is left.
 #
@@ -29,16 +29,19 @@ name: myPlanet automerge
 #   base -- so this behaves like a merge queue rather than trusting a verdict
 #   from whenever the PR last ran against an older base.
 #
-# * Nothing waits on the base branch afterwards. release.yml only runs on
-#   master, and it publishes rather than gates; holding every PR behind a
-#   full signed release build was the slow part. The next PR is prepared
-#   while that release runs. The drain still refuses to stack a merge on top
-#   of a base that has *already* reported a failure -- that is a free lookup,
-#   not a wait.
+# * The base branch is waited on in front of the merge, not after it. Master
+#   still has to be settled and green before anything lands on it -- a
+#   running release or a red run stops the drain. Asking at step 4 rather
+#   than right after the previous merge is what buys the overlap: master runs
+#   test and release for merge N while the drain prepares and builds PR N+1,
+#   so by the time it needs an answer the wait is usually already over.
 #
-# * The bump has to ride along inside the squash commit. Bumping the base
-#   separately would push two commits per PR, and the first would re-run
-#   release.yml at a version that was already tagged and published.
+# * The bump has to ride along inside the squash commit. Every merge into
+#   master publishes a release tagged from versionName in app/build.gradle,
+#   so every merge needs its own version number. Writing it on the PR branch
+#   makes it part of the squash -- one commit per PR, carrying the change and
+#   the version it ships as. Bumping master separately would push two commits
+#   per PR, and the first would start a release at a version already tagged.
 #
 # * A PAT is not optional here. GITHUB_TOKEN pushes deliberately do not
 #   trigger workflow runs, so the prepared commit would never get the build
@@ -87,7 +90,7 @@ on:
         default: '0'
         type: string
       wait_timeout_minutes:
-        description: 'how long to wait for the prepared commit to finish build and test'
+        description: 'how long to wait for workflows: build and test on the prepared commit, and whatever is in flight on the base'
         required: false
         default: '45'
         type: string
