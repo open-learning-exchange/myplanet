@@ -211,7 +211,7 @@ class NotificationsViewModel @Inject constructor(
             for (type in orderedTypes) {
                 val items = grouped[type] ?: continue
                 val unreadCount = items.count { !it.isRead }
-                val isExpanded = type !in collapsedGroups
+                val isExpanded = unreadCount > 0 && type !in collapsedGroups
                 add(NotificationListItem.Header(type, typeLabelFor(type), unreadCount, isExpanded))
                 if (isExpanded) {
                     items.forEach { notification ->
