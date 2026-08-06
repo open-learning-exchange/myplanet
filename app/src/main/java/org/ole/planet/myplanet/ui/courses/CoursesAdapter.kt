@@ -237,6 +237,10 @@ class CoursesAdapter(
         holder.bind(position, course)
     }
 
+    fun getSelectedCourseIds(): List<String> {
+        return selectedItems.mapNotNull { it?.courseId }
+    }
+
     fun areAllSelected(): Boolean {
         val selectableCourses = currentList.filter { isMyCourseLib || !it.isMyCourse }
         return selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()

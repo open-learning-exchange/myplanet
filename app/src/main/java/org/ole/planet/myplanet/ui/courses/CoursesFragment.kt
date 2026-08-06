@@ -226,29 +226,50 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
             isMyCourseLib = isMyCourseLib,
             isGuest = userModel?.isGuest() ?: true,
             onRemoveConfirmed = {
-                val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
-                deleteSelected(true)
-                selectionController.clearAll(adapterCourses)
-                adapterCourses.removeCourses(courseIds) {
+                val courseIds = if (::adapterCourses.isInitialized) adapterCourses.getSelectedCourseIds() else (selectedItems?.mapNotNull { it?.courseId } ?: emptyList())
+                if (courseIds.isNotEmpty()) {
+                    val userId = userModel?.id
+                    if (userId != null) {
+                        viewModel.removeCourses(courseIds, userId, true) {
+                            if (isAdded) {
+                                Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+                            }
+                        }
+                    }
+                    selectionController.clearAll(adapterCourses)
+                    selectedItems?.clear()
+                    adapterCourses.removeCourses(courseIds) {
+                        setupButtonVisibility()
+                        checkList()
+                    }
                     setupButtonVisibility()
                     checkList()
                 }
-                setupButtonVisibility()
-                checkList()
             },
             onArchiveConfirmed = {
-                val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
-                deleteSelected(true)
-                selectionController.clearAll(adapterCourses)
-                adapterCourses.removeCourses(courseIds) {
+                val courseIds = if (::adapterCourses.isInitialized) adapterCourses.getSelectedCourseIds() else (selectedItems?.mapNotNull { it?.courseId } ?: emptyList())
+                if (courseIds.isNotEmpty()) {
+                    val userId = userModel?.id
+                    if (userId != null) {
+                        viewModel.removeCourses(courseIds, userId, true) {
+                            if (isAdded) {
+                                Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+                            }
+                        }
+                    }
+                    selectionController.clearAll(adapterCourses)
+                    selectedItems?.clear()
+                    adapterCourses.removeCourses(courseIds) {
+                        setupButtonVisibility()
+                        checkList()
+                    }
                     setupButtonVisibility()
                     checkList()
                 }
-                setupButtonVisibility()
-                checkList()
             },
             onAddToLib = {
-                if ((selectedItems?.size ?: 0) > 0) {
+                val count = if (::adapterCourses.isInitialized) adapterCourses.getSelectedCourseIds().size else (selectedItems?.size ?: 0)
+                if (count > 0) {
                     confirmation = createAlertDialog()
                     confirmation.show()
                 }
