@@ -10,6 +10,7 @@ import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.ceil
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -20,6 +21,7 @@ import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.SearchActivity
@@ -27,6 +29,8 @@ import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -46,7 +50,8 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val myLibraryDao: MyLibraryDao,
     private val userRepository: UserRepository,
     private val teamDao: TeamDao,
-    private val userSessionManager: UserSessionManager
+    private val userSessionManager: UserSessionManager,
+    private val dispatcherProvider: DispatcherProvider
 ) : ResourcesRepository {
 
     // Shelf membership is stored as a JSON userId list; match a single entry with LIKE %"id"%.
@@ -667,5 +672,49 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun trackResourceOpen(item: MyLibrary) {
         userSessionManager.setResourceOpenCount(item, UserSessionManager.KEY_RESOURCE_OPEN)
+    }
+
+    override suspend fun getOfflineResourceItems(
+        oleDirPath: String,
+        extensions: Set<String>,
+        allKnownExtensions: Set<String>
+    ): List<OfflineResourceItem> = withContext(dispatcherProvider.io) {
+        val oleDir = File(oleDirPath)
+        if (!oleDir.exists() || !oleDir.isDirectory) return@withContext emptyList()
+
+        val titleMap = getResourceTitlesMap()
+
+        val grouped = mutableMapOf<String, MutableList<File>>()
+        oleDir.walkTopDown().filter { it.isFile }.forEach { file ->
+            val ext = file.extension.lowercase()
+            val matchesCategory = if (extensions.isEmpty()) {
+                ext !in allKnownExtensions
+            } else {
+                ext in extensions
+            }
+            if (matchesCategory) {
+                val resourceId = file.parentFile?.name ?: return@forEach
+                grouped.getOrPut(resourceId) { mutableListOf() }.add(file)
+            }
+        }
+
+        return@withContext grouped.map { (resourceId, files) ->
+            val totalSize = files.sumOf { it.length() }
+            val title = titleMap[resourceId]?.takeIf { it.isNotBlank() } ?: context.getString(R.string.storage_unknown_resource)
+            OfflineResourceItem(resourceId, title, files.map { it.absolutePath }, totalSize)
+        }.sortedBy { it.title }
+    }
+
+    override suspend fun deleteOfflineResources(oleDirPath: String, items: List<OfflineResourceItem>) = withContext(dispatcherProvider.io) {
+        val oleDir = File(oleDirPath)
+        items.forEach { item ->
+            item.filePaths.forEach { File(it).delete() }
+            val parentDir = oleDir.resolve(item.resourceId)
+            if (parentDir.exists() && parentDir.list().isNullOrEmpty()) {
+                parentDir.delete()
+            }
+        }
+        val deletedIds = items.map { it.resourceId }.toSet()
+        markResourcesAsNotOffline(deletedIds)
     }
 }

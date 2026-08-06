@@ -72,7 +72,8 @@ class ResourcesRepositoryLibrarySyncTest {
             myLibraryDao,
             mockk<UserRepository>(relaxed = true),
             mockk<TeamDao>(relaxed = true),
-            mockk<org.ole.planet.myplanet.services.UserSessionManager>(relaxed = true)
+            mockk<org.ole.planet.myplanet.services.UserSessionManager>(relaxed = true),
+            io.mockk.mockk(relaxed = true)
         )
     }
 
