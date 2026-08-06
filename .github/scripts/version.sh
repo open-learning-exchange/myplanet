@@ -47,8 +47,10 @@ next_version() {
     local file=$1
     read_version "$file"
 
-    [[ "$cur_name" =~ ^([0-9]{1,2})\.([0-9]{1,2})\.([0-9]{1,2})$ ]] \
-        || die "versionName '$cur_name' is not <major>.<minor>.<patch> with 1-2 digits per block"
+    # minor and patch are the carry blocks and stay at two digits; major is
+    # left wider so the script does not become the thing that breaks at 1.0.0.
+    [[ "$cur_name" =~ ^([0-9]{1,3})\.([0-9]{1,2})\.([0-9]{1,2})$ ]] \
+        || die "versionName '$cur_name' is not <major>.<minor>.<patch> with 1-2 digits in the minor and patch blocks"
 
     local major=$((10#${BASH_REMATCH[1]}))
     local minor=$((10#${BASH_REMATCH[2]}))
