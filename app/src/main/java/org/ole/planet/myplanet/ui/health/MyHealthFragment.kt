@@ -85,8 +85,7 @@ class MyHealthFragment : Fragment() {
     private fun refreshHealthData() {
         if (!isAdded || requireActivity().isFinishing) return
 
-        refreshJob?.cancel()
-        refreshJob = viewLifecycleOwner.lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val currentUser = userSessionManager.getUserModel()
                 userId = if (TextUtils.isEmpty(currentUser?._id)) {
