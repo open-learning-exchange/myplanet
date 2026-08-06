@@ -1284,6 +1284,8 @@
     <string name="storage_unknown_resource">Agabka Aan La Garanayn</string>
     <string name="file_count_one">1 fayl</string>
     <string name="file_count_many">%1$d fayl</string>
+    <string name="storage_deleting_progress">Faylasha waa la tirtirayaa... %1$d la tirtiray (%2$s)</string>
+    <string name="storage_freed_summary">%1$s ayaa la banneeyay (%2$d fayl)</string>
     <string name="skip">Ka gudub</string>
     <string name="add_meetup">Ku dar kulan</string>
     <string name="download_report">Soo deji warbixinta</string>

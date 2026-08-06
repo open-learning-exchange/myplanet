@@ -36,7 +36,6 @@ import org.ole.planet.myplanet.repository.ResourceUrlsResponse
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.UserSessionManager.Companion.KEY_RESOURCE_DOWNLOAD
-import org.ole.planet.myplanet.services.UserSessionManager.Companion.KEY_RESOURCE_OPEN
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.viewer.WebViewActivity
 import org.ole.planet.myplanet.utils.CourseRatingUtils
