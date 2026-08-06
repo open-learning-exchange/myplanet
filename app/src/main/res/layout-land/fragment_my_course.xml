@@ -72,17 +72,23 @@
 
             <TextView
                 android:id="@+id/tv_add"
-                style="@style/Widget.AppCompat.Button.Borderless.Colored"
                 android:layout_width="wrap_content"
                 android:layout_height="32dp"
                 android:layout_gravity="center_vertical"
                 android:layout_margin="2dp"
                 android:drawablePadding="4dp"
                 android:gravity="center"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="0dp"
+                android:paddingBottom="0dp"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:includeFontPadding="false"
                 android:text="@string/join_selected"
                 android:textColor="@color/daynight_textColor"
                 app:drawableTint="@color/daynight_textColor"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 app:drawableLeftCompat="@drawable/ic_add_library"/>
 
             <TextView

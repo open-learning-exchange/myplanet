@@ -41,17 +41,24 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            app:hintEnabled="false"
             android:textColorHint="@color/hint_color">
 
             <EditText
                 android:id="@+id/et_search"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
+                android:layout_height="32dp"
+                android:layout_gravity="center_vertical"
+                android:gravity="center_vertical"
                 android:hint="@string/search_dots"
                 android:inputType="text"
                 android:maxLines="1"
-                android:padding="@dimen/padding_normal"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:textSize="13sp"
+                android:includeFontPadding="false"
                 android:backgroundTint="@color/hint_color"
                 android:textColor="@color/daynight_textColor" />
         </com.google.android.material.textfield.TextInputLayout>
