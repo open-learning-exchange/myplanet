@@ -69,9 +69,6 @@ pick_pr() {
 
 pr_state() { gh pr view "$1" --repo "$REPO" --json state --jq '.state' 2>/dev/null || echo ''; }
 
-# Cheap early exit. Only CONFLICTING is an answer: UNKNOWN means GitHub has not
-# finished computing mergeability yet, and step 1's real merge is the test that
-# matters, so waiting on it -- let alone stopping the drain -- buys nothing.
 check_mergeable() {
     local pr=$1 state=""
     for _ in 1 2 3 4 5; do
@@ -89,8 +86,6 @@ check_mergeable() {
     esac
 }
 
-# Let the merge land in GitHub's own view before picking the next PR, so the
-# list index has a chance to catch up too.
 wait_pr_merged() {
     local pr=$1 state="" deadline=$(( SECONDS + PR_SETTLE_TIMEOUT_SEC ))
     while :; do
