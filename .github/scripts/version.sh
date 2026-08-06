@@ -1,32 +1,19 @@
 #!/usr/bin/env bash
 #
-# myPlanet version helper.
-#
-# The two version fields in app/build.gradle are kept in lockstep:
-#
-#   versionName = "<major>.<minor>.<patch>"   e.g. 0.63.0
-#   versionCode = major*10000 + minor*100 + patch    e.g. 6300
-#
-# Each block is 0..99, printed without zero padding, so a patch rollover
-# carries into the minor block (and a minor rollover into the major block):
+# myPlanet version helper. The two fields in app/build.gradle are kept in
+# lockstep -- versionCode = major*10000 + minor*100 + patch -- with each block
+# 0..99, so a patch rollover carries into the minor block:
 #
 #   0.62.97 / 6297  ->  0.62.98 / 6298
 #   0.62.99 / 6299  ->  0.63.0  / 6300
-#   0.99.99 / 9999  ->  1.0.0   / 10000
 #
-# Because of that encoding the bumped code is always exactly the old code
-# plus one; the script asserts that as a guard against a hand-edited file
-# where name and code have drifted apart.
+# That encoding makes the bumped code always the old code plus one, which the
+# script asserts to catch a hand-edited file where the two have drifted apart.
 #
 # Usage:
-#   version.sh read <gradle-file>
-#       Print "code=<n>" and "name=<x.y.z>" for the current version.
-#
-#   version.sh next <gradle-file>
-#       Print "code=<n>" and "name=<x.y.z>" for the *next* version.
-#
-#   version.sh apply <gradle-file> <code> <name>
-#       Rewrite the versionCode/versionName lines in place.
+#   version.sh read  <gradle-file>          print code= and name= as they are
+#   version.sh next  <gradle-file>          print code= and name= for the next
+#   version.sh apply <gradle-file> <code> <name>    rewrite them in place
 #
 set -euo pipefail
 

@@ -1,23 +1,13 @@
 #!/usr/bin/env bash
 #
-# Build the squash commit body for a PR.
+# Build the squash commit body for a PR: one Co-authored-by line per real
+# person who worked on it and is a collaborator here, then the repo owner on
+# anything they did not author themselves. The PR description is discarded.
 #
-# The PR description itself is thrown away -- it is release-note noise by the
-# time it reaches the commit log. What survives is attribution: one
-# Co-authored-by line per real person who worked on the PR and is a
-# collaborator on this repository, followed by the repo owner on anything
-# they did not author themselves.
-#
-# Who gets dropped, and why:
-#
-#   * coding agents. An agent either commits as a Bot account (filtered by
-#     type) or leaves a trailer whose address is not a GitHub account
-#     (`Co-Authored-By: Claude <noreply@anthropic.com>`). Only trailers whose
-#     address ties back to a real account survive, so agents fall out without
-#     needing a denylist to chase.
-#   * non-collaborators. Checked against the repository's collaborator list.
-#   * the PR author. They are already the commit author; listing them again
-#     would credit the same person twice.
+# Dropped: the PR author (already the commit author), non-collaborators, and
+# coding agents -- an agent either commits as a Bot account or leaves a
+# trailer whose address is not a GitHub account, so only trailers that tie
+# back to a real account survive and no denylist is needed.
 #
 # Usage: REPO=owner/name PR=123 coauthors.sh
 # Prints the body on stdout; empty output is a legitimate result.
@@ -35,8 +25,7 @@ noreply_for() { printf '%s <%s@users.noreply.github.com>' "$1" "$1"; }
 
 # ------------------------------------------------------------- gather
 
-# Listing collaborators needs push access. If it fails we stop rather than
-# quietly emitting a commit with nobody credited.
+# Needs push access; failing here beats crediting nobody.
 collaborators=$(
     gh api "repos/$REPO/collaborators?per_page=100" --paginate \
         --jq '.[] | select(.type == "User") | .login' | tr '[:upper:]' '[:lower:]' | sort -u
@@ -50,8 +39,7 @@ commits=$(gh api "repos/$REPO/pulls/$PR/commits?per_page=100" --paginate)
 
 candidates=""
 
-# Commit authors GitHub already resolved to an account. Bot accounts carry
-# type "Bot" and are skipped here.
+# Commit authors GitHub resolved to an account; type "Bot" is skipped.
 while IFS= read -r login; do
     if [ -n "$login" ]; then
         candidates+="$login"$'\n'
@@ -76,9 +64,8 @@ while IFS= read -r line; do
             candidates+="$login"$'\n'
             ;;
         *)
-            # Not a GitHub address, so it cannot be tied to an account or
-            # checked against the collaborator list. This is the branch that
-            # removes the coding agents.
+            # Not a GitHub address -- cannot be tied to an account. This is
+            # the branch that removes the coding agents.
             ;;
     esac
 done <<<"$trailers"
