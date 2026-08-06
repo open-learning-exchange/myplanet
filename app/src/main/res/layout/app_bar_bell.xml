@@ -27,7 +27,6 @@
             android:src="@drawable/ole_logo"
             app:tint="@color/md_white_1000"
             android:contentDescription="@string/menu" />
-
         <TextView
             android:id="@+id/app_title_name"
             android:layout_width="0dp"
@@ -43,12 +42,10 @@
             android:textColor="@color/md_white_1000"
             android:textSize="@dimen/text_size_large"
             android:textStyle="bold" />
-
         <include
             layout="@layout/bell_actionbar_items"
             android:layout_width="wrap_content"
             android:layout_height="?android:attr/actionBarSize" />
-
         <ImageView
             android:id="@+id/iv_sync"
             android:layout_width="@dimen/_40dp"
@@ -59,7 +56,6 @@
             app:srcCompat="@drawable/sync_icon"
             app:tint="@color/md_white_1000"
             android:contentDescription="@string/sync" />
-
         <ImageView
             android:id="@+id/iv_setting"
             android:layout_width="@dimen/_40dp"
