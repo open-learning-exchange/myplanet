@@ -91,12 +91,7 @@ permissions:
   actions: read
 
 env:
-  # --- TESTING -------------------------------------------------------
-  # While trying this out, only drain PRs targeting the test branch.
-  DEFAULT_BASE: claude/github-automerge-workflow-ge5yge
-  # Flip to this once the workflow has proven itself:
-  # DEFAULT_BASE: master
-  # -------------------------------------------------------------------
+  DEFAULT_BASE: master
   GRADLE_FILE: app/build.gradle
 
 jobs:
