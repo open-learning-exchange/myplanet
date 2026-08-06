@@ -159,9 +159,6 @@
 
     <style name="NegativeButtonStyle" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
         <item name="android:textColor">@color/colorAccent</item>
-        <item name="android:textSize">13sp</item>
-        <item name="android:singleLine">false</item>
-        <item name="android:maxLines">2</item>
     </style>
 
     <style name="ReplyAlertDialog" parent="ThemeOverlay.MaterialComponents.Dialog.Alert">
@@ -175,8 +172,23 @@
     <style name="NegativeButtonStyleHealth" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
         <item name="android:textColor">@color/colorAccent</item>
         <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="DownloadDialogButtonStyle" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/colorAccent</item>
+        <item name="android:textSize">13sp</item>
         <item name="android:singleLine">false</item>
         <item name="android:maxLines">2</item>
+    </style>
+
+    <style name="DownloadDialogTheme" parent="ThemeOverlay.MaterialComponents.Dialog.Alert">
+        <item name="android:background">@color/secondary_bg</item>
+        <item name="android:textColorPrimary">@color/daynight_textColor</item>
+        <item name="android:textColor">@color/daynight_textColor</item>
+        <item name="buttonBarNegativeButtonStyle">@style/DownloadDialogButtonStyle</item>
+        <item name="buttonBarPositiveButtonStyle">@style/DownloadDialogButtonStyle</item>
+        <item name="buttonBarNeutralButtonStyle">@style/DownloadDialogButtonStyle</item>
+        <item name="android:buttonStyle">@style/DownloadDialogButtonStyle</item>
     </style>
 
     <style name="CustomPopupMenu" parent="Widget.AppCompat.PopupMenu">
@@ -187,13 +199,12 @@
         <item name="android:popupBackground">@color/daynight_grey</item>
     </style>
 
-    <style name="AlertDialogTheme" parent="ThemeOverlay.MaterialComponents.Dialog.Alert">
+    <style name="AlertDialogTheme" parent="ThemeOverlay.AppCompat.Dialog.Alert">
         <item name="android:background">@color/secondary_bg</item>
         <item name="android:textColorPrimary">@color/daynight_textColor</item>
         <item name="android:textColor">@color/daynight_textColor</item>
         <item name="buttonBarNegativeButtonStyle">@style/NegativeButtonStyle</item>
         <item name="buttonBarPositiveButtonStyle">@style/NegativeButtonStyle</item>
-        <item name="buttonBarNeutralButtonStyle">@style/NegativeButtonStyle</item>
         <item name="android:buttonStyle">@style/NegativeButtonStyleHealth</item>
     </style>
 
