@@ -708,7 +708,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val offlineVisits = user?.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0
             if (user?.id?.startsWith("guest") == true) {
                 when {
-                    offlineVisits >= 3 -> showGuestDialog()
+                    offlineVisits >= 4 -> showGuestDialog()
                     offlineVisits == 2 -> showVisitLimitWarning()
                 }
             }
