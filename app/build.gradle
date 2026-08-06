@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.application)
-    alias(libs.plugins.legacy.kapt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.dagger.hilt.android)
 }
@@ -19,6 +18,14 @@ android {
     testOptions {
         unitTests {
             includeAndroidResources = true
+            // Unit tests are mostly Robolectric and CPU bound, so run them in parallel JVMs.
+            // Override with -PtestMaxParallelForks=N (defaults to the number of cores, capped at 4).
+            all { test ->
+                def requested = project.findProperty('testMaxParallelForks') as String
+                test.maxParallelForks = requested ? requested.toInteger()
+                    : Math.min(Runtime.runtime.availableProcessors(), 4)
+                test.maxHeapSize = "1536m"
+            }
         }
     }
     configurations.configureEach {
@@ -78,7 +85,6 @@ android {
     buildFeatures {
         viewBinding = true
         buildConfig = true
-        dataBinding = true
         resValues = true
     }
     bundle {
@@ -144,9 +150,6 @@ android {
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_URL', "\"${planetCambridgeUrl}\""
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
     }
-}
-kapt {
-    correctErrorTypes = true
 }
 dependencies {
     testImplementation(libs.test.junit)
