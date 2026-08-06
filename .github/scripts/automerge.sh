@@ -19,6 +19,7 @@ BASE="${BASE:?}"
 LABEL="${LABEL:?}"
 GRADLE_FILE="${GRADLE_FILE:?}"
 VERSION_SH="${VERSION_SH:?}"
+COAUTHORS_SH="${COAUTHORS_SH:?}"
 REQUIRE_CHECKS="${REQUIRE_CHECKS:-true}"
 DELETE_BRANCH="${DELETE_BRANCH:-true}"
 DRY_RUN="${DRY_RUN:-true}"
@@ -244,7 +245,18 @@ while :; do
             || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: push failed |"; exit 1; }
     fi
 
-    ARGS=(--repo "$REPO" --squash --match-head-commit "$merge_sha")
+    # Replace the PR description with just the attribution that belongs in
+    # the commit log. Subject keeps the repo's "<title> (#<number>)" shape.
+    commit_body=$(REPO="$REPO" PR="$NUMBER" "$COAUTHORS_SH")
+    if [ -n "$commit_body" ]; then
+        log "  co-authors:"
+        printf '%s\n' "$commit_body" | sed 's/^/    /'
+    else
+        log "  no co-authors to credit"
+    fi
+
+    ARGS=(--repo "$REPO" --squash --match-head-commit "$merge_sha"
+          --subject "$TITLE (#$NUMBER)" --body "$commit_body")
     if [ "$DELETE_BRANCH" = 'true' ]; then
         ARGS+=(--delete-branch)
     fi

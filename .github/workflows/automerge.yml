@@ -10,6 +10,12 @@ name: myPlanet automerge
 # The label is the safety rail: the drainer only ever touches PRs somebody
 # deliberately marked, never "every open PR".
 #
+# The PR description does not survive into the commit log. Each squash commit
+# is "<title> (#<number>)" plus Co-authored-by lines for the real people who
+# worked on it -- collaborators only, no coding agents, never the PR author
+# twice -- with the repo owner credited on anything they did not author. See
+# scripts/coauthors.sh.
+#
 # THREE THINGS WORTH KNOWING:
 #
 # * The bump has to ride along inside the squash commit. Bumping the base
@@ -45,6 +51,11 @@ on:
         description: 'base branch to merge into (blank = workflow default)'
         required: false
         default: ''
+        type: string
+      owner_login:
+        description: 'credited as co-author on every PR they did not author'
+        required: false
+        default: 'dogi'
         type: string
       require_checks:
         description: 'refuse to merge unless the PR checks are green'
@@ -109,8 +120,10 @@ jobs:
           # these scripts for PR-controlled copies mid-run. Take them from
           # the trusted checkout now and run them from there.
           mkdir -p "$RUNNER_TEMP/scripts"
-          cp .github/scripts/automerge.sh .github/scripts/version.sh "$RUNNER_TEMP/scripts/"
-          chmod +x "$RUNNER_TEMP/scripts/automerge.sh" "$RUNNER_TEMP/scripts/version.sh"
+          cp .github/scripts/automerge.sh \
+             .github/scripts/version.sh \
+             .github/scripts/coauthors.sh "$RUNNER_TEMP/scripts/"
+          chmod +x "$RUNNER_TEMP/scripts/"*.sh
           echo "dir=$RUNNER_TEMP/scripts" >> "$GITHUB_OUTPUT"
 
       - name: drain the automerge queue
@@ -126,4 +139,6 @@ jobs:
           MAX_MERGES: ${{ inputs.max_merges }}
           WAIT_TIMEOUT_MIN: ${{ inputs.wait_timeout_minutes }}
           VERSION_SH: ${{ steps.stage.outputs.dir }}/version.sh
+          COAUTHORS_SH: ${{ steps.stage.outputs.dir }}/coauthors.sh
+          OWNER_LOGIN: ${{ inputs.owner_login }}
         run: '${{ steps.stage.outputs.dir }}/automerge.sh'
