@@ -25,6 +25,8 @@ DELETE_BRANCH="${DELETE_BRANCH:-true}"
 DRY_RUN="${DRY_RUN:-true}"
 MAX_MERGES="${MAX_MERGES:-0}"
 WAIT_TIMEOUT_MIN="${WAIT_TIMEOUT_MIN:-45}"
+WAIT_FOR_BUMP_CHECKS="${WAIT_FOR_BUMP_CHECKS:-false}"
+USING_PAT="${USING_PAT:-false}"
 
 log()     { printf '%s | %s\n' "$(date -u +%H:%M:%S)" "$*"; }
 summary() { [ -n "${GITHUB_STEP_SUMMARY:-}" ] && printf '%s\n' "$*" >> "$GITHUB_STEP_SUMMARY"; return 0; }
@@ -243,6 +245,13 @@ while :; do
     if [ "$merge_sha" != "$SHA" ]; then
         push_with_retry "$HEAD" \
             || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: push failed |"; exit 1; }
+
+        # A PAT push re-triggers CI. When the base also requires status
+        # checks, merging straight away races the checks it just started.
+        if [ "$WAIT_FOR_BUMP_CHECKS" = 'true' ]; then
+            wait_for_runs "$merge_sha" \
+                || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: bump commit failed CI |"; exit 1; }
+        fi
     fi
 
     # Replace the PR description with just the attribution that belongs in
@@ -260,9 +269,28 @@ while :; do
     if [ "$DELETE_BRANCH" = 'true' ]; then
         ARGS+=(--delete-branch)
     fi
-    if ! gh pr merge "$NUMBER" "${ARGS[@]}"; then
+    if ! merge_out=$(gh pr merge "$NUMBER" "${ARGS[@]}" 2>&1); then
+        printf '%s\n' "$merge_out" | sed 's/^/    /'
         log "  merge of #$NUMBER refused"
-        summary "| #$NUMBER | → \`$new_name\` | **stopped**: merge refused |"
+        reason="merge refused"
+        case "$merge_out" in
+            *"not authorized to push"*|*"Protected branch"*|*"Resource not accessible"*)
+                reason="**stopped**: token may not merge into \`$BASE\`"
+                log "  $BASE is protected and this token may not merge into it."
+                if [ "$USING_PAT" = 'true' ]; then
+                    log "  AUTOMERGE_TOKEN is set, so that account still lacks merge rights on $BASE."
+                else
+                    log "  Running on GITHUB_TOKEN. Set the AUTOMERGE_TOKEN secret to a PAT or"
+                    log "  GitHub App token belonging to someone allowed to merge into $BASE."
+                fi
+                ;;
+            *"Pull Request is not mergeable"*|*"required status check"*)
+                reason="**stopped**: base requires checks the bump commit has not passed"
+                log "  the bumped commit has not satisfied required checks."
+                log "  Re-dispatch with wait_for_bump_checks enabled."
+                ;;
+        esac
+        summary "| #$NUMBER | → \`$new_name\` | $reason |"
         exit 1
     fi
     log "  merged #$NUMBER"
