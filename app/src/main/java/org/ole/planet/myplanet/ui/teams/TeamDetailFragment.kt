@@ -16,7 +16,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -442,7 +441,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
 
     private fun setupRealtimeSync() {
         collectWhenStarted(
-            teamViewModel.getTeamUpdateFlow().filter { it.table == "teams" }
+            teamViewModel.getTeamUpdateFlow()
         ) { update ->
             if (update.shouldRefreshUI) {
                 refreshTeamDetails()

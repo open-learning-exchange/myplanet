@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
-import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 sealed class TeamActionResult {
@@ -31,8 +30,7 @@ sealed class TeamActionResult {
 class TeamViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
     private val teamsSyncRepository: TeamsSyncRepository,
-    private val dispatcherProvider: DispatcherProvider,
-    private val realtimeSyncManager: RealtimeSyncManager
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
     private val _teamData = MutableStateFlow<List<TeamDetails>>(emptyList())
     val teamData: StateFlow<List<TeamDetails>> = _teamData
@@ -40,7 +38,7 @@ class TeamViewModel @Inject constructor(
     private val _taskList = MutableStateFlow<List<TeamTask>>(emptyList())
     val taskList: StateFlow<List<TeamTask>> = _taskList
 
-    fun getTeamUpdateFlow() = realtimeSyncManager.dataUpdateFlow
+    fun getTeamUpdateFlow() = teamsRepository.observeTableUpdates(listOf("teams"))
 
     fun loadTasks(teamId: String) {
         loadTaskJob?.cancel()

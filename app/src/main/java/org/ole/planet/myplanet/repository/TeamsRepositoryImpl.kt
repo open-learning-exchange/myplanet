@@ -17,6 +17,7 @@ import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
@@ -32,6 +33,7 @@ import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.TeamResourceDto
@@ -44,6 +46,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -72,6 +75,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val courseDao: CourseDao,
     private val courseStepDao: CourseStepDao,
     private val appDatabase: AppDatabase,
+    private val realtimeSyncManager: RealtimeSyncManager
 ) : TeamsRepository, TeamsSyncRepository {
     override fun getTasksFlow(userId: String?): Flow<List<TeamTask>> {
         return teamTaskDao.getOpenTasksForUser(userId)
@@ -1430,5 +1434,9 @@ class TeamsRepositoryImpl @Inject constructor(
         selector: (MyTeam) -> T,
     ): List<MyTeam> {
         return if (ascending) sortedBy(selector) else sortedByDescending(selector)
+    }
+
+    override fun observeTableUpdates(tableNames: List<String>): Flow<TableDataUpdate> {
+        return realtimeSyncManager.dataUpdateFlow.filter { tableNames.contains(it.table) }
     }
 }

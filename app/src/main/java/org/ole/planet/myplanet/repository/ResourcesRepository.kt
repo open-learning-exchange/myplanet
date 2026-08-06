@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.ResourceListModel
+import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.TagEntity
 
 data class LibraryWithMetadata(
@@ -102,6 +103,7 @@ interface ResourcesRepository {
     suspend fun getPendingResourceUploads(): List<MyLibrary>
     suspend fun markResourceUploaded(localId: String, remoteId: String, remoteRev: String, planetCode: String?): Boolean
     suspend fun trackResourceOpen(item: MyLibrary)
+    fun observeTableUpdates(tableNames: List<String>): Flow<TableDataUpdate>
 }
 
 sealed class ResourceUrlsResponse {
