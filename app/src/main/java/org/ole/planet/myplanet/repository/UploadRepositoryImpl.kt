@@ -1,8 +1,11 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonObject
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.ExamDao
@@ -10,6 +13,8 @@ import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.model.MembershipDoc
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
+import org.ole.planet.myplanet.services.FileUploader
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
@@ -50,6 +55,12 @@ class UploadRepositoryImpl @Inject constructor(
         serializedData: JsonObject
     ): Response<JsonObject> {
         return apiInterface.postDoc(UrlUtils.header, "application/json", url, serializedData)
+    }
+    override suspend fun postUploadArray(
+        url: String,
+        serializedData: JsonObject
+    ): Response<com.google.gson.JsonArray> {
+        return apiInterface.postDocArray(UrlUtils.header, "application/json", url, serializedData)
     }
 
     override suspend fun putUpload(
@@ -93,5 +104,25 @@ class UploadRepositoryImpl @Inject constructor(
         }
 
         return failed
+    }
+
+    override suspend fun uploadAttachment(
+        file: File,
+        destinationFormat: String,
+        id: String,
+        rev: String,
+        name: String
+    ): Response<JsonObject> {
+        val connection = file.toURI().toURL().openConnection()
+        val mimeType = connection.contentType ?: "application/octet-stream"
+        val body = FileUtils.fullyReadFileToBytes(file)
+            .toRequestBody("application/octet-stream".toMediaTypeOrNull())
+        val url = String.format(destinationFormat, UrlUtils.getUrl(), id, name)
+
+        return apiInterface.uploadResource(
+            FileUploader.getHeaderMap(mimeType, rev),
+            url,
+            body
+        )
     }
 }

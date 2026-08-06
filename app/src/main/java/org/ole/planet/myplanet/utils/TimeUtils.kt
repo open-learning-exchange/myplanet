@@ -44,8 +44,8 @@ object TimeUtils {
         DateTimeFormatter.ofPattern("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)", Locale.US).withZone(ZoneId.systemDefault())
     }
 
-    fun getRelativeTime(timestamp: Long): String {
-        val timeNow = System.currentTimeMillis()
+    fun getRelativeTime(timestamp: Long, timeProvider: TimeProvider? = null): String {
+        val timeNow = timeProvider?.now() ?: System.currentTimeMillis()
         return if (timestamp < timeNow) {
             DateUtils.getRelativeTimeSpanString(timestamp, timeNow, 0).toString()
         } else "Just now"

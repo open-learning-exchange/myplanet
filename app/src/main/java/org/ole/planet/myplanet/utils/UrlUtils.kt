@@ -29,9 +29,13 @@ object UrlUtils {
     val header: String
         get() {
             val spm = spm()
-            val credentials = "${spm.getUrlUser()}:${spm.getUrlPwd()}".toByteArray()
-            return "Basic ${Base64.encodeToString(credentials, Base64.NO_WRAP)}"
+            return basicAuthHeader(spm.getUrlUser(), spm.getUrlPwd())
         }
+
+    fun basicAuthHeader(username: String, password: String): String {
+        val credentials = "$username:$password".toByteArray()
+        return "Basic ${Base64.encodeToString(credentials, Base64.NO_WRAP)}"
+    }
 
     val hostUrl: String
         get() {

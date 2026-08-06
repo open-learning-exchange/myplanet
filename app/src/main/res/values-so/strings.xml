@@ -1013,6 +1013,11 @@
     <string name="dark_mode_follow_system">Raac Nidaamka</string>
     <string name="theme_mode_light">Iftiin</string>
     <string name="theme_mode_dark">Madow</string>
+    <string name="text_size">cabbirka qoraalka</string>
+    <string name="select_text_size">Dooro Cabbirka Qoraalka</string>
+    <string name="text_size_small">Yar</string>
+    <string name="text_size_medium">Dhexdhexaad</string>
+    <string name="text_size_large">Weyn</string>
     <string name="are_you_sure_you_want_to_archive_these_courses">Ma hubtaa inaad rabto inaad kaydiso koorsooyinkan?</string>
     <string name="are_you_sure_you_want_to_archive_this_course">Ma hubtaa inaad rabto inaad kaydiso koorsadan?</string>
     <string name="manual">buug</string>
@@ -1282,6 +1287,8 @@
     <string name="storage_unknown_resource">Agabka Aan La Garanayn</string>
     <string name="file_count_one">1 fayl</string>
     <string name="file_count_many">%1$d fayl</string>
+    <string name="storage_deleting_progress">Faylasha waa la tirtirayaa... %1$d la tirtiray (%2$s)</string>
+    <string name="storage_freed_summary">%1$s ayaa la banneeyay (%2$d fayl)</string>
     <string name="skip">Ka gudub</string>
     <string name="add_meetup">Ku dar kulan</string>
     <string name="download_report">Soo deji warbixinta</string>

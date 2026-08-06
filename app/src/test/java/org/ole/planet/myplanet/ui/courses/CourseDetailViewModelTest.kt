@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.content.Context
 import io.mockk.coEvery
-import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineDispatcher
@@ -19,14 +18,15 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.model.CourseDetailModel
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.StepItem
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.RatingSummary
+import org.ole.planet.myplanet.repository.RatingSummaryModel
 import org.ole.planet.myplanet.repository.RatingsRepository
-import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
@@ -39,11 +39,10 @@ class CourseDetailViewModelTest {
     val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
     private val coursesRepository: CoursesRepository = mockk()
-    private val submissionsRepository: SubmissionsRepository = mockk()
     private val ratingsRepository: RatingsRepository = mockk()
-    private val userSessionManager: UserSessionManager = mockk()
     private val dispatcherProvider = object : DispatcherProvider {
         override val main: CoroutineDispatcher = testDispatcher
+        override val mainImmediate: CoroutineDispatcher = testDispatcher
         override val io: CoroutineDispatcher = testDispatcher
         override val default: CoroutineDispatcher = testDispatcher
         override val unconfined: CoroutineDispatcher = testDispatcher
@@ -67,19 +66,12 @@ class CourseDetailViewModelTest {
             // UninitializedPropertyAccessException if context was never set
         }
         MainApplication.testContext = mockk<Context>(relaxed = true)
+        io.mockk.every { MainApplication.context.getExternalFilesDir(null) } returns null
 
-        courseDetailProvider = CourseDetailProvider(
-            coursesRepository,
-            submissionsRepository,
-            ratingsRepository,
-            userSessionManager,
-            dispatcherProvider
-        )
+        courseDetailProvider = CourseDetailProvider(coursesRepository)
 
         ratingSummaryProvider = RatingSummaryProvider(
-            ratingsRepository,
-            userSessionManager,
-            dispatcherProvider
+            ratingsRepository
         )
 
         viewModel = CourseDetailViewModel(
@@ -105,14 +97,26 @@ class CourseDetailViewModelTest {
             userRating = 5
         )
     ) {
+        val model = if (course == null) null else {
+            val stepItems = steps.map {
+                StepItem(
+                    id = it.id,
+                    stepTitle = it.stepTitle,
+                    questionCount = 2
+                )
+            }
+            CourseDetailModel(
+                course = course,
+                user = user,
+                ratingSummary = ratingSummary,
+                examCount = examCount,
+                resources = emptyList(),
+                downloadedResources = emptyList(),
+                steps = stepItems
+            )
+        }
+        every { coursesRepository.getCourseDetailModel(courseId) } returns flowOf(model)
         every { coursesRepository.getCourseByCourseIdFlow(courseId) } returns flowOf(course)
-        coEvery { userSessionManager.getUserModel() } returns user
-        coEvery { coursesRepository.getCourseExamCount(courseId) } returns examCount
-        coEvery { coursesRepository.getCourseOnlineResources(courseId) } returns emptyList()
-        coEvery { coursesRepository.getCourseOfflineResources(courseId) } returns emptyList()
-        coEvery { coursesRepository.getCourseSteps(courseId) } returns steps
-        coEvery { submissionsRepository.getExamQuestionCount(any()) } returns 2
-        coEvery { ratingsRepository.getRatingSummary("course", courseId, any()) } returns ratingSummary
     }
 
     @Test
@@ -128,12 +132,12 @@ class CourseDetailViewModelTest {
         state as CourseDetailUiState.Success
         assertEquals(7, state.examCount)
         assertEquals(4.0f, state.ratingSummary?.averageRating)
-        coVerify { coursesRepository.getCourseExamCount(courseId) }
+
     }
 
     @Test
     fun loadCourseDetail_whenCourseNull_emitsError() = runTest {
-        every { coursesRepository.getCourseByCourseIdFlow(courseId) } returns flowOf(null)
+        every { coursesRepository.getCourseDetailModel(courseId) } returns flowOf(null)
 
         viewModel.loadCourseDetail(courseId)
         advanceUntilIdle()
@@ -189,11 +193,14 @@ class CourseDetailViewModelTest {
         viewModel.loadCourseDetail(courseId)
         advanceUntilIdle()
 
-        coEvery { ratingsRepository.getRatingSummary("course", courseId, any()) } returns RatingSummary(
-            existingRating = null,
-            averageRating = 5.0f,
-            totalRatings = 10,
-            userRating = 5
+        coEvery { ratingsRepository.getCourseRatingSummary(courseId) } returns RatingSummaryModel(
+            user = UserEntity().apply { id = "user_1" },
+            ratingSummary = RatingSummary(
+                existingRating = null,
+                averageRating = 5.0f,
+                totalRatings = 10,
+                userRating = 5
+            )
         )
 
         viewModel.refreshRatings(courseId)

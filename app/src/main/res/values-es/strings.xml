@@ -1013,6 +1013,11 @@
     <string name="dark_mode_follow_system">Seguir el sistema</string>
     <string name="theme_mode_light">Claro</string>
     <string name="theme_mode_dark">Oscuro</string>
+    <string name="text_size">tamaño del texto</string>
+    <string name="select_text_size">Seleccionar tamaño de texto</string>
+    <string name="text_size_small">Pequeño</string>
+    <string name="text_size_medium">Mediano</string>
+    <string name="text_size_large">Grande</string>
     <string name="are_you_sure_you_want_to_archive_these_courses">¿Estás seguro de que deseas archivar estos cursos?</string>
     <string name="are_you_sure_you_want_to_archive_this_course">¿Estás seguro de que deseas archivar este curso?</string>
     <string name="manual">manual</string>
@@ -1285,6 +1290,8 @@
     <string name="storage_unknown_resource">Recurso desconocido</string>
     <string name="file_count_one">1 archivo</string>
     <string name="file_count_many">%1$d archivos</string>
+    <string name="storage_deleting_progress">Eliminando archivos… %1$d eliminados (%2$s)</string>
+    <string name="storage_freed_summary">Liberado %1$s (%2$d archivos)</string>
     <string name="skip">Omitir</string>
     <string name="add_meetup">Agregar reunión</string>
     <string name="download_report">Descargar informe</string>

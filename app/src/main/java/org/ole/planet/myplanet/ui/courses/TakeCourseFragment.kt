@@ -9,7 +9,6 @@ import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -280,7 +279,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         } else {
             binding.nextStep.visibility = View.VISIBLE
             binding.nextStep.isClickable = true
-            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
         }
 
         updateStepDisplay(position)
@@ -296,22 +294,18 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
                 if (coursesRepository.isStepCompleted(stepId, userModel?.id)) {
                     isNextStepLocked = false
-                    binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
                 } else if (hasExam || hasSurvey) {
                     isNextStepLocked = true
                     lockedStepMessage = when {
                         hasExam -> getString(R.string.please_complete_test)
                         else -> getString(R.string.please_complete_survey)
                     }
-                    binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
                 } else {
                     isNextStepLocked = false
-                    binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
                 }
             }
         } else {
             isNextStepLocked = false
-            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
         }
     }
     override fun onPageScrollStateChanged(state: Int) {}
@@ -319,11 +313,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private fun onClickNext() {
         binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", binding.viewPager2.currentItem, steps.size)
         if (binding.viewPager2.currentItem >= steps.size) {
-            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
             binding.nextStep.visibility = View.GONE
             binding.finishStep.visibility = View.VISIBLE
         } else {
-            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
             binding.nextStep.visibility = View.VISIBLE
             binding.finishStep.visibility = View.GONE
         }
@@ -336,7 +328,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             binding.nextStep.visibility = View.VISIBLE
             binding.finishStep.visibility = View.GONE
         }else{
-            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
             binding.nextStep.visibility = View.VISIBLE
             binding.finishStep.visibility = View.GONE
         }
@@ -410,7 +401,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             }
         } else {
             binding.finishStep.isEnabled = true
-            binding.finishStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
             binding.finishStep.setOnClickListener {
                 FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
             }

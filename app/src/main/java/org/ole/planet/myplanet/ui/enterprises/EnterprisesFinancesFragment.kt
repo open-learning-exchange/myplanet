@@ -21,7 +21,6 @@ import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
@@ -32,6 +31,7 @@ import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class EnterprisesFinancesFragment : BaseTeamFragment() {
@@ -226,20 +226,14 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         binding.rvFinance.layoutManager = LinearLayoutManager(activity)
         binding.rvFinance.adapter = financeAdapter
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            launch {
-                isMemberFlow.collectLatest { isMember ->
-                    val canManage = if (fromCommunity) user?.isManager() == true else isMember
-                    binding.addTransaction.visibility = if (canManage) View.VISIBLE else View.GONE
-                }
-            }
-            launch {
-                viewModel.transactions.collectLatest { results ->
-                    transactions = results
-                    updatedFinanceList(results)
-                    showNoData(binding.tvNodata, transactions.size, "finances")
-                }
-            }
+        collectLatestWhenStarted(isMemberFlow) { isMember ->
+            val canManage = if (fromCommunity) user?.isManager() == true else isMember
+            binding.addTransaction.visibility = if (canManage) View.VISIBLE else View.GONE
+        }
+        collectLatestWhenStarted(viewModel.transactions) { results ->
+            transactions = results
+            updatedFinanceList(results)
+            showNoData(binding.tvNodata, transactions.size, "finances")
         }
 
         observeTransactions()
@@ -287,7 +281,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
                         return@setPositiveButton
                     }
                     val imageUri = selectedImageUri
-                    val imageName = imageUri?.let { FileUtils.getDisplayName(requireContext(), it) }
+                    val imageName = imageUri?.let { FileUtils.getDisplayName(requireContext(), it, timeProvider) }
                     val imageData = imageUri?.let { FileUtils.readBytesFromUri(requireContext(), it) }
                     viewLifecycleOwner.lifecycleScope.launch {
                         val capturedDate = date ?: return@launch

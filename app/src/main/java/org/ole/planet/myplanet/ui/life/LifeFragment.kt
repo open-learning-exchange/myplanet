@@ -48,7 +48,10 @@ class LifeFragment : BaseRecyclerFragment<MyLife?>(), OnStartDragListener {
     override suspend fun getAdapter(): ListAdapter<*, *> {
         lifeAdapter = LifeAdapter(requireContext(), this,
             visibilityCallback = { myLife, isVisible ->
-                myLife._id?.let { id ->
+                val id = myLife._id.takeIf { it.isNotBlank() }
+                    ?: myLife.imageId?.takeIf { it.isNotBlank() }
+                    ?: myLife.title
+                if (!id.isNullOrEmpty()) {
                     viewLifecycleOwner.lifecycleScope.launch {
                         withContext(dispatcherProvider.io) {
                             lifeRepository.updateVisibility(isVisible, id)
@@ -73,22 +76,31 @@ class LifeFragment : BaseRecyclerFragment<MyLife?>(), OnStartDragListener {
         val callback: ItemTouchHelper.Callback = ItemReorderHelper(lifeAdapter)
         itemTouchHelper = ItemTouchHelper(callback)
         itemTouchHelper?.attachToRecyclerView(recyclerView)
+        lifeAdapter.submitList(loadMyLifeList())
         return lifeAdapter
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        refreshList()
         recyclerView.setHasFixedSize(true)
         setupUI(binding.myLifeParentLayout, requireActivity())
         val dividerItemDecoration = DividerItemDecoration(recyclerView.context, RecyclerView.VERTICAL)
         recyclerView.addItemDecoration(dividerItemDecoration)
     }
 
+    private suspend fun loadMyLifeList(): List<MyLife> {
+        val userId = sharedPrefManager.getUserId().ifEmpty { userRepository.getUserModel()?.id }
+        var myLifeList = lifeRepository.getMyLifeByUserId(userId)
+        if (myLifeList.isEmpty()) {
+            lifeRepository.seedMyLifeIfEmpty(userId, MyLife.defaultItems(requireContext(), userId))
+            myLifeList = lifeRepository.getMyLifeByUserId(userId)
+        }
+        return myLifeList.distinctBy { it.imageId ?: it.title }
+    }
+
     private fun refreshList() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val userId = profileDbHandler.getUserModel()?.id
-            val myLifeList = lifeRepository.getMyLifeByUserId(userId)
+            val myLifeList = loadMyLifeList()
             if (::lifeAdapter.isInitialized) {
                 lifeAdapter.submitList(myLifeList)
             }

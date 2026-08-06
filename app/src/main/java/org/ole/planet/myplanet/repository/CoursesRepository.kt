@@ -4,6 +4,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.HashMap
 import kotlinx.coroutines.flow.Flow
+import org.ole.planet.myplanet.model.CourseDetailModel
 import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.CourseStepData
@@ -18,6 +19,7 @@ interface CoursesRepository {
     suspend fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>>
     suspend fun getCourseById(courseId: String): MyCourse?
     fun getCourseByCourseIdFlow(courseId: String): Flow<MyCourse?>
+    fun getCourseDetailModel(courseId: String): Flow<CourseDetailModel?>
     suspend fun getCoursesByIds(courseIds: List<String>): List<MyCourse>
     suspend fun getCourseOnlineResources(courseId: String?): List<MyLibrary>
     suspend fun getCourseOfflineResources(courseId: String?): List<MyLibrary>
