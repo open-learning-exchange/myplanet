@@ -16,131 +16,117 @@
             android:id="@+id/ll_actions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="end"
             android:background="@color/colorPrimary"
-            android:gravity="end"
-            android:orientation="vertical"
-            android:padding="@dimen/padding_large">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@color/colorPrimary"
-                android:orientation="horizontal"
-                android:padding="@dimen/padding_normal">
-
-                <TextView
-                    android:id="@+id/tv_fragment_info"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_gravity="center_vertical"
-                    android:layout_margin="@dimen/_10dp"
-                    android:layout_weight="1"
-                    android:gravity="center_vertical"
-                    android:padding="@dimen/padding_normal"
-                    android:text="@string/txt_myCourses"
-                    android:textColor="@color/md_white_1000"
-                    android:textSize="@dimen/text_size_large"
-                    android:textStyle="bold"
-                    android:maxLines="1"
-                    android:minWidth="150dp" />
-                <Button
-                    android:id="@+id/btn_remove"
-                    android:layout_width="70dp"
-                    android:layout_height="35dp"
-                    android:layout_gravity="center"
-                    android:layout_margin="@dimen/padding_small"
-                    android:background="@drawable/buttonblue"
-                    android:padding="8dp"
-                    android:text="@string/leave"
-                    android:textColor="@color/md_white_1000"
-                    android:textSize="13sp"
-                    android:visibility="gone" />
-                <TextView
-                    android:id="@+id/tv_add"
-                    style="@style/Widget.AppCompat.Button.Borderless.Colored"
-                    android:layout_width="wrap_content"
-                    android:layout_height="40dp"
-                    android:layout_gravity="center"
-                    android:layout_margin="@dimen/padding_small"
-                    android:drawablePadding="4dp"
-                    android:gravity="center"
-                    android:minWidth="160dp"
-                    android:text="@string/join_selected"
-                    android:textColor="@color/daynight_textColor"
-                    app:drawableTint="@color/daynight_textColor"
-                    android:textSize="@dimen/text_size_mid"
-                    app:drawableLeftCompat="@drawable/ic_add_library"/>
-                <TextView
-                    android:id="@+id/tv_selected"
-                    android:layout_width="wrap_content"
-                    android:layout_height="40dp"
-                    android:layout_gravity="center"
-                    android:layout_margin="@dimen/_10dp"
-                    android:background="?attr/selectableItemBackground"
-                    android:gravity="start|center_vertical"
-                    android:text="@string/remove_selected"
-                    android:textColor="@color/daynight_textColor"
-                    android:textSize="@dimen/text_size_mid"
-                    android:visibility="gone"
-                    app:drawableLeftCompat="@drawable/ic_delete"
-                    app:drawableTint="@color/daynight_textColor"
-                    android:minWidth="120dp" />
-                <Button
-                    android:id="@+id/btn_archive"
-                    android:layout_width="95dp"
-                    android:layout_height="35dp"
-                    android:layout_gravity="center"
-                    android:layout_margin="@dimen/_10dp"
-                    android:background="?attr/selectableItemBackground"
-                    android:gravity="start|center_vertical"
-                    android:text="@string/archive"
-                    android:textColor="@color/daynight_textColor"
-                    android:textSize="13sp"
-                    android:visibility="gone"
-                    app:drawableLeftCompat="@drawable/ic_delete"
-                    app:drawableTint="@color/daynight_textColor" />
-                <ImageButton
-                    android:id="@+id/filter"
-                    style="@style/YellowButtons"
-                    android:layout_gravity="center_vertical"
-                    android:layout_width="@dimen/_40dp"
-                    android:layout_height="@dimen/_40dp"
-                    android:layout_margin="@dimen/padding_small"
-                    android:background="@drawable/buttonyellow"
-                    android:padding="@dimen/padding_small"
-                    android:text="@string/more_action"
-                    android:textColor="@color/md_white_1000"
-                    app:srcCompat="@drawable/ic_filter"
-                    android:contentDescription="@string/more_action" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:background="@color/secondary_bg">
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp">
+
+            <TextView
+                android:id="@+id/tv_fragment_info"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginEnd="8dp"
+                android:gravity="center_vertical"
+                android:text="@string/txt_myCourses"
+                android:textColor="@color/md_white_1000"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:maxLines="1" />
 
             <CheckBox
                 android:id="@+id/selectAllCourse"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="10.5dp"
-                android:layout_gravity="center"
-                android:padding="8dp"
-                android:layout_weight="1"
+                android:layout_gravity="center_vertical"
+                android:padding="2dp"
                 android:text="@string/select_all"
-                android:textColor="@color/daynight_textColor"
-                android:textSize="@dimen/text_size_mid"
-                android:buttonTint="@color/daynight_textColor"
-                android:maxWidth="0dp"
+                android:textColor="@color/md_white_1000"
+                android:textSize="12sp"
+                android:buttonTint="@color/md_white_1000"
                 android:checked="false" />
+
             <include
                 layout="@layout/layout_search"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1" /> <!-- Set layout_width to 0dp and layout_weight to 1 for equal distribution -->
+                android:layout_weight="1"
+                android:layout_gravity="center_vertical" />
+
+            <Button
+                android:id="@+id/btn_remove"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_gravity="center_vertical"
+                android:layout_margin="2dp"
+                android:background="@drawable/buttonblue"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:text="@string/leave"
+                android:textColor="@color/md_white_1000"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tv_add"
+                style="@style/Widget.AppCompat.Button.Borderless.Colored"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_gravity="center_vertical"
+                android:layout_margin="2dp"
+                android:drawablePadding="2dp"
+                android:gravity="center"
+                android:text="@string/join_selected"
+                android:textColor="@color/daynight_textColor"
+                app:drawableTint="@color/daynight_textColor"
+                android:textSize="12sp"
+                app:drawableLeftCompat="@drawable/ic_add_library"/>
+
+            <TextView
+                android:id="@+id/tv_selected"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_gravity="center_vertical"
+                android:layout_margin="2dp"
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center_vertical"
+                android:text="@string/remove_selected"
+                android:textColor="@color/daynight_textColor"
+                android:textSize="12sp"
+                android:visibility="gone"
+                app:drawableLeftCompat="@drawable/ic_delete"
+                app:drawableTint="@color/daynight_textColor" />
+
+            <Button
+                android:id="@+id/btn_archive"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_gravity="center_vertical"
+                android:layout_margin="2dp"
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center_vertical"
+                android:text="@string/archive"
+                android:textColor="@color/daynight_textColor"
+                android:textSize="12sp"
+                android:visibility="gone"
+                app:drawableLeftCompat="@drawable/ic_delete"
+                app:drawableTint="@color/daynight_textColor" />
+
+            <ImageButton
+                android:id="@+id/filter"
+                style="@style/YellowButtons"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/buttonyellow"
+                android:padding="4dp"
+                android:textColor="@color/md_white_1000"
+                app:srcCompat="@drawable/ic_filter"
+                android:contentDescription="@string/more_action" />
         </LinearLayout>
 
         <FrameLayout
