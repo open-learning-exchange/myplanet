@@ -67,7 +67,8 @@ pick_pr() {
             | sort_by(.number) | first'
 }
 
-pr_state() { gh pr view "$1" --repo "$REPO" --json state --jq '.state' 2>/dev/null || echo ''; }
+pr_state()  { gh pr view "$1" --repo "$REPO" --json state --jq '.state' 2>/dev/null || echo ''; }
+pr_review() { gh pr view "$1" --repo "$REPO" --json reviewDecision --jq '.reviewDecision' 2>/dev/null || echo ''; }
 
 check_mergeable() {
     local pr=$1 state=""
@@ -283,6 +284,17 @@ while :; do
         continue
     fi
 
+    # A branch policy needing an approval refuses the merge in step 4, after a
+    # full build. Skip rather than stop, so approved PRs behind it still drain.
+    review=$(pr_review "$NUMBER")
+    case "$review" in
+        REVIEW_REQUIRED|CHANGES_REQUIRED|CHANGES_REQUESTED)
+            log "  #$NUMBER needs a review ($review) -- skipping, $BASE would refuse it"
+            summary "| #$NUMBER | | skipped: needs a review (\`$review\`) |"
+            skip_numbers="$skip_numbers $NUMBER"
+            continue ;;
+    esac
+
     check_mergeable "$NUMBER" || { summary "| #$NUMBER | | **stopped**: conflicts with \`$BASE\` |"; exit 1; }
 
     # "Next" comes off the base -- it is what the merge lands on.
@@ -402,7 +414,15 @@ while :; do
                     log "  GitHub App token belonging to someone allowed to merge into $BASE."
                 fi
                 ;;
-            *"Pull Request is not mergeable"*|*"required status check"*)
+            *"base branch policy prohibits"*)
+                reason="**stopped**: \`$BASE\` policy refused the merge (review? codeowner?)"
+                log "  $BASE's branch protection refused this merge. The prepared commit is"
+                log "  green, so the unmet requirement is a policy one -- most often a missing"
+                log "  approving review, a codeowner review, or an unresolved conversation."
+                log "  --auto is deliberately not used: it returns before the merge happens,"
+                log "  and the drain must know the merge landed to bump the next version."
+                ;;
+            *"is not mergeable"*|*"required status check"*)
                 reason="**stopped**: base requires checks the prepared commit has not passed"
                 log "  the prepared commit has not satisfied the base's required checks."
                 log "  Make sure required_workflows covers every check $BASE requires."
