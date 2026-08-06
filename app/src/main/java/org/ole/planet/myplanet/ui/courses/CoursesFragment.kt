@@ -178,7 +178,8 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     override fun onGetLayoutInflater(savedInstanceState: Bundle?): android.view.LayoutInflater {
         val superInflater = super.onGetLayoutInflater(savedInstanceState)
         val configContext = requireContext().createConfigurationContext(requireContext().resources.configuration)
-        return superInflater.cloneInContext(configContext)
+        val themeWrapper = android.view.ContextThemeWrapper(configContext, R.style.MyMaterialTheme)
+        return superInflater.cloneInContext(themeWrapper)
     }
 
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
