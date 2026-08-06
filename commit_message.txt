@@ -1,0 +1,6 @@
+Revert "Refactor ResourcesRepository search to replace RawQuery with statically typed queries"
+
+This reverts the previous refactor which moved search token filtering from the SQLite engine into Kotlin in-memory collections.
+
+Rationale:
+While avoiding `@RawQuery` is generally preferable for static typing, the original `SimpleSQLiteQuery` implementation already securely uses parameterized bind arguments (`?`) and `ESCAPE` clauses, meaning it is not vulnerable to SQL injection. Attempting to filter large datasets in memory via `.filter { ... }` requires materializing the entire `my_library` table contents into memory, causing a severe performance and memory regression. We are keeping the secure, parameterized SQL query approach.
