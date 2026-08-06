@@ -15,15 +15,14 @@
         <LinearLayout
             android:id="@+id/ll_actions"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="40dp"
+            android:layout_height="48dp"
             android:background="@color/colorPrimary"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingStart="8dp"
             android:paddingEnd="8dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp">
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp">
 
             <TextView
                 android:id="@+id/tv_fragment_info"
