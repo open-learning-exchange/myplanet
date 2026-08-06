@@ -18,8 +18,6 @@ android {
     testOptions {
         unitTests {
             includeAndroidResources = true
-            // Unit tests are mostly Robolectric and CPU bound, so run them in parallel JVMs.
-            // Override with -PtestMaxParallelForks=N (defaults to the number of cores, capped at 4).
             all { test ->
                 def requested = project.findProperty('testMaxParallelForks') as String
                 test.maxParallelForks = requested ? requested.toInteger()
@@ -52,7 +50,6 @@ android {
         create("lite") {
             dimension "mode"
             buildConfigField "boolean", "LITE", "true"
-            // Use versionNameSuffix and resValue to avoid editing build.gradle and versions.xml in CI
             versionNameSuffix "-lite"
             resValue "string", "app_version", "${defaultConfig.versionName}-lite"
         }
@@ -184,8 +181,6 @@ dependencies {
     implementation(libs.cardview)
     implementation(libs.constraintlayout)
     implementation(libs.core.ktx)
-    // ProcessLifecycleOwner used by MainApplication and Utilities. This used to arrive
-    // transitively through databinding-ktx, so it must be declared now that data binding is off.
     implementation(libs.lifecycle.process)
     implementation(libs.hilt.work)
     ksp(libs.hilt.compiler)
