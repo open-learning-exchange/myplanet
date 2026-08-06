@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.content.Context
 import io.mockk.coEvery
-import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineDispatcher
@@ -19,19 +18,17 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.model.CourseDetailModel
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyCourse
-import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.model.CourseDetailModel
 import org.ole.planet.myplanet.model.StepItem
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.RatingSummary
+import org.ole.planet.myplanet.repository.RatingSummaryModel
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
-
-
-import org.ole.planet.myplanet.repository.RatingSummaryModel
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CourseDetailViewModelTest {

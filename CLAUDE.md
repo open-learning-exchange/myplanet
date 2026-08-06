@@ -8,8 +8,9 @@
 - **Primary Language**: Kotlin (100% — no Java sources remain)
 - **Min SDK**: 26 (Android 8.0)
 - **Target SDK**: 36 (Android 16); **Compile SDK**: 37
-- **Current Version**: 0.59.69 (versionCode: 5969)
-- **Build System**: Gradle 9.5.1 with Android Gradle Plugin 9.2.1
+- **Current Version**: 0.62.97 (versionCode: 6297)
+- **Build System**: Gradle 9.6.1 with Android Gradle Plugin 9.3.1
+- **Local Database**: Room (AndroidX) 2.8.4 — the only local persistence store
 - **License**: AGPL v3
 
 ### Build Flavors
@@ -36,15 +37,15 @@ myplanet/
 │   │   │   │   ├── MainApplication.kt       # App entry point with Hilt
 │   │   │   │   ├── base/                    # Base classes for activities/fragments
 │   │   │   │   ├── callback/                # Event listeners and interfaces
-│   │   │   │   ├── data/                    # Data services and API
+│   │   │   │   ├── data/                    # Data services, API, and Room (room/, api/, auth/)
 │   │   │   │   ├── di/                      # Dependency injection modules
-│   │   │   │   ├── model/                   # Realm data models (83 files)
+│   │   │   │   ├── model/                   # Room @Entity models + DTOs (92 files)
 │   │   │   │   ├── repository/              # Repository pattern implementations
 │   │   │   │   ├── services/                # Background services and workers
 │   │   │   │   ├── ui/                      # UI components (28 packages)
 │   │   │   │   └── utils/                   # Helper utilities
 │   │   │   ├── res/                         # Android resources
-│   │   │   │   ├── layout/                  # 186 layout files
+│   │   │   │   ├── layout/                  # 181 layout files
 │   │   │   │   ├── values/                  # Strings, colors, styles
 │   │   │   │   ├── values-{lang}/           # Translations (ar, es, fr, ne, so)
 │   │   │   │   └── drawable*/               # Images and icons
@@ -65,31 +66,31 @@ myplanet/
 
 | Package | Purpose | Files | Key Items |
 |---------|---------|-------|-----------|
-| `base/` | Base classes for common functionality | 12 | BaseActivity, BaseRecyclerFragment, BasePermissionActivity, BaseContainerFragment, BaseDashboardFragment, BaseResourceFragment, BaseTeamFragment, BaseExamFragment, BaseMemberFragment, BaseDialogFragment, BaseVoicesFragment, BaseRecyclerParentFragment |
+| `base/` | Base classes for common functionality | 13 | BaseActivity, BaseRecyclerFragment, BasePermissionActivity, BaseContainerFragment, BaseDashboardFragment, BaseResourceFragment, BaseTeamFragment, BaseExamFragment, BaseMemberFragment, BaseDialogFragment, BaseVoicesFragment, BaseRecyclerParentFragment |
 | `callback/` | Event listeners and interfaces | 28 | OnLibraryItemSelectedListener, OnSyncListener, OnTeamUpdateListener, OnChatItemClickListener, OnNewsItemClickListener, and more |
-| `data/` | Data access and API services | 8 | DatabaseService.kt, NetworkResult.kt, RealmMigrations.kt; sub-packages: `api/` (ApiInterface, ApiClient, ChatApiService, RetryInterceptor), `auth/` (AuthSessionUpdater) |
-| `di/` | Hilt dependency injection | 13 | Modules (NetworkModule, DatabaseModule, RepositoryModule, ServiceModule, SharedPreferencesModule, DispatcherModule) + entry points (CoreDependenciesEntryPoint, NetworkDependenciesEntryPoint, RepositoryDependenciesEntryPoint, ServiceDependenciesEntryPoint) + RealmDispatcher |
-| `model/` | Realm database models and DTOs | 87 | Realm models + DTOs including ChatMessage, ChatRequest, ChatResponse, CourseProgressData, Download, ServerAddress, User |
-| `repository/` | Repository pattern implementations | 50 | 23+ repository domains with Interface + Impl pairs + RealmRepository base + SubmissionsRepositoryExporter |
-| `services/` | Background services and workers | 37 | 21 root-level + `sync/` (7), `upload/` (7), `retry/` (2) |
-| `ui/` | User interface components | 174 | 28 feature packages with 16+ ViewModels (courses, resources, teams, chat, etc.) |
+| `data/` | Data access, Room persistence, and API | 40 | DatabaseService.kt, NetworkResult.kt; `room/` (AppDatabase, Converters, 30 DAOs, entity/), `api/` (ApiInterface, ApiClient, ChatApiService, RetryInterceptor), `auth/` (AuthSessionUpdater) |
+| `di/` | Hilt dependency injection | 10 | Modules (NetworkModule, DatabaseModule, RoomModule, RepositoryModule, ServiceModule, SharedPreferencesModule, DispatcherModule, TimeModule) + entry points (CoreDependenciesEntryPoint, ServiceDependenciesEntryPoint) |
+| `model/` | Room `@Entity` models and DTOs | 92 | 37 `@Entity` classes (MyCourse, MyLibrary, News, Submission, TeamTask, UserEntity, …) + DTOs (ChatMessage, ChatRequest, ChatResponse, CourseProgressData, Download, ServerAddress, User) |
+| `repository/` | Repository pattern implementations | 50 | 23 domain Interface + Impl pairs + sync-facing interfaces (SyncRepository, TeamsSyncRepository, UserSyncRepository) + SubmissionsRepositoryExporter |
+| `services/` | Background services and workers | 39 | 22 root-level + `sync/` (7), `upload/` (8), `retry/` (2) |
+| `ui/` | User interface components | 183 | 28 feature packages with 16+ ViewModels (courses, resources, teams, chat, etc.) |
 | `utils/` | Helper functions | 46 | NetworkUtils, ImageUtils, DialogUtils, FileUploader, AuthUtils, SecurePrefs, ANRWatchdog, and more |
 
-### UI Sub-packages (28 feature packages, 174 files)
+### UI Sub-packages (28 feature packages, 183 files)
 
 | Package | Files | Key Components |
 |---------|-------|----------------|
 | `ui/calendar/` | 1 | CalendarFragment |
-| `ui/chat/` | 7 | ChatDetailFragment, ChatHistoryFragment, ChatViewModel |
+| `ui/chat/` | 8 | ChatDetailFragment, ChatHistoryFragment, ChatViewModel |
 | `ui/community/` | 6 | CommunityTabFragment, LeadersFragment |
 | `ui/components/` | 5 | CustomSpinner, MarkdownDialogFragment, FragmentNavigator |
-| `ui/courses/` | 19 | CourseDetailFragment, TakeCourseFragment, ProgressViewModel |
-| `ui/dashboard/` | 11 | DashboardActivity, DashboardViewModel, BellDashboardViewModel |
+| `ui/courses/` | 22 | CourseDetailFragment, TakeCourseFragment, ProgressViewModel |
+| `ui/dashboard/` | 12 | DashboardActivity, DashboardViewModel, BellDashboardViewModel |
 | `ui/dictionary/` | 1 | DictionaryActivity |
 | `ui/enterprises/` | 6 | EnterprisesViewModel, FinancesFragment, ReportsFragment |
 | `ui/events/` | 4 | EventsDetailFragment, EventsAdapter |
 | `ui/exam/` | 2 | ExamTakingFragment, UserInformationFragment |
-| `ui/feedback/` | 6 | FeedbackFragment, FeedbackDetailActivity, FeedbackListViewModel |
+| `ui/feedback/` | 7 | FeedbackFragment, FeedbackDetailActivity, FeedbackListViewModel |
 | `ui/health/` | 7 | MyHealthFragment, AddExaminationActivity |
 | `ui/life/` | 2 | LifeFragment, LifeAdapter |
 | `ui/maps/` | 1 | OfflineMapsActivity |
@@ -101,39 +102,44 @@ myplanet/
 | `ui/resources/` | 10 | ResourcesFragment, AddResourceFragment, CollectionsFragment |
 | `ui/settings/` | 4 | SettingsActivity, SettingsViewModel, StorageBreakdownFragment, StorageCategoryDetailFragment |
 | `ui/submissions/` | 10 | SubmissionsFragment, SubmissionViewModel |
-| `ui/surveys/` | 4 | SurveyFragment, SendSurveyFragment |
-| `ui/sync/` | 9 | LoginActivity, LoginViewModel, SyncActivity, SyncConfigurationCoordinator, ProcessUserDataActivity |
-| `ui/teams/` | 24 | TeamFragment, TeamDetailFragment, TeamViewModel (largest UI package) |
-| `ui/user/` | 8 | UserProfileFragment, UserProfileViewModel, BecomeMemberActivity |
+| `ui/surveys/` | 5 | SurveyFragment, SendSurveyFragment |
+| `ui/sync/` | 10 | LoginActivity, LoginViewModel, SyncActivity, SyncConfigurationCoordinator, ProcessUserDataActivity |
+| `ui/teams/` | 25 | TeamFragment, TeamDetailFragment, TeamViewModel (largest UI package) |
+| `ui/user/` | 10 | UserProfileFragment, UserProfileViewModel, BecomeMemberActivity |
 | `ui/viewer/` | 4 | ResourceViewerActivity, ResourceViewerFragment, ResourceViewerViewModel, WebViewActivity (all media types render through the shared resource viewer) |
-| `ui/voices/` | 11 | VoicesFragment, NewsViewModel, ReplyActivity |
+| `ui/voices/` | 9 | VoicesFragment, NewsViewModel, ReplyActivity |
 
 ### Critical Files to Understand
 
-1. **`MainApplication.kt`** (~517 lines)
+1. **`MainApplication.kt`** (~530 lines)
    - Application initialization with Hilt DI
    - WorkManager scheduling (AutoSyncWorker, TaskNotificationWorker, NetworkMonitorWorker, RetryQueueWorker)
    - Server reachability checking with alternative URL mapping
    - Theme/locale management, ANR watchdog, uncaught exception handling
    - Location: `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt`
 
-2. **`SyncManager.kt`** (~721 lines)
+2. **`AppDatabase.kt`** (~170 lines) — the Room database
+   - `@Database` with 37 entities, `version = 5`, `@TypeConverters(Converters::class)`
+   - Declares all 30+ DAO accessors; provisioned by `RoomModule` with a **drop-and-resync** (`fallbackToDestructiveMigration`) strategy — no hand-written migrations; data is re-pulled from CouchDB on first launch after a schema bump
+   - Location: `app/src/main/java/org/ole/planet/myplanet/data/room/AppDatabase.kt`
+
+3. **`SyncManager.kt`** (~691 lines)
    - Orchestrates data synchronization with server via StateFlow-based state management (`SyncStatus` Idle/Syncing/Success/Error)
    - Delegates per-table pulls to TransactionSyncManager; notifies UI via RealtimeSyncManager's SharedFlow; batch sizing via AdaptiveBatchProcessor
    - Location: `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt`
 
-3. **`UploadManager.kt`** (~501 lines)
+4. **`UploadManager.kt`** (~616 lines)
    - File and data uploads with batch processing (BATCH_SIZE = 50)
    - Integrates with UploadCoordinator for orchestrated uploads
    - Handles activities, submissions, photos, news uploads
    - Location: `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt`
 
-4. **`TeamsRepositoryImpl.kt`** (~1785 lines — largest file; candidate for splitting by responsibility)
+5. **`TeamsRepositoryImpl.kt`** (~1434 lines — largest file; candidate for splitting by responsibility)
    - Team management with reactive Flow-based queries
    - Team creation, task management, membership roles
    - Location: `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt`
 
-5. **`ApiInterface.kt`** (~65 lines)
+6. **`ApiInterface.kt`** (~65 lines)
    - All REST API endpoint definitions (file downloads/uploads, document CRUD, version checking, health access, AI/chat endpoints)
    - Location: `app/src/main/java/org/ole/planet/myplanet/data/api/ApiInterface.kt`
 
@@ -145,34 +151,33 @@ myplanet/
 
 | Category | Technology | Version | Purpose |
 |----------|-----------|---------|---------|
-| **Language** | Kotlin | 2.4.0 | Primary development language |
-| **Build System** | Gradle | 9.5.1 | Build automation |
-| **Build Plugin** | Android Gradle Plugin | 9.2.1 | Android build tooling |
-| **DI Framework** | Dagger Hilt | 2.60 | Dependency injection |
-| **Database** | Realm | 10.19.0 (Realm-Java, **EOL**) | Local object database |
+| **Language** | Kotlin | 2.4.10 | Primary development language |
+| **Build System** | Gradle | 9.6.1 | Build automation |
+| **Build Plugin** | Android Gradle Plugin | 9.3.1 | Android build tooling |
+| **DI Framework** | Dagger Hilt | 2.60.1 | Dependency injection |
+| **Database** | Room (AndroidX) | 2.8.4 | Local SQLite object database |
 | **Networking** | Retrofit | 3.0.0 | REST API client |
 | **HTTP Client** | OkHttp | 5.4.0 | HTTP communication |
 | **JSON** | Gson | 2.14.0 | JSON serialization |
 | **Async** | Kotlin Coroutines | 1.11.0 | Asynchronous programming |
 | **Background Tasks** | AndroidX Work | 2.11.2 | Background job scheduling |
 | **UI Framework** | Material Design 3 | 1.14.0 | UI components |
-| **Image Loading** | Glide | 5.0.7 | Image loading and caching |
+| **Image Loading** | Glide | 5.0.9 | Image loading and caching |
 | **Media Playback** | Media3 (ExoPlayer) | 1.10.1 | Audio/video playback |
 | **Markdown** | Markwon | 4.6.2 | Markdown rendering |
 | **Maps** | OSMDroid | 6.1.20 | OpenStreetMap integration |
-| **Encryption** | Tink | 1.21.0 | Cryptographic operations |
+| **Encryption** | Tink | 1.23.0 | Cryptographic operations |
 | **Serialization** | Kotlin Serialization | 1.11.0 | Kotlin-native serialization |
 | **CSV** | OpenCSV | 5.12.0 | CSV file parsing |
 
 ### Build Configuration
 
-**Gradle Plugins:**
+**Gradle Plugins** (declared in `app/build.gradle`):
 - `com.android.application`
-- `kotlin-android`
-- `kotlin-kapt` (Annotation processing)
-- `com.google.devtools.ksp` (Symbol processing)
+- `org.jetbrains.kotlin.android` (applied via the AGP toolchain; the `kotlin-android` alias)
+- `kotlin-kapt` (legacy annotation processing — still used by Hilt's `kapt` block)
+- `com.google.devtools.ksp` (Symbol processing — used by **Room**, Glide, and Hilt compilers)
 - `com.google.dagger.hilt.android`
-- `realm-android`
 
 **Compiler Settings:**
 - Java Compatibility: 17
@@ -194,26 +199,28 @@ Repository Layer (23 domains, Interface + Impl pairs, Flow-based queries)
     ↓
 Service Layer (ApiInterface, SyncManager, UploadCoordinator)
     ↓
-Data Sources (Realm local DB, REST API, SharedPreferences)
+Data Sources (Room local DB via DAOs, REST API, SharedPreferences)
 ```
 
 ### 2. Repository Pattern
 
-**Convention**: Each data domain has an interface and implementation
+**Convention**: Each data domain has an interface and implementation. Implementations inject the **Room DAOs** they need (plus `ApiInterface`, `Gson`, dispatchers) — or `DatabaseService` when they need the `AppDatabase`/transaction helpers — and return plain data-class/`@Entity` instances.
 
 ```kotlin
 // Interface
-interface CourseRepository {
-    suspend fun getCourses(): List<RealmMyCourse>
+interface CoursesRepository {
+    suspend fun getCourses(): List<MyCourse>
     suspend fun syncCourses(): Result<Unit>
 }
 
-// Implementation
-class CourseRepositoryImpl @Inject constructor(
+// Implementation — inject the DAO(s) directly
+class CoursesRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
-    private val databaseService: DatabaseService
-) : CourseRepository {
-    override suspend fun getCourses(): List<RealmMyCourse> { ... }
+    private val courseDao: CourseDao,
+    private val databaseService: DatabaseService,
+    private val dispatcherProvider: DispatcherProvider,
+) : CoursesRepository {
+    override suspend fun getCourses(): List<MyCourse> = courseDao.getAll()
     override suspend fun syncCourses(): Result<Unit> { ... }
 }
 ```
@@ -221,32 +228,34 @@ class CourseRepositoryImpl @Inject constructor(
 **All 23 Domain Repositories:**
 Activities, Chat, Community, Configurations, Courses, Download, Events, Feedback, Health, Life, Notifications, Personals, Progress, Ratings, Resources, Retry, Submissions, Surveys, Tags, Teams, User, Voices
 
-**Utility Classes:**
-- `RealmRepository` - Generic base repository
+**Sync-facing interfaces & utilities:**
+- `SyncRepository`, `TeamsSyncRepository`, `UserSyncRepository` - narrow interfaces the sync managers depend on
 - `SubmissionsRepositoryExporter` - Export utilities
+
+There is no generic base repository; each implementation talks to its Room DAO(s) directly.
 
 **Location**: `app/src/main/java/org/ole/planet/myplanet/repository/`
 
 ### 4. Dependency Injection (Hilt)
 
-**Module Structure (6 modules):**
+**Module Structure (8 modules):**
 - `NetworkModule.kt` - Provides Retrofit, OkHttp
-- `DatabaseModule.kt` - Provides Realm instances
+- `RoomModule.kt` - Builds the `AppDatabase` (with `fallbackToDestructiveMigration`) and provides every DAO
+- `DatabaseModule.kt` - Provides `DatabaseService` (wraps `AppDatabase` + dispatcher helpers)
 - `RepositoryModule.kt` - Binds repository interfaces to implementations
 - `ServiceModule.kt` - Provides service dependencies
 - `SharedPreferencesModule.kt` - Provides SharedPreferences
-- `DispatcherModule.kt` - Provides coroutine dispatchers (see also `RealmDispatcher.kt`)
+- `DispatcherModule.kt` - Provides coroutine dispatchers and `@ApplicationScope`
+- `TimeModule.kt` - Provides time/clock abstractions
 
-**Entry Points for Workers (4 entry point files):**
+**Entry Points for Workers (2 entry point files):**
 - `CoreDependenciesEntryPoint`
-- `NetworkDependenciesEntryPoint`
-- `RepositoryDependenciesEntryPoint`
 - `ServiceDependenciesEntryPoint`
 
 ```kotlin
 @EntryPoint
 @InstallIn(SingletonComponent::class)
-interface NetworkDependenciesEntryPoint {
+interface CoreDependenciesEntryPoint {
     fun apiInterface(): ApiInterface
     fun sharedPreferences(): SharedPreferences
 }
@@ -254,7 +263,7 @@ interface NetworkDependenciesEntryPoint {
 
 **Location**: `app/src/main/java/org/ole/planet/myplanet/di/`
 
-### 5. Base Classes for Code Reuse (12 classes)
+### 5. Base Classes for Code Reuse (13 classes)
 
 | Base Class | Purpose |
 |------------|---------|
@@ -282,9 +291,11 @@ interface NetworkDependenciesEntryPoint {
 - `TaskNotificationWorker` - Task deadline notifications
 - `DownloadWorker` - Background file downloads
 - `FreeSpaceWorker` - Disk space monitoring
+- `UserDataWorker` - Background processing of pulled user data
+- `HeavyTableSyncWorker` - Large-table background sync (`services/sync/`)
 - `RetryQueueWorker` - Retries failed operations (`services/retry/`)
 
-**Services and Managers (21 root-level files):**
+**Services and Managers (22 root-level files):**
 - `SyncManager` - Manual synchronization (`services/sync/`)
 - `UploadManager` - File upload coordination (extends FileUploader)
 - `UploadToShelfService` - Shelf upload operations
@@ -303,7 +314,7 @@ interface NetworkDependenciesEntryPoint {
 - `NotificationActionReceiver` - Broadcast receiver for notification actions
 
 **Sync Sub-package (`services/sync/` - 7 files):**
-- `SyncManager` (~721) - Orchestrates sync via StateFlow; the entry point for full syncs
+- `SyncManager` (~691) - Orchestrates sync via StateFlow; the entry point for full syncs
 - `TransactionSyncManager` (~519) - Per-table paginated pulls from CouchDB with checkpoint/resume
 - `LoginSyncManager` (~195) - Sync triggered around the login flow
 - `ServerUrlMapper` (~116) - Maps primary server URLs to alternative/clone URLs
@@ -311,10 +322,11 @@ interface NetworkDependenciesEntryPoint {
 - `AdaptiveBatchProcessor` (~37) - Batch-size tuning used by SyncManager
 - `RealtimeSyncManager` (~27) - SharedFlow of `TableDataUpdate` events; UI collects `dataUpdateFlow` (via `RealtimeSyncHelper`/`collectWhenStarted`)
 
-**Upload Sub-package (`services/upload/` - 7 files):**
+**Upload Sub-package (`services/upload/` - 8 files):**
 - `UploadCoordinator` - Central orchestration for all upload operations with batch processing and retry
 - `UploadConfigs` - Configuration objects for different upload types (NewsActivities, Submissions, Photos, etc.)
-- `UploadConfig` - Generic configuration template with batch size and Realm model binding
+- `UploadConfig` - Generic configuration template with batch size and model binding
+- `RoomUploadConfig` - Room-DAO-backed upload configuration
 - `UploadResult` - Result wrapper with success/failure/empty states
 - `UploadConstants` - Shared upload constants
 - `PhotoUploader`, `AchievementUploader` - Type-specific uploaders
@@ -415,10 +427,10 @@ git push -u origin claude/feature-name-sessionid
    - UI change? → `ui/` package
    - Data model? → `model/` package
    - Business logic? → `repository/` or `services/`
-   - Network API? → `data/ApiInterface.kt`
+   - Network API? → `data/api/ApiInterface.kt`
 
 2. **Create Necessary Components**
-   - Model class (Realm if persistent)
+   - Model class (Room `@Entity` + a DAO if persistent)
    - Repository interface + implementation
    - UI components (Activity/Fragment)
    - Layout XML files
@@ -480,7 +492,8 @@ git push -u origin claude/feature-name-sessionid
 - Adapters: `*Adapter.kt` (e.g., `CourseAdapter.kt`)
 - ViewHolders: `*ViewHolder.kt`
 - Repositories: `*Repository.kt` and `*RepositoryImpl.kt`
-- Models: `Realm*.kt` for Realm objects
+- Room DAOs: `*Dao.kt` in `data/room/dao/` (e.g., `CourseDao.kt`)
+- Models/Entities: plain names in `model/` (e.g., `MyCourse.kt`, `Submission.kt`)
 - Workers: `*Worker.kt` (e.g., `AutoSyncWorker.kt`)
 
 **Layout Naming:**
@@ -489,67 +502,73 @@ git push -u origin claude/feature-name-sessionid
 - List items: `row_*.xml` or `item_*.xml`
 - Dialogs: `dialog_*.xml`
 
-### Realm Database Conventions
+### Room Database Conventions
 
-**Model Classes:**
+> All local persistence goes through Room — the `AppDatabase` (`data/room/AppDatabase.kt`), its DAOs (`data/room/dao/`), and `Converters` (`data/room/Converters.kt`). There is no other local store, so reach for DAOs (or `DatabaseService`), never a raw SQLite or third-party-DB API.
+
+**Entity (model) Classes:**
 ```kotlin
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import androidx.room.ColumnInfo
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
 
-open class RealmMyCourse : RealmObject() {
-    @PrimaryKey
-    var _id: String = ""
-    var courseTitle: String? = null
-    var description: String? = null
-    var createdDate: Long = 0
+@Entity(tableName = "courses", indices = [Index("courseId"), Index("_id")])
+open class MyCourse(
+    @PrimaryKey @JvmField var id: String = "",
+    @ColumnInfo(name = "_id") var _id: String? = null,
+    var courseTitle: String? = null,
+    var description: String? = null,
+    var createdDate: Long = 0,
     // ... other fields
+) {
+    @Ignore var courseSteps: MutableList<CourseStep>? = null   // non-persisted helper
 }
 ```
 
 **Key Points:**
-- All Realm models must extend `RealmObject`
-- Use `open` class modifier
-- Use `var` for all properties (Realm requirement)
-- Primary keys use `@PrimaryKey` annotation
-- Nullable types use `?` suffix
+- Entities live in `model/` and are annotated with `@Entity(tableName = "...")` (e.g. `MyCourse`, `MyLibrary`, `News`, `Submission`, `UserEntity`, `TeamTask`).
+- Use `@PrimaryKey` for the key; add `@Index`/`indices` for frequently queried columns.
+- `@ColumnInfo(name = "_id")` maps the CouchDB `_id`/`_rev` fields to Kotlin-friendly property names.
+- Non-persisted, computed, or in-memory-only fields use `@Ignore` (and often `@Transient`).
+- Multi-valued fields (`List<String>`, nested objects, `Date`) are persisted via `@TypeConverters(Converters::class)` — the converters serialize them to JSON strings with Gson.
 
-**Database Operations — use `DatabaseService` (preferred pattern):**
+**Database Operations — use DAOs (preferred pattern):**
 
-Data access goes through `data/DatabaseService.kt`, **not** raw `Realm` instances in the UI. `DatabaseService` opens a thread-local Realm, always closes it in a `finally`, and confines work to coroutine dispatchers. Repositories **return detached copies** (`copyFromRealm`) so Realm objects never cross threads or leak to the UI — only `DictionaryActivity` still uses the raw API directly, and new code should not.
+Repositories inject the **DAO(s)** they need directly (provided by `RoomModule`) and call `suspend` DAO functions. All DAO methods are `suspend` and run on the IO dispatcher. For work that needs the whole database or an atomic multi-table transaction, inject `DatabaseService` and use its helpers.
 
 ```kotlin
-// Read (suspend) — runs on the IO dispatcher, returns DETACHED copies
-val courses = databaseService.withRealmAsync { realm ->
-    realm.queryList(RealmMyCourse::class.java) {
-        equalTo("userId", userId)
-    } // queryList already applies copyFromRealm
+// DAO definition (data/room/dao/CourseDao.kt)
+@Dao
+interface CourseDao {
+    @Query("SELECT * FROM courses WHERE userId IS :userId")
+    suspend fun getByUserId(userId: String?): List<MyCourse>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(items: List<MyCourse>)
+
+    @Query("DELETE FROM courses WHERE _id = :id")
+    suspend fun deleteById(id: String)
 }
 
-// Single object, detached
-val course = databaseService.withRealmAsync { realm ->
-    realm.findCopyByField(RealmMyCourse::class.java, "_id", courseId)
-}
+// Repository usage — inject the DAO
+val courses = courseDao.getByUserId(userId)
+courseDao.insertAll(courses)
 
-// Write (suspend) — confined to a limited-parallelism Realm dispatcher
-databaseService.executeTransactionAsync { realm ->
-    realm.copyToRealmOrUpdate(course)
-}
-
-// Delete
-databaseService.executeTransactionAsync { realm ->
-    realm.where(RealmMyCourse::class.java)
-        .equalTo("_id", courseId)
-        .findFirst()
-        ?.deleteFromRealm()
+// DatabaseService helpers when you need the AppDatabase / a transaction
+val result = databaseService.withRoomAsync { db -> db.courseDao().getByUserId(userId) }
+databaseService.executeRoomTransactionAsync { db ->
+    db.courseDao().insertAll(courses)
+    db.courseStepDao().insertAll(steps)
 }
 ```
 
 **Rules:**
-- Never return live `RealmObject`/`RealmResults` from a repository — return `copyFromRealm` copies (helpers `queryList` / `findCopyByField` do this for you).
-- Never hold a `Realm` instance as a long-lived field or pass it between threads; let `DatabaseService` manage open/close.
-- Do not call blocking Realm APIs on `Dispatchers.Main`; use the `withRealmAsync` / `executeTransactionAsync` suspend helpers.
+- Prefer injecting the specific DAO into a repository; reach for `DatabaseService.withRoomAsync` / `executeRoomTransactionAsync` only when you need the whole `AppDatabase` or a multi-DAO transaction.
+- DAO methods are `suspend` and confined to IO — do not block the main thread. `DictionaryActivity` also uses a DAO (`DictionaryDao`) now; there is no raw-DB escape hatch.
+- Use `IS` (not `=`) in DAO `@Query` predicates when a `null` argument should match `NULL` rows (`=` never matches `NULL` in SQL).
+- **Migration strategy is drop-and-resync**: `RoomModule` builds the DB with `fallbackToDestructiveMigration(true)`. On any schema change bump `version` in `AppDatabase`; there are **no** hand-written `Migration` objects — data is re-pulled from the Planet/CouchDB server on first launch.
 - Inject `DispatcherProvider` (don't hard-code `Dispatchers.IO`) so tests can substitute deterministic dispatchers.
-- The raw `mRealm.where(...).findAll()` style is **legacy**; prefer the helpers above.
 
 ### Dependency Injection Patterns
 
@@ -686,13 +705,14 @@ try {
 }
 ```
 
-**Realm Errors:**
+**Database (Room) Errors:**
 ```kotlin
 try {
-    mRealm.executeTransaction { realm ->
-        // Database operations
+    databaseService.executeRoomTransactionAsync { db ->
+        // Database operations across one or more DAOs
+        db.courseDao().insertAll(courses)
     }
-} catch (e: RealmException) {
+} catch (e: android.database.sqlite.SQLiteException) {
     Log.e(TAG, "Database error", e)
     showError("Failed to save data")
 }
@@ -742,55 +762,68 @@ val color = ContextCompat.getColor(context, R.color.primary)
 
 ### Adding a New Data Model
 
-1. **Create Model Class**
+1. **Create the Entity**
    ```kotlin
-   // app/src/main/java/org/ole/planet/myplanet/model/RealmMyNewModel.kt
+   // app/src/main/java/org/ole/planet/myplanet/model/MyNewModel.kt
    package org.ole.planet.myplanet.model
 
-   import io.realm.RealmObject
-   import io.realm.annotations.PrimaryKey
+   import androidx.room.Entity
+   import androidx.room.PrimaryKey
 
-   open class RealmMyNewModel : RealmObject() {
-       @PrimaryKey
-       var _id: String = ""
-       var title: String? = null
-       var createdDate: Long = 0
+   @Entity(tableName = "my_new_models")
+   open class MyNewModel(
+       @PrimaryKey var _id: String = "",
+       var title: String? = null,
+       var createdDate: Long = 0,
+   )
+   ```
 
-       companion object {
-           fun insert(realm: Realm, data: JsonObject) {
-               val model = realm.createObject(RealmMyNewModel::class.java, data.get("_id").asString)
-               model.title = data.get("title")?.asString
-               model.createdDate = System.currentTimeMillis()
-           }
-       }
+2. **Create a DAO**
+   ```kotlin
+   // app/src/main/java/org/ole/planet/myplanet/data/room/dao/MyNewModelDao.kt
+   @Dao
+   interface MyNewModelDao {
+       @Query("SELECT * FROM my_new_models")
+       suspend fun getAll(): List<MyNewModel>
+
+       @Insert(onConflict = OnConflictStrategy.REPLACE)
+       suspend fun insertAll(items: List<MyNewModel>)
    }
    ```
 
-2. **Update API Interface**
+3. **Register the entity + DAO in `AppDatabase`** and provide the DAO in `RoomModule`
    ```kotlin
-   // app/src/main/java/org/ole/planet/myplanet/data/ApiInterface.kt
+   // AppDatabase.kt: add MyNewModel::class to @Database(entities = [...]) and BUMP `version`
+   abstract fun myNewModelDao(): MyNewModelDao
+   // RoomModule.kt
+   @Provides fun provideMyNewModelDao(db: AppDatabase) = db.myNewModelDao()
+   ```
+
+4. **Update API Interface**
+   ```kotlin
+   // app/src/main/java/org/ole/planet/myplanet/data/api/ApiInterface.kt
    @GET("myendpoint")
    suspend fun getMyNewModels(): Response<List<JsonObject>>
    ```
 
-3. **Create Repository**
+5. **Create Repository**
    ```kotlin
    // Interface
    interface MyNewModelRepository {
-       suspend fun getModels(): List<RealmMyNewModel>
+       suspend fun getModels(): List<MyNewModel>
        suspend fun syncModels(): Result<Unit>
    }
 
-   // Implementation
+   // Implementation — inject the DAO
    class MyNewModelRepositoryImpl @Inject constructor(
        private val apiInterface: ApiInterface,
-       private val databaseService: DatabaseService
+       private val myNewModelDao: MyNewModelDao,
    ) : MyNewModelRepository {
        // Implementation
    }
    ```
 
-4. **Register in DI Module**
+6. **Register the repository in DI**
    ```kotlin
    // app/src/main/java/org/ole/planet/myplanet/di/RepositoryModule.kt
    @Binds
@@ -810,7 +843,7 @@ val color = ContextCompat.getColor(context, R.color.primary)
 
 1. **Update ApiInterface**
    ```kotlin
-   // app/src/main/java/org/ole/planet/myplanet/data/ApiInterface.kt
+   // app/src/main/java/org/ole/planet/myplanet/data/api/ApiInterface.kt
    @POST("api/endpoint")
    suspend fun postData(
        @Body data: JsonObject,
@@ -837,8 +870,8 @@ val color = ContextCompat.getColor(context, R.color.primary)
 
 ### Implementing Offline Sync
 
-1. **Download**: Fetch from API, save to Realm via `executeTransaction` with model `insert()` method
-2. **Upload**: Query unsynced items (`equalTo("synced", false)`), POST each to server, mark synced on success
+1. **Download**: Fetch from API, upsert into Room via a DAO `@Insert(onConflict = REPLACE)` (see `TransactionSyncManager` for the paginated per-table pulls)
+2. **Upload**: Query unsynced items via a DAO (`... WHERE synced = 0`), POST each to server through `UploadCoordinator`, mark synced on success
 
 ### Adding Background Work
 
@@ -850,9 +883,9 @@ val color = ContextCompat.getColor(context, R.color.primary)
 ## Testing Guidelines
 
 ### Current State
-- **A real unit-test suite exists**: 140 unit-test files in `app/src/test/` + 2 instrumented tests in `app/src/androidTest/` (142 test files total).
-- **Stack**: JUnit4, **MockK** (`mockk` / `mockk-android`), **Robolectric**, `kotlinx-coroutines-test`, AndroidX Test (`core`/`ext`/`runner`/`arch-core-testing`), and **Hilt testing** (`hilt-android-testing` with `kspTest`). Dependencies are declared in `app/build.gradle` (test block) and `gradle/libs.versions.toml`.
-- **Coverage**: nearly all 23 repositories, the sync managers (`services/sync/`), upload/retry services, most ViewModels, many `utils/`, several Realm models, DI modules, and the API/auth layer.
+- **A real unit-test suite exists**: 166 unit-test files in `app/src/test/`. There is currently **no** `app/src/androidTest/` (instrumented) source set.
+- **Stack**: JUnit4, **MockK** (`mockk` / `mockk-android`), **Robolectric**, `kotlinx-coroutines-test`, AndroidX Test (`core`/`ext`/`runner`/`arch-core-testing`), **Room testing** (`room-testing`), and **Hilt testing** (`hilt-android-testing` with `kspTest`). Dependencies are declared in `app/build.gradle` (test block) and `gradle/libs.versions.toml`.
+- **Coverage**: nearly all 23 repositories, the sync managers (`services/sync/`), upload/retry services, most ViewModels, many `utils/`, several Room entities/DAOs, DI modules, and the API/auth layer.
 - **Shared test infra**: `MainDispatcherRule`, `TestDispatcherProvider` (inject deterministic dispatchers — production code uses an injectable `DispatcherProvider`, so avoid hard-coding `Dispatchers.*` in new code).
 - **CI enforcement**: `.github/workflows/test.yml` runs `./gradlew testDefaultDebugUnitTest` on every push and fails the build on any test failure. (Instrumented tests are **not** run in CI.)
 
@@ -867,10 +900,9 @@ val color = ContextCompat.getColor(context, R.color.primary)
 
 # A single test class
 ./gradlew testDefaultDebugUnitTest --tests "org.ole.planet.myplanet.repository.CoursesRepositoryImplTest"
-
-# Instrumented tests (needs a connected device/emulator)
-./gradlew connectedDefaultDebugAndroidTest
 ```
+
+> There is no instrumented (`androidTest`) source set at the moment, so `connectedDefaultDebugAndroidTest` has nothing to run. All tests are JVM unit tests.
 
 ### Writing Tests (conventions used in this repo)
 
@@ -880,12 +912,12 @@ class CoursesRepositoryImplTest {
     @get:Rule val mainDispatcherRule = MainDispatcherRule()
 
     private val apiInterface: ApiInterface = mockk(relaxed = true)
-    private val databaseService: DatabaseService = mockk(relaxed = true)
+    private val courseDao: CourseDao = mockk(relaxed = true)
 
     @Test
-    fun `getCourses returns detached copies`() = runTest {
-        val repository = CoursesRepositoryImpl(apiInterface, databaseService, TestDispatcherProvider())
-        coEvery { databaseService.withRealmAsync<Any>(any()) } returns /* ... */
+    fun `getCourses returns dao results`() = runTest {
+        val repository = CoursesRepositoryImpl(apiInterface, courseDao, TestDispatcherProvider())
+        coEvery { courseDao.getByUserId(any()) } returns listOf(MyCourse(id = "1"))
         val result = repository.getCourses()
         assertTrue(result.isNotEmpty())
     }
@@ -1028,12 +1060,12 @@ rm -rf .gradle/
 ./gradlew build
 ```
 
-**Issue: Realm schema migration errors**
+**Issue: Room schema mismatch / "Room cannot verify the data integrity"**
 ```kotlin
-// Solution: Increment schema version or delete and rebuild
-val config = RealmConfiguration.Builder()
-    .deleteRealmIfMigrationNeeded()  // Development only!
-    .build()
+// The app uses a drop-and-resync strategy: bump `version` in AppDatabase after any
+// entity change. RoomModule already builds with fallbackToDestructiveMigration(true),
+// so the local DB is rebuilt and re-pulled from the server — no hand-written Migration needed.
+@Database(entities = [ /* ... */ ], version = /* increment this */ 6)
 ```
 
 **Issue: Hilt dependency not found**
@@ -1055,14 +1087,13 @@ val loggingInterceptor = HttpLoggingInterceptor().apply {
 }
 ```
 
-**Issue: Realm database locked**
+**Issue: Blocking the main thread on DB access**
 ```kotlin
-// Solution: Ensure realm is closed properly
-override fun onDestroy() {
-    super.onDestroy()
-    if (::mRealm.isInitialized && !mRealm.isClosed) {
-        mRealm.close()
-    }
+// Room DAO methods in this project are all `suspend` and run on IO, so call them
+// from a coroutine — never from the main thread synchronously.
+viewLifecycleOwner.lifecycleScope.launch {
+    val courses = courseDao.getByUserId(userId)   // suspends, runs off the main thread
+    // update UI here
 }
 ```
 
@@ -1114,7 +1145,7 @@ git rebase --continue
 - [myPlanet Manual](https://open-learning-exchange.github.io/#!pages/manual/myplanet/overview.md)
 - [Android Developer Documentation](https://developer.android.com/)
 - [Kotlin Documentation](https://kotlinlang.org/docs/home.html)
-- [Realm Documentation](https://www.mongodb.com/docs/realm/)
+- [Room Documentation](https://developer.android.com/training/data-storage/room)
 - [Hilt Documentation](https://developer.android.com/training/dependency-injection/hilt-android)
 
 ### Community
@@ -1125,32 +1156,33 @@ git rebase --continue
 
 | Purpose | File Path | Line Count |
 |---------|-----------|------------|
-| Main entry point | `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt` | ~517 |
+| Main entry point | `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt` | ~530 |
 | REST API endpoints | `app/src/main/java/org/ole/planet/myplanet/data/api/ApiInterface.kt` | ~65 |
-| Sync orchestration | `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt` | ~721 |
-| Upload handling | `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt` | ~501 |
-| Upload orchestration | `app/src/main/java/org/ole/planet/myplanet/services/upload/UploadCoordinator.kt` | ~306 |
-| Team management | `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt` | ~1785 |
-| Realm abstraction | `app/src/main/java/org/ole/planet/myplanet/data/DatabaseService.kt` | ~112 |
-| Build configuration | `app/build.gradle` | ~232 |
-| Dependency versions | `gradle/libs.versions.toml` | ~130 |
+| Room database | `app/src/main/java/org/ole/planet/myplanet/data/room/AppDatabase.kt` | ~170 |
+| Sync orchestration | `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt` | ~691 |
+| Upload handling | `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt` | ~616 |
+| Upload orchestration | `app/src/main/java/org/ole/planet/myplanet/services/upload/UploadCoordinator.kt` | ~478 |
+| Team management | `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt` | ~1434 |
+| DB service wrapper | `app/src/main/java/org/ole/planet/myplanet/data/DatabaseService.kt` | ~33 |
+| Build configuration | `app/build.gradle` | ~230 |
+| Dependency versions | `gradle/libs.versions.toml` | ~131 |
 
 ---
 
 ## Codebase Inventory Summary
 
-### Source Files (456 total Kotlin files in `app/src/main/java`) + 142 test files (140 in `app/src/test`, 2 in `app/src/androidTest`)
+### Source Files (502 total Kotlin files in `app/src/main/java`) + 166 unit-test files in `app/src/test` (no `app/src/androidTest` source set)
 
 | Component | Files | Purpose |
 |-----------|-------|---------|
-| `model/` | 87 | Realm database models + DTOs |
-| `repository/` | 50 | Data access abstraction (23+ domain Interface+Impl pairs + utilities) |
-| `ui/` | 174 | User interface across 28 feature packages |
-| `services/` | 37 | Background tasks & managers (21 root-level + sync/upload/retry sub-packages) |
-| `di/` | 13 | Dependency injection (modules + entry points + RealmDispatcher) |
-| `base/` | 12 | Reusable base classes |
+| `model/` | 92 | Room `@Entity` models + DTOs |
+| `repository/` | 50 | Data access abstraction (23 domain Interface+Impl pairs + sync interfaces + utilities) |
+| `ui/` | 183 | User interface across 28 feature packages |
+| `services/` | 39 | Background tasks & managers (22 root-level + sync/upload/retry sub-packages) |
+| `di/` | 10 | Dependency injection (8 modules + 2 entry points) |
+| `base/` | 13 | Reusable base classes |
 | `callback/` | 28 | Event listeners and interfaces |
-| `data/` | 8 | Data services, API, auth |
+| `data/` | 40 | Data services, Room (AppDatabase, Converters, 30 DAOs, entity/), API, auth |
 | `utils/` | 46 | Helper utilities |
 | Root | 1 | MainApplication.kt |
 
@@ -1158,7 +1190,7 @@ git rebase --continue
 
 | Category | Count |
 |----------|-------|
-| Layout files (main) | 186 |
+| Layout files (main) | 181 |
 | Translation languages | 5 (ar, es, fr, ne, so) |
 | Menu files | 2 |
 | XML config files | 3 |
@@ -1176,6 +1208,6 @@ Note: SYSTEM_ALERT_WINDOW is **not** declared (removed at some point; older docs
 
 ---
 
-**Last Updated**: 2026-07-07
-**Version**: 0.59.69
+**Last Updated**: 2026-08-02
+**Version**: 0.62.97
 **Maintainer**: Open Learning Exchange
