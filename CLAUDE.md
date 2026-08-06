@@ -17,6 +17,26 @@
 - **default**: Full-featured version
 - **lite**: Lightweight version with reduced features
 
+### Flutter port (in progress)
+A Flutter/Dart port lives in **`flutter/`**, alongside — not replacing — the Kotlin app. `app/`
+is unchanged and remains the shipping app. **27 of 28 UI packages** have a screen, plus a durable
+write-back path. The first vertical slice ran server configuration → login → resources list;
+since then the dashboard shell, courses, calendar, first-launch onboarding, the offline user
+profile, appearance settings, the dictionary, notifications, My life, references, personals, and
+ratings, offline submissions with question-aware answer review, events/meetups, individual
+surveys, teams, chat, feedback, community, graded course exams, and the resource viewer with
+its download path, encrypted health records, the chat and feedback sync-in directions, chat upload, and member registration have
+landed. Everything below
+in this document describes the Kotlin app and still applies to it.
+
+See **`docs/kotlin-to-flutter-migration.md`** for scope, the technology mapping (Hilt→Riverpod,
+Room→Drift, Retrofit→Dio, strings.xml→.arb), and the open problems. The `WorkManager` gap is
+resolved for write-back: `RetryQueue`'s durability was always the SQLite table rather than the
+worker, so the queue ported directly and only the drain trigger needed replacing (`outbox` table
++ `OutboxDrainer`, drained on app resume). What remains open is background work with no user
+present — `AutoSyncWorker`'s timed sync and `TaskNotificationWorker`'s deadline notifications
+genuinely need OS scheduling.
+
 ---
 
 ## Codebase Structure

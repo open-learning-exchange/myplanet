@@ -1,0 +1,441 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../core/config/server_config.dart';
+import '../core/prefs/planet_prefs.dart';
+import '../core/sync/server_url_mapper.dart';
+import '../core/utils/url_utils.dart';
+import '../data/api/planet_api.dart';
+import '../data/local/app_database.dart';
+import '../repository/chat_repository.dart';
+import '../repository/chat_repository_impl.dart';
+import '../repository/chat_uploader.dart';
+import '../repository/configurations_repository.dart';
+import '../repository/courses_repository.dart';
+import '../repository/dictionary_repository.dart';
+import '../repository/events_repository.dart';
+import '../repository/events_uploader.dart';
+import '../repository/feedback_repository.dart';
+import '../repository/feedback_repository_impl.dart';
+import '../repository/health_repository.dart';
+import '../repository/health_uploader.dart';
+import '../repository/ratings_uploader.dart';
+import '../repository/notifications_repository.dart';
+import '../repository/outbox_drainer.dart';
+import '../repository/outbox_repository.dart';
+import '../repository/personals_uploader.dart';
+import '../repository/personals_repository.dart';
+import '../repository/ratings_repository.dart';
+import '../repository/life_repository.dart';
+import '../repository/resource_downloader.dart';
+import '../repository/resources_repository.dart';
+import '../repository/shelf_repository.dart';
+import '../repository/user_repository.dart';
+import '../repository/voices_repository.dart';
+import '../repository/voices_uploader.dart';
+import '../repository/submissions_repository.dart';
+import '../repository/submissions_uploader.dart';
+import '../repository/submissions_exporter.dart';
+import '../repository/surveys_repository.dart';
+import '../repository/teams_repository.dart';
+import '../repository/team_tasks_repository.dart';
+import '../repository/team_tasks_uploader.dart';
+import '../repository/feedback_uploader.dart';
+import '../repository/teams_uploader.dart';
+
+/// The dependency graph, replacing the Hilt modules in `di/`.
+///
+/// Riverpod providers cover what `@Module`/`@Provides`/`@Binds` did, with two
+/// practical differences: the graph is resolved at runtime rather than by an
+/// annotation processor (no kapt/KSP step), and there is no need for the
+/// `@EntryPoint` escape hatches `di/` defines for Workers — any code holding a
+/// `Ref` or `ProviderContainer` can read a provider directly.
+
+/// Overridden in `main()` once [SharedPreferences] has loaded, the same way
+/// `SharedPreferencesModule` provides a ready instance.
+final planetPrefsProvider = Provider<PlanetPrefs>(
+  (ref) => throw UnimplementedError('planetPrefsProvider must be overridden'),
+);
+
+/// Replaces `DatabaseModule` / `DatabaseService`.
+final appDatabaseProvider = Provider<AppDatabase>((ref) {
+  final database = AppDatabase.open();
+  ref.onDispose(database.close);
+  return database;
+});
+
+final userDaoProvider = Provider<UserDao>(
+  (ref) => ref.watch(appDatabaseProvider).userDao,
+);
+
+final myLibraryDaoProvider = Provider<MyLibraryDao>(
+  (ref) => ref.watch(appDatabaseProvider).myLibraryDao,
+);
+
+final courseDaoProvider = Provider<CourseDao>(
+  (ref) => ref.watch(appDatabaseProvider).courseDao,
+);
+
+final removedLogDaoProvider = Provider<RemovedLogDao>(
+  (ref) => ref.watch(appDatabaseProvider).removedLogDao,
+);
+
+final dictionaryDaoProvider = Provider<DictionaryDao>(
+  (ref) => ref.watch(appDatabaseProvider).dictionaryDao,
+);
+
+final notificationDaoProvider = Provider<NotificationDao>(
+  (ref) => ref.watch(appDatabaseProvider).notificationDao,
+);
+
+final meetupDaoProvider = Provider<MeetupDao>(
+  (ref) => ref.watch(appDatabaseProvider).meetupDao,
+);
+
+final teamDaoProvider = Provider<TeamDao>(
+  (ref) => ref.watch(appDatabaseProvider).teamDao,
+);
+
+final teamsRepositoryProvider = Provider<TeamsRepository>(
+  (ref) =>
+      TeamsRepository(ref.watch(planetApiProvider), ref.watch(teamDaoProvider)),
+);
+final teamTaskDaoProvider = Provider<TeamTaskDao>(
+  (ref) => ref.watch(appDatabaseProvider).teamTaskDao,
+);
+final teamTasksRepositoryProvider = Provider<TeamTasksRepository>(
+  (ref) => TeamTasksRepository(ref.watch(teamTaskDaoProvider)),
+);
+final teamTasksUploaderProvider = Provider<TeamTasksUploader>(
+  (ref) => TeamTasksUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(teamTasksRepositoryProvider),
+    ref.watch(outboxRepositoryProvider),
+  ),
+);
+
+final teamsUploaderProvider = Provider<TeamsUploader>(
+  (ref) =>
+      TeamsUploader(ref.watch(planetApiProvider), ref.watch(teamDaoProvider)),
+);
+
+final eventsRepositoryProvider = Provider<EventsRepository>(
+  (ref) => EventsRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(meetupDaoProvider),
+  ),
+);
+
+final eventsUploaderProvider = Provider<EventsUploader>(
+  (ref) => EventsUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(eventsRepositoryProvider),
+    ref.watch(outboxRepositoryProvider),
+  ),
+);
+
+final myLifeDaoProvider = Provider<MyLifeDao>(
+  (ref) => ref.watch(appDatabaseProvider).myLifeDao,
+);
+
+final personalDaoProvider = Provider<PersonalDao>(
+  (ref) => ref.watch(appDatabaseProvider).personalDao,
+);
+
+final ratingDaoProvider = Provider<RatingDao>(
+  (ref) => ref.watch(appDatabaseProvider).ratingDao,
+);
+
+final submissionDaoProvider = Provider<SubmissionDao>(
+  (ref) => ref.watch(appDatabaseProvider).submissionDao,
+);
+
+final surveyDaoProvider = Provider<SurveyDao>(
+  (ref) => ref.watch(appDatabaseProvider).surveyDao,
+);
+
+final examDaoProvider = Provider<ExamDao>(
+  (ref) => ref.watch(appDatabaseProvider).examDao,
+);
+
+final resourceDownloaderProvider = Provider<ResourceDownloader>(
+  (ref) => ResourceDownloader(
+    ref.watch(planetApiProvider),
+    ref.watch(myLibraryDaoProvider),
+  ),
+);
+
+final chatDaoProvider = Provider<ChatDao>(
+  (ref) => ref.watch(appDatabaseProvider).chatDao,
+);
+
+final chatRepositoryProvider = Provider<ChatRepository>((ref) {
+  final api = ref.watch(planetApiProvider);
+  final dao = ref.watch(chatDaoProvider);
+  final config = ref.watch(serverConfigProvider);
+  final serverUrl = config == null ? '' : UrlUtils.credentialFreeDbUrl(config);
+  return ChatRepositoryImpl(planetApi: api, chatDao: dao, serverUrl: serverUrl);
+});
+
+final chatUploaderProvider = Provider<ChatUploader>(
+  (ref) => ChatUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(chatDaoProvider),
+    ref.watch(outboxRepositoryProvider),
+  ),
+);
+
+final feedbackDaoProvider = Provider<FeedbackDao>(
+  (ref) => ref.watch(appDatabaseProvider).feedbackDao,
+);
+
+final feedbackUploaderProvider = Provider<FeedbackUploader>(
+  (ref) => FeedbackUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(feedbackRepositoryProvider),
+    ref.watch(feedbackDaoProvider),
+    ref.watch(outboxRepositoryProvider),
+  ),
+);
+
+final feedbackRepositoryProvider = Provider<FeedbackRepository>((ref) {
+  final dao = ref.watch(feedbackDaoProvider);
+  final api = ref.watch(planetApiProvider);
+  return FeedbackRepositoryImpl(feedbackDao: dao, planetApi: api);
+});
+
+final submissionsRepositoryProvider = Provider<SubmissionsRepository>(
+  (ref) => SubmissionsRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(submissionDaoProvider),
+  ),
+);
+
+final surveysRepositoryProvider = Provider<SurveysRepository>(
+  (ref) => SurveysRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(surveyDaoProvider),
+    ref.watch(examDaoProvider),
+    ref.watch(submissionsRepositoryProvider),
+    urlMapper: ref.watch(serverUrlMapperProvider),
+  ),
+);
+
+final submissionsUploaderProvider = Provider<SubmissionsUploader>(
+  (ref) => SubmissionsUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(submissionsRepositoryProvider),
+    ref.watch(outboxRepositoryProvider),
+  ),
+);
+
+final submissionsExporterProvider = Provider<SubmissionsExporter>(
+  (ref) => SubmissionsExporter(ref.watch(submissionsRepositoryProvider)),
+);
+
+/// Replaces `NetworkModule`.
+final planetApiProvider = Provider<PlanetApi>(
+  (ref) => PlanetApi.withDefaults(),
+);
+
+final serverUrlMapperProvider = Provider<ServerUrlMapper>(
+  (ref) => ServerUrlMapper(),
+);
+
+/// Replaces `RepositoryModule`'s `@Binds` declarations.
+final configurationsRepositoryProvider = Provider<ConfigurationsRepository>(
+  (ref) => ConfigurationsRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(serverUrlMapperProvider),
+  ),
+);
+
+final userRepositoryProvider = Provider<UserRepository>(
+  (ref) =>
+      UserRepository(ref.watch(planetApiProvider), ref.watch(userDaoProvider)),
+);
+
+final resourcesRepositoryProvider = Provider<ResourcesRepository>(
+  (ref) => ResourcesRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(myLibraryDaoProvider),
+  ),
+);
+
+final dictionaryRepositoryProvider = Provider<DictionaryRepository>(
+  (ref) => DictionaryRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(dictionaryDaoProvider),
+  ),
+);
+
+final notificationsRepositoryProvider = Provider<NotificationsRepository>(
+  (ref) => NotificationsRepository(ref.watch(notificationDaoProvider)),
+);
+
+final lifeRepositoryProvider = Provider<LifeRepository>(
+  (ref) => LifeRepository(ref.watch(myLifeDaoProvider)),
+);
+
+final personalsRepositoryProvider = Provider<PersonalsRepository>(
+  (ref) => PersonalsRepository(ref.watch(personalDaoProvider)),
+);
+
+final ratingsRepositoryProvider = Provider<RatingsRepository>(
+  (ref) => RatingsRepository(ref.watch(ratingDaoProvider)),
+);
+
+final coursesRepositoryProvider = Provider<CoursesRepository>(
+  (ref) => CoursesRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(courseDaoProvider),
+    ref.watch(removedLogDaoProvider),
+  ),
+);
+
+final newsDaoProvider = Provider<NewsDao>(
+  (ref) => ref.watch(appDatabaseProvider).newsDao,
+);
+
+final voicesRepositoryProvider = Provider<VoicesRepository>(
+  (ref) => VoicesRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(newsDaoProvider),
+  ),
+);
+
+final voicesUploaderProvider = Provider<VoicesUploader>(
+  (ref) => VoicesUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(voicesRepositoryProvider),
+    ref.watch(outboxRepositoryProvider),
+  ),
+);
+
+final outboxDaoProvider = Provider<OutboxDao>(
+  (ref) => ref.watch(appDatabaseProvider).outboxDao,
+);
+
+final outboxRepositoryProvider = Provider<OutboxRepository>(
+  (ref) => OutboxRepository(ref.watch(outboxDaoProvider)),
+);
+
+final personalsUploaderProvider = Provider<PersonalsUploader>(
+  (ref) => PersonalsUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(personalsRepositoryProvider),
+    ref.watch(outboxRepositoryProvider),
+  ),
+);
+
+/// Replaces `RetryQueueWorker`'s WorkManager registration in `MainApplication`.
+///
+/// Handlers are registered per `uploadType`; anything without one is replayed
+/// verbatim from the stored payload. The credential is *not* held here — it is
+/// passed to `drain()` per call, so it cannot go stale against the current
+/// [serverConfigProvider] or linger after the config is cleared.
+final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
+  return OutboxDrainer(
+    ref.watch(planetApiProvider),
+    ref.watch(outboxRepositoryProvider),
+    handlers: {
+      PersonalsUploader.type: ref.watch(personalsUploaderProvider).handler,
+      SubmissionsUploader.type: ref.watch(submissionsUploaderProvider).handler,
+      EventsUploader.type: ref.watch(eventsUploaderProvider).handler,
+      VoicesUploader.type: ref.watch(voicesUploaderProvider).handler,
+      TeamTasksUploader.type: ref.watch(teamTasksUploaderProvider).handler,
+      for (final type in TeamsUploader.types)
+        type: ref.watch(teamsUploaderProvider).handler,
+      FeedbackUploader.type: ref.watch(feedbackUploaderProvider).handler,
+      HealthUploader.type: ref.watch(healthUploaderProvider).handler,
+      RatingsUploader.type: ref.watch(ratingsUploaderProvider).handler,
+      ChatUploader.type: ref.watch(chatUploaderProvider).handler,
+    },
+  );
+});
+
+/// Number of writes waiting to reach the server, for the UI to surface.
+final pendingUploadCountProvider = StreamProvider<int>(
+  (ref) => ref.watch(outboxRepositoryProvider).watchPendingCount(),
+);
+
+final shelfRepositoryProvider = Provider<ShelfRepository>(
+  (ref) => ShelfRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(courseDaoProvider),
+    ref.watch(myLibraryDaoProvider),
+    ref.watch(removedLogDaoProvider),
+    ref.watch(meetupDaoProvider),
+  ),
+);
+
+/// The configured server, or `null` before the first successful handshake.
+/// Drives the router's redirect, so persisting a config navigates the app.
+class ServerConfigNotifier extends Notifier<ServerConfig?> {
+  @override
+  ServerConfig? build() => ref.watch(planetPrefsProvider).serverConfig;
+
+  Future<void> save(ServerConfig config) async {
+    await ref.read(planetPrefsProvider).saveServerConfig(config);
+    state = config;
+  }
+
+  Future<void> clear() async {
+    // Must reach storage, not just state: `build()` reads the persisted config
+    // back on the next cold start.
+    await ref.read(planetPrefsProvider).clearServerConfig();
+    state = null;
+  }
+}
+
+final serverConfigProvider =
+    NotifierProvider<ServerConfigNotifier, ServerConfig?>(
+      ServerConfigNotifier.new,
+    );
+
+/// First-launch gate used by the declarative router instead of launching and
+/// finishing `OnboardingActivity` imperatively.
+class OnboardingNotifier extends Notifier<bool> {
+  @override
+  bool build() => ref.watch(planetPrefsProvider).onboardingComplete;
+
+  Future<void> complete() async {
+    await ref.read(planetPrefsProvider).setOnboardingComplete();
+    state = true;
+  }
+}
+
+final onboardingProvider = NotifierProvider<OnboardingNotifier, bool>(
+  OnboardingNotifier.new,
+);
+
+/// Health examination DAO provider.
+final healthExaminationDaoProvider = Provider<HealthExaminationDao>(
+  (ref) => ref.watch(appDatabaseProvider).healthExaminationDao,
+);
+
+/// Health repository provider.
+final healthRepositoryProvider = Provider<HealthRepository>((ref) {
+  final api = ref.watch(planetApiProvider);
+  final dao = ref.watch(healthExaminationDaoProvider);
+  final config = ref.watch(serverConfigProvider);
+  return HealthRepository(api, dao, ref.watch(userDaoProvider), config: config);
+});
+
+final ratingsUploaderProvider = Provider<RatingsUploader>(
+  (ref) => RatingsUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(ratingsRepositoryProvider),
+    ref.watch(appDatabaseProvider).ratingDao,
+    ref.watch(userDaoProvider),
+    ref.watch(outboxRepositoryProvider),
+  ),
+);
+
+final healthUploaderProvider = Provider<HealthUploader>(
+  (ref) => HealthUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(healthRepositoryProvider),
+    ref.watch(healthExaminationDaoProvider),
+    ref.watch(outboxRepositoryProvider),
+  ),
+);
