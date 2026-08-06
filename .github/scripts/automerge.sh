@@ -32,11 +32,7 @@ RUN_APPEAR_TIMEOUT_SEC=300
 POLL_INTERVAL_SEC=20
 PR_SETTLE_TIMEOUT_SEC=120
 
-# Dispatched from $BASE, this drain's own run carries the base SHA as its
-# head_sha -- so the step 4 base wait would count it as pending and wait on
-# itself until the timeout, and an earlier drain on that same SHA would read as
-# a red base. Never judge $BASE by runs of this workflow.
-self_ref="${GITHUB_WORKFLOW_REF:-}"       # owner/repo/.github/workflows/x.yml@ref
+self_ref="${GITHUB_WORKFLOW_REF:-}"
 self_ref="${self_ref%@*}"
 SELF_WORKFLOW_PATH="${self_ref#*/*/}"
 SELF_WORKFLOW_PATH="${SELF_WORKFLOW_PATH:-.github/workflows/automerge.yml}"
