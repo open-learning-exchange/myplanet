@@ -123,7 +123,7 @@ class ChatViewModel @Inject constructor(
                     precomputedChats = buildPrecomputedChats(allChats)
                 }
 
-                ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets)
+                ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets, chatRepository.extractSharedViewInIds(newsMessages))
             }
 
             result?.let { data ->

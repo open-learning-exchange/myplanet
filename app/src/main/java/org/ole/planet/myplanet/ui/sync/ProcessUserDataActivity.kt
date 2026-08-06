@@ -16,10 +16,10 @@ import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.net.toUri
-import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -39,6 +39,8 @@ import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.showAlert
 import org.ole.planet.myplanet.utils.DialogUtils.showError
 import org.ole.planet.myplanet.utils.FileUtils.installApk
+import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessListener {
@@ -148,11 +150,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         prefData.setUrlUser(urlUser)
         prefData.setUrlPwd(urlPwd)
 
-        if (!couchdbURL.endsWith("db")) {
-            couchdbURL += "/db"
-        }
-
-        return couchdbURL
+        return UrlUtils.dbUrl(couchdbURL)
     }
 
     fun isUrlValid(url: String): Boolean {
@@ -192,38 +190,38 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     private fun uploadLoginData() {
-        val liveData = syncRepository.uploadLoginData()
+        val flow = syncRepository.uploadLoginData()
 
-        liveData.observe(this, object : androidx.lifecycle.Observer<SyncUiState> {
-            override fun onChanged(value: SyncUiState) {
-                if (value is SyncUiState.Success) {
-                    liveData.removeObserver(this)
-                    onSuccess(value.message)
-                } else if (value is SyncUiState.Error) {
-                    liveData.removeObserver(this)
-                }
+        collectWhenStarted(flow.takeWhile { value ->
+            if (value is SyncUiState.Success) {
+                onSuccess(value.message)
+                false
+            } else if (value is SyncUiState.Error) {
+                false
+            } else {
+                true
             }
-        })
+        }) {}
     }
 
     private fun uploadBulkData() {
         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        val liveData = syncRepository.uploadBulkData()
+        val flow = syncRepository.uploadBulkData()
 
-        liveData.observe(this, object : androidx.lifecycle.Observer<SyncUiState> {
-            override fun onChanged(value: SyncUiState) {
-                if (value is SyncUiState.Success) {
-                    liveData.removeObserver(this)
-                    safelyDismissDialog()
-                    Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
-                } else if (value is SyncUiState.Error) {
-                    liveData.removeObserver(this)
-                    safelyDismissDialog()
-                }
+        collectWhenStarted(flow.takeWhile { value ->
+            if (value is SyncUiState.Success) {
+                safelyDismissDialog()
+                Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
+                false
+            } else if (value is SyncUiState.Error) {
+                safelyDismissDialog()
+                false
+            } else {
+                true
             }
-        })
+        }) {}
     }
 
     protected fun hideKeyboard(view: View?) {

@@ -72,7 +72,7 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
     override suspend fun getAdapter(): ListAdapter<*, *> {
         adapterMutex.withLock {
             if (adapter == null) {
-                val userProfileModel = profileDbHandler.getUserModel()
+                val userProfileModel = userRepository.getUserModel()
                 adapter = SurveysAdapter(
                     requireActivity(),
                     userProfileModel?.id,

@@ -24,7 +24,6 @@ import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.teams.TeamsSelectionAdapter
-import org.ole.planet.myplanet.utils.ChatHistoryUtils.extractSharedViewInIds
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 
@@ -33,6 +32,7 @@ class ChatHistoryAdapter(
     chatHistoryList: List<ChatHistory>,
     private var currentUser: UserEntity?,
     private var newsList: List<News>,
+    private var cachedSharedViewInIds: Map<String, Set<String>>,
     private var shareTargets: ChatShareTargets,
     private val onShareChat: (HashMap<String?, String>, ChatHistory) -> Unit,
 ) : ListAdapter<ChatHistory, ChatHistoryAdapter.ViewHolderChat>(
@@ -51,21 +51,20 @@ class ChatHistoryAdapter(
         }
     )
 ) {
-    private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
     private var chatHistoryItemClickListener: OnChatHistoryItemClickListener? = null
     private var chatTitle: String? = ""
     private lateinit var shareTargetAdapter: ChatShareTargetAdapter
-    private var cachedSharedViewInIds: Map<String, Set<String>> = emptyMap()
+
     private val daynightGreyColor by lazy { ContextCompat.getColor(context, R.color.daynight_grey) }
 
     init {
         submitList(chatHistoryList)
     }
 
-    fun updateCachedData(user: UserEntity?, sharedNews: List<News>) {
+    fun updateCachedData(user: UserEntity?, sharedNews: List<News>, sharedViewInIds: Map<String, Set<String>>) {
         currentUser = user
         newsList = sharedNews
-        cachedSharedViewInIds = extractSharedViewInIds(sharedNews)
+        cachedSharedViewInIds = sharedViewInIds
     }
 
     fun updateShareTargets(newTargets: ChatShareTargets) {
@@ -84,7 +83,7 @@ class ChatHistoryAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderChat {
-        rowChatHistoryBinding = RowChatHistoryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        val rowChatHistoryBinding = RowChatHistoryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolderChat(rowChatHistoryBinding)
     }
 
@@ -135,7 +134,7 @@ class ChatHistoryAdapter(
             val sharedIds = getSharedViewInIds(item._id)
             val isCommunityShared = shareTargets.community?._id?.let { it in sharedIds } == true
             val sharedChildren = if (isCommunityShared) setOf(context.getString(R.string.community)) else emptySet()
-            val dataMap = getData() as HashMap<String, List<String>>
+            val dataMap = getData() as? Map<String, List<String>> ?: emptyMap()
 
             var currentFlatList = generateFlatList(dataMap, sharedChildren, emptySet())
 
