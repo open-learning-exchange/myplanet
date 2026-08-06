@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 #
-# Drain the automerge queue.
+# Drain the automerge queue. Per PR labelled $LABEL, lowest number first:
 #
-# Repeatedly: pick the lowest-numbered open non-draft PR carrying $LABEL,
-# verify it is mergeable and green, bump the version, squash merge it, then
-# wait for the workflows the merge kicks off on $BASE. Stop on the first
-# failure; otherwise keep going until no labelled PR is left.
+#   1. merge $BASE into the PR branch          (a conflict stops the drain)
+#   2. bump the version on the PR branch
+#   3. push, and wait for build + test on that prepared commit
+#   4. wait for $BASE to be settled and green, then squash merge
 #
-# Everything is driven by environment variables so the workflow stays thin.
-# This script is expected to run from a copy outside the work tree (see
-# automerge.yml) -- it checks out PR branches, and a running bash script
-# whose file is swapped underneath it is a bad time.
+# Stop on the first failure. Both waits sit in front of step 4 so they
+# overlap: $BASE releases the previous merge while this PR builds.
+#
+# Runs from a copy outside the work tree -- it checks out PR branches.
 #
 set -euo pipefail
 
@@ -21,18 +21,25 @@ GRADLE_FILE="${GRADLE_FILE:?}"
 VERSION_SH="${VERSION_SH:?}"
 COAUTHORS_SH="${COAUTHORS_SH:?}"
 REQUIRE_CHECKS="${REQUIRE_CHECKS:-true}"
+REQUIRED_WORKFLOWS="${REQUIRED_WORKFLOWS:-}"
 DELETE_BRANCH="${DELETE_BRANCH:-true}"
 DRY_RUN="${DRY_RUN:-true}"
 MAX_MERGES="${MAX_MERGES:-0}"
 WAIT_TIMEOUT_MIN="${WAIT_TIMEOUT_MIN:-45}"
-WAIT_FOR_BUMP_CHECKS="${WAIT_FOR_BUMP_CHECKS:-false}"
 USING_PAT="${USING_PAT:-false}"
+
+RUN_APPEAR_TIMEOUT_SEC=300
 
 log()     { printf '%s | %s\n' "$(date -u +%H:%M:%S)" "$*"; }
 summary() { [ -n "${GITHUB_STEP_SUMMARY:-}" ] && printf '%s\n' "$*" >> "$GITHUB_STEP_SUMMARY"; return 0; }
 
 merged_count=0
 merged_list=""
+last_base_sha=""
+
+MAX_REPREPARES=2
+reprep_pr=""
+reprep_n=0
 
 # ---------------------------------------------------------------- helpers
 
@@ -47,7 +54,7 @@ pick_pr() {
       | jq -c 'map(select(.isDraft | not)) | sort_by(.number) | first'
 }
 
-# GitHub computes mergeability lazily; UNKNOWN just means "ask again".
+# Cheap early exit; the real conflict test is step 1.
 check_mergeable() {
     local pr=$1 state=""
     for _ in 1 2 3 4 5; do
@@ -61,61 +68,100 @@ check_mergeable() {
     fi
 }
 
-# A PR whose CI is still running is not a failure, it is just not ready yet
-# -- so wait it out rather than stopping the drain. This is the normal state
-# for a PR that was pushed to moments ago, including by the drain's own bump
-# commit when the token re-triggers CI.
-check_green() {
-    local pr=$1
+runs_for() {
+    gh api "repos/$REPO/actions/runs?head_sha=$1&per_page=100" \
+        --jq '[.workflow_runs[] | {name, status, conclusion}]' 2>/dev/null || echo '[]'
+}
+
+runs_failed()  { jq '[.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")] | length' <<<"$1"; }
+runs_pending() { jq '[.[] | select(.status != "completed")] | length' <<<"$1"; }
+
+# Names in $2 with no successful run yet; blank $2 = none.
+runs_missing() {
+    jq -r --arg req "$2" '
+        [ ($req | split(",")[] | gsub("^\\s+|\\s+$"; "")) | select(length > 0) ] as $need
+        | ([ .[] | select(.status == "completed" and .conclusion == "success") | .name ] | unique) as $green
+        | [ $need[] | select(. as $n | $green | index($n) | not) ]
+        | join(", ")
+    ' <<<"$1"
+}
+
+# Green: nothing failed, nothing running, every workflow in $need passed.
+# $absent = what no runs at all means: 'fail' (we pushed it), 'pass' ($BASE).
+wait_for_runs() {
+    local sha=$1 need=$2 absent=$3
     local deadline=$(( SECONDS + WAIT_TIMEOUT_MIN * 60 ))
-    local checks bad pending announced=0
+    local appear_deadline=$(( SECONDS + RUN_APPEAR_TIMEOUT_SEC ))
+    local runs total pending failed missing announced=0
 
+    log "  waiting for workflows on ${sha:0:7} (timeout ${WAIT_TIMEOUT_MIN}m)"
     while :; do
-        checks=$(gh pr checks "$pr" --repo "$REPO" --json name,bucket 2>/dev/null || true)
+        runs=$(runs_for "$sha")
+        total=$(jq 'length' <<<"$runs")
 
-        if [ -z "$checks" ] || [ "$checks" = "[]" ]; then
-            log "  #$pr reports no checks -- refusing to merge blind"
-            return 1
+        if [ "$total" -gt 0 ]; then
+            failed=$(runs_failed "$runs")
+            if [ "$failed" -ne 0 ]; then
+                jq -r '.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral") | "    \(.conclusion)\t\(.name)"' <<<"$runs"
+                log "  $failed workflow(s) failed on ${sha:0:7}"
+                return 1
+            fi
+
+            pending=$(runs_pending "$runs")
+            missing=$(runs_missing "$runs" "$need")
+
+            if [ "$pending" -eq 0 ] && [ -z "$missing" ]; then
+                jq -r '.[] | "    \(.conclusion)\t\(.name)"' <<<"$runs"
+                log "  all $total workflow(s) green on ${sha:0:7}"
+                return 0
+            fi
+
+            if [ "$pending" -ne 0 ] && [ "$announced" -eq 0 ]; then
+                log "  $pending workflow(s) still running on ${sha:0:7}"
+                announced=1
+            fi
         fi
 
-        bad=$(jq '[.[] | select(.bucket == "fail" or .bucket == "cancel")] | length' <<<"$checks")
-        if [ "$bad" -ne 0 ]; then
-            jq -r '.[] | select(.bucket == "fail" or .bucket == "cancel") | "    \(.bucket)\t\(.name)"' <<<"$checks"
-            log "  #$pr has $bad check(s) failing"
-            return 1
-        fi
-
-        pending=$(jq '[.[] | select(.bucket == "pending")] | length' <<<"$checks")
-        if [ "$pending" -eq 0 ]; then
-            log "  #$pr checks green"
-            return 0
-        fi
-
-        # A dry run is a report, not a gate -- say what is happening and move
-        # on rather than blocking for however long CI takes.
-        if [ "$DRY_RUN" = 'true' ]; then
-            jq -r '.[] | select(.bucket == "pending") | "    pending\t\(.name)"' <<<"$checks"
-            log "  #$pr has $pending check(s) still running (dry run does not wait)"
-            return 0
+        if [ "$total" -eq 0 ] || { [ "${pending:-0}" -eq 0 ] && [ -n "${missing:-}" ]; }; then
+            if [ "$SECONDS" -ge "$appear_deadline" ]; then
+                if [ "$total" -eq 0 ]; then
+                    if [ "$absent" = 'pass' ]; then
+                        log "  no workflow runs for ${sha:0:7} -- nothing to wait for"
+                        return 0
+                    fi
+                    log "  no workflow runs exist for ${sha:0:7} -- refusing to merge blind"
+                else
+                    log "  required workflow(s) never ran on ${sha:0:7}: $missing"
+                fi
+                if [ "$USING_PAT" != 'true' ]; then
+                    log "  a push made with GITHUB_TOKEN deliberately does not trigger workflows."
+                    log "  Set the AUTOMERGE_TOKEN secret to a PAT or GitHub App token so the"
+                    log "  prepared commit gets its own build and test run."
+                fi
+                return 1
+            fi
         fi
 
         if [ "$SECONDS" -ge "$deadline" ]; then
-            log "  #$pr still has $pending pending check(s) after ${WAIT_TIMEOUT_MIN}m"
+            log "  timed out after ${WAIT_TIMEOUT_MIN}m waiting on ${sha:0:7}"
             return 1
-        fi
-
-        if [ "$announced" -eq 0 ]; then
-            log "  #$pr has $pending check(s) running, waiting (timeout ${WAIT_TIMEOUT_MIN}m)"
-            announced=1
         fi
         sleep 20
     done
 }
 
-# The pre-merge checks ran on the PR head, but we merge the SHA *after* the
-# version bump, which GITHUB_TOKEN pushes deliberately do not re-run CI for.
-# Carrying the green verdict across that gap is only honest if the bump
-# provably changed nothing but the two version lines -- so prove it.
+# Non-blocking peek; step 4 does the blocking version.
+base_already_failed() {
+    local sha=$1 runs bad
+    runs=$(runs_for "$sha")
+    bad=$(jq -r '.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral") | "\(.conclusion)\t\(.name)"' <<<"$runs")
+    [ -n "$bad" ] || return 1
+    printf '%s\n' "$bad" | sed 's/^/    /'
+    log "the last merge has already failed on $BASE (${sha:0:7})"
+    return 0
+}
+
+# Guard against a broken version.sh.
 verify_version_only_diff() {
     local from=$1 to=$2 files bad
 
@@ -130,10 +176,10 @@ verify_version_only_diff() {
           | grep -vE '^(\+\+\+|---)' \
           | grep -vcE '^[+-][[:space:]]*version(Code|Name)[[:space:]]*=' || true)
     if [ "${bad:-0}" -ne 0 ]; then
-        log "  bump changed $bad non-version line(s) -- refusing to carry the check verdict"
+        log "  bump changed $bad non-version line(s)"
         return 1
     fi
-    log "  bump is provably version-only ($from -> $to)"
+    log "  bump is version-only ($from -> $to)"
 }
 
 push_with_retry() {
@@ -145,46 +191,6 @@ push_with_retry() {
         fi
     done
     log "  push of $ref failed after retries"
-    return 1
-}
-
-# Wait for every workflow run triggered by $sha on the base branch.
-wait_for_runs() {
-    local sha=$1
-    local deadline=$(( SECONDS + WAIT_TIMEOUT_MIN * 60 ))
-    local appear_deadline=$(( SECONDS + 300 ))
-    local runs total pending failed
-
-    log "  waiting for workflows on ${sha:0:7} (timeout ${WAIT_TIMEOUT_MIN}m)"
-    while [ "$SECONDS" -lt "$deadline" ]; do
-        runs=$(gh api "repos/$REPO/actions/runs?head_sha=$sha&per_page=100" \
-                 --jq '[.workflow_runs[] | {name, status, conclusion}]' 2>/dev/null || echo '[]')
-        total=$(jq 'length' <<<"$runs")
-
-        if [ "$total" -eq 0 ]; then
-            if [ "$SECONDS" -ge "$appear_deadline" ]; then
-                log "  no workflow runs appeared for ${sha:0:7} -- nothing to wait for"
-                return 0
-            fi
-            sleep 20
-            continue
-        fi
-
-        pending=$(jq '[.[] | select(.status != "completed")] | length' <<<"$runs")
-        if [ "$pending" -eq 0 ]; then
-            jq -r '.[] | "    \(.conclusion)\t\(.name)"' <<<"$runs"
-            failed=$(jq '[.[] | select(.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")] | length' <<<"$runs")
-            if [ "$failed" -ne 0 ]; then
-                log "  $failed workflow(s) failed on ${sha:0:7}"
-                return 1
-            fi
-            log "  all $total workflow(s) green on ${sha:0:7}"
-            return 0
-        fi
-        sleep 20
-    done
-
-    log "  timed out after ${WAIT_TIMEOUT_MIN}m waiting on ${sha:0:7}"
     return 1
 }
 
@@ -206,7 +212,13 @@ while :; do
         break
     fi
 
+    if [ -n "$last_base_sha" ] && base_already_failed "$last_base_sha"; then
+        summary "| | | **stopped**: \`$BASE\` red after the last merge |"
+        exit 1
+    fi
+
     git fetch --quiet origin "$BASE"
+    base_at_prepare=$(git rev-parse "origin/$BASE")
 
     pr_json=$(pick_pr)
     if [ "$pr_json" = "null" ] || [ -z "$pr_json" ]; then
@@ -230,30 +242,33 @@ while :; do
     fi
 
     check_mergeable "$NUMBER" || { summary "| #$NUMBER | | **stopped**: not mergeable |"; exit 1; }
-    if [ "$REQUIRE_CHECKS" = 'true' ]; then
-        check_green "$NUMBER" || { summary "| #$NUMBER | | **stopped**: checks failing or stuck |"; exit 1; }
-    fi
 
-    # Next version always comes off the base branch: the base is what the
-    # merge lands on, so it is what defines "next".
+    # "Next" comes off the base -- it is what the merge lands on.
     git show "origin/$BASE:$GRADLE_FILE" > /tmp/base-build.gradle
     eval "$("$VERSION_SH" next /tmp/base-build.gradle | sed 's/^/new_/')"
     log "  version -> $new_name ($new_code)"
 
+    git fetch --quiet origin "$HEAD"
+
     if [ "$DRY_RUN" = 'true' ]; then
-        log "  dry run: would bump to $new_name and squash merge #$NUMBER"
-        summary "| #$NUMBER | → \`$new_name\` | dry run, nothing changed |"
+        git checkout --quiet --detach "origin/$HEAD"
+        if git merge --quiet --no-edit "origin/$BASE"; then
+            log "  dry run: merges cleanly with $BASE, would bump to $new_name,"
+            log "           wait for ${REQUIRED_WORKFLOWS:-the triggered workflows}, then squash merge #$NUMBER"
+            summary "| #$NUMBER | → \`$new_name\` | dry run: would merge |"
+        else
+            git merge --abort || true
+            log "  dry run: #$NUMBER conflicts with $BASE -- needs a human"
+            summary "| #$NUMBER | | dry run: **conflicts** with \`$BASE\` |"
+        fi
         log "dry run stops after one PR (nothing advances)"
         break
     fi
 
-    git fetch --quiet origin "$HEAD"
     git checkout --quiet -B "$HEAD" "origin/$HEAD"
 
-    # Bring the branch up to the current base BEFORE bumping. Every merge
-    # moves the version on the base, so a branch cut at an older version
-    # would otherwise collide on exactly the two lines we are about to
-    # rewrite -- which is to say every PR after the first one in a drain.
+    # 1. Base first: a branch cut earlier collides on the exact version lines
+    #    step 2 rewrites, and this makes step 3 test what actually lands.
     if ! git merge --quiet --no-edit "origin/$BASE"; then
         git merge --abort || true
         log "  #$NUMBER conflicts with $BASE -- needs a human"
@@ -261,6 +276,8 @@ while :; do
         exit 1
     fi
 
+    # 2. Bump. Every merge publishes a release tagged from versionName, so
+    #    each needs its own number; writing it here puts it in the squash.
     pre_bump_sha=$(git rev-parse HEAD)
     "$VERSION_SH" apply "$GRADLE_FILE" "$new_code" "$new_name"
 
@@ -275,20 +292,46 @@ while :; do
             || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: bump was not version-only |"; exit 1; }
     fi
 
+    # 3. Push and let CI judge the prepared commit.
     if [ "$merge_sha" != "$SHA" ]; then
         push_with_retry "$HEAD" \
             || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: push failed |"; exit 1; }
+    else
+        log "  branch already merged and bumped, head unchanged at ${SHA:0:7}"
+    fi
 
-        # A PAT push re-triggers CI. When the base also requires status
-        # checks, merging straight away races the checks it just started.
-        if [ "$WAIT_FOR_BUMP_CHECKS" = 'true' ]; then
-            wait_for_runs "$merge_sha" \
-                || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: bump commit failed CI |"; exit 1; }
+    if [ "$REQUIRE_CHECKS" = 'true' ]; then
+        wait_for_runs "$merge_sha" "$REQUIRED_WORKFLOWS" fail \
+            || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: prepared commit not green |"; exit 1; }
+    else
+        log "  require_checks is off -- merging ${merge_sha:0:7} unverified"
+    fi
+
+    # 4. Merge, but only onto a settled green base.
+    if [ "$REQUIRE_CHECKS" = 'true' ]; then
+        git fetch --quiet origin "$BASE"
+        wait_for_runs "$(git rev-parse "origin/$BASE")" '' pass \
+            || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: \`$BASE\` is red |"; exit 1; }
+
+        # Prepared against a base that no longer exists; prepare again.
+        git fetch --quiet origin "$BASE"
+        base_now=$(git rev-parse "origin/$BASE")
+        if [ "$base_now" != "$base_at_prepare" ]; then
+            if [ "$NUMBER" = "$reprep_pr" ]; then
+                reprep_n=$((reprep_n + 1))
+            else
+                reprep_pr="$NUMBER"; reprep_n=1
+            fi
+            if [ "$reprep_n" -gt "$MAX_REPREPARES" ]; then
+                log "  $BASE keeps moving under #$NUMBER -- giving up after $MAX_REPREPARES re-preparations"
+                summary "| #$NUMBER | → \`$new_name\` | **stopped**: \`$BASE\` moving under it |"
+                exit 1
+            fi
+            log "  $BASE moved to ${base_now:0:7} while #$NUMBER was building -- re-preparing it"
+            continue
         fi
     fi
 
-    # Replace the PR description with just the attribution that belongs in
-    # the commit log. Subject keeps the repo's "<title> (#<number>)" shape.
     commit_body=$(REPO="$REPO" PR="$NUMBER" "$COAUTHORS_SH")
     if [ -n "$commit_body" ]; then
         log "  co-authors:"
@@ -318,9 +361,9 @@ while :; do
                 fi
                 ;;
             *"Pull Request is not mergeable"*|*"required status check"*)
-                reason="**stopped**: base requires checks the bump commit has not passed"
-                log "  the bumped commit has not satisfied required checks."
-                log "  Re-dispatch with wait_for_bump_checks enabled."
+                reason="**stopped**: base requires checks the prepared commit has not passed"
+                log "  the prepared commit has not satisfied the base's required checks."
+                log "  Make sure required_workflows covers every check $BASE requires."
                 ;;
         esac
         summary "| #$NUMBER | → \`$new_name\` | $reason |"
@@ -329,20 +372,11 @@ while :; do
     log "  merged #$NUMBER"
 
     git fetch --quiet origin "$BASE"
+    last_base_sha=$(git rev-parse "origin/$BASE")
 
     merged_count=$((merged_count + 1))
     merged_list="$merged_list #$NUMBER"
-
-    # Whatever the merge produced on the base branch is what CI now runs on:
-    # on master that is test + release, on a test branch test + build.
-    base_sha=$(git rev-parse "origin/$BASE")
-    if ! wait_for_runs "$base_sha"; then
-        summary "| #$NUMBER | → \`$new_name\` | merged, but **workflows failed** -- stopping |"
-        log "stopping: post-merge workflows failed after #$NUMBER"
-        exit 1
-    fi
-
-    summary "| #$NUMBER | → \`$new_name\` | merged, workflows green |"
+    summary "| #$NUMBER | → \`$new_name\` | merged as \`${last_base_sha:0:7}\` |"
 done
 
 log "done: merged $merged_count PR(s):${merged_list:- none}"

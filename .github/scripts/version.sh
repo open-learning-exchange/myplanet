@@ -1,32 +1,12 @@
 #!/usr/bin/env bash
 #
-# myPlanet version helper.
+# myPlanet version helper. versionCode = major*10000 + minor*100 + patch,
+# each block 0..99, so a patch rollover carries:  0.62.99/6299 -> 0.63.0/6300.
+# The bumped code is therefore always the old code plus one, which `next`
+# asserts to catch a file where the two have drifted apart.
 #
-# The two version fields in app/build.gradle are kept in lockstep:
-#
-#   versionName = "<major>.<minor>.<patch>"   e.g. 0.63.0
-#   versionCode = major*10000 + minor*100 + patch    e.g. 6300
-#
-# Each block is 0..99, printed without zero padding, so a patch rollover
-# carries into the minor block (and a minor rollover into the major block):
-#
-#   0.62.97 / 6297  ->  0.62.98 / 6298
-#   0.62.99 / 6299  ->  0.63.0  / 6300
-#   0.99.99 / 9999  ->  1.0.0   / 10000
-#
-# Because of that encoding the bumped code is always exactly the old code
-# plus one; the script asserts that as a guard against a hand-edited file
-# where name and code have drifted apart.
-#
-# Usage:
-#   version.sh read <gradle-file>
-#       Print "code=<n>" and "name=<x.y.z>" for the current version.
-#
-#   version.sh next <gradle-file>
-#       Print "code=<n>" and "name=<x.y.z>" for the *next* version.
-#
+#   version.sh {read|next} <gradle-file>
 #   version.sh apply <gradle-file> <code> <name>
-#       Rewrite the versionCode/versionName lines in place.
 #
 set -euo pipefail
 
@@ -47,8 +27,7 @@ next_version() {
     local file=$1
     read_version "$file"
 
-    # minor and patch are the carry blocks and stay at two digits; major is
-    # left wider so the script does not become the thing that breaks at 1.0.0.
+    # major is left wider so this is not the thing that breaks at 1.0.0.
     [[ "$cur_name" =~ ^([0-9]{1,3})\.([0-9]{1,2})\.([0-9]{1,2})$ ]] \
         || die "versionName '$cur_name' is not <major>.<minor>.<patch> with 1-2 digits in the minor and patch blocks"
 
