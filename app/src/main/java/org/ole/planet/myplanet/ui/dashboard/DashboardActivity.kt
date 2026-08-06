@@ -350,7 +350,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             lifecycleScope.launch {
                 delay(50)
                 val offlineVisits = user?.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0
-                if (!(user?.id?.startsWith("guest") == true && offlineVisits >= 3) &&
+                if (!(user?.id?.startsWith("guest") == true && offlineVisits >= 4) &&
                     resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
                 ) {
                     result?.recyclerView?.scrollToPosition(0)
@@ -708,8 +708,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val offlineVisits = user?.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0
             if (user?.id?.startsWith("guest") == true) {
                 when {
-                    offlineVisits >= 3 -> showGuestDialog()
-                    offlineVisits == 2 -> showVisitLimitWarning()
+                    offlineVisits >= 4 -> showGuestDialog()
+                    offlineVisits == 3 -> showVisitLimitWarning()
                 }
             }
         }
