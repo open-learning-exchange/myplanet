@@ -25,13 +25,20 @@ name: myPlanet automerge
 #   up to the current base first, since every merge moves the version and an
 #   older branch would collide on exactly those two lines.
 #
-# * CI does not re-run on the bump. Pushes made with GITHUB_TOKEN
-#   deliberately do not trigger workflow runs, so the version-bump commit
-#   arrives without its own build. The drainer proves the bump changed
+# * GITHUB_TOKEN cannot merge into a protected branch. Verified against
+#   master: everything up to the merge works, then GitHub answers "You're not
+#   authorized to push to this branch". Set the AUTOMERGE_TOKEN secret to a
+#   PAT or GitHub App token belonging to someone allowed to merge there.
+#   Without it the drainer is dry-run-only against a protected base.
+#
+# * CI does not re-run on the bump when GITHUB_TOKEN pushes it -- pushes made
+#   with that token deliberately do not trigger workflow runs, so the bump
+#   commit arrives without its own build. The drainer proves the bump changed
 #   nothing but the two version lines before carrying the PR's green verdict
-#   across it (see verify_version_only_diff). If the base branch has required
-#   status checks, GitHub will still refuse the merge -- swap GITHUB_TOKEN for
-#   a PAT or a GitHub App token so CI re-runs on the bumped SHA.
+#   across it (see verify_version_only_diff). An AUTOMERGE_TOKEN push *does*
+#   re-trigger CI; if the base also requires status checks, turn on
+#   wait_for_bump_checks so the drain waits for the bumped SHA instead of
+#   racing its own pending checks.
 #
 # * Checks are per-PR, not per-merged-state. Each PR was tested against the
 #   base as it was when the PR ran, not against the base as the drain leaves
@@ -73,10 +80,15 @@ on:
         default: '0'
         type: string
       wait_timeout_minutes:
-        description: 'how long to wait for the base branch workflows after each merge'
+        description: 'how long to wait for running checks: on a PR before merging, and on the base branch after'
         required: false
         default: '45'
         type: string
+      wait_for_bump_checks:
+        description: 'wait for CI on the bump commit before merging (needed only when AUTOMERGE_TOKEN re-triggers CI and the base requires checks)'
+        required: false
+        default: false
+        type: boolean
       dry_run:
         description: 'report what would happen, change nothing'
         required: false
@@ -106,6 +118,10 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          # Same token the merge uses, so the bump push and the merge are
+          # made by the same identity. Falls back to GITHUB_TOKEN, which is
+          # fine for a dry run but cannot merge into a protected branch.
+          token: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
 
       - name: stage helper scripts outside the work tree
         id: stage
@@ -124,7 +140,8 @@ jobs:
       - name: drain the automerge queue
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
+          USING_PAT: ${{ secrets.AUTOMERGE_TOKEN != '' }}
           REPO: ${{ github.repository }}
           BASE: ${{ inputs.base || env.DEFAULT_BASE }}
           LABEL: ${{ inputs.label }}
@@ -133,6 +150,7 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run }}
           MAX_MERGES: ${{ inputs.max_merges }}
           WAIT_TIMEOUT_MIN: ${{ inputs.wait_timeout_minutes }}
+          WAIT_FOR_BUMP_CHECKS: ${{ inputs.wait_for_bump_checks }}
           VERSION_SH: ${{ steps.stage.outputs.dir }}/version.sh
           COAUTHORS_SH: ${{ steps.stage.outputs.dir }}/coauthors.sh
           OWNER_LOGIN: ${{ inputs.owner_login }}

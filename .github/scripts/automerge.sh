@@ -25,6 +25,8 @@ DELETE_BRANCH="${DELETE_BRANCH:-true}"
 DRY_RUN="${DRY_RUN:-true}"
 MAX_MERGES="${MAX_MERGES:-0}"
 WAIT_TIMEOUT_MIN="${WAIT_TIMEOUT_MIN:-45}"
+WAIT_FOR_BUMP_CHECKS="${WAIT_FOR_BUMP_CHECKS:-false}"
+USING_PAT="${USING_PAT:-false}"
 
 log()     { printf '%s | %s\n' "$(date -u +%H:%M:%S)" "$*"; }
 summary() { [ -n "${GITHUB_STEP_SUMMARY:-}" ] && printf '%s\n' "$*" >> "$GITHUB_STEP_SUMMARY"; return 0; }
@@ -59,22 +61,55 @@ check_mergeable() {
     fi
 }
 
+# A PR whose CI is still running is not a failure, it is just not ready yet
+# -- so wait it out rather than stopping the drain. This is the normal state
+# for a PR that was pushed to moments ago, including by the drain's own bump
+# commit when the token re-triggers CI.
 check_green() {
-    local pr=$1 checks bad
-    checks=$(gh pr checks "$pr" --repo "$REPO" --json name,bucket 2>/dev/null || true)
+    local pr=$1
+    local deadline=$(( SECONDS + WAIT_TIMEOUT_MIN * 60 ))
+    local checks bad pending announced=0
 
-    if [ -z "$checks" ] || [ "$checks" = "[]" ]; then
-        log "  #$pr reports no checks -- refusing to merge blind"
-        return 1
-    fi
+    while :; do
+        checks=$(gh pr checks "$pr" --repo "$REPO" --json name,bucket 2>/dev/null || true)
 
-    bad=$(jq -r '[.[] | select(.bucket != "pass" and .bucket != "skipping")] | length' <<<"$checks")
-    if [ "$bad" -ne 0 ]; then
-        jq -r '.[] | select(.bucket != "pass" and .bucket != "skipping") | "    \(.bucket)\t\(.name)"' <<<"$checks"
-        log "  #$pr has $bad check(s) not passing"
-        return 1
-    fi
-    log "  #$pr checks green"
+        if [ -z "$checks" ] || [ "$checks" = "[]" ]; then
+            log "  #$pr reports no checks -- refusing to merge blind"
+            return 1
+        fi
+
+        bad=$(jq '[.[] | select(.bucket == "fail" or .bucket == "cancel")] | length' <<<"$checks")
+        if [ "$bad" -ne 0 ]; then
+            jq -r '.[] | select(.bucket == "fail" or .bucket == "cancel") | "    \(.bucket)\t\(.name)"' <<<"$checks"
+            log "  #$pr has $bad check(s) failing"
+            return 1
+        fi
+
+        pending=$(jq '[.[] | select(.bucket == "pending")] | length' <<<"$checks")
+        if [ "$pending" -eq 0 ]; then
+            log "  #$pr checks green"
+            return 0
+        fi
+
+        # A dry run is a report, not a gate -- say what is happening and move
+        # on rather than blocking for however long CI takes.
+        if [ "$DRY_RUN" = 'true' ]; then
+            jq -r '.[] | select(.bucket == "pending") | "    pending\t\(.name)"' <<<"$checks"
+            log "  #$pr has $pending check(s) still running (dry run does not wait)"
+            return 0
+        fi
+
+        if [ "$SECONDS" -ge "$deadline" ]; then
+            log "  #$pr still has $pending pending check(s) after ${WAIT_TIMEOUT_MIN}m"
+            return 1
+        fi
+
+        if [ "$announced" -eq 0 ]; then
+            log "  #$pr has $pending check(s) running, waiting (timeout ${WAIT_TIMEOUT_MIN}m)"
+            announced=1
+        fi
+        sleep 20
+    done
 }
 
 # The pre-merge checks ran on the PR head, but we merge the SHA *after* the
@@ -196,7 +231,7 @@ while :; do
 
     check_mergeable "$NUMBER" || { summary "| #$NUMBER | | **stopped**: not mergeable |"; exit 1; }
     if [ "$REQUIRE_CHECKS" = 'true' ]; then
-        check_green "$NUMBER" || { summary "| #$NUMBER | | **stopped**: checks not green |"; exit 1; }
+        check_green "$NUMBER" || { summary "| #$NUMBER | | **stopped**: checks failing or stuck |"; exit 1; }
     fi
 
     # Next version always comes off the base branch: the base is what the
@@ -243,6 +278,13 @@ while :; do
     if [ "$merge_sha" != "$SHA" ]; then
         push_with_retry "$HEAD" \
             || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: push failed |"; exit 1; }
+
+        # A PAT push re-triggers CI. When the base also requires status
+        # checks, merging straight away races the checks it just started.
+        if [ "$WAIT_FOR_BUMP_CHECKS" = 'true' ]; then
+            wait_for_runs "$merge_sha" \
+                || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: bump commit failed CI |"; exit 1; }
+        fi
     fi
 
     # Replace the PR description with just the attribution that belongs in
@@ -260,9 +302,28 @@ while :; do
     if [ "$DELETE_BRANCH" = 'true' ]; then
         ARGS+=(--delete-branch)
     fi
-    if ! gh pr merge "$NUMBER" "${ARGS[@]}"; then
+    if ! merge_out=$(gh pr merge "$NUMBER" "${ARGS[@]}" 2>&1); then
+        printf '%s\n' "$merge_out" | sed 's/^/    /'
         log "  merge of #$NUMBER refused"
-        summary "| #$NUMBER | → \`$new_name\` | **stopped**: merge refused |"
+        reason="merge refused"
+        case "$merge_out" in
+            *"not authorized to push"*|*"Protected branch"*|*"Resource not accessible"*)
+                reason="**stopped**: token may not merge into \`$BASE\`"
+                log "  $BASE is protected and this token may not merge into it."
+                if [ "$USING_PAT" = 'true' ]; then
+                    log "  AUTOMERGE_TOKEN is set, so that account still lacks merge rights on $BASE."
+                else
+                    log "  Running on GITHUB_TOKEN. Set the AUTOMERGE_TOKEN secret to a PAT or"
+                    log "  GitHub App token belonging to someone allowed to merge into $BASE."
+                fi
+                ;;
+            *"Pull Request is not mergeable"*|*"required status check"*)
+                reason="**stopped**: base requires checks the bump commit has not passed"
+                log "  the bumped commit has not satisfied required checks."
+                log "  Re-dispatch with wait_for_bump_checks enabled."
+                ;;
+        esac
+        summary "| #$NUMBER | → \`$new_name\` | $reason |"
         exit 1
     fi
     log "  merged #$NUMBER"
