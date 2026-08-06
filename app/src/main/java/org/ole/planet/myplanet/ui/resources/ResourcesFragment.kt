@@ -634,23 +634,21 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val planetCode = model?.planetCode
         val parentCode = model?.parentCode
 
-        lifecycleScope.launch(dispatcherProvider.io) {
-            if (!filterApplied(searchText) || userName == null || planetCode == null || parentCode == null) {
-                return@launch
-            }
-
-            resourcesRepository.saveSearchActivity(
-                userName,
-                searchText,
-                planetCode,
-                parentCode,
-                searchTags,
-                subjects,
-                languages,
-                levels,
-                mediums
-            )
+        if (!filterApplied(searchText) || userName == null || planetCode == null || parentCode == null) {
+            return
         }
+
+        viewModel.saveSearchActivity(
+            userName,
+            searchText,
+            planetCode,
+            parentCode,
+            searchTags,
+            subjects,
+            languages,
+            levels,
+            mediums
+        )
     }
 
 
