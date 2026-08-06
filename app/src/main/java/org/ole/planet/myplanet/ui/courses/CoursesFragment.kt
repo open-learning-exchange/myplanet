@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
+import org.ole.planet.myplanet.base.DefaultBaseAdapterFactory
 import org.ole.planet.myplanet.callback.OnCourseItemSelectedListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnTagClickListener
@@ -37,7 +38,6 @@ import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.base.DefaultBaseAdapterFactory
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
@@ -281,15 +281,26 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         requireView().findViewById<View>(R.id.filter).setOnClickListener {
             bottomSheet.visibility = if (bottomSheet.isVisible) View.GONE else View.VISIBLE
         }
+        requireView().findViewById<View>(R.id.btn_close_filter)?.setOnClickListener {
+            bottomSheet.visibility = View.GONE
+        }
+        requireView().findViewById<View>(R.id.btn_collections)?.setOnClickListener {
+            bottomSheet.visibility = View.GONE
+        }
+        requireView().findViewById<View>(R.id.btn_clear_tags)?.setOnClickListener {
+            bottomSheet.visibility = View.GONE
+        }
         orderByDate = requireView().findViewById(R.id.order_by_date_button)
         orderByTitle = requireView().findViewById(R.id.order_by_title_button)
         orderByDate.isEnabled = false
         orderByTitle.isEnabled = false
         orderByDate.setOnClickListener {
+            bottomSheet.visibility = View.GONE
             if (!::adapterCourses.isInitialized) return@setOnClickListener
             adapterCourses.toggleSortOrder { scrollToTop() }
         }
         orderByTitle.setOnClickListener {
+            bottomSheet.visibility = View.GONE
             if (!::adapterCourses.isInitialized) return@setOnClickListener
             adapterCourses.toggleTitleSortOrder { scrollToTop() }
         }

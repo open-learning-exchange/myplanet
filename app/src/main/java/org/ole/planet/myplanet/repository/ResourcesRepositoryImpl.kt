@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import androidx.sqlite.db.SimpleSQLiteQuery
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -19,10 +20,11 @@ import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
-import org.ole.planet.myplanet.model.SearchActivity
-import org.ole.planet.myplanet.model.TagEntity
+import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
+import org.ole.planet.myplanet.model.SearchActivity
+import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -30,7 +32,6 @@ import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
-import androidx.sqlite.db.SimpleSQLiteQuery
 import org.ole.planet.myplanet.utils.Utilities
 
 class ResourcesRepositoryImpl @Inject constructor(
@@ -443,6 +444,28 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun removeResourceFromShelf(resourceId: String, userId: String) {
         updateUserLibrary(resourceId, userId, false)
+    }
+
+    override suspend fun removeResourcesFromShelf(resourceIds: List<String>, userId: String): Result<Unit> {
+        return runCatching {
+            if (resourceIds.isEmpty() || userId.isBlank()) return@runCatching
+
+            val libraryItems = myLibraryDao.getByResourceIds(resourceIds)
+            libraryItems.forEach { it.removeUserId(userId) }
+            if (libraryItems.isNotEmpty()) {
+                myLibraryDao.upsertAll(libraryItems)
+            }
+            removedLogDao.insertAll(
+                resourceIds.map { resourceId ->
+                    RemovedLog().apply {
+                        id = UUID.randomUUID().toString()
+                        docId = resourceId
+                        this.userId = userId
+                        type = "resources"
+                    }
+                }
+            )
+        }
     }
 
     override suspend fun getHtmlResourceDownloadUrls(resourceId: String): ResourceUrlsResponse {

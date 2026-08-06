@@ -1,15 +1,12 @@
 package org.ole.planet.myplanet.repository
 
-import io.mockk.verify
-import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.UrlUtils
 import android.content.Context
 import android.content.SharedPreferences
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.CoroutineScope
@@ -24,10 +21,13 @@ import org.junit.Test
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.AppDatabase
+import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TestTimeProvider
+import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)

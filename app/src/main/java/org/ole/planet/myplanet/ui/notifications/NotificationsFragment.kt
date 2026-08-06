@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.databinding.FragmentNotificationsBinding
 import org.ole.planet.myplanet.model.Notification
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
-import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
