@@ -2,16 +2,12 @@ package org.ole.planet.myplanet.services
 
 import com.google.gson.JsonObject
 import java.io.File
-import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.Personal
+import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
