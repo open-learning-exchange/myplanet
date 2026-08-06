@@ -1,0 +1,291 @@
+name: myPlanet automerge
+
+# Manually started queue drainer.
+#
+# Picks the oldest (lowest number) open PR carrying the `automerge` label,
+# bumps the version in app/build.gradle, and squash merges it.
+#
+# One PR per run, on purpose: each merge changes the version that the next
+# PR has to bump from, so the runs are inherently sequential. Re-run (or
+# schedule) to take the next one.
+#
+# NOTE ON CI RE-RUNS: the version bump is pushed with GITHUB_TOKEN, and
+# pushes made with GITHUB_TOKEN deliberately do not trigger new workflow
+# runs. So the bump commit arrives without its own build/test run. That is
+# fine when `bump_target: branch` and the branch is not protected by
+# required status checks -- but if master requires checks on the head SHA,
+# the merge will be refused. Two ways out:
+#   * use `bump_target: base` (merge first, then commit the bump on top of
+#     the base branch), or
+#   * swap GITHUB_TOKEN for a PAT / GitHub App token in the checkout and
+#     push steps so CI re-runs on the bumped SHA.
+
+on:
+  workflow_dispatch:
+    inputs:
+      label:
+        description: 'label marking PRs as mergeable'
+        required: false
+        default: 'automerge'
+        type: string
+      base:
+        description: 'base branch to merge into (blank = workflow default)'
+        required: false
+        default: ''
+        type: string
+      bump_target:
+        description: 'where the version bump commit lands'
+        required: false
+        default: 'branch'
+        type: choice
+        options:
+          - branch
+          - base
+      require_checks:
+        description: 'refuse to merge unless the PR checks are green'
+        required: false
+        default: true
+        type: boolean
+      delete_branch:
+        description: 'delete the head branch after merging'
+        required: false
+        default: true
+        type: boolean
+      dry_run:
+        description: 'report what would happen, change nothing'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+  statuses: read
+
+env:
+  # --- TESTING -------------------------------------------------------
+  # While trying this out, only drain PRs targeting the test branch.
+  DEFAULT_BASE: claude/github-automerge-workflow-ge5yge
+  # Flip to this once the workflow has proven itself:
+  # DEFAULT_BASE: master
+  # -------------------------------------------------------------------
+  GRADLE_FILE: app/build.gradle
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  automerge:
+    name: myPlanet automerge
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repository code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: resolve base branch
+        id: base
+        shell: bash
+        run: |
+          BASE="${{ inputs.base }}"
+          [ -n "$BASE" ] || BASE="$DEFAULT_BASE"
+          echo "ref=$BASE" >> "$GITHUB_OUTPUT"
+          echo "draining PRs into $BASE"
+
+      - name: pick oldest labelled pull request
+        id: pick
+        shell: bash
+        run: |
+          LABEL="${{ inputs.label }}"
+          BASE="${{ steps.base.outputs.ref }}"
+
+          # Lowest PR number wins -- "oldest" in this repo's terms.
+          PR=$(gh pr list \
+                --repo "$GITHUB_REPOSITORY" \
+                --state open \
+                --base "$BASE" \
+                --label "$LABEL" \
+                --limit 100 \
+                --json number,title,isDraft,headRefName,headRepositoryOwner,headRefOid \
+              | jq -c 'map(select(.isDraft | not)) | sort_by(.number) | first')
+
+          if [ "$PR" = "null" ] || [ -z "$PR" ]; then
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "### nothing to merge" >> "$GITHUB_STEP_SUMMARY"
+            echo "No open, non-draft PR labelled \`$LABEL\` targets \`$BASE\`." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          NUMBER=$(jq -r '.number'                <<< "$PR")
+          TITLE=$(jq  -r '.title'                 <<< "$PR")
+          HEAD=$(jq   -r '.headRefName'           <<< "$PR")
+          SHA=$(jq    -r '.headRefOid'            <<< "$PR")
+          OWNER=$(jq  -r '.headRepositoryOwner.login' <<< "$PR")
+
+          if [ "$OWNER" != "${GITHUB_REPOSITORY%%/*}" ]; then
+            echo "PR #$NUMBER comes from fork $OWNER -- cannot push a version bump to it." >&2
+            exit 1
+          fi
+
+          {
+            echo "found=true"
+            echo "number=$NUMBER"
+            echo "title=$TITLE"
+            echo "head=$HEAD"
+            echo "sha=$SHA"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "picked #$NUMBER ($HEAD @ ${SHA:0:7}): $TITLE"
+
+      - name: check mergeability
+        if: steps.pick.outputs.found == 'true'
+        shell: bash
+        run: |
+          PR="${{ steps.pick.outputs.number }}"
+
+          # GitHub computes mergeability lazily; UNKNOWN just means "ask again".
+          for attempt in 1 2 3 4 5; do
+            STATE=$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json mergeable --jq '.mergeable')
+            [ "$STATE" = "UNKNOWN" ] || break
+            echo "mergeability still UNKNOWN, retrying ($attempt/5)"
+            sleep 5
+          done
+
+          if [ "$STATE" != "MERGEABLE" ]; then
+            echo "PR #$PR is not mergeable (state: $STATE) -- resolve conflicts first." >&2
+            exit 1
+          fi
+          echo "PR #$PR is mergeable"
+
+      - name: check pull request checks
+        if: steps.pick.outputs.found == 'true' && inputs.require_checks
+        shell: bash
+        run: |
+          PR="${{ steps.pick.outputs.number }}"
+
+          CHECKS=$(gh pr checks "$PR" --repo "$GITHUB_REPOSITORY" --json name,bucket 2>/dev/null || true)
+          if [ -z "$CHECKS" ] || [ "$CHECKS" = "[]" ]; then
+            echo "PR #$PR reports no checks -- refusing to merge blind." >&2
+            echo "Re-run with require_checks: false to override." >&2
+            exit 1
+          fi
+
+          echo "$CHECKS" | jq -r '.[] | "  \(.bucket)\t\(.name)"'
+
+          BAD=$(jq -r '[.[] | select(.bucket != "pass" and .bucket != "skipping")] | length' <<< "$CHECKS")
+          if [ "$BAD" -ne 0 ]; then
+            echo "PR #$PR has $BAD check(s) that are not passing." >&2
+            exit 1
+          fi
+          echo "all checks green"
+
+      - name: compute next version
+        id: version
+        if: steps.pick.outputs.found == 'true'
+        shell: bash
+        run: |
+          BASE="${{ steps.base.outputs.ref }}"
+
+          # Read the version off the base branch, not the PR branch: the base
+          # is what the merge lands on, so it is what defines "next".
+          git show "origin/$BASE:$GRADLE_FILE" > /tmp/base-build.gradle
+
+          .github/scripts/version.sh read /tmp/base-build.gradle | sed 's/^/current_/' >> "$GITHUB_OUTPUT"
+          .github/scripts/version.sh next /tmp/base-build.gradle | sed 's/^/next_/'   >> "$GITHUB_OUTPUT"
+
+          echo "current: $(.github/scripts/version.sh read /tmp/base-build.gradle | tr '\n' ' ')"
+          echo "next:    $(.github/scripts/version.sh next /tmp/base-build.gradle | tr '\n' ' ')"
+
+      - name: summarise plan
+        if: steps.pick.outputs.found == 'true'
+        shell: bash
+        env:
+          # via env, never inlined: a PR title is attacker-controlled text
+          PR_TITLE: ${{ steps.pick.outputs.title }}
+          PR_HEAD: ${{ steps.pick.outputs.head }}
+        run: |
+          {
+            echo "### ${{ inputs.dry_run && 'dry run -- would merge' || 'merging' }} #${{ steps.pick.outputs.number }}"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| title | $PR_TITLE |"
+            echo "| head | \`$PR_HEAD\` @ \`${{ steps.pick.outputs.sha }}\` |"
+            echo "| base | \`${{ steps.base.outputs.ref }}\` |"
+            echo "| version | \`${{ steps.version.outputs.current_name }}\` (\`${{ steps.version.outputs.current_code }}\`) → \`${{ steps.version.outputs.next_name }}\` (\`${{ steps.version.outputs.next_code }}\`) |"
+            echo "| bump lands on | ${{ inputs.bump_target }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: bump version on head branch
+        id: bump
+        if: steps.pick.outputs.found == 'true' && inputs.bump_target == 'branch' && !inputs.dry_run
+        shell: bash
+        env:
+          HEAD: ${{ steps.pick.outputs.head }}
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          git checkout -B "$HEAD" "origin/$HEAD"
+          .github/scripts/version.sh apply "$GRADLE_FILE" \
+            '${{ steps.version.outputs.next_code }}' '${{ steps.version.outputs.next_name }}'
+
+          if git diff --quiet -- "$GRADLE_FILE"; then
+            echo "$GRADLE_FILE already at the target version, nothing to commit"
+          else
+            git add "$GRADLE_FILE"
+            git commit -m 'version: bump to ${{ steps.version.outputs.next_name }}'
+            for delay in 0 2 4 8 16; do
+              [ "$delay" -eq 0 ] || sleep "$delay"
+              git push -u origin "$HEAD" && break
+            done
+          fi
+
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: merge pull request
+        id: merge
+        if: steps.pick.outputs.found == 'true' && !inputs.dry_run
+        shell: bash
+        run: |
+          PR="${{ steps.pick.outputs.number }}"
+          SHA="${{ steps.bump.outputs.sha || steps.pick.outputs.sha }}"
+
+          ARGS=(--repo "$GITHUB_REPOSITORY" --squash --match-head-commit "$SHA")
+          if [ '${{ inputs.delete_branch }}' = 'true' ]; then
+            ARGS+=(--delete-branch)
+          fi
+
+          gh pr merge "$PR" "${ARGS[@]}"
+          echo "merged #$PR at ${SHA:0:7}"
+
+      - name: bump version on base branch
+        if: steps.pick.outputs.found == 'true' && inputs.bump_target == 'base' && !inputs.dry_run
+        shell: bash
+        run: |
+          BASE="${{ steps.base.outputs.ref }}"
+
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          git fetch origin "$BASE"
+          git checkout -B "$BASE" "origin/$BASE"
+          .github/scripts/version.sh apply "$GRADLE_FILE" \
+            '${{ steps.version.outputs.next_code }}' '${{ steps.version.outputs.next_name }}'
+
+          if git diff --quiet -- "$GRADLE_FILE"; then
+            echo "$GRADLE_FILE already at the target version, nothing to commit"
+          else
+            git add "$GRADLE_FILE"
+            git commit -m 'version: bump to ${{ steps.version.outputs.next_name }} (#${{ steps.pick.outputs.number }})'
+            for delay in 0 2 4 8 16; do
+              [ "$delay" -eq 0 ] || sleep "$delay"
+              git push origin "$BASE" && break
+            done
+          fi
+
+      - name: report result
+        if: steps.pick.outputs.found == 'true' && !inputs.dry_run && success()
+        shell: bash
+        run: |
+          echo "### merged #${{ steps.pick.outputs.number }} at \`${{ steps.version.outputs.next_name }}\`" >> "$GITHUB_STEP_SUMMARY"
