@@ -123,7 +123,14 @@ class CourseSelectionController(
     }
 
     private fun showConfirmDialog(messageRes: Int, onConfirmed: () -> Unit) {
-        AlertDialog.Builder(ContextThemeWrapper(rootView.context, R.style.CustomAlertDialog))
+        val context = rootView.context.let {
+            var ctx = it
+            while (ctx is android.content.ContextWrapper && ctx !is android.app.Activity) {
+                ctx = ctx.baseContext
+            }
+            ctx
+        }
+        AlertDialog.Builder(ContextThemeWrapper(context, R.style.CustomAlertDialog))
             .setMessage(messageRes)
             .setPositiveButton(R.string.yes) { _: DialogInterface, _: Int -> onConfirmed() }
             .setNegativeButton(R.string.no, null)

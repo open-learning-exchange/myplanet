@@ -178,13 +178,6 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         realtimeSyncHelper.setupRealtimeSync()
     }
 
-    override fun onGetLayoutInflater(savedInstanceState: Bundle?): android.view.LayoutInflater {
-        val superInflater = super.onGetLayoutInflater(savedInstanceState)
-        val configContext = requireContext().createConfigurationContext(requireContext().resources.configuration)
-        val themeWrapper = android.view.ContextThemeWrapper(configContext, R.style.MyMaterialTheme)
-        return superInflater.cloneInContext(themeWrapper)
-    }
-
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
         super.onConfigurationChanged(newConfig)
         if (isAdded && !isStateSaved) {
