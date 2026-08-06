@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/my_course_parent_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.resources.ResourcesFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:id="@+id/ll_actions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/colorPrimary"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp">
+
+            <TextView
+                android:id="@+id/tv_fragment_info"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginEnd="8dp"
+                android:gravity="center_vertical"
+                android:text="@string/txt_myCourses"
+                android:textColor="@color/md_white_1000"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:maxLines="1" />
+
+            <CheckBox
+                android:id="@+id/selectAllCourse"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:padding="2dp"
+                android:text="@string/select_all"
+                android:textColor="@color/md_white_1000"
+                android:textSize="12sp"
+                android:buttonTint="@color/md_white_1000"
+                android:checked="false" />
+
+            <include
+                layout="@layout/layout_search"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_gravity="center_vertical" />
+
+            <Button
+                android:id="@+id/btn_remove"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_gravity="center_vertical"
+                android:layout_margin="2dp"
+                android:background="@drawable/buttonblue"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:text="@string/leave"
+                android:textColor="@color/md_white_1000"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tv_add"
+                style="@style/Widget.AppCompat.Button.Borderless.Colored"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_gravity="center_vertical"
+                android:layout_margin="2dp"
+                android:drawablePadding="2dp"
+                android:gravity="center"
+                android:text="@string/join_selected"
+                android:textColor="@color/daynight_textColor"
+                app:drawableTint="@color/daynight_textColor"
+                android:textSize="12sp"
+                app:drawableLeftCompat="@drawable/ic_add_library"/>
+
+            <TextView
+                android:id="@+id/tv_selected"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_gravity="center_vertical"
+                android:layout_margin="2dp"
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center_vertical"
+                android:text="@string/remove_selected"
+                android:textColor="@color/daynight_textColor"
+                android:textSize="12sp"
+                android:visibility="gone"
+                app:drawableLeftCompat="@drawable/ic_delete"
+                app:drawableTint="@color/daynight_textColor" />
+
+            <Button
+                android:id="@+id/btn_archive"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_gravity="center_vertical"
+                android:layout_margin="2dp"
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center_vertical"
+                android:text="@string/archive"
+                android:textColor="@color/daynight_textColor"
+                android:textSize="12sp"
+                android:visibility="gone"
+                app:drawableLeftCompat="@drawable/ic_delete"
+                app:drawableTint="@color/daynight_textColor" />
+
+            <ImageButton
+                android:id="@+id/filter"
+                style="@style/YellowButtons"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/buttonyellow"
+                android:padding="4dp"
+                android:textColor="@color/md_white_1000"
+                app:srcCompat="@drawable/ic_filter"
+                android:contentDescription="@string/more_action" />
+        </LinearLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@color/secondary_bg">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <TextView
+                android:id="@+id/tv_message"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/daynight_textColor"
+                android:layout_gravity="center" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_filter"
+        android:layout_width="360dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:animateLayoutChanges="true"
+        android:visibility="gone"
+        app:cardCornerRadius="8dp">
+
+        <androidx.core.widget.NestedScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:id="@+id/ll_filter"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/custom_border"
+                android:orientation="vertical"
+                android:padding="@dimen/padding_normal">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:padding="@dimen/padding_normal"
+                        android:text="@string/filter"
+                        android:textColor="@color/daynight_textColor"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <ImageButton
+                        android:id="@+id/btn_close_filter"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/close"
+                        android:src="@drawable/baseline_close_24"
+                        app:tint="@color/daynight_textColor" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:padding="4dp"
+                            android:textColor="@color/daynight_textColor"
+                            android:text="@string/grade_level" />
+
+                        <Spinner
+                            android:id="@+id/spn_grade"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:entries="@array/grade_level" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:padding="4dp"
+                            android:textColor="@color/daynight_textColor"
+                            android:text="@string/subject_level" />
+
+                        <Spinner
+                            android:id="@+id/spn_subject"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:entries="@array/subject_level" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:padding="4dp"
+                            android:textColor="@color/daynight_textColor"
+                            android:text="@string/progress" />
+
+                        <Spinner
+                            android:id="@+id/spn_progress"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:entries="@array/progress_filter" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+    </androidx.cardview.widget.CardView>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

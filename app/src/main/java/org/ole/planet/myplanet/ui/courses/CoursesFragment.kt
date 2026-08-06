@@ -59,7 +59,10 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
 
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
 
-    override fun getLayout(): Int = R.layout.fragment_my_course
+    override fun getLayout(): Int {
+        val isLandscape = context?.resources?.configuration?.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+        return if (isLandscape) R.layout.fragment_my_course_land else R.layout.fragment_my_course
+    }
 
     private fun scrollToTop() {
         recyclerView.post {
