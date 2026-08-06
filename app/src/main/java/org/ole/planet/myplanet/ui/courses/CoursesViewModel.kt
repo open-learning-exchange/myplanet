@@ -149,6 +149,8 @@ class CoursesViewModel @Inject constructor(
 
     fun removeCourses(courseIds: List<String>, userId: String, deleteProgress: Boolean, onComplete: () -> Unit) {
         if (courseIds.isEmpty()) return
+        val currentCourses = _coursesState.value.courses.filter { it.courseId !in courseIds }
+        _coursesState.value = _coursesState.value.copy(courses = currentCourses)
         viewModelScope.launch {
             withContext(dispatcherProvider.io) {
                 courseIds.forEach { courseId ->

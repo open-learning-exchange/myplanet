@@ -229,13 +229,23 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
                 val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
                 deleteSelected(true)
                 selectionController.clearAll(adapterCourses)
-                adapterCourses.removeCourses(courseIds)
+                adapterCourses.removeCourses(courseIds) {
+                    setupButtonVisibility()
+                    checkList()
+                }
+                setupButtonVisibility()
+                checkList()
             },
             onArchiveConfirmed = {
                 val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
                 deleteSelected(true)
                 selectionController.clearAll(adapterCourses)
-                adapterCourses.removeCourses(courseIds)
+                adapterCourses.removeCourses(courseIds) {
+                    setupButtonVisibility()
+                    checkList()
+                }
+                setupButtonVisibility()
+                checkList()
             },
             onAddToLib = {
                 if ((selectedItems?.size ?: 0) > 0) {
@@ -380,16 +390,18 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     private fun createAlertDialog(): AlertDialog {
         var hasAdded = false
         val builder = AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
+        val isLand = context?.resources?.configuration?.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+        val maxCount = if (isLand) 2 else 5
         val msg = buildString {
             append(getString(R.string.success_you_have_added_the_following_courses))
             val itemsSize = selectedItems?.size ?: 0
-            if (itemsSize <= 5) {
+            if (itemsSize <= maxCount) {
                 selectedItems?.forEach { item -> append(" - ").append(item?.courseTitle).append(" \n") }
             } else {
-                for (i in 0..4) {
+                for (i in 0 until maxCount) {
                     append(" - ").append(selectedItems?.get(i)?.courseTitle).append(" \n")
                 }
-                append(getString(R.string.and)).append(itemsSize - 5)
+                append(getString(R.string.and)).append(itemsSize - maxCount)
                     .append(getString(R.string.more_course_s))
             }
             append(getString(R.string.return_to_the_home_tab_to_access_mycourses))
@@ -420,7 +432,16 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
                 }
             }
 
-        return builder.create()
+        val dialog = builder.create()
+        dialog.setOnShowListener {
+            val messageView = dialog.findViewById<android.widget.TextView>(android.R.id.message)
+            messageView?.movementMethod = android.text.method.ScrollingMovementMethod()
+            if (isLand) {
+                messageView?.maxLines = 4
+                messageView?.textSize = 13f
+            }
+        }
+        return dialog
     }
 
     private fun saveSearchActivity() {

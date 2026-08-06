@@ -158,9 +158,9 @@ class CoursesAdapter(
         }
     }
 
-    fun removeCourses(courseIds: List<String>) {
+    fun removeCourses(courseIds: List<String>, onCommitted: (() -> Unit)? = null) {
         val updated = currentList.filter { it.courseId !in courseIds }
-        submitList(updated)
+        submitList(updated, onCommitted)
     }
 
     private fun sortCourseListByTitle(list: List<Course>): List<Course> {
