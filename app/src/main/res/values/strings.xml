@@ -334,7 +334,7 @@
     <string name="add_image">Add Image</string>
     <string name="clear_data">Clear data</string>
     <string name="reset_app">Reset app</string>
-    <string name="freeup_space">Free-up disk space</string>
+    <string name="freeup_space">Free up disk space</string>
     <string name="action_disclaimer">Disclaimer</string>
     <string name="action_about">About</string>
     <string name="english_dictionary">English Dictionary</string>
@@ -946,7 +946,10 @@
     <string name="virtual_assistant_currently_not_available">Virtual assistant currently not available</string>
     <string name="no_courses">No courses available</string>
     <string name="no_resources">No resources available</string>
-    <string name="no_finance_record">Finance record not available</string>
+    <string name="no_resources_added_yet">You haven\'t added any resources yet</string>
+    <string name="no_courses_joined_yet">You haven\'t joined any courses yet</string>
+    <string name="no_teams_joined_yet">You haven\'t joined a team yet</string>
+    <string name="no_finance_record">finance record not available</string>
     <string name="no_team_courses">Team courses not available</string>
     <string name="no_team_resources">Team resources not available</string>
     <string name="no_tasks">Tasks not available</string>
@@ -1272,8 +1275,8 @@
     <string name="tts_not_available">Text-to-speech is not available on this device</string>
     <string name="pdf_no_text_layer">This PDF doesn\'t contain readable text</string>
     <string name="pdf_extracting_text">Preparing text, please wait…</string>
-    <string name="storage_breakdown">storage breakdown</string>
-    <string name="storage_breakdown_summary">view and manage space used by downloads</string>
+    <string name="storage_breakdown">Storage breakdown</string>
+    <string name="storage_breakdown_summary">View and manage space used by downloads</string>
     <string name="storage_breakdown_title">Downloaded Content</string>
     <string name="storage_total_downloaded">Total downloaded</string>
     <string name="storage_videos">Videos</string>
