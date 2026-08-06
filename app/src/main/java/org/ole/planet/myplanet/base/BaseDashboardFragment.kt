@@ -251,6 +251,20 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         imgTask.visibility = if (info.hasTask) View.VISIBLE else View.GONE
     }
 
+    override fun onResume() {
+        super.onResume()
+        refreshMyLifeList()
+    }
+
+    protected fun refreshMyLifeList(view: View? = this.view) {
+        val v = view ?: return
+        val myLifeFlex = v.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife) ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            myLifeFlex.removeAllViews()
+            myLifeListInit(myLifeFlex)
+        }
+    }
+
     private suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
         val userId = prefData.getUserId().ifEmpty { "--" }
         val visibleItems = lifeRepository.getMyLifeForDashboard(userId, getMyLifeListBase(userId))
