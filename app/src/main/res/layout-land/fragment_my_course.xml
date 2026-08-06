@@ -201,7 +201,6 @@
                         android:textColor="@color/daynight_textColor"
                         android:textSize="18sp"
                         android:textStyle="bold" />
-
                     <ImageView
                         android:id="@+id/btn_close_filter"
                         android:layout_width="wrap_content"
