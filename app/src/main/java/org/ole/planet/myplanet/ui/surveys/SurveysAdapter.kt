@@ -29,7 +29,9 @@ class SurveysAdapter(
     { oldItem, newItem -> oldItem.id == newItem.id },
     { oldItem, newItem ->
         oldItem.name == newItem.name &&
-                oldItem.description == newItem.description
+                oldItem.description == newItem.description &&
+                oldItem.isTeamShareAllowed == newItem.isTeamShareAllowed &&
+                oldItem.isFromNation == newItem.isFromNation
     }
 )), OnDiffRefreshListener {
     override fun refreshWithDiff() {
