@@ -7,12 +7,12 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
-import dagger.hilt.android.AndroidEntryPoint
-import org.ole.planet.myplanet.databinding.FragmentCoursesProgressBinding
-import org.ole.planet.myplanet.utils.collectWhenStarted
-import org.ole.planet.myplanet.model.CoursesProgressRow
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import dagger.hilt.android.AndroidEntryPoint
+import org.ole.planet.myplanet.databinding.FragmentCoursesProgressBinding
+import org.ole.planet.myplanet.model.CoursesProgressRow
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class CoursesProgressFragment : Fragment() {

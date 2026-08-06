@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Intent
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.MyLibrary
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
 
