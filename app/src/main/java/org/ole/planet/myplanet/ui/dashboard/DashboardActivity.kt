@@ -709,9 +709,26 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             if (user?.id?.startsWith("guest") == true) {
                 when {
                     offlineVisits >= 4 -> showGuestDialog()
+                    offlineVisits == 3 -> showLastLogInDialog()
                     offlineVisits == 2 -> showVisitLimitWarning()
                 }
             }
+        }
+    }
+
+    private fun showLastLogInDialog() {
+        // Clear any existing banner first
+        binding.bannerContainer.removeAllViews()
+
+        // Inflate the banner layout
+        val bannerView = LayoutInflater.from(this).inflate(R.layout.banner_offline_visit_warning, binding.bannerContainer, true)
+        var banner_message = bannerView.findViewById<TextView>(R.id.banner_message)
+        banner_message.text = getString(R.string.last_login_message)
+
+        // Set up close button
+        val closeButton = bannerView.findViewById<ImageButton>(R.id.banner_close)
+        closeButton.setOnClickListener {
+            binding.bannerContainer.removeAllViews()
         }
     }
 
