@@ -187,7 +187,7 @@
 
     <string name="english">English</string>
     <string name="spanish">Español</string>
-    <string name="somali">somali</string>
+    <string name="somali">Somali</string>
     <string name="nepali">नेपाली</string>
     <string name="arabic">عربى</string>
     <string name="french">Français</string>
@@ -1093,7 +1093,7 @@
     <string name="most_opened_resource">Most Opened Resource : </string>
     <string name="number_of_resources_opened">Number of Resources Opened : </string>
     <string name="kindly_enter_reply_message">Kindly enter reply message</string>
-    <string name="start">Atart</string>
+    <string name="start">Start</string>
     <string name="continuation">Continue</string>
     <string name="please_complete_survey">Please complete the survey to finish the course</string>
     <string name="export_cancelled">Export cancelled.</string>
