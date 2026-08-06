@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
+import org.ole.planet.myplanet.base.DefaultBaseAdapterFactory
 import org.ole.planet.myplanet.callback.OnCourseItemSelectedListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnTagClickListener
@@ -99,11 +100,12 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
             userModel = userSessionManager.getUserModel()
         }
 
-        adapterCourses = CoursesAdapter(
-            hostActivity,
-            HashMap(),
-            userModel?.isGuest() ?: true,
-            isMyCourseLib
+        val factory = adapterFactory ?: DefaultBaseAdapterFactory()
+        adapterCourses = factory.createCoursesAdapter(
+            context = hostActivity,
+            map = HashMap(),
+            isGuest = userModel?.isGuest() ?: true,
+            isMyCourseLib = isMyCourseLib
         )
 
         adapterCourses.setListener(this@CoursesFragment)

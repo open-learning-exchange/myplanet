@@ -30,13 +30,11 @@ import org.ole.planet.myplanet.utils.FileUtils
 
 @AndroidEntryPoint
 class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
-
     private var _binding: FragmentStorageCategoryDetailBinding? = null
     private val binding get() = _binding!!
 
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
-
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
 
@@ -60,6 +58,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         private const val ARG_EXTENSIONS = "extensions"
         private const val ARG_ALL_KNOWN = "all_known"
         const val RESULT_KEY = "category_deleted"
+        const val PAYLOAD_CHECKED_CHANGED = "payload_checked_changed"
 
         fun newInstance(
             label: String,
@@ -136,7 +135,6 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
                 deleteItems(items)
             }
         }
-
         loadResources()
     }
 
@@ -171,10 +169,8 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         val oleDir = File(FileUtils.getOlePath(requireContext()))
         if (!oleDir.exists() || !oleDir.isDirectory) return emptyList()
 
-        // Build a map of resourceId → title from Realm (one query)
         val titleMap = resourcesRepository.getResourceTitlesMap()
 
-        // Group files by resourceId directory
         val grouped = mutableMapOf<String, MutableList<File>>()
         oleDir.walkTopDown().filter { it.isFile }.forEach { file ->
             val ext = file.extension.lowercase()
@@ -232,19 +228,16 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
 
                 toDelete.forEach { item ->
                     item.files.forEach { it.delete() }
-                    // Remove empty parent directory
                     val parentDir = oleDir.resolve(item.resourceId)
                     if (parentDir.exists() && parentDir.list().isNullOrEmpty()) {
                         parentDir.delete()
                     }
                 }
 
-                // Sync Realm: mark deleted resources as not offline
                 val deletedIds = toDelete.map { it.resourceId }.toSet()
                 resourcesRepository.markResourcesAsNotOffline(deletedIds)
             }
 
-            // Notify parent to refresh, then dismiss
             parentFragmentManager.setFragmentResult(RESULT_KEY, Bundle())
             dismiss()
         }
@@ -253,7 +246,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
     private val DIFF_CALLBACK = DiffUtils.itemCallback<ResourceItem>(
         areItemsTheSame = { o, n -> o.resourceId == n.resourceId },
         areContentsTheSame = { o, n -> o == n },
-        getChangePayload = { o, n -> if (o.copy(isChecked = n.isChecked) == n) true else null }
+        getChangePayload = { o, n -> if (o.copy(isChecked = n.isChecked) == n) PAYLOAD_CHECKED_CHANGED else null }
     )
 
     inner class ResourceAdapter(
@@ -294,7 +287,6 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
             }
         }
     }
-
 
     override fun onDestroyView() {
         super.onDestroyView()

@@ -16,6 +16,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.callback.OnMemberActionListener
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
@@ -111,12 +112,7 @@ class MembersFragment : BaseTeamFragment() {
             val isLeader = members.any { it.user.id == currentUserId && it.isLeader }
             membersAdapter?.setUserId(currentUserId)
             membersAdapter?.updateData(members, isLeader)
-            if (members.isEmpty()) {
-                binding.tvNodata.visibility = View.VISIBLE
-                binding.tvNodata.text = getString(R.string.no_data_available_please_check_and_try_again)
-            } else {
-                binding.tvNodata.visibility = View.GONE
-            }
+            BaseRecyclerFragment.showNoData(binding.tvNodata, members.size, "")
         }
     }
 

@@ -16,9 +16,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.utils.DefaultDispatcherProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.model.TagEntity
 
 data class FilterState(
     val searchText: String,
@@ -90,6 +90,7 @@ class CourseFilterController(
 
     private fun setupSearchWatcher() {
         searchTextWatcher = object : TextWatcher {
+            @Suppress("EmptyMethod")
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 if (!etSearch.isFocused) return
@@ -99,6 +100,7 @@ class CourseFilterController(
                     _filterState.value = currentState()
                 }
             }
+            @Suppress("EmptyMethod")
             override fun afterTextChanged(s: Editable) {}
         }
         etSearch.addTextChangedListener(searchTextWatcher)

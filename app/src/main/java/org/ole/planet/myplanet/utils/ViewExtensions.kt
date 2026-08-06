@@ -12,9 +12,9 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import org.ole.planet.myplanet.R
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.onStart
+import org.ole.planet.myplanet.R
 
 fun EditText.textChanges(): Flow<CharSequence?> {
     return callbackFlow {

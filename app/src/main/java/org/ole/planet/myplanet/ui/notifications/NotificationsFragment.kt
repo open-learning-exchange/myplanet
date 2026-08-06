@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.databinding.FragmentNotificationsBinding
 import org.ole.planet.myplanet.model.Notification
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
-import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
@@ -125,7 +124,6 @@ class NotificationsFragment : Fragment() {
     private fun handleNotificationClick(notification: Notification) {
         viewLifecycleOwner.lifecycleScope.launch {
             val result = when (notification.type) {
-                "survey" -> viewModel.getSurveyId(notification.relatedId)
                 "task" -> viewModel.getTaskDetails(notification.relatedId)
                 "join_request" -> notification.relatedId?.let {
                     viewModel.getJoinRequestTeamId(it)
@@ -137,18 +135,6 @@ class NotificationsFragment : Fragment() {
                 "storage" -> {
                     val intent = Intent(ACTION_INTERNAL_STORAGE_SETTINGS)
                     startActivity(intent)
-                }
-                "survey" -> {
-                    val examId = result as? String
-                    if (examId != null && activity is OnHomeItemClickListener) {
-                        SubmissionsAdapter.openSurvey(
-                            activity as OnHomeItemClickListener,
-                            examId,
-                            false,
-                            false,
-                            "",
-                        )
-                    }
                 }
                 "task" -> {
                     val teamDetails = result as? TaskNotificationResult

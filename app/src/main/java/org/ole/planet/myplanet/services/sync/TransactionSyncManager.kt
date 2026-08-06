@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
 import android.os.SystemClock
-import android.util.Base64
 import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -17,13 +16,13 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.coroutineScope
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
@@ -82,7 +81,8 @@ class TransactionSyncManager @Inject constructor(
     private val progressRepository: ProgressRepository,
     private val surveysRepository: SurveysRepository,
     @ApplicationScope private val applicationScope: CoroutineScope,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val userSessionManager: UserSessionManager
 ) {
     // The heavy tables are fetched in parallel (see SyncManager), but SQLite has a single
     // writer, so running ~14 batch inserts concurrently just thrashes the write lock/WAL — the
@@ -101,11 +101,21 @@ class TransactionSyncManager @Inject constructor(
         return false
     }
 
+
+    fun syncDashboardKeyId(role: String?, listener: OnSyncListener) {
+        val settings = sharedPrefManager.rawPreferences
+        if (role?.contains("health") == true) {
+            syncAllHealthData(settings, listener)
+        } else {
+            syncKeyIv(settings, listener, userSessionManager)
+        }
+    }
+
     fun syncAllHealthData(settings: SharedPreferences, listener: OnSyncListener) {
         listener.onSyncStarted()
         val userName = SecurePrefs.getUserName(context, settings) ?: ""
         val password = SecurePrefs.getPassword(context, settings) ?: ""
-        val header = "Basic ${Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)}"
+        val header = UrlUtils.basicAuthHeader(userName, password)
 
         applicationScope.launch(dispatcherProvider.io) {
             try {
@@ -158,7 +168,7 @@ class TransactionSyncManager @Inject constructor(
         listener.onSyncStarted()
         val userName = SecurePrefs.getUserName(context, settings) ?: ""
         val password = SecurePrefs.getPassword(context, settings) ?: ""
-        val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
+        val header = UrlUtils.basicAuthHeader(userName, password)
 
         applicationScope.launch(dispatcherProvider.io) {
             val model = userSessionManager.getUserModel()
@@ -211,7 +221,7 @@ class TransactionSyncManager @Inject constructor(
                 }
                 val batchStartTime = SystemClock.elapsedRealtime()
                 val batchApiStartTime = SystemClock.elapsedRealtime()
-                val response = apiInterface.findDocs(
+                val response = apiInterface.postDoc(
                     authHeader,
                     "application/json",
                     "$url/$table/_all_docs?include_docs=true&limit=$pageSize&skip=$skip",
