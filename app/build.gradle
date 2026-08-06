@@ -184,6 +184,9 @@ dependencies {
     implementation(libs.cardview)
     implementation(libs.constraintlayout)
     implementation(libs.core.ktx)
+    // ProcessLifecycleOwner used by MainApplication and Utilities. This used to arrive
+    // transitively through databinding-ktx, so it must be declared now that data binding is off.
+    implementation(libs.lifecycle.process)
     implementation(libs.hilt.work)
     ksp(libs.hilt.compiler)
     implementation(libs.media3.exoplayer)
