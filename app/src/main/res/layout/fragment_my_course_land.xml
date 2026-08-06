@@ -262,7 +262,68 @@
                             android:entries="@array/progress_filter" />
                     </LinearLayout>
                 </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/order_by_date_button"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/buttonblue"
+                        android:text="@string/order_by_date"
+                        android:textColor="@color/md_white_1000" />
+                    <Button
+                        android:id="@+id/order_by_title_button"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/buttonblue"
+                        android:text="@string/order_by_title"
+                        android:textColor="@color/md_white_1000" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btn_collections"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/buttonblue"
+                        android:text="@string/collections"
+                        android:textColor="@color/md_white_1000" />
+                    <Button
+                        android:id="@+id/btn_clear_tags"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/buttonblue"
+                        android:text="@string/clear_tags"
+                        android:textColor="@color/md_white_1000" />
+                </LinearLayout>
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
     </androidx.cardview.widget.CardView>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabMyProgress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/padding_large"
+        android:contentDescription="@string/my_progress"
+        android:src="@drawable/ic_my_progress"
+        android:visibility="gone"
+        app:tint="@color/md_white_1000" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
