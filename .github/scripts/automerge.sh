@@ -29,12 +29,21 @@ WAIT_TIMEOUT_MIN="${WAIT_TIMEOUT_MIN:-45}"
 USING_PAT="${USING_PAT:-false}"
 
 RUN_APPEAR_TIMEOUT_SEC=300
+POLL_INTERVAL_SEC=20
+PR_SETTLE_TIMEOUT_SEC=120
+
+self_ref="${GITHUB_WORKFLOW_REF:-}"
+self_ref="${self_ref%@*}"
+SELF_WORKFLOW_PATH="${self_ref#*/*/}"
+SELF_WORKFLOW_PATH="${SELF_WORKFLOW_PATH:-.github/workflows/automerge.yml}"
+SELF_RUN_ID="${GITHUB_RUN_ID:-}"
 
 log()     { printf '%s | %s\n' "$(date -u +%H:%M:%S)" "$*"; }
 summary() { [ -n "${GITHUB_STEP_SUMMARY:-}" ] && printf '%s\n' "$*" >> "$GITHUB_STEP_SUMMARY"; return 0; }
 
 merged_count=0
 merged_list=""
+skip_numbers=""
 last_base_sha=""
 
 MAX_REPREPARES=2
@@ -51,26 +60,52 @@ pick_pr() {
         --label "$LABEL" \
         --limit 100 \
         --json number,title,isDraft,headRefName,headRefOid,headRepositoryOwner \
-      | jq -c 'map(select(.isDraft | not)) | sort_by(.number) | first'
+      | jq -c --arg skip "$skip_numbers" '
+            [ $skip | split(" ")[] | select(length > 0) | tonumber ] as $done
+            | map(select(.isDraft | not))
+            | map(select(.number as $n | $done | index($n) | not))
+            | sort_by(.number) | first'
 }
 
-# Cheap early exit; the real conflict test is step 1.
+pr_state()  { gh pr view "$1" --repo "$REPO" --json state --jq '.state' 2>/dev/null || echo ''; }
+pr_review() { gh pr view "$1" --repo "$REPO" --json reviewDecision --jq '.reviewDecision' 2>/dev/null || echo ''; }
+
 check_mergeable() {
     local pr=$1 state=""
     for _ in 1 2 3 4 5; do
-        state=$(gh pr view "$pr" --repo "$REPO" --json mergeable --jq '.mergeable')
-        [ "$state" = "UNKNOWN" ] || break
+        state=$(gh pr view "$pr" --repo "$REPO" --json mergeable --jq '.mergeable' 2>/dev/null || echo '')
+        case "$state" in MERGEABLE|CONFLICTING) break ;; esac
         sleep 5
     done
-    if [ "$state" != "MERGEABLE" ]; then
-        log "  #$pr is not mergeable (state: $state)"
-        return 1
-    fi
+    case "$state" in
+        MERGEABLE) ;;
+        CONFLICTING)
+            log "  #$pr conflicts with $BASE -- needs a human"
+            return 1 ;;
+        *)
+            log "  #$pr mergeability is ${state:-unavailable} -- letting step 1 decide" ;;
+    esac
+}
+
+wait_pr_merged() {
+    local pr=$1 state="" deadline=$(( SECONDS + PR_SETTLE_TIMEOUT_SEC ))
+    while :; do
+        state=$(pr_state "$pr")
+        [ "$state" = "OPEN" ] || break
+        [ "$SECONDS" -lt "$deadline" ] || { log "  #$pr still reads as open after ${PR_SETTLE_TIMEOUT_SEC}s"; break; }
+        sleep 5
+    done
 }
 
 runs_for() {
-    gh api "repos/$REPO/actions/runs?head_sha=$1&per_page=100" \
-        --jq '[.workflow_runs[] | {name, status, conclusion}]' 2>/dev/null || echo '[]'
+    local raw
+    raw=$(gh api "repos/$REPO/actions/runs?head_sha=$1&per_page=100" 2>/dev/null) \
+        || { echo '[]'; return 0; }
+    jq -c --arg self "$SELF_WORKFLOW_PATH" --arg run "$SELF_RUN_ID" '
+        [ .workflow_runs[]?
+          | select(.path != $self)
+          | select(($run | length == 0) or ((.id | tostring) != $run))
+          | {name, status, conclusion} ]' <<<"$raw" 2>/dev/null || echo '[]'
 }
 
 runs_failed()  { jq '[.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")] | length' <<<"$1"; }
@@ -146,7 +181,7 @@ wait_for_runs() {
             log "  timed out after ${WAIT_TIMEOUT_MIN}m waiting on ${sha:0:7}"
             return 1
         fi
-        sleep 20
+        sleep "$POLL_INTERVAL_SEC"
     done
 }
 
@@ -241,7 +276,26 @@ while :; do
         exit 1
     fi
 
-    check_mergeable "$NUMBER" || { summary "| #$NUMBER | | **stopped**: not mergeable |"; exit 1; }
+    # The list index can be stale; ask about this PR directly before working it.
+    state=$(pr_state "$NUMBER")
+    if [ -n "$state" ] && [ "$state" != "OPEN" ]; then
+        log "  #$NUMBER is no longer open (state: $state) -- skipping"
+        skip_numbers="$skip_numbers $NUMBER"
+        continue
+    fi
+
+    # A branch policy needing an approval refuses the merge in step 4, after a
+    # full build. Skip rather than stop, so approved PRs behind it still drain.
+    review=$(pr_review "$NUMBER")
+    case "$review" in
+        REVIEW_REQUIRED|CHANGES_REQUIRED|CHANGES_REQUESTED)
+            log "  #$NUMBER needs a review ($review) -- skipping, $BASE would refuse it"
+            summary "| #$NUMBER | | skipped: needs a review (\`$review\`) |"
+            skip_numbers="$skip_numbers $NUMBER"
+            continue ;;
+    esac
+
+    check_mergeable "$NUMBER" || { summary "| #$NUMBER | | **stopped**: conflicts with \`$BASE\` |"; exit 1; }
 
     # "Next" comes off the base -- it is what the merge lands on.
     git show "origin/$BASE:$GRADLE_FILE" > /tmp/base-build.gradle
@@ -360,7 +414,15 @@ while :; do
                     log "  GitHub App token belonging to someone allowed to merge into $BASE."
                 fi
                 ;;
-            *"Pull Request is not mergeable"*|*"required status check"*)
+            *"base branch policy prohibits"*)
+                reason="**stopped**: \`$BASE\` policy refused the merge (review? codeowner?)"
+                log "  $BASE's branch protection refused this merge. The prepared commit is"
+                log "  green, so the unmet requirement is a policy one -- most often a missing"
+                log "  approving review, a codeowner review, or an unresolved conversation."
+                log "  --auto is deliberately not used: it returns before the merge happens,"
+                log "  and the drain must know the merge landed to bump the next version."
+                ;;
+            *"is not mergeable"*|*"required status check"*)
                 reason="**stopped**: base requires checks the prepared commit has not passed"
                 log "  the prepared commit has not satisfied the base's required checks."
                 log "  Make sure required_workflows covers every check $BASE requires."
@@ -370,12 +432,14 @@ while :; do
         exit 1
     fi
     log "  merged #$NUMBER"
+    wait_pr_merged "$NUMBER"
 
     git fetch --quiet origin "$BASE"
     last_base_sha=$(git rev-parse "origin/$BASE")
 
     merged_count=$((merged_count + 1))
     merged_list="$merged_list #$NUMBER"
+    skip_numbers="$skip_numbers $NUMBER"
     summary "| #$NUMBER | → \`$new_name\` | merged as \`${last_base_sha:0:7}\` |"
 done
 
