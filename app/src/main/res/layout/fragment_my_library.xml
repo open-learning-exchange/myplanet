@@ -203,7 +203,6 @@
                         android:textColor="@color/daynight_textColor"
                         android:textSize="18sp"
                         android:textStyle="bold" />
-
                     <ImageView
                         android:id="@+id/btn_close_filter"
                         android:layout_width="wrap_content"
@@ -214,6 +213,7 @@
                         android:src="@drawable/outline_close_24"
                         app:tint="@color/daynight_textColor" />
                 </LinearLayout>
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
