@@ -52,8 +52,6 @@ reprep_n=0
 
 # ---------------------------------------------------------------- helpers
 
-# `gh pr list` reads a search index that lags a merge by a few seconds, so a PR
-# this drain just merged can come back as open. $skip_numbers keeps it out.
 pick_pr() {
     gh pr list \
         --repo "$REPO" \
