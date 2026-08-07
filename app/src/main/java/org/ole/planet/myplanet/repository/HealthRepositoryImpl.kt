@@ -145,4 +145,68 @@ class HealthRepositoryImpl @Inject constructor(
     override suspend fun upsert(examination: HealthExamination) {
         healthExaminationDao.upsert(examination)
     }
+
+    override suspend fun getPatientById(id: String): UserEntity? {
+        return userDao.getById(id)
+    }
+
+    override suspend fun getPatientsSortedBy(fieldName: String, descending: Boolean): List<UserEntity> {
+        val users = userDao.getAll()
+        return sortPatients(users, fieldName, descending)
+    }
+
+    override suspend fun searchPatients(query: String, sortField: String, descending: Boolean): List<UserEntity> {
+        val users = if (query.isBlank()) {
+            userDao.getAll()
+        } else {
+            userDao.search(query)
+        }
+        return sortPatients(users, sortField, descending)
+    }
+
+    private fun sortPatients(users: List<UserEntity>, fieldName: String, descending: Boolean): List<UserEntity> {
+        fun value(value: String?) = value.orEmpty().lowercase()
+        return when (fieldName) {
+            "joinDate" -> if (descending) users.sortedByDescending { it.joinDate } else users.sortedBy { it.joinDate }
+            "name" -> if (descending) users.sortedByDescending { value(it.name) } else users.sortedBy { value(it.name) }
+            else -> users
+        }
+    }
+
+    override suspend fun getPatientHealthRecords(userId: String, currentUser: UserEntity): org.ole.planet.myplanet.model.HealthRecord? {
+        val mh = getByIdOrUserId(userId) ?: return null
+        val json = AndroidDecrypter.decrypt(mh.data, currentUser.key, currentUser.iv)
+        val mm = if (android.text.TextUtils.isEmpty(json)) {
+            null
+        } else {
+            try {
+                JsonUtils.gson.fromJson(json, MyHealth::class.java)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        } ?: return null
+
+        val list = getByProfileId(mm.userKey ?: "")
+        if (list.isEmpty()) {
+            return org.ole.planet.myplanet.model.HealthRecord(mh, mm, emptyList(), emptyMap())
+        }
+
+        val userIds = list.mapNotNull {
+            it.getEncryptedDataAsJson(currentUser).let { jsonData ->
+                jsonData.get("createdBy")?.asString
+            }
+        }.distinct()
+
+        val userMap = if (userIds.isEmpty()) {
+            emptyMap()
+        } else {
+            val userIdSet = userIds.toSet()
+            userDao.getAll()
+                .filter { it.id in userIdSet }
+                .map { it }
+                .associateBy { it.id ?: "" }
+        }
+        return org.ole.planet.myplanet.model.HealthRecord(mh, mm, list, userMap)
+    }
 }

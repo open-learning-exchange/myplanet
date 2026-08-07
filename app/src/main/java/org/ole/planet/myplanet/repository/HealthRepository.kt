@@ -20,4 +20,8 @@ interface HealthRepository {
     suspend fun getByIdOrUserId(id: String): HealthExamination?
     suspend fun getByProfileId(profileId: String): List<HealthExamination>
     suspend fun upsert(examination: HealthExamination)
+    suspend fun getPatientById(id: String): UserEntity?
+    suspend fun getPatientsSortedBy(fieldName: String, descending: Boolean): List<UserEntity>
+    suspend fun searchPatients(query: String, sortField: String, descending: Boolean): List<UserEntity>
+    suspend fun getPatientHealthRecords(userId: String, currentUser: UserEntity): org.ole.planet.myplanet.model.HealthRecord?
 }
