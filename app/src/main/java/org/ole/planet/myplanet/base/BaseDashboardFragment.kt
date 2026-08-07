@@ -111,41 +111,41 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
 
     private fun observeUiState() {
         viewLifecycleOwner.lifecycleScope.launch {
-            launch {
-                viewModel.uiState
-                    .map { it.library }
-                    .distinctUntilChanged()
-                    .collect { library ->
-                        renderMyLibrary(library)
-                    }
-            }
-            launch {
-                viewModel.uiState
-                    .map { it.courses }
-                    .distinctUntilChanged()
-                    .collect { courses ->
-                        renderMyCourses(courses)
-                    }
-            }
-            launch {
-                viewModel.uiState
-                    .map { it.teams }
-                    .distinctUntilChanged()
-                    .collect { teams ->
-                        renderMyTeams(teams)
-                    }
-            }
-            launch {
-                viewModel.uiState
-                    .map { it.fullName to it.offlineLogins }
-                    .distinctUntilChanged()
-                    .collect { (fullName, offlineLogins) ->
-                        view?.findViewById<TextView>(R.id.txtFullName)?.text =
-                            getString(R.string.user_name, fullName, offlineLogins)
-                    }
-            }
-            launch {
-                repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.uiState
+                        .map { it.library }
+                        .distinctUntilChanged()
+                        .collect { library ->
+                            renderMyLibrary(library)
+                        }
+                }
+                launch {
+                    viewModel.uiState
+                        .map { it.courses }
+                        .distinctUntilChanged()
+                        .collect { courses ->
+                            renderMyCourses(courses)
+                        }
+                }
+                launch {
+                    viewModel.uiState
+                        .map { it.teams }
+                        .distinctUntilChanged()
+                        .collect { teams ->
+                            renderMyTeams(teams)
+                        }
+                }
+                launch {
+                    viewModel.uiState
+                        .map { it.fullName to it.offlineLogins }
+                        .distinctUntilChanged()
+                        .collect { (fullName, offlineLogins) ->
+                            view?.findViewById<TextView>(R.id.txtFullName)?.text =
+                                getString(R.string.user_name, fullName, offlineLogins)
+                        }
+                }
+                launch {
                     newsViewModel.privateImageUrls.collect { urls ->
                         if (urls.isNotEmpty()) {
                             Utilities.toast(activity, getString(R.string.downloading_images_please_check_notification))
