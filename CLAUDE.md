@@ -648,7 +648,7 @@ When making changes, verify:
 - Ensure `@AndroidEntryPoint` annotation is present; verify a module provides the dependency; check injection point (constructor vs field).
 
 **Issue: Blocking the main thread on DB access**
-- Room DAO methods in this project are all `suspend` and run on IO — call them from a coroutine (`viewLifecycleOwner.lifecycleScope.launch`), never synchronously from the main thread.
+- Room DAO methods in this project are `suspend` (apart from the `Flow`-returning ones) and run on IO — call them from a coroutine (`viewLifecycleOwner.lifecycleScope.launch`), never synchronously from the main thread.
 
 **Issue: Push fails with 403**
 - Ensure branch name starts with `claude/` and ends with the matching session ID; use `git push -u origin <branch-name>` (see **Branch Strategy** above for details).
