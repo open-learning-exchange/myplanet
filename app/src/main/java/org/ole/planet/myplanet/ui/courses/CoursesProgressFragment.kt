@@ -13,6 +13,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.databinding.FragmentCoursesProgressBinding
 import org.ole.planet.myplanet.model.CoursesProgressRow
 import org.ole.planet.myplanet.utils.collectWhenStarted
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class CoursesProgressFragment : Fragment() {
@@ -20,6 +21,8 @@ class CoursesProgressFragment : Fragment() {
     private val binding get() = _binding!!
     private val progressViewModel: ProgressViewModel by viewModels()
     private lateinit var progressAdapter: CoursesProgressAdapter
+
+    @Inject lateinit var gson: Gson
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentCoursesProgressBinding.inflate(inflater, container, false)
@@ -43,7 +46,7 @@ class CoursesProgressFragment : Fragment() {
 
                     val stepMistake = if (obj.has("stepMistake")) {
                         val type = object : TypeToken<Map<String, Int>>() {}.type
-                        Gson().fromJson<Map<String, Int>>(obj.get("stepMistake"), type)
+                        gson.fromJson<Map<String, Int>>(obj.get("stepMistake"), type)
                     } else {
                         null
                     }
