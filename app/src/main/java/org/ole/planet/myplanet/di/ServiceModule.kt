@@ -119,7 +119,7 @@ object ServiceModule {
     @Provides
     @Singleton
     fun provideRealtimeSyncManager(): RealtimeSyncManager {
-        return RealtimeSyncManager.getInstance()
+        return RealtimeSyncManager()
     }
 
     @Provides
