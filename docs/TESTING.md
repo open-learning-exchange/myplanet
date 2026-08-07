@@ -218,7 +218,7 @@ class UserEntityTest {
     fun setup() {
         // applicationScope is lateinit — reading it before anything initialized it throws,
         // so the capture is guarded (same reason the context capture below is guarded)
-        originalScope = try { MainApplication.applicationScope } catch (_: Exception) { null }
+        originalScope = try { MainApplication.applicationScope } catch (_: UninitializedPropertyAccessException) { null }
         Dispatchers.setMain(Dispatchers.Unconfined)
         MainApplication.applicationScope = CoroutineScope(Dispatchers.Unconfined)
         mockkObject(Utilities)

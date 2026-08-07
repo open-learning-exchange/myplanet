@@ -32,7 +32,7 @@ class UserEntityTest {
         // applicationScope is lateinit — reading it before anything initialized it throws
         originalScope = try {
             MainApplication.applicationScope
-        } catch (_: Exception) {
+        } catch (_: UninitializedPropertyAccessException) {
             null
         }
         Dispatchers.setMain(Dispatchers.Unconfined)

@@ -695,7 +695,7 @@ Branches follow the `{prefix}/{slug}` pattern, where the slug is kebab-case deri
 | AI agent (Claude) | `claude/` | `claude/13752-unable-to-complete-certain-courses` |
 | AI agent (Jules) | `jules/` or `jules-` | `jules/13530-move-nav-buttons-below-content` |
 | AI agent (Codex) | `codex/` (also `<id>-codex/`) | `codex/13559-archive-and-remove-course-actions` |
-| AI agent (Copilot) | `copilot/` | `copilot/fix-realm-room-migration` |
+| AI agent (Copilot) | `copilot/` | `copilot/fix-notification-badge-count` |
 | Human contributor | `{number}-{description}` | `13755-add-ability-to-edit-meetups` |
 
 (The full roster of AI agents active on this repo — including Devin, OpenHands, and the review bots — lives in `CLAUDE.md` → "AI Agent Roster".)
@@ -735,7 +735,7 @@ Besides a human reviewer and a Claude session, **CodeRabbit** is available as a 
 
 Useful commands (as PR comments):
 
-```
+```text
 @coderabbitai help                    # list all commands
 @coderabbitai review                  # incremental review of new changes
 @coderabbitai full review             # re-review the whole PR from scratch
