@@ -726,6 +726,21 @@ Before opening a PR:
 - [ ] `_binding` is nulled in `onDestroyView()` if you added a new Fragment
 - [ ] `AppDatabase` `version` bumped if you changed any `@Entity`
 
+### PR Reviews — Three Options
+
+Besides a human reviewer and a Claude session, **CodeRabbit** is available as a third review option on any PR: mention `@coderabbitai` in a PR comment to summon it. It's the token-cheap shortcut — an incremental automated review without spending a human's time or a Claude session's context.
+
+Useful commands (as PR comments):
+
+```
+@coderabbitai review          # incremental review of new changes
+@coderabbitai full review     # re-review the whole PR from scratch
+@coderabbitai resolve         # resolve all its open comments
+@coderabbitai summary         # regenerate the PR summary
+```
+
+Min-max rule of thumb: let CodeRabbit do the first mechanical pass (nits, obvious bugs, style drift), then spend human/Claude attention only on what it can't judge — architecture fit, domain correctness, offline/sync behavior.
+
 ---
 
 ## Things to Avoid

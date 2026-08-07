@@ -400,6 +400,10 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 - Daily checks for GitHub Actions updates (max 10 open PRs)
 - Daily checks for Gradle dependency updates (max 15 open PRs)
 
+**PR Reviews — CodeRabbit**
+- On any PR, commenting `@coderabbitai review` summons CodeRabbit as a third review option (besides human and Claude review) — the token-cheap first pass for nits and obvious bugs
+- Also: `@coderabbitai full review` (from scratch), `@coderabbitai resolve` (resolve its comments); see `docs/CODE_STYLE_GUIDE.md` → "PR Reviews — Three Options"
+
 ### Adding New Features
 
 1. **Identify the Layer**
