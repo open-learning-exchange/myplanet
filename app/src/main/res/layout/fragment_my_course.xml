@@ -26,6 +26,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@color/colorPrimary"
+                android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:padding="@dimen/padding_normal">
 
@@ -44,6 +45,9 @@
                     android:textStyle="bold"
                     android:maxLines="1"
                     android:minWidth="150dp" />
+
+                <include layout="@layout/view_grid_list_toggle" />
+
                 <Button
                     android:id="@+id/btn_remove"
                     android:layout_width="70dp"
@@ -137,11 +141,29 @@
                 android:maxWidth="0dp"
                 android:checked="false" />
             <include
-                layout="@layout/layout_search"
+                layout="@layout/layout_search_pill"
                 android:layout_width="0dp"
+                android:layout_margin="10.5dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1" /> 
+                android:layout_weight="1" />
         </LinearLayout>
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/secondary_bg"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/chip_filter_row"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingStart="@dimen/padding_normal"
+                android:paddingTop="4dp"
+                android:paddingEnd="@dimen/padding_normal"
+                android:paddingBottom="8dp" />
+        </HorizontalScrollView>
 
         <FrameLayout
             android:layout_width="match_parent"
@@ -149,10 +171,17 @@
             android:layout_weight="1"
             android:background="@color/secondary_bg">
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recycler"
+            <org.ole.planet.myplanet.ui.components.MaxWidthFrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="match_parent"
+                android:layout_gravity="center_horizontal">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recycler"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+            </org.ole.planet.myplanet.ui.components.MaxWidthFrameLayout>
+
             <TextView
                 android:id="@+id/tv_message"
                 android:layout_width="wrap_content"
@@ -254,24 +283,6 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:entries="@array/subject_level" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:padding="4dp"
-                            android:textColor="@color/daynight_textColor"
-                            android:text="@string/progress" />
-                        <Spinner
-                            android:id="@+id/spn_progress"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content" />
                     </LinearLayout>
                 </LinearLayout>
 
