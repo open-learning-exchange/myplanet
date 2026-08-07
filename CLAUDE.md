@@ -193,7 +193,7 @@ Kotlin itself is applied via AGP's built-in Kotlin support (no `kotlin-android` 
 - Java Compatibility: 17
 - Kotlin JVM Target: 17
 - View Binding: Enabled
-- Data Binding: Enabled
+- Data Binding: Not enabled
 - BuildConfig: Enabled
 
 ---
@@ -374,7 +374,7 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 - Runs on Ubuntu 24.04
 - Matrix builds both `default` and `lite` flavors with fail-fast disabled
 - Uses `gradle/actions/setup-gradle@v6` with a remote Gradle build cache
-- Build command: `./gradlew assemble${FLAVOR}Debug --parallel --max-workers=4`
+- Build command: `./gradlew assemble${FLAVOR^}Debug --parallel --max-workers=4`
 
 **Test Workflow** (`.github/workflows/test.yml`)
 - Triggers: every push (all branches) + manual dispatch; `permissions: contents: read`
