@@ -432,20 +432,24 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     private suspend fun observeNetworkForDownloads() {
         withContext(dispatcherProvider.default) {
             isNetworkConnectedFlow.onEach { isConnected ->
-                if (isConnected) {
-                    val serverUrl = sharedPrefManager.getServerUrl()
-                    if (serverUrl.isNotEmpty()) {
-                        applicationScope.launch {
-                            val canReachServer = isServerReachable(serverUrl, dispatcherProvider.io)
-                            if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
-                                resourceDownloadCoordinator.startBackgroundDownload(
-                                    downloadAllFiles(resourcesRepository.getAllLibrariesToSync())
-                                )
-                            }
-                        }
-                    }
+                if (!isConnected) return@onEach
+
+                val serverUrl = sharedPrefManager.getServerUrl()
+                if (serverUrl.isEmpty()) return@onEach
+
+                applicationScope.launch {
+                    checkServerAndStartDownload(serverUrl)
                 }
             }.launchIn(applicationScope)
+        }
+    }
+
+    private suspend fun checkServerAndStartDownload(serverUrl: String) {
+        val canReachServer = isServerReachable(serverUrl, dispatcherProvider.io)
+        if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
+            resourceDownloadCoordinator.startBackgroundDownload(
+                downloadAllFiles(resourcesRepository.getAllLibrariesToSync())
+            )
         }
     }
 
