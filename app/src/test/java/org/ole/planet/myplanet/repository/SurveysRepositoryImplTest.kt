@@ -109,6 +109,113 @@ class SurveysRepositoryImplTest {
     }
 
     @Test
+    fun `getTeamOwnedSurveys returns empty list when teamId is null`() = runTest {
+        val result = repository.getTeamOwnedSurveys(null)
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun `getTeamOwnedSurveys returns filtered surveys for valid teamId`() = runTest {
+        val teamId = "team1"
+        // Mock team submissions
+        coEvery { submissionDao.getByTeamId(teamId) } returns listOf(
+            Submission(id = "sub1", parent = "{\"_id\":\"exam1\"}")
+        )
+        // Mock adopted source survey ids
+        coEvery { examDao.getByTeamIdAndType(teamId, "surveys") } returns listOf(
+            StepExam(id = "survey1", sourceSurveyId = "source1")
+        )
+        // Mock all surveys
+        coEvery { examDao.getByType("surveys") } returns listOf(
+            StepExam(id = "exam1", teamId = "other"), // Filtered by submission ID
+            StepExam(id = "survey2", teamId = teamId), // Filtered by teamId
+            StepExam(id = "survey3", teamId = "other") // Excluded
+        )
+
+        val result = repository.getTeamOwnedSurveys(teamId)
+
+        assertEquals(listOf("exam1", "survey2"), result.map { it.id })
+    }
+
+    @Test
+    fun `getAdoptableTeamSurveys returns empty list when teamId is null`() = runTest {
+        val result = repository.getAdoptableTeamSurveys(null)
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun `getAdoptableTeamSurveys returns unadopted shareable surveys`() = runTest {
+        val teamId = "team1"
+        // Mock team submissions
+        coEvery { submissionDao.getByTeamId(teamId) } returns listOf(
+            Submission(id = "sub1", parent = "{\"_id\":\"exam1\"}")
+        )
+        // Mock adopted source survey ids
+        coEvery { examDao.getByTeamIdAndType(teamId, "surveys") } returns listOf(
+            StepExam(id = "survey1", sourceSurveyId = "source1")
+        )
+        // Mock all surveys
+        coEvery { examDao.getByType("surveys") } returns listOf(
+            StepExam(id = "exam1", isTeamShareAllowed = true), // Excluded (in submissions)
+            StepExam(id = "source1", isTeamShareAllowed = true), // Excluded (adopted source)
+            StepExam(id = "survey2", isTeamShareAllowed = true), // Included
+            StepExam(id = "survey3", isTeamShareAllowed = false) // Excluded (not shareable)
+        )
+
+        val result = repository.getAdoptableTeamSurveys(teamId)
+
+        assertEquals(listOf("survey2"), result.map { it.id })
+    }
+
+    @Test
+    fun `getIndividualSurveys filters surveys without team and not shareable`() = runTest {
+        coEvery { examDao.getByType("surveys") } returns listOf(
+            StepExam(id = "survey1", isTeamShareAllowed = false, teamId = null), // Included
+            StepExam(id = "survey2", isTeamShareAllowed = true, teamId = null), // Excluded (shareable)
+            StepExam(id = "survey3", isTeamShareAllowed = false, teamId = "team1"), // Excluded (has teamId)
+            StepExam(id = "survey4", isTeamShareAllowed = false, teamId = "") // Included (empty teamId)
+        )
+
+        val result = repository.getIndividualSurveys()
+
+        assertEquals(listOf("survey1", "survey4"), result.map { it.id })
+    }
+
+    @Test
+    fun `getSurvey returns survey by id`() = runTest {
+        coEvery { examDao.getById("survey1") } returns StepExam(id = "survey1")
+
+        val result = repository.getSurvey("survey1")
+
+        assertEquals("survey1", result?.id)
+    }
+
+    @Test
+    fun `getSurvey returns survey by name if id not found`() = runTest {
+        coEvery { examDao.getById("Survey Name") } returns null
+        coEvery { examDao.getByType("surveys") } returns listOf(
+            StepExam(id = "survey1", name = "Other Name"),
+            StepExam(id = "survey2", name = "Survey Name")
+        )
+
+        val result = repository.getSurvey("Survey Name")
+
+        assertEquals("survey2", result?.id)
+    }
+
+    @Test
+    fun `getPendingAdoptedSurveys returns pending adoptions`() = runTest {
+        coEvery { examDao.getPendingAdoptedSurveys() } returns listOf(
+            StepExam(id = "survey1"),
+            StepExam(id = "survey2")
+        )
+
+        val result = repository.getPendingAdoptedSurveys()
+
+        assertEquals(listOf("survey1", "survey2"), result.map { it.id })
+    }
+
+    @Test
     fun `getSurveySubmissionCount uses pending surveys dao query`() = runTest {
         coEvery { submissionDao.getPendingSurveys("user1") } returns listOf(
             Submission(id = "sub1"),
