@@ -8,6 +8,7 @@ import io.mockk.unmockkAll
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -24,9 +25,16 @@ class UserEntityTest {
 
     private val mockContext: Context = mockk(relaxed = true)
     private var originalContext: Context? = null
+    private var originalScope: CoroutineScope? = null
 
     @Before
     fun setup() {
+        // applicationScope is lateinit — reading it before anything initialized it throws
+        originalScope = try {
+            MainApplication.applicationScope
+        } catch (_: Exception) {
+            null
+        }
         Dispatchers.setMain(Dispatchers.Unconfined)
         MainApplication.applicationScope = CoroutineScope(Dispatchers.Unconfined)
         mockkObject(Utilities)
@@ -41,6 +49,8 @@ class UserEntityTest {
     @After
     fun tearDown() {
         MainApplication.testContext = originalContext
+        MainApplication.applicationScope.cancel()
+        originalScope?.let { MainApplication.applicationScope = it }
         Dispatchers.resetMain()
         unmockkAll()
     }

@@ -178,7 +178,7 @@ Two kinds of assertions dominate: pure helper logic tested directly (no stubbing
 
 When mocked DAOs aren't enough — you need real SQL, `Converters` serialization, or transaction semantics — use Robolectric with an in-memory Room database. Six tests do this today.
 
-References: `data/room/AppDatabaseRoundTripTest.kt` (schema/Converters round-trips — verifies that every entity round-trips through Room's schema export/import), `data/room/dao/NewsDaoTest.kt` (LIKE-escaping in queries), `repository/TeamsRepositoryBulkInsertTransactionTest.kt` (verifies `bulkInsertFromSync` commits inside a single `appDatabase.withTransaction { }`).
+References: `data/room/AppDatabaseRoundTripTest.kt` (insert-and-read round-trips through the real DAOs and `Converters` against Robolectric's SQLite — guards the JSON list/embedded-object converters and the LIKE-on-JSON shelf-membership query), `data/room/dao/NewsDaoTest.kt` (LIKE-escaping in queries), `repository/TeamsRepositoryBulkInsertTransactionTest.kt` (verifies `bulkInsertFromSync` commits inside a single `appDatabase.withTransaction { }`). Note: the schema is not exported (`exportSchema = false`), so these tests exercise the live schema, not JSON schema files.
 
 ```kotlin
 @RunWith(AndroidJUnit4::class)
@@ -210,25 +210,28 @@ Room entities behave like plain Kotlin objects — construct with `UserEntity()`
 Reference: `model/UserEntityTest.kt`
 
 ```kotlin
-// import kotlinx.coroutines.cancel
 class UserEntityTest {
-    private lateinit var originalScope: CoroutineScope
+    private var originalContext: Context? = null
+    private var originalScope: CoroutineScope? = null
 
     @Before
     fun setup() {
-        originalScope = MainApplication.applicationScope
+        // applicationScope is lateinit — reading it before anything initialized it throws,
+        // so the capture is guarded (same reason the context capture below is guarded)
+        originalScope = try { MainApplication.applicationScope } catch (_: Exception) { null }
         Dispatchers.setMain(Dispatchers.Unconfined)
         MainApplication.applicationScope = CoroutineScope(Dispatchers.Unconfined)
         mockkObject(Utilities)
         every { Utilities.toast(any(), any()) } returns Unit
+        originalContext = try { MainApplication.context } catch (_: Exception) { null }
         MainApplication.testContext = mockContext
     }
 
     @After
     fun tearDown() {
         MainApplication.testContext = originalContext
-        MainApplication.applicationScope.cancel()
-        MainApplication.applicationScope = originalScope
+        MainApplication.applicationScope.cancel()   // cancel the temporary scope's jobs
+        originalScope?.let { MainApplication.applicationScope = it }
         Dispatchers.resetMain()
         unmockkAll()
     }
