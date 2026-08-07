@@ -267,7 +267,7 @@ class CommunityRepositoryImpl @Inject constructor(
 }
 ```
 
-Reactive queries return `Flow` from a DAO `observe*` method, mapped in the repository:
+Reactive queries return `Flow` from a non-suspend DAO method — named `observe*` or `*Flow` — mapped in the repository:
 
 ```kotlin
 override suspend fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>> {
@@ -428,7 +428,7 @@ open class MyCourse(
 
 ### DAOs
 
-DAO methods are `suspend` (except `Flow`-returning `observe*` methods, which Room requires to be non-suspend). Upserts use `@Upsert` or `@Insert(onConflict = OnConflictStrategy.REPLACE)`.
+DAO methods are `suspend` (except `Flow`-returning `observe*`/`*Flow` methods, which Room requires to be non-suspend). Upserts use `@Upsert` or `@Insert(onConflict = OnConflictStrategy.REPLACE)`.
 
 ```kotlin
 // data/room/dao/RatingDao.kt
