@@ -84,6 +84,9 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     lateinit var sharedPrefManager: SharedPrefManager
 
     @Inject
+    lateinit var themeManager: ThemeManager
+
+    @Inject
     @DefaultPreferences
     lateinit var defaultPreferencesProvider: Provider<SharedPreferences>
     val defaultPref: SharedPreferences by lazy { defaultPreferencesProvider.get() }
@@ -505,7 +508,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     }
 
     private fun getCurrentThemeMode(): String {
-        return ThemeManager.getCurrentThemeMode(context)
+        return themeManager.getCurrentThemeMode()
     }
 
     private fun onAppForegrounded() {
