@@ -378,29 +378,7 @@ class DownloadService : Service() {
                         currentFileProgress = -1
                     }
 
-                    while (true) {
-                        val readCount = bis.read(data)
-                        if (readCount == -1) break
-
-                        if (readCount > 0) {
-                            total += readCount
-                            val current = (total / 1024.0).roundToInt().toDouble()
-
-                            if (fileSize > 0) {
-                                val progress = (total * 100 / fileSize).toInt()
-                                download.progress = progress
-                                currentFileProgress = progress
-                            }
-
-                            val now = SystemClock.elapsedRealtime()
-                            if (now - lastNotificationUpdateTime >= NOTIFICATION_UPDATE_INTERVAL_MS) {
-                                download.currentFileSize = current.toInt()
-                                sendNotification(download)
-                                lastNotificationUpdateTime = now
-                            }
-                            output.write(data, 0, readCount)
-                        }
-                    }
+                    total = copyStreamWithProgress(bis, output, download, fileSize, total)
                 }
             }
             if (!tempFile.renameTo(finalFile)) {
@@ -415,6 +393,40 @@ class DownloadService : Service() {
             throw e
         }
         onDownloadComplete(url)
+    }
+
+    private fun copyStreamWithProgress(
+        bis: BufferedInputStream,
+        output: FileOutputStream,
+        download: Download,
+        fileSize: Long,
+        initialTotal: Long
+    ): Long {
+        var total = initialTotal
+        while (true) {
+            val readCount = bis.read(data)
+            if (readCount == -1) break
+
+            if (readCount > 0) {
+                total += readCount
+                val current = (total / 1024.0).roundToInt().toDouble()
+
+                if (fileSize > 0) {
+                    val progress = (total * 100 / fileSize).toInt()
+                    download.progress = progress
+                    currentFileProgress = progress
+                }
+
+                val now = SystemClock.elapsedRealtime()
+                if (now - lastNotificationUpdateTime >= NOTIFICATION_UPDATE_INTERVAL_MS) {
+                    download.currentFileSize = current.toInt()
+                    sendNotification(download)
+                    lastNotificationUpdateTime = now
+                }
+                output.write(data, 0, readCount)
+            }
+        }
+        return total
     }
 
     private fun getStorageError(fileSize: Long): String? {
@@ -558,32 +570,21 @@ class DownloadService : Service() {
                 putExtra("fromSync", fromSync)
             }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val canStart = when {
-                    context is Activity -> true
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> {
-                        hasValidForegroundServiceContext(context)
-                    }
-                    else -> true
-                }
-
-                if (canStart) {
-                    try {
-                        ContextCompat.startForegroundService(context, intent)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to start foreground service", e)
-                        handleForegroundServiceError(context, urlsKey, fromSync)
-                    }
-                } else {
-                    startDownloadWork(context, urlsKey, fromSync)
-                }
+            val canStart = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                context is Activity || hasValidForegroundServiceContext(context)
             } else {
+                true
+            }
+
+            if (canStart) {
                 try {
                     ContextCompat.startForegroundService(context, intent)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to start foreground service", e)
                     handleForegroundServiceError(context, urlsKey, fromSync)
                 }
+            } else {
+                startDownloadWork(context, urlsKey, fromSync)
             }
         }
 

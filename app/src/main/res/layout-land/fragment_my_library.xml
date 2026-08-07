@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -166,9 +167,9 @@
 
     <androidx.cardview.widget.CardView
         android:id="@+id/card_filter"
-        android:layout_width="match_parent"
+        android:layout_width="380dp"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
+        android:layout_gravity="bottom|end"
         android:animateLayoutChanges="true"
         android:visibility="gone"
         app:cardCornerRadius="8dp">
@@ -213,7 +214,6 @@
                         android:src="@drawable/outline_close_24"
                         app:tint="@color/daynight_textColor" />
                 </LinearLayout>
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
