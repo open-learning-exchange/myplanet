@@ -182,12 +182,12 @@ myplanet/
 
 ### Build Configuration
 
-**Gradle Plugins** (declared in `app/build.gradle`):
+**Gradle Plugins** (declared in `app/build.gradle` — only these three):
 - `com.android.application`
-- `org.jetbrains.kotlin.android` (applied via the AGP toolchain; the `kotlin-android` alias)
-- `kotlin-kapt` (legacy annotation processing — still used by Hilt's `kapt` block)
-- `com.google.devtools.ksp` (Symbol processing — used by **Room**, Glide, and Hilt compilers)
+- `com.google.devtools.ksp` — the **only** annotation-processing path (`kapt` was removed entirely); Room, Glide, and all Hilt compilers run through KSP (`ksp`/`kspTest`/`kspAndroidTest`)
 - `com.google.dagger.hilt.android`
+
+Kotlin itself is applied via AGP's built-in Kotlin support (no `kotlin-android` plugin alias); `kotlin-gradle-plugin` and `kotlin-serialization` sit on the root buildscript classpath.
 
 **Compiler Settings:**
 - Java Compatibility: 17
@@ -624,7 +624,7 @@ When making changes, verify:
 **Issue: Room schema mismatch / "Room cannot verify the data integrity"**
 - The app uses drop-and-resync: bump `version` in `AppDatabase` after any entity change. `RoomModule` already builds with `fallbackToDestructiveMigration(true)`, so the local DB is rebuilt and re-pulled from the server — no hand-written `Migration` needed.
 
-**Issue: KAPT/KSP annotation processing errors**
+**Issue: KSP annotation processing errors**
 - `./gradlew clean`, remove `.gradle/`, rebuild.
 
 **Issue: Hilt dependency not found**
