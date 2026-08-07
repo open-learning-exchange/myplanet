@@ -404,6 +404,19 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 - On any PR, commenting `@coderabbitai review` summons CodeRabbit as a third review option (besides human and Claude review) — the token-cheap first pass for nits and obvious bugs
 - Also: `@coderabbitai full review` (from scratch), `@coderabbitai resolve` (resolve its comments); see `docs/CODE_STYLE_GUIDE.md` → "PR Reviews — Three Options"
 
+**AI Agent Roster** (verified against PR history 2026-08-07)
+
+| Agent | GitHub identity | Footprint |
+|-------|-----------------|-----------|
+| Claude Code | human account, `claude/**` branches | primary AI contributor; automerge/docs/refactor PRs |
+| CodeRabbit | `coderabbitai[bot]` | auto-reviews every PR; `@coderabbitai` commands |
+| OpenAI Codex | human account via connector; `codex` label, `*-codex/*` branches, "Codex Task" links in PR bodies | feature/refactor PRs |
+| Google Jules | `google-labs-jules[bot]`; `jules-*`/`jules/**` branches | 20+ bot-authored PRs |
+| Copilot coding agent | `Copilot` (`copilot-swe-agent`); `copilot/**` branches | 36+ bot-authored PRs (incl. the Realm→Room migration PR #14850) |
+| Devin | `devin-ai-integration[bot]` | occasional PRs |
+| OpenHands (All Hands) | PRs under the requesting user's account, "created by an AI agent (OpenHands)" footer | occasional PRs; mention handle is `@openhands` |
+| Dependabot | `dependabot[bot]` | daily dependency PRs |
+
 ### Adding New Features
 
 1. **Identify the Layer**

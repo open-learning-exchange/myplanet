@@ -693,9 +693,12 @@ Branches follow the `{prefix}/{slug}` pattern, where the slug is kebab-case deri
 | Contributor type | Prefix | Example |
 |-----------------|--------|---------|
 | AI agent (Claude) | `claude/` | `claude/13752-unable-to-complete-certain-courses` |
-| AI agent (Jules) | `jules/` | `jules/13530-move-nav-buttons-below-content` |
-| AI agent (Codex) | `codex/` | `codex/13559-archive-and-remove-course-actions` |
+| AI agent (Jules) | `jules/` or `jules-` | `jules/13530-move-nav-buttons-below-content` |
+| AI agent (Codex) | `codex/` (also `<id>-codex/`) | `codex/13559-archive-and-remove-course-actions` |
+| AI agent (Copilot) | `copilot/` | `copilot/fix-realm-room-migration` |
 | Human contributor | `{number}-{description}` | `13755-add-ability-to-edit-meetups` |
+
+(The full roster of AI agents active on this repo — including Devin, OpenHands, and the review bots — lives in `CLAUDE.md` → "AI Agent Roster".)
 
 **Push flag:** Always use `-u` on the first push: `git push -u origin <branch-name>`.
 
