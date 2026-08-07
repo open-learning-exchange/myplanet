@@ -5,16 +5,22 @@ import com.google.gson.JsonObject
 import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
+import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
+import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 
 class EventsRepositoryImpl @Inject constructor(
     private val timeProvider: TimeProvider,
     private val meetupDao: MeetupDao,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val removedLogDao: RemovedLogDao,
+    private val realtimeSyncManager: RealtimeSyncManager
 ) : EventsRepository {
 
     override suspend fun getMeetupsForTeam(teamId: String): List<Meetup> {
@@ -25,7 +31,7 @@ class EventsRepositoryImpl @Inject constructor(
         meetupId: String, title: String, description: String,
         startDate: Long, endDate: Long, startTime: String,
         endTime: String, meetupLocation: String, meetupLink: String,
-        recurring: String
+        recurring: String, recurringNumber: Int
     ): Boolean {
         return try {
             val meetup = meetupDao.getById(meetupId) ?: return false
@@ -38,6 +44,7 @@ class EventsRepositoryImpl @Inject constructor(
             meetup.meetupLocation = meetupLocation
             meetup.meetupLink = meetupLink
             meetup.recurring = recurring
+            meetup.recurringNumber = recurringNumber
             meetup.updated = true
             meetupDao.upsert(meetup)
             true
@@ -94,16 +101,30 @@ class EventsRepositoryImpl @Inject constructor(
     override suspend fun batchInsertMeetups(documents: List<JsonObject>): Int {
         if (documents.isEmpty()) return 0
         return try {
+            val currentUserId = userRepository.getUserModel()?.id
+            val removedIds = (
+                removedLogDao.getAllRemovedDocIds("meetups") +
+                removedLogDao.getAllRemovedDocIds("meetup") +
+                if (!currentUserId.isNullOrBlank()) {
+                    removedLogDao.getRemovedDocIds("meetups", currentUserId) +
+                    removedLogDao.getRemovedDocIds("meetup", currentUserId)
+                } else emptyList()
+            ).filterNotNull().toSet()
+
             val ids = documents.map { JsonUtils.getString("_id", it) }
             val existingByMeetupId = meetupDao.getByMeetupIds(ids).associateBy { it.meetupId }
 
             val meetupsToInsert = documents.mapNotNull { meetupDoc ->
                 val id = JsonUtils.getString("_id", meetupDoc)
-                val existing = existingByMeetupId[id]
-                if (existing?.updated == true) {
+                if (removedIds.contains(id)) {
                     null
                 } else {
-                    Meetup.fromJson(meetupDoc, "", existing)
+                    val existing = existingByMeetupId[id]
+                    if (existing?.updated == true) {
+                        null
+                    } else {
+                        Meetup.fromJson(meetupDoc, "", existing)
+                    }
                 }
             }
             if (meetupsToInsert.isNotEmpty()) {
@@ -118,8 +139,10 @@ class EventsRepositoryImpl @Inject constructor(
 
     override suspend fun createMeetup(params: MeetupCreationParams): Boolean {
         val gson = Gson()
+        val currentUserId = userRepository.getUserModel()?.id
         val meetup = Meetup().apply {
             id = "${UUID.randomUUID()}"
+            userId = currentUserId
             title = params.title
             meetupLink = params.meetupLink
             description = params.description
@@ -138,6 +161,7 @@ class EventsRepositoryImpl @Inject constructor(
             if (params.recurringText != null) {
                 recurring = params.recurringText
             }
+            recurringNumber = params.recurringNumber
             val ob = JsonObject()
             ob.addProperty("teams", params.teamId)
             link = gson.toJson(ob)
@@ -162,11 +186,81 @@ class EventsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markMeetupUploaded(localId: String, remoteId: String, remoteRev: String): Boolean {
-        val meetup = meetupDao.getById(localId) ?: return false
+        val meetup = meetupDao.getById(localId) ?: meetupDao.getByMeetupId(localId) ?: return false
+        if (meetup.isDeletePending) {
+            meetupDao.deleteById(localId)
+            meetup.meetupId?.let { if (it.isNotBlank()) meetupDao.deleteById(it) }
+            return true
+        }
         meetup.meetupId = remoteId
         meetup.meetupIdRev = remoteRev
         meetup.updated = false
         meetupDao.upsert(meetup)
         return true
+    }
+
+    override suspend fun deleteMeetup(meetupId: String): Boolean {
+        if (meetupId.isBlank()) return false
+        return try {
+            val meetup = meetupDao.getAnyById(meetupId) ?: meetupDao.getById(meetupId) ?: meetupDao.getByMeetupId(meetupId)
+            val currentUserId = userRepository.getUserModel()?.id
+
+            val docIdsToLog = mutableSetOf<String>()
+            if (meetupId.isNotBlank()) docIdsToLog.add(meetupId)
+            meetup?.id?.let { if (it.isNotBlank()) docIdsToLog.add(it) }
+            meetup?.meetupId?.let { if (it.isNotBlank()) docIdsToLog.add(it) }
+
+            val userIdsToLog = mutableSetOf<String>()
+            if (!currentUserId.isNullOrBlank()) userIdsToLog.add(currentUserId)
+            meetup?.userId?.let { if (it.isNotBlank()) userIdsToLog.add(it) }
+
+            userIdsToLog.forEach { uId ->
+                docIdsToLog.forEach { docId ->
+                    removedLogDao.insert(RemovedLog().apply {
+                        id = UUID.randomUUID().toString()
+                        type = "meetups"
+                        this.userId = uId
+                        this.docId = docId
+                    })
+                    removedLogDao.insert(RemovedLog().apply {
+                        id = UUID.randomUUID().toString()
+                        type = "meetup"
+                        this.userId = uId
+                        this.docId = docId
+                    })
+                }
+            }
+
+            if (meetup != null && (!meetup.meetupId.isNullOrEmpty() || !meetup.meetupIdRev.isNullOrEmpty())) {
+                meetup.isDeletePending = true
+                meetup.updated = true
+                meetupDao.upsert(meetup)
+            } else {
+                meetupDao.deleteById(meetupId)
+                meetup?.id?.let { if (it.isNotBlank()) meetupDao.deleteById(it) }
+                meetup?.meetupId?.let { if (it.isNotBlank()) meetupDao.deleteById(it) }
+            }
+
+            realtimeSyncManager.notifyTableUpdated(TableDataUpdate("meetups", 0, 1))
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    override suspend fun excludeDateFromMeetup(meetupId: String, dateString: String): Boolean {
+        if (meetupId.isBlank() || dateString.isBlank()) return false
+        return try {
+            val meetup = meetupDao.getAnyById(meetupId) ?: meetupDao.getById(meetupId) ?: meetupDao.getByMeetupId(meetupId) ?: return false
+            meetup.addExcludedDate(dateString)
+            meetup.updated = true
+            meetupDao.upsert(meetup)
+            realtimeSyncManager.notifyTableUpdated(TableDataUpdate("meetups", 0, 1))
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
     }
 }

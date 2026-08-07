@@ -12,5 +12,6 @@ data class MeetupCreationParams(
     val userName: String?,
     val startMillis: Long,
     val endMillis: Long,
-    val teamId: String
+    val teamId: String,
+    val recurringNumber: Int = 10
 )

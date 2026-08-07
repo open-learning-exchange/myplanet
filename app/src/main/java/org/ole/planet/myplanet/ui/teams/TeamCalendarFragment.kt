@@ -89,6 +89,11 @@ class TeamCalendarFragment : BaseTeamFragment() {
         val addMeetupBinding = AddMeetupBinding.inflate(layoutInflater)
         setupMeetupDialogPickers(addMeetupBinding)
 
+        addMeetupBinding.rgRecuring.setOnCheckedChangeListener { _, checkedId ->
+            val isRecurring = checkedId == R.id.rb_daily || checkedId == R.id.rb_weekly
+            addMeetupBinding.tlRecurringCount.visibility = if (isRecurring) View.VISIBLE else View.GONE
+        }
+
         if (!::clickedCalendar.isInitialized) {
             clickedCalendar = Calendar.getInstance()
         }
@@ -154,6 +159,8 @@ class TeamCalendarFragment : BaseTeamFragment() {
         val recurringId = addMeetupBinding.rgRecuring.checkedRadioButtonId
         val rb = addMeetupBinding.rgRecuring.findViewById<RadioButton>(recurringId)
         val recurringText = rb?.text?.toString()
+        val recurringCountText = addMeetupBinding.etRecurringCount.text.toString().trim()
+        val recurringNumber = recurringCountText.toIntOrNull() ?: 10
         val teamPlanetCode = team?.teamPlanetCode
         val userName = user?.name
         val startMillis = start.timeInMillis
@@ -175,7 +182,8 @@ class TeamCalendarFragment : BaseTeamFragment() {
             userName = userName,
             startMillis = startMillis,
             endMillis = endMillis,
-            teamId = currentTeamId
+            teamId = currentTeamId,
+            recurringNumber = recurringNumber
         )
         viewModel.createMeetup(params)
     }
@@ -218,11 +226,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.meetups.collect { meetups ->
-                        val newDates = meetups.mapTo(mutableListOf()) { meetup ->
-                            val calendarInstance = Calendar.getInstance()
-                            calendarInstance.timeInMillis = meetup.startDate
-                            calendarInstance
-                        }
+                        val newDates = meetups.flatMap { it.getAllEventDates() }.toMutableList()
 
                         if (isAdded && activity != null) {
                             eventDates.clear()
@@ -241,13 +245,14 @@ class TeamCalendarFragment : BaseTeamFragment() {
                                 .toLocalDate()
 
                             val filteredMeetups = meetups.filter { meetup ->
-                                val meetupDate = Instant.ofEpochMilli(meetup.startDate)
-                                    .atZone(ZoneId.systemDefault())
-                                    .toLocalDate()
-                                meetupDate == clickedDate
+                                meetup.occursOnDate(clickedDate)
                             }
 
-                            meetupAdapter?.submitList(filteredMeetups)
+                            if (filteredMeetups.isEmpty()) {
+                                meetupDialog?.dismiss()
+                            } else {
+                                meetupAdapter?.submitList(filteredMeetups)
+                            }
                         }
                     }
                 }
@@ -289,6 +294,15 @@ class TeamCalendarFragment : BaseTeamFragment() {
         dialogBinding.tvStartTime.text = meetup.startTime?.ifEmpty { getString(R.string.click_here_to_pick_time) } ?: getString(R.string.click_here_to_pick_time)
         dialogBinding.tvEndTime.text = meetup.endTime?.ifEmpty { getString(R.string.click_here_to_pick_time) } ?: getString(R.string.click_here_to_pick_time)
 
+        dialogBinding.etRecurringCount.setText(meetup.recurringNumber.toString())
+        val isRecurringInit = meetup.recurring.equals("daily", ignoreCase = true) || meetup.recurring.equals("weekly", ignoreCase = true)
+        dialogBinding.tlRecurringCount.visibility = if (isRecurringInit) View.VISIBLE else View.GONE
+
+        dialogBinding.rgRecuring.setOnCheckedChangeListener { _, checkedId ->
+            val isRecurring = checkedId == R.id.rb_daily || checkedId == R.id.rb_weekly
+            dialogBinding.tlRecurringCount.visibility = if (isRecurring) View.VISIBLE else View.GONE
+        }
+
         when (meetup.recurring) {
             "daily" -> dialogBinding.rgRecuring.check(R.id.rb_daily)
             "weekly" -> dialogBinding.rgRecuring.check(R.id.rb_weekly)
@@ -314,6 +328,15 @@ class TeamCalendarFragment : BaseTeamFragment() {
             .setView(dialogBinding.root)
             .create()
 
+        lifecycleScope.launch {
+            val allowed = canDeleteMeetup(meetup)
+            dialogBinding.btnDelete.visibility = if (allowed) View.VISIBLE else View.GONE
+        }
+        dialogBinding.btnDelete.setOnClickListener {
+            dialog.dismiss()
+            confirmDeleteMeetup(meetup)
+        }
+
         dialogBinding.btnCancel.setOnClickListener { dialog.dismiss() }
         dialogBinding.btnSave.setOnClickListener {
             val newTitle = dialogBinding.etTitle.text.toString().trim()
@@ -327,6 +350,8 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 R.id.rb_weekly -> "weekly"
                 else -> "none"
             }
+            val recurringCountText = dialogBinding.etRecurringCount.text.toString().trim()
+            val recurringNumber = recurringCountText.toIntOrNull() ?: 10
 
             lifecycleScope.launch {
                 val success = viewModel.updateMeetup(
@@ -339,7 +364,8 @@ class TeamCalendarFragment : BaseTeamFragment() {
                     endTime = dialogBinding.tvEndTime.text.toString(),
                     meetupLocation = dialogBinding.etLocation.text.toString().trim(),
                     meetupLink = dialogBinding.etLink.text.toString().trim(),
-                    recurring = recurring
+                    recurring = recurring,
+                    recurringNumber = recurringNumber
                 )
                 if (success) {
                     Utilities.toast(activity, getString(R.string.meetup_updated))
@@ -352,6 +378,81 @@ class TeamCalendarFragment : BaseTeamFragment() {
             }
         }
         dialog.show()
+    }
+
+    private suspend fun canDeleteMeetup(meetup: Meetup): Boolean {
+        val currentUser = user ?: userRepository.getUserModel()
+        val currentUserId = currentUser?.id
+        val currentUserName = currentUser?.name
+        if (currentUserId.isNullOrBlank()) return false
+
+        val isCreator = (!meetup.creator.isNullOrBlank() && (meetup.creator == currentUserId || meetup.creator == currentUserName)) ||
+                (!meetup.userId.isNullOrBlank() && meetup.userId == currentUserId)
+        if (isCreator) return true
+
+        val currentTeamId = teamId.ifBlank { meetup.teamId.orEmpty() }
+        if (currentTeamId.isNotBlank()) {
+            val isLeader = teamsRepository.isTeamLeader(currentTeamId, currentUserId)
+            if (isLeader) return true
+        }
+
+        return false
+    }
+
+    private fun confirmDeleteMeetup(meetup: Meetup) {
+        val targetId = meetup.id.ifEmpty { meetup.meetupId ?: "" }
+        val isRecurring = meetup.recurring.equals("daily", ignoreCase = true) || meetup.recurring.equals("weekly", ignoreCase = true)
+
+        if (isRecurring && ::clickedCalendar.isInitialized) {
+            val clickedDate = Instant.ofEpochMilli(clickedCalendar.timeInMillis)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+                .toString()
+
+            AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+                .setTitle(R.string.confirm_delete_meetup)
+                .setMessage("This is a recurring event. Do you want to delete only this event or all recurring events?")
+                .setPositiveButton("This Event Only") { _, _ ->
+                    lifecycleScope.launch {
+                        val success = viewModel.excludeDateFromMeetup(targetId, clickedDate, teamId)
+                        if (success) {
+                            Utilities.toast(activity, getString(R.string.meetup_deleted))
+                            meetupDialog?.dismiss()
+                        } else {
+                            Utilities.toast(activity, getString(R.string.meetup_not_deleted))
+                        }
+                    }
+                }
+                .setNeutralButton("All Events") { _, _ ->
+                    lifecycleScope.launch {
+                        val success = viewModel.deleteMeetup(targetId, teamId)
+                        if (success) {
+                            Utilities.toast(activity, getString(R.string.meetup_deleted))
+                            meetupDialog?.dismiss()
+                        } else {
+                            Utilities.toast(activity, getString(R.string.meetup_not_deleted))
+                        }
+                    }
+                }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
+        } else {
+            AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+                .setMessage(R.string.confirm_delete_meetup)
+                .setPositiveButton(R.string.ok) { _, _ ->
+                    lifecycleScope.launch {
+                        val success = viewModel.deleteMeetup(targetId, teamId)
+                        if (success) {
+                            Utilities.toast(activity, getString(R.string.meetup_deleted))
+                            meetupDialog?.dismiss()
+                        } else {
+                            Utilities.toast(activity, getString(R.string.meetup_not_deleted))
+                        }
+                    }
+                }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
+        }
     }
 
     override fun onDestroyView() {
@@ -371,10 +472,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
                         .toLocalDate()
 
                     val markedDates = meetups.filter { meetup ->
-                        val meetupDate = Instant.ofEpochMilli(meetup.startDate)
-                            .atZone(ZoneId.systemDefault())
-                            .toLocalDate()
-                        meetupDate == clickedDate
+                        meetup.occursOnDate(clickedDate)
                     }
 
                     if (markedDates.isNotEmpty()) {
@@ -446,9 +544,10 @@ class TeamCalendarFragment : BaseTeamFragment() {
         recyclerView.layoutParams.height = cardHeight + extraHeight
         recyclerView.requestLayout()
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        meetupAdapter = EventsAdapter { meetup ->
-            showEditMeetupDialog(meetup)
-        }
+        meetupAdapter = EventsAdapter(
+            onMeetupClick = { meetup -> showEditMeetupDialog(meetup) },
+            onDeleteClick = { meetup -> confirmDeleteMeetup(meetup) }
+        )
         recyclerView.adapter = meetupAdapter
         meetupAdapter?.submitList(meetupList)
 
@@ -473,7 +572,6 @@ class TeamCalendarFragment : BaseTeamFragment() {
         }
 
         meetupDialog?.setOnDismissListener {
-            eventDates.add(clickedCalendar)
             viewLifecycleOwner.lifecycleScope.launch {
                 val calendarDays = eventDates.map { CalendarDay(it).apply {
                     imageResource = R.drawable.ic_calendar

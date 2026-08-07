@@ -297,6 +297,7 @@
     <string name="daily">Daily</string>
     <string name="weekly">Weekly</string>
     <string name="recurring_frequency">Recurring Frequency</string>
+    <string name="recurring_count">Recurrence Limit</string>
     <string name="date_reset">Date Reset</string>
     <string name="emergency_contact">Emergency Contact</string>
     <string name="emergency_contact_details">Name: %1$s Type: %2$s Contact: %3$s</string>
@@ -612,6 +613,10 @@
     <string name="description_is_required">Description is required</string>
     <string name="meetup_added">Meetup added</string>
     <string name="meetup_not_added">Meetup not added</string>
+    <string name="delete_meetup">Delete Event</string>
+    <string name="meetup_deleted">Event deleted successfully</string>
+    <string name="meetup_not_deleted">Failed to delete event</string>
+    <string name="confirm_delete_meetup">Are you sure you want to delete this event?</string>
     <string name="add_transaction">Add Transaction</string>
     <string name="note_is_required">Note is required</string>
     <string name="amount_is_required">Amount is required</string>

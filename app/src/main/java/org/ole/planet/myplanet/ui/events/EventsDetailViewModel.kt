@@ -53,7 +53,8 @@ class EventsDetailViewModel @Inject constructor(
         endTime: String,
         meetupLocation: String,
         meetupLink: String,
-        recurring: String
+        recurring: String,
+        recurringNumber: Int = 10
     ) {
         viewModelScope.launch {
             val success = eventsRepository.updateMeetup(
@@ -66,7 +67,8 @@ class EventsDetailViewModel @Inject constructor(
                 endTime = endTime,
                 meetupLocation = meetupLocation,
                 meetupLink = meetupLink,
-                recurring = recurring
+                recurring = recurring,
+                recurringNumber = recurringNumber
             )
 
             if (success) {
@@ -85,6 +87,20 @@ class EventsDetailViewModel @Inject constructor(
             val currentUser = _user.value
             _meetup.value = eventsRepository.toggleAttendance(meetupId, currentUser?.id)
             _members.value = eventsRepository.getJoinedMembers(meetupId)
+        }
+    }
+
+    fun deleteMeetup(meetupId: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = eventsRepository.deleteMeetup(meetupId)
+            onResult(success)
+        }
+    }
+
+    fun excludeDateFromMeetup(meetupId: String, dateString: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = eventsRepository.excludeDateFromMeetup(meetupId, dateString)
+            onResult(success)
         }
     }
 }

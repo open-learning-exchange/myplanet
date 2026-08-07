@@ -10,10 +10,14 @@ import org.ole.planet.myplanet.model.Community
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.utils.JsonUtils
 
+import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
+
 class CommunityRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
     private val communityDao: CommunityDao,
-    private val meetupDao: MeetupDao
+    private val meetupDao: MeetupDao,
+    private val removedLogDao: RemovedLogDao,
+    private val userRepository: UserRepository
 ) : CommunityRepository {
 
     override suspend fun replaceAll(rows: JsonArray) {
@@ -58,16 +62,30 @@ class CommunityRepositoryImpl @Inject constructor(
 
     override suspend fun insertMeetupsFromSync(docs: List<JsonObject>) {
         if (docs.isEmpty()) return
+        val currentUserId = userRepository.getUserModel()?.id
+        val removedIds = (
+            removedLogDao.getAllRemovedDocIds("meetups") +
+            removedLogDao.getAllRemovedDocIds("meetup") +
+            if (!currentUserId.isNullOrBlank()) {
+                removedLogDao.getRemovedDocIds("meetups", currentUserId) +
+                removedLogDao.getRemovedDocIds("meetup", currentUserId)
+            } else emptyList()
+        ).filterNotNull().toSet()
+
         val ids = docs.map { JsonUtils.getString("_id", it) }
         val existingByMeetupId = meetupDao.getByMeetupIds(ids).associateBy { it.meetupId }
 
         val meetupsToInsert = docs.mapNotNull { meetupDoc ->
             val id = JsonUtils.getString("_id", meetupDoc)
-            val existing = existingByMeetupId[id]
-            if (existing?.updated == true) {
+            if (removedIds.contains(id)) {
                 null
             } else {
-                Meetup.fromJson(meetupDoc, "", existing)
+                val existing = existingByMeetupId[id]
+                if (existing?.updated == true) {
+                    null
+                } else {
+                    Meetup.fromJson(meetupDoc, "", existing)
+                }
             }
         }
         if (meetupsToInsert.isNotEmpty()) {
