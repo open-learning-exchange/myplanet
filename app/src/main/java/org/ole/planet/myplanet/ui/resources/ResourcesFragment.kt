@@ -90,6 +90,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private var refreshJob: Job? = null
+    private var searchJob: Job? = null
 
     internal val addResourceLauncher = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
@@ -481,7 +482,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             mediums.clear()
             subjects.clear()
             languages.clear()
-            viewLifecycleOwner.lifecycleScope.launch {
+            searchJob?.cancel()
+            searchJob = viewLifecycleOwner.lifecycleScope.launch {
                 applyFiltersAndUpdateUI()
             }
         }
@@ -531,7 +533,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         if (!searchTags.any { it.name == tag.name }) searchTags.add(tag)
         chipCloud.addChips(searchTags)
         showTagText(searchTags, tvSelected)
-        viewLifecycleOwner.lifecycleScope.launch {
+        searchJob?.cancel()
+        searchJob = viewLifecycleOwner.lifecycleScope.launch {
             applyFiltersAndUpdateUI()
         }
     }
@@ -542,7 +545,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         li.add(tag)
         searchTags = li
         tvSelected.text = getString(R.string.tag_selected, tag.name)
-        viewLifecycleOwner.lifecycleScope.launch {
+        searchJob?.cancel()
+        searchJob = viewLifecycleOwner.lifecycleScope.launch {
             applyFiltersAndUpdateUI()
         }
     }
@@ -550,7 +554,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override fun onOkClicked(list: List<TagEntity>?) {
         if (list?.isEmpty() == true) {
             searchTags.clear()
-            viewLifecycleOwner.lifecycleScope.launch {
+            searchJob?.cancel()
+            searchJob = viewLifecycleOwner.lifecycleScope.launch {
                 applyFiltersAndUpdateUI()
             }
         } else {
@@ -573,7 +578,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     override fun chipDeleted(i: Int, s: String) {
         searchTags.removeAt(i)
-        viewLifecycleOwner.lifecycleScope.launch {
+        searchJob?.cancel()
+        searchJob = viewLifecycleOwner.lifecycleScope.launch {
             applyFiltersAndUpdateUI()
         }
     }
@@ -583,7 +589,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         this.languages = languages
         this.mediums = mediums
         this.levels = levels
-        viewLifecycleOwner.lifecycleScope.launch {
+        searchJob?.cancel()
+        searchJob = viewLifecycleOwner.lifecycleScope.launch {
             applyFiltersAndUpdateUI()
         }
     }

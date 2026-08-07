@@ -51,6 +51,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     var userModel: UserEntity? = null
     private lateinit var confirmation: AlertDialog
     private var selectionJob: Job? = null
+    private var refreshJob: Job? = null
     private var pendingScrollState: Parcelable? = null
     private val viewModel: CoursesViewModel by viewModels()
 
@@ -474,7 +475,8 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
 
     override fun onRatingChanged(type: String, id: String) {
         if (type == "course" && ::adapterCourses.isInitialized) {
-            viewLifecycleOwner.lifecycleScope.launch {
+            refreshJob?.cancel()
+            refreshJob = viewLifecycleOwner.lifecycleScope.launch {
                 viewModel.refreshCourseRatings(model?.id)
                 adapterCourses.refreshWithDiff(id)
             }

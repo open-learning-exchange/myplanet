@@ -71,6 +71,7 @@ class MyHealthFragment : Fragment() {
     lateinit var sharedPrefManager: SharedPrefManager
     private var textWatcher: TextWatcher? = null
     private var searchJob: Job? = null
+    private var refreshJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -161,7 +162,8 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun getHealthRecords(memberId: String?) {
-        viewLifecycleOwner.lifecycleScope.launch {
+        refreshJob?.cancel()
+        refreshJob = viewLifecycleOwner.lifecycleScope.launch {
             val normalizedId = memberId?.trim()
             userId = normalizedId
             val fetchedUser = if (normalizedId.isNullOrEmpty()) {
