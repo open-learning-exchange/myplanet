@@ -364,7 +364,7 @@ class SurveysRepositoryImpl @Inject constructor(
 
     override suspend fun getSurveySubmissionCount(userId: String?): Int {
         if (userId.isNullOrEmpty()) return 0
-        return submissionDao.getPendingSurveys(userId).size
+        return submissionDao.countPendingSurveys(userId)
     }
 
     override suspend fun getSurvey(id: String): StepExam? {
