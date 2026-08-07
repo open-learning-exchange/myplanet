@@ -736,10 +736,15 @@ Besides a human reviewer and a Claude session, **CodeRabbit** is available as a 
 Useful commands (as PR comments):
 
 ```
-@coderabbitai review          # incremental review of new changes
-@coderabbitai full review     # re-review the whole PR from scratch
-@coderabbitai resolve         # resolve all its open comments
-@coderabbitai summary         # regenerate the PR summary
+@coderabbitai help                    # list all commands
+@coderabbitai review                  # incremental review of new changes
+@coderabbitai full review             # re-review the whole PR from scratch
+@coderabbitai resolve                 # resolve all its open comments
+@coderabbitai regenerate summary      # regenerate the PR summary
+@coderabbitai fix ci                  # analyze + fix failing CI via a stacked PR
+@coderabbitai fix ci commit           # fix failing CI on the current branch
+@coderabbitai resolve merge conflict  # resolve merge conflicts automatically
+@coderabbitai pause / resume          # pause/resume automatic reviews
 ```
 
 Min-max rule of thumb: let CodeRabbit do the first mechanical pass (nits, obvious bugs, style drift), then spend human/Claude attention only on what it can't judge — architecture fit, domain correctness, offline/sync behavior.
