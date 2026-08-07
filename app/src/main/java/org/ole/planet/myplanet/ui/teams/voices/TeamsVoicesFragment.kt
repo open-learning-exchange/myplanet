@@ -88,7 +88,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
             }
         }
 
-        if (shouldQueryTeamFromRealm()) {
+        if (shouldQueryTeamLocally()) {
             viewModel.loadTeam(teamId)
             collectWhenStarted(viewModel.teamPolicy) { result ->
                 result?.let { (teamResult, policy) ->
