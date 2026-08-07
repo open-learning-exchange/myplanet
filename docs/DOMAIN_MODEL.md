@@ -2,7 +2,7 @@
 
 This document explains the learning domain that myPlanet operates in — who the people are, what they do, and how the data concepts connect. Read this before working on any feature, because the app's language and data model only make sense once you understand the domain.
 
-> All models named here are Room `@Entity` classes in `app/src/main/java/org/ole/planet/myplanet/model/`. The old `Realm*` class names are gone — e.g. `RealmUser` is now `UserEntity`, `RealmMyCourse` is `MyCourse`, `RealmNews` is `News`.
+> The **persistence models** described here are Room `@Entity` classes in `app/src/main/java/org/ole/planet/myplanet/model/` (e.g. `UserEntity`, `MyCourse`, `AppNotification`). The old `Realm*` class names are gone. Non-entity models — `Tag`, `FeedbackReply`, `Notification` — are UI-side only and noted inline where they appear.
 
 ---
 

@@ -23,7 +23,7 @@ This guide explains how tests are actually written in this codebase, based on th
 
 ### `app/src/test/` — JVM unit tests (the only source set)
 
-Everything runs on the local JVM — no emulator or device needed. **CI runs exactly this**: `.github/workflows/test.yml` runs `./gradlew testDefaultDebugUnitTest` on every push to every branch. If a test isn't in `src/test/`, it isn't verified automatically.
+Everything runs on the local JVM — no emulator or device needed. **CI runs this**: `.github/workflows/test.yml` runs `./gradlew testDefaultDebugUnitTest` on every push to every branch. If a test isn't in `src/test/`, it isn't verified automatically.
 
 There is currently **no `app/src/androidTest/` (instrumented) source set** — the `androidTestImplementation` dependencies are still declared in `app/build.gradle`, but no instrumented sources exist and no workflow runs an emulator.
 
@@ -178,7 +178,7 @@ Two kinds of assertions dominate: pure helper logic tested directly (no stubbing
 
 When mocked DAOs aren't enough — you need real SQL, `Converters` serialization, or transaction semantics — use Robolectric with an in-memory Room database. Six tests do this today.
 
-References: `data/room/AppDatabaseRoundTripTest.kt` (schema/Converters round-trips — "the only tests in the suite that run actual schema/DAO SQL"), `data/room/dao/NewsDaoTest.kt` (LIKE-escaping in queries), `repository/TeamsRepositoryBulkInsertTransactionTest.kt` (verifies `bulkInsertFromSync` commits inside a single `appDatabase.withTransaction { }`).
+References: `data/room/AppDatabaseRoundTripTest.kt` (schema/Converters round-trips — verifies that every entity round-trips through Room's schema export/import), `data/room/dao/NewsDaoTest.kt` (LIKE-escaping in queries), `repository/TeamsRepositoryBulkInsertTransactionTest.kt` (verifies `bulkInsertFromSync` commits inside a single `appDatabase.withTransaction { }`).
 
 ```kotlin
 @RunWith(AndroidJUnit4::class)
@@ -210,9 +210,13 @@ Room entities behave like plain Kotlin objects — construct with `UserEntity()`
 Reference: `model/UserEntityTest.kt`
 
 ```kotlin
+// import kotlinx.coroutines.cancel
 class UserEntityTest {
+    private lateinit var originalScope: CoroutineScope
+
     @Before
     fun setup() {
+        originalScope = MainApplication.applicationScope
         Dispatchers.setMain(Dispatchers.Unconfined)
         MainApplication.applicationScope = CoroutineScope(Dispatchers.Unconfined)
         mockkObject(Utilities)
@@ -223,6 +227,8 @@ class UserEntityTest {
     @After
     fun tearDown() {
         MainApplication.testContext = originalContext
+        MainApplication.applicationScope.cancel()
+        MainApplication.applicationScope = originalScope
         Dispatchers.resetMain()
         unmockkAll()
     }
