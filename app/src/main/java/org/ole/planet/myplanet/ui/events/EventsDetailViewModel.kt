@@ -11,12 +11,10 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.EventsRepository
-import org.ole.planet.myplanet.services.UserSessionManager
 
 @HiltViewModel
 class EventsDetailViewModel @Inject constructor(
-    private val eventsRepository: EventsRepository,
-    private val userSessionManager: UserSessionManager
+    private val eventsRepository: EventsRepository
 ) : ViewModel() {
 
     private val _user = MutableStateFlow<UserEntity?>(null)
@@ -33,7 +31,7 @@ class EventsDetailViewModel @Inject constructor(
 
     fun loadData(meetUpId: String?) {
         viewModelScope.launch {
-            _user.value = userSessionManager.getUserModel()
+            _user.value = eventsRepository.getCurrentUser()
 
             if (!meetUpId.isNullOrBlank()) {
                 val loadedMeetup = eventsRepository.getMeetupByLocalId(meetUpId)
@@ -82,8 +80,8 @@ class EventsDetailViewModel @Inject constructor(
 
     fun toggleAttendance(meetupId: String) {
         viewModelScope.launch {
-            val currentUser = _user.value
-            _meetup.value = eventsRepository.toggleAttendance(meetupId, currentUser?.id)
+            _meetup.value = eventsRepository.toggleCurrentUserAttendance(meetupId)
+            _user.value = eventsRepository.getCurrentUser()
             _members.value = eventsRepository.getJoinedMembers(meetupId)
         }
     }
