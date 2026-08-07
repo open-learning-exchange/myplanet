@@ -49,7 +49,7 @@ Managers can:
 - Manage teams they lead
 - View reports for enterprises they oversee
 
-Note: `LoginSyncManager.kt` (private `isManager()`, around line 179) re-implements the same `"manager"` substring check independently on the raw `JsonObject` instead of calling `UserEntity.isManager()`. If you're changing manager-detection logic, grep for `.contains("manager")` as well as `.isManager()` — there are two copies to keep in sync.
+Note: `LoginSyncManager.kt` has a private `isManager()` that re-implements the same `"manager"` substring check independently on the raw `JsonObject` instead of calling `UserEntity.isManager()`. If you're changing manager-detection logic, grep for `.contains("manager")` as well as `.isManager()` — there are two copies to keep in sync.
 
 ### Leaders
 
