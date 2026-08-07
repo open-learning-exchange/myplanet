@@ -85,6 +85,9 @@ class RetryInterceptor @Inject constructor(
                 if (remaining <= 0) {
                     return
                 }
+                // Thread.sleep is required here because OkHttp Interceptors are strictly synchronous.
+                // This executes on a background dispatcher thread, so it is safe to block.
+                // Asynchronous alternatives cannot be used as we must delay returning the Response.
                 Thread.sleep(minOf(remaining, MAX_BACKOFF_SLICE_MS))
             }
         } catch (e: InterruptedException) {
