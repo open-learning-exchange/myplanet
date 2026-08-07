@@ -239,35 +239,8 @@ class DownloadService : Service() {
 
             if (primaryResult is DownloadResult.Error && primaryResult.code == null) {
                 Log.w(TAG, "initDownload: primary failed with network error (${primaryResult.message}), checking for alternative URL")
-                val mapping = serverUrlMapper.processUrl(url)
-                val altBase = mapping.alternativeUrl
-                val primaryBase = mapping.extractedBaseUrl
-
-                val resolvedAltBase: String?
-                val resolvedPrimaryBase: String?
-                if (altBase != null && primaryBase != null) {
-                    resolvedAltBase = altBase
-                    resolvedPrimaryBase = primaryBase
-                    Log.d(TAG, "initDownload: found hardcoded mapping $primaryBase → $altBase")
-                } else {
-                    val storedAlt = sharedPrefManager.getProcessedAlternativeUrl()
-                    if (storedAlt.isNotEmpty() && primaryBase != null) {
-                        resolvedAltBase = storedAlt.trimEnd('/')
-                        resolvedPrimaryBase = primaryBase
-                        Log.d(TAG, "initDownload: no hardcoded mapping for $primaryBase — using stored alternative $resolvedAltBase")
-                    } else {
-                        resolvedAltBase = null
-                        resolvedPrimaryBase = null
-                        Log.w(TAG, "initDownload: no alternative URL available for primary base '$primaryBase', giving up")
-                    }
-                }
-
-                if (resolvedAltBase != null && resolvedPrimaryBase != null) {
-                    val parsed = Uri.parse(url)
-                    val path = parsed.path.orEmpty()
-                    val query = if (parsed.query != null) "?${parsed.query}" else ""
-                    val altUrl = resolvedAltBase + path + query
-                    Log.d(TAG, "initDownload: switching $fileName — primary=$resolvedPrimaryBase → alternative=$resolvedAltBase")
+                val altUrl = resolveAlternativeUrl(url, fileName)
+                if (altUrl != null) {
                     Log.d(TAG, "initDownload: retrying with $altUrl")
                     currentDownloadUrl = altUrl
                     val altResult = downloadRepository.downloadFileResponse(altUrl, authHeader)
@@ -281,6 +254,41 @@ class DownloadService : Service() {
             downloadFailed("Download initialization failed: ${e.localizedMessage ?: "Unknown error"}", fromSync)
             return false
         }
+    }
+
+    private fun resolveAlternativeUrl(url: String, fileName: String): String? {
+        val mapping = serverUrlMapper.processUrl(url)
+        val altBase = mapping.alternativeUrl
+        val primaryBase = mapping.extractedBaseUrl
+
+        val resolvedAltBase: String?
+        val resolvedPrimaryBase: String?
+        if (altBase != null && primaryBase != null) {
+            resolvedAltBase = altBase
+            resolvedPrimaryBase = primaryBase
+            Log.d(TAG, "initDownload: found hardcoded mapping $primaryBase → $altBase")
+        } else {
+            val storedAlt = sharedPrefManager.getProcessedAlternativeUrl()
+            if (storedAlt.isNotEmpty() && primaryBase != null) {
+                resolvedAltBase = storedAlt.trimEnd('/')
+                resolvedPrimaryBase = primaryBase
+                Log.d(TAG, "initDownload: no hardcoded mapping for $primaryBase — using stored alternative $resolvedAltBase")
+            } else {
+                resolvedAltBase = null
+                resolvedPrimaryBase = null
+                Log.w(TAG, "initDownload: no alternative URL available for primary base '$primaryBase', giving up")
+            }
+        }
+
+        if (resolvedAltBase != null && resolvedPrimaryBase != null) {
+            val parsed = Uri.parse(url)
+            val path = parsed.path.orEmpty()
+            val query = if (parsed.query != null) "?${parsed.query}" else ""
+            val altUrl = resolvedAltBase + path + query
+            Log.d(TAG, "initDownload: switching $fileName — primary=$resolvedPrimaryBase → alternative=$resolvedAltBase")
+            return altUrl
+        }
+        return null
     }
 
     private fun tryDownloadFromResult(
