@@ -35,6 +35,10 @@ object SyncTimeLogger {
     private val apiCallCounter = AtomicInteger(0)
     private val realmOpCounter = AtomicInteger(0)
 
+    private val timestampFormat = object : ThreadLocal<SimpleDateFormat>() {
+        override fun initialValue() = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
+    }
+
     data class ApiCallLog(
         val endpoint: String,
         val duration: Long,
@@ -215,8 +219,7 @@ object SyncTimeLogger {
     }
 
     private fun formatTimestamp(timestamp: Long): String {
-        val sdf = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
-        return sdf.format(Date(timestamp))
+        return timestampFormat.get()!!.format(Date(timestamp))
     }
 
     private fun generateSummary(): String {
