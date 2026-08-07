@@ -54,4 +54,89 @@ class UserRepositoryBulkInsertTest {
 
         coVerify(exactly = 1) { userDao.upsertAll(match { it.size == 10 }) }
     }
+
+    @Test
+    fun `insertUsersFromSync handles existing user and guest promotion correctly`() = runTest {
+        val userDao = mockk<UserDao>(relaxed = true)
+        val userRepository = UserRepositoryImpl(
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            userDao
+        )
+
+        val existingGuest = org.ole.planet.myplanet.model.UserEntity().apply {
+            id = "guest_123"
+            _id = "guest_123"
+            name = "Guest User"
+        }
+        coEvery { userDao.getAll() } returns listOf(existingGuest)
+
+        val list = mutableListOf<JsonObject>()
+        val jObj = JsonObject()
+        val doc = JsonObject()
+        doc.addProperty("_id", "org.couchdb.user:Guest User")
+        doc.addProperty("name", "Guest User")
+        jObj.add("doc", doc)
+        list.add(jObj)
+
+        userRepository.insertUsersFromSync(list)
+
+        coVerify(exactly = 1) { userDao.deleteByIds(listOf("guest_123")) }
+        coVerify(exactly = 1) { userDao.upsertAll(match { it.size == 1 && it[0]._id == "org.couchdb.user:Guest User" }) }
+    }
+
+    @Test
+    fun `insertUsersFromSync deduplicates ids correctly`() = runTest {
+        val userDao = mockk<UserDao>(relaxed = true)
+        val userRepository = UserRepositoryImpl(
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            userDao
+        )
+        coEvery { userDao.getAll() } returns emptyList()
+
+        val list = mutableListOf<JsonObject>()
+        for (i in 1..2) {
+            val jObj = JsonObject()
+            val doc = JsonObject()
+            doc.addProperty("_id", "user_1")
+            doc.addProperty("name", "User 1 (version $i)")
+            jObj.add("doc", doc)
+            list.add(jObj)
+        }
+
+        userRepository.insertUsersFromSync(list)
+
+        coVerify(exactly = 1) { userDao.upsertAll(match { it.size == 1 && it[0].name == "User 1 (version 2)" }) }
+    }
 }
