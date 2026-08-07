@@ -170,18 +170,16 @@ class ChatViewModel @Inject constructor(
         }
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            val results = withContext(dispatcherProvider.default) {
-                if (isFullSearch) {
-                    fullConvoSearch(query, isQuestion)
-                } else {
-                    searchByTitle(query)
-                }
+            val results = if (isFullSearch) {
+                fullConvoSearch(query, isQuestion)
+            } else {
+                searchByTitle(query)
             }
             _filteredChats.value = results
         }
     }
 
-    private fun fullConvoSearch(s: String, isQuestion: Boolean): List<ChatHistory> {
+    private suspend fun fullConvoSearch(s: String, isQuestion: Boolean): List<ChatHistory> = withContext(dispatcherProvider.default) {
         var conversation: String?
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
@@ -211,10 +209,10 @@ class ChatViewModel @Inject constructor(
                 }
             }
         }
-        return inTitleStartQuery + inTitleContainsQuery + startsWithQuery + containsQuery
+        inTitleStartQuery + inTitleContainsQuery + startsWithQuery + containsQuery
     }
 
-    private fun searchByTitle(s: String): List<ChatHistory> {
+    private suspend fun searchByTitle(s: String): List<ChatHistory> = withContext(dispatcherProvider.default) {
         var title: String?
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
@@ -231,7 +229,7 @@ class ChatViewModel @Inject constructor(
                 containsQuery.add(pChat.chat)
             }
         }
-        return startsWithQuery + containsQuery
+        startsWithQuery + containsQuery
     }
 
     private suspend fun loadCurrentUser(userId: String?): UserEntity? {
