@@ -79,6 +79,7 @@ reviews:
 
 chat:
   auto_reply: true
+  art: false # no ASCII/emoji art in replies
 
 knowledge_base:
   code_guidelines:
