@@ -61,6 +61,7 @@ class MyHealthFragment : Fragment() {
     private var alertHealthListBinding: AlertHealthListBinding? = null
     var userId: String? = null
     var userModel: UserEntity? = null
+    var loggedInUser: UserEntity? = null
     lateinit var userModelList: List<UserEntity>
     lateinit var adapter: HealthUsersAdapter
     private lateinit var healthAdapter: HealthExaminationAdapter
@@ -113,6 +114,11 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun observeData() {
+
+        collectWhenStarted(viewModel.loggedInUser) { user ->
+            loggedInUser = user
+            setupButtons()
+        }
         collectWhenStarted(viewModel.selectedPatient) { user ->
             if (user != null) {
                 userModel = user
@@ -229,7 +235,7 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun setupButtons() {
-        val isHealthProvider = userModel?.rolesList?.contains("health") ?: false
+        val isHealthProvider = loggedInUser?.rolesList?.contains("health") ?: false
         binding.btnnewPatient.visibility = if (isHealthProvider) View.VISIBLE else View.GONE
 
         binding.btnnewPatient.setOnClickListener {
@@ -238,6 +244,10 @@ class MyHealthFragment : Fragment() {
             }
         }
         binding.updateHealth.visibility = View.VISIBLE
+
+        binding.addNewRecord.setOnClickListener {
+            startActivity(Intent(activity, HealthExaminationActivity::class.java).putExtra("userId", userId))
+        }
 
         binding.updateHealth.setOnClickListener {
             startActivity(Intent(activity, AddHealthActivity::class.java).putExtra("userId", userId))

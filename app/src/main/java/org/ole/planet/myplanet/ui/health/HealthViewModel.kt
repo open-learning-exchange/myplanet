@@ -47,6 +47,10 @@ class HealthViewModel @Inject constructor(
 
 
 
+
+    private val _loggedInUser = MutableStateFlow<UserEntity?>(null)
+    val loggedInUser: StateFlow<UserEntity?> = _loggedInUser.asStateFlow()
+
     private var searchJob: Job? = null
 
     fun loadPatients(sortBy: String = "joinDate", descending: Boolean = true) {
@@ -68,6 +72,7 @@ class HealthViewModel @Inject constructor(
     fun loadInitialPatient() {
         viewModelScope.launch {
             val currentUser = userRepository.getUserModel()
+            _loggedInUser.value = currentUser
             val uid = if (currentUser?._id.isNullOrEmpty()) currentUser?.id else currentUser?._id
             val normalizedId = uid?.trim()
             if (!normalizedId.isNullOrEmpty()) {
