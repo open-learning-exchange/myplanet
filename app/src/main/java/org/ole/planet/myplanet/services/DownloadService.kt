@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.repository.DownloadRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.DownloadWorker
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -57,6 +58,9 @@ class DownloadService : Service() {
 
     @Inject
     lateinit var downloadRepository: DownloadRepository
+
+    @Inject
+    lateinit var resourcesRepository: ResourcesRepository
 
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
@@ -214,7 +218,11 @@ class DownloadService : Service() {
 
             if (FileUtils.checkFileExist(this, url)) {
                 Log.d(TAG, "initDownload: $fileName already on disk, marking offline and skipping download")
-                DownloadUtils.updateResourceOfflineStatus(url)
+                try {
+                    resourcesRepository.markResourceOfflineByUrl(url)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
                 onDownloadComplete(url)
                 return true
             }
@@ -474,7 +482,13 @@ class DownloadService : Service() {
 
     private fun onDownloadComplete(url: String) {
         if ((outputFile?.length() ?: 0) > 0) {
-            DownloadUtils.updateResourceOfflineStatus(url)
+            appScope.launch {
+                try {
+                    resourcesRepository.markResourceOfflineByUrl(url)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
         }
 
         val remainingPriority = preferences.getStringSet(PRIORITY_DOWNLOADS_KEY, emptySet())?.count { it !in processedUrls } ?: 0
