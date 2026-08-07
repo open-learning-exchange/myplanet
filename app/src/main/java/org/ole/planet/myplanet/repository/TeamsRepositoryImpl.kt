@@ -439,6 +439,10 @@ class TeamsRepositoryImpl @Inject constructor(
             }
     }
 
+    override fun getTeamNameFromPrefs(): String? {
+        return sharedPrefManager.getTeamName()
+    }
+
     override suspend fun getTeamNamesByIds(ids: List<String>): Map<String, String> {
         if (ids.isEmpty()) return emptyMap()
         return teamDao.getAll()
