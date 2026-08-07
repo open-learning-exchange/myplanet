@@ -48,7 +48,6 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     private lateinit var orderByTitle: Button
     private lateinit var filterController: CourseFilterController
     private lateinit var selectionController: CourseSelectionController
-    var userModel: UserEntity? = null
     private lateinit var confirmation: AlertDialog
     private var selectionJob: Job? = null
     private var pendingScrollState: Parcelable? = null
@@ -81,7 +80,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     }
 
     override fun deleteSelected(deleteProgress: Boolean) {
-        val userId = userModel?.id ?: return
+        val userId = model?.id ?: return
         val snapshot = selectedItems?.filterNotNull() ?: return
         if (snapshot.isEmpty()) return
         val courseIds = snapshot.mapNotNull { it.courseId }
@@ -96,15 +95,11 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     override suspend fun getAdapter(): ListAdapter<*, *> {
         val hostActivity = activity ?: throw CancellationException("Fragment detached")
 
-        if (userModel == null) {
-            userModel = userSessionManager.getUserModel()
-        }
-
         val factory = adapterFactory ?: DefaultBaseAdapterFactory()
         adapterCourses = factory.createCoursesAdapter(
             context = hostActivity,
             map = HashMap(),
-            isGuest = userModel?.isGuest() ?: true,
+            isGuest = model?.isGuest() ?: true,
             isMyCourseLib = isMyCourseLib
         )
 
@@ -131,19 +126,6 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
         additionalSetup()
         setupMyProgressButton()
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            userModel = userSessionManager.getUserModel()
-            model = userModel
-            initializeView()
-            setupButtonVisibility()
-            setupEventListeners()
-            if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
-            if (::adapterCourses.isInitialized) {
-                showNoData(tvMessage, adapterCourses.itemCount, "courses")
-            }
-            selectionController.clearAll(null)
-        }
 
         collectLatestWhenStarted(viewModel.coursesState) { state ->
             if (!::adapterCourses.isInitialized) return@collectLatestWhenStarted
@@ -173,6 +155,17 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
 
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
+    }
+
+    override suspend fun initView(userModel: UserEntity?) {
+        initializeView()
+        setupButtonVisibility()
+        setupEventListeners()
+        if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
+        if (::adapterCourses.isInitialized) {
+            showNoData(tvMessage, adapterCourses.itemCount, "courses")
+        }
+        selectionController.clearAll(null)
     }
 
     private fun initializeView() {
@@ -211,7 +204,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         selectionController = CourseSelectionController(
             rootView = requireView(),
             isMyCourseLib = isMyCourseLib,
-            isGuest = userModel?.isGuest() ?: true,
+            isGuest = model?.isGuest() ?: true,
             onRemoveConfirmed = {
                 val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
                 deleteSelected(true)
@@ -392,7 +385,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         builder.setMessage(msg)
         builder.setCancelable(true)
             .setPositiveButton(R.string.go_to_mycourses) { _: DialogInterface, _: Int ->
-                if (userModel?.id?.startsWith("guest") == true) {
+                if (model?.id?.startsWith("guest") == true) {
                     DialogUtils.guestDialog(requireContext())
                 } else {
                     hasAdded = true

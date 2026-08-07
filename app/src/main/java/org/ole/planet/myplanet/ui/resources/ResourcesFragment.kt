@@ -72,7 +72,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private lateinit var config: ChipCloudConfig
     private lateinit var adapterLibrary: ResourcesAdapter
     private var tagsMap: Map<String, List<TagEntity>> = emptyMap()
-    var userModel: UserEntity ?= null
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
     private var allResourceModels: List<ResourceListModel> = emptyList()
@@ -136,13 +135,12 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override suspend fun getAdapter(): ListAdapter<*, *> {
         allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
 
-        val user = userRepository.getUserModel()
         val factory = adapterFactory ?: DefaultBaseAdapterFactory()
         adapterLibrary = factory.createResourcesAdapter(
             context = requireActivity(),
-            isGuest = user?.isGuest() == true,
+            isGuest = model?.isGuest() == true,
             openedResourceIds = emptySet(),
-            currentUserName = user?.name,
+            currentUserName = model?.name,
             onEditClick = { model -> openEditResource(model) }
         )
 
@@ -195,13 +193,15 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                 }
             }
         }
-        lifecycleScope.launch {
-            userModel = userRepository.getUserModel()
-            setupGuestUserRestrictions()
+    }
 
-            val userId = userModel?.id
-            if (userId != null) {
-                viewModel.observeOpenedResourceIds(userId)
+    override suspend fun initView(userModel: UserEntity?) {
+        setupGuestUserRestrictions()
+
+        val userId = model?.id
+        if (userId != null) {
+            viewModel.observeOpenedResourceIds(userId)
+            viewLifecycleOwner.lifecycleScope.launch {
                 viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                     viewModel.openedResourceIds.collectLatest { openedResourceIds ->
                         if (::adapterLibrary.isInitialized) {
@@ -237,7 +237,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     private fun setupGuestUserRestrictions() {
-        if(userModel?.isGuest() == true){
+        if(model?.isGuest() == true){
             tvAddToLib.visibility = View.GONE
             selectAll.visibility = View.GONE
         }
@@ -356,7 +356,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private fun setupAddResourceButtonListener() {
         binding.addResource.visibility = if (isMyCourseLib) View.VISIBLE else View.GONE
         binding.addResource.setOnClickListener {
-            if (userModel?.id?.startsWith("guest") == false) {
+            if (model?.id?.startsWith("guest") == false) {
                 AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
             } else {
                 guestDialog(requireContext())
@@ -424,7 +424,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         builder.setMessage(buildAlertMessage())
         builder.setCancelable(true)
             .setPositiveButton(R.string.go_to_mylibrary) { dialog: DialogInterface, _: Int ->
-                if (userModel?.id?.startsWith("guest") == true) {
+                if (model?.id?.startsWith("guest") == true) {
                     guestDialog(requireContext())
                 } else {
                     hasAdded = true
@@ -725,7 +725,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     override fun deleteSelected(deleteProgress: Boolean) {
-        val userId = userModel?.id
+        val userId = model?.id
         val itemsToDelete = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToDelete.isNotEmpty()) {
@@ -744,7 +744,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     override fun addToMyList(onComplete: (() -> Unit)?) {
-        val userId = userModel?.id
+        val userId = model?.id
         val itemsToAdd = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToAdd.isNotEmpty()) {
