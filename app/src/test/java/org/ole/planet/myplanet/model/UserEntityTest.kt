@@ -49,8 +49,14 @@ class UserEntityTest {
     @After
     fun tearDown() {
         MainApplication.testContext = originalContext
-        MainApplication.applicationScope.cancel()
-        originalScope?.let { MainApplication.applicationScope = it }
+        // Cancel + restore only when there was an original scope. If applicationScope was
+        // uninitialized before this test, leave the live temp scope in place — replacing an
+        // uninitialized lateinit with a cancelled scope would make later tests in the same
+        // JVM silently skip coroutine work.
+        originalScope?.let {
+            MainApplication.applicationScope.cancel()
+            MainApplication.applicationScope = it
+        }
         Dispatchers.resetMain()
         unmockkAll()
     }

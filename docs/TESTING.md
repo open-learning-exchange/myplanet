@@ -230,8 +230,12 @@ class UserEntityTest {
     @After
     fun tearDown() {
         MainApplication.testContext = originalContext
-        MainApplication.applicationScope.cancel()   // cancel the temporary scope's jobs
-        originalScope?.let { MainApplication.applicationScope = it }
+        // cancel + restore only when an original scope existed — never leave the
+        // global holding a cancelled scope (later tests would silently no-op)
+        originalScope?.let {
+            MainApplication.applicationScope.cancel()
+            MainApplication.applicationScope = it
+        }
         Dispatchers.resetMain()
         unmockkAll()
     }
