@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.ui.ratings.RatingsFragment
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
@@ -354,8 +355,38 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 }
             }
 
-            R.id.finish_step -> checkSurveyCompletion()
+            R.id.finish_step -> onFinishStep()
             R.id.btn_remove -> addRemoveCourse()
+        }
+    }
+
+    private fun showCourseRatingDialogAndFinish() {
+        val cId = courseId ?: currentCourse?.courseId
+        val title = currentCourse?.courseTitle ?: ""
+        if (!cId.isNullOrEmpty() && isAdded) {
+            val ratingDialog = RatingsFragment.newInstance("course", cId, title)
+            ratingDialog.setOnDismissListener {
+                if (isAdded) {
+                    FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
+                }
+            }
+            ratingDialog.show(parentFragmentManager, "CourseRatingDialog")
+        } else if (isAdded) {
+            FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
+        }
+    }
+
+    private fun onFinishStep() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val hasUnfinishedSurvey = courseId?.let {
+                coursesRepository.hasUnfinishedSurveys(it, userModel?.id)
+            } ?: false
+
+            if (hasUnfinishedSurvey && courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
+                Toast.makeText(context, getString(R.string.please_complete_survey), Toast.LENGTH_SHORT).show()
+            } else {
+                showCourseRatingDialogAndFinish()
+            }
         }
     }
 
@@ -402,7 +433,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         } else {
             binding.finishStep.isEnabled = true
             binding.finishStep.setOnClickListener {
-                FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
+                showCourseRatingDialogAndFinish()
             }
         }
     }
