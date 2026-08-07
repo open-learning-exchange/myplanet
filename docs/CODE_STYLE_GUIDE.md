@@ -706,7 +706,7 @@ Branches follow the `{prefix}/{slug}` pattern, where the slug is kebab-case deri
 
 History is linear squash-merges; merged commit subjects follow this observed pattern:
 
-```
+```text
 <area>: <description> (fixes #<issue>) (#<pr>)
 ```
 

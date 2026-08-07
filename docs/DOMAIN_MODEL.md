@@ -255,7 +255,7 @@ Whether an exam was self-administered or entered by someone else is tracked by t
 
 ## How Everything Connects
 
-```
+```text
 UserEntity (learner)
 ├── joins → MyCourse (course)
 │   ├── has steps → CourseStep
