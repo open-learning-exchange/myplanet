@@ -174,6 +174,23 @@
         <item name="android:textSize">16sp</item>
     </style>
 
+    <style name="DownloadDialogButtonStyle" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/colorAccent</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:singleLine">false</item>
+        <item name="android:maxLines">2</item>
+    </style>
+
+    <style name="DownloadDialogTheme" parent="ThemeOverlay.MaterialComponents.Dialog.Alert">
+        <item name="android:background">@color/secondary_bg</item>
+        <item name="android:textColorPrimary">@color/daynight_textColor</item>
+        <item name="android:textColor">@color/daynight_textColor</item>
+        <item name="buttonBarNegativeButtonStyle">@style/DownloadDialogButtonStyle</item>
+        <item name="buttonBarPositiveButtonStyle">@style/DownloadDialogButtonStyle</item>
+        <item name="buttonBarNeutralButtonStyle">@style/DownloadDialogButtonStyle</item>
+        <item name="android:buttonStyle">@style/DownloadDialogButtonStyle</item>
+    </style>
+
     <style name="CustomPopupMenu" parent="Widget.AppCompat.PopupMenu">
         <item name="android:popupMenuStyle">@style/PopupMenu</item>
         <item name="android:textColor">@color/daynight_textColor</item>
