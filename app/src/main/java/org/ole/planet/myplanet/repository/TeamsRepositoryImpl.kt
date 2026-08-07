@@ -1434,4 +1434,20 @@ class TeamsRepositoryImpl @Inject constructor(
     ): List<MyTeam> {
         return if (ascending) sortedBy(selector) else sortedByDescending(selector)
     }
+
+    override suspend fun getPendingTaskUploads(): List<TeamTask> {
+        return teamTaskDao.getPendingUploads()
+    }
+
+    override suspend fun markTaskUploaded(localId: String, remoteId: String?, remoteRev: String?): Boolean {
+        return teamTaskDao.markUploaded(localId, remoteId, remoteRev) != 0
+    }
+
+    override suspend fun getPendingTeamLogUploads(): List<TeamLog> {
+        return teamLogDao.getPendingUploads()
+    }
+
+    override suspend fun markTeamLogUploaded(localId: String, remoteId: String, rev: String): Boolean {
+        return teamLogDao.markUploaded(localId, remoteId, rev) != 0
+    }
 }
