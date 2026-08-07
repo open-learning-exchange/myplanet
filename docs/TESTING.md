@@ -363,7 +363,7 @@ Test class names always match `{ClassUnderTest}Test.kt` (e.g. `CoursesRepository
 ./gradlew testLiteDebugUnitTest
 ```
 
-CI (`.github/workflows/test.yml`, "myPlanet test") runs on every push to every branch (no `pull_request` trigger — the push itself triggers it) plus manual dispatch: `./gradlew testDefaultDebugUnitTest --configuration-cache-problems=warn --parallel --max-workers=4` on `ubuntu-24.04`. On failure it uploads `app/build/reports/tests/` as the `test-reports-default` artifact (7-day retention); a timing summary always runs. There is no separate lint or coverage gate — passing `testDefaultDebugUnitTest` is the bar.
+CI (`.github/workflows/test.yml`, "myPlanet test") runs on every push to every branch (no `pull_request` trigger — the push itself triggers it) plus manual dispatch: `./gradlew test${FLAVOR^}DebugUnitTest --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4` (matrix is `default` only) on `ubuntu-24.04`. On failure it uploads `app/build/reports/tests/` as the `test-reports-default` artifact (7-day retention); a timing summary always runs. There is no separate lint or coverage gate — passing `testDefaultDebugUnitTest` is the bar.
 
 ---
 

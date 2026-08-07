@@ -374,7 +374,7 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 - Runs on Ubuntu 24.04
 - Matrix builds both `default` and `lite` flavors with fail-fast disabled
 - Uses `gradle/actions/setup-gradle@v6` with a remote Gradle build cache
-- Build command: `./gradlew assemble${FLAVOR^}Debug --parallel --max-workers=4`
+- Build command: `./gradlew assemble${FLAVOR^}Debug --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4`
 
 **Test Workflow** (`.github/workflows/test.yml`)
 - Triggers: every push (all branches) + manual dispatch; `permissions: contents: read`
