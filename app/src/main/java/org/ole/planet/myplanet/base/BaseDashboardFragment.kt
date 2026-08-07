@@ -62,7 +62,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
     private var di: DialogUtils.CustomProgressDialog? = null
 
     @Inject
-    lateinit var transactionSyncManager: TransactionSyncManager
+    lateinit var syncRepository: org.ole.planet.myplanet.repository.SyncRepository
     @Inject
     lateinit var lifeRepository: LifeRepository
 
@@ -449,7 +449,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
     }
 
     fun syncKeyId() {
-        transactionSyncManager.syncDashboardKeyId(model?.getRoleAsString(), this)
+        syncRepository.syncDashboardKeyId(model?.getRoleAsString(), this)
     }
 
     override fun onSyncStarted() {
