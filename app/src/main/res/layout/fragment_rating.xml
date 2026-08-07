@@ -72,32 +72,44 @@
     </LinearLayout>
 
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="right">
+        android:gravity="end|center_vertical"
+        android:orientation="horizontal"
+        android:padding="@dimen/padding_normal">
 
         <Button
-            android:id="@+id/btn_submit"
-            style="@style/YellowButtons"
+            android:id="@+id/btn_cancel"
+            style="@style/GreyButtons"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginRight="10dp"
-            android:background="@drawable/buttonyellow"
-            android:text="@string/button_submit" />
+            android:layout_height="40dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginEnd="@dimen/padding_normal"
+            android:background="@drawable/buttongrey"
+            android:gravity="center"
+            android:paddingStart="@dimen/padding_normal"
+            android:paddingEnd="@dimen/padding_normal"
+            android:text="@string/button_cancel" />
+
         <ProgressBar
             android:id="@+id/submit_progress"
             style="?android:attr/progressBarStyleSmall"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginRight="10dp"
             android:layout_gravity="center_vertical"
+            android:layout_marginEnd="@dimen/padding_normal"
             android:visibility="gone" />
+
         <Button
-            android:id="@+id/btn_cancel"
-            style="@style/GreyButtons"
+            android:id="@+id/btn_submit"
+            style="@style/YellowButtons"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/buttongrey"
-            android:text="@string/button_cancel" />
+            android:layout_height="40dp"
+            android:layout_gravity="center_vertical"
+            android:background="@drawable/buttonyellow"
+            android:gravity="center"
+            android:paddingStart="@dimen/padding_normal"
+            android:paddingEnd="@dimen/padding_normal"
+            android:text="@string/button_submit" />
     </LinearLayout>
 </LinearLayout>
