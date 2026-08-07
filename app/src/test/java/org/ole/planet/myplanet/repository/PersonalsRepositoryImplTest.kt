@@ -17,28 +17,50 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import com.google.gson.JsonObject
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.model.Personal
+import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PersonalsRepositoryImplTest {
 
     private lateinit var personalDao: PersonalDao
+    private lateinit var apiInterface: ApiInterface
+    private lateinit var uploadRepository: UploadRepository
+    private lateinit var context: Context
     private lateinit var repository: PersonalsRepositoryImpl
 
     @Before
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
         personalDao = mockk(relaxed = true)
-        val apiInterface = mockk<ApiInterface>(relaxed = true)
-        val context = mockk<Context>(relaxed = true)
-        repository = PersonalsRepositoryImpl(personalDao, apiInterface, context)
+        apiInterface = mockk(relaxed = true)
+        uploadRepository = mockk(relaxed = true)
+        context = mockk(relaxed = true)
+
+        io.mockk.mockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+        io.mockk.every { org.ole.planet.myplanet.utils.UrlUtils.header } returns "mock-header"
+        io.mockk.every { org.ole.planet.myplanet.utils.UrlUtils.getUrl() } returns "mock-url"
+
+        io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
+        io.mockk.every { org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier() } returns "mock-unique-id"
+        io.mockk.every { org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName() } returns "mock-device-name"
+        io.mockk.every { org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName(any()) } returns "mock-custom-device-name"
+
+        io.mockk.mockkObject(org.ole.planet.myplanet.utils.FileUtils)
+        io.mockk.every { org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl(any()) } returns "test.txt"
+
+        repository = PersonalsRepositoryImpl(personalDao, apiInterface, uploadRepository, context)
     }
 
     @After
     fun tearDown() {
+        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
+        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.FileUtils)
         unmockkAll()
     }
 
@@ -154,5 +176,79 @@ class PersonalsRepositoryImplTest {
         assertEquals("new-id", personal._id)
         assertEquals("rev-1", personal._rev)
         coVerify { personalDao.update(personal) }
+    }
+
+    @Test
+    fun `uploadPersonal returns already uploaded when personal is uploaded`() = runTest {
+        val personal = Personal().apply { isUploaded = true }
+
+        val result = repository.uploadPersonal(personal)
+
+        assertEquals("Resource already uploaded", result)
+    }
+
+    @Test
+    fun `uploadPersonal uploads doc and returns success when response is valid without path`() = runTest {
+        val personal = Personal().apply {
+            id = "test-id"
+            isUploaded = false
+            path = null
+        }
+        val mockResponseObject = JsonObject().apply {
+            addProperty("rev", "new-rev")
+            addProperty("id", "new-id")
+        }
+        val mockResponse = Response.success(mockResponseObject)
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns mockResponse
+
+        val result = repository.uploadPersonal(personal)
+
+        assertEquals("Personal resource uploaded successfully", result)
+        coVerify { apiInterface.postDoc(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `uploadPersonal uploads doc and attachment when path is provided`() = runTest {
+        val personal = Personal().apply {
+            id = "test-id"
+            isUploaded = false
+            path = "/local/path/to/test.txt"
+        }
+        val mockResponseObject = JsonObject().apply {
+            addProperty("rev", "new-rev")
+            addProperty("id", "new-id")
+        }
+        val mockResponse = Response.success(mockResponseObject)
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns mockResponse
+        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns mockk()
+
+        val result = repository.uploadPersonal(personal)
+
+        assertEquals("Personal resource uploaded successfully", result)
+        coVerify { apiInterface.postDoc(any(), any(), any(), any()) }
+        coVerify(exactly = 1) {
+            uploadRepository.uploadAttachment(
+                file = any(),
+                destinationFormat = "%s/resources/%s/%s",
+                id = "new-id",
+                rev = "new-rev",
+                name = "test.txt"
+            )
+        }
+    }
+
+    @Test
+    fun `uploadPersonal returns failure message when doc response is null`() = runTest {
+        val personal = Personal().apply {
+            id = "test-id"
+            isUploaded = false
+        }
+        val mockResponse = Response.success<JsonObject>(null)
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns mockResponse
+
+        val result = repository.uploadPersonal(personal)
+
+        assertEquals("Failed to upload personal resource: No response", result)
     }
 }
