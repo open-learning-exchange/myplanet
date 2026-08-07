@@ -651,7 +651,7 @@ When making changes, verify:
 - Room DAO methods in this project are all `suspend` and run on IO — call them from a coroutine (`viewLifecycleOwner.lifecycleScope.launch`), never synchronously from the main thread.
 
 **Issue: Push fails with 403**
-- Ensure branch name starts with `claude/` and ends with the matching session ID; use `git push -u origin <branch-name>`.
+- Ensure branch name starts with `claude/` and ends with the matching session ID; use `git push -u origin <branch-name>` (see **Branch Strategy** above for details).
 
 ---
 
