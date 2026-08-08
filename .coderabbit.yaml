@@ -58,11 +58,26 @@ reviews:
     ignore_usernames:
       - "dependabot[bot]"
 
+  # Finishing touches are ON-DEMAND only (checkbox or @coderabbitai command)
+  # — zero noise when idle, full devops arsenal when summoned.
   finishing_touches:
     docstrings:
-      enabled: false
+      enabled: true # @coderabbitai generate docstrings
     unit_tests:
-      enabled: false
+      enabled: true # @coderabbitai generate unit tests (conventions: see code_generation)
+    simplify:
+      enabled: true # off by default upstream; opt in
+    autofix:
+      enabled: true # @coderabbitai autofix — applies its own review findings
+    fix_ci:
+      enabled: true # @coderabbitai fix-ci — commits a fix for failing CI
+    resolve_merge_conflict:
+      enabled: true # @coderabbitai resolve merge conflict
+
+  pre_merge_checks:
+    # KDoc coverage is not a project goal — a perpetual 80% warning is pure noise.
+    docstring_coverage:
+      mode: "off"
 
   tools:
     detekt:
@@ -79,10 +94,21 @@ reviews:
 
 chat:
   auto_reply: true
-  art: false # no ASCII/emoji art in replies
+  # art stays on (default): emoji are high signal per character.
 
 knowledge_base:
   code_guidelines:
     enabled: true
     filePatterns:
       - "CLAUDE.md"
+
+code_generation:
+  unit_tests:
+    path_instructions:
+      - path: "app/src/test/**"
+        instructions: >-
+          Use MockK (mockk, coEvery, coVerify) — never Mockito. Coroutine
+          tests use runTest with MainDispatcherRule and inject
+          TestDispatcherProvider. Use Robolectric only when Android
+          framework classes are required. Place tests mirroring the main
+          package path so CI (testDefaultDebugUnitTest) picks them up.

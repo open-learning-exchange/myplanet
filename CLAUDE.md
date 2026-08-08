@@ -401,6 +401,18 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 - Daily checks for GitHub Actions updates (max 10 open PRs)
 - Daily checks for Gradle dependency updates (max 15 open PRs)
 
+### CodeRabbit (AI reviewer) — `.coderabbit.yaml`
+
+CodeRabbit reviews every non-draft, non-dependabot PR. It is configured **quiet by default**: no diagrams, labels, status or "review skipped" comments; it auto-pauses after 5 reviewed commits per PR. It reads this file (CLAUDE.md) as its code guidelines, so conventions here are enforced in review.
+
+**For agents working a PR:**
+- Each finding includes a collapsible **"Prompt for AI agents"** block — use it verbatim as the fix instruction instead of re-deriving the issue.
+- Address or explicitly rebut every finding; after fixing, comment `@coderabbitai resolve` to close all its threads in one shot.
+- If reviews are paused (5-commit auto-pause) or you need a re-check, comment `@coderabbitai review` (incremental) or `@coderabbitai full review`.
+- On-demand powers (never run automatically): `@coderabbitai fix-ci`, `@coderabbitai resolve merge conflict`, `@coderabbitai autofix`, `@coderabbitai generate unit tests` / `generate docstrings`.
+- Don't fight the built-in linters (detekt, gitleaks, actionlint, yamllint) — fix the finding or justify in-thread why it doesn't apply.
+- Config changes go in `.coderabbit.yaml` at repo root (it overrides the web UI); the PR branch's copy applies to its own PR, so config PRs self-test.
+
 ### Adding New Features
 
 1. **Identify the Layer**
