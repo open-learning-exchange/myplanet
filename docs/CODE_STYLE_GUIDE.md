@@ -729,9 +729,9 @@ Before opening a PR:
 - [ ] `_binding` is nulled in `onDestroyView()` if you added a new Fragment
 - [ ] `AppDatabase` `version` bumped if you changed any `@Entity`
 
-### PR Reviews — Three Options
+### PR Reviews
 
-Besides a human reviewer and a Claude session, **CodeRabbit** is available as a third review option on any PR: mention `@coderabbitai` in a PR comment to summon it. It's the token-cheap shortcut — an incremental automated review without spending a human's time or a Claude session's context.
+Besides a human reviewer and a Claude session, several bots can review a PR — the full roster and their side effects are in `CLAUDE.md` → "The Agent Spellbook". **CodeRabbit** is the default: it auto-reviews every non-draft push, and `@coderabbitai` in a PR comment re-summons it. It's the token-cheap shortcut — an incremental automated review without spending a human's time or a Claude session's context.
 
 Useful commands (as PR comments):
 
