@@ -407,6 +407,8 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 
 The full grid — summon commands, ack times, push behavior, and per-agent quirks for CodeRabbit, Codex, Copilot, Devin, OpenHands, Jules, Claude Code, and Dependabot — plus vendor doc links lives in **`docs/AGENT_SPELLBOOK.md`**. Read it before casting; the laws below are what you carry with you.
 
+> ⛔ **`@claude review` is turned OFF for this repo — do not summon it.** The claude.ai-managed Code Review bills $15–25 per review against org overage credits (separate from plan usage, non-refundable). Our first and only live test (PR #15436, 2026-08-08) consumed the org's entire $20 monthly cap ($22.60 — the limit doesn't stop a review mid-process) and delivered **zero findings**: one "review skipped" reply, then one capacity-limited run posting nothing but a warning banner. At ~123 reviewed PRs/day, this repo's review volume would cost ~$1,845–3,075 *per day*. Use CodeRabbit (free for OSS, auto-reviews every push) and `@codex review` instead — same job, no per-review bill.
+
 **Laws of Summoning** — for the humans casting *and* the agents summoned. (Copilot and Devin ingest this file as standing instructions; Jules reads `AGENTS.md`, which this repo doesn't have yet — if you're an agent reading this, these laws are yours to follow.)
 
 1. **Scope your summons — precision works.** An explicit "comment only — do not push" was honored by Devin, Copilot, and Codex; say exactly what you want and you'll usually get exactly that. Summoned agents: the mention text is your contract — when it says comment, comment. (One agent broke this once; the timeline remembers, so keep the streak.)
