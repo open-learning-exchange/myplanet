@@ -11,7 +11,7 @@ This guide documents the conventions actually used in the myPlanet codebase. AI 
 3. [File & Package Structure](#file--package-structure)
 4. [Architecture Patterns](#architecture-patterns)
 5. [Coroutines & Async](#coroutines--async)
-6. [Realm Database](#realm-database)
+6. [Room Database](#room-database)
 7. [Dependency Injection (Hilt)](#dependency-injection-hilt)
 8. [UI Layer](#ui-layer)
 9. [Resource Files](#resource-files)
@@ -26,7 +26,7 @@ This guide documents the conventions actually used in the myPlanet codebase. AI 
 
 ### General
 
-- **Kotlin-first.** All new files are `.kt`. Java interop exists in a few legacy spots — don't add more.
+- **Kotlin-first.** All new files are `.kt` — the codebase is 100% Kotlin, no Java sources remain.
 - Follow the [Kotlin Coding Conventions](https://kotlinlang.org/docs/coding-conventions.html) as the baseline. This guide narrows them down to what the codebase actually does.
 - **4-space indent.** No tabs.
 - Max line length: ~120 chars (not strictly enforced, but keep it readable).
@@ -74,13 +74,12 @@ val course = coursesRepository.getCourseById(courseId!!)
 
 ### Lambdas and Functional Style
 
-Use trailing lambda syntax. Prefer `filter`, `map`, `forEach` over indexed loops when operating on collections. For named-parameter lambdas where the parameter is unused, use `_`.
+Use trailing lambda syntax. Prefer `filter`, `map`, `forEach` over indexed loops when operating on collections. For lambdas where a parameter is unused, use `_`.
 
 ```kotlin
 // Good
-realm.where(RealmMyCourse::class.java)
-    .isNotEmpty("courseTitle")
-    .findAll()
+val myCourses = courses.filter { it.userId?.contains(userId) == true }
+    .sortedBy { it.courseTitle }
 
 // Good - unused lambda params named _
 builder.setPositiveButton(getString(R.string.ok)) { _, _ -> doSomething() }
@@ -108,6 +107,8 @@ sealed class SyncStatus {
 }
 ```
 
+(Note: Room `@Entity` classes are the exception — they stay `open class` with `var` properties; see [Room Database](#room-database).)
+
 ### `when` Expressions
 
 Prefer `when` over `if-else if` chains with more than two branches. Use it as an expression when assigning.
@@ -132,9 +133,9 @@ object DialogUtils {
 }
 ```
 
-### `@JvmStatic` and Java Interop
+### `@JvmStatic`
 
-Use `@JvmStatic` on companion object members that are called from Java code or in utility objects that may be referenced from older patterns. Don't add it gratuitously in purely Kotlin code paths.
+Use `@JvmStatic` on companion object members in utility objects that follow the existing pattern. Don't add it gratuitously in purely Kotlin code paths.
 
 ### Extension Functions
 
@@ -166,10 +167,14 @@ Always null `_binding` in `onDestroyView()`.
 
 **Backing StateFlow:**
 ```kotlin
-private val _coursesState = MutableStateFlow(CoursesUiState())
-val coursesState: StateFlow<CoursesUiState> = _coursesState
+private val _uiState = MutableStateFlow(DashboardUiState())
+val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 ```
-Private mutable, public read-only — every time, no exceptions.
+Private mutable, public read-only via `.asStateFlow()` — every time, no exceptions. For one-shot events, use the SharedFlow equivalent:
+```kotlin
+private val _surveyNavigationEvent = MutableSharedFlow<String>(extraBufferCapacity = 1)
+val surveyNavigationEvent: SharedFlow<String> = _surveyNavigationEvent.asSharedFlow()
+```
 
 **TAG in companion object:**
 ```kotlin
@@ -196,19 +201,20 @@ companion object {
 
 ### Kotlin File Names
 
-| Component | Suffix | Example |
+| Component | Convention | Example |
 |-----------|--------|---------|
-| Activity | `Activity` | `LoginActivity.kt` |
-| Fragment | `Fragment` | `CoursesFragment.kt` |
-| ViewModel | `ViewModel` | `CoursesViewModel.kt` |
-| Adapter | `Adapter` | `CoursesAdapter.kt` |
-| Repository interface | `Repository` | `CoursesRepository.kt` |
-| Repository implementation | `RepositoryImpl` | `CoursesRepositoryImpl.kt` |
-| Realm model | `Realm` prefix | `RealmMyCourse.kt` |
-| Worker | `Worker` | `AutoSyncWorker.kt` |
+| Activity | `*Activity.kt` | `LoginActivity.kt` |
+| Fragment | `*Fragment.kt` | `CoursesFragment.kt` |
+| ViewModel | `*ViewModel.kt` | `CoursesViewModel.kt` |
+| Adapter | `*Adapter.kt` | `CoursesAdapter.kt` |
+| Repository interface | `*Repository.kt` | `CoursesRepository.kt` |
+| Repository implementation | `*RepositoryImpl.kt` | `CoursesRepositoryImpl.kt` |
+| Room entity | plain name in `model/` | `MyCourse.kt`, `Submission.kt`, `UserEntity.kt` |
+| Room DAO | `*Dao.kt` in `data/room/dao/` | `RatingDao.kt` (several small DAOs share `LegacyEntityDaos.kt`) |
+| Worker | `*Worker.kt` | `AutoSyncWorker.kt` |
 | Callback interface | `On` prefix | `OnCourseItemSelectedListener.kt` |
 | DI module | `Module` suffix | `RepositoryModule.kt` |
-| DI entry point | `EntryPoint` suffix | `NetworkDependenciesEntryPoint.kt` |
+| DI entry point | `EntryPoint` suffix | `CoreDependenciesEntryPoint.kt` |
 
 ### Package Layout
 
@@ -223,7 +229,7 @@ ui/
 ```
 
 If a feature needs a new data type:
-- Realm-backed persistent model → `model/Realm*.kt`
+- Persistent model → Room `@Entity` in `model/` + a DAO in `data/room/dao/` (register both in `AppDatabase` and `RoomModule`, bump the DB `version`)
 - Non-persistent DTO or UI model → `model/MyDto.kt`
 - New data domain → `repository/MyRepository.kt` + `repository/MyRepositoryImpl.kt`
 
@@ -236,47 +242,46 @@ If a feature needs a new data type:
 ```
 UI Layer      (Fragment/Activity + ViewModel)
     ↓  inject via Hilt
-Repository Layer  (interface + Impl extending RealmRepository)
+Repository Layer  (interface + Impl, injects Room DAOs)
     ↓
-Data Sources  (Realm local DB via DatabaseService, REST via ApiInterface)
+Data Sources  (Room DAOs, REST via ApiInterface, SharedPreferences)
 ```
 
-Never skip a layer. A Fragment should never directly query Realm. A Repository should never know about Views or Context (except `@ApplicationContext`).
+Never skip a layer. A Fragment should never query a DAO directly. A Repository should never know about Views or Context (except `@ApplicationContext`).
 
 ### Repository Pattern
 
-Every data domain has an interface and a `RealmRepository`-extending implementation. The interface is what gets injected everywhere.
+Every data domain has an interface and a plain implementation. **There is no base repository class** — each Impl injects the DAO(s) it needs directly. The interface is what gets injected everywhere.
 
 ```kotlin
-// Interface in repository/
-interface CoursesRepository {
-    suspend fun getCourseById(courseId: String): RealmMyCourse?
-    suspend fun joinCourse(courseId: String, userId: String): Result<Unit>
-    // ...
-}
+// Real example — repository/CommunityRepositoryImpl.kt
+class CommunityRepositoryImpl @Inject constructor(
+    private val apiInterface: ApiInterface,
+    private val communityDao: CommunityDao,
+    private val meetupDao: MeetupDao
+) : CommunityRepository {
 
-// Implementation in repository/
-class CoursesRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
-    private val sharedPrefManager: SharedPrefManager
-) : RealmRepository(databaseService, realmDispatcher), CoursesRepository {
-    override suspend fun getCourseById(courseId: String): RealmMyCourse? {
-        return withRealm { realm ->
-            realm.where(RealmMyCourse::class.java)
-                .equalTo("courseId", courseId)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
-        }
+    override suspend fun getAllSorted(): List<Community> {
+        return communityDao.getAllSorted()
     }
 }
 ```
 
-**Rule:** Always `realm.copyFromRealm(...)` before returning objects from a `withRealm { }` block. Realm objects are thread-bound; returning a live managed object causes crashes outside the Realm thread.
+Reactive queries return `Flow` from a non-suspend DAO method — named `observe*` or `*Flow` — mapped in the repository:
+
+```kotlin
+override suspend fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>> {
+    return courseDao.observeAll().map { courses ->
+        mapCourses(courses).filter { it.userId?.contains(userId) == true }
+    }
+}
+```
+
+DAO methods return plain (unmanaged) Kotlin objects — there is no thread-bound-object problem and no copy-out step; just return what the DAO gives you.
 
 ### ViewModel Pattern
 
-ViewModels use `@HiltViewModel` and expose state via `StateFlow`, never `LiveData` (the codebase has migrated to Flow).
+ViewModels use `@HiltViewModel` and expose state via `StateFlow`. **LiveData is fully gone** (zero usages) — don't reintroduce it.
 
 ```kotlin
 @HiltViewModel
@@ -286,7 +291,7 @@ class MyFeatureViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MyUiState())
-    val uiState: StateFlow<MyUiState> = _uiState
+    val uiState: StateFlow<MyUiState> = _uiState.asStateFlow()
 
     fun loadData() {
         viewModelScope.launch {
@@ -311,23 +316,30 @@ After creating the interface and impl, register the binding in `di/RepositoryMod
 abstract fun bindMyRepository(impl: MyRepositoryImpl): MyRepository
 ```
 
+### Model Companion Helpers
+
+Models keep `serialize*`/`insert*`/`create*` factory methods in their `companion object` (e.g. `News.createNews(...)`, `MyLibrary.insertMyLibrary(...)`, `UserEntity.serialize()`). The contract post-Room-migration: **these helpers build or serialize unmanaged objects; the caller persists the result via a DAO.** Keep serialization logic co-located with the model, keep persistence in the repository.
+
 ---
 
 ## Coroutines & Async
 
 ### Dispatcher Discipline
 
-Never hardcode `Dispatchers.IO` or `Dispatchers.Main`. Inject `DispatcherProvider` and use its properties:
+Never hardcode `Dispatchers.IO` or `Dispatchers.Main`. Inject `DispatcherProvider` (`utils/DispatcherProvider.kt` — properties `main`, `mainImmediate`, `io`, `default`, `unconfined`; provided by `DispatcherModule`) and use its properties:
 
 ```kotlin
-class MyRepositoryImpl @Inject constructor(
+// Real example — repository/DownloadRepositoryImpl.kt
+class DownloadRepositoryImpl @Inject constructor(
+    private val apiInterface: ApiInterface,
     private val dispatcherProvider: DispatcherProvider
-) {
-    suspend fun doWork() = withContext(dispatcherProvider.io) { ... }
+) : DownloadRepository {
+    override suspend fun downloadFileResponse(url: String, authHeader: String): DownloadResult =
+        withContext(dispatcherProvider.io) { ... }
 }
 ```
 
-Realm operations use `@RealmDispatcher` — a dedicated single-threaded dispatcher to keep all Realm access on one thread.
+This is what lets tests substitute `TestDispatcherProvider` (see `docs/TESTING.md`).
 
 ### Fragment Scope
 
@@ -383,95 +395,75 @@ result.onSuccess { /* update UI */ }
       .onFailure { e -> Utilities.toast(activity, "Failed: ${e.message}") }
 ```
 
-For internal-only network calls use `NetworkResult<T>` (the sealed class in `data/NetworkResult.kt`).
+For internal-only network calls use `NetworkResult<T>` (the sealed class in `data/NetworkResult.kt`: `Success` / `Error(code, message)` / `Exception(throwable)`).
 
 ---
 
-## Realm Database
+## Room Database
 
-### Model Classes
+All local persistence goes through Room: `AppDatabase` (`data/room/AppDatabase.kt`, 37 entities, `version = 6`), DAOs in `data/room/dao/`, and `Converters` (`data/room/Converters.kt`). There is no other local store.
 
-- Must extend `RealmObject`.
-- Must be `open class` — Realm generates a proxy subclass.
-- All properties must be `var` — Realm needs to intercept get/set.
-- Primary keys use `@PrimaryKey`. Indexed fields for frequent queries use `@Index`.
-- Non-persisted fields use `@Transient`.
+### Entity Classes
+
+Entities live in `model/` with plain names (no prefix). They keep the Realm-era shape — **`open class` with `var` properties and default values**, not `data class`:
 
 ```kotlin
-open class RealmMyCourse : RealmObject() {
-    @PrimaryKey
-    var id: String? = null
-
-    @Index
-    var courseId: String? = null
-
-    var courseTitle: String? = null
-    var createdDate: Long = 0
-
-    @Transient
-    var isMyCourse: Boolean = false
+@Entity(tableName = "courses", indices = [Index("courseId"), Index("_id"), Index("courseTitleNormal")])
+open class MyCourse(
+    @PrimaryKey @JvmField var id: String = "",
+    var userId: List<String>? = null,
+    @JvmField @ColumnInfo(name = "_id") var _id: String? = null,
+    @ColumnInfo(name = "_rev") var courseRev: String? = null,
+    var courseTitle: String? = null,
+    // ...
+) {
+    @Ignore var courseSteps: MutableList<CourseStep>? = null   // non-persisted helper
 }
 ```
 
-### Static Helpers in Companion
+- `@PrimaryKey` for the key; `indices = [Index(...)]` on `@Entity` for frequently queried columns.
+- `@ColumnInfo(name = "_id")` / `"_rev"` map the CouchDB field names to Kotlin-friendly property names.
+- Non-persisted, computed, or in-memory-only fields use `@Ignore` (often combined with `@Transient`).
+- Multi-valued fields (`List<String>`, nested lists, `Date`) persist via `Converters` — Gson-serialized JSON strings, using the shared `JsonUtils.gson`.
 
-Put `insert`/`serialize`/`from` factory methods in the model's `companion object`, not in the repository. This keeps serialization logic co-located with the schema.
+### DAOs
+
+DAO methods are `suspend` (except `Flow`-returning `observe*`/`*Flow` methods, which Room requires to be non-suspend). Upserts use `@Upsert` or `@Insert(onConflict = OnConflictStrategy.REPLACE)`.
 
 ```kotlin
-companion object {
-    @JvmStatic
-    fun serialize(course: RealmMyCourse, realm: Realm): JsonObject { ... }
+// data/room/dao/RatingDao.kt
+@Dao
+interface RatingDao {
+    // IS for nullable params (matches NULL rows), = for non-null params
+    @Query("SELECT * FROM rating WHERE type IS :type AND item IS :item")
+    suspend fun getByTypeAndItem(type: String?, item: String?): List<Rating>
+
+    @Query("SELECT * FROM rating WHERE type = :type AND userId = :userId AND item = :item LIMIT 1")
+    suspend fun findByTypeUserItem(type: String, userId: String, item: String): Rating?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(items: List<Rating>)
 }
 ```
+
+**`IS` vs `=` matters:** in SQL, `= :param` never matches `NULL`. Use `IS :param` whenever a nullable argument should match `NULL` rows.
 
 ### Writing Data
 
-Always use `executeTransaction` or `executeTransactionAsync` for writes. Never modify a managed Realm object outside a transaction.
+Persist through DAOs. For an atomic multi-DAO write (e.g. bulk sync inserts), use Room's `withTransaction` on the `AppDatabase`:
 
 ```kotlin
-// Synchronous write (on Realm thread via withRealm)
-realm.executeTransaction { r ->
-    r.copyToRealmOrUpdate(myObject)
-}
-
-// For bulk inserts during sync, use the bulkInsertFromSync pattern
-fun bulkInsertFromSync(realm: Realm, jsonArray: JsonArray) {
-    realm.executeTransaction { r ->
-        jsonArray.forEach { element ->
-            insertOrUpdate(r, element.asJsonObject)
-        }
-    }
+appDatabase.withTransaction {
+    courseDao.upsertAll(courses)
+    courseStepDao.upsertAll(steps)
 }
 ```
 
-### Reading Data
+(`DatabaseService` still exists but is vestigial — no repository injects it anymore; don't build new code on it.)
 
-Read inside `withRealm { }` and always `copyFromRealm` before returning:
+### Schema Changes — Drop-and-Resync, No Migrations
 
-```kotlin
-override suspend fun getCourseById(courseId: String): RealmMyCourse? {
-    return withRealm { realm ->
-        realm.where(RealmMyCourse::class.java)
-            .equalTo("courseId", courseId)
-            .findFirst()
-            ?.let { realm.copyFromRealm(it) }  // REQUIRED
-    }
-}
-```
-
-For reactive/live queries, use `Flow`-returning methods from `RealmRepository`:
-
-```kotlin
-override suspend fun getMyCoursesFlow(userId: String): Flow<List<RealmMyCourse>> {
-    return queryListFlow(RealmMyCourse::class.java) {
-        equalTo("userId", userId)
-    }
-}
-```
-
-### Schema Migrations
-
-All Realm schema changes must have a corresponding migration in `data/RealmMigrations.kt`. Increment `SCHEMA_VERSION` in `DatabaseModule.kt`. Never use `deleteRealmIfMigrationNeeded()` in production builds — that's only for throwaway dev setups.
+`RoomModule` builds the database with `fallbackToDestructiveMigration(true)`. There are **no hand-written `Migration` objects and there should be none**: on any entity/schema change, bump `version` in `AppDatabase` — the local DB is dropped and repopulated from the Planet/CouchDB server on next launch. Don't write `Migration` classes and don't forget the version bump (Room crashes with "cannot verify the data integrity" if the schema changed without one).
 
 ---
 
@@ -499,7 +491,7 @@ class CoursesRepositoryImpl @Inject constructor(
 
 // Fragment - field injection
 @AndroidEntryPoint
-class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>() {
+class CoursesFragment : BaseRecyclerFragment<MyCourse?>() {
     @Inject lateinit var userSessionManager: UserSessionManager
     @Inject lateinit var dispatcherProvider: DispatcherProvider
 }
@@ -507,7 +499,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>() {
 
 ### Workers
 
-Workers can't use constructor injection. Use entry points:
+Workers can't use constructor injection. Use entry points — the two that exist are `CoreDependenciesEntryPoint` and `ServiceDependenciesEntryPoint` (both in `di/`):
 
 ```kotlin
 class MyWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
@@ -516,13 +508,17 @@ class MyWorker(context: Context, params: WorkerParameters) : CoroutineWorker(con
             applicationContext,
             CoreDependenciesEntryPoint::class.java
         )
-        val repo = entryPoint.someRepository()
+        val repo = entryPoint.resourcesRepository()
         // ...
     }
 }
 ```
 
-If you need a dependency not in an existing entry point, add it — don't try to manually instantiate things.
+If you need a dependency not in an existing entry point, add it there — don't manually instantiate things. (`apiInterface()` lives on `ServiceDependenciesEntryPoint`.)
+
+### Existing Qualifiers
+
+`@StandardHttpClient` / `@StandardRetrofit` (NetworkModule), `@ApplicationScope` (ServiceModule), `@AppPreferences` / `@DefaultPreferences` / `@DownloadPreferences` (SharedPreferencesModule). There are no dispatcher qualifiers — dispatchers come from the unqualified `DispatcherProvider`.
 
 ---
 
@@ -561,7 +557,7 @@ class MyFragment : Fragment() {
 
 ### Adapter Pattern — `ListAdapter` with `DiffUtil`
 
-New adapters extend `ListAdapter`, not `RecyclerView.Adapter`. Use `DiffUtils.itemCallback<T>()` for the differ.
+New adapters extend `ListAdapter`, not `RecyclerView.Adapter`. Use the helpers in `utils/DiffUtils.kt` — `itemCallback` for the general case, `standardItemCallback(idSelector, contentSelector, payloadSelector)` as the preferred shorthand.
 
 ```kotlin
 class MyAdapter : ListAdapter<MyItem, MyAdapter.ViewHolder>(
@@ -579,7 +575,7 @@ class MyAdapter : ListAdapter<MyItem, MyAdapter.ViewHolder>(
 
 ### Toasts and Snackbars
 
-Use `Utilities.toast(activity, message)` for toasts — not `Toast.makeText(...)` directly. This null-checks the activity for you. Use Material `Snackbar` for undoable actions.
+Use `Utilities.toast(context, message)` for toasts — not `Toast.makeText(...)` directly (it null-checks the context and has a `duration` default). Use Material `Snackbar` for undoable actions.
 
 ### Dialogs
 
@@ -611,7 +607,6 @@ Use `snake_case`. Prefix with an abbreviated type hint for clarity: `tv_` for Te
 ```xml
 <TextView android:id="@+id/tv_course_title" />
 <Button android:id="@+id/btn_remove" />
-<RecyclerView android:id="@+id/recycler" />
 ```
 
 ### String Resources
@@ -663,13 +658,13 @@ try {
 }
 ```
 
-### Realm Writes
+### Database Writes
 
 ```kotlin
 try {
-    realm.executeTransaction { r -> r.copyToRealmOrUpdate(obj) }
-} catch (e: RealmException) {
-    Log.e(TAG, "Realm write failed", e)
+    courseDao.upsertAll(courses)
+} catch (e: SQLiteException) {
+    Log.e(TAG, "Database write failed", e)
 }
 ```
 
@@ -693,41 +688,38 @@ try {
 
 ### Branch Naming
 
-Branches must follow the `{prefix}/{issue-number}-{short-description}` pattern:
+Branches follow the `{prefix}/{slug}` pattern, where the slug is kebab-case derived from the issue title (with the issue number when there is one):
 
 | Contributor type | Prefix | Example |
 |-----------------|--------|---------|
 | AI agent (Claude) | `claude/` | `claude/13752-unable-to-complete-certain-courses` |
-| AI agent (Jules) | `jules/` | `jules/13530-move-nav-buttons-below-content` |
-| AI agent (Codex) | `codex/` | `codex/13559-archive-and-remove-course-actions` |
+| AI agent (Jules) | `jules/` or `jules-` | `jules/13530-move-nav-buttons-below-content` |
+| AI agent (Codex) | `codex/` (also `<id>-codex/`) | `codex/13559-archive-and-remove-course-actions` |
+| AI agent (Copilot) | `copilot/` | `copilot/fix-notification-badge-count` |
 | Human contributor | `{number}-{description}` | `13755-add-ability-to-edit-meetups` |
 
-The description slug is kebab-case, derived from the GitHub issue title. Match it as closely as possible.
+(The full field guide to summoning AI agents on PRs — reviewers vs doers, incantations, side effects — lives in `docs/AGENT_SPELLBOOK.md`; the Laws of Summoning live in `CLAUDE.md` → "The Agent Spellbook".)
 
 **Push flag:** Always use `-u` on the first push: `git push -u origin <branch-name>`.
 
 ### Commit Messages
 
-Use the imperative mood, present tense. Reference the issue number. Keep the first line under 72 chars.
+History is linear squash-merges; merged commit subjects follow this observed pattern:
 
-```
-fix: return to step 1 after exam completion
-
-Tracks lastPositionBeforeExam in TakeCourseFragment so that
-setNavigationButtons() correctly restores position after exam.
-
-Fixes #13752
+```text
+<area>: <description> (fixes #<issue>) (#<pr>)
 ```
 
-Common type prefixes: `fix:`, `feat:`, `refactor:`, `chore:`, `docs:`, `style:`.
+e.g. `sync: smoother user repository inserting (fixes #15432) (#15270)` — areas in use include `sync`, `all`, `resources`, `courses`, `teams`, `login`, `dashboard`, `chat`, `life`.
 
-Don't combine unrelated changes in a single commit.
+For your working commits: imperative mood, present tense, reference the issue number, first line under 72 chars. Conventional prefixes (`fix:`, `feat:`, `refactor:`, `chore:`, `docs:`) are also fine for intermediate commits. Don't combine unrelated changes in a single commit.
 
 ### PR Checklist
 
 Before opening a PR:
 
 - [ ] Branch builds cleanly: `./gradlew assembleDefaultDebug`
+- [ ] Unit tests pass: `./gradlew testDefaultDebugUnitTest` (this is the CI gate)
 - [ ] Tested manually on a physical device or emulator
 - [ ] Offline mode still works (no network assumption introduced)
 - [ ] All user-facing strings are in `strings.xml` (not hardcoded)
@@ -735,7 +727,27 @@ Before opening a PR:
 - [ ] Dark theme renders correctly (no hardcoded colors)
 - [ ] No debug-only `Log.d` calls left in without a `BuildConfig.DEBUG` guard
 - [ ] `_binding` is nulled in `onDestroyView()` if you added a new Fragment
-- [ ] `realm.copyFromRealm(...)` used before returning Realm objects
+- [ ] `AppDatabase` `version` bumped if you changed any `@Entity`
+
+### PR Reviews
+
+Besides a human reviewer and a Claude session, several bots can review a PR — the full roster and their side effects are in `docs/AGENT_SPELLBOOK.md`. **CodeRabbit** is the default: it auto-reviews every non-draft push, and `@coderabbitai` in a PR comment re-summons it. It's the token-cheap shortcut — an incremental automated review without spending a human's time or a Claude session's context.
+
+Useful commands (as PR comments):
+
+```text
+@coderabbitai help                    # list all commands
+@coderabbitai review                  # incremental review of new changes
+@coderabbitai full review             # re-review the whole PR from scratch
+@coderabbitai resolve                 # resolve all its open comments
+@coderabbitai regenerate summary      # regenerate the PR summary
+@coderabbitai fix ci                  # analyze + fix failing CI via a stacked PR
+@coderabbitai fix ci commit           # fix failing CI on the current branch
+@coderabbitai resolve merge conflict  # resolve merge conflicts automatically
+@coderabbitai pause / resume          # pause/resume automatic reviews
+```
+
+Min-max rule of thumb: let CodeRabbit do the first mechanical pass (nits, obvious bugs, style drift), then spend human/Claude attention only on what it can't judge — architecture fit, domain correctness, offline/sync behavior.
 
 ---
 
@@ -743,21 +755,23 @@ Before opening a PR:
 
 These are real patterns that have caused bugs in this codebase before.
 
-**Don't return managed Realm objects.** Always `copyFromRealm` before the object leaves the Realm thread.
+**Don't bypass the DAO layer.** All persistence goes through Room DAOs (or `AppDatabase.withTransaction` for multi-DAO atomicity). No raw SQLite, no third-party store, no new code on the vestigial `DatabaseService`.
 
-**Don't reference types by their fully-qualified name inline.** `org.ole.planet.myplanet.utils.JsonUtils.getString(...)` in the middle of a function is an import that escaped. Import the type (aliased if the name collides) and use the simple name — see [Imports](#imports--no-inline-fully-qualified-names). Library `R` classes are the one exception.
+**Don't write Room `Migration` objects.** The strategy is drop-and-resync (`fallbackToDestructiveMigration`); bump `AppDatabase.version` instead.
+
+**Don't use `=` in a DAO `@Query` for a nullable parameter.** `= :param` never matches `NULL` rows — use `IS :param`.
+
+**Don't reference types by their fully-qualified name inline.** Import the type (aliased if the name collides) and use the simple name — see [Imports](#imports--no-inline-fully-qualified-names). Library `R` classes are the one exception.
 
 **Don't use `!!` unless you are absolutely certain the value cannot be null.** The codebase has had NPE crashes from this.
 
-**Don't hardcode course IDs or server URLs.** There is one hardcoded course ID (`4e6b78800b6ad18b4e8b0e1e38a98cac`) in `TakeCourseFragment` — that's a known tech debt, not a pattern to follow.
+**Don't hardcode course IDs or server URLs.** One course ID (`4e6b78800b6ad18b4e8b0e1e38a98cac`) is hardcoded in **4 places** (`TakeCourseFragment` ×2, `MarkdownDialogFragment`, `DashboardViewModel`) — that's known tech debt, not a pattern to follow.
 
-**Don't write to Realm outside a transaction.** Realm throws at runtime.
-
-**Don't call `realm.close()` inside a `withRealm { }` block.** The `RealmRepository` base class manages Realm lifecycle.
+**Don't hardcode `Dispatchers.IO`/`Dispatchers.Main`.** Inject `DispatcherProvider` so tests can substitute deterministic dispatchers.
 
 **Don't use `lifecycleScope` in Fragments for view-touching work.** Use `viewLifecycleOwner.lifecycleScope`.
 
-**Don't create a new `Realm` instance directly.** Go through `DatabaseService` or the `RealmRepository` helpers. Mismatched Realm instances cause thread violations.
+**Don't reintroduce LiveData.** The codebase is fully on `StateFlow`/`SharedFlow` (zero LiveData usages).
 
 **Don't add new dependencies without updating `gradle/libs.versions.toml`.** All versions are centralized there. Don't put a version directly in `app/build.gradle`.
 
@@ -765,6 +779,8 @@ These are real patterns that have caused bugs in this codebase before.
 
 **Don't add a new repository without binding it in `di/RepositoryModule.kt`.**
 
+**Don't add a new entity/DAO without registering both in `AppDatabase` + `RoomModule` and bumping the DB `version`.**
+
 **Don't swallow `CancellationException` in coroutines** — it breaks cooperative cancellation.
 
-**Don't block the main thread** with Realm queries, file I/O, or network calls. Use `withContext(dispatcherProvider.io)`.
+**Don't block the main thread** with database queries, file I/O, or network calls. Use `withContext(dispatcherProvider.io)`.

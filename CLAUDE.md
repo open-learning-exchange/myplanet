@@ -8,14 +8,24 @@
 - **Primary Language**: Kotlin (100% — no Java sources remain)
 - **Min SDK**: 26 (Android 8.0)
 - **Target SDK**: 36 (Android 16); **Compile SDK**: 37
-- **Current Version**: 0.62.97 (versionCode: 6297)
+- **Current Version**: 0.63.42 (versionCode: 6342)
 - **Build System**: Gradle 9.6.1 with Android Gradle Plugin 9.3.1
 - **Local Database**: Room (AndroidX) 2.8.4 — the only local persistence store
 - **License**: AGPL v3
 
 ### Build Flavors
 - **default**: Full-featured version
-- **lite**: Lightweight version with reduced features
+- **lite**: Lightweight version with reduced features (removes `REQUEST_INSTALL_PACKAGES`; `-lite` version-name suffix)
+
+### Documentation Map
+
+| Document | Read it when… |
+|----------|---------------|
+| `CLAUDE.md` (this file) | You need the codebase layout, architecture, build/CI facts, or task recipes |
+| `docs/DOMAIN_MODEL.md` | You need to understand the learning domain — roles, courses, teams, surveys, sync concepts |
+| `docs/CODE_STYLE_GUIDE.md` | You're writing code — naming, imports, coroutines, Room, Hilt, UI conventions |
+| `docs/TESTING.md` | You're writing or fixing tests — patterns to copy per layer |
+| `docs/AGENT_SPELLBOOK.md` | You're summoning another AI agent on a PR — who answers, how fast, and with what side effects |
 
 ---
 
@@ -27,6 +37,7 @@
 myplanet/
 ├── .github/                    # CI/CD workflows and Dependabot config
 │   └── workflows/
+│       ├── automerge.yml      # Manually-dispatched queue drainer for `automerge`-labelled PRs
 │       ├── build.yml          # Build workflow for all branches
 │       ├── release.yml        # Release and Play Store publishing
 │       └── test.yml           # Unit test workflow
@@ -68,7 +79,7 @@ myplanet/
 |---------|---------|-------|-----------|
 | `base/` | Base classes for common functionality | 13 | BaseActivity, BaseRecyclerFragment, BasePermissionActivity, BaseContainerFragment, BaseDashboardFragment, BaseResourceFragment, BaseTeamFragment, BaseExamFragment, BaseMemberFragment, BaseDialogFragment, BaseVoicesFragment, BaseRecyclerParentFragment |
 | `callback/` | Event listeners and interfaces | 28 | OnLibraryItemSelectedListener, OnSyncListener, OnTeamUpdateListener, OnChatItemClickListener, OnNewsItemClickListener, and more |
-| `data/` | Data access, Room persistence, and API | 40 | DatabaseService.kt, NetworkResult.kt; `room/` (AppDatabase, Converters, 30 DAOs, entity/), `api/` (ApiInterface, ApiClient, ChatApiService, RetryInterceptor), `auth/` (AuthSessionUpdater) |
+| `data/` | Data access, Room persistence, and API | 40 | DatabaseService.kt, NetworkResult.kt; `room/` (AppDatabase, Converters, 37 DAO interfaces in 30 files — several share `LegacyEntityDaos.kt`), `api/` (ApiInterface, ApiClient, ChatApiService, RetryInterceptor), `auth/` (AuthSessionUpdater) |
 | `di/` | Hilt dependency injection | 10 | Modules (NetworkModule, DatabaseModule, RoomModule, RepositoryModule, ServiceModule, SharedPreferencesModule, DispatcherModule, TimeModule) + entry points (CoreDependenciesEntryPoint, ServiceDependenciesEntryPoint) |
 | `model/` | Room `@Entity` models and DTOs | 92 | 37 `@Entity` classes (MyCourse, MyLibrary, News, Submission, TeamTask, UserEntity, …) + DTOs (ChatMessage, ChatRequest, ChatResponse, CourseProgressData, Download, ServerAddress, User) |
 | `repository/` | Repository pattern implementations | 50 | 23 domain Interface + Impl pairs + sync-facing interfaces (SyncRepository, TeamsSyncRepository, UserSyncRepository) + SubmissionsRepositoryExporter |
@@ -111,7 +122,7 @@ myplanet/
 
 ### Critical Files to Understand
 
-1. **`MainApplication.kt`** (~530 lines)
+1. **`MainApplication.kt`** (~537 lines)
    - Application initialization with Hilt DI
    - WorkManager scheduling (AutoSyncWorker, TaskNotificationWorker, NetworkMonitorWorker, RetryQueueWorker)
    - Server reachability checking with alternative URL mapping
@@ -119,7 +130,7 @@ myplanet/
    - Location: `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt`
 
 2. **`AppDatabase.kt`** (~170 lines) — the Room database
-   - `@Database` with 37 entities, `version = 5`, `@TypeConverters(Converters::class)`
+   - `@Database` with 37 entities, `version = 6`, `@TypeConverters(Converters::class)`
    - Declares all 30+ DAO accessors; provisioned by `RoomModule` with a **drop-and-resync** (`fallbackToDestructiveMigration`) strategy — no hand-written migrations; data is re-pulled from CouchDB on first launch after a schema bump
    - Location: `app/src/main/java/org/ole/planet/myplanet/data/room/AppDatabase.kt`
 
@@ -128,13 +139,13 @@ myplanet/
    - Delegates per-table pulls to TransactionSyncManager; notifies UI via RealtimeSyncManager's SharedFlow; batch sizing via AdaptiveBatchProcessor
    - Location: `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt`
 
-4. **`UploadManager.kt`** (~616 lines)
+4. **`UploadManager.kt`** (~615 lines)
    - File and data uploads with batch processing (BATCH_SIZE = 50)
    - Integrates with UploadCoordinator for orchestrated uploads
    - Handles activities, submissions, photos, news uploads
    - Location: `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt`
 
-5. **`TeamsRepositoryImpl.kt`** (~1434 lines — largest file; candidate for splitting by responsibility)
+5. **`TeamsRepositoryImpl.kt`** (~1437 lines — largest file; candidate for splitting by responsibility)
    - Team management with reactive Flow-based queries
    - Team creation, task management, membership roles
    - Location: `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt`
@@ -172,18 +183,18 @@ myplanet/
 
 ### Build Configuration
 
-**Gradle Plugins** (declared in `app/build.gradle`):
+**Gradle Plugins** (declared in `app/build.gradle` — only these three):
 - `com.android.application`
-- `org.jetbrains.kotlin.android` (applied via the AGP toolchain; the `kotlin-android` alias)
-- `kotlin-kapt` (legacy annotation processing — still used by Hilt's `kapt` block)
-- `com.google.devtools.ksp` (Symbol processing — used by **Room**, Glide, and Hilt compilers)
+- `com.google.devtools.ksp` — the **only** annotation-processing path (`kapt` was removed entirely); Room, Glide, and all Hilt compilers run through KSP (`ksp`/`kspTest`/`kspAndroidTest`)
 - `com.google.dagger.hilt.android`
+
+Kotlin itself is applied via AGP's built-in Kotlin support (no `kotlin-android` plugin alias); `kotlin-gradle-plugin` and `kotlin-serialization` sit on the root buildscript classpath.
 
 **Compiler Settings:**
 - Java Compatibility: 17
 - Kotlin JVM Target: 17
 - View Binding: Enabled
-- Data Binding: Enabled
+- Data Binding: Not enabled
 - BuildConfig: Enabled
 
 ---
@@ -204,29 +215,30 @@ Data Sources (Room local DB via DAOs, REST API, SharedPreferences)
 
 ### 2. Repository Pattern
 
-**Convention**: Each data domain has an interface and implementation. Implementations inject the **Room DAOs** they need (plus `ApiInterface`, `Gson`, dispatchers) — or `DatabaseService` when they need the `AppDatabase`/transaction helpers — and return plain data-class/`@Entity` instances.
+**Convention**: Each data domain has an interface and implementation. Implementations inject the **Room DAOs** they need (plus `ApiInterface`, `DispatcherProvider`, other repositories as needed) and return plain `@Entity`/data-class instances. `DatabaseService` still exists (`data/DatabaseService.kt`) but is essentially vestigial — no repository injects it anymore; multi-DAO atomic work uses Room's `withTransaction` on the `AppDatabase`.
 
 ```kotlin
-// Interface
-interface CoursesRepository {
-    suspend fun getCourses(): List<MyCourse>
-    suspend fun syncCourses(): Result<Unit>
+// Real example — repository/CommunityRepositoryImpl.kt
+class CommunityRepositoryImpl @Inject constructor(
+    private val apiInterface: ApiInterface,
+    private val communityDao: CommunityDao,
+    private val meetupDao: MeetupDao
+) : CommunityRepository {
+    override suspend fun getAllSorted(): List<Community> = communityDao.getAllSorted()
 }
 
-// Implementation — inject the DAO(s) directly
-class CoursesRepositoryImpl @Inject constructor(
+// Dispatcher discipline — repository/DownloadRepositoryImpl.kt
+class DownloadRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
-    private val courseDao: CourseDao,
-    private val databaseService: DatabaseService,
-    private val dispatcherProvider: DispatcherProvider,
-) : CoursesRepository {
-    override suspend fun getCourses(): List<MyCourse> = courseDao.getAll()
-    override suspend fun syncCourses(): Result<Unit> { ... }
+    private val dispatcherProvider: DispatcherProvider
+) : DownloadRepository {
+    override suspend fun downloadFileResponse(url: String, authHeader: String): DownloadResult =
+        withContext(dispatcherProvider.io) { ... }
 }
 ```
 
 **All 23 Domain Repositories:**
-Activities, Chat, Community, Configurations, Courses, Download, Events, Feedback, Health, Life, Notifications, Personals, Progress, Ratings, Resources, Retry, Submissions, Surveys, Tags, Teams, User, Voices
+Activities, Chat, Community, Configurations, Courses, Download, Events, Feedback, Health, Life, Notifications, Personals, Progress, Ratings, Resources, Retry, Submissions, Surveys, Tags, Teams, Upload, User, Voices
 
 **Sync-facing interfaces & utilities:**
 - `SyncRepository`, `TeamsSyncRepository`, `UserSyncRepository` - narrow interfaces the sync managers depend on
@@ -236,7 +248,7 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 
 **Location**: `app/src/main/java/org/ole/planet/myplanet/repository/`
 
-### 4. Dependency Injection (Hilt)
+### 3. Dependency Injection (Hilt)
 
 **Module Structure (8 modules):**
 - `NetworkModule.kt` - Provides Retrofit, OkHttp
@@ -248,22 +260,11 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 - `DispatcherModule.kt` - Provides coroutine dispatchers and `@ApplicationScope`
 - `TimeModule.kt` - Provides time/clock abstractions
 
-**Entry Points for Workers (2 entry point files):**
-- `CoreDependenciesEntryPoint`
-- `ServiceDependenciesEntryPoint`
-
-```kotlin
-@EntryPoint
-@InstallIn(SingletonComponent::class)
-interface CoreDependenciesEntryPoint {
-    fun apiInterface(): ApiInterface
-    fun sharedPreferences(): SharedPreferences
-}
-```
+**Entry Points for Workers (2 entry point files):** `CoreDependenciesEntryPoint`, `ServiceDependenciesEntryPoint`. Workers can't use constructor injection, so they fetch dependencies via `EntryPointAccessors.fromApplication(applicationContext, CoreDependenciesEntryPoint::class.java)`.
 
 **Location**: `app/src/main/java/org/ole/planet/myplanet/di/`
 
-### 5. Base Classes for Code Reuse (13 classes)
+### 4. Base Classes for Code Reuse (13 classes)
 
 | Base Class | Purpose |
 |------------|---------|
@@ -282,7 +283,7 @@ interface CoreDependenciesEntryPoint {
 
 **Location**: `app/src/main/java/org/ole/planet/myplanet/base/`
 
-### 6. Background Processing
+### 5. Background Processing
 
 **AndroidX Work for Scheduled Tasks:**
 - `AutoSyncWorker` - Periodic data synchronization
@@ -341,57 +342,31 @@ interface CoreDependenciesEntryPoint {
 
 ## Development Workflows
 
-### Setting Up Development Environment
+### Building and Running
 
-1. **Clone Repository**
-   ```bash
-   git clone https://github.com/open-learning-exchange/myplanet.git
-   cd myplanet
-   ```
+```bash
+# Build debug APK (default / lite flavor)
+./gradlew assembleDefaultDebug
+./gradlew assembleLiteDebug
 
-2. **Gradle Build**
-   ```bash
-   # Build debug APK (default flavor)
-   ./gradlew assembleDefaultDebug
+# Build release
+./gradlew assembleDefaultRelease bundleDefaultRelease
 
-   # Build debug APK (lite flavor)
-   ./gradlew assembleLiteDebug
-
-   # Build release
-   ./gradlew assembleDefaultRelease bundleDefaultRelease
-   ```
-
-3. **Run on Device/Emulator**
-   ```bash
-   # Install debug build
-   ./gradlew installDefaultDebug
-
-   # Install and run
-   ./gradlew installDefaultDebug && adb shell am start -n org.ole.planet.myplanet/.ui.onboarding.OnBoardingActivity
-   ```
+# Install and run on a device/emulator
+./gradlew installDefaultDebug && adb shell am start -n org.ole.planet.myplanet/.ui.onboarding.OnboardingActivity
+```
 
 ### Branch Strategy
 
-**Important**: Always work on branches starting with `claude/` and matching the session ID format.
+**Important**: Always work on branches starting with `claude/` and matching the session ID format. Always use `-u` on the first push:
 
 ```bash
-# Create feature branch
 git checkout -b claude/feature-name-sessionid
-
-# Develop changes
-# ...
-
-# Commit with descriptive messages
-git add .
-git commit -m "feat: add user profile photo upload
-
-- Implement camera integration
-- Add image cropping functionality
-- Update UserSessionManager"
-
-# Push to remote (MUST use -u flag)
+# ...develop, commit with descriptive messages (fix:/feat:/refactor: prefixes)...
 git push -u origin claude/feature-name-sessionid
 ```
+
+See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message and PR conventions.
 
 ### CI/CD Pipeline
 
@@ -400,7 +375,7 @@ git push -u origin claude/feature-name-sessionid
 - Runs on Ubuntu 24.04
 - Matrix builds both `default` and `lite` flavors with fail-fast disabled
 - Uses `gradle/actions/setup-gradle@v6` with a remote Gradle build cache
-- Build command: `./gradlew assemble${FLAVOR}Debug --parallel --max-workers=4`
+- Build command: `./gradlew assemble${FLAVOR^}Debug --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4`
 
 **Test Workflow** (`.github/workflows/test.yml`)
 - Triggers: every push (all branches) + manual dispatch; `permissions: contents: read`
@@ -417,9 +392,32 @@ git push -u origin claude/feature-name-sessionid
 - Creates GitHub release with artifacts (tag: `v${VERSION}`)
 - Sends Discord notifications via Treehouses CLI
 
+**Automerge Workflow** (`.github/workflows/automerge.yml`)
+- Manually dispatched (`workflow_dispatch`) queue drainer for PRs labelled `automerge`
+- For each labelled PR: merges the base branch in, bumps the version, waits for build + test to pass, then squash-merges
+- Logic lives in `.github/scripts/automerge.sh`; requires `AUTOMERGE_TOKEN` (the default `GITHUB_TOKEN` can't push to the protected base branch)
+
 **Dependabot** (`.github/dependabot.yml`)
 - Daily checks for GitHub Actions updates (max 10 open PRs)
 - Daily checks for Gradle dependency updates (max 15 open PRs)
+
+### The Agent Spellbook — Summoning Other AIs on PRs
+
+> Field-verified live on PR #15436 (2026-08-07/08), including each agent fact-checking its own row. Core distinction: **Reviewers** speak; **Doers** act — an unleashed Doer mention defaults to commits on your branch.
+
+The full grid — summon commands, ack times, push behavior, and per-agent quirks for CodeRabbit, Codex, Copilot, Devin, OpenHands, Jules, Claude Code, and Dependabot — plus vendor doc links lives in **`docs/AGENT_SPELLBOOK.md`**. Read it before casting; the laws below are what you carry with you.
+
+**Laws of Summoning** — for the humans casting *and* the agents summoned. (Copilot and Devin ingest this file as standing instructions; Jules reads `AGENTS.md`, which this repo doesn't have yet — if you're an agent reading this, these laws are yours to follow.)
+
+1. **Scope your summons — precision works.** An explicit "comment only — do not push" was honored by Devin, Copilot, and Codex; say exactly what you want and you'll usually get exactly that. Summoned agents: the mention text is your contract — when it says comment, comment. (One agent broke this once; the timeline remembers, so keep the streak.)
+2. **The branch has one pen.** Work flows fastest when one Doer holds it and everyone else delivers findings as comments — that division turned five agents into a relay team instead of three push races an hour. Not holding the pen? Your comment is just as mergeable: the pen-holder will commit it with credit.
+3. **Every commit deserves a second reader.** Peer review is what made all five agent commits on this PR mergeable — including a `lateinit` crash caught *after* another reviewer had approved it. Read a foreign commit before building on it, and write yours expecting the same courtesy.
+4. **The PR timeline is the shared ledger.** Commit identities legitimately vary (Devin and Jules both ship configurable commit-authoring modes — Devin's can write as the requesting user; OpenHands writes as `openhands`), so attribution, receipts, and history live in the timeline — cite it, link to it, and keep it clean enough to settle disputes, because it did.
+5. **Show your receipts.** "Tests pass" persuades when it names what ran, where, and how the environment differed — Devin's I-had-to-install-the-SDK-first disclosure is the model. Evidence attached to a claim lets everyone build on your work without re-deriving it.
+6. **Stack your reviewers.** CodeRabbit, Codex, Devin, and OpenHands each caught something all the others missed; the sum is what got this PR to green. A complementary reviewer is one comment away — suggest it to the pen-holder, or cast it yourself (Law 7) — and welcome being cross-checked yourself.
+7. **The spellbook is yours to cast too.** Summoning isn't reserved for humans — if a second opinion would genuinely improve the work, an agent may summon one instead of waiting for a human to think of it. Cast the way you'd want to be cast at: scope the mention (Law 1), reach for Reviewers when you want words (a Doer mention is a request for commits, not comments), and own what you summon — a review you invoked is yours to triage and answer. Spells that create artifacts beyond the thread (issue labels, autofix checkboxes, `fix it` cloud tasks) still deserve a human's go-ahead — they spend quotas and spawn branches someone has to clean up.
+8. **Teach what you learn.** CodeRabbit turns PR discussion into standing policy (learnings); `AGENTS.md` and this file do it for everyone else. A lesson encoded once is inherited by every future session — encoding these laws is how they started enforcing themselves.
+9. **Your entry in the spellbook is written by others.** Fact-check any row in `docs/AGENT_SPELLBOOK.md` and earn a correction with receipts — most of the grid was built exactly that way. Just don't edit your own: self-description isn't observation, and the one attempt at it is why this law exists.
 
 ### Adding New Features
 
@@ -435,76 +433,27 @@ git push -u origin claude/feature-name-sessionid
    - UI components (Activity/Fragment)
    - Layout XML files
 
-3. **Update Dependencies**
-   - Add dependencies in `gradle/libs.versions.toml`
-   - Reference in `app/build.gradle`
-
-4. **Register in Manifest**
-   - Add activities in `AndroidManifest.xml`
-   - Add permissions if needed
-
-5. **Update DI Modules**
-   - Provide new dependencies in appropriate module
-   - Bind repository interfaces in `RepositoryModule`
-
-### Modifying Existing Features
-
-1. **Locate Relevant Files**
-   ```bash
-   # Find by class name
-   find app/src -name "*ClassName*.kt"
-
-   # Search for functionality
-   grep -r "functionality keyword" app/src/main/java
-   ```
-
-2. **Understand Dependencies**
-   - Check constructor injection (Hilt)
-   - Identify repository usage
-   - Review layout bindings
-
-3. **Make Changes**
-   - Update model if data structure changes
-   - Modify repository if data access changes
-   - Update UI components for visual changes
-
-4. **Test Changes**
-   - Build and run on device
-   - Verify offline functionality
-   - Test synchronization if applicable
+3. **Wire everything up**
+   - New dependencies go in `gradle/libs.versions.toml`, referenced from `app/build.gradle`
+   - Register new activities (and permissions) in `AndroidManifest.xml`
+   - Provide/bind new dependencies in the appropriate `di/` module (`RepositoryModule` for repositories)
 
 ---
 
 ## Key Conventions
 
-### Code Style
-
-**Kotlin Conventions:**
-- Follow [Kotlin Coding Conventions](https://kotlinlang.org/docs/coding-conventions.html)
-- Use camelCase for functions and variables
-- Use PascalCase for classes
-- Use UPPER_SNAKE_CASE for constants
+> Full coding conventions live in **`docs/CODE_STYLE_GUIDE.md`** (naming, imports, null safety, coroutines, Hilt, UI, resources, error handling). The rules below are the project-specific ones that most often trip up newcomers.
 
 **File Naming:**
-- Activities: `*Activity.kt` (e.g., `LoginActivity.kt`)
-- Fragments: `*Fragment.kt` (e.g., `CourseListFragment.kt`)
-- ViewModels: `*ViewModel.kt` (e.g., `ChatViewModel.kt`)
-- Adapters: `*Adapter.kt` (e.g., `CourseAdapter.kt`)
-- ViewHolders: `*ViewHolder.kt`
-- Repositories: `*Repository.kt` and `*RepositoryImpl.kt`
-- Room DAOs: `*Dao.kt` in `data/room/dao/` (e.g., `CourseDao.kt`)
-- Models/Entities: plain names in `model/` (e.g., `MyCourse.kt`, `Submission.kt`)
-- Workers: `*Worker.kt` (e.g., `AutoSyncWorker.kt`)
-
-**Layout Naming:**
-- Activities: `activity_*.xml`
-- Fragments: `fragment_*.xml`
-- List items: `row_*.xml` or `item_*.xml`
-- Dialogs: `dialog_*.xml`
+- Activities/Fragments/ViewModels/Adapters/Workers: `*Activity.kt`, `*Fragment.kt`, `*ViewModel.kt`, `*Adapter.kt`, `*Worker.kt`
+- Repositories: `*Repository.kt` (interface) and `*RepositoryImpl.kt`
+- Room DAOs: `*Dao.kt` in `data/room/dao/` (e.g., `RatingDao.kt`; the legacy-entity DAOs like `CourseDao` share `LegacyEntityDaos.kt`)
+- Models/Entities: plain names in `model/` (e.g., `MyCourse.kt`, `Submission.kt` — the old `Realm*` prefix is gone)
+- Layouts: `activity_*.xml`, `fragment_*.xml`, `row_*.xml` / `item_*.xml`, `dialog_*.xml`
 
 ### Room Database Conventions
 
-> All local persistence goes through Room — the `AppDatabase` (`data/room/AppDatabase.kt`), its DAOs (`data/room/dao/`), and `Converters` (`data/room/Converters.kt`). There is no other local store, so reach for DAOs (or `DatabaseService`), never a raw SQLite or third-party-DB API.
+> All **structured domain data** goes through Room — the `AppDatabase` (`data/room/AppDatabase.kt`), its DAOs (`data/room/dao/`), and `Converters` (`data/room/Converters.kt`). There is no other database, so reach for DAOs (multi-DAO atomic work via `AppDatabase.withTransaction`), never a raw SQLite or third-party-DB API. (Key-value settings live in `SharedPreferences`, and sensitive preferences in the Tink-backed `SecurePrefs` — see Security Considerations.)
 
 **Entity (model) Classes:**
 ```kotlin
@@ -535,226 +484,36 @@ open class MyCourse(
 
 **Database Operations — use DAOs (preferred pattern):**
 
-Repositories inject the **DAO(s)** they need directly (provided by `RoomModule`) and call `suspend` DAO functions. All DAO methods are `suspend` and run on the IO dispatcher. For work that needs the whole database or an atomic multi-table transaction, inject `DatabaseService` and use its helpers.
+Repositories inject the **DAO(s)** they need directly (provided by `RoomModule`) and call `suspend` DAO functions. Reactive queries return `Flow<…>` (non-suspend, per Room's requirement) — 8 of the 30 DAO files expose them, named either `observe*` (e.g. `CourseDao.observeAll()`) or `*Flow` (e.g. `NewsDao.getTopLevelFlow()`).
 
 ```kotlin
-// DAO definition (data/room/dao/CourseDao.kt)
+// Real DAO examples
+// data/room/dao/LegacyEntityDaos.kt — several DAOs share this file, @Upsert style
 @Dao
 interface CourseDao {
-    @Query("SELECT * FROM courses WHERE userId IS :userId")
-    suspend fun getByUserId(userId: String?): List<MyCourse>
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(items: List<MyCourse>)
-
-    @Query("DELETE FROM courses WHERE _id = :id")
-    suspend fun deleteById(id: String)
+    @Query("SELECT * FROM courses") suspend fun getAll(): List<MyCourse>
+    @Query("SELECT * FROM courses") fun observeAll(): Flow<List<MyCourse>>
+    @Upsert suspend fun upsertAll(items: List<MyCourse>)
 }
 
-// Repository usage — inject the DAO
-val courses = courseDao.getByUserId(userId)
-courseDao.insertAll(courses)
+// data/room/dao/RatingDao.kt — IS for nullable params, = for non-null
+@Query("SELECT * FROM rating WHERE type IS :type AND item IS :item")
+suspend fun getByTypeAndItem(type: String?, item: String?): List<Rating>
 
-// DatabaseService helpers when you need the AppDatabase / a transaction
-val result = databaseService.withRoomAsync { db -> db.courseDao().getByUserId(userId) }
-databaseService.executeRoomTransactionAsync { db ->
-    db.courseDao().insertAll(courses)
-    db.courseStepDao().insertAll(steps)
-}
+@Insert(onConflict = OnConflictStrategy.REPLACE)
+suspend fun upsertAll(items: List<Rating>)
 ```
 
 **Rules:**
-- Prefer injecting the specific DAO into a repository; reach for `DatabaseService.withRoomAsync` / `executeRoomTransactionAsync` only when you need the whole `AppDatabase` or a multi-DAO transaction.
-- DAO methods are `suspend` and confined to IO — do not block the main thread. `DictionaryActivity` also uses a DAO (`DictionaryDao`) now; there is no raw-DB escape hatch.
+- Inject the specific DAO into a repository. For an atomic multi-DAO transaction, use Room's `withTransaction` on the `AppDatabase`. (`DatabaseService.withRoomAsync`/`executeRoomTransactionAsync` still exist but no repository uses them anymore.)
+- DAO methods are `suspend` (Room runs the query off the main thread via its own executors, so they're safe to call from any dispatcher) or `Flow`-returning — never block the main thread with DB work. `DictionaryActivity` also uses a DAO (`DictionaryDao`) now; there is no raw-DB escape hatch.
 - Use `IS` (not `=`) in DAO `@Query` predicates when a `null` argument should match `NULL` rows (`=` never matches `NULL` in SQL).
-- **Migration strategy is drop-and-resync**: `RoomModule` builds the DB with `fallbackToDestructiveMigration(true)`. On any schema change bump `version` in `AppDatabase`; there are **no** hand-written `Migration` objects — data is re-pulled from the Planet/CouchDB server on first launch.
+- **Migration strategy is drop-and-resync**: `RoomModule` builds the DB with `fallbackToDestructiveMigration(true)`. On any schema change bump `version` in `AppDatabase`; there are **no** hand-written `Migration` objects — data is re-pulled from the Planet/CouchDB server on the **next sync** (login-triggered or scheduled auto-sync; the rebuild itself does not start one). ⚠️ The rebuild also discards **unsynced local writes** (pending uploads, drafts) — a schema bump ships that loss to any device that hasn't synced, so treat version bumps as releases that need pending data uploaded first.
 - Inject `DispatcherProvider` (don't hard-code `Dispatchers.IO`) so tests can substitute deterministic dispatchers.
-
-### Dependency Injection Patterns
-
-**Constructor Injection (Preferred):**
-```kotlin
-@AndroidEntryPoint
-class CourseListFragment : BaseRecyclerFragment() {
-    @Inject lateinit var courseRepository: CourseRepository
-    @Inject lateinit var sharedPreferences: SharedPreferences
-}
-```
-
-**Manual Injection for Workers:**
-```kotlin
-class AutoSyncWorker(
-    context: Context,
-    params: WorkerParameters
-) : CoroutineWorker(context, params) {
-
-    override suspend fun doWork(): Result {
-        val entryPoint = EntryPointAccessors.fromApplication(
-            applicationContext,
-            NetworkDependenciesEntryPoint::class.java
-        )
-        val apiInterface = entryPoint.apiInterface()
-        // ... use injected dependencies
-    }
-}
-```
-
-### Asynchronous Programming
-
-**Use Kotlin Coroutines:**
-```kotlin
-// In Fragment/Activity
-viewLifecycleOwner.lifecycleScope.launch {
-    try {
-        val result = courseRepository.syncCourses()
-        // Update UI
-    } catch (e: Exception) {
-        // Handle error
-    }
-}
-
-// In Repository
-override suspend fun syncCourses(): Result<Unit> = withContext(Dispatchers.IO) {
-    val response = apiInterface.getCourses()
-    if (response.isSuccessful) {
-        response.body()?.let { courses ->
-            saveCourses(courses)
-        }
-        Result.success(Unit)
-    } else {
-        Result.failure(Exception("Sync failed"))
-    }
-}
-```
-
-**Background Work:**
-```kotlin
-// Schedule periodic work
-val workRequest = PeriodicWorkRequestBuilder<AutoSyncWorker>(
-    15, TimeUnit.MINUTES
-).setConstraints(
-    Constraints.Builder()
-        .setRequiredNetworkType(NetworkType.CONNECTED)
-        .build()
-).build()
-
-WorkManager.getInstance(context)
-    .enqueueUniquePeriodicWork(
-        "AutoSync",
-        ExistingPeriodicWorkPolicy.KEEP,
-        workRequest
-    )
-```
-
-### View Binding
-
-**Activity:**
-```kotlin
-class LoginActivity : AppCompatActivity() {
-    private lateinit var binding: ActivityLoginBinding
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        binding = ActivityLoginBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
-        binding.btnLogin.setOnClickListener {
-            // Handle click
-        }
-    }
-}
-```
-
-**Fragment:**
-```kotlin
-class CourseListFragment : Fragment() {
-    private var _binding: FragmentCourseListBinding? = null
-    private val binding get() = _binding!!
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        _binding = FragmentCourseListBinding.inflate(inflater, container, false)
-        return binding.root
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
-    }
-}
-```
-
-### Error Handling
-
-**Network Errors:**
-```kotlin
-try {
-    val response = apiInterface.getData()
-    if (response.isSuccessful) {
-        // Handle success
-    } else {
-        showError("Server error: ${response.code()}")
-    }
-} catch (e: IOException) {
-    showError("Network error: ${e.message}")
-} catch (e: Exception) {
-    showError("Unexpected error: ${e.message}")
-}
-```
-
-**Database (Room) Errors:**
-```kotlin
-try {
-    databaseService.executeRoomTransactionAsync { db ->
-        // Database operations across one or more DAOs
-        db.courseDao().insertAll(courses)
-    }
-} catch (e: android.database.sqlite.SQLiteException) {
-    Log.e(TAG, "Database error", e)
-    showError("Failed to save data")
-}
-```
-
-### Resource Management
-
-**String Resources:**
-```kotlin
-// Use resource strings for all user-facing text
-binding.tvTitle.text = getString(R.string.course_title)
-
-// With arguments
-getString(R.string.course_progress, currentStep, totalSteps)
-```
-
-**Dimensions:**
-```kotlin
-// Use dimension resources
-val padding = resources.getDimensionPixelSize(R.dimen.standard_padding)
-```
-
-**Colors:**
-```kotlin
-// Use color resources
-val color = ContextCompat.getColor(context, R.color.primary)
-```
 
 ### Localization
 
-**Support Languages:**
-- English (default)
-- Arabic (ar)
-- Spanish (es)
-- French (fr)
-- Nepali (ne)
-- Somali (so)
-
-**Adding Translations:**
-1. Update `app/src/main/res/values/strings.xml`
-2. Sync with Crowdin (automatic via `crowdin.yml`)
-3. Translations appear in `values-{lang}/strings.xml`
+Supported languages: English (default) + Arabic (ar), Spanish (es), French (fr), Nepali (ne), Somali (so). Add new strings to `app/src/main/res/values/strings.xml`; Crowdin syncs translations into `values-{lang}/strings.xml` automatically (config: `crowdin.yml`).
 
 ---
 
@@ -765,11 +524,6 @@ val color = ContextCompat.getColor(context, R.color.primary)
 1. **Create the Entity**
    ```kotlin
    // app/src/main/java/org/ole/planet/myplanet/model/MyNewModel.kt
-   package org.ole.planet.myplanet.model
-
-   import androidx.room.Entity
-   import androidx.room.PrimaryKey
-
    @Entity(tableName = "my_new_models")
    open class MyNewModel(
        @PrimaryKey var _id: String = "",
@@ -799,37 +553,12 @@ val color = ContextCompat.getColor(context, R.color.primary)
    @Provides fun provideMyNewModelDao(db: AppDatabase) = db.myNewModelDao()
    ```
 
-4. **Update API Interface**
-   ```kotlin
-   // app/src/main/java/org/ole/planet/myplanet/data/api/ApiInterface.kt
-   @GET("myendpoint")
-   suspend fun getMyNewModels(): Response<List<JsonObject>>
-   ```
+4. **Add the endpoint** in `data/api/ApiInterface.kt` if the model syncs with the server.
 
-5. **Create Repository**
+5. **Create Repository** (interface + Impl injecting the DAO) and **bind it** in `di/RepositoryModule.kt`:
    ```kotlin
-   // Interface
-   interface MyNewModelRepository {
-       suspend fun getModels(): List<MyNewModel>
-       suspend fun syncModels(): Result<Unit>
-   }
-
-   // Implementation — inject the DAO
-   class MyNewModelRepositoryImpl @Inject constructor(
-       private val apiInterface: ApiInterface,
-       private val myNewModelDao: MyNewModelDao,
-   ) : MyNewModelRepository {
-       // Implementation
-   }
-   ```
-
-6. **Register the repository in DI**
-   ```kotlin
-   // app/src/main/java/org/ole/planet/myplanet/di/RepositoryModule.kt
    @Binds
-   abstract fun bindMyNewModelRepository(
-       impl: MyNewModelRepositoryImpl
-   ): MyNewModelRepository
+   abstract fun bindMyNewModelRepository(impl: MyNewModelRepositoryImpl): MyNewModelRepository
    ```
 
 ### Adding a New Screen
@@ -839,35 +568,6 @@ val color = ContextCompat.getColor(context, R.color.primary)
 3. Register in `AndroidManifest.xml`
 4. Navigate with `Intent(context, MyFeatureActivity::class.java)`
 
-### Adding a New API Endpoint
-
-1. **Update ApiInterface**
-   ```kotlin
-   // app/src/main/java/org/ole/planet/myplanet/data/api/ApiInterface.kt
-   @POST("api/endpoint")
-   suspend fun postData(
-       @Body data: JsonObject,
-       @Header("Authorization") auth: String
-   ): Response<JsonObject>
-   ```
-
-2. **Use in Repository**
-   ```kotlin
-   override suspend fun submitData(data: MyData): Result<Unit> = withContext(Dispatchers.IO) {
-       try {
-           val jsonData = convertToJson(data)
-           val response = apiInterface.postData(jsonData, getAuthHeader())
-           if (response.isSuccessful) {
-               Result.success(Unit)
-           } else {
-               Result.failure(Exception("API error: ${response.code()}"))
-           }
-       } catch (e: Exception) {
-           Result.failure(e)
-       }
-   }
-   ```
-
 ### Implementing Offline Sync
 
 1. **Download**: Fetch from API, upsert into Room via a DAO `@Insert(onConflict = REPLACE)` (see `TransactionSyncManager` for the paginated per-table pulls)
@@ -875,12 +575,14 @@ val color = ContextCompat.getColor(context, R.color.primary)
 
 ### Adding Background Work
 
-1. Create `CoroutineWorker` subclass with `doWork()` returning `Result.success()` or `Result.retry()`
+1. Create `CoroutineWorker` subclass with `doWork()` returning `Result.success()` or `Result.retry()`; fetch dependencies via `CoreDependenciesEntryPoint`/`ServiceDependenciesEntryPoint`
 2. Schedule with `PeriodicWorkRequestBuilder<MyWorker>(interval, unit)` + network constraints + `WorkManager.enqueueUniquePeriodicWork`
 
 ---
 
 ## Testing Guidelines
+
+> Full testing patterns (what to copy per layer, shared infra, naming) live in **`docs/TESTING.md`**.
 
 ### Current State
 - **A real unit-test suite exists**: 166 unit-test files in `app/src/test/`. There is currently **no** `app/src/androidTest/` (instrumented) source set.
@@ -902,33 +604,7 @@ val color = ContextCompat.getColor(context, R.color.primary)
 ./gradlew testDefaultDebugUnitTest --tests "org.ole.planet.myplanet.repository.CoursesRepositoryImplTest"
 ```
 
-> There is no instrumented (`androidTest`) source set at the moment, so `connectedDefaultDebugAndroidTest` has nothing to run. All tests are JVM unit tests.
-
-### Writing Tests (conventions used in this repo)
-
-```kotlin
-// Repository/ViewModel unit test — MockK + coroutines-test
-class CoursesRepositoryImplTest {
-    @get:Rule val mainDispatcherRule = MainDispatcherRule()
-
-    private val apiInterface: ApiInterface = mockk(relaxed = true)
-    private val courseDao: CourseDao = mockk(relaxed = true)
-
-    @Test
-    fun `getCourses returns dao results`() = runTest {
-        val repository = CoursesRepositoryImpl(apiInterface, courseDao, TestDispatcherProvider())
-        coEvery { courseDao.getByUserId(any()) } returns listOf(MyCourse(id = "1"))
-        val result = repository.getCourses()
-        assertTrue(result.isNotEmpty())
-    }
-}
-```
-
-**Conventions:**
-- Prefer **MockK** (`mockk`, `coEvery`, `coVerify`) — not Mockito.
-- Use `runTest { }` + `MainDispatcherRule` for coroutine code; inject `TestDispatcherProvider` instead of real dispatchers.
-- Use **Robolectric** (`@RunWith(RobolectricTestRunner::class)`) for tests needing Android framework classes without a device.
-- Add new tests next to existing ones (mirror the `main` package path) so CI picks them up automatically.
+**Core conventions**: MockK (not Mockito), `runTest { }` + `MainDispatcherRule` for coroutine code, `TestDispatcherProvider` instead of real dispatchers, Robolectric for Android framework classes, and mirror the `main` package path (an organizational convention — Gradle discovers tests from the compiled test source set regardless of package).
 
 ### Manual Testing Checklist
 
@@ -948,194 +624,37 @@ When making changes, verify:
 
 ### Sensitive Data Handling
 
-**Never hardcode:**
-- API keys
-- Passwords
-- Server URLs / server PINs
-- User credentials
+**Never hardcode:** API keys, passwords, server URLs / server PINs, user credentials.
 
 > ⚠️ **KNOWN ISSUE — secrets currently committed.** `gradle.properties` is **tracked in git** (it is *not* gitignored) and holds real `PLANET_*_URL` / `PLANET_*_PIN` values. `app/build.gradle` bakes each into `BuildConfig`, and since `minifyEnabled=false` they are trivially recoverable from any shipped APK. These PINs are real CouchDB `satellite` credentials (used in `UrlUtils.header`, `ConfigurationsRepositoryImpl.buildCouchdbUrl`, and the `/healthaccess` PIN). **Do not add new secrets here.** Remediation: rotate the exposed PINs server-side, move values to an untracked file / CI secrets, gitignore `gradle.properties`, and purge it from git history.
 
-**Preferred pattern — inject config via untracked properties or CI secrets, then expose as `BuildConfig` fields:**
-```properties
-# A gitignored local file (e.g. local.properties / secrets.properties), or CI-injected -P properties
-PLANET_LEARNING_URL=https://example.org
-PLANET_LEARNING_PIN=****
-```
+**Preferred pattern** — inject config via untracked properties (`local.properties` / `secrets.properties`); in CI use the provider's secret store (`-P` flags are for non-secret config only — command-line values can surface in logs and build scans). Expose only **non-secret** configuration (public URLs like `BuildConfig.PLANET_LEARNING_URL`) as `BuildConfig` fields — anything in `BuildConfig` is recoverable from the shipped APK regardless of where it came from, so PINs/passwords need a runtime authentication mechanism, not a build-time constant.
 
-**Access in code:**
-```kotlin
-val serverUrl = BuildConfig.PLANET_LEARNING_URL
-```
+### Other Security Facts
 
-### Network Security
-
-**Network Security Config:**
-- Location: `app/src/main/res/xml/network_security_config.xml`
-- Configure trusted certificates
-- Set cleartext traffic policies
-
-**HTTPS Enforcement:**
-```kotlin
-// Prefer HTTPS URLs
-val baseUrl = "https://example.org/"
-
-// Validate URLs
-if (!url.startsWith("https://")) {
-    throw SecurityException("Only HTTPS URLs allowed")
-}
-```
-
-### Data Encryption
-
-**Encrypted SharedPreferences:**
-```kotlin
-val encryptedPrefs = EncryptedSharedPreferences.create(
-    context,
-    "secure_prefs",
-    masterKey,
-    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-)
-```
-
-**Password Hashing:**
-```kotlin
-// Use PBKDF2 for password hashing
-val hashedPassword = Sha256Utils.hash(password)
-```
-
-### Permissions
-
-**Request at Runtime:**
-```kotlin
-// Check permission
-if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-    != PackageManager.PERMISSION_GRANTED) {
-
-    // Request permission
-    ActivityCompat.requestPermissions(
-        this,
-        arrayOf(Manifest.permission.CAMERA),
-        REQUEST_CAMERA
-    )
-}
-```
-
-**Declare in Manifest:**
-```xml
-<uses-permission android:name="android.permission.CAMERA" />
-```
-
-### ProGuard/R8
-
-**Current state:** `minifyEnabled` is `false` for both debug and release builds. If enabling for release:
-```gradle
-buildTypes {
-    release {
-        minifyEnabled true
-        proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-    }
-}
-```
+- **Network security config**: `app/src/main/res/xml/network_security_config.xml` (trusted certs, cleartext policy)
+- **Encrypted storage**: `SecurePrefs` (Tink-based) for sensitive preferences
+- **Password verification**: PBKDF2 in `AndroidDecrypter.androidDecrypter()` (HmacSHA1, per-user salt) — not where the names suggest: `Sha256Utils` only computes SHA-512 **file checksums**, and `AuthUtils` contains no hashing
+- **ProGuard/R8**: `minifyEnabled` is currently `false` for both debug and release builds
 
 ---
 
 ## Troubleshooting
 
-### Common Build Issues
-
-**Issue: Gradle sync failed**
-```bash
-# Solution: Clean and rebuild
-./gradlew clean
-./gradlew build --refresh-dependencies
-```
-
-**Issue: KAPT/KSP annotation processing errors**
-```bash
-# Solution: Clean build cache
-./gradlew clean
-rm -rf .gradle/
-./gradlew build
-```
-
 **Issue: Room schema mismatch / "Room cannot verify the data integrity"**
-```kotlin
-// The app uses a drop-and-resync strategy: bump `version` in AppDatabase after any
-// entity change. RoomModule already builds with fallbackToDestructiveMigration(true),
-// so the local DB is rebuilt and re-pulled from the server — no hand-written Migration needed.
-@Database(entities = [ /* ... */ ], version = /* increment this */ 6)
-```
+- The app uses drop-and-resync: bump `version` in `AppDatabase` after any entity change. `RoomModule` already builds with `fallbackToDestructiveMigration(true)`, so the local DB is rebuilt and re-pulled from the server — no hand-written `Migration` needed.
+
+**Issue: KSP annotation processing errors**
+- `./gradlew clean`, remove `.gradle/`, rebuild.
 
 **Issue: Hilt dependency not found**
-- Ensure `@AndroidEntryPoint` annotation is present
-- Verify module provides the dependency
-- Check injection point is correct (constructor vs field)
-
-### Runtime Issues
-
-**Issue: Network requests fail**
-```kotlin
-// Debug: Check network state
-val isConnected = NetworkUtils.isNetworkAvailable(context)
-Log.d(TAG, "Network available: $isConnected")
-
-// Debug: Log request/response
-val loggingInterceptor = HttpLoggingInterceptor().apply {
-    level = HttpLoggingInterceptor.Level.BODY
-}
-```
+- Ensure `@AndroidEntryPoint` annotation is present; verify a module provides the dependency; check injection point (constructor vs field).
 
 **Issue: Blocking the main thread on DB access**
-```kotlin
-// Room DAO methods in this project are all `suspend` and run on IO, so call them
-// from a coroutine — never from the main thread synchronously.
-viewLifecycleOwner.lifecycleScope.launch {
-    val courses = courseDao.getByUserId(userId)   // suspends, runs off the main thread
-    // update UI here
-}
-```
-
-**Issue: Out of memory with images**
-```kotlin
-// Solution: Use Glide with proper sizing
-Glide.with(context)
-    .load(imageUrl)
-    .override(800, 600)  // Limit size
-    .into(imageView)
-```
-
-### Git Issues
+- Room DAO methods in this project are `suspend` (apart from the `Flow`-returning ones); Room executes the query off the main thread through its own executors. Call them from a coroutine (`viewLifecycleOwner.lifecycleScope.launch`) — never run DB work synchronously on the main thread.
 
 **Issue: Push fails with 403**
-- Ensure branch name starts with `claude/`
-- Ensure branch name ends with matching session ID
-- Use `git push -u origin <branch-name>`
-
-**Issue: Merge conflicts**
-```bash
-# Solution: Fetch latest and rebase
-git fetch origin
-git rebase origin/master
-
-# Resolve conflicts in files
-# Then:
-git add .
-git rebase --continue
-```
-
-### CI/CD Issues
-
-**Issue: Build workflow fails**
-- Check Gradle version compatibility
-- Verify all dependencies are accessible
-- Review workflow logs in GitHub Actions
-
-**Issue: Release workflow fails**
-- Ensure signing credentials are configured
-- Verify Play Store API access
-- Check bundle/APK generation
+- Ensure branch name starts with `claude/` and ends with the matching session ID; use `git push -u origin <branch-name>` (see **Branch Strategy** above for details).
 
 ---
 
@@ -1143,8 +662,6 @@ git rebase --continue
 
 ### External Documentation
 - [myPlanet Manual](https://open-learning-exchange.github.io/#!pages/manual/myplanet/overview.md)
-- [Android Developer Documentation](https://developer.android.com/)
-- [Kotlin Documentation](https://kotlinlang.org/docs/home.html)
 - [Room Documentation](https://developer.android.com/training/data-storage/room)
 - [Hilt Documentation](https://developer.android.com/training/dependency-injection/hilt-android)
 
@@ -1156,16 +673,16 @@ git rebase --continue
 
 | Purpose | File Path | Line Count |
 |---------|-----------|------------|
-| Main entry point | `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt` | ~530 |
+| Main entry point | `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt` | ~537 |
 | REST API endpoints | `app/src/main/java/org/ole/planet/myplanet/data/api/ApiInterface.kt` | ~65 |
 | Room database | `app/src/main/java/org/ole/planet/myplanet/data/room/AppDatabase.kt` | ~170 |
 | Sync orchestration | `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt` | ~691 |
-| Upload handling | `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt` | ~616 |
+| Upload handling | `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt` | ~615 |
 | Upload orchestration | `app/src/main/java/org/ole/planet/myplanet/services/upload/UploadCoordinator.kt` | ~478 |
-| Team management | `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt` | ~1434 |
+| Team management | `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt` | ~1437 |
 | DB service wrapper | `app/src/main/java/org/ole/planet/myplanet/data/DatabaseService.kt` | ~33 |
-| Build configuration | `app/build.gradle` | ~230 |
-| Dependency versions | `gradle/libs.versions.toml` | ~131 |
+| Build configuration | `app/build.gradle` | ~231 |
+| Dependency versions | `gradle/libs.versions.toml` | ~132 |
 
 ---
 
@@ -1182,7 +699,7 @@ git rebase --continue
 | `di/` | 10 | Dependency injection (8 modules + 2 entry points) |
 | `base/` | 13 | Reusable base classes |
 | `callback/` | 28 | Event listeners and interfaces |
-| `data/` | 40 | Data services, Room (AppDatabase, Converters, 30 DAOs, entity/), API, auth |
+| `data/` | 40 | Data services, Room (AppDatabase, Converters, 37 DAO interfaces in 30 files), API, auth |
 | `utils/` | 46 | Helper utilities |
 | Root | 1 | MainApplication.kt |
 
@@ -1208,6 +725,6 @@ Note: SYSTEM_ALERT_WINDOW is **not** declared (removed at some point; older docs
 
 ---
 
-**Last Updated**: 2026-08-02
-**Version**: 0.62.97
+**Last Updated**: 2026-08-07
+**Version**: 0.63.42
 **Maintainer**: Open Learning Exchange
