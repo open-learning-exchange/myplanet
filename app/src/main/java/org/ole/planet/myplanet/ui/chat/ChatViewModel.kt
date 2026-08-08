@@ -345,6 +345,18 @@ class ChatViewModel @Inject constructor(
         _aiProvidersError.value = hasError
     }
 
+    private var draftMessage: String = ""
+
+    fun getDraftMessage(): String = draftMessage
+
+    fun setDraftMessage(text: String) {
+        draftMessage = text
+    }
+
+    fun clearDraftMessage() {
+        draftMessage = ""
+    }
+
     fun clearChatState() {
         _selectedChatHistory.value = null
         _selectedId.value = ""
