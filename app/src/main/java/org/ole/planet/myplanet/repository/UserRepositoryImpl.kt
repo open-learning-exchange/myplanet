@@ -48,6 +48,10 @@ import org.ole.planet.myplanet.model.MyHealth.MyHealthProfile
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -78,8 +82,13 @@ class UserRepositoryImpl @Inject constructor(
     private val removedLogDao: RemovedLogDao,
     private val achievementDao: AchievementDao,
     private val healthRepository: HealthRepository,
-    private val userDao: UserDao
+    private val userDao: UserDao,
+    private val realtimeSyncManager: RealtimeSyncManager
 ) : UserRepository, UserSyncRepository {
+    override val achievementUpdates: Flow<Unit> = realtimeSyncManager.dataUpdateFlow
+        .filter { it.table == "achievements" && it.shouldRefreshUI }
+        .map { }
+
     override suspend fun getDashboardProfile(userId: String): DashboardProfile {
         val user = getUserById(userId)
         val userName = user?.name
