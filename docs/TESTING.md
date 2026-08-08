@@ -55,7 +55,7 @@ All three helpers live in `app/src/test/java/org/ole/planet/myplanet/utils/` (pa
 
 ### `MainDispatcherRule`
 
-Swaps `Dispatchers.Main` for a test dispatcher so `viewModelScope.launch { }` runs synchronously. Use it in any ViewModel test. There is exactly **one** copy — import it from `utils`.
+Swaps `Dispatchers.Main` for a test dispatcher. With the default `UnconfinedTestDispatcher`, `viewModelScope.launch { }` runs eagerly (effectively synchronously); if you pass a `StandardTestDispatcher` instead, coroutines queue until you call `runCurrent()` / `advanceUntilIdle()`. Use it in any ViewModel test. There is exactly **one** copy — import it from `utils`.
 
 ```kotlin
 @OptIn(ExperimentalCoroutinesApi::class)

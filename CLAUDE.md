@@ -472,7 +472,7 @@ Two cross-cutting doc facts: **no vendor documents a hard "never push" switch** 
 
 ### Room Database Conventions
 
-> All local persistence goes through Room — the `AppDatabase` (`data/room/AppDatabase.kt`), its DAOs (`data/room/dao/`), and `Converters` (`data/room/Converters.kt`). There is no other local store, so reach for DAOs (or `DatabaseService`), never a raw SQLite or third-party-DB API.
+> All local persistence goes through Room — the `AppDatabase` (`data/room/AppDatabase.kt`), its DAOs (`data/room/dao/`), and `Converters` (`data/room/Converters.kt`). There is no other local store, so reach for DAOs (multi-DAO atomic work via `AppDatabase.withTransaction`), never a raw SQLite or third-party-DB API.
 
 **Entity (model) Classes:**
 ```kotlin
@@ -647,7 +647,7 @@ When making changes, verify:
 
 > ⚠️ **KNOWN ISSUE — secrets currently committed.** `gradle.properties` is **tracked in git** (it is *not* gitignored) and holds real `PLANET_*_URL` / `PLANET_*_PIN` values. `app/build.gradle` bakes each into `BuildConfig`, and since `minifyEnabled=false` they are trivially recoverable from any shipped APK. These PINs are real CouchDB `satellite` credentials (used in `UrlUtils.header`, `ConfigurationsRepositoryImpl.buildCouchdbUrl`, and the `/healthaccess` PIN). **Do not add new secrets here.** Remediation: rotate the exposed PINs server-side, move values to an untracked file / CI secrets, gitignore `gradle.properties`, and purge it from git history.
 
-**Preferred pattern** — inject config via untracked properties (`local.properties` / `secrets.properties`) or CI-injected `-P` properties, expose as `BuildConfig` fields, and read them as `BuildConfig.PLANET_LEARNING_URL`.
+**Preferred pattern** — inject config via untracked properties (`local.properties` / `secrets.properties`) or CI-injected `-P` properties. Expose only **non-secret** configuration (public URLs like `BuildConfig.PLANET_LEARNING_URL`) as `BuildConfig` fields — anything in `BuildConfig` is recoverable from the shipped APK regardless of where it came from, so PINs/passwords need a runtime authentication mechanism, not a build-time constant.
 
 ### Other Security Facts
 
