@@ -1,0 +1,35 @@
+# The Agent Spellbook — Summoning Other AIs on PRs
+
+> Field-verified live on [PR #15436](https://github.com/open-learning-exchange/myplanet/pull/15436) (2026-08-07/08), including each agent fact-checking its own row. Core distinction: **Reviewers** speak; **Doers** act — an unleashed Doer mention defaults to commits on your branch.
+>
+> This page is the reference: who answers to what, how fast, and with which side effects. The behavioral rules — the **Laws of Summoning** — live in `CLAUDE.md` → "The Agent Spellbook", so the agents that ingest that file carry them as standing instructions.
+
+## The Grid
+
+| Agent (identity) | Type | Summon | Ack | Pushes to your branch? | Quirks & limits |
+|---|---|---|---|---|---|
+| **CodeRabbit** (`coderabbitai[bot]`) | Reviewer | auto on push + `@coderabbitai review` / `full review` / `resolve` / `approve` / `fix ci [commit]` / `autofix [stacked pr]` / `resolve merge conflict` / `generate {docstrings, unit tests, sequence diagram}` / `configuration` / `pause`·`resume` / `help` — `ignore` works only in the PR **description** | minutes | only opt-in (`fix ci commit`, `autofix`, generators) | auto-review skips drafts and pauses after 5 reviewed commits (config); allowance: 5 reviews/dev/hr (Pro; Pro+ 10, rolling); review fails if head moves mid-review; `approve` needs `reviews.request_changes_workflow: true`; chats in threads (Q&A, issue creation to GitHub/Jira/Linear); stores teachable per-repo learnings |
+| **Codex** (`chatgpt-codex-connector[bot]`) | Reviewer (+ cloud tasks) | `@codex review` · targeted: `@codex review for issues in <scope>` (auto on open/ready **only if enabled** in repo Codex settings) | 👀 in seconds; review in minutes; 👍 if clean | no — `@codex fix it` / `address that feedback` starts a cloud task that may update the PR **or** deliver a sibling branch/PR | P0–P3 badges observed here (docs claim GitHub reviews flag only P0/P1); repo rules via `## Code Review Rules` in `AGENTS.md`; `codex` label, `*-codex/*` branches |
+| **Copilot** (`Copilot` / `copilot-swe-agent`) | Doer, instruction-following | `@copilot <ask>` (write-access users only) · Reviewers UI (review-only) · assign an issue | ~30 s | **default** — docs: mentions work on any PR and push to that branch; say "open a separate PR" to redirect | Reviewers-UI review is Comment-only (never approves, no auto re-review) — and produced **no review at all** on this repo when formally requested; issue assignment spawns its own `copilot/**` PR; reads `AGENTS.md` / `.github/copilot-instructions.md` / `CLAUDE.md` |
+| **Devin** (`devin-ai-integration[bot]`) | Doer, instruction-following | `@devin <ask>` | session link ~10 s | yes, unless leashed ("comment only" held in test) | one session **adopts** the PR — later mentions join it (no races from Devin); ⚠️ commit identity is a configurable "commit authoring mode" — here its commits wear the requesting user's identity, so audit via PR timeline, not `git log`; Knowledge ingests `CLAUDE.md`/`AGENTS.md`; verify its claims (env may lack the Android SDK) |
+| **OpenHands** (`openhands-ai[bot]`) | Doer, unleashable | `@openhands <ask>` (not `@allhands`) · `openhands` label on an issue | "I'm on it!" + session link ~10 s | yes — reads *any* mention (even "help") as "fix what's open", and **pushed even against an explicit no-push instruction** (verified) | **new session per mention** (4+ concurrent observed); double-posts under both the mentioning user's account and the bot; commits authored `openhands`; standing context via `.openhands/microagents/repo.md` (prompt-level, not a guardrail); disputed its own receipts-documented behavior in self-review — trust the timeline |
+| **Jules** (`google-labs-jules[bot]`) | Issue-driven | `jules` label on an issue (reliable) / Jules app — `@jules` PR mentions got **no response here** (docs since 2025-09 claim PR-comment replies + a Reactive Mode toggle) | — | own `jules-*` branches only | 20+ bot-authored PRs; reads `AGENTS.md` + per-repo memory; quotas 15/100/300 tasks/day by plan |
+| **Claude Code** | Session Doer | claude.ai/code session — no mention-bot (`@claude` silent) | — | its own `claude/**` branch | can subscribe to PR events and drive to green from inside a session |
+| **Dependabot** (`dependabot[bot]`) | Scheduled | daily; `@dependabot rebase` / `recreate` / `ignore …` / `unignore …` / `show … ignore conditions` on **its own PRs only** | — | own PRs | Actions + Gradle bumps (`.github/dependabot.yml`) |
+
+## Vendor grimoires
+
+Official references; the grid above records observed behavior on this repo where the two differ.
+
+- CodeRabbit: [review commands](https://docs.coderabbit.ai/reference/review-commands) · [configuration](https://docs.coderabbit.ai/reference/configuration) · [learnings](https://docs.coderabbit.ai/knowledge-base/learnings) — `@coderabbitai configuration` prints this repo's live config
+- Codex: [GitHub integration](https://learn.chatgpt.com/docs/third-party/github)
+- Copilot: [code review](https://docs.github.com/en/copilot/concepts/agents/code-review) · [changing existing PRs](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/make-changes-to-an-existing-pr)
+- Devin: [GitHub integration](https://docs.devin.ai/integrations/gh) (commit authoring modes) · [Knowledge](https://docs.devin.ai/product-guides/knowledge)
+- OpenHands: [GitHub cloud](https://docs.openhands.dev/openhands/usage/cloud/github-installation) · [repo microagents](https://docs.openhands.dev/modules/usage/prompting/microagents-repo)
+- Jules: [running tasks](https://jules.google/docs/running-tasks/) · [usage limits](https://jules.google/docs/usage-limits/)
+- Dependabot: [comment commands](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-pull-request-comment-commands) — current list is `rebase`, `recreate`, the `ignore` family, `show … ignore conditions`; the old merge commands are gone from dotcom docs
+
+## Cross-cutting doc facts
+
+- **No vendor documents a hard "never push" switch** — every standing-rule mechanism (microagents, Knowledge, `AGENTS.md`) is prompt-level context, so Law 1 (scope your summons) is the only guardrail.
+- **Copilot and Devin ingest `CLAUDE.md` directly** (Copilot also `AGENTS.md`/`.github/copilot-instructions.md`; Devin via Knowledge) — the Laws of Summoning bind those two simply by being merged. Jules reads only `AGENTS.md`, which this repo doesn't have; add one (or symlink it to `CLAUDE.md`) to bind Jules too.
