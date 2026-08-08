@@ -652,7 +652,8 @@ When making changes, verify:
 ### Other Security Facts
 
 - **Network security config**: `app/src/main/res/xml/network_security_config.xml` (trusted certs, cleartext policy)
-- **Encrypted storage**: `SecurePrefs` (Tink-based) for sensitive preferences; password hashing via `Sha256Utils`/PBKDF2 (`AuthUtils`)
+- **Encrypted storage**: `SecurePrefs` (Tink-based) for sensitive preferences
+- **Password verification**: PBKDF2 in `AndroidDecrypter.androidDecrypter()` (HmacSHA1, per-user salt) — not where the names suggest: `Sha256Utils` only computes SHA-512 **file checksums**, and `AuthUtils` contains no hashing
 - **ProGuard/R8**: `minifyEnabled` is currently `false` for both debug and release builds
 
 ---
