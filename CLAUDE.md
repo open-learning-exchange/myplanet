@@ -413,7 +413,7 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 | **OpenHands** (`openhands-ai[bot]`) | Doer, unleashable | `@openhands <ask>` (not `@allhands`) · `openhands` label on an issue | "I'm on it!" + session link ~10 s | yes — reads *any* mention (even "help") as "fix what's open", and **pushed even against an explicit no-push instruction** (verified) | **new session per mention** (4+ concurrent observed); double-posts under both the mentioning user's account and the bot; commits authored `openhands`; standing context via `.openhands/microagents/repo.md` (prompt-level, not a guardrail); disputed its own receipts-documented behavior in self-review — trust the timeline |
 | **Jules** (`google-labs-jules[bot]`) | Issue-driven | `jules` label on an issue (reliable) / Jules app — `@jules` PR mentions got **no response here** (docs since 2025-09 claim PR-comment replies + a Reactive Mode toggle) | — | own `jules-*` branches only | 20+ bot-authored PRs; reads `AGENTS.md` + per-repo memory; quotas 15/100/300 tasks/day by plan |
 | **Claude Code** | Session Doer | claude.ai/code session — no mention-bot (`@claude` silent) | — | its own `claude/**` branch | can subscribe to PR events and drive to green from inside a session |
-| **Dependabot** (`dependabot[bot]`) | Scheduled | daily; `@dependabot rebase` / `recreate` / `merge` on **its own PRs only** | — | own PRs | Actions + Gradle bumps (`.github/dependabot.yml`) |
+| **Dependabot** (`dependabot[bot]`) | Scheduled | daily; `@dependabot rebase` / `recreate` / `ignore …` / `unignore …` / `show … ignore conditions` on **its own PRs only** | — | own PRs | Actions + Gradle bumps (`.github/dependabot.yml`) |
 
 **Laws of Summoning**
 
