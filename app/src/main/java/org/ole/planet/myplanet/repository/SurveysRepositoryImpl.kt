@@ -292,6 +292,38 @@ class SurveysRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getTeamSurveyCompletionTimestamps(teamId: String?): Map<String, List<Long>> {
+        if (teamId.isNullOrEmpty()) return emptyMap()
+        val surveyIds = getTeamOwnedSurveys(teamId).mapNotNull { it.id }
+        if (surveyIds.isEmpty()) return emptyMap()
+
+        val submissions = submissionDao.getByTeamId(teamId)
+
+        fun matchedSurveyId(parentId: String?): String? {
+            parentId ?: return null
+            return surveyIds.find { surveyId ->
+                parentId == surveyId || parentId.startsWith("$surveyId@")
+            }
+        }
+
+        fun completionTimestamp(submission: Submission): Long {
+            return submission.lastUpdateTime.takeIf { it > 0 } ?: submission.startTime
+        }
+
+        return submissions
+            .filter { it.status == "complete" || it.status == "requires grading" }
+            .filter { !it.userId.isNullOrEmpty() }
+            .mapNotNull { submission ->
+                val surveyId = matchedSurveyId(submission.parentId) ?: return@mapNotNull null
+                Triple(submission.userId as String, surveyId, completionTimestamp(submission))
+            }
+            .groupBy { it.first }
+            .mapValues { (_, userSubmissions) ->
+                userSubmissions.groupBy { it.second }
+                    .map { (_, duplicateSubmissions) -> duplicateSubmissions.maxOf { it.third } }
+            }
+    }
+
     override suspend fun getSurveyInfos(
         isTeam: Boolean,
         teamId: String?,

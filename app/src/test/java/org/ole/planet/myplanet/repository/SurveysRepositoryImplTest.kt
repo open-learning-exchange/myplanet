@@ -13,6 +13,8 @@ import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -185,6 +187,68 @@ class SurveysRepositoryImplTest {
         val result = repository.dueRemindersFlow().first()
 
         assertEquals(listOf("survey1"), result)
+
+        verify { sharedPreferencesEditor.remove("reminder_time_survey1") }
+        verify { sharedPreferencesEditor.remove("reminder_surveys_survey1") }
+
+        verify(exactly = 0) { sharedPreferencesEditor.remove("reminder_time_survey2") }
+        verify(exactly = 0) { sharedPreferencesEditor.remove("reminder_surveys_survey2") }
+    }
+
+    @Test
+    fun `getTeamSurveyCompletionTimestamps groups distinct completed surveys by user`() = runTest {
+        val exam = StepExam(id = "survey1", type = "surveys", teamId = "team1")
+
+        coEvery { examDao.getByTeamIdAndType("team1", "surveys") } returns emptyList()
+        coEvery { examDao.getByType("surveys") } returns listOf(exam)
+
+        val completedSubmission = Submission(
+            parentId = "survey1",
+            status = "complete",
+            userId = "alice",
+            startTime = 1_700_000_000_000L,
+            lastUpdateTime = 1_700_000_500_000L
+        )
+        coEvery { submissionDao.getByTeamId("team1") } returns listOf(completedSubmission)
+
+        val result = repository.getTeamSurveyCompletionTimestamps("team1")
+
+        assertEquals(mapOf("alice" to listOf(1_700_000_500_000L)), result)
+    }
+
+    @Test
+    fun `getAdoptableTeamSurveys returns expected exams`() = runTest {
+        val exam = StepExam(id = "survey2", type = "surveys", isTeamShareAllowed = true)
+
+        coEvery { submissionDao.getByTeamId("team1") } returns emptyList()
+        coEvery { examDao.getByTeamIdAndType("team1", "surveys") } returns emptyList()
+        coEvery { examDao.getByType("surveys") } returns listOf(exam)
+
+        val result = repository.getAdoptableTeamSurveys("team1")
+        assertEquals(1, result.size)
+        assertEquals("survey2", result[0].id)
+        assertEquals(true, result[0].isTeamShareAllowed)
+    }
+
+    @Test
+    fun `dueRemindersFlow emits valid reminders and removes them`() = runTest {
+        val currentTime = timeProvider.now()
+        val pastTime = currentTime - 1000
+
+        // Mock SharedPreferences
+        every { sharedPreferences.all } returns mapOf(
+            "reminder_time_survey1" to pastTime,
+            "reminder_time_survey2" to currentTime + 10000 // Future time
+        )
+        every { sharedPreferences.getLong("reminder_time_survey1", 0) } returns pastTime
+        every { sharedPreferences.getLong("reminder_time_survey2", 0) } returns currentTime + 10000
+
+        val flow = repository.dueRemindersFlow()
+
+        val result = flow.take(1).toList()
+
+        assertEquals(1, result.size)
+        assertEquals(listOf("survey1"), result[0])
 
         verify { sharedPreferencesEditor.remove("reminder_time_survey1") }
         verify { sharedPreferencesEditor.remove("reminder_surveys_survey1") }
