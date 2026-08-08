@@ -116,6 +116,15 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
         dialogBinding.tvStartTime.text = editStartTime.ifEmpty { getString(R.string.click_here_to_pick_time) }
         dialogBinding.tvEndTime.text = editEndTime.ifEmpty { getString(R.string.click_here_to_pick_time) }
 
+        dialogBinding.etRecurringCount.setText(meetup.recurringNumber.toString())
+        val isRecurringInit = meetup.recurring.equals("daily", ignoreCase = true) || meetup.recurring.equals("weekly", ignoreCase = true)
+        dialogBinding.tlRecurringCount.visibility = if (isRecurringInit) View.VISIBLE else View.GONE
+
+        dialogBinding.rgRecuring.setOnCheckedChangeListener { _, checkedId ->
+            val isRecurring = checkedId == R.id.rb_daily || checkedId == R.id.rb_weekly
+            dialogBinding.tlRecurringCount.visibility = if (isRecurring) View.VISIBLE else View.GONE
+        }
+
         when (meetup.recurring) {
             "daily" -> dialogBinding.rgRecuring.check(R.id.rb_daily)
             "weekly" -> dialogBinding.rgRecuring.check(R.id.rb_weekly)
@@ -157,6 +166,8 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
                 R.id.rb_weekly -> "weekly"
                 else -> "none"
             }
+            val recurringCountText = dialogBinding.etRecurringCount.text.toString().trim()
+            val recurringNumber = recurringCountText.toIntOrNull() ?: 10
 
             viewModel.updateMeetup(
                 meetupId = meetup.id ?: return@setOnClickListener,
@@ -168,7 +179,8 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
                 endTime = editEndTime,
                 meetupLocation = dialogBinding.etLocation.text.toString().trim(),
                 meetupLink = dialogBinding.etLink.text.toString().trim(),
-                recurring = recurring
+                recurring = recurring,
+                recurringNumber = recurringNumber
             )
             dialog.dismiss()
         }
