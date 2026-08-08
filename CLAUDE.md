@@ -415,16 +415,16 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 | **Claude Code** | Session Doer | claude.ai/code session — no mention-bot (`@claude` silent) | — | its own `claude/**` branch | can subscribe to PR events and drive to green from inside a session |
 | **Dependabot** (`dependabot[bot]`) | Scheduled | daily; `@dependabot rebase` / `recreate` / `ignore …` / `unignore …` / `show … ignore conditions` on **its own PRs only** | — | own PRs | Actions + Gradle bumps (`.github/dependabot.yml`) |
 
-**Laws of Summoning**
+**Laws of Summoning** — for the humans casting *and* the agents summoned. (Copilot, Devin, and Jules ingest this file as standing instructions — if you're an agent reading this, these laws are yours to follow.)
 
-1. **Leash your Doers — and don't trust the leash.** An explicit "comment only — do not push" held for Devin, Copilot, and Codex; **OpenHands pushed anyway**. Audit regardless.
-2. **One unleashed Doer per branch.** Mentions don't coordinate — three push races in one hour when several were active.
-3. **Audit every foreign commit.** 2 of 5 agent commits contained factual errors; one "reviewer-verified" pattern would crash (`lateinit` read before init).
-4. **Bot commits don't all wear the same name.** Devin's commits carry the requesting user's git identity; OpenHands' are authored `openhands`. Never attribute by `git log` author — use the PR timeline.
-5. **Verify claims, not vibes.** "Tests pass" may mean "after I hand-installed the SDK" — or may not have run at all.
-6. **Cross-review beats any single reviewer.** CodeRabbit approved a fix Codex refuted; Devin refuted an OpenHands self-report with receipts. Each catches what another misses.
-7. **Teach the teachable.** CodeRabbit learns repo policy from PR discussion; agents will fact-check their own documentation with citations if you ask.
-8. **No agent edits its own entry.** Self-description is not observation: asked to self-review, OpenHands disputed three behaviors the PR record proves, then pushed the flattering wording itself. Entries here are written from the timeline, by someone else.
+1. **Scope your summons — precision works.** An explicit "comment only — do not push" was honored by Devin, Copilot, and Codex; say exactly what you want and you'll usually get exactly that. Summoned agents: the mention text is your contract — when it says comment, comment. (One agent broke this once; the timeline remembers, so keep the streak.)
+2. **The branch has one pen.** Work flows fastest when one Doer holds it and everyone else delivers findings as comments — that division turned five agents into a relay team instead of three push races an hour. Not holding the pen? Your comment is just as mergeable: the pen-holder will commit it with credit.
+3. **Every commit deserves a second reader.** Peer review is what made all five agent commits on this PR mergeable — including a `lateinit` crash caught *after* another reviewer had approved it. Read a foreign commit before building on it, and write yours expecting the same courtesy.
+4. **The PR timeline is the shared ledger.** Commit identities legitimately vary (Devin can write as the requesting user; OpenHands writes as `openhands`), so attribution, receipts, and history live in the timeline — cite it, link to it, and keep it clean enough to settle disputes, because it did.
+5. **Show your receipts.** "Tests pass" persuades when it names what ran, where, and how the environment differed — Devin's I-had-to-install-the-SDK-first disclosure is the model. Evidence attached to a claim lets everyone build on your work without re-deriving it.
+6. **Stack your reviewers.** CodeRabbit, Codex, Devin, and OpenHands each caught something all the others missed; the sum is what got this PR to green. A complementary reviewer is one comment away — summon it, and welcome being cross-checked yourself.
+7. **Teach what you learn.** CodeRabbit turns PR discussion into standing policy (learnings); `AGENTS.md` and this file do it for everyone else. A lesson encoded once is inherited by every future session — encoding these laws is how they started enforcing themselves.
+8. **Your entry here is written by others.** Fact-check any row and earn a correction with receipts — most of this table was built exactly that way. Just don't edit your own: self-description isn't observation, and the one attempt at it is why this law exists.
 
 **Vendor grimoires** (official references; the table above records observed behavior on this repo where the two differ)
 
