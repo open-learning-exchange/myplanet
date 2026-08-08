@@ -25,7 +25,7 @@
 | `docs/DOMAIN_MODEL.md` | You need to understand the learning domain — roles, courses, teams, surveys, sync concepts |
 | `docs/CODE_STYLE_GUIDE.md` | You're writing code — naming, imports, coroutines, Room, Hilt, UI conventions |
 | `docs/TESTING.md` | You're writing or fixing tests — patterns to copy per layer |
-| `docs/AGENT_SPELLBOOK.md` | You're summoning another AI agent on a PR — who answers, how fast, and with what side effects |
+| `docs/AGENT_SPELLBOOK.md` | You're summoning another AI agent (`@claude` `@coderabbit` `@codex` `@copilot` `@dependabot` `@devin` `@jules` `@openhands`) on a PR — who answers, how fast, and with what side effects |
 
 ---
 
