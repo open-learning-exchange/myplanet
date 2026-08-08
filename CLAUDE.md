@@ -443,9 +443,9 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 
 #### OpenHands / All Hands — Doer (`openhands-ai[bot]`)
 
-- **Incantation**: any `@openhands` mention (**not** `@allhands` — verified silent) → "I'm on it!" + session link in ~10 s
-- **Observed**: interprets *any* mention (even "help") as "fix whatever is open on this PR" and pushes to your branch under the mentioning user's account with an OpenHands footer
-- **Hazard**: every mention spawns another concurrent session; it double-posts summaries. The noisiest Doer — summon precisely, once
+- **Incantation**: any `@openhands` mention — responds with a session link
+- **Behavior**: interprets mentions as task assignments and pushes commits to the branch when tasked
+- **Note**: each mention spawns a new session; be deliberate to avoid concurrent sessions
 
 #### Google Jules — issue-driven, deaf to PR mentions (`google-labs-jules[bot]`)
 
