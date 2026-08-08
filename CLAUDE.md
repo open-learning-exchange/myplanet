@@ -415,7 +415,7 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 | **Claude Code** | Session Doer | claude.ai/code session — no mention-bot (`@claude` silent) | — | its own `claude/**` branch | can subscribe to PR events and drive to green from inside a session |
 | **Dependabot** (`dependabot[bot]`) | Scheduled | daily; `@dependabot rebase` / `recreate` / `ignore …` / `unignore …` / `show … ignore conditions` on **its own PRs only** | — | own PRs | Actions + Gradle bumps (`.github/dependabot.yml`) |
 
-**Laws of Summoning** — for the humans casting *and* the agents summoned. (Copilot, Devin, and Jules ingest this file as standing instructions — if you're an agent reading this, these laws are yours to follow.)
+**Laws of Summoning** — for the humans casting *and* the agents summoned. (Copilot and Devin ingest this file as standing instructions; Jules reads `AGENTS.md`, which this repo doesn't have yet — if you're an agent reading this, these laws are yours to follow.)
 
 1. **Scope your summons — precision works.** An explicit "comment only — do not push" was honored by Devin, Copilot, and Codex; say exactly what you want and you'll usually get exactly that. Summoned agents: the mention text is your contract — when it says comment, comment. (One agent broke this once; the timeline remembers, so keep the streak.)
 2. **The branch has one pen.** Work flows fastest when one Doer holds it and everyone else delivers findings as comments — that division turned five agents into a relay team instead of three push races an hour. Not holding the pen? Your comment is just as mergeable: the pen-holder will commit it with credit.
@@ -436,7 +436,7 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 - Jules: [running tasks](https://jules.google/docs/running-tasks/) · [usage limits](https://jules.google/docs/usage-limits/)
 - Dependabot: [comment commands](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-pull-request-comment-commands) — current list is `rebase`, `recreate`, the `ignore` family, `show … ignore conditions`; the old merge commands are gone from dotcom docs
 
-Two cross-cutting doc facts: **no vendor documents a hard "never push" switch** — every standing-rule mechanism (microagents, Knowledge, `AGENTS.md`) is prompt-level context, so Law 1 is the only guardrail; and **Copilot, Devin, and Jules ingest `AGENTS.md`/`CLAUDE.md` as standing instructions** — this spellbook binds those three simply by being merged.
+Two cross-cutting doc facts: **no vendor documents a hard "never push" switch** — every standing-rule mechanism (microagents, Knowledge, `AGENTS.md`) is prompt-level context, so Law 1 is the only guardrail; and **Copilot and Devin ingest `CLAUDE.md` directly** (Copilot also `AGENTS.md`/`.github/copilot-instructions.md`; Devin via Knowledge) — this spellbook binds those two simply by being merged. Jules reads only `AGENTS.md`, which this repo doesn't have; add one (or symlink it to `CLAUDE.md`) to bind Jules too.
 
 ### Adding New Features
 
@@ -472,7 +472,7 @@ Two cross-cutting doc facts: **no vendor documents a hard "never push" switch** 
 
 ### Room Database Conventions
 
-> All local persistence goes through Room — the `AppDatabase` (`data/room/AppDatabase.kt`), its DAOs (`data/room/dao/`), and `Converters` (`data/room/Converters.kt`). There is no other local store, so reach for DAOs (multi-DAO atomic work via `AppDatabase.withTransaction`), never a raw SQLite or third-party-DB API.
+> All **structured domain data** goes through Room — the `AppDatabase` (`data/room/AppDatabase.kt`), its DAOs (`data/room/dao/`), and `Converters` (`data/room/Converters.kt`). There is no other database, so reach for DAOs (multi-DAO atomic work via `AppDatabase.withTransaction`), never a raw SQLite or third-party-DB API. (Key-value settings live in `SharedPreferences`, and sensitive preferences in the Tink-backed `SecurePrefs` — see Security Considerations.)
 
 **Entity (model) Classes:**
 ```kotlin
@@ -525,9 +525,9 @@ suspend fun upsertAll(items: List<Rating>)
 
 **Rules:**
 - Inject the specific DAO into a repository. For an atomic multi-DAO transaction, use Room's `withTransaction` on the `AppDatabase`. (`DatabaseService.withRoomAsync`/`executeRoomTransactionAsync` still exist but no repository uses them anymore.)
-- DAO methods are `suspend` and confined to IO — do not block the main thread. `DictionaryActivity` also uses a DAO (`DictionaryDao`) now; there is no raw-DB escape hatch.
+- DAO methods are `suspend` (Room runs the query off the main thread via its own executors, so they're safe to call from any dispatcher) or `Flow`-returning — never block the main thread with DB work. `DictionaryActivity` also uses a DAO (`DictionaryDao`) now; there is no raw-DB escape hatch.
 - Use `IS` (not `=`) in DAO `@Query` predicates when a `null` argument should match `NULL` rows (`=` never matches `NULL` in SQL).
-- **Migration strategy is drop-and-resync**: `RoomModule` builds the DB with `fallbackToDestructiveMigration(true)`. On any schema change bump `version` in `AppDatabase`; there are **no** hand-written `Migration` objects — data is re-pulled from the Planet/CouchDB server on first launch.
+- **Migration strategy is drop-and-resync**: `RoomModule` builds the DB with `fallbackToDestructiveMigration(true)`. On any schema change bump `version` in `AppDatabase`; there are **no** hand-written `Migration` objects — data is re-pulled from the Planet/CouchDB server on first launch. ⚠️ The rebuild also discards **unsynced local writes** (pending uploads, drafts) — a schema bump ships that loss to any device that hasn't synced, so treat version bumps as releases that need pending data uploaded first.
 - Inject `DispatcherProvider` (don't hard-code `Dispatchers.IO`) so tests can substitute deterministic dispatchers.
 
 ### Localization
@@ -623,7 +623,7 @@ Supported languages: English (default) + Arabic (ar), Spanish (es), French (fr),
 ./gradlew testDefaultDebugUnitTest --tests "org.ole.planet.myplanet.repository.CoursesRepositoryImplTest"
 ```
 
-**Core conventions**: MockK (not Mockito), `runTest { }` + `MainDispatcherRule` for coroutine code, `TestDispatcherProvider` instead of real dispatchers, Robolectric for Android framework classes, and mirror the `main` package path so CI picks new tests up automatically.
+**Core conventions**: MockK (not Mockito), `runTest { }` + `MainDispatcherRule` for coroutine code, `TestDispatcherProvider` instead of real dispatchers, Robolectric for Android framework classes, and mirror the `main` package path (an organizational convention — Gradle discovers tests from the compiled test source set regardless of package).
 
 ### Manual Testing Checklist
 
@@ -670,7 +670,7 @@ When making changes, verify:
 - Ensure `@AndroidEntryPoint` annotation is present; verify a module provides the dependency; check injection point (constructor vs field).
 
 **Issue: Blocking the main thread on DB access**
-- Room DAO methods in this project are `suspend` (apart from the `Flow`-returning ones) and run on IO — call them from a coroutine (`viewLifecycleOwner.lifecycleScope.launch`), never synchronously from the main thread.
+- Room DAO methods in this project are `suspend` (apart from the `Flow`-returning ones); Room executes the query off the main thread through its own executors. Call them from a coroutine (`viewLifecycleOwner.lifecycleScope.launch`) — never run DB work synchronously on the main thread.
 
 **Issue: Push fails with 403**
 - Ensure branch name starts with `claude/` and ends with the matching session ID; use `git push -u origin <branch-name>` (see **Branch Strategy** above for details).
@@ -718,7 +718,7 @@ When making changes, verify:
 | `di/` | 10 | Dependency injection (8 modules + 2 entry points) |
 | `base/` | 13 | Reusable base classes |
 | `callback/` | 28 | Event listeners and interfaces |
-| `data/` | 40 | Data services, Room (AppDatabase, Converters, 30 DAOs, entity/), API, auth |
+| `data/` | 40 | Data services, Room (AppDatabase, Converters, 37 DAO interfaces in 30 files), API, auth |
 | `utils/` | 46 | Helper utilities |
 | Root | 1 | MainApplication.kt |
 
