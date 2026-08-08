@@ -4,7 +4,7 @@
     <item
         android:id="@+id/menu_home"
         android:icon="@drawable/ic_home"
-        android:title="@string/menu_home" />
+        android:title="@string/menu_mydashboard" />
     <item
         android:id="@+id/menu_mylibrary"
         android:icon="@drawable/mylibrary"
