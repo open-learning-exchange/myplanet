@@ -495,7 +495,7 @@ suspend fun upsertAll(items: List<Rating>)
 
 ### Localization
 
-Supported languages: English (default) + Arabic (ar), Spanish (es), French (fr), Nepali (ne), Somali (so). Add new strings to `app/src/main/res/values/strings.xml`; Crowdin syncs translations into `values-{lang}/strings.xml` automatically (config: `crowdin.yml`).
+Supported languages: English (default) + Arabic (ar), Spanish (es), French (fr), Nepali (ne), Somali (so). Add new strings to `app/src/main/res/values/strings.xml` and add the translation to each `values-{lang}/strings.xml`.
 
 ---
 

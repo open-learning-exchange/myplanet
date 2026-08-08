@@ -31,7 +31,6 @@ reviews:
   enable_prompt_for_ai_agents: true
 
   path_filters:
-    - "!app/src/main/res/values-*/**" # Crowdin-managed translations
     - "!gradle/wrapper/**"
     - "!**/*.png"
     - "!**/*.webp"
