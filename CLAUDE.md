@@ -400,22 +400,64 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 - Daily checks for GitHub Actions updates (max 10 open PRs)
 - Daily checks for Gradle dependency updates (max 15 open PRs)
 
-**PR Reviews — CodeRabbit**
-- On any PR, commenting `@coderabbitai review` summons CodeRabbit as a third review option (besides human and Claude review) — the token-cheap first pass for nits and obvious bugs
-- Also: `@coderabbitai full review` (from scratch), `@coderabbitai resolve` (resolve its comments); see `docs/CODE_STYLE_GUIDE.md` → "PR Reviews — Three Options"
+### The Agent Spellbook — Summoning Other AIs on PRs
 
-**AI Agent Roster** (verified against PR history 2026-08-07)
+> Field-verified by live experiment on PR #15436 (2026-08-07): every agent below was summoned by comment and its actual behavior recorded. The one distinction that matters before you type `@`: **Reviewers** only speak; **Doers** treat any mention as a task assignment and **will push commits to your branch**. A mention of a Doer is a delegation of write access, not a request for an opinion.
 
-| Agent | GitHub identity | Footprint |
-|-------|-----------------|-----------|
-| Claude Code | human account, `claude/**` branches | primary AI contributor; automerge/docs/refactor PRs |
-| CodeRabbit | `coderabbitai[bot]` | auto-reviews every PR; `@coderabbitai` commands |
-| OpenAI Codex | human account via connector; `codex` label, `*-codex/*` branches, "Codex Task" links in PR bodies | feature/refactor PRs |
-| Google Jules | `google-labs-jules[bot]`; `jules-*`/`jules/**` branches | 20+ bot-authored PRs |
-| Copilot coding agent | `Copilot` (`copilot-swe-agent`); `copilot/**` branches | 36+ bot-authored PRs (incl. the Realm→Room migration PR #14850) |
-| Devin | `devin-ai-integration[bot]` | occasional PRs |
-| OpenHands (All Hands) | PRs under the requesting user's account, "created by an AI agent (OpenHands)" footer | occasional PRs; mention handle is `@openhands` |
-| Dependabot | `dependabot[bot]` | daily dependency PRs |
+#### Laws of Summoning (learned the hard way)
+
+1. **Know Reviewer vs Doer before you type `@`.** "help" summoned two Doers who immediately started committing.
+2. **One Doer per branch at a time.** Mentions don't coordinate — three push races occurred within one hour when multiple Doers were active.
+3. **Audit every foreign commit.** Of 5 agent commits pushed during the experiment, 2 contained factual errors and 1 "reviewer-verified" pattern would crash at runtime (`lateinit` read before init).
+4. **Reviewer verdicts are not ground truth.** CodeRabbit approved a broken fix; Codex caught it. The value is in *cross*-review — different bots catch different failure modes.
+5. **Each mention is a fresh summon.** Every `@openhands` spawned a new independent cloud session (three ran concurrently). Be deliberate.
+6. **Teach the teachable.** CodeRabbit stores per-repo "learnings" from PR discussions — encode policy there and it enforces itself in future reviews.
+
+#### CodeRabbit — Reviewer (`coderabbitai[bot]`)
+
+- **Auto-fires** on every non-draft push (drafts are skipped); posts walkthrough, inline findings with severity badges, and pre-merge checks (title/description/linked-issues)
+- **Incantations**: `@coderabbitai review` (incremental) · `full review` · `resolve` (resolve its threads) · `approve` · `pause` / `resume` · `regenerate summary` · `help`
+- **Write-mode spells** (opt-in only — this is the exception to "Reviewers only speak"): `fix ci` (stacked PR), `fix ci commit` (commits to your branch), plus docstring/unit-test generation checkboxes
+- **Cooldowns**: per-developer OSS rate limit (~30–60 min observed); a review **aborts if the head commit changes mid-review** — stop pushing while it chews
+- **Config gate**: `resolve` works out of the box, but `approve` (and top-level request-changes) requires `reviews.request_changes_workflow` in `.coderabbit.yaml` (verified — it says so when asked)
+- **Special**: verifiable learnings — it re-checks fixes with shell scripts and remembers agreed policies across PRs
+
+#### OpenAI Codex — Reviewer, Doer on request (`chatgpt-codex-connector[bot]`)
+
+- **Auto-fires** on PR open / ready-for-review; also `@codex review`
+- **Tell**: acks with an 👀 reaction within seconds; the review lands minutes later (P1/P2 severity badges, inline); reacts 👍 instead of commenting when it finds nothing
+- **Doer mode**: `@codex address that feedback` updates the PR from its own cloud sandbox (vendor-documented; it prepared a follow-up branch unprompted during the experiment — watch for surprise sibling PRs)
+- **Footprint**: `codex` label, `*-codex/*` branches, "Codex Task" chatgpt.com links in PR bodies
+
+#### GitHub Copilot coding agent — Doer (`Copilot` / `copilot-swe-agent`)
+
+- **Incantations**: `@copilot <anything>` in a PR comment (replied in ~30 s); formal review request via the Reviewers UI/API; assign an issue to Copilot
+- **Observed**: asked to "review", it instead **pushed fixes** — treat any mention as a commit trigger
+- **Footprint**: `copilot/**` branches; 36+ PRs including the Realm→Room migration (#14850)
+
+#### Devin — Doer (`devin-ai-integration[bot]`)
+
+- **Incantation**: any `@devin` mention → posts a live session link within ~10 s, then acts
+- **Observed**: pushed commits directly to the mentioned branch, ran the unit tests in its own environment and reported results, and picked up "leftover" open review comments without being asked twice
+- **Quality note**: its commits during the experiment were accurate — but Law 3 still applies
+
+#### OpenHands / All Hands — Doer (`openhands-ai[bot]`)
+
+- **Incantation**: any `@openhands` mention (**not** `@allhands` — verified silent) → "I'm on it!" + session link in ~10 s
+- **Observed**: interprets *any* mention (even "help") as "fix whatever is open on this PR" and pushes to your branch under the mentioning user's account with an OpenHands footer
+- **Hazard**: every mention spawns another concurrent session; it double-posts summaries. The noisiest Doer — summon precisely, once
+
+#### Google Jules — issue-driven, deaf to PR mentions (`google-labs-jules[bot]`)
+
+- `@jules` on a PR does **nothing** (verified). Summon via the Jules app or the `jules` label on issues; it delivers its own PRs from `jules-*` branches (20+ to date)
+
+#### Claude Code — Doer, session-based (this document's author)
+
+- No mention-bot on this repo — `@claude` does nothing (verified). Summon via claude.ai/code sessions; works on `claude/**` branches, can watch PRs and drive them to green from inside a session
+
+#### Dependabot — scheduled (`dependabot[bot]`)
+
+- Daily Actions + Gradle bumps (see `.github/dependabot.yml`); `@dependabot rebase` / `recreate` / `merge` work **only on its own PRs** (vendor-documented, untested here)
 
 ### Adding New Features
 
