@@ -182,10 +182,10 @@ or by running `git submodule update --init --recursive` as a step. Fresh human c
 ## Maintenance
 
 - **Edit the skill once** — change `SKILL.md` or `references/title-corpus.md` in `dogi/merge-prepping`.
-- **Bump the submodule** in myPlanet when you want to pick up the change. Note the submodule checkout is on a detached HEAD, so a plain `git pull` inside it has no branch to update; use the submodule-safe form:
+- **Bump the submodule** in myPlanet when you want to pick up the change. Two pitfalls make the obvious commands wrong: the submodule checkout is on a detached HEAD, so a plain `git pull` inside it has no branch to update; and `--remote --merge` would *merge* the remote tip into that detached HEAD — if the pin has diverged (e.g. after an upstream force-push, which has happened to these repos), that mints a local merge commit that doesn't exist upstream, and committing its gitlink breaks every fresh clone. Use checkout mode, which pins the remote branch tip directly:
 
   ```bash
-  git submodule update --remote --merge -- .agents/skills/merge-prepping
+  git submodule update --remote -- .agents/skills/merge-prepping
   git add .agents/skills/merge-prepping
   git commit -m "bump merge-prepping skill submodule"
   ```
@@ -193,15 +193,15 @@ or by running `git submodule update --init --recursive` as a step. Fresh human c
 - **Same for `kotlin-importing`** — edit `SKILL.md` or `kotlin-importing.py` in `dogi/kotlin-importing`, then:
 
   ```bash
-  git submodule update --remote --merge -- .agents/skills/kotlin-importing
+  git submodule update --remote -- .agents/skills/kotlin-importing
   git add .agents/skills/kotlin-importing
   git commit -m "bump kotlin-importing skill submodule"
   ```
 
-- **Regenerate the corpus** periodically from the myPlanet log:
+- **Regenerate the corpus** periodically from the myPlanet log (use `origin/master` — a local `master` branch doesn't exist on PR-branch checkouts):
 
   ```bash
-  git log --format=%s master > /tmp/titles.txt
+  git log --format=%s origin/master > /tmp/titles.txt
   # drop into references/title-corpus.md in dogi/merge-prepping, commit, bump submodule
   ```
 
