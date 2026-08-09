@@ -48,7 +48,7 @@ git clone --recurse-submodules https://github.com/open-learning-exchange/myplane
 git submodule update --init --recursive
 ```
 
-See [`docs/SKILL_SYNC_SETUP.md`](docs/SKILL_SYNC_SETUP.md) for how the skills are wired up.
+See ["The Armory" in `docs/AGENT_SPELLBOOK.md`](docs/AGENT_SPELLBOOK.md#the-armory--skill-sync-one-repo-every-agent) for how the skills are wired up.
 
 ## Contact
 
