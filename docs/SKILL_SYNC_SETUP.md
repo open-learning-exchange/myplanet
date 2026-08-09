@@ -138,7 +138,10 @@ Skill discovery runs at session start — before the agent reads `AGENTS.md` —
 ```bash
 #!/usr/bin/env bash
 set -uo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || {
+  echo "setup.sh: cannot locate workspace root" >&2
+  exit 1
+}
 git submodule update --init --recursive ||
   echo "setup.sh: submodule init failed (offline?) — continuing without uninitialized skills" >&2
 exit 0
