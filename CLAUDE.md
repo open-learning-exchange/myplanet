@@ -26,6 +26,7 @@
 | `docs/CODE_STYLE_GUIDE.md` | You're writing code — naming, imports, coroutines, Room, Hilt, UI conventions |
 | `docs/TESTING.md` | You're writing or fixing tests — patterns to copy per layer |
 | `docs/AGENT_SPELLBOOK.md` | You're summoning another AI agent (`@claude` `@coderabbit` `@codex` `@copilot` `@dependabot` `@devin` `@jules` `@openhands`) on a PR — who answers, how fast, and with what side effects |
+| `docs/SKILL_SYNC_SETUP.md` | You're maintaining the shared agent skills (`merge-prepping`, `kotlin-importing`) — how one skill repo feeds both Claude Code and OpenHands |
 
 ---
 
