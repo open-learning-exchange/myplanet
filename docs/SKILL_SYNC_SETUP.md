@@ -2,6 +2,15 @@
 
 Goal: maintain `merge-prepping` (and `kotlin-importing`) **once** in their own repos, and have both Claude Code and OpenHands auto-load the same skill on every session in this repo.
 
+## Rollout status
+
+- [ ] **Step 1** — restructure `dogi/merge-prepping` and `dogi/kotlin-importing` (root `SKILL.md`): **pending**, needs push access to the `dogi/*` repos
+- [x] **Step 2** — submodules added at `.agents/skills/` (pinned at `merge-prepping@138af54`, `kotlin-importing@279b3e5`)
+- [x] **Step 3** — `AGENTS.md` written at the repo root
+- [x] **Step 4** — `.claude/settings.json` already correct, no change needed
+
+Until Step 1 lands (plus a submodule bump here), OpenHands won't auto-load the skills — the `SKILL.md` files sit nested at `.agents/skills/<name>/plugins/<name>/skills/<skill>/`, not at the root path OpenHands scans. `AGENTS.md` points OpenHands at the nested paths as a stopgap.
+
 ## Why this works
 
 - **Claude Code** reads `.claude/settings.json` → fetches plugin marketplaces from GitHub → follows internal symlinks to find `SKILL.md`.
@@ -57,7 +66,7 @@ git push
 
 Symlink depth check: the `SKILL.md` link lives in `plugins/merge-prepping/skills/title/`, four directories below the root, so its target climbs four levels (`../../../../SKILL.md`); the corpus link lives one directory deeper (`…/title/references/`), so it climbs five (`../../../../../references/…`). Verify with `ls -L` after creating them (see Troubleshooting).
 
-Repeat the same pattern for `dogi/kotlin-importing` (root `SKILL.md`, plugin path symlinked up).
+Repeat the same pattern for `dogi/kotlin-importing`, adjusting for its actual layout: the skill lives at `plugins/kotlin-importing/skills/sort/` and ships a script (`kotlin-importing.py`) instead of a `references/` directory — move both `SKILL.md` and the script to the repo root and symlink both back from the plugin path (same four-level climb: `../../../../SKILL.md`, `../../../../kotlin-importing.py`).
 
 ## Step 2 — add submodules to myPlanet
 

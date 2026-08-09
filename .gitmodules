@@ -1,0 +1,6 @@
+[submodule ".agents/skills/merge-prepping"]
+	path = .agents/skills/merge-prepping
+	url = https://github.com/dogi/merge-prepping.git
+[submodule ".agents/skills/kotlin-importing"]
+	path = .agents/skills/kotlin-importing
+	url = https://github.com/dogi/kotlin-importing.git
