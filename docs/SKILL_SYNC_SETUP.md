@@ -1,6 +1,6 @@
-# Skill sync setup — Claude Code + OpenHands
+# Skill sync setup — Claude Code + OpenHands + Copilot
 
-Goal: maintain `merge-prepping` (and `kotlin-importing`) **once** in their own repos, and have both Claude Code and OpenHands auto-load the same skill on every session in this repo.
+Goal: maintain `merge-prepping` (and `kotlin-importing`) **once** in their own repos, and have Claude Code, OpenHands, and Copilot all load the same skill on every session in this repo.
 
 ## Rollout status
 
