@@ -29,6 +29,14 @@ Brainstormed with OpenHands; two simpler options were on the table:
 
 The **submodule** approach keeps Option A's auto-load and short trigger while preserving a single source of truth: the skill repo stays canonical, and this repo pins a specific commit of it that's bumped deliberately (see Maintenance).
 
+The payoff, side by side — what Option B required per invocation:
+
+> `@openhands clone https://github.com/dogi/merge-prepping, read plugins/merge-prepping/skills/prepping/SKILL.md, and apply the title procedure to this PR`
+
+and what the same invocation is now (production-proven on [PR #15499](https://github.com/open-learning-exchange/myplanet/pull/15499) — retitled the PR and created its tracking issue):
+
+> `@openhands prepping`
+
 ## Step 1 — restructure each skill repo
 
 Make `SKILL.md` + `references/` canonical at the repo root. Keep the Claude plugin path, but symlink it back up to the root files.
