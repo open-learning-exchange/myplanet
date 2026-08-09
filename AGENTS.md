@@ -2,7 +2,9 @@
 
 ## Skills (auto-loaded from .agents/skills/)
 
-Skill repos are git submodules — initialize them first on a fresh clone:
+Skill repos are git submodules. `.openhands/setup.sh` initializes them at
+session start, before skill discovery runs. In any other context (fresh
+manual clone, other agents), initialize them yourself:
 
 ```bash
 git submodule update --init --recursive

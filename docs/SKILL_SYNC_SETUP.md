@@ -9,8 +9,9 @@ Goal: maintain `merge-prepping` (and `kotlin-importing`) **once** in their own r
 - [x] **Step 3** — `AGENTS.md` written at the repo root
 - [x] **Step 4** — `.claude/settings.json` already correct, no change needed
 - [x] **Step 5** — `.github/copilot-instructions.md` points Copilot at the skills and the submodule init
+- [x] **Step 6** — `.openhands/setup.sh` initializes the submodules before OpenHands skill discovery
 
-All steps are live: OpenHands auto-loads from `.agents/skills/<name>/SKILL.md` (after `git submodule update --init`), Claude Code keeps loading the plugins through the marketplaces, and Copilot picks the skills up via its instruction file.
+All steps are live: OpenHands auto-loads from `.agents/skills/<name>/SKILL.md` (submodules bootstrapped by `.openhands/setup.sh` before discovery), Claude Code keeps loading the plugins through the marketplaces, and Copilot picks the skills up via its instruction file.
 
 ## Why this works
 
@@ -130,12 +131,25 @@ Claude Code fetches the marketplaces at session start and follows the internal s
 
 Copilot's coding agent reads `.github/copilot-instructions.md` plus the nearest `AGENTS.md` — and a real `AGENTS.md` at the root **replaces** `CLAUDE.md` for it (see `docs/AGENT_SPELLBOOK.md` → Cross-cutting facts). Since this setup makes `AGENTS.md` a real file (OpenHands memory), `.github/copilot-instructions.md` restores the pointer: read `CLAUDE.md` first, then lists the skills and the submodule-init command.
 
+## Step 6 — bootstrap submodules before OpenHands discovery
+
+Skill discovery runs at session start — before the agent reads `AGENTS.md` — so an init command documented there comes too late: on a fresh checkout the gitlinks are empty directories and no `SKILL.md` is found. OpenHands runs `.openhands/setup.sh` at workspace initialization, ahead of discovery, so that script does the init:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+git submodule update --init --recursive
+```
+
+Without this file the short trigger still fails on fresh sessions even though everything else is wired correctly; the `AGENTS.md` command only helps mid-session or in other contexts.
+
 ## Result — what each system sees
 
 | System | Reads | Loads skill from | Trigger |
 |---|---|---|---|
 | Claude Code | `.claude/settings.json` | GitHub fetch + plugin symlinks | `/merge-prepping:title` |
-| OpenHands | `.agents/skills/<name>/SKILL.md` + `AGENTS.md` | submodule (root `SKILL.md`) | `@openhands prep this PR` (skill description handles trigger phrases) |
+| OpenHands | `.agents/skills/<name>/SKILL.md` + `AGENTS.md` | submodule, initialized by `.openhands/setup.sh` before discovery | `@openhands prep this PR` (skill description handles trigger phrases) |
 | Copilot (coding agent) | `.github/copilot-instructions.md` + `AGENTS.md` | submodule, after `git submodule update --init` | `@copilot <ask>` |
 
 ## CI and default-checkout implications
@@ -155,12 +169,20 @@ or by running `git submodule update --init --recursive` as a step. Fresh human c
 ## Maintenance
 
 - **Edit the skill once** — change `SKILL.md` or `references/title-corpus.md` in `dogi/merge-prepping`.
-- **Bump the submodule** in myPlanet when you want to pick up the change (same procedure for `kotlin-importing` — swap the path). Note the submodule checkout is on a detached HEAD, so a plain `git pull` inside it has no branch to update; use the submodule-safe form:
+- **Bump the submodule** in myPlanet when you want to pick up the change. Note the submodule checkout is on a detached HEAD, so a plain `git pull` inside it has no branch to update; use the submodule-safe form:
 
   ```bash
   git submodule update --remote --merge -- .agents/skills/merge-prepping
   git add .agents/skills/merge-prepping
   git commit -m "bump merge-prepping skill submodule"
+  ```
+
+- **Same for `kotlin-importing`** — edit `SKILL.md` or `kotlin-importing.py` in `dogi/kotlin-importing`, then:
+
+  ```bash
+  git submodule update --remote --merge -- .agents/skills/kotlin-importing
+  git add .agents/skills/kotlin-importing
+  git commit -m "bump kotlin-importing skill submodule"
   ```
 
 - **Regenerate the corpus** periodically from the myPlanet log:
