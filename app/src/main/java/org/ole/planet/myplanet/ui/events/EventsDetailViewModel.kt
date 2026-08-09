@@ -53,7 +53,8 @@ class EventsDetailViewModel @Inject constructor(
         endTime: String,
         meetupLocation: String,
         meetupLink: String,
-        recurring: String
+        recurring: String,
+        recurringNumber: Int = 10
     ) {
         viewModelScope.launch {
             val success = eventsRepository.updateMeetup(
@@ -66,7 +67,8 @@ class EventsDetailViewModel @Inject constructor(
                 endTime = endTime,
                 meetupLocation = meetupLocation,
                 meetupLink = meetupLink,
-                recurring = recurring
+                recurring = recurring,
+                recurringNumber = recurringNumber
             )
 
             if (success) {
