@@ -4,12 +4,12 @@ Goal: maintain `merge-prepping` (and `kotlin-importing`) **once** in their own r
 
 ## Rollout status
 
-- [ ] **Step 1** — restructure `dogi/merge-prepping` and `dogi/kotlin-importing` (root `SKILL.md`): **pending**, needs push access to the `dogi/*` repos
-- [x] **Step 2** — submodules added at `.agents/skills/` (pinned at `merge-prepping@138af54`, `kotlin-importing@279b3e5`)
+- [x] **Step 1** — `dogi/merge-prepping` and `dogi/kotlin-importing` restructured with root `SKILL.md` (plugin paths symlinked back)
+- [x] **Step 2** — submodules added at `.agents/skills/` (pinned at `merge-prepping@dad667f`, `kotlin-importing@0943989`)
 - [x] **Step 3** — `AGENTS.md` written at the repo root
 - [x] **Step 4** — `.claude/settings.json` already correct, no change needed
 
-Until Step 1 lands (plus a submodule bump here), OpenHands won't auto-load the skills — the `SKILL.md` files sit nested at `.agents/skills/<name>/plugins/<name>/skills/<skill>/`, not at the root path OpenHands scans. `AGENTS.md` points OpenHands at the nested paths as a stopgap.
+All four steps are live: OpenHands auto-loads from `.agents/skills/<name>/SKILL.md` (after `git submodule update --init`), and Claude Code keeps loading the plugins through the marketplaces.
 
 ## Why this works
 
@@ -135,10 +135,10 @@ Claude Code fetches the marketplaces at session start and follows the internal s
 ## Maintenance
 
 - **Edit the skill once** — change `SKILL.md` or `references/title-corpus.md` in `dogi/merge-prepping`.
-- **Bump the submodule** in myPlanet when you want to pick up the change:
+- **Bump the submodule** in myPlanet when you want to pick up the change (same procedure for `kotlin-importing` — swap the path). Note the submodule checkout is on a detached HEAD, so a plain `git pull` inside it has no branch to update; use the submodule-safe form:
 
   ```bash
-  git -C .agents/skills/merge-prepping pull
+  git submodule update --remote --merge -- .agents/skills/merge-prepping
   git add .agents/skills/merge-prepping
   git commit -m "bump merge-prepping skill submodule"
   ```
