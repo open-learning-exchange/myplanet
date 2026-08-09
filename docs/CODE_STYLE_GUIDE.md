@@ -613,7 +613,7 @@ Use `snake_case`. Prefix with an abbreviated type hint for clarity: `tv_` for Te
 
 - All strings in `res/values/strings.xml`.
 - Use `snake_case` for the name attribute.
-- When adding a new string, add a placeholder in **all 5 translation files** too (`values-ar`, `values-es`, `values-fr`, `values-ne`, `values-so`). Even if you don't know the translation, copy the English string so the build doesn't fail — Crowdin will sync the real translation later.
+- When adding a new string, add a placeholder in **all 5 translation files** too (`values-ar`, `values-es`, `values-fr`, `values-ne`, `values-so`). Even if you don't know the translation, copy the English string so the build doesn't fail, and note it in the PR so a translation can follow.
 
 ### Colors and Dimensions
 
