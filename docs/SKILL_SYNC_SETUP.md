@@ -8,8 +8,9 @@ Goal: maintain `merge-prepping` (and `kotlin-importing`) **once** in their own r
 - [x] **Step 2** — submodules added at `.agents/skills/` (pinned at `merge-prepping@dad667f`, `kotlin-importing@0943989`)
 - [x] **Step 3** — `AGENTS.md` written at the repo root
 - [x] **Step 4** — `.claude/settings.json` already correct, no change needed
+- [x] **Step 5** — `.github/copilot-instructions.md` points Copilot at the skills and the submodule init
 
-All four steps are live: OpenHands auto-loads from `.agents/skills/<name>/SKILL.md` (after `git submodule update --init`), and Claude Code keeps loading the plugins through the marketplaces.
+All steps are live: OpenHands auto-loads from `.agents/skills/<name>/SKILL.md` (after `git submodule update --init`), Claude Code keeps loading the plugins through the marketplaces, and Copilot picks the skills up via its instruction file.
 
 ## Why this works
 
@@ -125,12 +126,31 @@ The existing file already fetches both plugins:
 
 Claude Code fetches the marketplaces at session start and follows the internal symlinks (now pointing to the root `SKILL.md`). No edit needed after Step 1.
 
+## Step 5 — point Copilot at the skills
+
+Copilot's coding agent reads `.github/copilot-instructions.md` plus the nearest `AGENTS.md` — and a real `AGENTS.md` at the root **replaces** `CLAUDE.md` for it (see `docs/AGENT_SPELLBOOK.md` → Cross-cutting facts). Since this setup makes `AGENTS.md` a real file (OpenHands memory), `.github/copilot-instructions.md` restores the pointer: read `CLAUDE.md` first, then lists the skills and the submodule-init command.
+
 ## Result — what each system sees
 
 | System | Reads | Loads skill from | Trigger |
 |---|---|---|---|
 | Claude Code | `.claude/settings.json` | GitHub fetch + plugin symlinks | `/merge-prepping:title` |
 | OpenHands | `.agents/skills/<name>/SKILL.md` + `AGENTS.md` | submodule (root `SKILL.md`) | `@openhands prep this PR` (skill description handles trigger phrases) |
+| Copilot (coding agent) | `.github/copilot-instructions.md` + `AGENTS.md` | submodule, after `git submodule update --init` | `@copilot <ask>` |
+
+## CI and default-checkout implications
+
+Submodules are **not** fetched by default: a plain `git clone`, and `actions/checkout` without a `submodules:` setting, leave `.agents/skills/*` as empty directories (`git submodule status` shows a `-` prefix on the commit). None of the current workflows (`build.yml`, `test.yml`, `release.yml`, `automerge.yml`) need the skills, so CI is intentionally left untouched — the app build must not pay for a skill fetch.
+
+If a future workflow or agent bootstrap step expects `.agents/skills/**` to exist, it must opt in explicitly, either:
+
+```yaml
+- uses: actions/checkout@v7
+  with:
+    submodules: recursive
+```
+
+or by running `git submodule update --init --recursive` as a step. Fresh human clones should use `git clone --recurse-submodules` (documented in the README's Development section).
 
 ## Maintenance
 

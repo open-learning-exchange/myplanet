@@ -13,6 +13,7 @@
 - [Feature Highlights](#feature-highlights)
 - [About myPlanet](#about-myplanet)
 - [How To Use](#how-to-use)
+- [Development](#development)
 - [Contact](#contact)
 
 ## Feature Highlights
@@ -36,6 +37,18 @@ By leveraging myPlanet, users gain seamless access to the Planet system’s exte
 ## How To Use
 
 For the app usage manual, please visit the [myPlanet Manual page](https://open-learning-exchange.github.io/#!pages/manual/myplanet/overview.md) on OLE Support.
+
+## Development
+
+Developer documentation lives in [`CLAUDE.md`](CLAUDE.md) (architecture, build, conventions). The repo uses git submodules for shared agent skills under `.agents/skills/`, which a plain clone skips — clone with:
+
+```bash
+git clone --recurse-submodules https://github.com/open-learning-exchange/myplanet.git
+# or, on an existing clone:
+git submodule update --init --recursive
+```
+
+See [`docs/SKILL_SYNC_SETUP.md`](docs/SKILL_SYNC_SETUP.md) for how the skills are wired up.
 
 ## Contact
 
