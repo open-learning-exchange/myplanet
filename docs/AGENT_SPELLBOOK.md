@@ -54,14 +54,14 @@ Official references; the grid and field notes record observed behavior where the
 
 ## The Armory — skill sync (one repo, every agent)
 
-Each skill (`merge-prepping`, `kotlin-importing`) is maintained **once** in its own repo, and Claude Code, OpenHands, and Copilot all load the same files on every session in this repo: OpenHands auto-loads from `.agents/skills/<name>/SKILL.md` (submodules bootstrapped by `.openhands/setup.sh` before discovery), Claude Code loads the plugins through the marketplaces, and Copilot picks the skills up via its instruction file.
+Each skill (`merge-prepping`, `kotlin-importing`) is maintained **once** in its own repo, and Claude Code, OpenHands, and Copilot all load it from that single source of truth: OpenHands auto-loads from `.agents/skills/<name>/SKILL.md` (submodules bootstrapped by `.openhands/setup.sh` before discovery), Claude Code loads the plugins through the marketplaces, and Copilot picks the skills up via its instruction file. One revision caveat: OpenHands and Copilot see the **pinned submodule commit**, while Claude Code's marketplace fetch tracks the skill repo's **main tip** — the two match only while the pin is current, so bump the submodule after every skill-repo merge (see Maintenance). And the load is best-effort on fresh offline sessions: `.openhands/setup.sh` is deliberately non-fatal, so an uninitialized submodule means that skill simply doesn't load that session (see Troubleshooting).
 
 ### Why this works
 
 - **Claude Code** reads `.claude/settings.json` → fetches plugin marketplaces from GitHub → follows internal symlinks to find `SKILL.md`.
 - **OpenHands** reads `.agents/skills/<name>/SKILL.md` → auto-loads on every session. It does **not** read `.claude/settings.json` or fetch marketplaces.
 - A **git submodule** at `.agents/skills/<name>/` makes the files physically present after `git submodule update --init`, on any machine or VM.
-- **Internal symlinks** (inside the skill repo) resolve on every checkout — no broken-link problem.
+- **Internal symlinks** (inside the skill repo) normally resolve on every checkout, since target and link travel together — verify with `ls -L` after creating or rewriting them; the failure modes that slip through are in Troubleshooting.
 
 ### Alternatives considered (and why the submodule won)
 
