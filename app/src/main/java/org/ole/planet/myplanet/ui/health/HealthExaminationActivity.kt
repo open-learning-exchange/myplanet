@@ -98,18 +98,20 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
 
         viewModel.loadData(userId, intent.getStringExtra("id"))
 
-        collectWhenStarted(viewModel.state) { state ->
-            if (!state.isLoading) {
-                user = state.user
-                pojo = state.pojo
-                health = state.health
-                examination = state.examination
+        lifecycleScope.launch {
+            viewModel.state.collect { state ->
+                if (!state.isLoading) {
+                    user = state.user
+                    pojo = state.pojo
+                    health = state.health
+                    examination = state.examination
 
-                lifecycleScope.launch {
-                    conditionsMap = healthRepository.getExaminationConditions(examination)
-                    initExamination()
-                    validateFields()
-                    btnSave.isEnabled = true
+                    lifecycleScope.launch {
+                        conditionsMap = healthRepository.getExaminationConditions(examination)
+                        initExamination()
+                        validateFields()
+                        btnSave.isEnabled = true
+                    }
                 }
             }
         }
