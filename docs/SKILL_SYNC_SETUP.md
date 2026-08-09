@@ -208,7 +208,10 @@ git submodule status
 
 If the path is nested (e.g. `.agents/skills/merge-prepping/plugins/.../SKILL.md`), Step 1 wasn't applied — the root restructure is required.
 
-**File exists but the skill is still "unknown"** — suspect the `name:` field in the `SKILL.md` frontmatter, not the path. OpenHands' discovery rejects names it considers too generic: field-tested on 2026-08-09, `name: sort` loaded while `name: title` was refused (the repos' original names) (`Unknown skill 'title'`) with byte-identical frontmatter structure. Both skills therefore use specific names (`prepping`, `importing`) — keep the trigger phrases in `description`.
+**File exists but the skill is still "unknown"** — suspect the frontmatter, not the path, and check it in this order:
+
+1. **Is the YAML valid at all?** One-line repro: `python3 -c "import yaml; yaml.safe_load(open('SKILL.md').read().split('---')[1])"`. An **unquoted `description:` containing `: ` (colon-space)** — e.g. an inline example like `` `scope: smoother thing doing` `` — is a YAML mapping indicator and kills the whole parse (`mapping values are not allowed here`), silently dropping the skill. Quote the value (single quotes; double any internal apostrophes). Field-tested 2026-08-09: this was the real reason `prepping` failed to load even after its rename.
+2. **Is the `name:` too generic?** Discovery also refused `name: title` (the repo's original name) while `sort` loaded. Both skills now use specific names (`prepping`, `importing`) — keep the trigger phrases in `description`.
 
 **No skills load on a fresh session** — check network: `.openhands/setup.sh` fetches the submodules from GitHub at workspace start. The script is deliberately non-fatal on failure (see Step 6), so an offline start leaves previously-initialized submodules working; run `git submodule update --init --recursive` manually once connectivity is back.
 
