@@ -54,18 +54,7 @@ Official references; the grid and field notes record observed behavior where the
 
 ## The Armory — skill sync (one repo, every agent)
 
-Goal: maintain `merge-prepping` (and `kotlin-importing`) **once** in their own repos, and have Claude Code, OpenHands, and Copilot all load the same skill on every session in this repo.
-
-### Rollout status
-
-- [x] **Step 1** — `dogi/merge-prepping` and `dogi/kotlin-importing` restructured with root `SKILL.md` (plugin paths symlinked back), skills renamed to discovery-safe names (`prepping`, `importing`)
-- [x] **Step 2** — submodules added at `.agents/skills/` (pinned at `merge-prepping@6289d32`, `kotlin-importing@0078fe4`)
-- [x] **Step 3** — `AGENTS.md` written at the repo root
-- [x] **Step 4** — `.claude/settings.json` already correct, no change needed
-- [x] **Step 5** — `.github/copilot-instructions.md` points Copilot at the skills and the submodule init
-- [x] **Step 6** — `.openhands/setup.sh` initializes the submodules before OpenHands skill discovery
-
-All steps are live: OpenHands auto-loads from `.agents/skills/<name>/SKILL.md` (submodules bootstrapped by `.openhands/setup.sh` before discovery), Claude Code keeps loading the plugins through the marketplaces, and Copilot picks the skills up via its instruction file.
+Each skill (`merge-prepping`, `kotlin-importing`) is maintained **once** in its own repo, and Claude Code, OpenHands, and Copilot all load the same files on every session in this repo: OpenHands auto-loads from `.agents/skills/<name>/SKILL.md` (submodules bootstrapped by `.openhands/setup.sh` before discovery), Claude Code loads the plugins through the marketplaces, and Copilot picks the skills up via its instruction file.
 
 ### Why this works
 
