@@ -19,4 +19,4 @@ git submodule update --init --recursive
 - docs/DOMAIN_MODEL.md — learning domain: roles, courses, teams, surveys, sync
 - docs/CODE_STYLE_GUIDE.md — naming, imports, coroutines, Room, Hilt, UI
 - docs/TESTING.md — test patterns per layer
-- docs/AGENT_SPELLBOOK.md — summoning AI agents on PRs + "The Armory": how the shared skills are wired up and maintained
+- docs/AGENT_SPELLBOOK.md — summoning AI agents on PRs + "The Skill Sync": how the shared skills are wired up and maintained
