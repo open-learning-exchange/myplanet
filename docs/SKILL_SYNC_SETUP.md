@@ -137,12 +137,14 @@ Skill discovery runs at session start — before the agent reads `AGENTS.md` —
 
 ```bash
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 cd "$(dirname "$0")/.."
-git submodule update --init --recursive
+git submodule update --init --recursive ||
+  echo "setup.sh: submodule init failed (offline?) — continuing without uninitialized skills" >&2
+exit 0
 ```
 
-Without this file the short trigger still fails on fresh sessions even though everything else is wired correctly; the `AGENTS.md` command only helps mid-session or in other contexts.
+Without this file the short trigger still fails on fresh sessions even though everything else is wired correctly; the `AGENTS.md` command only helps mid-session or in other contexts. The init failure is deliberately non-fatal: with no network at workspace start, already-initialized submodules keep working and uninitialized ones simply don't load that session, instead of the whole setup script failing the workspace.
 
 ## Result — what each system sees
 
@@ -202,6 +204,10 @@ git submodule status
 ```
 
 If the path is nested (e.g. `.agents/skills/merge-prepping/plugins/.../SKILL.md`), Step 1 wasn't applied — the root restructure is required.
+
+**File exists but the skill is still "unknown"** — suspect the `name:` field in the `SKILL.md` frontmatter, not the path. OpenHands' discovery rejects names it considers too generic: field-tested on 2026-08-09, `name: sort` loaded while `name: title` was refused (`Unknown skill 'title'`) with byte-identical frontmatter structure. Use a specific name (e.g. `merge-prepping`) and keep the trigger phrases in `description`.
+
+**No skills load on a fresh session** — check network: `.openhands/setup.sh` fetches the submodules from GitHub at workspace start. The script is deliberately non-fatal on failure (see Step 6), so an offline start leaves previously-initialized submodules working; run `git submodule update --init --recursive` manually once connectivity is back.
 
 **Claude Code slash command missing** — the internal symlinks must resolve within the fetched repo. Verify in a fresh clone of `dogi/merge-prepping`:
 
