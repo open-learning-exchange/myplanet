@@ -4,8 +4,8 @@ Goal: maintain `merge-prepping` (and `kotlin-importing`) **once** in their own r
 
 ## Rollout status
 
-- [x] **Step 1** — `dogi/merge-prepping` and `dogi/kotlin-importing` restructured with root `SKILL.md` (plugin paths symlinked back)
-- [x] **Step 2** — submodules added at `.agents/skills/` (pinned at `merge-prepping@dad667f`, `kotlin-importing@0943989`)
+- [x] **Step 1** — `dogi/merge-prepping` and `dogi/kotlin-importing` restructured with root `SKILL.md` (plugin paths symlinked back), skills renamed to discovery-safe names (`prepping`, `importing`)
+- [x] **Step 2** — submodules added at `.agents/skills/` (pinned at `merge-prepping@24744f8`, `kotlin-importing@a4b4ca2`)
 - [x] **Step 3** — `AGENTS.md` written at the repo root
 - [x] **Step 4** — `.claude/settings.json` already correct, no change needed
 - [x] **Step 5** — `.github/copilot-instructions.md` points Copilot at the skills and the submodule init
@@ -25,7 +25,7 @@ All steps are live: OpenHands auto-loads from `.agents/skills/<name>/SKILL.md` (
 Brainstormed with OpenHands; two simpler options were on the table:
 
 - **Option A — copy the skill into this repo** as plain files under `.agents/skills/merge-prepping/`. OpenHands would auto-load it, and the trigger comment shrinks to `@openhands prep this PR` (or even `@openhands fix the title` — the skill description lists the trigger phrases). But the copy forks the source of truth: every edit to `dogi/merge-prepping` must be manually re-copied here, and the two versions silently drift.
-- **Option B — no install, explicit comment each time**: `@openhands clone https://github.com/dogi/merge-prepping, read plugins/merge-prepping/skills/title/SKILL.md, and apply the title procedure to this PR`. Works today with zero setup, but it's verbose and relies on the model finding and following the skill each run — not guaranteed.
+- **Option B — no install, explicit comment each time**: `@openhands clone https://github.com/dogi/merge-prepping, read plugins/merge-prepping/skills/prepping/SKILL.md, and apply the title procedure to this PR`. Works today with zero setup, but it's verbose and relies on the model finding and following the skill each run — not guaranteed.
 
 The **submodule** approach keeps Option A's auto-load and short trigger while preserving a single source of truth: the skill repo stays canonical, and this repo pins a specific commit of it that's bumped deliberately (see Maintenance).
 
@@ -43,7 +43,7 @@ dogi/merge-prepping/
 ├── .claude-plugin/marketplace.json
 └── plugins/merge-prepping/
     ├── .claude-plugin/plugin.json
-    └── skills/title/
+    └── skills/prepping/
         ├── SKILL.md          → symlink → ../../../../SKILL.md
         └── references/
             └── title-corpus.md → symlink → ../../../../../references/title-corpus.md
@@ -54,21 +54,21 @@ Commands (run inside the `dogi/merge-prepping` checkout):
 ```bash
 # move the skill files to the repo root
 mkdir references
-git mv plugins/merge-prepping/skills/title/SKILL.md SKILL.md
-git mv plugins/merge-prepping/skills/title/references/title-corpus.md references/title-corpus.md
+git mv plugins/merge-prepping/skills/prepping/SKILL.md SKILL.md
+git mv plugins/merge-prepping/skills/prepping/references/title-corpus.md references/title-corpus.md
 
 # recreate the plugin paths as symlinks pointing back up
-ln -s ../../../../SKILL.md plugins/merge-prepping/skills/title/SKILL.md
-mkdir -p plugins/merge-prepping/skills/title/references
-ln -s ../../../../../references/title-corpus.md plugins/merge-prepping/skills/title/references/title-corpus.md
+ln -s ../../../../SKILL.md plugins/merge-prepping/skills/prepping/SKILL.md
+mkdir -p plugins/merge-prepping/skills/prepping/references
+ln -s ../../../../../references/title-corpus.md plugins/merge-prepping/skills/prepping/references/title-corpus.md
 
 git add -A && git commit -m "restructure: canonical SKILL.md at root, plugin path symlinked"
 git push
 ```
 
-Symlink depth check: the `SKILL.md` link lives in `plugins/merge-prepping/skills/title/`, four directories below the root, so its target climbs four levels (`../../../../SKILL.md`); the corpus link lives one directory deeper (`…/title/references/`), so it climbs five (`../../../../../references/…`). Verify with `ls -L` after creating them (see Troubleshooting).
+Symlink depth check: the `SKILL.md` link lives in `plugins/merge-prepping/skills/prepping/`, four directories below the root, so its target climbs four levels (`../../../../SKILL.md`); the corpus link lives one directory deeper (`…/prepping/references/`), so it climbs five (`../../../../../references/…`). Verify with `ls -L` after creating them (see Troubleshooting).
 
-Repeat the same pattern for `dogi/kotlin-importing`, adjusting for its actual layout: the skill lives at `plugins/kotlin-importing/skills/sort/` and ships a script (`kotlin-importing.py`) instead of a `references/` directory — move both `SKILL.md` and the script to the repo root and symlink both back from the plugin path (same four-level climb: `../../../../SKILL.md`, `../../../../kotlin-importing.py`).
+Repeat the same pattern for `dogi/kotlin-importing`, adjusting for its actual layout: the skill lives at `plugins/kotlin-importing/skills/importing/` and ships a script (`kotlin-importing.py`) instead of a `references/` directory — move both `SKILL.md` and the script to the repo root and symlink both back from the plugin path (same four-level climb: `../../../../SKILL.md`, `../../../../kotlin-importing.py`).
 
 ## Step 2 — add submodules to myPlanet
 
@@ -150,7 +150,7 @@ Without this file the short trigger still fails on fresh sessions even though ev
 
 | System | Reads | Loads skill from | Trigger |
 |---|---|---|---|
-| Claude Code | `.claude/settings.json` | GitHub fetch + plugin symlinks | `/merge-prepping:title` |
+| Claude Code | `.claude/settings.json` | GitHub fetch + plugin symlinks | `/merge-prepping:prepping` |
 | OpenHands | `.agents/skills/<name>/SKILL.md` + `AGENTS.md` | submodule, initialized by `.openhands/setup.sh` before discovery | `@openhands prep this PR` (skill description handles trigger phrases) |
 | Copilot (coding agent) | `.github/copilot-instructions.md` + `AGENTS.md` | submodule, after `git submodule update --init` | `@copilot <ask>` |
 
@@ -205,7 +205,7 @@ git submodule status
 
 If the path is nested (e.g. `.agents/skills/merge-prepping/plugins/.../SKILL.md`), Step 1 wasn't applied — the root restructure is required.
 
-**File exists but the skill is still "unknown"** — suspect the `name:` field in the `SKILL.md` frontmatter, not the path. OpenHands' discovery rejects names it considers too generic: field-tested on 2026-08-09, `name: sort` loaded while `name: title` was refused (`Unknown skill 'title'`) with byte-identical frontmatter structure. Use a specific name (e.g. `merge-prepping`) and keep the trigger phrases in `description`.
+**File exists but the skill is still "unknown"** — suspect the `name:` field in the `SKILL.md` frontmatter, not the path. OpenHands' discovery rejects names it considers too generic: field-tested on 2026-08-09, `name: sort` loaded while `name: title` was refused (the repos' original names) (`Unknown skill 'title'`) with byte-identical frontmatter structure. Both skills therefore use specific names (`prepping`, `importing`) — keep the trigger phrases in `description`.
 
 **No skills load on a fresh session** — check network: `.openhands/setup.sh` fetches the submodules from GitHub at workspace start. The script is deliberately non-fatal on failure (see Step 6), so an offline start leaves previously-initialized submodules working; run `git submodule update --init --recursive` manually once connectivity is back.
 
@@ -213,8 +213,8 @@ If the path is nested (e.g. `.agents/skills/merge-prepping/plugins/.../SKILL.md`
 
 ```bash
 git clone https://github.com/dogi/merge-prepping.git /tmp/merge-prepping
-ls -L /tmp/merge-prepping/plugins/merge-prepping/skills/title/SKILL.md
-cat /tmp/merge-prepping/plugins/merge-prepping/skills/title/SKILL.md
+ls -L /tmp/merge-prepping/plugins/merge-prepping/skills/prepping/SKILL.md
+cat /tmp/merge-prepping/plugins/merge-prepping/skills/prepping/SKILL.md
 ```
 
 `-L` follows the symlink; `cat` should print the root `SKILL.md` content.
