@@ -1,0 +1,9 @@
+<resources>
+    <dimen name="image_size_home_card">20dp</dimen>
+    <dimen name="dashboard_card_title">75dp</dimen>
+    <dimen name="home_card_badge_size">20dp</dimen>
+    <dimen name="home_card_badge_text_size">11sp</dimen>
+    <dimen name="home_card_padding">4dp</dimen>
+    <dimen name="home_card_title_text_size">11sp</dimen>
+    <dimen name="drawer_header_height">120dp</dimen>
+</resources>
