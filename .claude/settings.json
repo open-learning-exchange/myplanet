@@ -5,9 +5,16 @@
         "source": "github",
         "repo": "dogi/kotlin-importing"
       }
+    },
+    "merge-prepping": {
+      "source": {
+        "source": "github",
+        "repo": "dogi/merge-prepping"
+      }
     }
   },
   "enabledPlugins": {
-    "kotlin-importing@dogi": true
+    "kotlin-importing@dogi": true,
+    "merge-prepping@merge-prepping": true
   }
 }
