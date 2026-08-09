@@ -154,7 +154,7 @@ Without this file the short trigger still fails on fresh sessions even though ev
 | System | Reads | Loads skill from | Trigger |
 |---|---|---|---|
 | Claude Code | `.claude/settings.json` | GitHub fetch + plugin symlinks | `/merge-prepping:prepping` |
-| OpenHands | `.agents/skills/<name>/SKILL.md` + `AGENTS.md` | submodule, initialized by `.openhands/setup.sh` before discovery | `@openhands prep this PR` (skill description handles trigger phrases) |
+| OpenHands | `.agents/skills/<name>/SKILL.md` + `AGENTS.md` | submodule, initialized by `.openhands/setup.sh` before discovery | `@openhands prepping` (bare skill name — production-proven on PR #15499) or any trigger phrase from the description (`prep this PR`, `fix the title`) |
 | Copilot (coding agent) | `.github/copilot-instructions.md` + `AGENTS.md` | submodule, after `git submodule update --init` | `@copilot <ask>` |
 
 ## CI and default-checkout implications
