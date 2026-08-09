@@ -5,7 +5,7 @@ Goal: maintain `merge-prepping` (and `kotlin-importing`) **once** in their own r
 ## Rollout status
 
 - [x] **Step 1** — `dogi/merge-prepping` and `dogi/kotlin-importing` restructured with root `SKILL.md` (plugin paths symlinked back), skills renamed to discovery-safe names (`prepping`, `importing`)
-- [x] **Step 2** — submodules added at `.agents/skills/` (pinned at `merge-prepping@24744f8`, `kotlin-importing@a4b4ca2`)
+- [x] **Step 2** — submodules added at `.agents/skills/` (pinned at `merge-prepping@6289d32`, `kotlin-importing@0078fe4`)
 - [x] **Step 3** — `AGENTS.md` written at the repo root
 - [x] **Step 4** — `.claude/settings.json` already correct, no change needed
 - [x] **Step 5** — `.github/copilot-instructions.md` points Copilot at the skills and the submodule init
