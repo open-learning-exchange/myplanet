@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - '**'
-    workflow_dispatch:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -24,7 +24,7 @@ jobs:
           fetch-depth: 1
 
       - name: setup gradle
-        uses: gradle/actions/setup-gradle@v6
+        uses: gradle/actions/setup-gradle@v6.3.0
         with:
           gradle-version: wrapper
 
@@ -38,3 +38,26 @@ jobs:
         run: |
           FLAVOR=${{ matrix.build }}
           ./gradlew test${FLAVOR^}DebugUnitTest --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
+
+      - name: summarise slowest tests
+        if: always()
+        shell: bash
+        run: |
+          FLAVOR=${{ matrix.build }}
+          RESULTS="app/build/test-results/test${FLAVOR^}DebugUnitTest"
+          if [ ! -d "$RESULTS" ]; then
+            echo "No test results found in $RESULTS" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          # tee so the breakdown is in the job log too, not only the run summary page
+          python3 .github/scripts/test_timing_summary.py "$RESULTS" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-${{ matrix.build }}
+          path: |
+            app/build/reports/tests/
+            app/build/test-results/
+          retention-days: 7

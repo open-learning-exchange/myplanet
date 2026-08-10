@@ -9,20 +9,19 @@ import org.ole.planet.myplanet.model.MyLife
 
 @Dao
 interface MyLifeDao {
-    // `IS` (not `=`) so a null userId matches null rows, mirroring Realm's equalTo(null) semantics.
-    @Query("SELECT * FROM my_life WHERE userId IS :userId ORDER BY weight")
+    @Query("SELECT * FROM my_life WHERE (:userId IS NULL OR userId IS NULL OR userId = :userId) ORDER BY weight")
     suspend fun getByUserId(userId: String?): List<MyLife>
 
-    @Query("SELECT * FROM my_life WHERE userId IS :userId AND isVisible = 1 ORDER BY weight")
+    @Query("SELECT * FROM my_life WHERE (:userId IS NULL OR userId IS NULL OR userId = :userId) AND isVisible = 1 ORDER BY weight")
     suspend fun getVisibleByUserId(userId: String?): List<MyLife>
 
-    @Query("SELECT COUNT(*) FROM my_life WHERE userId IS :userId")
+    @Query("SELECT COUNT(*) FROM my_life WHERE (:userId IS NULL OR userId IS NULL OR userId = :userId)")
     suspend fun countByUserId(userId: String?): Int
 
     @Query("SELECT * FROM my_life WHERE _id IN (:ids)")
     suspend fun getByIds(ids: List<String>): List<MyLife>
 
-    @Query("UPDATE my_life SET isVisible = :isVisible WHERE _id = :id")
+    @Query("UPDATE my_life SET isVisible = :isVisible WHERE _id = :id OR imageId = :id OR title = :id")
     suspend fun updateVisibility(id: String, isVisible: Boolean)
 
     @Update
