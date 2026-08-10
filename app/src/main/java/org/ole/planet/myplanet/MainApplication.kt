@@ -140,6 +140,28 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             }
         }
 
+        private fun buildApkLog(
+            spm: SharedPrefManager,
+            modelId: String?,
+            time: String,
+            type: String,
+            error: String
+        ): ApkLog {
+            return ApkLog().apply {
+                id = "${UUID.randomUUID()}"
+                parentCode = spm.getParentCode()
+                createdOn = spm.getPlanetCode()
+                modelId?.let { userId = it }
+                this.time = time
+                page = ""
+                version = getVersionName(context)
+                this.type = type
+                if (error.isNotEmpty()) {
+                    this.error = error
+                }
+            }
+        }
+
         // A report for a failure that may kill the process (crash/ANR) must be persisted
         // to a plain file before this runs: the Room write below can still be lost
         // if the process dies before the coroutine persists the row.
@@ -153,19 +175,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             val apkLogDao = entryPoint.apkLogDao()
             return try {
                 val model = userSessionManager.getUserModel()
-                val log = ApkLog().apply {
-                    id = "${UUID.randomUUID()}"
-                    parentCode = spm.getParentCode()
-                    createdOn = spm.getPlanetCode()
-                    model?.let { userId = it.id }
-                    this.time = time
-                    page = ""
-                    version = getVersionName(context)
-                    this.type = type
-                    if (error.isNotEmpty()) {
-                        this.error = error
-                    }
-                }
+                val log = buildApkLog(spm, model?.id, time, type, error)
                 apkLogDao.insert(log)
                 true
             } catch (e: Exception) {
