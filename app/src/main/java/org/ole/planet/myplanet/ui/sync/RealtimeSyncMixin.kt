@@ -1,14 +1,14 @@
 package org.ole.planet.myplanet.ui.sync
 
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.FlowPreview
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.callback.OnDiffRefreshListener
+import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -21,7 +21,12 @@ interface RealtimeSyncMixin {
 }
 
 class RealtimeSyncHelper(private val fragment: Fragment, private val mixin: RealtimeSyncMixin) {
-    private val syncManagerInstance = RealtimeSyncManager.getInstance()
+    private val syncManagerInstance: RealtimeSyncManager by lazy {
+        EntryPointAccessors.fromApplication(
+            fragment.requireContext().applicationContext,
+            CoreDependenciesEntryPoint::class.java
+        ).realtimeSyncManager()
+    }
 
     @OptIn(FlowPreview::class)
     fun setupRealtimeSync() {
@@ -43,11 +48,9 @@ class RealtimeSyncHelper(private val fragment: Fragment, private val mixin: Real
     }
 
     private fun refreshRecyclerView() {
-        fragment.viewLifecycleOwner.lifecycleScope.launch {
-            val adapter = mixin.getSyncRecyclerView()?.adapter ?: return@launch
-            if (adapter is OnDiffRefreshListener) {
-                adapter.refreshWithDiff()
-            }
+        val adapter = mixin.getSyncRecyclerView()?.adapter ?: return
+        if (adapter is OnDiffRefreshListener) {
+            adapter.refreshWithDiff()
         }
     }
 

@@ -3,7 +3,8 @@ package org.ole.planet.myplanet.utils
 import org.ole.planet.myplanet.model.ResourceListModel
 
 object ResourceSearchUtils {
-    fun <T> searchList(list: List<T>, query: String, titleSelector: (T) -> String?): List<T> {
+    // Requires normalizedTitleSelector to return a pre-normalized (and lowercased) string
+    fun <T> searchList(list: List<T>, query: String, normalizedTitleSelector: (T) -> String?): List<T> {
         if (query.isEmpty()) return list
 
         val queryParts = query.split(" ").filterNot { it.isEmpty() }
@@ -14,10 +15,10 @@ object ResourceSearchUtils {
         val containsQuery = mutableListOf<T>()
 
         for (item in list) {
-            val title = titleSelector(item)?.let { Utilities.normalizeText(it) } ?: continue
-            if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+            val title = normalizedTitleSelector(item) ?: continue
+            if (title.startsWith(normalizedQuery)) {
                 startsWithQuery.add(item)
-            } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
+            } else if (normalizedQueryParts.all { title.contains(it) }) {
                 containsQuery.add(item)
             }
         }
@@ -25,6 +26,6 @@ object ResourceSearchUtils {
     }
 
     fun searchLocalModels(models: List<ResourceListModel>, query: String): List<ResourceListModel> {
-        return searchList(models, query) { it.item.title }
+        return searchList(models, query) { it.library.titleNormal ?: Utilities.normalizeText(it.item.title ?: "") }
     }
 }
