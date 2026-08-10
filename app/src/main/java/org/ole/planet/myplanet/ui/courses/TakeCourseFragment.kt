@@ -79,6 +79,12 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
         }
 
+        parentFragmentManager.setFragmentResultListener(RatingsFragment.REQUEST_KEY, viewLifecycleOwner) { _, _ ->
+            if (isAdded) {
+                FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
+            }
+        }
+
         collectLatestWhenStarted(viewModel.uiState) { state ->
             when (state) {
                 is TakeCourseUiState.Loading -> {
@@ -142,7 +148,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             binding.previousStep.visibility = View.GONE
         }
         setCourseData()
-        checkSurveyCompletion()
     }
 
     override fun onResume() {
@@ -365,12 +370,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         val title = currentCourse?.courseTitle ?: ""
         if (!cId.isNullOrEmpty() && isAdded) {
             val ratingDialog = RatingsFragment.newInstance("course", cId, title)
-            ratingDialog.setOnDismissListener {
-                if (isAdded) {
-                    FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
-                }
-            }
-            ratingDialog.show(parentFragmentManager, "CourseRatingDialog")
+            ratingDialog.show(parentFragmentManager, RatingsFragment.TAG)
         } else if (isAdded) {
             FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
         }
@@ -417,23 +417,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             }.onFailure { e ->
                 e.printStackTrace()
                 Utilities.toast(activity, "Failed to update course: ${e.message}")
-            }
-        }
-    }
-
-    private fun checkSurveyCompletion() = viewLifecycleOwner.lifecycleScope.launch {
-        val hasUnfinishedSurvey = courseId?.let {
-            coursesRepository.hasUnfinishedSurveys(it, userModel?.id)
-        } ?: false
-
-        if (hasUnfinishedSurvey && courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
-            binding.finishStep.setOnClickListener {
-                Toast.makeText(context, getString(R.string.please_complete_survey), Toast.LENGTH_SHORT).show()
-            }
-        } else {
-            binding.finishStep.isEnabled = true
-            binding.finishStep.setOnClickListener {
-                showCourseRatingDialogAndFinish()
             }
         }
     }
