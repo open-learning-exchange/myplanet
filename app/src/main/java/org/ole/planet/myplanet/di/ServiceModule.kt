@@ -67,63 +67,6 @@ object ServiceModule {
 
     @Provides
     @Singleton
-    fun provideSyncManager(
-        @ApplicationContext context: Context,
-        sharedPrefManager: SharedPrefManager,
-        apiInterface: ApiInterface,
-        transactionSyncManager: TransactionSyncManager,
-        resourcesRepository: ResourcesRepository,
-        loginSyncManager: LoginSyncManager,
-        @ApplicationScope scope: CoroutineScope,
-        activitiesRepository: ActivitiesRepository,
-        dispatcherProvider: DispatcherProvider,
-        timeProvider: TimeProvider,
-        teamsRepository: TeamsRepository,
-        teamsSyncRepository: TeamsSyncRepository,
-        coursesRepository: CoursesRepository,
-        eventsRepository: EventsRepository,
-        userSyncRepository: UserSyncRepository
-    ): SyncManager {
-        return SyncManager(context, sharedPrefManager, apiInterface, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository, dispatcherProvider, timeProvider, teamsRepository, teamsSyncRepository, coursesRepository, eventsRepository, userSyncRepository)
-    }
-
-    @Provides
-    @Singleton
-    fun provideUploadManager(
-        @ApplicationContext context: Context,
-        submissionsRepository: SubmissionsRepository,
-        sharedPrefManager: SharedPrefManager,
-        gson: Gson,
-        uploadCoordinator: UploadCoordinator,
-        uploadRepository: UploadRepository,
-        retryQueue: RetryQueue,
-        personalsRepository: PersonalsRepository,
-        userRepository: UserRepository,
-        chatRepository: ChatRepository,
-        voicesRepository: VoicesRepository,
-        uploadConfigs: UploadConfigs,
-        resourcesRepository: ResourcesRepository,
-        teamsRepository: Lazy<TeamsRepository>,
-        teamsSyncRepository: Lazy<TeamsSyncRepository>,
-        activitiesRepository: ActivitiesRepository,
-        apiInterface: ApiInterface,
-        @ApplicationScope scope: CoroutineScope,
-        dispatcherProvider: DispatcherProvider,
-        photoUploader: PhotoUploader,
-        achievementUploader: AchievementUploader,
-        timeProvider: TimeProvider
-    ): UploadManager {
-        return UploadManager(context, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, uploadRepository, retryQueue, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, resourcesRepository, teamsRepository, teamsSyncRepository, apiInterface, activitiesRepository, dispatcherProvider, scope, photoUploader, achievementUploader, timeProvider)
-    }
-
-    @Provides
-    @Singleton
-    fun provideRealtimeSyncManager(): RealtimeSyncManager {
-        return RealtimeSyncManager.getInstance()
-    }
-
-    @Provides
-    @Singleton
     fun provideUploadToShelfService(
         @ApplicationContext context: Context,
         @AppPreferences preferences: SharedPreferences,
