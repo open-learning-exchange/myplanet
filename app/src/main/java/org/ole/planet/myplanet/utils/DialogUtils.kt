@@ -74,18 +74,24 @@ object DialogUtils {
     private fun showDialog(context: Context) {
         if (MainApplication.syncFailedCount > 3) {
             val pd = AlertDialog.Builder(context, R.style.AlertDialogTheme)
-            var message = ""
-            if (NetworkUtils.isBluetoothEnabled()) message += "Bluetooth"
-            if (NetworkUtils.isWifiEnabled()) {
-                if (message.isNotEmpty()) message += " and "
-                    message += "Wi-Fi"
+            val isBluetoothEnabled = NetworkUtils.isBluetoothEnabled()
+            val isWifiEnabled = NetworkUtils.isWifiEnabled()
+
+            val message = buildString {
+                if (isBluetoothEnabled) append("Bluetooth")
+                if (isWifiEnabled) {
+                    if (isBluetoothEnabled) append(" and ")
+                    append("Wi-Fi")
+                }
             }
-            if (message.isNotEmpty()) {
-            message += context.getString(R.string.is_on_please_turn_of_to_save_battery)
+
+            val suffix = context.getString(R.string.is_on_please_turn_of_to_save_battery)
+            val finalMessage = if (message.isNotEmpty()) {
+                "$message$suffix"
             } else {
-            message = context.getString(R.string.is_on_please_turn_of_to_save_battery)
+                suffix
             }
-            pd.setMessage(message)
+            pd.setMessage(finalMessage)
             pd.setPositiveButton(context.getString(R.string.go_to_settings)) { _, _ ->
                 MainApplication.syncFailedCount = 0
                 val intent = Intent(Settings.ACTION_WIFI_SETTINGS)
