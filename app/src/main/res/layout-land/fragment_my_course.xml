@@ -36,14 +36,14 @@
                     android:layout_height="wrap_content"
                     android:minHeight="40dp"
                     android:layout_gravity="center_vertical"
-                    android:layout_margin="@dimen/_10dp"
+                    android:layout_marginStart="@dimen/padding_small"
+                    android:layout_marginEnd="@dimen/padding_small"
                     android:gravity="center_vertical"
-                    android:padding="@dimen/padding_normal"
+                    android:padding="@dimen/padding_small"
                     android:text="@string/txt_myCourses"
                     android:textColor="?attr/colorOnPrimary"
                     android:textSize="@dimen/text_size_large"
-                    android:textStyle="bold"
-                    android:minWidth="150dp" />
+                    android:textStyle="bold" />
 
                 <CheckBox
                     android:id="@+id/selectAllCourse"
@@ -54,7 +54,7 @@
                     android:layout_marginEnd="@dimen/padding_small"
                     android:buttonTint="?attr/colorOnPrimary"
                     android:checked="false"
-                    android:padding="8dp"
+                    android:padding="@dimen/padding_small"
                     android:text="@string/select_all"
                     android:textColor="?attr/colorOnPrimary"
                     android:textSize="@dimen/text_size_mid" />
@@ -93,6 +93,7 @@
                     android:text="@string/join_selected"
                     android:textColor="@color/daynight_textColor"
                     android:textSize="@dimen/text_size_mid"
+                    android:visibility="gone"
                     app:drawableLeftCompat="@drawable/ic_add_library"
                     app:drawableTint="@color/daynight_textColor" />
 
