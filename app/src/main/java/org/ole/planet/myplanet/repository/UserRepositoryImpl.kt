@@ -174,14 +174,7 @@ class UserRepositoryImpl @Inject constructor(
             .toList()
     }
 
-    override suspend fun searchUsers(query: String, sortField: String, descending: Boolean): List<UserEntity> {
-        val users = if (query.isBlank()) {
-            userDao.getAll()
-        } else {
-            userDao.search(query)
-        }.map { it }
-        return sortUsers(users, sortField, descending)
-    }
+
 
     override suspend fun isUserExists(name: String?): Boolean {
         if (name.isNullOrBlank()) return false
@@ -875,45 +868,7 @@ class UserRepositoryImpl @Inject constructor(
         return getUserModel()?.id ?: ""
     }
 
-    override suspend fun getHealthRecordsAndAssociatedUsers(
-        userId: String,
-        currentUser: UserEntity
-    ): HealthRecord? {
-        val mh = healthRepository.getByIdOrUserId(userId) ?: return null
-        val json = AndroidDecrypter.decrypt(mh.data, currentUser.key, currentUser.iv)
-        val mm = if (TextUtils.isEmpty(json)) {
-            null
-        } else {
-            try {
-                JsonUtils.gson.fromJson(json, MyHealth::class.java)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
-        } ?: return null
 
-        val list = healthRepository.getByProfileId(mm.userKey ?: "")
-        if (list.isEmpty()) {
-            return HealthRecord(mh, mm, emptyList(), emptyMap())
-        }
-
-        val userIds = list.mapNotNull {
-            it.getEncryptedDataAsJson(currentUser).let { jsonData ->
-                jsonData.get("createdBy")?.asString
-            }
-        }.distinct()
-
-        val userMap = if (userIds.isEmpty()) {
-            emptyMap()
-        } else {
-            val userIdSet = userIds.toSet()
-            userDao.getAll()
-                .filter { it.id in userIdSet }
-                .map { it }
-                .associateBy { it.id ?: "" }
-        }
-        return HealthRecord(mh, mm, list, userMap)
-    }
 
     override suspend fun getHealthProfile(userId: String): MyHealth? {
         val userModel = getUserByAnyId(userId)

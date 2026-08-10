@@ -36,11 +36,8 @@ class HealthViewModel @Inject constructor(
     private val _patientList = MutableStateFlow<List<UserEntity>>(emptyList())
     val patientList: StateFlow<List<UserEntity>> = _patientList.asStateFlow()
 
-    private val _selectedPatient = MutableStateFlow<UserEntity?>(null)
-    val selectedPatient: StateFlow<UserEntity?> = _selectedPatient.asStateFlow()
-
-    private val _healthRecord = MutableStateFlow<HealthRecord?>(null)
-    val healthRecord: StateFlow<HealthRecord?> = _healthRecord.asStateFlow()
+    private val _patientDetailState = MutableStateFlow(PatientDetailState(null, null))
+    val patientDetailState: StateFlow<PatientDetailState> = _patientDetailState.asStateFlow()
 
     private val _isListLoading = MutableStateFlow(false)
     val isListLoading: StateFlow<Boolean> = _isListLoading.asStateFlow()
@@ -63,8 +60,13 @@ class HealthViewModel @Inject constructor(
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
             delay(300)
-            _isListLoading.value = true
-            _patientList.value = healthRepository.searchPatients(query, sortBy, descending)
+            val loadingJob = launch {
+                delay(100)
+                _isListLoading.value = true
+            }
+            val result = healthRepository.searchPatients(query, sortBy, descending)
+            loadingJob.cancel()
+            _patientList.value = result
             _isListLoading.value = false
         }
     }
@@ -85,11 +87,11 @@ class HealthViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             val user = healthRepository.getPatientById(userId)
-            _selectedPatient.value = user
             if (user != null) {
-                _healthRecord.value = healthRepository.getPatientHealthRecords(userId, user)
+                val record = healthRepository.getPatientHealthRecords(userId, user)
+                _patientDetailState.value = PatientDetailState(user, record)
             } else {
-                _healthRecord.value = null
+                _patientDetailState.value = PatientDetailState(null, null)
             }
             _isLoading.value = false
         }
@@ -122,6 +124,11 @@ class HealthViewModel @Inject constructor(
         }
     }
 }
+
+data class PatientDetailState(
+    val user: UserEntity?,
+    val healthRecord: HealthRecord?
+)
 
 data class HealthData(
     val myHealth: MyHealth?,

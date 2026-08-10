@@ -77,11 +77,6 @@ interface UserRepository {
 
     suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String>
 
-    suspend fun searchUsers(query: String, sortField: String, descending: Boolean): List<UserEntity>
-    suspend fun getHealthRecordsAndAssociatedUsers(
-        userId: String,
-        currentUser: UserEntity
-    ): HealthRecord?
     suspend fun getUserModel(): UserEntity?
     suspend fun getUserProfile(): UserEntity?
     suspend fun getUserImageUrl(): String?

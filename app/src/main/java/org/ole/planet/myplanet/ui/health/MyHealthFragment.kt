@@ -34,11 +34,8 @@ import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
 import org.ole.planet.myplanet.model.UserEntity
 import androidx.fragment.app.viewModels
-import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -48,9 +45,6 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 class MyHealthFragment : Fragment() {
 
     private val viewModel: HealthViewModel by viewModels()
-
-    @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
 
 
     @Inject
@@ -68,7 +62,6 @@ class MyHealthFragment : Fragment() {
     var dialog: AlertDialog? = null
 
     private var textWatcher: TextWatcher? = null
-    private var searchJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -119,18 +112,7 @@ class MyHealthFragment : Fragment() {
             loggedInUser = user
             setupButtons()
         }
-        collectWhenStarted(viewModel.selectedPatient) { user ->
-            if (user != null) {
-                userModel = user
-                binding.lblHealthName.text = getDisplayName(user)
-                userId = if (user._id.isNullOrEmpty()) user.id else user._id
-                setupButtons()
-            } else {
-                userModel = null
-                binding.lblHealthName.text = ""
-                userId = null
-            }
-        }
+
 
         collectWhenStarted(viewModel.patientList) { users ->
             if (::adapter.isInitialized) {
@@ -139,8 +121,20 @@ class MyHealthFragment : Fragment() {
             }
         }
 
-        collectWhenStarted(viewModel.healthRecord) { healthRecord ->
-            val currentUser = userModel
+        collectWhenStarted(viewModel.patientDetailState) { state ->
+            val currentUser = state.user
+            val healthRecord = state.healthRecord
+
+            if (currentUser != null) {
+                userModel = currentUser
+                binding.lblHealthName.text = getDisplayName(currentUser)
+                userId = if (currentUser._id.isNullOrEmpty()) currentUser.id else currentUser._id
+                setupButtons()
+            } else {
+                userModel = null
+                binding.lblHealthName.text = ""
+                userId = null
+            }
             val uid = userId
             if (currentUser == null || uid.isNullOrEmpty()) {
                 binding.layoutUserDetail.visibility = View.GONE

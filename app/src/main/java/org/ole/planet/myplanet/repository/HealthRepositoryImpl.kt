@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.HealthExamination.Companion.serialize
 import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -173,10 +174,10 @@ class HealthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getPatientHealthRecords(userId: String, currentUser: UserEntity): org.ole.planet.myplanet.model.HealthRecord? {
+    override suspend fun getPatientHealthRecords(userId: String, currentUser: UserEntity): HealthRecord? {
         val mh = getByIdOrUserId(userId) ?: return null
         val json = AndroidDecrypter.decrypt(mh.data, currentUser.key, currentUser.iv)
-        val mm = if (android.text.TextUtils.isEmpty(json)) {
+        val mm = if (json.isNullOrEmpty()) {
             null
         } else {
             try {
@@ -189,7 +190,7 @@ class HealthRepositoryImpl @Inject constructor(
 
         val list = getByProfileId(mm.userKey ?: "")
         if (list.isEmpty()) {
-            return org.ole.planet.myplanet.model.HealthRecord(mh, mm, emptyList(), emptyMap())
+            return HealthRecord(mh, mm, emptyList(), emptyMap())
         }
 
         val userIds = list.mapNotNull {
@@ -204,9 +205,8 @@ class HealthRepositoryImpl @Inject constructor(
             val userIdSet = userIds.toSet()
             userDao.getAll()
                 .filter { it.id in userIdSet }
-                .map { it }
                 .associateBy { it.id ?: "" }
         }
-        return org.ole.planet.myplanet.model.HealthRecord(mh, mm, list, userMap)
+        return HealthRecord(mh, mm, list, userMap)
     }
 }

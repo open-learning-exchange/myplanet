@@ -3,15 +3,14 @@ package org.ole.planet.myplanet.ui.health
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.resetMain
+
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+
 import org.junit.Assert.assertEquals
-import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.UserEntity
@@ -24,19 +23,45 @@ class HealthViewModelTest {
     private lateinit var userRepository: UserRepository
     private lateinit var healthRepository: HealthRepository
     private lateinit var viewModel: HealthViewModel
-    private val testDispatcher = StandardTestDispatcher()
+    @get:org.junit.Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
-    @Before
+    @org.junit.Before
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
         userRepository = mockk()
         healthRepository = mockk()
         viewModel = HealthViewModel(userRepository, healthRepository)
     }
 
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
+    @Test
+    fun `selectPatient updates patientDetailState`() = runTest {
+        val user = UserEntity().apply { id = "1"; name = "Test Patient" }
+        val record = org.ole.planet.myplanet.model.HealthRecord(
+            mockk(), mockk(), emptyList(), emptyMap()
+        )
+        coEvery { healthRepository.getPatientById("1") } returns user
+        coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
+
+        viewModel.selectPatient("1")
+        advanceUntilIdle()
+
+        val state = viewModel.patientDetailState.first()
+        assertEquals(user, state.user)
+        assertEquals(record, state.healthRecord)
+        assertEquals(false, viewModel.isLoading.first())
+    }
+
+    @Test
+    fun `searchPatients updates patientList with debounce`() = runTest {
+        val query = "John"
+        val patients = listOf(UserEntity().apply { id = "2"; name = "John Doe" })
+        coEvery { healthRepository.searchPatients(query, "joinDate", true) } returns patients
+
+        viewModel.searchPatients(query)
+        advanceUntilIdle()
+
+        assertEquals(patients, viewModel.patientList.first())
+        assertEquals(false, viewModel.isListLoading.first())
     }
 
     @Test
@@ -45,7 +70,7 @@ class HealthViewModelTest {
         coEvery { healthRepository.getPatientsSortedBy("joinDate", true) } returns patients
 
         viewModel.loadPatients()
-        testDispatcher.scheduler.advanceUntilIdle()
+        advanceUntilIdle()
 
         assertEquals(patients, viewModel.patientList.first())
     }

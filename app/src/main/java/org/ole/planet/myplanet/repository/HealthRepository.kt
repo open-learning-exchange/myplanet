@@ -4,6 +4,7 @@ import com.google.gson.JsonArray
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.HealthRecord
 
 interface HealthRepository {
     suspend fun getHealthEntry(userId: String): Pair<UserEntity?, HealthExamination?>
@@ -23,5 +24,5 @@ interface HealthRepository {
     suspend fun getPatientById(id: String): UserEntity?
     suspend fun getPatientsSortedBy(fieldName: String, descending: Boolean): List<UserEntity>
     suspend fun searchPatients(query: String, sortField: String, descending: Boolean): List<UserEntity>
-    suspend fun getPatientHealthRecords(userId: String, currentUser: UserEntity): org.ole.planet.myplanet.model.HealthRecord?
+    suspend fun getPatientHealthRecords(userId: String, currentUser: UserEntity): HealthRecord?
 }
