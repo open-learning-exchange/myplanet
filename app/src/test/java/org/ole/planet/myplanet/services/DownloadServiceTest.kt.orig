@@ -41,7 +41,6 @@ class DownloadServiceTest {
     @Before
     fun setUp() {
         mockPreferences = mockk()
-        mockkStatic(ContextCompat::class)
     }
 
     @After
@@ -61,7 +60,6 @@ class DownloadServiceTest {
     }
 
     @Test
-    // Since getNextUrl sorts the URLs, we expect 'http://example.com/file1' to be picked first deterministically.
     fun `test getNextUrl returns first valid url deterministically`() {
         val urlSet = setOf("http://example.com/file2", "http://example.com/file1")
         every { mockPreferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet()) } returns urlSet
@@ -167,6 +165,7 @@ class DownloadServiceTest {
     @Config(sdk = [Build.VERSION_CODES.R])
     fun `test startService starts foreground service when API is less than S`() {
         val mContext = mockk<Context>(relaxed = true)
+        mockkStatic(ContextCompat::class)
         every { ContextCompat.startForegroundService(any(), any()) } returns mockk()
         ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", Build.VERSION_CODES.R)
 
@@ -179,6 +178,7 @@ class DownloadServiceTest {
     @Config(sdk = [Build.VERSION_CODES.S])
     fun `test startService starts foreground service for Activity context on Android S and above`() {
         val mockActivity: Activity = mockk(relaxed = true)
+        mockkStatic(ContextCompat::class)
         every { ContextCompat.startForegroundService(any(), any()) } returns mockk()
         ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", Build.VERSION_CODES.S)
 
@@ -195,6 +195,7 @@ class DownloadServiceTest {
         every { context.applicationContext } returns applicationContext
         every { context.getSystemService(Context.ACTIVITY_SERVICE) } returns mockActivityManager
         every { mockActivityManager.isBackgroundRestricted } returns false
+        mockkStatic(ContextCompat::class)
         every { ContextCompat.startForegroundService(any(), any()) } returns mockk()
         ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 
@@ -219,6 +220,7 @@ class DownloadServiceTest {
         every { context.getSystemService(Context.ACTIVITY_SERVICE) } returns mockActivityManager
         every { mockActivityManager.isBackgroundRestricted } returns true
 
+        mockkStatic(ContextCompat::class)
         every { ContextCompat.startForegroundService(any(), any()) } returns mockk()
 
         ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
@@ -249,6 +251,7 @@ class DownloadServiceTest {
         every { context.getSystemService(Context.ACTIVITY_SERVICE) } returns mockActivityManager
         every { mockActivityManager.isBackgroundRestricted } returns false
 
+        mockkStatic(ContextCompat::class)
         // Throw exception to trigger fallback
         every { ContextCompat.startForegroundService(any(), any()) } throws IllegalStateException("Foreground exception")
         every { context.startService(any()) } throws IllegalStateException("Service exception")
