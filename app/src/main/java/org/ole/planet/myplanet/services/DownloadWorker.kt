@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.di.DownloadPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.repository.DownloadRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
@@ -33,6 +34,7 @@ class DownloadWorker @AssistedInject constructor(
     @Assisted private val context: Context, @Assisted workerParams: WorkerParameters,
     private val downloadRepository: DownloadRepository, private val broadcastService: BroadcastService,
     private val dispatcherProvider: DispatcherProvider,
+    private val resourcesRepository: ResourcesRepository,
     @DownloadPreferences private val preferences: SharedPreferences
 ) : CoroutineWorker(context, workerParams) {
 
@@ -81,7 +83,11 @@ class DownloadWorker @AssistedInject constructor(
 
     private suspend fun downloadFile(url: String, index: Int, total: Int): Boolean {
         if (FileUtils.checkFileExist(context, url)) {
-            DownloadUtils.updateResourceOfflineStatus(url)
+            try {
+                resourcesRepository.markResourceOfflineByUrl(url)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
             return true
         }
         return try {
@@ -128,7 +134,11 @@ class DownloadWorker @AssistedInject constructor(
                 sink.flush()
             }
         }
-        DownloadUtils.updateResourceOfflineStatus(url)
+        try {
+            resourcesRepository.markResourceOfflineByUrl(url)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private suspend fun showProgressNotification(current: Int, total: Int, fileName: String, fileProgress: Int = -1) {

@@ -90,6 +90,8 @@ class SettingsActivity : AppCompatActivity() {
         @Inject
         lateinit var sharedPrefManager: SharedPrefManager
         @Inject
+        lateinit var themeManager: ThemeManager
+        @Inject
         lateinit var timeProvider: TimeProvider
         var user: UserEntity? = null
         private var libraryList: List<MyLibrary>? = null
@@ -202,7 +204,7 @@ class SettingsActivity : AppCompatActivity() {
 
             val darkMode = findPreference<Preference>("dark_mode")
             darkMode?.setOnPreferenceClickListener {
-                ThemeManager.showThemeDialog(requireActivity())
+                themeManager.showThemeDialog(requireContext())
                 true
             }
 
