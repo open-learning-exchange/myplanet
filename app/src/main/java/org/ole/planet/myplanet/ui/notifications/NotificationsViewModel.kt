@@ -155,6 +155,7 @@ class NotificationsViewModel @Inject constructor(
             }
         }
     }
+
     fun markAsRead(notificationId: String) {
         viewModelScope.launch {
             val markedIds = notificationsRepository.markNotificationsAsRead(setOf(notificationId))
@@ -179,6 +180,7 @@ class NotificationsViewModel @Inject constructor(
             }
         }
     }
+
     fun markAllAsRead(userId: String) {
         viewModelScope.launch {
             val markedIds = notificationsRepository.markAllUnreadAsRead(userId)
@@ -191,18 +193,26 @@ class NotificationsViewModel @Inject constructor(
                     }
                 }
                 _unreadCount.value = 0
+                _expandedGroups.value = emptySet()
+                _collapsedGroups.value = emptySet()
             }
         }
     }
+
     private fun List<Notification>.markAsRead(id: String): List<Notification> {
         return map { if (it.id == id && !it.isRead) it.copy(isRead = true) else it }
     }
+
     private fun List<Notification>.markAsRead(ids: Set<String>): List<Notification> {
         return map { if (it.id in ids && !it.isRead) it.copy(isRead = true) else it }
     }
 
     private fun isGroupDefaultExpanded(type: String, notifications: List<Notification>): Boolean {
-        return notifications.any { it.type == type && !it.isRead }
+        return notifications.any {
+            val t = it.type.lowercase()
+            val groupType = if (t in KNOWN_TYPES) t else "notification"
+            groupType == type && !it.isRead
+        }
     }
 
     private fun buildGroupedList(
@@ -228,7 +238,7 @@ class NotificationsViewModel @Inject constructor(
                 val isExpanded = when {
                     type in expandedGroups -> true
                     type in collapsedGroups -> false
-                    else -> isGroupDefaultExpanded(type, notifications)
+                    else -> unreadCount > 0
                 }
                 add(NotificationListItem.Header(type, typeLabelFor(type), unreadCount, isExpanded))
                 if (isExpanded) {
