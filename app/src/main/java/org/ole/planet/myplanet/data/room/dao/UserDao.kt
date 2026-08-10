@@ -19,4 +19,36 @@ interface UserDao {
     @Query("DELETE FROM users WHERE id IN (:ids)") suspend fun deleteByIds(ids: List<String>): Int
     @Upsert suspend fun upsert(item: UserEntity)
     @Upsert suspend fun upsertAll(items: List<UserEntity>)
+
+    @Query("SELECT * FROM users WHERE id IN (:userIds) OR _id IN (:userIds)")
+    suspend fun getUsersByAnyIds(userIds: List<String>): List<UserEntity>
+
+    @Query("SELECT * FROM users WHERE id IN (:userIds)")
+    suspend fun getUsersByIds(userIds: List<String>): List<UserEntity>
+
+    @Query("SELECT * FROM users WHERE (_id IS NOT NULL AND TRIM(_id) != '') AND id NOT LIKE 'guest%'")
+    suspend fun getSyncedUsers(): List<UserEntity>
+
+    @Query("SELECT * FROM users WHERE _id IS NOT NULL AND TRIM(_id) != ''")
+    suspend fun getUsersForHealthSync(): List<UserEntity>
+
+    @Query("SELECT * FROM users WHERE (_id IS NULL OR TRIM(_id) = '') OR isUpdated = 1 LIMIT :limit")
+    suspend fun getPendingSyncUsers(limit: Int): List<UserEntity>
+
+    @Query("SELECT * FROM users WHERE name = :name AND _id LIKE 'guest_%' LIMIT 1")
+    suspend fun getGuestUserByName(name: String): UserEntity?
+
+    @Query("SELECT * FROM users WHERE name IN (:names) AND _id LIKE 'guest_%'")
+    suspend fun getGuestUsersByNames(names: List<String>): List<UserEntity>
+
+    @Query("""
+        SELECT * FROM users
+        WHERE name IN (
+            SELECT name FROM users
+            GROUP BY name
+            HAVING COUNT(*) > 1
+        )
+    """)
+    suspend fun getDuplicateUsers(): List<UserEntity>
+
 }

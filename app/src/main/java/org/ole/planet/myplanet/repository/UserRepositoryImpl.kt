@@ -108,10 +108,12 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getUsersByIds(userIds: List<String>): List<UserEntity> {
         if (userIds.isEmpty()) return emptyList()
-        val userIdSet = userIds.toSet()
-        return userDao.getAll()
-            .filter { it.id in userIdSet || it._id in userIdSet }
-            .map { it }
+        val userIdList = userIds.distinct()
+        val result = mutableListOf<UserEntity>()
+        userIdList.chunked(500).forEach { chunk ->
+            result.addAll(userDao.getUsersByAnyIds(chunk))
+        }
+        return result
     }
 
     override suspend fun getUserByAnyId(id: String): UserEntity? {
@@ -127,9 +129,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getSyncedUsers(): List<UserEntity> {
-        return userDao.getAll()
-            .filter { !it._id.isNullOrBlank() && !it.id.startsWith("guest") }
-            .map { it }
+        return userDao.getSyncedUsers()
     }
 
     private fun mapToLightweightUser(managedUser: UserEntity): UserEntity {
@@ -141,11 +141,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getUsersForHealthSync(): List<UserEntity> {
-        return userDao.getAll()
-            .asSequence()
-            .filter { !it._id.isNullOrBlank() }
-            .map { mapToLightweightUser(it) }
-            .toList()
+        return userDao.getUsersForHealthSync().map { mapToLightweightUser(it) }
     }
 
     override suspend fun getSyncedUserByName(name: String): UserEntity? {
@@ -167,7 +163,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getAllUsers(): List<UserEntity> {
-        return userDao.getAll().map { it }
+        return userDao.getAll()
     }
 
     override suspend fun getUsersSortedBy(fieldName: String, descending: Boolean): List<UserEntity> {
@@ -175,12 +171,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getPendingSyncUsers(limit: Int): List<UserEntity> {
-        return userDao.getAll()
-            .asSequence()
-            .filter { it._id.isNullOrBlank() || it.isUpdated }
-            .map { it }
-            .take(limit)
-            .toList()
+        return userDao.getPendingSyncUsers(limit)
     }
 
     override suspend fun searchUsers(query: String, sortField: String, descending: Boolean): List<UserEntity> {
@@ -188,7 +179,7 @@ class UserRepositoryImpl @Inject constructor(
             userDao.getAll()
         } else {
             userDao.search(query)
-        }.map { it }
+        }
         return sortUsers(users, sortField, descending)
     }
 
@@ -327,9 +318,11 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun migrateGuestUser(id: String, userName: String, users: List<UserEntity>): UserEntity? {
-        val guestUser = users.firstOrNull {
-            it.name == userName && it._id?.startsWith("guest_") == true
+    private suspend fun migrateGuestUser(id: String, userName: String, users: List<UserEntity>?): UserEntity? {
+        val guestUser = if (users != null) {
+            users.firstOrNull { it.name == userName && it._id?.startsWith("guest_") == true }
+        } else {
+            userDao.getGuestUserByName(userName)
         } ?: return null
 
         userDao.deleteById(guestUser.id)
@@ -342,13 +335,16 @@ class UserRepositoryImpl @Inject constructor(
     private suspend fun buildUserFromJson(jsonDoc: JsonObject?, users: List<UserEntity>? = null): UserEntity? {
         if (jsonDoc == null) return null
         return try {
-            val availableUsers = users ?: userDao.getAll()
             val id = JsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: UUID.randomUUID().toString()
             val userName = JsonUtils.getString("name", jsonDoc)
-            val existingUser = availableUsers.firstOrNull { it.id == id || it._id == id }
+            val existingUser = if (users != null) {
+                users.firstOrNull { it.id == id || it._id == id }
+            } else {
+                getUserByAnyId(id)
+            }
             val user = existingUser
                 ?: if (id.startsWith("org.couchdb.user:") && userName.isNotEmpty()) {
-                    migrateGuestUser(id, userName, availableUsers)
+                    migrateGuestUser(id, userName, users)
                 } else {
                     null
                 }
@@ -916,10 +912,11 @@ class UserRepositoryImpl @Inject constructor(
             emptyMap()
         } else {
             val userIdSet = userIds.toSet()
-            userDao.getAll()
-                .filter { it.id in userIdSet }
-                .map { it }
-                .associateBy { it.id ?: "" }
+            val result = mutableListOf<UserEntity>()
+            userIdSet.chunked(500).forEach { chunk ->
+                result.addAll(userDao.getUsersByIds(chunk))
+            }
+            result.associateBy { it.id ?: "" }
         }
         return HealthRecord(mh, mm, list, userMap)
     }
@@ -1021,8 +1018,8 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun cleanupDuplicateUsers() {
-        val allUsers = userDao.getAll()
-        val usersByName = allUsers.groupBy { it.name }
+        val duplicates = userDao.getDuplicateUsers()
+        val usersByName = duplicates.groupBy { it.name }
 
         usersByName.forEach { (_, users) ->
             if (users.size > 1) {
@@ -1250,7 +1247,27 @@ class UserRepositoryImpl @Inject constructor(
             }
         }
 
-        val existingUsersList = userDao.getAll()
+        val idsToFetch = mutableSetOf<String>()
+        val namesToFetch = mutableSetOf<String>()
+        for (jsonDoc in documentList) {
+            val id = JsonUtils.getString("_id", jsonDoc)
+            if (id.isNotEmpty()) idsToFetch.add(id)
+            val userName = JsonUtils.getString("name", jsonDoc)
+            if (userName.isNotEmpty()) namesToFetch.add(userName)
+        }
+
+        val existingUsersList = mutableListOf<UserEntity>()
+        if (idsToFetch.isNotEmpty()) {
+            idsToFetch.chunked(500).forEach { chunk ->
+                existingUsersList.addAll(userDao.getUsersByAnyIds(chunk))
+            }
+        }
+        if (namesToFetch.isNotEmpty()) {
+            namesToFetch.chunked(500).forEach { chunk ->
+                existingUsersList.addAll(userDao.getGuestUsersByNames(chunk))
+            }
+        }
+
         val usersById = mutableMapOf<String, UserEntity>()
         val guestUsersByName = mutableMapOf<String, UserEntity>()
 
