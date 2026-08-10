@@ -48,7 +48,10 @@ class LifeFragment : BaseRecyclerFragment<MyLife?>(), OnStartDragListener {
     override suspend fun getAdapter(): ListAdapter<*, *> {
         lifeAdapter = LifeAdapter(requireContext(), this,
             visibilityCallback = { myLife, isVisible ->
-                myLife._id?.let { id ->
+                val id = myLife._id.takeIf { it.isNotBlank() }
+                    ?: myLife.imageId?.takeIf { it.isNotBlank() }
+                    ?: myLife.title
+                if (!id.isNullOrEmpty()) {
                     viewLifecycleOwner.lifecycleScope.launch {
                         withContext(dispatcherProvider.io) {
                             lifeRepository.updateVisibility(isVisible, id)
@@ -86,13 +89,13 @@ class LifeFragment : BaseRecyclerFragment<MyLife?>(), OnStartDragListener {
     }
 
     private suspend fun loadMyLifeList(): List<MyLife> {
-        val userId = userRepository.getUserModel()?.id
+        val userId = sharedPrefManager.getUserId().ifEmpty { userRepository.getUserModel()?.id }
         var myLifeList = lifeRepository.getMyLifeByUserId(userId)
         if (myLifeList.isEmpty()) {
             lifeRepository.seedMyLifeIfEmpty(userId, MyLife.defaultItems(requireContext(), userId))
             myLifeList = lifeRepository.getMyLifeByUserId(userId)
         }
-        return myLifeList
+        return myLifeList.distinctBy { it.imageId ?: it.title }
     }
 
     private fun refreshList() {
