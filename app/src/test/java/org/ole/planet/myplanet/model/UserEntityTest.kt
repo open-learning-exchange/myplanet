@@ -100,4 +100,26 @@ class UserEntityTest {
         user.userAdmin = false
         assertTrue(user.isManager())
     }
+
+    @Test
+    fun testIsManagerWithCompoundRole() {
+        val user = UserEntity()
+        user.rolesList = mutableListOf("project_manager")
+        user.userAdmin = false
+        assertTrue(user.isManager())
+    }
+
+    @Test
+    fun testIsLeaderWithLeaderRole() {
+        val user = UserEntity()
+        user.rolesList = mutableListOf("leader")
+        assertTrue(user.isLeader())
+    }
+
+    @Test
+    fun testIsLeaderWithCompoundRole() {
+        val user = UserEntity()
+        user.rolesList = mutableListOf("team_leader")
+        assertTrue(user.isLeader())
+    }
 }
