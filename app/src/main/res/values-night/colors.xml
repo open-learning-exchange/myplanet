@@ -53,4 +53,11 @@
 
     <color name="field_fill">#1A2330</color>
     <color name="md_blue_100">#1E3A5F</color>
+
+    <color name="dashboard_page_bg">@color/colorPrimary</color>
+    <color name="dashboard_ink_1">@color/textColorPrimary</color>
+    <color name="dashboard_ink_2">#B0B3B8</color>
+    <color name="dashboard_ink_3">#8A8D91</color>
+    <color name="dashboard_hairline">#4E4F50</color>
+    <color name="dashboard_sync_banner_bg">@color/field_fill</color>
 </resources>

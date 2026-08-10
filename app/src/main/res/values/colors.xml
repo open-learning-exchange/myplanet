@@ -56,4 +56,19 @@
     <color name="md_blue_100">#BBDEFB</color>
     <color name="md_blue_200">#90CAF9</color>
     <color name="pending_request_indicator">#9fa0a4</color>
+
+    <color name="dashboard_page_bg">#FAF7F2</color>
+    <color name="dashboard_ink_1">#1A1814</color>
+    <color name="dashboard_ink_2">#4A453E</color>
+    <color name="dashboard_ink_3">#807868</color>
+    <color name="dashboard_hairline">#E8E2D5</color>
+    <color name="dashboard_tile_library">#D32F2F</color>
+    <color name="dashboard_tile_courses">#F57C00</color>
+    <color name="dashboard_tile_teams">#388E3C</color>
+    <color name="dashboard_tile_life">#7B1FA2</color>
+    <color name="dashboard_badge_bg">#FFFFFF</color>
+    <color name="dashboard_badge_ink">#1A1814</color>
+    <color name="dashboard_avatar_ring">#0D47A1</color>
+    <color name="dashboard_accent_blue">#1976D2</color>
+    <color name="dashboard_sync_banner_bg">#E3F2FD</color>
 </resources>

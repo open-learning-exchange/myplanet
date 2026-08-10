@@ -778,6 +778,7 @@
     <string name="unable_to_clear_files">Lama xarigo faylasha</string>
     <string name="last_synced_never">waligeyn la isku midayn</string>
     <string name="last_synced_colon">"Kor u kac: "</string>
+    <string name="dashboard_sync_status">Isku-dari · %1$s</string>
 
     <string name="disclaimer">
     <![CDATA[

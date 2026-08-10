@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="dashboard_chip_width">150dp</dimen>
+    <dimen name="dashboard_rail_width">250dp</dimen>
+    <dimen name="dashboard_page_padding">16dp</dimen>
+</resources>

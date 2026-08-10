@@ -778,6 +778,7 @@
     <string name="unable_to_clear_files">फाइलहरू हटाउन सकिएन</string>
     <string name="last_synced_never">कहिले पनि समक्रमित भएन</string>
     <string name="last_synced_colon">"पिछ्लो सिंक: "</string>
+    <string name="dashboard_sync_status">सिंक · %1$s</string>
 
     <string name="disclaimer">
     <![CDATA[

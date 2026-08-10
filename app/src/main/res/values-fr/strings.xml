@@ -778,6 +778,7 @@
     <string name="unable_to_clear_files">Impossible de supprimer les fichiers</string>
     <string name="last_synced_never">jamais synchronisé</string>
     <string name="last_synced_colon">"Dernière synchronisation: "</string>
+    <string name="dashboard_sync_status">Synchronisation · %1$s</string>
 
     <string name="disclaimer">
     <![CDATA[

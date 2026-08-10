@@ -123,7 +123,7 @@
             android:theme="@style/AppTheme" />
         <activity
             android:name=".ui.dashboard.DashboardActivity"
-            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:configChanges="keyboardHidden"
             android:label="@string/title_activity_dashboard"
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/FullscreenTheme" />

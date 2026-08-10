@@ -10,42 +10,49 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:padding="@dimen/dashboard_page_padding">
+        android:orientation="horizontal">
 
         <include
             android:id="@+id/cardProfileBell"
             layout="@layout/card_profile_bell"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/dashboard_tile_gap" />
-        <include
-            android:id="@+id/homeCardLibrary"
-            layout="@layout/home_card_library"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_marginBottom="@dimen/dashboard_tile_gap"
-            android:layout_weight="1" />
-        <include
-            android:id="@+id/homeCardCourses"
-            layout="@layout/home_card_courses"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_marginBottom="@dimen/dashboard_tile_gap"
-            android:layout_weight="1" />
-        <include
-            android:id="@+id/homeCardTeams"
-            layout="@layout/home_card_teams"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_marginBottom="@dimen/dashboard_tile_gap"
-            android:layout_weight="1" />
-        <include
-            android:id="@+id/homeCardMyLife"
-            layout="@layout/home_card_mylife"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
+            android:layout_width="@dimen/dashboard_rail_width"
+            android:layout_height="match_parent" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:padding="@dimen/dashboard_page_padding">
+
+            <include
+                android:id="@+id/homeCardLibrary"
+                layout="@layout/home_card_library"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginBottom="@dimen/dashboard_tile_gap"
+                android:layout_weight="1" />
+            <include
+                android:id="@+id/homeCardCourses"
+                layout="@layout/home_card_courses"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginBottom="@dimen/dashboard_tile_gap"
+                android:layout_weight="1" />
+            <include
+                android:id="@+id/homeCardTeams"
+                layout="@layout/home_card_teams"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginBottom="@dimen/dashboard_tile_gap"
+                android:layout_weight="1" />
+            <include
+                android:id="@+id/homeCardMyLife"
+                layout="@layout/home_card_mylife"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+        </LinearLayout>
     </LinearLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton

@@ -12,11 +12,10 @@
         android:padding="@dimen/dashboard_chip_padding">
 
         <ImageView
-            android:id="@+id/chip_icon"
             android:layout_width="@dimen/dashboard_chip_icon_size"
             android:layout_height="@dimen/dashboard_chip_icon_size"
-            app:srcCompat="@drawable/library"
-            app:tint="@color/dashboard_tile_library"
+            app:srcCompat="@drawable/mycourses"
+            app:tint="@color/dashboard_tile_courses"
             android:contentDescription="@null" />
 
         <TextView
@@ -30,13 +29,4 @@
             android:textColor="@color/dashboard_ink_2"
             android:textSize="11.5sp" />
     </LinearLayout>
-
-    <ImageView
-        android:id="@+id/detail"
-        android:layout_width="@dimen/dashboard_chip_icon_size"
-        android:layout_height="@dimen/dashboard_chip_icon_size"
-        android:layout_gravity="top|end"
-        android:layout_margin="4dp"
-        app:srcCompat="@drawable/ic_more"
-        app:tint="@color/dashboard_ink_3"/>
 </FrameLayout>

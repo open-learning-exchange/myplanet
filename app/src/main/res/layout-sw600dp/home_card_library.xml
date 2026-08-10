@@ -19,10 +19,10 @@
             android:layout_height="match_parent">
 
             <LinearLayout
-                android:id="@+id/myCoursesImageButton"
+                android:id="@+id/myLibraryImageButton"
                 android:layout_width="@dimen/dashboard_tile_color_block_width"
                 android:layout_height="match_parent"
-                android:background="@color/dashboard_tile_courses"
+                android:background="@color/dashboard_tile_library"
                 android:gravity="center"
                 android:orientation="vertical"
                 android:padding="@dimen/padding_small">
@@ -30,15 +30,15 @@
                 <ImageView
                     android:layout_width="@dimen/dashboard_tile_icon_size"
                     android:layout_height="@dimen/dashboard_tile_icon_size"
-                    app:srcCompat="@drawable/mycourses"
-                    android:contentDescription="@string/txt_myCourses" />
+                    app:srcCompat="@drawable/library"
+                    android:contentDescription="@string/my_library" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/padding_small"
                     android:gravity="center"
-                    android:text="@string/txt_myCourses"
+                    android:text="@string/txt_myLibrary"
                     android:textColor="@color/md_white_1000"
                     android:textSize="12sp"
                     android:textStyle="bold" />
@@ -46,7 +46,7 @@
             </LinearLayout>
 
             <TextView
-                android:id="@+id/count_course"
+                android:id="@+id/count_library"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="top|end"
@@ -59,31 +59,30 @@
                 android:paddingEnd="6dp"
                 android:paddingTop="2dp"
                 android:paddingBottom="2dp"
+                android:text="12"
                 android:textColor="@color/dashboard_badge_ink"
                 android:textSize="11sp"
                 android:textStyle="bold" />
 
         </FrameLayout>
 
-        <HorizontalScrollView
+        <ScrollView
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:contentDescription="@string/my_courses"
+            android:contentDescription="@string/txt_myLibrary"
             android:background="@color/card_bg"
             android:scrollbars="none">
 
             <com.google.android.flexbox.FlexboxLayout
-                android:id="@+id/flexboxLayoutCourse"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:paddingStart="@dimen/dashboard_chip_gap"
-                android:paddingTop="@dimen/dashboard_chip_gap"
-                android:paddingBottom="@dimen/dashboard_chip_gap"
-                app:alignContent="stretch"
+                android:id="@+id/flexboxLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/dashboard_chip_gap"
+                app:alignContent="flex_start"
                 app:alignItems="stretch"
                 app:flexWrap="wrap" />
-        </HorizontalScrollView>
+        </ScrollView>
     </LinearLayout>
 
 </com.google.android.material.card.MaterialCardView>
