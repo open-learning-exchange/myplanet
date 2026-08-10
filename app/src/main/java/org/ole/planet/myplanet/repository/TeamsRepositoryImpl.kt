@@ -640,29 +640,34 @@ class TeamsRepositoryImpl @Inject constructor(
         val validIds = teamIds.filter { it.isNotBlank() }.distinct()
         if (validIds.isEmpty()) return emptyMap()
 
+        val validIdsSet = validIds.toSet()
         val userEntries = teamDao.getByUserId(userId)
-            .filter { it.teamId in validIds && (it.docType == "membership" || it.docType == "request") }
 
-        val membershipMap = userEntries
-            .filter { it.docType == "membership" && !it.isDeletePending }
-            .mapNotNull { it.teamId }
-            .toSet()
+        val membershipSet = mutableSetOf<String>()
+        val leaderSet = mutableSetOf<String>()
+        val pendingRequestSet = mutableSetOf<String>()
 
-        val leaderMap = userEntries
-            .filter { it.docType == "membership" && it.isLeader }
-            .mapNotNull { it.teamId }
-            .toSet()
+        for (entry in userEntries) {
+            val teamId = entry.teamId ?: continue
+            if (teamId !in validIdsSet) continue
 
-        val pendingRequestMap = userEntries
-            .filter { it.docType == "request" }
-            .mapNotNull { it.teamId }
-            .toSet()
+            if (entry.docType == "membership") {
+                if (!entry.isDeletePending) {
+                    membershipSet.add(teamId)
+                }
+                if (entry.isLeader) {
+                    leaderSet.add(teamId)
+                }
+            } else if (entry.docType == "request") {
+                pendingRequestSet.add(teamId)
+            }
+        }
 
         return validIds.associateWith { teamId ->
             TeamMemberStatus(
-                isMember = teamId in membershipMap,
-                isLeader = teamId in leaderMap,
-                hasPendingRequest = teamId in pendingRequestMap
+                isMember = teamId in membershipSet,
+                isLeader = teamId in leaderSet,
+                hasPendingRequest = teamId in pendingRequestSet
             )
         }
     }
