@@ -32,17 +32,17 @@
                 <TextView
                     android:id="@+id/tv_fragment_info"
                     android:layout_width="0dp"
-                    android:layout_height="40dp"
+                    android:layout_height="wrap_content"
+                    android:minHeight="40dp"
                     android:layout_gravity="center_vertical"
                     android:layout_margin="@dimen/_10dp"
                     android:layout_weight="1"
                     android:gravity="center_vertical"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/txt_myCourses"
-                    android:textColor="@color/md_white_1000"
+                    android:textColor="?attr/colorOnPrimary"
                     android:textSize="@dimen/text_size_large"
                     android:textStyle="bold"
-                    android:maxLines="1"
                     android:minWidth="150dp" />
                 <Button
                     android:id="@+id/btn_remove"
@@ -109,8 +109,6 @@
                     android:layout_margin="@dimen/padding_small"
                     android:background="@drawable/buttonyellow"
                     android:padding="@dimen/padding_small"
-                    android:text="@string/more_action"
-                    android:textColor="@color/md_white_1000"
                     app:srcCompat="@drawable/ic_filter"
                     android:contentDescription="@string/more_action" />
             </LinearLayout>
