@@ -23,6 +23,9 @@ interface FeedbackDao {
     @Query("SELECT * FROM feedback WHERE id = :id LIMIT 1")
     suspend fun findById(id: String): Feedback?
 
+    @Query("SELECT * FROM feedback WHERE id IN (:ids)")
+    suspend fun getByIds(ids: List<String>): List<Feedback>
+
     @Query("UPDATE feedback SET status = 'Closed' WHERE id = :id")
     suspend fun closeById(id: String)
 

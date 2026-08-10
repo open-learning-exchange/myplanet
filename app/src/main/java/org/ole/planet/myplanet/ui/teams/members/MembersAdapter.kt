@@ -41,7 +41,14 @@ class MembersAdapter(
         const val PAYLOAD_KEY_LEADER = "PAYLOAD_KEY_LEADER"
         private val DIFF_CALLBACK = DiffUtils.itemCallback<JoinedMemberData>(
             areItemsTheSame = { oldItem, newItem -> oldItem.user.id == newItem.user.id },
-            areContentsTheSame = { oldItem, newItem -> oldItem == newItem },
+            areContentsTheSame = { oldItem, newItem ->
+                oldItem.isLeader == newItem.isLeader &&
+                    oldItem.visitCount == newItem.visitCount &&
+                    oldItem.lastVisitDate == newItem.lastVisitDate &&
+                    oldItem.user.name == newItem.user.name &&
+                    oldItem.user.userImage == newItem.user.userImage &&
+                    oldItem.user.getRoleAsString() == newItem.user.getRoleAsString()
+            },
             getChangePayload = { oldItem, newItem ->
                 val payload = Bundle()
                 if (oldItem.isLeader != newItem.isLeader) {
@@ -169,8 +176,13 @@ class MembersAdapter(
     }
 
     fun updateData(newList: List<JoinedMemberData>, isLoggedInUserTeamLeader: Boolean) {
+        val leaderStatusChanged = this.isLoggedInUserTeamLeader != isLoggedInUserTeamLeader
         this.isLoggedInUserTeamLeader = isLoggedInUserTeamLeader
-        submitList(newList)
+        if (leaderStatusChanged) {
+            submitList(newList) { notifyItemRangeChanged(0, itemCount) }
+        } else {
+            submitList(newList)
+        }
     }
 
     class MembersViewHolder(val binding: RowJoinedUserBinding) :
