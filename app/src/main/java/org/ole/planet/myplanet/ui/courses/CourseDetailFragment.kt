@@ -133,7 +133,12 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         if (stepsAdapter == null) {
             binding.stepsList.layoutManager = LinearLayoutManager(activity)
             stepsAdapter = CoursesStepsAdapter(requireActivity()) { stepId ->
-                viewModel.toggleStepDescription(stepId)
+                val parent = parentFragment as? TakeCourseFragment
+                if (parent != null) {
+                    parent.navigateToStep(stepId)
+                } else {
+                    viewModel.toggleStepDescription(stepId)
+                }
             }
             binding.stepsList.adapter = stepsAdapter
         }
