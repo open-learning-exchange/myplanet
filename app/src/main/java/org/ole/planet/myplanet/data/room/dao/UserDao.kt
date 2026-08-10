@@ -26,7 +26,7 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE id IN (:userIds)")
     suspend fun getUsersByIds(userIds: List<String>): List<UserEntity>
 
-    @Query("SELECT * FROM users WHERE (_id IS NOT NULL AND TRIM(_id) != '') AND id NOT LIKE 'guest%'")
+    @Query("SELECT * FROM users WHERE (_id IS NOT NULL AND TRIM(_id) != '') AND SUBSTR(id, 1, 5) != 'guest'")
     suspend fun getSyncedUsers(): List<UserEntity>
 
     @Query("SELECT * FROM users WHERE _id IS NOT NULL AND TRIM(_id) != ''")
@@ -35,20 +35,19 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE (_id IS NULL OR TRIM(_id) = '') OR isUpdated = 1 LIMIT :limit")
     suspend fun getPendingSyncUsers(limit: Int): List<UserEntity>
 
-    @Query("SELECT * FROM users WHERE name = :name AND _id LIKE 'guest_%' LIMIT 1")
+    @Query("SELECT * FROM users WHERE name = :name AND SUBSTR(_id, 1, 6) = 'guest_' LIMIT 1")
     suspend fun getGuestUserByName(name: String): UserEntity?
 
-    @Query("SELECT * FROM users WHERE name IN (:names) AND _id LIKE 'guest_%'")
+    @Query("SELECT * FROM users WHERE name IN (:names) AND SUBSTR(_id, 1, 6) = 'guest_'")
     suspend fun getGuestUsersByNames(names: List<String>): List<UserEntity>
 
     @Query("""
         SELECT * FROM users
-        WHERE name IN (
-            SELECT name FROM users
-            GROUP BY name
+        WHERE IFNULL(name, '') IN (
+            SELECT IFNULL(name, '') FROM users
+            GROUP BY IFNULL(name, '')
             HAVING COUNT(*) > 1
         )
     """)
     suspend fun getDuplicateUsers(): List<UserEntity>
-
 }

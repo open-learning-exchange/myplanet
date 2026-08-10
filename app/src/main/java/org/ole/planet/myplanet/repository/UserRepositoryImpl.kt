@@ -113,7 +113,7 @@ class UserRepositoryImpl @Inject constructor(
         userIdList.chunked(500).forEach { chunk ->
             result.addAll(userDao.getUsersByAnyIds(chunk))
         }
-        return result
+        return result.distinctBy { it.id }
     }
 
     override suspend fun getUserByAnyId(id: String): UserEntity? {
