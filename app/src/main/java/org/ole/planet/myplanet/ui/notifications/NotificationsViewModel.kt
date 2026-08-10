@@ -108,9 +108,7 @@ class NotificationsViewModel @Inject constructor(
         val isCurrentlyExpanded = when {
             type in _expandedGroups.value -> true
             type in _collapsedGroups.value -> false
-            else -> {
-                _notifications.value.any { it.type == type && !it.isRead }  // If at least one notification is not read in the group, expand
-            }
+            else -> isGroupDefaultExpanded(type, notifications.value)  // If at least one notification is not read in the group, expand
         }
 
         if (isCurrentlyExpanded) {
@@ -202,6 +200,11 @@ class NotificationsViewModel @Inject constructor(
     private fun List<Notification>.markAsRead(ids: Set<String>): List<Notification> {
         return map { if (it.id in ids && !it.isRead) it.copy(isRead = true) else it }
     }
+
+    private fun isGroupDefaultExpanded(type: String, notifications: List<Notification>): Boolean {
+        return notifications.any { it.type == type && !it.isRead }
+    }
+
     private fun buildGroupedList(
         notifications: List<Notification>,
         selectedIds: Set<String>,
@@ -225,7 +228,7 @@ class NotificationsViewModel @Inject constructor(
                 val isExpanded = when {
                     type in expandedGroups -> true
                     type in collapsedGroups -> false
-                    else -> unreadCount > 0
+                    else -> isGroupDefaultExpanded(type, notifications)
                 }
                 add(NotificationListItem.Header(type, typeLabelFor(type), unreadCount, isExpanded))
                 if (isExpanded) {
