@@ -16,6 +16,8 @@ class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : Fragmen
     }
 
     fun submitList(newSteps: List<String>) {
+        if (newSteps == steps) return
+
         newSteps.forEach { stepId ->
             if (!itemIds.containsKey(stepId)) {
                 itemIds[stepId] = nextId++

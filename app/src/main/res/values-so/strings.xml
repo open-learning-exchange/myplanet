@@ -943,6 +943,9 @@
     <string name="virtual_assistant_currently_not_available">kaaliyaha farsamada hadda lama heli karo</string>
     <string name="no_courses">ma jiro koorsad la helin</string>
     <string name="no_resources">ma jiraan ilaha la heli karo</string>
+    <string name="no_resources_added_yet">Wali ma aad ku darin wax ilo ah</string>
+    <string name="no_courses_joined_yet">Wali ku ma aad biirin wax koorsooyin ah</string>
+    <string name="no_teams_joined_yet">Wali ku ma aad biirin wax koox ah</string>
     <string name="no_finance_record">hisaabka ma jiro</string>
     <string name="no_team_courses">koorsadaha kooxiga ma jiraan</string>
     <string name="no_team_resources">ilaha kooxiga ma jiraan</string>
