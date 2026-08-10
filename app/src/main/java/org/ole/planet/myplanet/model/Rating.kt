@@ -8,7 +8,7 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utils.NetworkUtils
 
 /**
- * Room replacement for the former Realm `Rating` model. Uploaded (Room upload path) and
+ * Room replacement for the former `Rating` model. Uploaded (Room upload path) and
  * synced; persistence goes through [org.ole.planet.myplanet.data.room.dao.RatingDao].
  */
 @Entity(

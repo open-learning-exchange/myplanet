@@ -17,6 +17,7 @@ import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
@@ -74,7 +75,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val appDatabase: AppDatabase,
 ) : TeamsRepository, TeamsSyncRepository {
     override fun getTasksFlow(userId: String?): Flow<List<TeamTask>> {
-        return teamTaskDao.getOpenTasksForUser(userId)
+        return teamTaskDao.getOpenTasksForUser(userId).flowOn(dispatcherProvider.default)
     }
 
     override suspend fun getTeamsForUpload(): List<TeamUploadData> {
@@ -200,7 +201,7 @@ class TeamsRepositoryImpl @Inject constructor(
                         it.isRootTeam()
                 }.map { it }
             }
-        }
+        }.flowOn(dispatcherProvider.default)
     }
 
     private suspend fun getMemberTeamIds(userId: String): Set<String> {
@@ -305,7 +306,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 }.map { it }
             }
             mapToTeamDetails(teams, userId)
-        }
+        }.flowOn(dispatcherProvider.default)
     }
 
     override suspend fun getShareableEnterpriseDetails(userId: String?): List<TeamDetails> {
@@ -640,29 +641,34 @@ class TeamsRepositoryImpl @Inject constructor(
         val validIds = teamIds.filter { it.isNotBlank() }.distinct()
         if (validIds.isEmpty()) return emptyMap()
 
+        val validIdsSet = validIds.toSet()
         val userEntries = teamDao.getByUserId(userId)
-            .filter { it.teamId in validIds && (it.docType == "membership" || it.docType == "request") }
 
-        val membershipMap = userEntries
-            .filter { it.docType == "membership" && !it.isDeletePending }
-            .mapNotNull { it.teamId }
-            .toSet()
+        val membershipSet = mutableSetOf<String>()
+        val leaderSet = mutableSetOf<String>()
+        val pendingRequestSet = mutableSetOf<String>()
 
-        val leaderMap = userEntries
-            .filter { it.docType == "membership" && it.isLeader }
-            .mapNotNull { it.teamId }
-            .toSet()
+        for (entry in userEntries) {
+            val teamId = entry.teamId ?: continue
+            if (teamId !in validIdsSet) continue
 
-        val pendingRequestMap = userEntries
-            .filter { it.docType == "request" }
-            .mapNotNull { it.teamId }
-            .toSet()
+            if (entry.docType == "membership") {
+                if (!entry.isDeletePending) {
+                    membershipSet.add(teamId)
+                }
+                if (entry.isLeader) {
+                    leaderSet.add(teamId)
+                }
+            } else if (entry.docType == "request") {
+                pendingRequestSet.add(teamId)
+            }
+        }
 
         return validIds.associateWith { teamId ->
             TeamMemberStatus(
-                isMember = teamId in membershipMap,
-                isLeader = teamId in leaderMap,
-                hasPendingRequest = teamId in pendingRequestMap
+                isMember = teamId in membershipSet,
+                isLeader = teamId in leaderSet,
+                hasPendingRequest = teamId in pendingRequestSet
             )
         }
     }
@@ -1143,13 +1149,16 @@ class TeamsRepositoryImpl @Inject constructor(
     override suspend fun updateTeamLeader(teamId: String, newLeaderId: String): Boolean {
         val memberships = teamDao.getByTeamIdAndDocType(teamId, "membership")
         val newLeader = memberships.firstOrNull { it.userId == newLeaderId } ?: return false
-        val updatedMemberships = memberships.mapNotNull { membership ->
-            val shouldBeLeader = membership.userId == newLeader.userId
-            if (membership.isLeader == shouldBeLeader) return@mapNotNull null
+
+        val updatedMemberships = memberships.map { membership ->
             membership.apply {
-                isLeader = shouldBeLeader
-                updated = true
-            }.requireRoomEntity()
+                // Explicitly set isLeader to true ONLY for the new leader, false for everyone else
+                val shouldBeLeader = membership.userId == newLeader.userId
+                if (isLeader != shouldBeLeader) {
+                    isLeader = shouldBeLeader
+                    updated = true
+                }
+            }
         }
         teamDao.upsertAll(updatedMemberships)
         return true
