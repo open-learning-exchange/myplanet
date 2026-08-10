@@ -13,14 +13,11 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
@@ -38,6 +35,7 @@ import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.Utilities
@@ -102,41 +100,36 @@ class VoicesFragment : BaseVoicesFragment() {
             }
 
             voicesViewModel.observeCommunityNews(getUserIdentifier())
+        }
 
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    voicesViewModel.filteredNews.collectLatest { searchFiltered ->
-                        if (_binding != null) {
-                            setData(searchFiltered)
-                        }
-                    }
-                }
-                launch {
-                    combine(
-                        voicesViewModel.labels,
-                        voicesViewModel.selectedLabel
-                    ) { labels, selected -> labels to selected }
-                        .collectLatest { (labels, selected) ->
-                            if (_binding != null) {
-                                updateLabelSpinner(labels, selected)
-                            }
-                        }
-                }
-                launch {
-                    voicesViewModel.createNewsSuccess.collectLatest { n ->
-                        binding.btnSubmit.isEnabled = true
-                        if (n != null) {
-                            binding.etMessage.setText(R.string.empty_text)
-                            binding.llAddNews.visibility = View.GONE
-                            binding.btnNewVoice.text = getString(R.string.new_voice)
-                            imageList.clear()
-                            llImage?.removeAllViews()
-                            shouldScrollToTopNextUpdate = true
-                        } else {
-                            Utilities.toast(requireContext(), getString(R.string.error, "Failed to create news"))
-                        }
-                    }
-                }
+        collectLatestWhenStarted(voicesViewModel.filteredNews) { searchFiltered ->
+            if (_binding != null) {
+                setData(searchFiltered)
+            }
+        }
+
+        val combinedFlow = combine(
+            voicesViewModel.labels,
+            voicesViewModel.selectedLabel
+        ) { labels, selected -> labels to selected }
+
+        collectLatestWhenStarted(combinedFlow) { (labels, selected) ->
+            if (_binding != null) {
+                updateLabelSpinner(labels, selected)
+            }
+        }
+
+        collectLatestWhenStarted(voicesViewModel.createNewsSuccess) { n ->
+            binding.btnSubmit.isEnabled = true
+            if (n != null) {
+                binding.etMessage.setText(R.string.empty_text)
+                binding.llAddNews.visibility = View.GONE
+                binding.btnNewVoice.text = getString(R.string.new_voice)
+                imageList.clear()
+                llImage?.removeAllViews()
+                shouldScrollToTopNextUpdate = true
+            } else {
+                Utilities.toast(requireContext(), getString(R.string.error, "Failed to create news"))
             }
         }
         binding.btnSubmit.setOnClickListener {

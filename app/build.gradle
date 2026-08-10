@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.application)
-    alias(libs.plugins.legacy.kapt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.dagger.hilt.android)
 }
@@ -11,14 +10,20 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6300
-        versionName = "0.63.0"
+        versionCode = 6373
+        versionName = "0.63.73"
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
     testOptions {
         unitTests {
             includeAndroidResources = true
+            all { test ->
+                def requested = project.findProperty('testMaxParallelForks') as String
+                test.maxParallelForks = requested ? requested.toInteger()
+                    : Math.min(Runtime.runtime.availableProcessors(), 4)
+                test.maxHeapSize = "1536m"
+            }
         }
     }
     configurations.configureEach {
@@ -45,7 +50,6 @@ android {
         create("lite") {
             dimension "mode"
             buildConfigField "boolean", "LITE", "true"
-            // Use versionNameSuffix and resValue to avoid editing build.gradle and versions.xml in CI
             versionNameSuffix "-lite"
             resValue "string", "app_version", "${defaultConfig.versionName}-lite"
         }
@@ -78,7 +82,6 @@ android {
     buildFeatures {
         viewBinding = true
         buildConfig = true
-        dataBinding = true
         resValues = true
     }
     bundle {
@@ -145,9 +148,6 @@ android {
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
     }
 }
-kapt {
-    correctErrorTypes = true
-}
 dependencies {
     testImplementation(libs.test.junit)
     testImplementation(libs.test.mockk)
@@ -181,6 +181,7 @@ dependencies {
     implementation(libs.cardview)
     implementation(libs.constraintlayout)
     implementation(libs.core.ktx)
+    implementation(libs.lifecycle.process)
     implementation(libs.hilt.work)
     ksp(libs.hilt.compiler)
     implementation(libs.media3.exoplayer)

@@ -84,6 +84,9 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     lateinit var sharedPrefManager: SharedPrefManager
 
     @Inject
+    lateinit var themeManager: ThemeManager
+
+    @Inject
     @DefaultPreferences
     lateinit var defaultPreferencesProvider: Provider<SharedPreferences>
     val defaultPref: SharedPreferences by lazy { defaultPreferencesProvider.get() }
@@ -471,20 +474,24 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     private suspend fun observeNetworkForDownloads() {
         withContext(dispatcherProvider.default) {
             isNetworkConnectedFlow.onEach { isConnected ->
-                if (isConnected) {
-                    val serverUrl = sharedPrefManager.getServerUrl()
-                    if (serverUrl.isNotEmpty()) {
-                        applicationScope.launch {
-                            val canReachServer = isServerReachable(serverUrl, dispatcherProvider.io)
-                            if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
-                                resourceDownloadCoordinator.startBackgroundDownload(
-                                    downloadAllFiles(resourcesRepository.getAllLibrariesToSync())
-                                )
-                            }
-                        }
-                    }
+                if (!isConnected) return@onEach
+
+                val serverUrl = sharedPrefManager.getServerUrl()
+                if (serverUrl.isEmpty()) return@onEach
+
+                applicationScope.launch {
+                    checkServerAndStartDownload(serverUrl)
                 }
             }.launchIn(applicationScope)
+        }
+    }
+
+    private suspend fun checkServerAndStartDownload(serverUrl: String) {
+        val canReachServer = isServerReachable(serverUrl, dispatcherProvider.io)
+        if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
+            resourceDownloadCoordinator.startBackgroundDownload(
+                downloadAllFiles(resourcesRepository.getAllLibrariesToSync())
+            )
         }
     }
 
@@ -543,7 +550,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     }
 
     private fun getCurrentThemeMode(): String {
-        return ThemeManager.getCurrentThemeMode(context)
+        return themeManager.getCurrentThemeMode()
     }
 
     private fun onAppForegrounded() {
