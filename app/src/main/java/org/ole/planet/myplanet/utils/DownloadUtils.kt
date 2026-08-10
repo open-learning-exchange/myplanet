@@ -13,14 +13,9 @@ import androidx.core.content.edit
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
-import dagger.hilt.android.EntryPointAccessors
 import java.util.regex.Pattern
-import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.model.MyLibrary
-import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.services.DownloadWorker
 
@@ -249,23 +244,9 @@ object DownloadUtils {
         return links
     }
 
-    fun updateResourceOfflineStatus(url: String) {
-        MainApplication.applicationScope.launch {
-            try {
-                resourcesRepository.markResourceOfflineByUrl(url)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
 
-    private val resourcesRepository: ResourcesRepository by lazy {
-        val entryPoint = EntryPointAccessors.fromApplication(
-            MainApplication.context,
-            CoreDependenciesEntryPoint::class.java
-        )
-        entryPoint.resourcesRepository()
-    }
+
+
 
 
 }

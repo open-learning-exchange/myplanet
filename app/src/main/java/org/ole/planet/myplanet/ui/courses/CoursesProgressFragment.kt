@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.databinding.FragmentCoursesProgressBinding
 import org.ole.planet.myplanet.model.CoursesProgressRow
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -20,6 +21,9 @@ class CoursesProgressFragment : Fragment() {
     private val binding get() = _binding!!
     private val progressViewModel: ProgressViewModel by viewModels()
     private lateinit var progressAdapter: CoursesProgressAdapter
+
+    @Inject
+    lateinit var gson: Gson
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentCoursesProgressBinding.inflate(inflater, container, false)
@@ -38,12 +42,12 @@ class CoursesProgressFragment : Fragment() {
     private fun observeCourseData() {
         collectWhenStarted(progressViewModel.courseData) { courseData ->
             courseData?.let { jsonArray ->
+                val type = object : TypeToken<Map<String, Int>>() {}.type
                 val list = jsonArray.map { element ->
                     val obj = element.asJsonObject
 
                     val stepMistake = if (obj.has("stepMistake")) {
-                        val type = object : TypeToken<Map<String, Int>>() {}.type
-                        Gson().fromJson<Map<String, Int>>(obj.get("stepMistake"), type)
+                        gson.fromJson<Map<String, Int>>(obj.get("stepMistake"), type)
                     } else {
                         null
                     }
