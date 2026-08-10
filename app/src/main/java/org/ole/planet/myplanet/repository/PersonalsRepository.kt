@@ -25,4 +25,6 @@ interface PersonalsRepository {
     suspend fun updatePersonalAfterSync(id: String, newId: String, rev: String)
 
     suspend fun uploadPersonalDocument(personal: Personal): Pair<String, String>?
+
+    suspend fun uploadPersonal(personal: Personal): String
 }

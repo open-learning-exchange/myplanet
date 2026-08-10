@@ -57,7 +57,7 @@ class VoicesViewModel @Inject constructor(
         filterNews(news, query, label)
     }
     .flowOn(dispatcherProvider.default)
-    .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun observeCommunityNews(userIdentifier: String) {
         observeJob?.cancel()
