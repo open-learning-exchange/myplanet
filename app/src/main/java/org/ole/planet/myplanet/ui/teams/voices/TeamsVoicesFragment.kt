@@ -88,7 +88,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
             }
         }
 
-        if (shouldQueryTeamFromRealm()) {
+        if (shouldQueryTeamLocally()) {
             viewModel.loadTeam(teamId)
             collectWhenStarted(viewModel.teamPolicy) { result ->
                 result?.let { (teamResult, policy) ->
@@ -196,7 +196,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                 removeLabelFn = { newsId, label -> viewModel.removeLabel(newsId, label) }
             )
             val effectiveTeamName = getEffectiveTeamName()
-            val adapterNews = activity?.let {
+            adapterNews = activity?.let {
                 VoicesAdapter(
                     context = it,
                     currentUser = user,
