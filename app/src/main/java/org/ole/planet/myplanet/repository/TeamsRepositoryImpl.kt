@@ -1039,7 +1039,7 @@ class TeamsRepositoryImpl @Inject constructor(
             .mapNotNull { it.userId }
             .distinct()
             
-        return teamMembers.mapNotNull { userDao.getUserById(it) }
+        return teamMembers.mapNotNull { userRepository.getUserById(it) }
     }
 
     override suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData> {
