@@ -157,7 +157,6 @@ class MembersFragment : BaseTeamFragment() {
                 teamsRepository.removeMember(teamId, memberId)
                 loadMembers()
                 onMemberChangeListener?.onMemberChanged()
-                requestsViewModel.fetchMembers(teamId)
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Error removing member: ${e.message}", Toast.LENGTH_SHORT).show()
             }
