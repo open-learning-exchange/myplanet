@@ -341,26 +341,26 @@ class VoicesAdapter(
         }
 
         if (isParent) {
-            submitList(emptyList())
-        } else {
-            val updatedOriginalList = originalList.toMutableList()
-            val posInOriginal = updatedOriginalList.indexOfFirst { it.id == newsId }
-            if (posInOriginal != -1) {
-                updatedOriginalList.removeAt(posInOriginal)
-                originalList = updatedOriginalList.toList()
-            }
-
-            val updatedCurrentList = currentList.toMutableList()
-            if (posInCurrent != -1) {
-                updatedCurrentList.removeAt(posInCurrent)
-            }
-            val listToSubmit = if (parentNews != null && updatedCurrentList.isNotEmpty() && updatedCurrentList[0].id == parentNews?.id) {
-                updatedCurrentList.drop(1)
-            } else {
-                updatedCurrentList
-            }
-            submitList(listToSubmit)
+            parentNews = null
         }
+
+        val updatedOriginalList = originalList.toMutableList()
+        val posInOriginal = updatedOriginalList.indexOfFirst { it.id == newsId }
+        if (posInOriginal != -1) {
+            updatedOriginalList.removeAt(posInOriginal)
+            originalList = updatedOriginalList.toList()
+        }
+
+        val updatedCurrentList = currentList.toMutableList()
+        if (posInCurrent != -1) {
+            updatedCurrentList.removeAt(posInCurrent)
+        }
+        val listToSubmit = if (parentNews != null && updatedCurrentList.isNotEmpty() && updatedCurrentList[0].id == parentNews?.id) {
+            updatedCurrentList.drop(1)
+        } else {
+            updatedCurrentList
+        }
+        submitList(listToSubmit)
 
         parentNews?.id?.let { pid ->
             val current = replyCountCache[pid]

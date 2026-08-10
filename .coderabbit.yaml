@@ -1,0 +1,113 @@
+# CodeRabbit configuration for myPlanet
+# Goal: maximum signal, minimum scroll — short reviews that humans and
+# AI agents can act on without burning tokens on decoration.
+# Reference: https://docs.coderabbit.ai/reference/configuration
+language: "en-US"
+
+tone_instructions: >-
+  Be concise. Only flag functional bugs, security issues, data-loss risks,
+  and clear violations of project conventions in CLAUDE.md. No style
+  nitpicks, no compliments, no restating the diff.
+
+reviews:
+  profile: chill
+  high_level_summary: true
+  collapse_walkthrough: true
+
+  # Decorative sections off — they bloat every PR thread.
+  sequence_diagrams: false
+  changed_files_summary: false
+  estimate_code_review_effort: false
+  related_issues: false
+  related_prs: false
+  suggested_labels: false
+  suggested_reviewers: false
+  poem: false
+  review_status: false
+  in_progress_fortune: false
+
+  # Keep the collapsible "Prompt for AI agents" block so Claude/Codex
+  # sessions can apply a finding directly.
+  enable_prompt_for_ai_agents: true
+
+  path_filters:
+    - "!gradle/wrapper/**"
+    - "!**/*.png"
+    - "!**/*.webp"
+    - "!**/*.jpg"
+
+  path_instructions:
+    - path: "app/src/main/java/**"
+      instructions: >-
+        All persistence must go through Room DAOs or DatabaseService — flag
+        raw SQLite or Realm usage. Flag hard-coded Dispatchers.* (inject
+        DispatcherProvider instead) and hard-coded user-facing strings
+        (must be string resources). Schema changes must bump the version in
+        AppDatabase (drop-and-resync strategy, no hand-written migrations).
+    - path: "app/src/test/**"
+      instructions: >-
+        Tests use MockK, runTest, MainDispatcherRule and
+        TestDispatcherProvider. Flag Mockito usage, Thread.sleep, or
+        hard-coded dispatchers in tests.
+
+  auto_review:
+    enabled: true
+    drafts: false
+    # Dependency bumps are gated by CI already; reviewing them is noise.
+    ignore_usernames:
+      - "dependabot[bot]"
+
+  # Finishing touches are ON-DEMAND only (checkbox or @coderabbitai command)
+  # — zero noise when idle, full devops arsenal when summoned.
+  finishing_touches:
+    docstrings:
+      enabled: true # @coderabbitai generate docstrings
+    unit_tests:
+      enabled: true # @coderabbitai generate unit tests (conventions: see code_generation)
+    simplify:
+      enabled: true # off by default upstream; opt in
+    autofix:
+      enabled: true # @coderabbitai autofix — applies its own review findings
+    fix_ci:
+      enabled: true # @coderabbitai fix-ci — commits a fix for failing CI
+    resolve_merge_conflict:
+      enabled: true # @coderabbitai resolve merge conflict
+
+  pre_merge_checks:
+    # KDoc coverage is not a project goal — a perpetual 80% warning is pure noise.
+    docstring_coverage:
+      mode: "off"
+
+  tools:
+    detekt:
+      enabled: true
+    gitleaks:
+      enabled: true
+    actionlint:
+      enabled: true
+    yamllint:
+      enabled: true
+    github-checks:
+      enabled: true
+      timeout_ms: 90000
+
+chat:
+  auto_reply: true
+  # art stays on (default): emoji are high signal per character.
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "CLAUDE.md"
+
+code_generation:
+  unit_tests:
+    path_instructions:
+      - path: "app/src/test/**"
+        instructions: >-
+          Use MockK (mockk, coEvery, coVerify) — never Mockito. Coroutine
+          tests use runTest with MainDispatcherRule and inject
+          TestDispatcherProvider. Use Robolectric only when Android
+          framework classes are required. Place tests mirroring the main
+          package path so CI (testDefaultDebugUnitTest) picks them up.
