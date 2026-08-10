@@ -947,6 +947,9 @@
     <string name="virtual_assistant_currently_not_available">المساعد الافتراضي غير متاح حالياً</string>
     <string name="no_courses">لا تتوفر دورات</string>
     <string name="no_resources">لا تتوفر موارد</string>
+    <string name="no_resources_added_yet">لم تقم بإضافة أي موارد بعد</string>
+    <string name="no_courses_joined_yet">لم تنضم إلى أي دورات بعد</string>
+    <string name="no_teams_joined_yet">لم تنضم إلى أي فريق بعد</string>
     <string name="no_finance_record">لا يتوفر سجل مالي</string>
     <string name="no_team_courses">لا تتوفر دورات الفريق</string>
     <string name="no_team_resources">لا تتوفر موارد الفريق</string>
@@ -1014,6 +1017,11 @@
     <string name="dark_mode_follow_system">اتباع النظام</string>
     <string name="theme_mode_light">فاتح</string>
     <string name="theme_mode_dark">داكن</string>
+    <string name="text_size">حجم النص</string>
+    <string name="select_text_size">اختر حجم النص</string>
+    <string name="text_size_small">صغير</string>
+    <string name="text_size_medium">متوسط</string>
+    <string name="text_size_large">كبير</string>
     <string name="are_you_sure_you_want_to_archive_these_courses">هل أنت متأكد أنك تريد أرشفة هذه الدورات؟</string>
     <string name="are_you_sure_you_want_to_archive_this_course">هل أنت متأكد أنك تريد أرشفة هذه الدورة؟</string>
     <string name="manual">يدوي</string>
@@ -1295,6 +1303,8 @@
     <string name="storage_unknown_resource">مورد غير معروف</string>
     <string name="file_count_one">ملف واحد</string>
     <string name="file_count_many">%1$d ملفات</string>
+    <string name="storage_deleting_progress">جارٍ حذف الملفات... تم حذف %1$d (%2$s)</string>
+    <string name="storage_freed_summary">تم تحرير %1$s (%2$d ملفات)</string>
     <string name="skip">تخطي</string>
     <string name="add_meetup">إضافة لقاء</string>
     <string name="download_report">تحميل التقرير</string>

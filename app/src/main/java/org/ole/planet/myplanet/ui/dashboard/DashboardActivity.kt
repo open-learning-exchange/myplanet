@@ -86,6 +86,7 @@ import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.ServerConfigUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities.toast
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -107,6 +108,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     override lateinit var dispatcherProvider: DispatcherProvider
     @Inject
     lateinit var userSessionManager: UserSessionManager
+    @Inject
+    lateinit var themeManager: ThemeManager
+    @Inject
+    override lateinit var timeProvider: TimeProvider
 
     @Inject
     override lateinit var resourcesRepository: ResourcesRepository
@@ -325,6 +330,22 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
         dl = result?.drawerLayout
+        dl?.addDrawerListener(object : DrawerLayout.SimpleDrawerListener() {
+            override fun onDrawerStateChanged(newState: Int) {
+                super.onDrawerStateChanged(newState)
+                result?.recyclerView?.scrollToPosition(0)
+            }
+
+            override fun onDrawerClosed(drawerView: View) {
+                super.onDrawerClosed(drawerView)
+                result?.recyclerView?.scrollToPosition(0)
+            }
+
+            override fun onDrawerOpened(drawerView: View) {
+                super.onDrawerOpened(drawerView)
+                result?.recyclerView?.scrollToPosition(0)
+            }
+        })
         topbarSetting()
 
         if (isFirstLaunch) {
@@ -334,6 +355,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 if (!(user?.id?.startsWith("guest") == true && offlineVisits >= 3) &&
                     resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
                 ) {
+                    result?.recyclerView?.scrollToPosition(0)
                     result?.openDrawer()
                 }
             }
@@ -369,7 +391,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun setupToolbarActions() {
         binding.appBarBell.ivSync.setOnClickListener { logSyncInSharedPrefs() }
-        binding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
+        binding.appBarBell.imgLogo.setOnClickListener {
+            result?.recyclerView?.scrollToPosition(0)
+            result?.openDrawer()
+        }
         binding.appBarBell.bellToolbar.setOnMenuItemClickListener { item ->
             handleToolbarMenuItem(item.itemId)
             true
@@ -404,7 +429,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             R.id.action_about -> openCallFragment(AboutFragment(), AboutFragment::class.java.simpleName)
             R.id.action_logout -> logout()
             R.id.change_language -> SettingsActivity.SettingFragment.languageChanger(this)
-            R.id.action_theme -> ThemeManager.showThemeDialog(this)
+            R.id.action_theme -> themeManager.showThemeDialog(this)
             else -> {}
         }
     }
@@ -556,7 +581,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val statusText = if (lastSyncMillis <= 0L) {
             getString(R.string.last_synced_colon) + getString(R.string.last_synced_never)
         } else {
-            getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSyncMillis)
+            getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSyncMillis, timeProvider)
         }
         binding.dashboardLastSyncStatus.text = statusText
     }
@@ -723,22 +748,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun showVisitLimitWarning() {
         // Clear any existing banner first
         binding.bannerContainer.removeAllViews()
-        
+
         // Inflate the banner layout
         val bannerView = LayoutInflater.from(this).inflate(R.layout.banner_offline_visit_warning, binding.bannerContainer, true)
-        
+
         // Set up close button
         val closeButton = bannerView.findViewById<ImageButton>(R.id.banner_close)
         closeButton.setOnClickListener {
-            binding.bannerContainer.removeView(bannerView.parent as? View ?: bannerView)
-        }
-        
-        // Auto-dismiss after 10 seconds
-        lifecycleScope.launch {
-            delay(10000)
-            if (binding.bannerContainer.childCount > 0) {
-                binding.bannerContainer.removeAllViews()
-            }
+            binding.bannerContainer.removeAllViews()
         }
     }
 
@@ -848,6 +865,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     if (drawerItem != null) {
                         result?.setSelection(drawerItem.identifier, false)
                         menuAction((drawerItem as Nameable<*>).name.textRes)
+                        result?.recyclerView?.scrollToPosition(0)
                     }
                     false
                 }.withDrawerWidthDp(200).build()

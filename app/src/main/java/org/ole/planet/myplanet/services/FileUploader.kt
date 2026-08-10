@@ -2,15 +2,12 @@ package org.ole.planet.myplanet.services
 
 import com.google.gson.JsonObject
 import java.io.File
-import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.Personal
+import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -25,7 +22,7 @@ data class UploadDocParams(
 )
 
 open class FileUploader(
-    private val apiInterface: ApiInterface,
+    private val uploadRepository: UploadRepository,
     private val scope: CoroutineScope
 ) {
     fun uploadAttachment(id: String, rev: String, personal: Personal, listener: OnSuccessListener) {
@@ -55,20 +52,16 @@ open class FileUploader(
     private fun uploadDoc(params: UploadDocParams) {
         scope.launch {
             try {
-                val connection = params.f.toURI().toURL().openConnection()
-                val mimeType = connection.contentType
-                val body = FileUtils.fullyReadFileToBytes(params.f)
-                    .toRequestBody("application/octet-stream".toMediaTypeOrNull())
-                val url = String.format(params.format, UrlUtils.getUrl(), params.id, params.name)
-
-                try {
-                    val response = apiInterface.uploadResource(getHeaderMap(mimeType, params.rev), url, body)
-                    onDataReceived(response.body(), params.listener)
-                } catch (t: Exception) {
-                    params.listener.onSuccess("Unable to upload resource")
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
+                val response = uploadRepository.uploadAttachment(
+                    file = params.f,
+                    destinationFormat = params.format,
+                    id = params.id,
+                    rev = params.rev,
+                    name = params.name
+                )
+                onDataReceived(response.body(), params.listener)
+            } catch (t: Exception) {
+                t.printStackTrace()
                 params.listener.onSuccess("Unable to upload resource")
             }
         }

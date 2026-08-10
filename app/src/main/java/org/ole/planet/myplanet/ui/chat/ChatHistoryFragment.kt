@@ -28,7 +28,6 @@ import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ChatRepository
-import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
@@ -50,11 +49,10 @@ class ChatHistoryFragment : Fragment() {
     lateinit var sharedPrefManager: SharedPrefManager
     private var sharedNewsMessages: List<News> = emptyList()
     private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
+    private var sharedViewInIds: Map<String, Set<String>> = emptyMap()
     
     @Inject
     lateinit var chatRepository: ChatRepository
-    @Inject
-    lateinit var voicesRepository: VoicesRepository
     private val serverUrl: String
         get() = sharedPrefManager.getServerUrl()
 
@@ -167,28 +165,16 @@ class ChatHistoryFragment : Fragment() {
             emptyList(),
             user,
             sharedNewsMessages,
+            sharedViewInIds,
             shareTargets
         ) { map, chat ->
             if (!isAdded || _binding == null) {
                 return@ChatHistoryAdapter
             }
-            viewLifecycleOwner.lifecycleScope.launch {
-                val currentUser = user
-                val chatId = chat._id ?: ""
-                val viewInId = map["viewInId"] ?: ""
-                if (chatId.isNotEmpty() && viewInId.isNotEmpty() &&
-                    voicesRepository.isAlreadyShared(chatId, viewInId)) {
-                    Snackbar.make(binding.root, getString(R.string.chat_already_shared_to_destination), Snackbar.LENGTH_SHORT).show()
-                    return@launch
-                }
-                val createdNews = voicesRepository.createNews(map, currentUser, null)
-                if (currentUser?.planetCode != null) {
-                    sharedNewsMessages = sharedNewsMessages + createdNews
-                }
-                (binding.recyclerView.adapter as? ChatHistoryAdapter)?.let { adapter ->
-                    adapter.updateCachedData(currentUser, sharedNewsMessages)
-                    adapter.notifyChatShared(chat._id)
-                }
+            val chatId = chat._id ?: ""
+            val viewInId = map["viewInId"] ?: ""
+            if (chatId.isNotEmpty() && viewInId.isNotEmpty()) {
+                sharedViewModel.shareChatToVoices(chatId, viewInId, map)
             }
         }
         newAdapter.setChatHistoryItemClickListener(object : OnChatHistoryItemClickListener {
@@ -209,7 +195,8 @@ class ChatHistoryFragment : Fragment() {
             sharedNewsMessages = data.newsMessages
             shareTargets = data.shareTargets
 
-            newAdapter.updateCachedData(user, sharedNewsMessages)
+            sharedViewInIds = data.sharedViewInIds
+            newAdapter.updateCachedData(user, sharedNewsMessages, sharedViewInIds)
             newAdapter.updateShareTargets(shareTargets)
 
             if (data.chatHistory.isNotEmpty()) {
@@ -250,6 +237,26 @@ class ChatHistoryFragment : Fragment() {
     private fun setupRealtimeSync() {
         collectWhenStarted(sharedViewModel.refreshChatSignal) {
             refreshChatHistory()
+        }
+        collectWhenStarted(sharedViewModel.shareResult) { result ->
+            when (result) {
+                is ChatViewModel.ShareChatResult.AlreadyShared -> {
+                    if (isAdded && _binding != null) {
+                        Snackbar.make(binding.root, getString(R.string.chat_already_shared_to_destination), Snackbar.LENGTH_SHORT).show()
+                    }
+                }
+                is ChatViewModel.ShareChatResult.Shared -> {
+                    if (isAdded && _binding != null) {
+                        if (user?.planetCode != null) {
+                            sharedNewsMessages = sharedNewsMessages + result.news
+                        }
+                        (binding.recyclerView.adapter as? ChatHistoryAdapter)?.let { adapter ->
+                            adapter.updateCachedData(user, sharedNewsMessages, sharedViewInIds)
+                            adapter.notifyChatShared(result.chatId)
+                        }
+                    }
+                }
+            }
         }
     }
 

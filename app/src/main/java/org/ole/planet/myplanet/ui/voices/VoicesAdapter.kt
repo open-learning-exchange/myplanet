@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
 import android.content.DialogInterface
-import android.graphics.Color
 import android.os.Build
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -121,7 +120,7 @@ class VoicesAdapter(
 
     private var originalList: List<News> = emptyList()
 
-    override fun submitList(list: List<News>?) {
+    private fun prepareSubmitList(list: List<News>?): List<News> {
         originalList = list ?: emptyList()
         val finalList = mutableListOf<News>()
         parentNews?.let {
@@ -132,21 +131,15 @@ class VoicesAdapter(
             it.forEach { item -> preParseNews(item) }
             finalList.addAll(it)
         }
-        super.submitList(finalList)
+        return finalList
+    }
+
+    override fun submitList(list: List<News>?) {
+        super.submitList(prepareSubmitList(list))
     }
 
     override fun submitList(list: List<News>?, commitCallback: Runnable?) {
-        originalList = list ?: emptyList()
-        val finalList = mutableListOf<News>()
-        parentNews?.let {
-            preParseNews(it)
-            finalList.add(it)
-        }
-        list?.let {
-            it.forEach { item -> preParseNews(item) }
-            finalList.addAll(it)
-        }
-        super.submitList(finalList, commitCallback)
+        super.submitList(prepareSubmitList(list), commitCallback)
     }
 
     private val externalFilesDir = FileUtils.getExternalFilesDir(context)
@@ -313,14 +306,35 @@ class VoicesAdapter(
     }
 
     fun removePost(newsId: String) {
-        val snapshotList = currentList.toMutableList()
-        val pos = snapshotList.indexOfFirst { it?.id == newsId }
-        if (pos != -1) {
-            snapshotList.removeAt(pos)
-            submitList(snapshotList)
-        } else if (parentNews?.id == newsId) {
-            submitList(emptyList())
+        val isParent = parentNews?.id == newsId
+        val posInCurrent = currentList.indexOfFirst { it.id == newsId }
+
+        if (posInCurrent == -1 && !isParent) {
+            return
         }
+
+        if (isParent) {
+            parentNews = null
+        }
+
+        val updatedOriginalList = originalList.toMutableList()
+        val posInOriginal = updatedOriginalList.indexOfFirst { it.id == newsId }
+        if (posInOriginal != -1) {
+            updatedOriginalList.removeAt(posInOriginal)
+            originalList = updatedOriginalList.toList()
+        }
+
+        val updatedCurrentList = currentList.toMutableList()
+        if (posInCurrent != -1) {
+            updatedCurrentList.removeAt(posInCurrent)
+        }
+        val listToSubmit = if (parentNews != null && updatedCurrentList.isNotEmpty() && updatedCurrentList[0].id == parentNews?.id) {
+            updatedCurrentList.drop(1)
+        } else {
+            updatedCurrentList
+        }
+        submitList(listToSubmit)
+
         parentNews?.id?.let { pid ->
             val current = replyCountCache[pid]
             replyCountCache[pid] = if (current != null) maxOf(0, current - 1) else 0
@@ -558,11 +572,16 @@ class VoicesAdapter(
                 }
 
                 val currentImageUrls = it.imageUrls?.toList()
-                if ((it.parsedImageUrls == null || it.rawImageUrls != currentImageUrls) && !currentImageUrls.isNullOrEmpty()) {
-                    val parsed = parseImageUrls(currentImageUrls)
-                    if (parsed != null) {
-                        it.parsedImageUrls = parsed
-                        it.rawImageUrls = currentImageUrls
+                if (it.rawImageUrls != currentImageUrls) {
+                    if (!currentImageUrls.isNullOrEmpty()) {
+                        val parsed = parseImageUrls(currentImageUrls)
+                        if (parsed != null) {
+                            it.parsedImageUrls = parsed
+                            it.rawImageUrls = currentImageUrls
+                        }
+                    } else {
+                        it.parsedImageUrls = null
+                        it.rawImageUrls = null
                     }
                 }
             } catch (e: IllegalStateException) {
@@ -829,7 +848,7 @@ class VoicesAdapter(
     private fun loadSingleImage(binding: RowNewsBinding, path: String?) {
         if (path == null) return
         val file = File(path)
-        val size = (120 * binding.imgNews.context.resources.displayMetrics.density).toInt()
+        val size = binding.imgNews.context.resources.getDimensionPixelSize(R.dimen.image_thumbnail_size_120)
         loadGlideImage(file, binding.imgNews, size)
         binding.imgNews.visibility = View.VISIBLE
         binding.imgNews.setOnClickListener {
@@ -840,7 +859,7 @@ class VoicesAdapter(
     private fun addImageToContainer(binding: RowNewsBinding, path: String?) {
         if (path == null) return
         val imageView = ImageView(context)
-        val size = (100 * context.resources.displayMetrics.density).toInt()
+        val size = context.resources.getDimensionPixelSize(R.dimen.image_thumbnail_size_100)
         val margin = (4 * context.resources.displayMetrics.density).toInt()
         val params = ViewGroup.MarginLayoutParams(size, size)
         params.setMargins(margin, margin, margin, margin)
@@ -863,7 +882,7 @@ class VoicesAdapter(
             val basePath = externalFilesDir
             if (library != null && basePath != null) {
                 val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-                val size = (120 * binding.imgNews.context.resources.displayMetrics.density).toInt()
+                val size = binding.imgNews.context.resources.getDimensionPixelSize(R.dimen.image_thumbnail_size_120)
                 loadGlideImage(imageFile, binding.imgNews, size)
                 binding.imgNews.visibility = View.VISIBLE
                 binding.imgNews.setOnClickListener {
@@ -880,7 +899,7 @@ class VoicesAdapter(
             if (library != null && basePath != null) {
                 val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
                 val imageView = ImageView(context)
-                val size = (100 * context.resources.displayMetrics.density).toInt()
+                val size = context.resources.getDimensionPixelSize(R.dimen.image_thumbnail_size_100)
                 val margin = (4 * context.resources.displayMetrics.density).toInt()
                 val params = ViewGroup.MarginLayoutParams(size, size)
                 params.setMargins(margin, margin, margin, margin)
@@ -905,7 +924,7 @@ class VoicesAdapter(
         val closeButton = view.findViewById<ImageView>(R.id.closeButton)
 
         dialog.setContentView(view)
-        dialog.window?.setBackgroundDrawable(Color.BLACK.toDrawable())
+        dialog.window?.setBackgroundDrawable(ContextCompat.getColor(context, R.color.md_black_1000).toDrawable())
 
         val request = Glide.with(photoView.context)
         val file = File(imageUrl)

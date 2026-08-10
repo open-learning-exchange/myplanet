@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.base
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.graphics.Typeface
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.DatePicker
@@ -17,8 +16,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import dagger.hilt.android.AndroidEntryPoint
@@ -41,14 +38,19 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardItem
 import org.ole.planet.myplanet.ui.dashboard.DashboardPluginFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardViewModel
 import org.ole.planet.myplanet.ui.dashboard.ItemType
+import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.health.HealthUsersAdapter
+import org.ole.planet.myplanet.ui.life.LifeFragment
+import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
+import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.user.UserProfileFragment
 import org.ole.planet.myplanet.ui.voices.NewsViewModel
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DownloadUtils
+import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -61,42 +63,33 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
 
     @Inject
     lateinit var transactionSyncManager: TransactionSyncManager
-
     @Inject
     lateinit var lifeRepository: LifeRepository
 
     fun onLoaded(v: View) {
+        val llPrompt = v.findViewById<LinearLayout>(R.id.ll_prompt)
+        val icClose = v.findViewById<ImageView>(R.id.ic_close)
+        val imageView = v.findViewById<ImageView>(R.id.imageView)
+
         viewLifecycleOwner.lifecycleScope.launch {
             model = userRepository.getUserProfile()
             fullName = model?.getFullName()
             if (fullName?.trim().isNullOrBlank()) {
                 fullName = model?.name
-                v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.VISIBLE
-                v.findViewById<LinearLayout>(R.id.ll_prompt).setOnClickListener {
+                llPrompt.visibility = View.VISIBLE
+                llPrompt.setOnClickListener {
                     if (!childFragmentManager.isStateSaved) {
                         UserInformationFragment.getInstance("", "", false)
                             .show(childFragmentManager, "")
                     }
                 }
             } else {
-                v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.GONE
+                llPrompt.visibility = View.GONE
             }
-            v.findViewById<ImageView>(R.id.ic_close).setOnClickListener {
-                v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.GONE
+            icClose.setOnClickListener {
+                llPrompt.visibility = View.GONE
             }
-            val imageView = v.findViewById<ImageView>(R.id.imageView)
-            if (!TextUtils.isEmpty(model?.userImage)) {
-                Glide.with(requireActivity())
-                    .load(model?.userImage)
-                    .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    .override(200, 200)
-                    .circleCrop()
-                    .placeholder(R.drawable.profile)
-                    .error(R.drawable.profile)
-                    .into(imageView)
-            } else {
-                imageView.setImageResource(R.drawable.profile)
-            }
+            ImageUtils.loadProfileImage(model?.userImage, imageView, 200)
 
             v.findViewById<TextView>(R.id.txtRole).text =
                 getString(R.string.user_role, model?.getRoleAsString())
@@ -166,6 +159,26 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         }
     }
 
+    private fun renderPlaceholder(
+        flexboxLayout: FlexboxLayout,
+        message: String,
+        onClick: (() -> Unit)? = null
+    ) {
+        val itemLibraryHomeBinding =
+            ItemLibraryHomeBinding.inflate(LayoutInflater.from(activity))
+        val v = itemLibraryHomeBinding.root
+        v.setBackgroundResource(R.color.card_bg)
+        itemLibraryHomeBinding.title.text = message
+        itemLibraryHomeBinding.title.setTextColor(
+            ContextCompat.getColor(requireContext(), R.color.hint_color)
+        )
+        itemLibraryHomeBinding.detail.visibility = View.GONE
+        if (onClick != null) {
+            v.setOnClickListener { onClick() }
+        }
+        flexboxLayout.addView(v, params)
+    }
+
     private fun renderMyLibrary(dbMylibrary: List<MyLibrary>) {
         val flexboxLayout = view?.findViewById<FlexboxLayout>(R.id.flexboxLayout)
         flexboxLayout?.removeAllViews()
@@ -173,6 +186,16 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         val countView = view?.findViewById<TextView>(R.id.count_library)
         if (dbMylibrary.isEmpty()) {
             countView?.visibility = View.GONE
+            flexboxLayout?.let {
+                renderPlaceholder(it, getString(R.string.no_resources_added_yet)) {
+                    if (model?.id?.startsWith("guest") == true) {
+                        DialogUtils.guestDialog(requireContext())
+                    } else {
+                        homeItemClickListener?.openMyFragment(ResourcesFragment())
+                    }
+                }
+            }
+            return
         } else {
             countView?.visibility = View.VISIBLE
             countView?.text = getString(R.string.number_placeholder, dbMylibrary.size)
@@ -206,6 +229,16 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         flexboxLayout.removeAllViews()
         val filteredCourses = courses.filter { !it.courseTitle.isNullOrBlank() }
         setCountText(filteredCourses.size, MyCourse::class.java, requireView())
+        if (filteredCourses.isEmpty()) {
+            renderPlaceholder(flexboxLayout, getString(R.string.no_courses_joined_yet)) {
+                if (model?.id?.startsWith("guest") == true) {
+                    DialogUtils.guestDialog(requireContext())
+                } else {
+                    homeItemClickListener?.openMyFragment(CoursesFragment())
+                }
+            }
+            return
+        }
         val myCoursesTextViewArray = arrayOfNulls<TextView>(filteredCourses.size)
         for ((itemCnt, items) in filteredCourses.withIndex()) {
             val dashboardItem = DashboardItem(items.courseId, items.courseTitle, null, ItemType.COURSE)
@@ -218,6 +251,18 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
     private suspend fun renderMyTeams(teams: List<MyTeam>) {
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutTeams) ?: return
         flexboxLayout.removeAllViews()
+        setCountText(teams.size, MyTeam::class.java, requireView())
+        if (teams.isEmpty()) {
+            renderPlaceholder(flexboxLayout, getString(R.string.no_teams_joined_yet)) {
+                val fragment = org.ole.planet.myplanet.ui.teams.TeamFragment().apply {
+                    arguments = android.os.Bundle().apply {
+                        putBoolean("fromDashboard", true)
+                    }
+                }
+                homeItemClickListener?.openMyFragment(fragment)
+            }
+            return
+        }
 
         for ((count, ob) in teams.withIndex()) {
             val v = LayoutInflater.from(activity).inflate(R.layout.item_home_my_team, flexboxLayout, false)
@@ -231,9 +276,8 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
             v.tag = ob._id
             flexboxLayout.addView(v, params)
         }
-        setCountText(teams.size, MyTeam::class.java, requireView())
 
-        val userId = profileDbHandler.getUserModel()?.id
+        val userId = userRepository.getUserModel()?.id
         val teamIds = teams.mapNotNull { it._id }
         if (userId != null && teamIds.isNotEmpty()) {
             viewLifecycleOwner.lifecycleScope.launch {
@@ -262,9 +306,29 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         imgTask.visibility = if (info.hasTask) View.VISIBLE else View.GONE
     }
 
+    override fun onResume() {
+        super.onResume()
+        refreshMyLifeList()
+    }
+
+    protected fun refreshMyLifeList(view: View? = this.view) {
+        val v = view ?: return
+        val myLifeFlex = v.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife) ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            myLifeFlex.removeAllViews()
+            myLifeListInit(myLifeFlex)
+        }
+    }
+
     private suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
         val userId = prefData.getUserId().ifEmpty { "--" }
         val visibleItems = lifeRepository.getMyLifeForDashboard(userId, getMyLifeListBase(userId))
+        if (visibleItems.isEmpty()) {
+            renderPlaceholder(flexboxLayout, getString(R.string.no_data_available)) {
+                homeItemClickListener?.openCallFragment(org.ole.planet.myplanet.ui.life.LifeFragment())
+            }
+            return
+        }
         for ((itemCnt, items) in visibleItems.withIndex()) {
             val dashboardItem = DashboardItem(items._id, items.title, items.imageId, ItemType.LIFE)
             flexboxLayout.addView(getLayout(itemCnt, dashboardItem, 0), params)
@@ -354,22 +418,23 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
             .setNegativeButton(R.string.dismiss, null)
             .create()
 
+        val adapter = HealthUsersAdapter { selected ->
+            selected._id?.let { userId ->
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val libraryList = viewModel.getLibraryListForUser(userId)
+                    showDownloadDialog(libraryList)
+                }
+            }
+            dialog.dismiss()
+        }
+        alertHealthListBinding.list.layoutManager = LinearLayoutManager(requireActivity())
+        alertHealthListBinding.list.adapter = adapter
+
         val job = viewLifecycleOwner.lifecycleScope.launch {
             viewModel.uiState.collect {
                 if (dialog.isShowing) {
                     if (it.users.isNotEmpty()) {
-                        val adapter = HealthUsersAdapter { selected ->
-                            selected._id?.let { userId ->
-                                viewLifecycleOwner.lifecycleScope.launch {
-                                    val libraryList = viewModel.getLibraryForSelectedUser(userId)
-                                    showDownloadDialog(libraryList)
-                                }
-                            }
-                            dialog.dismiss()
-                        }
                         adapter.submitList(it.users)
-                        alertHealthListBinding.list.layoutManager = LinearLayoutManager(requireActivity())
-                        alertHealthListBinding.list.adapter = adapter
                         alertHealthListBinding.list.visibility = View.VISIBLE
                     } else {
                         alertHealthListBinding.list.visibility = View.GONE
@@ -384,11 +449,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
     }
 
     fun syncKeyId() {
-        if (model?.getRoleAsString()?.contains("health") == true) {
-            transactionSyncManager.syncAllHealthData(prefData.rawPreferences, this)
-        } else {
-            transactionSyncManager.syncKeyIv(prefData.rawPreferences, this, profileDbHandler)
-        }
+        transactionSyncManager.syncDashboardKeyId(model?.getRoleAsString(), this)
     }
 
     override fun onSyncStarted() {
@@ -402,5 +463,4 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
     override fun onSyncFailed(msg: String?) {
         di?.dismiss()
     }
-
 }
