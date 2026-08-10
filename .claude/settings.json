@@ -1,13 +1,20 @@
 {
   "extraKnownMarketplaces": {
-    "dogi": {
+    "importing": {
       "source": {
         "source": "github",
         "repo": "dogi/kotlin-importing"
       }
+    },
+    "prepping": {
+      "source": {
+        "source": "github",
+        "repo": "dogi/merge-prepping"
+      }
     }
   },
   "enabledPlugins": {
-    "kotlin-importing@dogi": true
+    "kotlin-importing@importing": true,
+    "merge-prepping@prepping": true
   }
 }

@@ -10,7 +10,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
 /**
- * Room replacement for the former Realm `Meetup` model. Meetups are both synced (pulled from
+ * Room replacement for the former `Meetup` model. Meetups are both synced (pulled from
  * the server) and uploaded (locally created/edited meetups). All fields are simple scalars, so no
  * type converters are required. Persistence goes through
  * [org.ole.planet.myplanet.data.room.dao.MeetupDao].

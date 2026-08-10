@@ -82,6 +82,16 @@ class RetryRepositoryImplTest {
 
         assertEquals(5, operation.attemptCount)
         assertEquals(RetryOperation.STATUS_ABANDONED, operation.status)
+        coVerify { retryDao.update(operation) }
+    }
+
+    @Test
+    fun `updateAttempt does nothing when operation not found`() = runTest {
+        coEvery { retryDao.findById("missingId") } returns null
+
+        repository.updateAttempt("missingId", RetryFailure("itemId", "Test Error", 503))
+
+        coVerify(exactly = 0) { retryDao.update(any()) }
     }
 
     @Test
@@ -93,6 +103,15 @@ class RetryRepositoryImplTest {
 
         assertEquals(RetryOperation.STATUS_IN_PROGRESS, operation.status)
         coVerify { retryDao.update(operation) }
+    }
+
+    @Test
+    fun `markInProgress does nothing when operation not found`() = runTest {
+        coEvery { retryDao.findById("missingId") } returns null
+
+        repository.markInProgress("missingId")
+
+        coVerify(exactly = 0) { retryDao.update(any()) }
     }
 
     @Test
@@ -110,6 +129,15 @@ class RetryRepositoryImplTest {
     }
 
     @Test
+    fun `markCompleted does nothing when operation not found`() = runTest {
+        coEvery { retryDao.findById("missingId") } returns null
+
+        repository.markCompleted("missingId")
+
+        coVerify(exactly = 0) { retryDao.update(any()) }
+    }
+
+    @Test
     fun `markFailed updates status to pending when attempts remain`() = runTest {
         val operation = RetryOperation().apply {
             attemptCount = 1; maxAttempts = 5; status = RetryOperation.STATUS_IN_PROGRESS
@@ -123,6 +151,7 @@ class RetryRepositoryImplTest {
         assertEquals(404, operation.httpCode)
         assertEquals(RetryOperation.STATUS_PENDING, operation.status)
         assert(operation.nextRetryTime > 0)
+        coVerify { retryDao.update(operation) }
     }
 
     @Test
@@ -136,6 +165,16 @@ class RetryRepositoryImplTest {
 
         assertEquals(5, operation.attemptCount)
         assertEquals(RetryOperation.STATUS_ABANDONED, operation.status)
+        coVerify { retryDao.update(operation) }
+    }
+
+    @Test
+    fun `markFailed does nothing when operation not found`() = runTest {
+        coEvery { retryDao.findById("missingId") } returns null
+
+        repository.markFailed("missingId", "Fail reason", 500)
+
+        coVerify(exactly = 0) { retryDao.update(any()) }
     }
 
     @Test
