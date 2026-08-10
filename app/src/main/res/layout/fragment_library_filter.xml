@@ -165,6 +165,18 @@
                     android:choiceMode="multipleChoice"
                     android:nestedScrollingEnabled="true" />
             </LinearLayout>
+
+            <Button
+                android:id="@+id/btn_apply_filter"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/padding_normal"
+                android:background="@drawable/buttonblue"
+                android:text="@string/close"
+                android:textColor="@color/md_white_1000"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/expandable_layout_levels" />
       </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.core.widget.NestedScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>
