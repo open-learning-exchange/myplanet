@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -155,5 +156,156 @@ class NotificationsRepositoryImplTest {
         repository.insert(jsonObject)
 
         assertTrue(upsertSlot.captured.isRead)
+    }
+
+    @Test
+    fun `refresh does nothing`() = runTest {
+        repository.refresh()
+        // No exceptions, does nothing
+    }
+
+    @Test
+    fun `markNotificationAsRead marks summary as read when id starts with summary_`() = runTest {
+        coEvery { notificationDao.markSummaryAsRead(any(), any()) } returns 1
+
+        repository.markNotificationAsRead("summary_testType", "user1")
+
+        coVerify { notificationDao.markSummaryAsRead("user1", "testType") }
+        coVerify(exactly = 0) { notificationDao.markAsRead(any()) }
+    }
+
+    @Test
+    fun `markNotificationAsRead marks regular notification as read`() = runTest {
+        coEvery { notificationDao.markAsRead(any()) } returns 1
+
+        repository.markNotificationAsRead("regular_id", "user1")
+
+        coVerify { notificationDao.markAsRead("regular_id") }
+        coVerify(exactly = 0) { notificationDao.markSummaryAsRead(any(), any()) }
+    }
+
+    @Test
+    fun `getPendingSyncNotifications returns notifications from dao`() = runTest {
+        val list = listOf(AppNotification())
+        coEvery { notificationDao.getPendingSyncNotifications() } returns list
+
+        val result = repository.getPendingSyncNotifications()
+
+        assertEquals(list, result)
+        coVerify { notificationDao.getPendingSyncNotifications() }
+    }
+
+    @Test
+    fun `markNotificationsSynced marks all as synced`() = runTest {
+        coEvery { notificationDao.markSynced(any(), any()) } returns Unit
+        val syncResults = listOf(Pair("id1", "rev1"), Pair("id2", "rev2"))
+
+        repository.markNotificationsSynced(syncResults)
+
+        coVerify { notificationDao.markSynced("id1", "rev1") }
+        coVerify { notificationDao.markSynced("id2", "rev2") }
+    }
+
+    @Test
+    fun `markNotificationsSynced with empty list does nothing`() = runTest {
+        repository.markNotificationsSynced(emptyList())
+
+        coVerify(exactly = 0) { notificationDao.markSynced(any(), any()) }
+    }
+
+    @Test
+    fun `deleteNotifications with empty set does nothing`() = runTest {
+        val result = repository.deleteNotifications(emptySet())
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { notificationDao.getByIds(any()) }
+        coVerify(exactly = 0) { notificationDao.deleteByIds(any()) }
+    }
+
+    @Test
+    fun `deleteNotifications deletes existing notifications and returns deleted ids`() = runTest {
+        val ids = setOf("id1", "id2", "id3")
+        val notifications = listOf(
+            AppNotification().apply { id = "id1" },
+            AppNotification().apply { id = "id2" }
+        )
+        coEvery { notificationDao.getByIds(any()) } returns notifications
+        coEvery { notificationDao.deleteByIds(any()) } returns 2
+
+        val result = repository.deleteNotifications(ids)
+
+        assertEquals(setOf("id1", "id2"), result)
+        coVerify { notificationDao.getByIds(ids.toList()) }
+        coVerify { notificationDao.deleteByIds(listOf("id1", "id2")) }
+    }
+
+    @Test
+    fun `bulkInsertFromSync inserts parsed notifications`() = runTest {
+        val jsonArray = JsonArray()
+
+        val doc1 = JsonObject().apply {
+            add("doc", JsonObject().apply {
+                addProperty("_id", "testId1")
+                addProperty("user", "user1")
+                addProperty("message", "msg1")
+            })
+        }
+        val doc2 = JsonObject().apply {
+            add("doc", JsonObject().apply {
+                addProperty("_id", "_design/something")
+                addProperty("user", "user2")
+            })
+        }
+        val doc3 = JsonObject().apply {
+            add("doc", JsonObject().apply {
+                addProperty("_id", "testId2")
+                addProperty("user", "user3")
+                addProperty("message", "msg3")
+            })
+        }
+        jsonArray.add(doc1)
+        jsonArray.add(doc2)
+        jsonArray.add(doc3)
+
+        val existingNotification = AppNotification().apply {
+            id = "testId2"
+            needsSync = true
+            isRead = true
+        }
+        coEvery { notificationDao.getByIds(any()) } returns listOf(existingNotification)
+
+        val upsertSlot = slot<List<AppNotification>>()
+        coEvery { notificationDao.upsertAll(capture(upsertSlot)) } returns Unit
+
+        repository.bulkInsertFromSync(jsonArray)
+
+        val saved = upsertSlot.captured
+        assertEquals(2, saved.size)
+
+        val first = saved.find { it.id == "testId1" }!!
+        assertEquals("user1", first.userId)
+        assertEquals("msg1", first.message)
+        assertFalse(first.needsSync)
+        assertTrue(first.isRead) // parsed from missing 'status' which doesn't equal 'unread'
+
+        val second = saved.find { it.id == "testId2" }!!
+        assertEquals("user3", second.userId)
+        assertEquals("msg3", second.message)
+        assertTrue(second.needsSync)
+        assertTrue(second.isRead)
+    }
+
+    @Test
+    fun `bulkInsertFromSync with empty array does nothing`() = runTest {
+        val jsonArray = JsonArray()
+
+        val upsertSlot = slot<List<AppNotification>>()
+        coEvery { notificationDao.upsertAll(capture(upsertSlot)) } returns Unit
+
+        repository.bulkInsertFromSync(jsonArray)
+
+        val saved = upsertSlot.captured
+        assertTrue(saved.isEmpty())
+        coVerify(exactly = 0) { notificationDao.getByIds(any()) }
     }
 }
