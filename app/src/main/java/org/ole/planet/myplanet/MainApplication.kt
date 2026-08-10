@@ -84,6 +84,9 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     lateinit var sharedPrefManager: SharedPrefManager
 
     @Inject
+    lateinit var themeManager: ThemeManager
+
+    @Inject
     @DefaultPreferences
     lateinit var defaultPreferencesProvider: Provider<SharedPreferences>
     val defaultPref: SharedPreferences by lazy { defaultPreferencesProvider.get() }
@@ -164,6 +167,44 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                     }
                 }
                 apkLogDao.insert(log)
+                true
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
+        }
+
+        suspend fun saveLogsToRoom(pendingLogs: List<CrashLogStore.PendingLog>): Boolean {
+            if (pendingLogs.isEmpty()) return true
+            val entryPoint = EntryPointAccessors.fromApplication(
+                context,
+                CoreDependenciesEntryPoint::class.java
+            )
+            val userSessionManager = entryPoint.userSessionManager()
+            val spm = entryPoint.sharedPrefManager()
+            val apkLogDao = entryPoint.apkLogDao()
+            return try {
+                val model = userSessionManager.getUserModel()
+                val versionName = getVersionName(context)
+                val parentCode = spm.getParentCode()
+                val planetCode = spm.getPlanetCode()
+
+                val logsToInsert = pendingLogs.map { pending ->
+                    ApkLog().apply {
+                        id = "${UUID.randomUUID()}"
+                        this.parentCode = parentCode
+                        this.createdOn = planetCode
+                        model?.let { userId = it.id }
+                        this.time = pending.time
+                        page = ""
+                        version = versionName
+                        this.type = pending.type
+                        if (pending.error.isNotEmpty()) {
+                            this.error = pending.error
+                        }
+                    }
+                }
+                apkLogDao.insertAll(logsToInsert)
                 true
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -305,9 +346,13 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             val pendingLogs = withContext(dispatcherProvider.io) {
                 CrashLogStore.loadPendingLogs(this@MainApplication)
             }
-            for (pending in pendingLogs) {
-                if (saveLogToRoom(pending.type, pending.error, pending.time)) {
-                    withContext(dispatcherProvider.io) { pending.file.delete() }
+            if (pendingLogs.isNotEmpty()) {
+                if (saveLogsToRoom(pendingLogs)) {
+                    withContext(dispatcherProvider.io) {
+                        for (pending in pendingLogs) {
+                            pending.file.delete()
+                        }
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -429,20 +474,24 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     private suspend fun observeNetworkForDownloads() {
         withContext(dispatcherProvider.default) {
             isNetworkConnectedFlow.onEach { isConnected ->
-                if (isConnected) {
-                    val serverUrl = sharedPrefManager.getServerUrl()
-                    if (serverUrl.isNotEmpty()) {
-                        applicationScope.launch {
-                            val canReachServer = isServerReachable(serverUrl, dispatcherProvider.io)
-                            if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
-                                resourceDownloadCoordinator.startBackgroundDownload(
-                                    downloadAllFiles(resourcesRepository.getAllLibrariesToSync())
-                                )
-                            }
-                        }
-                    }
+                if (!isConnected) return@onEach
+
+                val serverUrl = sharedPrefManager.getServerUrl()
+                if (serverUrl.isEmpty()) return@onEach
+
+                applicationScope.launch {
+                    checkServerAndStartDownload(serverUrl)
                 }
             }.launchIn(applicationScope)
+        }
+    }
+
+    private suspend fun checkServerAndStartDownload(serverUrl: String) {
+        val canReachServer = isServerReachable(serverUrl, dispatcherProvider.io)
+        if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
+            resourceDownloadCoordinator.startBackgroundDownload(
+                downloadAllFiles(resourcesRepository.getAllLibrariesToSync())
+            )
         }
     }
 
@@ -501,7 +550,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     }
 
     private fun getCurrentThemeMode(): String {
-        return ThemeManager.getCurrentThemeMode(context)
+        return themeManager.getCurrentThemeMode()
     }
 
     private fun onAppForegrounded() {

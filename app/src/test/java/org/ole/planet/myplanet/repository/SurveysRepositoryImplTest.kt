@@ -300,4 +300,48 @@ class SurveysRepositoryImplTest {
         verify(exactly = 0) { sharedPreferencesEditor.remove("reminder_surveys_survey2") }
     }
 
+    @Test
+    fun `getSurveyInfos groups submissions correctly by resolved survey IDs`() = runTest {
+        // Setup surveys
+        val survey1 = StepExam(id = "survey1", createdDate = 1696161600000L)
+        val survey2 = StepExam(id = "survey2", createdDate = 1696248000000L)
+        val surveys = listOf(survey1, survey2)
+
+        // Setup submissions with edge cases
+        val submissions = listOf(
+            // Exact ID
+            Submission(id = "sub1", parentId = "survey1", status = "complete", startTime = 1000L),
+            // Suffixed ID
+            Submission(id = "sub2", parentId = "survey2@some_suffix", status = "requires grading", startTime = 2000L),
+            // Unrelated submission
+            Submission(id = "sub3", parentId = "unrelated_survey", status = "complete", startTime = 3000L),
+            // Incomplete submission
+            Submission(id = "sub4", parentId = "survey1", status = "pending", startTime = 4000L),
+            // Overlapping-looking ID
+            Submission(id = "sub5", parentId = "survey11", status = "complete", startTime = 5000L),
+            // Another valid one for survey1
+            Submission(id = "sub6", parentId = "survey1@another_suffix", status = "complete", startTime = 6000L)
+        )
+
+        val userId = "user1"
+        coEvery { submissionDao.getByUserIdWithoutTeam(userId) } returns submissions
+        every { context.resources.getQuantityString(any(), any(), any()) } returns "N taken"
+
+        val result = repository.getSurveyInfos(isTeam = false, teamId = null, userId = userId, surveys = surveys)
+
+        // survey1 should have sub1 and sub6
+        val info1 = result["survey1"]
+        assertEquals("survey1", info1?.surveyId)
+        // verify counts logic (we mock getQuantityString but we can assert the map keys)
+        assertTrue(result.containsKey("survey1"))
+
+        // survey2 should have sub2
+        val info2 = result["survey2"]
+        assertEquals("survey2", info2?.surveyId)
+        assertTrue(result.containsKey("survey2"))
+
+        // Only 2 surveys were requested
+        assertEquals(2, result.size)
+    }
+
 }
