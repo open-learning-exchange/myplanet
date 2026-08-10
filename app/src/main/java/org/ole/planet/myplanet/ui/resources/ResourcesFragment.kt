@@ -659,6 +659,15 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         filter.setOnClickListener {
             bottomSheet.visibility = if (bottomSheet.isVisible) View.GONE else View.VISIBLE
         }
+        binding.root.findViewById<View>(R.id.btn_close_filter)?.setOnClickListener {
+            bottomSheet.visibility = View.GONE
+        }
+        binding.btnCollections.setOnClickListener {
+            bottomSheet.visibility = View.GONE
+        }
+        binding.btnClearTags.setOnClickListener {
+            bottomSheet.visibility = View.GONE
+        }
         binding.filterCategories.setOnClickListener {
             val f = ResourcesFilterFragment()
             f.setListener(this)
@@ -666,11 +675,13 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             bottomSheet.visibility = View.GONE
         }
         binding.orderByDateButton.setOnClickListener {
+            bottomSheet.visibility = View.GONE
             adapterLibrary.toggleSortOrder {
                 recyclerView.scrollToPosition(0)
             }
         }
         binding.orderByTitleButton.setOnClickListener {
+            bottomSheet.visibility = View.GONE
             adapterLibrary.toggleTitleSortOrder {
                 recyclerView.scrollToPosition(0)
             }
@@ -719,9 +730,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
         if (userId != null && itemsToDelete.isNotEmpty()) {
             lifecycleScope.launch(dispatcherProvider.io) {
-                itemsToDelete.forEach { resourceId ->
-                    resourcesRepository.removeResourceFromShelf(resourceId, userId)
-                }
+                resourcesRepository.removeResourcesFromShelf(itemsToDelete, userId)
                 withContext(dispatcherProvider.main) {
                     _binding ?: return@withContext
                     Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
