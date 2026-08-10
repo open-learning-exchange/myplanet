@@ -35,7 +35,7 @@ class CoursesViewModel @Inject constructor(
     private val _coursesState = MutableStateFlow(CoursesUiState())
     val coursesState: StateFlow<CoursesUiState> = _coursesState.asStateFlow()
 
-    private var isTitleAscending = true
+    private var isTitleAscending = false
     private var isDateAscending = true
     private var activeSort: SortType? = null
 
@@ -53,7 +53,7 @@ class CoursesViewModel @Inject constructor(
         _coursesState.value = _coursesState.value.copy(courses = sortCourses(_coursesState.value.courses))
     }
 
-    private fun sortCourses(courses: List<org.ole.planet.myplanet.model.Course>): List<org.ole.planet.myplanet.model.Course> {
+    private fun sortCourses(courses: List<Course>): List<Course> {
         return when (activeSort) {
             SortType.TITLE -> if (isTitleAscending) {
                 courses.sortedBy { it.courseTitle.lowercase() }

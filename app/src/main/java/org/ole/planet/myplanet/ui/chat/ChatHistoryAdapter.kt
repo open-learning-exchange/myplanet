@@ -140,7 +140,7 @@ class ChatHistoryAdapter(
             chatShareDialogBinding.listView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context)
             shareTargetAdapter = ChatShareTargetAdapter { clickedItem ->
                 if (clickedItem.isGroup) {
-                    val currentFlatList = (chatShareDialogBinding.listView.adapter as ChatShareTargetAdapter).currentList
+                    val currentFlatList = shareTargetAdapter.currentList
                     val currentlyExpanded = currentFlatList.firstOrNull { it.isGroup && it.title == clickedItem.title }?.isExpanded ?: false
                     val expandedGroups = currentFlatList.filter { it.isGroup && it.isExpanded }.map { it.title }.toMutableSet()
                     if (currentlyExpanded) {
