@@ -222,3 +222,93 @@ Not applied — these mutate PR state on GitHub.
 
 1. **`on hold`** → the 6 held PRs: #15169, #15275, #15305, #15307, #15321, #15327.
 2. **`automerge`** → the 48 Wave-1 PRs, so `.github/workflows/automerge.yml` can drain them.
+
+---
+
+## Title audit — 35 un-massaged PRs
+
+Titles come in three shapes: **house** (`area: smoother thing verbing (fixes #N)` — massaged), **partial** (issue linked, no `area:` prefix — all external contributors), **raw** (untouched since the agent opened it).
+
+Raw title is a proxy for *never triaged*, and untriaged PRs rot:
+
+| Bucket | raw share |
+|---|---|
+| Wave 1 (merges clean) | 9 / 48 — **19%** |
+| Wave 2 (displaced) | 4 / 7 — 57% |
+| Wave 3 (**broken vs master**) | 6 / 9 — **67%** |
+| `ready` + `priority` | 10 / 14 — 71% |
+
+**Not one of the 30 raw PRs links a tracking issue.** Every proposal below is therefore marked *needs issue* rather than carrying a `(fixes #N)`; the 5 partials keep the issue they already link and only gain the `area:` prefix.
+
+Used as a **triage-order hint, not a gate** — labels stay authoritative for what merges, so Wave 1 stays at 48 and `priority` #15316 stays in. Nothing here has been applied to any PR.
+
+
+### Wave 1 — `automerge` live
+
+Squash-merge bakes the title into `master` permanently. The urgent ones.
+
+| PR | Author | Current title | Proposed | |
+|---|---|---|---|---|
+| [#15259](https://github.com/open-learning-exchange/myplanet/pull/15259) | ragilzakaria | display newly added image when editing a voice post (fixes #15253) | `teams: smoother voice post image editing (fixes #15253)` | issue linked |
+| [#15269](https://github.com/open-learning-exchange/myplanet/pull/15269) | dogi | Optimize `ResourceSearchUtils` by caching normalized titles to fix search lag | `resources: smoother search utils title caching` | needs issue |
+| [#15280](https://github.com/open-learning-exchange/myplanet/pull/15280) | dogi | Refactor UI State Collection in BaseDashboardFragment | `dashboard: smoother base fragment state collecting` | needs issue |
+| [#15315](https://github.com/open-learning-exchange/myplanet/pull/15315) | dogi | Optimize NotificationUtils.getInstance allocations | `all: smoother notification utils instancing` | needs issue |
+| [#15316](https://github.com/open-learning-exchange/myplanet/pull/15316) | dogi | Refactor: Split LegacyEntityDaos.kt into per-DAO files | `all: smoother legacy entity daos splitting` | needs issue |
+| [#15325](https://github.com/open-learning-exchange/myplanet/pull/15325) | dogi | Refactor dashboard-triggered key sync out of BaseDashboardFragment | `dashboard: smoother key sync repository moving` | needs issue |
+| [#15331](https://github.com/open-learning-exchange/myplanet/pull/15331) | dogi | ⚡ Optimize N+1 database insertion bottlenecks during crash log sweep operations | `all: smoother crash log inserting` | needs issue |
+| [#15337](https://github.com/open-learning-exchange/myplanet/pull/15337) | dogi | 🧪 Add tests for ConfigurationsRepository | `all: smoother configurations repository testing` | needs issue |
+| [#15354](https://github.com/open-learning-exchange/myplanet/pull/15354) | dogi | ⚡ perf: cache SimpleDateFormat instances to reduce allocation overhead | `enterprises: smoother date format caching` | needs issue |
+| [#15383](https://github.com/open-learning-exchange/myplanet/pull/15383) | dogi | A31. Use payloads instead of full rebinds in VoicesAdapter | `teams: smoother voices adapter payloading` | needs issue |
+
+### On hold for `priority`
+
+Held behind a priority PR — time to fix the title before it re-enters the queue.
+
+| PR | Author | Current title | Proposed | |
+|---|---|---|---|---|
+| [#15169](https://github.com/open-learning-exchange/myplanet/pull/15169) | ragilzakaria | courses leaving rejoining breaks (fixes #15156) | `courses: smoother leaving and rejoining (fixes #15156)` | issue linked |
+| [#15307](https://github.com/open-learning-exchange/myplanet/pull/15307) | dogi | Stop re-creating adapters in `BaseRecyclerFragment` | `all: smoother recycler fragment adapter reusing` | needs issue |
+| [#15327](https://github.com/open-learning-exchange/myplanet/pull/15327) | dogi | Refactor RealtimeSyncMixin table updates to Repositories | `sync: smoother realtime sync mixin repository moving` | needs issue |
+
+### Wave 2 — needs rebase
+
+Displaced by a Wave 1 PR. Needs a rebase anyway; retitle in the same pass.
+
+| PR | Author | Current title | Proposed | |
+|---|---|---|---|---|
+| [#15273](https://github.com/open-learning-exchange/myplanet/pull/15273) | dogi | Use injected Gson instead of constructing one at call sites | `all: smoother injected gson reusing` | needs issue |
+| [#15300](https://github.com/open-learning-exchange/myplanet/pull/15300) | dogi | Refactor: Remove cross-repo passthroughs on CoursesRepository | `courses: less repository passthrough is more` | needs issue |
+| [#15340](https://github.com/open-learning-exchange/myplanet/pull/15340) | dogi | 🧪 [Testing Improvement] Add tests for uploadPersonalDocument in PersonalsRepository | `sync: smoother personals repository testing` | needs issue |
+| [#15379](https://github.com/open-learning-exchange/myplanet/pull/15379) | dogi | 🧹 [Code Health] Reduce deep nesting in MainApplication ANR listener | `all: smoother anr listener nesting` | needs issue |
+
+### Wave 3 — broken vs `master`
+
+Already conflicts. Two thirds of this bucket was never massaged.
+
+| PR | Author | Current title | Proposed | |
+|---|---|---|---|---|
+| [#15282](https://github.com/open-learning-exchange/myplanet/pull/15282) | dogi | Move sorting logic from adapters to viewmodels | `all: smoother adapter sorting view modelling` | needs issue |
+| [#15289](https://github.com/open-learning-exchange/myplanet/pull/15289) | dogi | Delete dead repository interface surface | `all: less repository interface surface is more` | needs issue |
+| [#15294](https://github.com/open-learning-exchange/myplanet/pull/15294) | dogi | Add ViewModels for Leaders, Life, and SendSurvey fragments | `all: smoother leaders life survey view modelling` | needs issue |
+| [#15302](https://github.com/open-learning-exchange/myplanet/pull/15302) | dogi | Refactor: Move storage scanning and deletion out of StorageCategoryDetailFragment | `settings: smoother storage scanning repository moving` | needs issue |
+| [#15318](https://github.com/open-learning-exchange/myplanet/pull/15318) | dogi | Refactor: Remove adapter-side mutable working lists | `all: less adapter working list is more` | needs issue |
+| [#15339](https://github.com/open-learning-exchange/myplanet/pull/15339) | dogi | 🧪 Add unit tests for ResourcesRepositoryImpl | `resources: smoother repository testing` | needs issue |
+
+### `ready` / `priority`
+
+Pre-review. A raw title here marks the untriaged backlog, not a defect.
+
+| PR | Author | Current title | Proposed | |
+|---|---|---|---|---|
+| [#15267](https://github.com/open-learning-exchange/myplanet/pull/15267) | ragilzakaria | prevent download popup dialog cropping when text size is large (fixes #15263) | `resources: smoother download dialog sizing (fixes #15263)` | issue linked |
+| [#15274](https://github.com/open-learning-exchange/myplanet/pull/15274) | dogi | Refactor UserRepositoryImpl to use targeted UserDao queries | `all: smoother user repository dao querying` | needs issue |
+| [#15276](https://github.com/open-learning-exchange/myplanet/pull/15276) | dogi | Add indices to the 8 entities that have none | `all: smoother entity index adding` | needs issue |
+| [#15284](https://github.com/open-learning-exchange/myplanet/pull/15284) | dogi | Fix areContentsTheSame on adapters whose model has no equals() | `all: smoother adapter contents comparing` | needs issue |
+| [#15291](https://github.com/open-learning-exchange/myplanet/pull/15291) | dogi | Refactor bare lifecycleScope flow collections | `all: smoother lifecycle scope collecting` | needs issue |
+| [#15297](https://github.com/open-learning-exchange/myplanet/pull/15297) | dogi | Refactor: Remove UserSessionManager from EventsDetailViewModel | `teams: less events view model session managing is more` | needs issue |
+| [#15306](https://github.com/open-learning-exchange/myplanet/pull/15306) | dogi | Fix: Cancel stale coroutine jobs in long-lived fragments | `all: smoother fragment job canceling` | needs issue |
+| [#15317](https://github.com/open-learning-exchange/myplanet/pull/15317) | dogi | Refactor MyHealthFragment data layer behind health boundary | `life: smoother health repository boundary moving` | needs issue |
+| [#15319](https://github.com/open-learning-exchange/myplanet/pull/15319) | dogi | Guard SyncManager and SyncTimeLogger debug logging | `sync: smoother debug logging guarding` | needs issue |
+| [#15326](https://github.com/open-learning-exchange/myplanet/pull/15326) | dogi | Refactor IO-bound logic to ViewModels | `all: smoother io view modelling` | needs issue |
+| [#15437](https://github.com/open-learning-exchange/myplanet/pull/15437) | ragilzakaria | suppress download suggestion dialog in Courses and myCourses (fixes #15435) | `courses: less download suggestion dialog is more (fixes #15435)` | issue linked |
+| [#15446](https://github.com/open-learning-exchange/myplanet/pull/15446) | Okuro3499 | UI: redesign courses/library with grid/list views (fixes #15440) | `courses: smoother grid and list viewing (fixes #15440)` | issue linked |
