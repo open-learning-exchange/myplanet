@@ -62,6 +62,46 @@ class UploadRepositoryImplTest {
     }
 
     @Test
+    fun `queryPending returns exam results and hydrates submissions`() = runTest {
+        val submission = org.ole.planet.myplanet.model.Submission(id = "sub-1", teamId = "team-1")
+        val answer = org.ole.planet.myplanet.model.Answer(id = "ans-1", submissionId = "sub-1")
+
+        coEvery { submissionDao.getPendingExamResults() } returns listOf(submission)
+        coEvery { answerDao.getBySubmissionIds(listOf("sub-1")) } returns listOf(answer)
+
+        val result: List<org.ole.planet.myplanet.model.Submission> = repository.queryPending(
+            UploadQueryContract(UploadQueryType.ExamResults)
+        )
+
+        assertEquals(1, result.size)
+        val res = result.first()
+        assertEquals("sub-1", res.id)
+        assertEquals(1, res.answers?.size)
+        assertEquals("ans-1", res.answers?.first()?.id)
+        assertEquals("team-1", res.membershipDoc?.teamId)
+    }
+
+    @Test
+    fun `queryPending returns completed submissions and hydrates submissions`() = runTest {
+        val submission = org.ole.planet.myplanet.model.Submission(id = "sub-2") // no teamId
+        val answer = org.ole.planet.myplanet.model.Answer(id = "ans-2", submissionId = "sub-2")
+
+        coEvery { submissionDao.getPendingSubmissions() } returns listOf(submission)
+        coEvery { answerDao.getBySubmissionIds(listOf("sub-2")) } returns listOf(answer)
+
+        val result: List<org.ole.planet.myplanet.model.Submission> = repository.queryPending(
+            UploadQueryContract(UploadQueryType.CompletedSubmissions)
+        )
+
+        assertEquals(1, result.size)
+        val res = result.first()
+        assertEquals("sub-2", res.id)
+        assertEquals(1, res.answers?.size)
+        assertEquals("ans-2", res.answers?.first()?.id)
+        assertEquals(null, res.membershipDoc)
+    }
+
+    @Test
     fun `markUploaded delegates submission updates to dao`() = runTest {
         coEvery { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") } returns 1
 
@@ -75,6 +115,42 @@ class UploadRepositoryImplTest {
     }
 
     @Test
+    fun `markUploaded with Submissions returns failure if dao returns 0`() = runTest {
+        coEvery { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") } returns 0
+
+        val failed = repository.markUploaded(
+            UploadUpdateContract(UploadUpdateType.Submissions),
+            listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", com.google.gson.JsonObject()))
+        )
+
+        assertEquals(1, failed.size)
+        assertEquals("sub-1", failed.first().localId)
+        coVerify { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") }
+    }
+
+    @Test
+    fun `markUploaded updates exams and returns missing exams as failures`() = runTest {
+        val existingExam = StepExam(id = "exam-1")
+        coEvery { examDao.getByIds(listOf("exam-1", "exam-missing")) } returns listOf(existingExam)
+
+        val result1 = UploadedItemResult("exam-1", "remote-1", "rev-1", com.google.gson.JsonObject())
+        val result2 = UploadedItemResult("exam-missing", "remote-2", "rev-2", com.google.gson.JsonObject())
+
+        val failed = repository.markUploaded(
+            UploadUpdateContract(UploadUpdateType.Exams),
+            listOf(result1, result2)
+        )
+
+        // Only "exam-missing" should fail
+        assertEquals(1, failed.size)
+        assertEquals("exam-missing", failed.first().localId)
+
+        // examDao.upsertAll should be called with existingExam whose _rev has been updated to "rev-1"
+        assertEquals("rev-1", existingExam._rev)
+        coVerify { examDao.upsertAll(listOf(existingExam)) }
+    }
+
+    @Test
     fun `postUpload calls postDoc on ApiInterface`() = runTest {
         val url = "testUrl"
         val data = com.google.gson.JsonObject()
@@ -85,6 +161,19 @@ class UploadRepositoryImplTest {
 
         assertEquals(expectedResponse, result)
         coVerify(exactly = 1) { apiInterface.postDoc(any(), eq("application/json"), eq(url), eq(data)) }
+    }
+
+    @Test
+    fun `postUploadArray calls postDocArray on ApiInterface`() = runTest {
+        val url = "testUrl"
+        val data = com.google.gson.JsonObject()
+        val expectedResponse = mockk<retrofit2.Response<com.google.gson.JsonArray>>()
+        coEvery { apiInterface.postDocArray(any(), eq("application/json"), eq(url), eq(data)) } returns expectedResponse
+
+        val result = repository.postUploadArray(url, data)
+
+        assertEquals(expectedResponse, result)
+        coVerify(exactly = 1) { apiInterface.postDocArray(any(), eq("application/json"), eq(url), eq(data)) }
     }
 
     @Test
@@ -110,5 +199,26 @@ class UploadRepositoryImplTest {
 
         assertEquals(expectedResponse, result)
         coVerify(exactly = 1) { apiInterface.getJsonObject(any(), eq(url)) }
+    }
+
+    @Test
+    fun `uploadAttachment calls uploadResource on ApiInterface`() = runTest {
+        val file = java.io.File.createTempFile("test", "txt")
+        file.writeText("test content")
+        file.deleteOnExit()
+
+        val expectedResponse = mockk<retrofit2.Response<com.google.gson.JsonObject>>()
+        coEvery { apiInterface.uploadResource(any(), any(), any()) } returns expectedResponse
+
+        val result = repository.uploadAttachment(
+            file = file,
+            destinationFormat = "%s/%s/%s",
+            id = "doc-1",
+            rev = "rev-1",
+            name = "file.txt"
+        )
+
+        assertEquals(expectedResponse, result)
+        coVerify(exactly = 1) { apiInterface.uploadResource(any(), any(), any()) }
     }
 }
