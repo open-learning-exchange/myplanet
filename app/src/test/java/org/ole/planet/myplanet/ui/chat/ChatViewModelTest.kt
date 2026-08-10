@@ -312,4 +312,59 @@ class ChatViewModelTest {
 
         job.cancel()
     }
+
+    @Test
+    fun `shareChatToVoices emits AlreadyShared when previously shared`() = runTest {
+        val chatId = "chat_123"
+        val viewInId = "view_456"
+        val payload = hashMapOf<String?, String>("test" to "data")
+
+        coEvery { voicesRepository.isAlreadyShared(chatId, viewInId) } returns true
+
+        val emissions = mutableListOf<ChatViewModel.ShareChatResult>()
+        val job = launch(testDispatcher) {
+            viewModel.shareResult.collect { emissions.add(it) }
+        }
+
+        viewModel.shareChatToVoices(chatId, viewInId, payload)
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, emissions.size)
+        assertTrue(emissions[0] is ChatViewModel.ShareChatResult.AlreadyShared)
+
+        coVerify(exactly = 1) { voicesRepository.isAlreadyShared(chatId, viewInId) }
+        coVerify(exactly = 0) { voicesRepository.createNews(any(), any(), any()) }
+
+        job.cancel()
+    }
+
+    @Test
+    fun `shareChatToVoices emits Shared when successfully creates news`() = runTest {
+        val chatId = "chat_123"
+        val viewInId = "view_456"
+        val payload = hashMapOf<String?, String>("test" to "data")
+        val createdNews = News().apply { id = "news_123" }
+
+        coEvery { voicesRepository.isAlreadyShared(chatId, viewInId) } returns false
+        coEvery { voicesRepository.createNews(payload, any(), null) } returns createdNews
+
+        val emissions = mutableListOf<ChatViewModel.ShareChatResult>()
+        val job = launch(testDispatcher) {
+            viewModel.shareResult.collect { emissions.add(it) }
+        }
+
+        viewModel.shareChatToVoices(chatId, viewInId, payload)
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, emissions.size)
+        assertTrue(emissions[0] is ChatViewModel.ShareChatResult.Shared)
+        val result = emissions[0] as ChatViewModel.ShareChatResult.Shared
+        assertEquals(createdNews, result.news)
+        assertEquals(chatId, result.chatId)
+
+        coVerify(exactly = 1) { voicesRepository.isAlreadyShared(chatId, viewInId) }
+        coVerify(exactly = 1) { voicesRepository.createNews(payload, any(), null) }
+
+        job.cancel()
+    }
 }
