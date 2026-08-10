@@ -27,14 +27,7 @@ class EnterprisesFinancesAdapter(
 ) : ListAdapter<Transaction, EnterprisesFinancesAdapter.FinanceViewHolder>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
-        areContentsTheSame = { oldItem, newItem ->
-                oldItem.date == newItem.date &&
-                        oldItem.description == newItem.description &&
-                        oldItem.type == newItem.type &&
-                        oldItem.amount == newItem.amount &&
-                        oldItem.balance == newItem.balance &&
-                        oldItem.imageName == newItem.imageName
-            }
+        areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
     )
 ) {
 
