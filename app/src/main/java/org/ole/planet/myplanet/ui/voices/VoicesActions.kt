@@ -30,6 +30,8 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 object VoicesActions {
+    private val dateFormatter = ThreadLocal.withInitial { SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()) }
+
     data class EditDialogComponents(
         val view: View,
         val editText: EditText,
@@ -217,7 +219,7 @@ object VoicesActions {
             userModel.language.toString(),
             userModel.phoneNumber.toString(),
             (userModel.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0).toString(),
-            (activitiesRepository.getLastVisit(userModel.name ?: "")?.let { SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(Date(it)) } ?: "No logout record found"),
+            (activitiesRepository.getLastVisit(userModel.name ?: "")?.let { dateFormatter.get()?.format(Date(it)) } ?: "No logout record found"),
             "${userModel.firstName} ${userModel.lastName}",
             userModel.level.toString(),
             userModel.userImage
