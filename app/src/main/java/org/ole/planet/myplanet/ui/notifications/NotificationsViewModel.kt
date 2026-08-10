@@ -191,6 +191,8 @@ class NotificationsViewModel @Inject constructor(
                     }
                 }
                 _unreadCount.value = 0
+                _expandedGroups.value = emptySet()
+                _collapsedGroups.value = emptySet()
             }
         }
     }
@@ -228,7 +230,7 @@ class NotificationsViewModel @Inject constructor(
                 val isExpanded = when {
                     type in expandedGroups -> true
                     type in collapsedGroups -> false
-                    else -> isGroupDefaultExpanded(type, notifications)
+                    else -> unreadCount > 0
                 }
                 add(NotificationListItem.Header(type, typeLabelFor(type), unreadCount, isExpanded))
                 if (isExpanded) {
