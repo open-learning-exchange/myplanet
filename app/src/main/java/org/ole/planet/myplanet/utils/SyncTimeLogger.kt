@@ -219,7 +219,7 @@ object SyncTimeLogger {
     }
 
     private fun formatTimestamp(timestamp: Long): String {
-        return timestampFormat.get()!!.format(Date(timestamp))
+        return (timestampFormat.get() as SimpleDateFormat).format(Date(timestamp))
     }
 
     private fun generateSummary(): String {
