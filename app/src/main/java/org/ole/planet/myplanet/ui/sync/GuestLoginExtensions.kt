@@ -12,7 +12,6 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertGuestLoginBinding
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.utils.AuthUtils
 import org.ole.planet.myplanet.utils.Utilities.toast
 import org.ole.planet.myplanet.utils.textChanges
 
@@ -37,7 +36,7 @@ fun LoginActivity.showGuestLoginDialog(userRepository: UserRepository) {
                 if (input.isEmpty()) {
                     binding.etUserName.error = null
                 } else {
-                    val error = AuthUtils.validateUsername(input, userRepository)
+                    val error = userRepository.validateUsername(input)
                     binding.etUserName.error = error
                 }
             }
@@ -56,7 +55,7 @@ fun LoginActivity.showGuestLoginDialog(userRepository: UserRepository) {
     login.setOnClickListener {
         val username = binding.etUserName.text.toString().trim { it <= ' ' }
         lifecycleScope.launch {
-            val error = AuthUtils.validateUsername(username, userRepository)
+            val error = userRepository.validateUsername(username)
             if (error == null) {
                 val existingUser = userRepository.findUserByName(username)
                 dialog.dismiss()
