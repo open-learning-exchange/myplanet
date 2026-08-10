@@ -14,9 +14,7 @@ import android.widget.RadioButton
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.applandeo.materialcalendarview.CalendarDay
@@ -40,6 +38,7 @@ import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.ui.events.EventsAdapter
 import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -214,53 +213,45 @@ class TeamCalendarFragment : BaseTeamFragment() {
         calendar = binding.calendarView
         calendarEventsMap = mutableMapOf()
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    viewModel.meetups.collect { meetups ->
-                        val newDates = meetups.mapTo(mutableListOf()) { meetup ->
-                            val calendarInstance = Calendar.getInstance()
-                            calendarInstance.timeInMillis = meetup.startDate
-                            calendarInstance
-                        }
+        collectWhenStarted(viewModel.meetups) { meetups ->
+            val newDates = meetups.mapTo(mutableListOf()) { meetup ->
+                val calendarInstance = Calendar.getInstance()
+                calendarInstance.timeInMillis = meetup.startDate
+                calendarInstance
+            }
 
-                        if (isAdded && activity != null) {
-                            eventDates.clear()
-                            eventDates.addAll(newDates)
-                            val calendarDays = newDates.map { CalendarDay(it).apply {
-                                imageResource = R.drawable.ic_calendar
-                            } }
-                            binding.calendarView.setCalendarDays(calendarDays)
-                            binding.calendarView.selectedDates = ArrayList(newDates)
-                        }
+            if (isAdded && activity != null) {
+                eventDates.clear()
+                eventDates.addAll(newDates)
+                val calendarDays = newDates.map { CalendarDay(it).apply {
+                    imageResource = R.drawable.ic_calendar
+                } }
+                binding.calendarView.setCalendarDays(calendarDays)
+                binding.calendarView.selectedDates = ArrayList(newDates)
+            }
 
-                        if (::clickedCalendar.isInitialized && meetupDialog?.isShowing == true) {
-                            val clickedDateInMillis = clickedCalendar.timeInMillis
-                            val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
-                                .atZone(ZoneId.systemDefault())
-                                .toLocalDate()
+            if (::clickedCalendar.isInitialized && meetupDialog?.isShowing == true) {
+                val clickedDateInMillis = clickedCalendar.timeInMillis
+                val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
 
-                            val filteredMeetups = meetups.filter { meetup ->
-                                val meetupDate = Instant.ofEpochMilli(meetup.startDate)
-                                    .atZone(ZoneId.systemDefault())
-                                    .toLocalDate()
-                                meetupDate == clickedDate
-                            }
-
-                            meetupAdapter?.submitList(filteredMeetups)
-                        }
-                    }
+                val filteredMeetups = meetups.filter { meetup ->
+                    val meetupDate = Instant.ofEpochMilli(meetup.startDate)
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate()
+                    meetupDate == clickedDate
                 }
-                launch {
-                    viewModel.createMeetupResult.collect { success ->
-                        if (success) {
-                            Utilities.toast(activity, getString(R.string.meetup_added))
-                            addMeetupDialog?.dismiss()
-                        } else {
-                            Utilities.toast(activity, getString(R.string.meetup_not_added))
-                        }
-                    }
-                }
+
+                meetupAdapter?.submitList(filteredMeetups)
+            }
+        }
+        collectWhenStarted(viewModel.createMeetupResult) { success ->
+            if (success) {
+                Utilities.toast(activity, getString(R.string.meetup_added))
+                addMeetupDialog?.dismiss()
+            } else {
+                Utilities.toast(activity, getString(R.string.meetup_not_added))
             }
         }
 

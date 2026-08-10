@@ -43,6 +43,7 @@ import org.ole.planet.myplanet.databinding.FragmentAddResourceBinding
 import org.ole.planet.myplanet.services.AudioRecorder
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -329,24 +330,22 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                     viewModel.saveResource(title, userId, userName, path, desc)
                 }
 
-                val job = lifecycleOwner.lifecycleScope.launch {
-                    viewModel.state.collect { state ->
-                        when (state) {
-                            is AddResourceState.TitleExists -> {
-                                etTitle.error = context.getString(R.string.resource_title_already_exists)
-                                positiveButton.isEnabled = true
-                                viewModel.resetState()
-                            }
-                            is AddResourceState.Success -> {
-                                Utilities.toast(context, context.getString(R.string.resource_saved_to_my_personal))
-                                positiveButton.isEnabled = true
-                                dialog.dismiss()
-                                onDismiss.invoke()
-                                viewModel.resetState()
-                            }
-                            is AddResourceState.Idle -> {
-                                // Do nothing
-                            }
+                val job = lifecycleOwner.collectWhenStarted(viewModel.state) { state ->
+                    when (state) {
+                        is AddResourceState.TitleExists -> {
+                            etTitle.error = context.getString(R.string.resource_title_already_exists)
+                            positiveButton.isEnabled = true
+                            viewModel.resetState()
+                        }
+                        is AddResourceState.Success -> {
+                            Utilities.toast(context, context.getString(R.string.resource_saved_to_my_personal))
+                            positiveButton.isEnabled = true
+                            dialog.dismiss()
+                            onDismiss.invoke()
+                            viewModel.resetState()
+                        }
+                        is AddResourceState.Idle -> {
+                            // Do nothing
                         }
                     }
                 }
