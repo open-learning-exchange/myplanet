@@ -340,8 +340,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private fun setupSelectAllListener() {
         selectAll.setOnClickListener {
-            hideButton()
             val allSelected = adapterLibrary.areAllSelected()
+            hideButton()
             adapterLibrary.selectAllItems(!allSelected)
             if (allSelected) {
                 selectAll.isChecked = false
@@ -388,7 +388,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val hasAnyLibraryData = allResourceModels.isNotEmpty()
 
         if (!hasAnyLibraryData && listSize == 0) {
-            selectAll.visibility = View.GONE
+            selectAll.visibility = if (userModel?.isGuest() == true) View.GONE else View.VISIBLE
             etSearch.visibility = View.GONE
             tvAddToLib.visibility = View.GONE
             tvSelected.visibility = View.GONE
@@ -397,7 +397,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             clearTags.visibility = View.GONE
             tvDelete?.visibility = View.GONE
         } else {
-            selectAll.visibility = View.VISIBLE
+            selectAll.visibility = if (userModel?.isGuest() == true) View.GONE else View.VISIBLE
             etSearch.visibility = View.VISIBLE
             binding.btnCollections.visibility = View.VISIBLE
             filter.visibility = View.VISIBLE
