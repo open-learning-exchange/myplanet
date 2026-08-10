@@ -102,34 +102,24 @@ class TransactionSyncManager @Inject constructor(
     }
 
 
-    fun syncDashboardKeyId(role: String?, listener: OnSyncListener) {
+    suspend fun syncDashboardKeyId(role: String?) {
         val settings = sharedPrefManager.rawPreferences
         if (role?.contains("health") == true) {
-            syncAllHealthData(settings, listener)
+            syncAllHealthData(settings)
         } else {
-            syncKeyIv(settings, listener, userSessionManager)
+            syncKeyIv(settings, userSessionManager)
         }
     }
 
-    fun syncAllHealthData(settings: SharedPreferences, listener: OnSyncListener) {
-        listener.onSyncStarted()
+    private suspend fun syncAllHealthData(settings: SharedPreferences) {
         val userName = SecurePrefs.getUserName(context, settings) ?: ""
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = UrlUtils.basicAuthHeader(userName, password)
 
-        applicationScope.launch(dispatcherProvider.io) {
-            try {
-                val usersToSync = userRepository.getUsersForHealthSync()
-                usersToSync.forEach { userModel ->
-                    syncHealthData(userModel, header)
-                }
-                withContext(dispatcherProvider.main) {
-                    listener.onSyncComplete()
-                }
-            } catch (e: Exception) {
-                withContext(dispatcherProvider.main) {
-                    listener.onSyncFailed(e.message)
-                }
+        withContext(dispatcherProvider.io) {
+            val usersToSync = userRepository.getUsersForHealthSync()
+            usersToSync.forEach { userModel ->
+                syncHealthData(userModel, header)
             }
         }
     }
@@ -160,31 +150,20 @@ class TransactionSyncManager @Inject constructor(
         }
     }
 
-    fun syncKeyIv(
+    private suspend fun syncKeyIv(
         settings: SharedPreferences,
-        listener: OnSyncListener,
         userSessionManager: UserSessionManager
     ) {
-        listener.onSyncStarted()
         val userName = SecurePrefs.getUserName(context, settings) ?: ""
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = UrlUtils.basicAuthHeader(userName, password)
 
-        applicationScope.launch(dispatcherProvider.io) {
+        withContext(dispatcherProvider.io) {
             val model = userSessionManager.getUserModel()
             val id = model?.id
-            try {
-                val userModel = id?.let { userRepository.getUserById(it) }
-                if (userModel != null) {
-                    syncHealthData(userModel, header)
-                }
-                withContext(dispatcherProvider.main) {
-                    listener.onSyncComplete()
-                }
-            } catch (e: Exception) {
-                withContext(dispatcherProvider.main) {
-                    listener.onSyncFailed(e.message)
-                }
+            val userModel = id?.let { userRepository.getUserById(it) }
+            if (userModel != null) {
+                syncHealthData(userModel, header)
             }
         }
     }
