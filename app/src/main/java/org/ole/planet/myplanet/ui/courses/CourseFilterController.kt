@@ -121,7 +121,12 @@ class CourseFilterController(
 
     fun setTags(list: List<TagEntity>) {
         searchTags.clear()
-        list.forEach { tag -> if (!searchTags.any { it.name == tag.name }) searchTags.add(tag) }
+        val seenNames = HashSet<String?>()
+        list.forEach { tag ->
+            if (seenNames.add(tag.name)) {
+                searchTags.add(tag)
+            }
+        }
         _filterState.value = currentState()
         onScrollToTop()
     }
