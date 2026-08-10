@@ -31,6 +31,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
+import org.ole.planet.myplanet.base.DefaultBaseAdapterFactory
 import org.ole.planet.myplanet.callback.OnFilterListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
@@ -135,11 +136,12 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override suspend fun getAdapter(): ListAdapter<*, *> {
         allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
 
-        val user = profileDbHandler.getUserModel()
-        adapterLibrary = ResourcesAdapter(
-            requireActivity(),
-            user?.isGuest() == true,
-            emptySet(),
+        val user = userRepository.getUserModel()
+        val factory = adapterFactory ?: DefaultBaseAdapterFactory()
+        adapterLibrary = factory.createResourcesAdapter(
+            context = requireActivity(),
+            isGuest = user?.isGuest() == true,
+            openedResourceIds = emptySet(),
             currentUserName = user?.name,
             onEditClick = { model -> openEditResource(model) }
         )
@@ -194,7 +196,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             }
         }
         lifecycleScope.launch {
-            userModel = profileDbHandler.getUserModel()
+            userModel = userRepository.getUserModel()
             setupGuestUserRestrictions()
 
             val userId = userModel?.id
@@ -657,6 +659,15 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         filter.setOnClickListener {
             bottomSheet.visibility = if (bottomSheet.isVisible) View.GONE else View.VISIBLE
         }
+        binding.root.findViewById<View>(R.id.btn_close_filter)?.setOnClickListener {
+            bottomSheet.visibility = View.GONE
+        }
+        binding.btnCollections.setOnClickListener {
+            bottomSheet.visibility = View.GONE
+        }
+        binding.btnClearTags.setOnClickListener {
+            bottomSheet.visibility = View.GONE
+        }
         binding.filterCategories.setOnClickListener {
             val f = ResourcesFilterFragment()
             f.setListener(this)
@@ -664,11 +675,13 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             bottomSheet.visibility = View.GONE
         }
         binding.orderByDateButton.setOnClickListener {
+            bottomSheet.visibility = View.GONE
             adapterLibrary.toggleSortOrder {
                 recyclerView.scrollToPosition(0)
             }
         }
         binding.orderByTitleButton.setOnClickListener {
+            bottomSheet.visibility = View.GONE
             adapterLibrary.toggleTitleSortOrder {
                 recyclerView.scrollToPosition(0)
             }
@@ -717,9 +730,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
         if (userId != null && itemsToDelete.isNotEmpty()) {
             lifecycleScope.launch(dispatcherProvider.io) {
-                itemsToDelete.forEach { resourceId ->
-                    resourcesRepository.removeResourceFromShelf(resourceId, userId)
-                }
+                resourcesRepository.removeResourcesFromShelf(itemsToDelete, userId)
                 withContext(dispatcherProvider.main) {
                     _binding ?: return@withContext
                     Utilities.toast(activity, getString(R.string.removed_from_mylibrary))

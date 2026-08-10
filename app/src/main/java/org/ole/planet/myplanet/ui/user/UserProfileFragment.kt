@@ -28,9 +28,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
@@ -50,7 +47,6 @@ import java.util.TimeZone
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.language
 import org.ole.planet.myplanet.R.array.subject_level
@@ -58,6 +54,7 @@ import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -91,14 +88,7 @@ class UserProfileFragment : Fragment() {
                 photoURI  = uri
                 startIntent(photoURI)
                 val imageSize = resources.getDimensionPixelSize(R.dimen.user_image_size)
-                Glide.with(this)
-                    .load(uri)
-                    .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    .override(imageSize, imageSize)
-                    .circleCrop()
-                    .placeholder(R.drawable.profile)
-                    .error(R.drawable.profile)
-                    .into(binding.image)
+                ImageUtils.loadProfileImage(uri.toString(), binding.image, imageSize)
             }
         }
 
@@ -146,19 +136,16 @@ class UserProfileFragment : Fragment() {
         viewModel.loadCurrentUserProfile()
         viewModel.getOfflineVisits()
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                combine(
-                    viewModel.offlineVisits,
-                    viewModel.maxOpenedResource,
-                    viewModel.lastVisit,
-                    viewModel.numberOfResourceOpen
-                ) { _, _, _, _ -> Unit }
-                    .collect {
-                        if (isAdded) {
-                            setupStatsRecycler()
-                        }
-                    }
+        val combinedFlow = combine(
+            viewModel.offlineVisits,
+            viewModel.maxOpenedResource,
+            viewModel.lastVisit,
+            viewModel.numberOfResourceOpen
+        ) { _, _, _, _ -> Unit }
+
+        collectWhenStarted(combinedFlow) {
+            if (isAdded) {
+                setupStatsRecycler()
             }
         }
     }

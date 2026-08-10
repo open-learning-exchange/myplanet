@@ -4,6 +4,8 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.RawQuery
+import androidx.sqlite.db.SupportSQLiteQuery
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.MyLibrary
 
@@ -17,6 +19,9 @@ import org.ole.planet.myplanet.model.MyLibrary
  */
 @Dao
 interface MyLibraryDao {
+    @RawQuery
+    suspend fun filterByTitleNormal(query: SupportSQLiteQuery): List<MyLibrary>
+
     @Query("SELECT * FROM my_library")
     suspend fun getAll(): List<MyLibrary>
 

@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.map
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkInfo
@@ -11,13 +9,26 @@ import androidx.work.workDataOf
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.services.UserDataWorker
+import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 
 @Singleton
 class SyncRepository @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val transactionSyncManager: dagger.Lazy<TransactionSyncManager>
 ) {
-    fun uploadLoginData(): LiveData<SyncUiState> {
+    suspend fun syncDashboardKeyId(role: String?): SyncUiState {
+        return try {
+            transactionSyncManager.get().syncDashboardKeyId(role)
+            SyncUiState.Success(null)
+        } catch (e: Exception) {
+            SyncUiState.Error(e.message)
+        }
+    }
+
+    fun uploadLoginData(): Flow<SyncUiState> {
         val workRequest = OneTimeWorkRequest.Builder(UserDataWorker::class.java)
             .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to UserDataWorker.UPLOAD_TYPE_LOGIN))
             .build()
@@ -27,12 +38,12 @@ class SyncRepository @Inject constructor(
             ExistingWorkPolicy.REPLACE,
             workRequest
         )
-        return workManager.getWorkInfoByIdLiveData(workRequest.id).map { workInfo ->
+        return workManager.getWorkInfoByIdFlow(workRequest.id).map { workInfo ->
             mapWorkInfoToState(workInfo)
         }
     }
 
-    fun uploadBulkData(): LiveData<SyncUiState> {
+    fun uploadBulkData(): Flow<SyncUiState> {
         val workRequest = OneTimeWorkRequest.Builder(UserDataWorker::class.java)
             .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to UserDataWorker.UPLOAD_TYPE_BULK))
             .build()
@@ -42,7 +53,7 @@ class SyncRepository @Inject constructor(
             ExistingWorkPolicy.REPLACE,
             workRequest
         )
-        return workManager.getWorkInfoByIdLiveData(workRequest.id).map { workInfo ->
+        return workManager.getWorkInfoByIdFlow(workRequest.id).map { workInfo ->
             mapWorkInfoToState(workInfo)
         }
     }

@@ -944,6 +944,9 @@
     <string name="virtual_assistant_currently_not_available">assistant virtuel actuellement non disponible</string>
     <string name="no_courses">aucun cours disponible</string>
     <string name="no_resources">aucune ressource disponible</string>
+    <string name="no_resources_added_yet">Vous n\'avez encore ajouté aucune ressource</string>
+    <string name="no_courses_joined_yet">Vous n\'avez encore rejoint aucun cours</string>
+    <string name="no_teams_joined_yet">Vous n\'avez pas encore rejoint d\'équipe</string>
     <string name="no_finance_record">aucun enregistrement financier disponible</string>
     <string name="no_team_courses">aucun cours d\'équipe disponible</string>
     <string name="no_team_resources">aucune ressource d\'équipe disponible</string>
@@ -1288,6 +1291,8 @@
     <string name="storage_unknown_resource">Ressource inconnue</string>
     <string name="file_count_one">1 fichier</string>
     <string name="file_count_many">%1$d fichiers</string>
+    <string name="storage_deleting_progress">Suppression des fichiers… %1$d supprimés (%2$s)</string>
+    <string name="storage_freed_summary">%1$s libérés (%2$d fichiers)</string>
     <string name="skip">Passer</string>
     <string name="add_meetup">Ajouter une rencontre</string>
     <string name="download_report">Télécharger le rapport</string>

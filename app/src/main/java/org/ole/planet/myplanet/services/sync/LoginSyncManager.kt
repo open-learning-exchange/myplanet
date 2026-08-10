@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.services.sync
 
 import android.content.Context
-import android.util.Base64
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.net.ConnectException
@@ -46,7 +45,7 @@ class LoginSyncManager @Inject constructor(
             listener.onSyncStarted()
 
             val authHeader = try {
-                "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
+                UrlUtils.basicAuthHeader(userName, password)
             } catch (e: Exception) {
                 e.printStackTrace()
                 listener.onSyncFailed("Authentication encoding failed.")
@@ -144,7 +143,7 @@ class LoginSyncManager @Inject constructor(
                 }
 
                 try {
-                    val response = apiInterface.findDocs(header, "application/json", url, `object`)
+                    val response = apiInterface.postDoc(header, "application/json", url, `object`)
                     if (response.isSuccessful && response.body() != null) {
                         val responseBody = response.body()
                         sharedPrefManager.setCommunityLeaders("$responseBody")

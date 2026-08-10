@@ -307,16 +307,20 @@ class SurveysRepositoryImpl @Inject constructor(
             emptyList()
         }
 
-        val submissionsByParentId = submissions.filter { submission ->
+        val surveyIdsSet = surveyIds.toSet()
+        val resolveParentId: (String) -> String? = { pId ->
+            if (surveyIdsSet.contains(pId)) pId
+            else surveyIdsSet.find { pId.startsWith("$it@") }
+        }
+
+        val submissionsByParentId = submissions.mapNotNull { submission ->
             val isComplete = submission.status == "complete" || submission.status == "requires grading"
-            val matchesParentId = surveyIds.any { surveyId ->
-                submission.parentId == surveyId || submission.parentId?.startsWith("$surveyId@") == true
-            }
-            isComplete && matchesParentId
-        }.groupBy { submission ->
-            val parentId = submission.parentId ?: return@groupBy null
-            surveyIds.find { surveyId -> parentId == surveyId || parentId.startsWith("$surveyId@") }
-        }.filterKeys { it != null }
+            if (!isComplete) return@mapNotNull null
+
+            val pId = submission.parentId ?: return@mapNotNull null
+            val resolvedId = resolveParentId(pId) ?: return@mapNotNull null
+            resolvedId to submission
+        }.groupBy({ it.first }, { it.second })
 
         return surveys.mapNotNull { survey ->
             val surveyId = survey.id
@@ -370,10 +374,6 @@ class SurveysRepositoryImpl @Inject constructor(
     override suspend fun getSurvey(id: String): StepExam? {
         return examDao.getById(id)
             ?: examDao.getByType("surveys").firstOrNull { it.name == id }
-    }
-
-    override suspend fun getSurveys(): List<StepExam> {
-        return examDao.getByType("surveys").map { it }
     }
 
     override suspend fun getSurveys(ascending: Boolean): List<StepExam> {

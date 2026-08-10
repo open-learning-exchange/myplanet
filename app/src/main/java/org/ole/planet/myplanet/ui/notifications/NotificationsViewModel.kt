@@ -198,7 +198,7 @@ class NotificationsViewModel @Inject constructor(
         collapsedGroups: Set<String>
     ): List<NotificationListItem> {
         if (notifications.isEmpty()) return emptyList()
-        val typeOrder = listOf("join_request", "team_join", "task", "survey", "chat", "voice_reply", "resource", "storage")
+        val typeOrder = listOf("join_request", "team_join", "task", "chat", "voice_reply", "resource", "storage")
         // Normalize any unrecognized type to "notification" for a single Other group
         val grouped = notifications.groupBy { notif ->
             val t = notif.type.lowercase()
@@ -230,7 +230,6 @@ class NotificationsViewModel @Inject constructor(
             lower.contains("added you to") || lower.contains("you've been added") || lower.contains("you have been added") -> "team_join"
             lower.contains("replied to your") || lower.contains("replied on your") || lower.contains("new reply to") -> "voice_reply"
             lower.contains("posted a new voice") || lower.contains("new voice in") || lower.contains("posted in") -> "chat"
-            lower.contains("survey") -> "survey"
             lower.contains("is due") || lower.contains("due:") -> "task"
             lower.contains("storage") -> "storage"
             lower.contains("resource") -> "resource"
@@ -242,7 +241,6 @@ class NotificationsViewModel @Inject constructor(
         "join_request" -> context.getString(R.string.notif_group_join_requests)
         "team_join" -> context.getString(R.string.notif_group_team_updates)
         "task" -> context.getString(R.string.tasks)
-        "survey" -> context.getString(R.string.menu_surveys)
         "chat" -> context.getString(R.string.notif_group_new_voices)
         "voice_reply" -> context.getString(R.string.notif_group_voice_replies)
         "resource" -> context.getString(R.string.resources)
@@ -251,7 +249,7 @@ class NotificationsViewModel @Inject constructor(
     }
 
     companion object {
-        val KNOWN_TYPES = setOf("join_request", "team_join", "task", "survey", "chat", "voice_reply", "resource", "storage")
+        val KNOWN_TYPES = setOf("join_request", "team_join", "task", "chat", "voice_reply", "resource", "storage")
 
         private val TASK_DATE_PATTERN = Pattern.compile("\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s\\d{1,2},\\s\\w+\\s\\d{4}\\b")
 
@@ -292,7 +290,6 @@ class NotificationsViewModel @Inject constructor(
     ): Notification {
         val resolvedType = resolveType(notification.type, notification.message)
         val formattedText = when (resolvedType) {
-            "survey" -> context.getString(R.string.pending_survey_notification) + " ${notification.message}"
             "task" -> {
                 val parsedDate = parseTaskDate(notification.message)
                 if (parsedDate != null) {
@@ -359,9 +356,6 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
-    suspend fun getSurveyId(relatedId: String?): String? {
-        return notificationsRepository.getSurveyId(relatedId)
-    }
 
     suspend fun getTaskDetails(relatedId: String?): TaskNotificationResult? {
         return notificationsRepository.getTaskDetails(relatedId)

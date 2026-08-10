@@ -21,7 +21,6 @@ import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
@@ -130,7 +129,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
                 val selectedDate = Calendar.getInstance().apply {
                     set(year, monthOfYear, dayOfMonth)
                 }
-                val formattedDate = selectedDate.formatToString("yyyy-MM-dd")
+                val formattedDate = selectedDate.formatToString()
 
                 if (isFromDate) {
                     binding.tvFromDateCalendar.setText(formattedDate)
@@ -167,9 +166,8 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     }
 
 
-    private fun Calendar.formatToString(pattern: String): String {
-        val dateFormat = if (pattern == "yyyy-MM-dd") dateFormatter else SimpleDateFormat(pattern, Locale.getDefault())
-        return dateFormat.format(this.time)
+    private fun Calendar.formatToString(): String {
+        return dateFormatter.format(this.time)
     }
 
     private fun updateToDateState(enabled: Boolean) {

@@ -943,6 +943,9 @@
     <string name="virtual_assistant_currently_not_available">asistente virtual actualmente no disponible</string>
     <string name="no_courses">no hay cursos disponibles</string>
     <string name="no_resources">no hay recursos disponibles</string>
+    <string name="no_resources_added_yet">Aún no has agregado ningún recurso</string>
+    <string name="no_courses_joined_yet">Aún no te has unido a ningún curso</string>
+    <string name="no_teams_joined_yet">Aún no te has unido a ningún equipo</string>
     <string name="no_finance_record">registro financiero no disponible</string>
     <string name="no_team_courses">cursos de equipo no disponibles</string>
     <string name="no_team_resources">recursos de equipo no disponibles</string>
@@ -1287,6 +1290,8 @@
     <string name="storage_unknown_resource">Recurso desconocido</string>
     <string name="file_count_one">1 archivo</string>
     <string name="file_count_many">%1$d archivos</string>
+    <string name="storage_deleting_progress">Eliminando archivos… %1$d eliminados (%2$s)</string>
+    <string name="storage_freed_summary">Liberado %1$s (%2$d archivos)</string>
     <string name="skip">Omitir</string>
     <string name="add_meetup">Agregar reunión</string>
     <string name="download_report">Descargar informe</string>

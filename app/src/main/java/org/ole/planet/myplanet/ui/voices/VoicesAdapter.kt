@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
 import android.content.DialogInterface
-import android.graphics.Color
 import android.os.Build
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -83,10 +82,30 @@ class VoicesAdapter(
                 oldItem.id == newItem.id && oldItem.time == newItem.time &&
                         oldItem.isEdited == newItem.isEdited && oldItem.message == newItem.message &&
                         oldItem.userName == newItem.userName && oldItem.userId == newItem.userId &&
-                        oldItem.sharedBy == newItem.sharedBy && oldItem.labels?.toList() == newItem.labels?.toList()
+                        oldItem.sharedBy == newItem.sharedBy && oldItem.labels?.toList() == newItem.labels?.toList() &&
+                        oldItem.avatar == newItem.avatar && oldItem.imageUrls?.toList() == newItem.imageUrls?.toList() &&
+                        oldItem.images == newItem.images && oldItem.replyTo == newItem.replyTo
             } catch (e: Exception) {
                 false
             }
+        },
+        getChangePayload = { oldItem, newItem ->
+            val payloads = mutableListOf<String>()
+
+            if (oldItem.labels?.toList() != newItem.labels?.toList()) {
+                payloads.add(PAYLOAD_TEAM_LEADER_CHANGED)
+            }
+            if (oldItem.userId != newItem.userId || oldItem.userName != newItem.userName || oldItem.avatar != newItem.avatar || oldItem.imageUrls?.toList() != newItem.imageUrls?.toList() || oldItem.images != newItem.images || oldItem.parsedImageUrls != newItem.parsedImageUrls) {
+                payloads.add(PAYLOAD_USER_FETCHED)
+            }
+            if (oldItem.message != newItem.message || oldItem.isEdited != newItem.isEdited || oldItem.time != newItem.time || oldItem.sharedBy != newItem.sharedBy || oldItem.replyTo != newItem.replyTo) {
+                payloads.add(PAYLOAD_EDIT_ACTION)
+            }
+
+            // Every field checked in areContentsTheSame is covered by the buckets above.
+            // If payloads is empty here, it means a future field was added to areContentsTheSame
+            // without a corresponding bucket. We MUST return null to trigger a full rebind to prevent stale UI.
+            if (payloads.isNotEmpty()) payloads else null
         }
     )
 ) {
@@ -121,7 +140,7 @@ class VoicesAdapter(
 
     private var originalList: List<News> = emptyList()
 
-    override fun submitList(list: List<News>?) {
+    private fun prepareSubmitList(list: List<News>?): List<News> {
         originalList = list ?: emptyList()
         val finalList = mutableListOf<News>()
         parentNews?.let {
@@ -132,21 +151,15 @@ class VoicesAdapter(
             it.forEach { item -> preParseNews(item) }
             finalList.addAll(it)
         }
-        super.submitList(finalList)
+        return finalList
+    }
+
+    override fun submitList(list: List<News>?) {
+        super.submitList(prepareSubmitList(list))
     }
 
     override fun submitList(list: List<News>?, commitCallback: Runnable?) {
-        originalList = list ?: emptyList()
-        val finalList = mutableListOf<News>()
-        parentNews?.let {
-            preParseNews(it)
-            finalList.add(it)
-        }
-        list?.let {
-            it.forEach { item -> preParseNews(item) }
-            finalList.addAll(it)
-        }
-        super.submitList(finalList, commitCallback)
+        super.submitList(prepareSubmitList(list), commitCallback)
     }
 
     private val externalFilesDir = FileUtils.getExternalFilesDir(context)
@@ -233,7 +246,6 @@ class VoicesAdapter(
 
 
     @SuppressLint("SetTextI18n")
-    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
         if (payloads.isEmpty()) {
             super.onBindViewHolder(holder, position, payloads)
@@ -243,7 +255,9 @@ class VoicesAdapter(
         if (holder is VoicesViewHolder) {
             val news = getNews(holder, position)
 
-            for (payload in payloads) {
+            val flattenedPayloads = payloads.flatMap { if (it is List<*>) it.filterNotNull() else listOf(it) }
+
+            for (payload in flattenedPayloads) {
                 when (payload) {
                     PAYLOAD_TEAM_LEADER_CHANGED -> {
                         configureEditDeleteButtons(holder, news)
@@ -275,10 +289,16 @@ class VoicesAdapter(
                         val userModel = configureUser(holder, news)
                         val currentLeader = getCurrentLeader(userModel, news)
                         setMemberClickListeners(holder, userModel, currentLeader)
+                        loadImage(holder.binding, news)
+                        configureEditDeleteButtons(holder, news)
                     }
                     PAYLOAD_EDIT_ACTION -> {
+                        val sharedTeamName = JsonUtils.extractSharedTeamName(news)
+                        setMessageAndDate(holder, news, sharedTeamName)
                         configureEditDeleteButtons(holder, news)
                         showReplyButton(holder, news, position)
+                        handleChat(holder, news)
+                        loadImage(holder.binding, news)
                     }
                 }
             }
@@ -313,14 +333,35 @@ class VoicesAdapter(
     }
 
     fun removePost(newsId: String) {
-        val snapshotList = currentList.toMutableList()
-        val pos = snapshotList.indexOfFirst { it?.id == newsId }
-        if (pos != -1) {
-            snapshotList.removeAt(pos)
-            submitList(snapshotList)
-        } else if (parentNews?.id == newsId) {
-            submitList(emptyList())
+        val isParent = parentNews?.id == newsId
+        val posInCurrent = currentList.indexOfFirst { it.id == newsId }
+
+        if (posInCurrent == -1 && !isParent) {
+            return
         }
+
+        if (isParent) {
+            parentNews = null
+        }
+
+        val updatedOriginalList = originalList.toMutableList()
+        val posInOriginal = updatedOriginalList.indexOfFirst { it.id == newsId }
+        if (posInOriginal != -1) {
+            updatedOriginalList.removeAt(posInOriginal)
+            originalList = updatedOriginalList.toList()
+        }
+
+        val updatedCurrentList = currentList.toMutableList()
+        if (posInCurrent != -1) {
+            updatedCurrentList.removeAt(posInCurrent)
+        }
+        val listToSubmit = if (parentNews != null && updatedCurrentList.isNotEmpty() && updatedCurrentList[0].id == parentNews?.id) {
+            updatedCurrentList.drop(1)
+        } else {
+            updatedCurrentList
+        }
+        submitList(listToSubmit)
+
         parentNews?.id?.let { pid ->
             val current = replyCountCache[pid]
             replyCountCache[pid] = if (current != null) maxOf(0, current - 1) else 0
@@ -452,8 +493,18 @@ class VoicesAdapter(
                         holder,
                         voicesRepository,
                         { h, updatedNews, pos ->
-                            showReplyButton(h, updatedNews, pos)
-                            safeNotifyItemChanged(pos, PAYLOAD_EDIT_ACTION)
+                            val targetNews = updatedNews ?: news
+                            preParseNews(targetNews)
+                            if (pos in 0 until itemCount) {
+                                val newList = currentList.toMutableList()
+                                newList[pos] = targetNews
+                                submitList(newList) {
+                                    safeNotifyItemChanged(pos, PAYLOAD_EDIT_ACTION)
+                                }
+                            } else {
+                                showReplyButton(h, targetNews, pos)
+                                safeNotifyItemChanged(pos, PAYLOAD_EDIT_ACTION)
+                            }
                         },
                         onEditAction
                     )
@@ -558,11 +609,16 @@ class VoicesAdapter(
                 }
 
                 val currentImageUrls = it.imageUrls?.toList()
-                if ((it.parsedImageUrls == null || it.rawImageUrls != currentImageUrls) && !currentImageUrls.isNullOrEmpty()) {
-                    val parsed = parseImageUrls(currentImageUrls)
-                    if (parsed != null) {
-                        it.parsedImageUrls = parsed
-                        it.rawImageUrls = currentImageUrls
+                if (it.rawImageUrls != currentImageUrls) {
+                    if (!currentImageUrls.isNullOrEmpty()) {
+                        val parsed = parseImageUrls(currentImageUrls)
+                        if (parsed != null) {
+                            it.parsedImageUrls = parsed
+                            it.rawImageUrls = currentImageUrls
+                        }
+                    } else {
+                        it.parsedImageUrls = null
+                        it.rawImageUrls = null
                     }
                 }
             } catch (e: IllegalStateException) {

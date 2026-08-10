@@ -943,6 +943,9 @@
     <string name="virtual_assistant_currently_not_available">भर्चुअल सहायक हाललाई उपलब्ध छैन</string>
     <string name="no_courses">कुनै पाठ्यक्रम उपलब्ध छैन</string>
     <string name="no_resources">कुनै स्रोतहरू उपलब्ध छैनन्</string>
+    <string name="no_resources_added_yet">तपाईंले अझै कुनै स्रोतहरू थप्नुभएको छैन</string>
+    <string name="no_courses_joined_yet">तपाईं अझै कुनै पाठ्यक्रमहरूमा सामेल हुनुभएको छैन</string>
+    <string name="no_teams_joined_yet">तपाईं अझै कुनै टोलीमा सामेल हुनुभएको छैन</string>
     <string name="no_finance_record">वित्तीय रेकर्ड उपलब्ध छैन</string>
     <string name="no_team_courses">कुनै टिम पाठ्यक्रमहरू उपलब्ध छैनन्</string>
     <string name="no_team_resources">कुनै टिम स्रोतहरू उपलब्ध छैनन्</string>
@@ -1284,6 +1287,8 @@
     <string name="storage_unknown_resource">अज्ञात स्रोत</string>
     <string name="file_count_one">१ फाइल</string>
     <string name="file_count_many">%1$d फाइलहरू</string>
+    <string name="storage_deleting_progress">फाइलहरू मेटाउँदै... %1$d मेटाइयो (%2$s)</string>
+    <string name="storage_freed_summary">%1$s खाली भयो (%2$d फाइलहरू)</string>
     <string name="skip">छोड्नुहोस्</string>
     <string name="add_meetup">भेटघाट थप्नुहोस्</string>
     <string name="download_report">रिपोर्ट डाउनलोड गर्नुहोस्</string>
