@@ -9,8 +9,6 @@ import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
-import org.ole.planet.myplanet.data.room.dao.TeamLogDao
-import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.CourseProgress
@@ -57,9 +55,7 @@ class UploadConfigs @Inject constructor(
     private val courseProgressDao: CourseProgressDao,
     private val resourceActivityDao: ResourceActivityDao,
     private val submitPhotosDao: SubmitPhotosDao,
-    private val newsLogDao: NewsLogDao,
-    private val teamLogDao: TeamLogDao,
-    private val teamTaskDao: TeamTaskDao
+    private val newsLogDao: NewsLogDao
 ) {
     val NewsActivities = RoomUploadConfig(
         endpoint = "myplanet_activities",
@@ -90,7 +86,7 @@ class UploadConfigs @Inject constructor(
     val TeamTask = RoomUploadConfig(
         endpoint = "tasks",
         modelClassName = "TeamTask",
-        fetchPendingItems = { teamTaskDao.getPendingUploads() },
+        fetchPendingItems = { teamsSyncRepository.get().getPendingTaskUploads() },
         serializer = UploadSerializer.Async { task ->
             val user = userRepository.getUserById(task.assignee ?: "")
             org.ole.planet.myplanet.model.TeamTask.serialize(task, user)
@@ -98,7 +94,7 @@ class UploadConfigs @Inject constructor(
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
-                teamTaskDao.markUploaded(result.localId, result.remoteId, result.remoteRev) == 0
+                !teamsSyncRepository.get().markTaskUploaded(result.localId, result.remoteId, result.remoteRev)
             }
         }
     )
@@ -106,12 +102,12 @@ class UploadConfigs @Inject constructor(
     val TeamActivities = RoomUploadConfig(
         endpoint = "team_activities",
         modelClassName = "TeamLog",
-        fetchPendingItems = { teamLogDao.getPendingUploads() },
+        fetchPendingItems = { teamsSyncRepository.get().getPendingTeamLogUploads() },
         serializer = UploadSerializer.WithContext { log, context -> teamsSyncRepository.get().serializeTeamActivities(log, context) },
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
-                teamLogDao.markUploaded(result.localId, result.remoteId, result.remoteRev) == 0
+                !teamsSyncRepository.get().markTeamLogUploaded(result.localId, result.remoteId, result.remoteRev)
             }
         }
     )

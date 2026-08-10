@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -32,9 +33,11 @@ import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.repository.SyncRepository
+import org.ole.planet.myplanet.repository.SyncUiState
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class DashboardViewModelTest {
 
     private lateinit var viewModel: DashboardViewModel
@@ -48,6 +51,7 @@ class DashboardViewModelTest {
     private val surveysRepository = mockk<SurveysRepository>()
     private val progressRepository = mockk<ProgressRepository>()
     private val voicesRepository = mockk<VoicesRepository>()
+    private val syncRepository = mockk<SyncRepository>()
     private val dispatcherProvider = mockk<DispatcherProvider>(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
@@ -71,7 +75,8 @@ class DashboardViewModelTest {
             surveysRepository,
             progressRepository,
             voicesRepository,
-            dispatcherProvider
+            dispatcherProvider,
+            syncRepository
         )
     }
 
@@ -80,6 +85,30 @@ class DashboardViewModelTest {
         Dispatchers.resetMain()
     }
 
+
+    @Test
+    fun testSyncKeyId_preventOverlappingCalls() = runTest {
+        coEvery { syncRepository.syncDashboardKeyId(any()) } coAnswers {
+            kotlinx.coroutines.delay(100)
+            SyncUiState.Success(null)
+        }
+
+        val events = mutableListOf<SyncUiState>()
+        val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
+            viewModel.syncKeyIdEvent.collect { events.add(it) }
+        }
+
+        viewModel.syncKeyId("role")
+        viewModel.syncKeyId("role") // Should be ignored
+
+        advanceUntilIdle()
+
+        assertEquals(2, events.size)
+        assertEquals(SyncUiState.Loading, events[0])
+        assertEquals(SyncUiState.Success(null), events[1])
+
+        job.cancel()
+    }
     @Test
     fun `loadUserContent replaces existing collectors when called multiple times`() = runTest(testDispatcher) {
         val userId = "user1"

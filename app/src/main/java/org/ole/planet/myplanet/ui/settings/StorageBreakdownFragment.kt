@@ -9,9 +9,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
@@ -32,6 +30,7 @@ import org.ole.planet.myplanet.services.FreeSpaceWorker
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -118,9 +117,7 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
             .build()
         workManager.enqueue(freeSpaceWork)
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                workManager.getWorkInfoByIdFlow(freeSpaceWork.id).collect { workInfo ->
+        collectWhenStarted(workManager.getWorkInfoByIdFlow(freeSpaceWork.id)) { workInfo ->
                     if (workInfo != null) {
                         when (workInfo.state) {
                             WorkInfo.State.RUNNING -> {
@@ -176,8 +173,6 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
                             kotlinx.coroutines.currentCoroutineContext().cancel()
                         }
                     }
-                }
-            }
         }
 
         progressDialog.setNegativeButton(getString(R.string.cancel)) {

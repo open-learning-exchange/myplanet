@@ -48,6 +48,10 @@ import org.ole.planet.myplanet.model.MyHealth.MyHealthProfile
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -78,8 +82,13 @@ class UserRepositoryImpl @Inject constructor(
     private val removedLogDao: RemovedLogDao,
     private val achievementDao: AchievementDao,
     private val healthRepository: HealthRepository,
-    private val userDao: UserDao
+    private val userDao: UserDao,
+    private val realtimeSyncManager: RealtimeSyncManager
 ) : UserRepository, UserSyncRepository {
+    override val achievementUpdates: Flow<Unit> = realtimeSyncManager.dataUpdateFlow
+        .filter { it.table == "achievements" && it.shouldRefreshUI }
+        .map { }
+
     override suspend fun getDashboardProfile(userId: String): DashboardProfile {
         val user = getUserById(userId)
         val userName = user?.name
@@ -1241,35 +1250,54 @@ class UserRepositoryImpl @Inject constructor(
             }
         }
 
-        val existingUsers = userDao.getAll().toMutableList()
+        val existingUsersList = userDao.getAll()
+        val usersById = mutableMapOf<String, UserEntity>()
+        val guestUsersByName = mutableMapOf<String, UserEntity>()
+
+        for (user in existingUsersList) {
+            usersById[user.id] = user
+            if (user._id != null) usersById[user._id!!] = user
+            if (!user.name.isNullOrEmpty() && user._id?.startsWith("guest_") == true) {
+                guestUsersByName[user.name!!] = user
+            }
+        }
+
         val usersToDelete = linkedSetOf<String>()
-        val usersToUpsert = mutableListOf<UserEntity>()
+        val usersToUpsert = linkedMapOf<String, UserEntity>()
 
         for (jsonDoc in documentList) {
             try {
                 val id = JsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: UUID.randomUUID().toString()
                 val userName = JsonUtils.getString("name", jsonDoc)
-                val existingUser = existingUsers.firstOrNull { it.id == id || it._id == id }
+
+                val existingUser = usersById[id]
                 val guestUser = if (existingUser == null && id.startsWith("org.couchdb.user:") && userName.isNotEmpty()) {
-                    existingUsers.firstOrNull { it.name == userName && it._id?.startsWith("guest_") == true }
+                    guestUsersByName[userName]
                 } else {
                     null
                 }
 
                 val user = existingUser
                     ?: guestUser?.apply {
-                        usersToDelete += guestUser.id
+                        usersToDelete += this.id
+                        if (!this.name.isNullOrEmpty()) guestUsersByName.remove(this.name!!)
+                        usersById.remove(this.id)
+                        if (this._id != null) usersById.remove(this._id!!)
                         this.id = id
                         this._id = id
                     }
                     ?: UserEntity().apply { this.id = id }
 
                 applyJsonToUser(jsonDoc, user, settings)
-                val entity = user ?: continue
-                usersToUpsert.removeAll { it.id == entity.id }
-                usersToUpsert += entity
-                existingUsers.removeAll { it.id == entity.id || it._id == entity._id }
-                existingUsers += entity
+                val entity = user
+
+                usersToUpsert[entity.id] = entity
+
+                usersById[entity.id] = entity
+                if (entity._id != null) usersById[entity._id!!] = entity
+                if (!entity.name.isNullOrEmpty() && entity._id?.startsWith("guest_") == true) {
+                    guestUsersByName[entity.name!!] = entity
+                }
             } catch (err: Exception) {
                 err.printStackTrace()
             }
@@ -1277,7 +1305,7 @@ class UserRepositoryImpl @Inject constructor(
 
         if (usersToDelete.isNotEmpty()) userDao.deleteByIds(usersToDelete.toList())
         if (usersToUpsert.isNotEmpty()) {
-            userDao.upsertAll(usersToUpsert)
+            userDao.upsertAll(usersToUpsert.values.toList())
         }
     }
 
@@ -1380,9 +1408,17 @@ class UserRepositoryImpl @Inject constructor(
     private fun mergeJsonArray(array1: JsonArray?, array2: JsonArray, removedIds: List<String>): JsonArray {
         val array = JsonArray()
         array.addAll(array1)
+        val removedIdsSet = removedIds.toSet()
+        val existingElements = mutableSetOf<com.google.gson.JsonElement>()
+        if (array1 != null) {
+            for (e in array1) {
+                existingElements.add(e)
+            }
+        }
         for (e in array2) {
-            if (!array.contains(e) && !removedIds.contains(e.asString)) {
+            if (!existingElements.contains(e) && !removedIdsSet.contains(e.asString)) {
                 array.add(e)
+                existingElements.add(e)
             }
         }
         return array
