@@ -174,6 +174,44 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             }
         }
 
+        suspend fun saveLogsToRoom(pendingLogs: List<CrashLogStore.PendingLog>): Boolean {
+            if (pendingLogs.isEmpty()) return true
+            val entryPoint = EntryPointAccessors.fromApplication(
+                context,
+                CoreDependenciesEntryPoint::class.java
+            )
+            val userSessionManager = entryPoint.userSessionManager()
+            val spm = entryPoint.sharedPrefManager()
+            val apkLogDao = entryPoint.apkLogDao()
+            return try {
+                val model = userSessionManager.getUserModel()
+                val versionName = getVersionName(context)
+                val parentCode = spm.getParentCode()
+                val planetCode = spm.getPlanetCode()
+
+                val logsToInsert = pendingLogs.map { pending ->
+                    ApkLog().apply {
+                        id = "${UUID.randomUUID()}"
+                        this.parentCode = parentCode
+                        this.createdOn = planetCode
+                        model?.let { userId = it.id }
+                        this.time = pending.time
+                        page = ""
+                        version = versionName
+                        this.type = pending.type
+                        if (pending.error.isNotEmpty()) {
+                            this.error = pending.error
+                        }
+                    }
+                }
+                apkLogDao.insertAll(logsToInsert)
+                true
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
+        }
+
         private fun applyThemeMode(themeMode: String?) {
             when (themeMode) {
                 ThemeMode.LIGHT -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
@@ -308,9 +346,13 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             val pendingLogs = withContext(dispatcherProvider.io) {
                 CrashLogStore.loadPendingLogs(this@MainApplication)
             }
-            for (pending in pendingLogs) {
-                if (saveLogToRoom(pending.type, pending.error, pending.time)) {
-                    withContext(dispatcherProvider.io) { pending.file.delete() }
+            if (pendingLogs.isNotEmpty()) {
+                if (saveLogsToRoom(pendingLogs)) {
+                    withContext(dispatcherProvider.io) {
+                        for (pending in pendingLogs) {
+                            pending.file.delete()
+                        }
+                    }
                 }
             }
         } catch (e: Exception) {
