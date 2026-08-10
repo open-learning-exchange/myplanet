@@ -77,16 +77,12 @@ class EventsRepositoryImpl @Inject constructor(
             .map { it }
     }
 
-    override suspend fun getCurrentUser(): UserEntity? {
-        return userRepository.getUserModel()
-    }
-
     override suspend fun toggleCurrentUserAttendance(meetupId: String): Meetup? {
         if (meetupId.isBlank()) {
             return null
         }
 
-        val currentUser = getCurrentUser()
+        val currentUser = userRepository.getUserModel()
         val currentUserId = currentUser?.id
 
         if (currentUserId.isNullOrBlank()) {
