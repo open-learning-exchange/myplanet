@@ -130,7 +130,6 @@ class MembersFragment : BaseTeamFragment() {
                         nextLeader?.id?.let { teamsRepository.updateTeamLeader(teamId, it) }
                         user?.id?.let { teamsRepository.removeMember(teamId, it) }
                         loadMembers()
-                        onMemberChangeListener?.onMemberChanged()
                         Toast.makeText(requireContext(), getString(R.string.left_team), Toast.LENGTH_SHORT).show()
                         requireActivity().supportFragmentManager.popBackStack()
                     } catch (e: Exception) {
@@ -156,10 +155,9 @@ class MembersFragment : BaseTeamFragment() {
                     }
                 }
                 teamsRepository.removeMember(teamId, memberId)
-                teamsSyncRepository.syncTeamActivities() // Sync immediately so that the user is now deleted.
-                Toast.makeText(requireContext(), "When sync is finished, user will be deleted", Toast.LENGTH_LONG).show();
                 loadMembers()
                 onMemberChangeListener?.onMemberChanged()
+                requestsViewModel.fetchMembers(teamId)
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Error removing member: ${e.message}", Toast.LENGTH_SHORT).show()
             }

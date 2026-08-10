@@ -1031,9 +1031,9 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun getJoinedMembers(teamId: String): List<UserEntity> {
         val teamMembers = teamDao.getByTeamIdAndDocType(teamId, "membership")
+            .filter { !it.isDeletePending } // Filter so only the not pending members get query
             .mapNotNull { it.userId }
             .distinct()
-
         return teamMembers.mapNotNull { userDao.getById(it) }
     }
 
