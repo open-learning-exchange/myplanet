@@ -72,6 +72,8 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     lateinit var loginSyncManager: LoginSyncManager
     @Inject
     override lateinit var sharedPrefManager: SharedPrefManager
+    @Inject
+    lateinit var themeManager: ThemeManager
 
     private lateinit var binding: ActivityLoginBinding
     private var guest = false
@@ -205,7 +207,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         }
         val selectDarkModeButton = binding.themeToggleButton
         selectDarkModeButton.setOnClickListener {
-            ThemeManager.showThemeDialog(this)
+            themeManager.showThemeDialog(this)
         }
     }
 

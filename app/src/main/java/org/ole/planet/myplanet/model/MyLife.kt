@@ -8,7 +8,7 @@ import androidx.room.PrimaryKey
 import org.ole.planet.myplanet.R
 
 /**
- * Room replacement for the former Realm `MyLife` model.
+ * Room replacement for the former `MyLife` model.
  *
  * The class name is kept so the UI (which uses it purely as a detached data holder) is unaffected
  * by the migration. Persistence now goes through [org.ole.planet.myplanet.data.room.dao.MyLifeDao].

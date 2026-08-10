@@ -10,7 +10,7 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 
 /**
- * Room replacement for the former Realm `Personal` model. The class name is kept because
+ * Room replacement for the former `Personal` model. The class name is kept because
  * the UI and upload path use it purely as a detached data holder. Persistence goes through
  * [org.ole.planet.myplanet.data.room.dao.PersonalDao].
  */

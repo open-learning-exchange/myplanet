@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 
 /**
- * Room replacement for the former Realm `TagEntity` model. Synced (read-only from the server).
+ * Room replacement for the former `TagEntity` model. Synced (read-only from the server).
  * `attachedTo` (formerly `RealmList<String>`) is a plain `List<String>` stored as JSON via the
  * shared [org.ole.planet.myplanet.data.room.Converters]. Persistence goes through
  * [org.ole.planet.myplanet.data.room.dao.TagDao].
