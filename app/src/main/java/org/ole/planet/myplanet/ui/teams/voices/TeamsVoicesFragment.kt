@@ -196,7 +196,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                 removeLabelFn = { newsId, label -> viewModel.removeLabel(newsId, label) }
             )
             val effectiveTeamName = getEffectiveTeamName()
-            val adapterNews = activity?.let {
+            adapterNews = activity?.let {
                 VoicesAdapter(
                     context = it,
                     currentUser = user,

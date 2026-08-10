@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.repository.DownloadRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.DownloadWorker
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -57,6 +58,9 @@ class DownloadService : Service() {
 
     @Inject
     lateinit var downloadRepository: DownloadRepository
+
+    @Inject
+    lateinit var resourcesRepository: ResourcesRepository
 
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
@@ -214,7 +218,11 @@ class DownloadService : Service() {
 
             if (FileUtils.checkFileExist(this, url)) {
                 Log.d(TAG, "initDownload: $fileName already on disk, marking offline and skipping download")
-                DownloadUtils.updateResourceOfflineStatus(url)
+                try {
+                    resourcesRepository.markResourceOfflineByUrl(url)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
                 onDownloadComplete(url)
                 return true
             }
@@ -370,29 +378,7 @@ class DownloadService : Service() {
                         currentFileProgress = -1
                     }
 
-                    while (true) {
-                        val readCount = bis.read(data)
-                        if (readCount == -1) break
-
-                        if (readCount > 0) {
-                            total += readCount
-                            val current = (total / 1024.0).roundToInt().toDouble()
-
-                            if (fileSize > 0) {
-                                val progress = (total * 100 / fileSize).toInt()
-                                download.progress = progress
-                                currentFileProgress = progress
-                            }
-
-                            val now = SystemClock.elapsedRealtime()
-                            if (now - lastNotificationUpdateTime >= NOTIFICATION_UPDATE_INTERVAL_MS) {
-                                download.currentFileSize = current.toInt()
-                                sendNotification(download)
-                                lastNotificationUpdateTime = now
-                            }
-                            output.write(data, 0, readCount)
-                        }
-                    }
+                    total = copyStreamWithProgress(bis, output, download, fileSize, total)
                 }
             }
             if (!tempFile.renameTo(finalFile)) {
@@ -407,6 +393,40 @@ class DownloadService : Service() {
             throw e
         }
         onDownloadComplete(url)
+    }
+
+    private fun copyStreamWithProgress(
+        bis: BufferedInputStream,
+        output: FileOutputStream,
+        download: Download,
+        fileSize: Long,
+        initialTotal: Long
+    ): Long {
+        var total = initialTotal
+        while (true) {
+            val readCount = bis.read(data)
+            if (readCount == -1) break
+
+            if (readCount > 0) {
+                total += readCount
+                val current = (total / 1024.0).roundToInt().toDouble()
+
+                if (fileSize > 0) {
+                    val progress = (total * 100 / fileSize).toInt()
+                    download.progress = progress
+                    currentFileProgress = progress
+                }
+
+                val now = SystemClock.elapsedRealtime()
+                if (now - lastNotificationUpdateTime >= NOTIFICATION_UPDATE_INTERVAL_MS) {
+                    download.currentFileSize = current.toInt()
+                    sendNotification(download)
+                    lastNotificationUpdateTime = now
+                }
+                output.write(data, 0, readCount)
+            }
+        }
+        return total
     }
 
     private fun getStorageError(fileSize: Long): String? {
@@ -462,7 +482,13 @@ class DownloadService : Service() {
 
     private fun onDownloadComplete(url: String) {
         if ((outputFile?.length() ?: 0) > 0) {
-            DownloadUtils.updateResourceOfflineStatus(url)
+            appScope.launch {
+                try {
+                    resourcesRepository.markResourceOfflineByUrl(url)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
         }
 
         val remainingPriority = preferences.getStringSet(PRIORITY_DOWNLOADS_KEY, emptySet())?.count { it !in processedUrls } ?: 0
@@ -544,32 +570,21 @@ class DownloadService : Service() {
                 putExtra("fromSync", fromSync)
             }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val canStart = when {
-                    context is Activity -> true
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> {
-                        hasValidForegroundServiceContext(context)
-                    }
-                    else -> true
-                }
-
-                if (canStart) {
-                    try {
-                        ContextCompat.startForegroundService(context, intent)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to start foreground service", e)
-                        handleForegroundServiceError(context, urlsKey, fromSync)
-                    }
-                } else {
-                    startDownloadWork(context, urlsKey, fromSync)
-                }
+            val canStart = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                context is Activity || hasValidForegroundServiceContext(context)
             } else {
+                true
+            }
+
+            if (canStart) {
                 try {
                     ContextCompat.startForegroundService(context, intent)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to start foreground service", e)
                     handleForegroundServiceError(context, urlsKey, fromSync)
                 }
+            } else {
+                startDownloadWork(context, urlsKey, fromSync)
             }
         }
 
