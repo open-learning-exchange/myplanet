@@ -1354,7 +1354,7 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun checkShelfBatchForDataOptimized(shelfIds: List<String>): List<String> {
         val shelvesWithData = mutableListOf<String>()
         val keysObject = JsonObject().apply {
-            add("keys", com.google.gson.Gson().fromJson(com.google.gson.Gson().toJson(shelfIds), JsonArray::class.java))
+            add("keys", JsonUtils.gson.fromJson(JsonUtils.gson.toJson(shelfIds), JsonArray::class.java))
         }
 
         val response = org.ole.planet.myplanet.data.api.ApiClient.executeWithRetryAndWrap {
