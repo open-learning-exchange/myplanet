@@ -312,3 +312,43 @@ Pre-review. A raw title here marks the untriaged backlog, not a defect.
 | [#15326](https://github.com/open-learning-exchange/myplanet/pull/15326) | dogi | Refactor IO-bound logic to ViewModels | `all: smoother io view modelling` | needs issue |
 | [#15437](https://github.com/open-learning-exchange/myplanet/pull/15437) | ragilzakaria | suppress download suggestion dialog in Courses and myCourses (fixes #15435) | `courses: less download suggestion dialog is more (fixes #15435)` | issue linked |
 | [#15446](https://github.com/open-learning-exchange/myplanet/pull/15446) | Okuro3499 | UI: redesign courses/library with grid/list views (fixes #15440) | `courses: smoother grid and list viewing (fixes #15440)` | issue linked |
+
+---
+
+## Automerge state — as executed
+
+`automerge` was applied to all 48 Wave-1 PRs, then **pulled from the 9 whose titles were never massaged**.
+Squash-merge bakes the PR title into `master` permanently, so a raw title is not a cosmetic problem on a PR
+that is queued to land.
+
+**Currently labelled `automerge`: 39.**
+
+Pulled pending a retitle — re-add once renamed:
+[#15269](https://github.com/open-learning-exchange/myplanet/pull/15269) ·
+[#15280](https://github.com/open-learning-exchange/myplanet/pull/15280) ·
+[#15315](https://github.com/open-learning-exchange/myplanet/pull/15315) ·
+[#15316](https://github.com/open-learning-exchange/myplanet/pull/15316) ·
+[#15325](https://github.com/open-learning-exchange/myplanet/pull/15325) ·
+[#15331](https://github.com/open-learning-exchange/myplanet/pull/15331) ·
+[#15337](https://github.com/open-learning-exchange/myplanet/pull/15337) ·
+[#15354](https://github.com/open-learning-exchange/myplanet/pull/15354) ·
+[#15383](https://github.com/open-learning-exchange/myplanet/pull/15383)
+
+⚠️ [#15316](https://github.com/open-learning-exchange/myplanet/pull/15316) is the `priority` PR that
+[#15169](https://github.com/open-learning-exchange/myplanet/pull/15169),
+[#15275](https://github.com/open-learning-exchange/myplanet/pull/15275) and
+[#15321](https://github.com/open-learning-exchange/myplanet/pull/15321) are held behind — holding it for a
+retitle holds those three too. Rename it first.
+
+### Proposed: split `automerge` into two tiers
+
+One flat label can't say *why* a PR isn't in the queue. Mirroring the repo's existing
+`review first` / `review next` pair:
+
+| Label | Meaning | Today |
+|---|---|---|
+| `automerge` | reviewed, massaged, merges clean — drain now | 39 |
+| `automerge next` | would merge clean, but blocked on something cheap and known (raw title, pending rebase) | 9 + Wave 2's 7 |
+
+That makes the drainer's input unambiguous while keeping the blocked set visible instead of unlabelled.
+`automerge next` does not exist yet — it needs creating before it can be applied.
