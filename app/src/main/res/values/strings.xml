@@ -778,7 +778,7 @@
     <string name="unable_to_clear_files">Unable to clear files</string>
     <string name="last_synced_never">Never synced</string>
     <string name="last_synced_colon">Last synced: </string>
-    <string name="last_login_message">This is your last login before you need to become a member</string>
+    <string name="last_login_message">This is your last login before you need to become a member.</string>
 
     <string name="disclaimer">
     <![CDATA[
