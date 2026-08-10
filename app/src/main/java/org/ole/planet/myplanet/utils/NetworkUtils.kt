@@ -25,8 +25,9 @@ import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 object NetworkUtils {
-    private val coreEntryPoint: CoreDependenciesEntryPoint get() =
+    private val coreEntryPoint: CoreDependenciesEntryPoint by lazy {
         EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
+    }
 
     // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
     private val sharedPrefManager: SharedPrefManager by lazy {
