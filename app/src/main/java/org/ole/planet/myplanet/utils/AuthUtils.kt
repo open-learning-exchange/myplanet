@@ -5,18 +5,10 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.sync.LoginSyncManager
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 
 object AuthUtils {
-    suspend fun validateUsername(
-        username: String,
-        userRepository: UserRepository,
-    ): String? {
-        return userRepository.validateUsername(username)
-    }
-
     suspend fun login(activity: LoginActivity, loginSyncManager: LoginSyncManager, name: String?, password: String?, ioDispatcher: CoroutineDispatcher) {
         if (activity.forceSyncTrigger()) return
 
