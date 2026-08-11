@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.SearchActivity
@@ -464,6 +465,28 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
 
     override suspend fun removeResourceFromShelf(resourceId: String, userId: String) {
         updateUserLibrary(resourceId, userId, false)
+    }
+
+    override suspend fun removeResourcesFromShelf(resourceIds: List<String>, userId: String): Result<Unit> {
+        return runCatching {
+            if (resourceIds.isEmpty() || userId.isBlank()) return@runCatching
+
+            val libraryItems = myLibraryDao.getByResourceIds(resourceIds)
+            libraryItems.forEach { it.removeUserId(userId) }
+            if (libraryItems.isNotEmpty()) {
+                myLibraryDao.upsertAll(libraryItems)
+            }
+            removedLogDao.insertAll(
+                resourceIds.map { resourceId ->
+                    RemovedLog().apply {
+                        id = UUID.randomUUID().toString()
+                        docId = resourceId
+                        this.userId = userId
+                        type = "resources"
+                    }
+                }
+            )
+        }
     }
 
     override suspend fun getHtmlResourceDownloadUrls(resourceId: String): ResourceUrlsResponse {

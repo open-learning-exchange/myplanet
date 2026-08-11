@@ -290,4 +290,32 @@ class ResourcesRepositoryImplTest {
 
         assertEquals(expectedList, result)
     }
+
+    @Test
+    fun `removeResourcesFromShelf batches dao calls instead of one per item`() = runTest {
+        val userId = "testUser123"
+        val resourceIds = (1..50).map { "resource$it" }
+        val libraryItems = resourceIds.map { rid -> MyLibrary().apply { resourceId = rid; setUserId(userId) } }
+
+        coEvery { myLibraryDao.getByResourceIds(resourceIds) } returns libraryItems
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+        coEvery { removedLogDao.insertAll(any()) } returns Unit
+
+        val result = repository.removeResourcesFromShelf(resourceIds, userId)
+
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) { myLibraryDao.getByResourceIds(resourceIds) }
+        coVerify(exactly = 1) { myLibraryDao.upsertAll(match { it.size == 50 }) }
+        coVerify(exactly = 1) { removedLogDao.insertAll(match { it.size == 50 }) }
+        coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+    }
+
+    @Test
+    fun `removeResourcesFromShelf with empty list does nothing`() = runTest {
+        val result = repository.removeResourcesFromShelf(emptyList(), "testUser123")
+
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 0) { myLibraryDao.getByResourceIds(any()) }
+        coVerify(exactly = 0) { removedLogDao.insertAll(any()) }
+    }
 }
