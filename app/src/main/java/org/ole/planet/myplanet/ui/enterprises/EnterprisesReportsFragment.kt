@@ -68,7 +68,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
 
         binding.exportCSV.setOnClickListener {
             val formattedDate = LocalDate.now().format(dateFormatter)
-            val teamName = prefData.getTeamName()?.replace(" ", "_")
+            val teamName = teamsRepository.getTeamNameFromPrefs()?.replace(" ", "_")
 
             val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                 addCategory(Intent.CATEGORY_OPENABLE)
@@ -83,7 +83,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                 result.data?.data?.let { uri ->
                     viewLifecycleOwner.lifecycleScope.launch {
                         try {
-                            val csvContent = viewModel.exportReportsAsCsv(reports, prefData.getTeamName() ?: "")
+                            val csvContent = viewModel.exportReportsAsCsv(reports, teamsRepository.getTeamNameFromPrefs() ?: "")
                             requireContext().contentResolver.openOutputStream(uri)?.use { outputStream ->
                                 outputStream.write(csvContent.toByteArray())
                             }
@@ -113,7 +113,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         super.onViewCreated(view, savedInstanceState)
         reportsAdapter = EnterprisesReportsAdapter(
             requireContext(),
-            prefData,
+            teamsRepository.getTeamNameFromPrefs(),
             onEdit = { report -> showEditReportDialog(report) },
             onDelete = { report -> showDeleteReportDialog(report) }
         )

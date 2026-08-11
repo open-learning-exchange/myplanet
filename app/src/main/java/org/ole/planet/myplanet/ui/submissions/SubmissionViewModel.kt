@@ -39,11 +39,11 @@ class SubmissionViewModel @Inject constructor(
     private val _query = MutableStateFlow("")
 
     private val userIdFlow = flow { emit(userRepository.getActiveUserIdSuspending()) }
-        .shareIn(viewModelScope, SharingStarted.Lazily, 1)
+        .shareIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1)
 
     private val allSubmissionsFlow = userIdFlow.flatMapLatest { uid ->
         submissionsRepository.getSubmissionsFlow(uid)
-    }.shareIn(viewModelScope, SharingStarted.Lazily, 1)
+    }.shareIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1)
 
     private val exams: StateFlow<HashMap<String?, StepExam>> = allSubmissionsFlow.mapLatest { subs ->
         HashMap(submissionsRepository.getExamMap(subs))
@@ -87,7 +87,7 @@ class SubmissionViewModel @Inject constructor(
             }
 
         Triple(uniqueSubmissions, submissionCountMap, filtered)
-    }.flowOn(dispatcherProvider.io).shareIn(viewModelScope, SharingStarted.Lazily, 1)
+    }.flowOn(dispatcherProvider.io).shareIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1)
 
     val submissions: StateFlow<List<SubmissionUiModel>> = combine(filteredSubmissionsRaw, exams) { (uniqueSubmissions, submissionCountMap), examsMap ->
         uniqueSubmissions.map { viewData ->
