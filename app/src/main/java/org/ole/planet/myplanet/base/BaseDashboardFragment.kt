@@ -59,7 +59,14 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     private val viewModel: DashboardViewModel by viewModels()
     private val newsViewModel: NewsViewModel by viewModels()
     private var fullName: String? = null
-    private lateinit var params: FlexboxLayout.LayoutParams
+    private val params: FlexboxLayout.LayoutParams by lazy {
+        FlexboxLayout.LayoutParams(
+            resources.getDimensionPixelSize(R.dimen.dashboard_chip_width),
+            ViewGroup.LayoutParams.MATCH_PARENT
+        ).apply {
+            marginEnd = resources.getDimensionPixelSize(R.dimen.dashboard_chip_gap)
+        }
+    }
     private var di: DialogUtils.CustomProgressDialog? = null
 
 
@@ -358,12 +365,6 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     }
 
     fun initView(view: View) {
-        params = FlexboxLayout.LayoutParams(
-            resources.getDimensionPixelSize(R.dimen.dashboard_chip_width),
-            ViewGroup.LayoutParams.MATCH_PARENT
-        ).apply {
-            marginEnd = resources.getDimensionPixelSize(R.dimen.dashboard_chip_gap)
-        }
         view.findViewById<View>(R.id.imageView).setOnClickListener {
             homeItemClickListener?.openCallFragment(UserProfileFragment())
         }
