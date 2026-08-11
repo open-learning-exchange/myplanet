@@ -214,9 +214,12 @@ object SyncTimeLogger {
         return String.format(Locale.US, "%3d.%03ds", seconds, millis)
     }
 
+    private val timestampFormat = ThreadLocal.withInitial {
+        SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
+    }
+
     private fun formatTimestamp(timestamp: Long): String {
-        val sdf = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
-        return sdf.format(Date(timestamp))
+        return timestampFormat.get()!!.format(Date(timestamp))
     }
 
     private fun generateSummary(): String {
