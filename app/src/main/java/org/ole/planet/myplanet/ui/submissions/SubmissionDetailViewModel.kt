@@ -25,30 +25,30 @@ class SubmissionDetailViewModel @Inject constructor(
 
     private val submissionDetailState: StateFlow<SubmissionDetail?> = flow {
         emit(submissionsRepository.getSubmissionDetail(submissionId))
-    }.stateIn(viewModelScope, SharingStarted.Lazily, null)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val questionAnswers: StateFlow<List<QuestionAnswer>> = submissionDetailState
         .filterNotNull()
         .map { it.questionAnswers }
-        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val title: StateFlow<String> = submissionDetailState
         .filterNotNull()
         .map { it.title }
-        .stateIn(viewModelScope, SharingStarted.Lazily, "Submission Details")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Submission Details")
 
     val status: StateFlow<String> = submissionDetailState
         .filterNotNull()
         .map { it.status }
-        .stateIn(viewModelScope, SharingStarted.Lazily, "Status: Unknown")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Status: Unknown")
 
     val date: StateFlow<String> = submissionDetailState
         .filterNotNull()
         .map { "Date: ${TimeUtils.getFormattedDate(it.date)}" }
-        .stateIn(viewModelScope, SharingStarted.Lazily, "Date: Unknown")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Date: Unknown")
 
     val submittedBy: StateFlow<String> = submissionDetailState
         .filterNotNull()
         .map { it.submittedBy }
-        .stateIn(viewModelScope, SharingStarted.Lazily, "Submitted by: Unknown")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Submitted by: Unknown")
 }

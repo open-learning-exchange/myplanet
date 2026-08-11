@@ -25,6 +25,8 @@ import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.TagEntity
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -47,7 +49,8 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val myLibraryDao: MyLibraryDao,
     private val userRepository: UserRepository,
     private val teamDao: TeamDao,
-    private val userSessionManager: UserSessionManager
+    private val userSessionManager: UserSessionManager,
+    private val configurationsRepository: ConfigurationsRepository
 ) : ResourcesRepository {
 
     // Shelf membership is stored as a JSON userId list; match a single entry with LIKE %"id"%.
@@ -381,6 +384,24 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun downloadResourcesPriority(resources: List<MyLibrary>): Boolean {
         return downloadResources(resources)
+    }
+
+override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrary> {
+        var files = libraryList
+        if (files == null) {
+            files = getAllLibrariesToSync()
+        }
+        val safeFiles = files ?: emptyList()
+        val urls = DownloadUtils.downloadAllFiles(safeFiles)
+
+        MainApplication.applicationScope.launch {
+            if (configurationsRepository.checkServerAvailability()) {
+                if (urls.isNotEmpty()) {
+                    DownloadUtils.openDownloadService(context, urls, false)
+                }
+            }
+        }
+        return safeFiles
     }
 
     override suspend fun getAllLibrariesToSync(): List<MyLibrary> {

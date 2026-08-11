@@ -140,6 +140,28 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             }
         }
 
+        private fun buildApkLog(
+            spm: SharedPrefManager,
+            modelId: String?,
+            time: String,
+            type: String,
+            error: String
+        ): ApkLog {
+            return ApkLog().apply {
+                id = "${UUID.randomUUID()}"
+                parentCode = spm.getParentCode()
+                createdOn = spm.getPlanetCode()
+                modelId?.let { userId = it }
+                this.time = time
+                page = ""
+                version = getVersionName(context)
+                this.type = type
+                if (error.isNotEmpty()) {
+                    this.error = error
+                }
+            }
+        }
+
         // A report for a failure that may kill the process (crash/ANR) must be persisted
         // to a plain file before this runs: the Room write below can still be lost
         // if the process dies before the coroutine persists the row.
@@ -153,20 +175,46 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             val apkLogDao = entryPoint.apkLogDao()
             return try {
                 val model = userSessionManager.getUserModel()
-                val log = ApkLog().apply {
-                    id = "${UUID.randomUUID()}"
-                    parentCode = spm.getParentCode()
-                    createdOn = spm.getPlanetCode()
-                    model?.let { userId = it.id }
-                    this.time = time
-                    page = ""
-                    version = getVersionName(context)
-                    this.type = type
-                    if (error.isNotEmpty()) {
-                        this.error = error
+                val log = buildApkLog(spm, model?.id, time, type, error)
+                apkLogDao.insert(log)
+                true
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
+        }
+
+        suspend fun saveLogsToRoom(pendingLogs: List<CrashLogStore.PendingLog>): Boolean {
+            if (pendingLogs.isEmpty()) return true
+            val entryPoint = EntryPointAccessors.fromApplication(
+                context,
+                CoreDependenciesEntryPoint::class.java
+            )
+            val userSessionManager = entryPoint.userSessionManager()
+            val spm = entryPoint.sharedPrefManager()
+            val apkLogDao = entryPoint.apkLogDao()
+            return try {
+                val model = userSessionManager.getUserModel()
+                val versionName = getVersionName(context)
+                val parentCode = spm.getParentCode()
+                val planetCode = spm.getPlanetCode()
+
+                val logsToInsert = pendingLogs.map { pending ->
+                    ApkLog().apply {
+                        id = "${UUID.randomUUID()}"
+                        this.parentCode = parentCode
+                        this.createdOn = planetCode
+                        model?.let { userId = it.id }
+                        this.time = pending.time
+                        page = ""
+                        version = versionName
+                        this.type = pending.type
+                        if (pending.error.isNotEmpty()) {
+                            this.error = pending.error
+                        }
                     }
                 }
-                apkLogDao.insert(log)
+                apkLogDao.insertAll(logsToInsert)
                 true
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -233,22 +281,27 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 }
                 val url = URL(formattedUrl)
                 val responseCode = withContext(ioDispatcher) {
-                    TrafficStats.setThreadStatsTag(NETWORK_TRAFFIC_TAG)
-                    val connection = url.openConnection() as HttpURLConnection
-                    try {
-                        connection.requestMethod = "GET"
-                        connection.connectTimeout = 5000
-                        connection.readTimeout = 5000
-                        connection.connect()
-                        connection.responseCode
-                    } finally {
-                        connection.disconnect()
-                        TrafficStats.clearThreadStatsTag()
-                    }
+                    getResponseCode(url)
                 }
                 responseCode in 200..299
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 false
+            }
+        }
+
+        private fun getResponseCode(url: URL): Int {
+            TrafficStats.setThreadStatsTag(NETWORK_TRAFFIC_TAG)
+            val connection = url.openConnection() as HttpURLConnection
+            return try {
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+                connection.connect()
+                connection.responseCode
+            } finally {
+                connection.disconnect()
+                TrafficStats.clearThreadStatsTag()
             }
         }
 
@@ -308,9 +361,13 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             val pendingLogs = withContext(dispatcherProvider.io) {
                 CrashLogStore.loadPendingLogs(this@MainApplication)
             }
-            for (pending in pendingLogs) {
-                if (saveLogToRoom(pending.type, pending.error, pending.time)) {
-                    withContext(dispatcherProvider.io) { pending.file.delete() }
+            if (pendingLogs.isNotEmpty()) {
+                if (saveLogsToRoom(pendingLogs)) {
+                    withContext(dispatcherProvider.io) {
+                        for (pending in pendingLogs) {
+                            pending.file.delete()
+                        }
+                    }
                 }
             }
         } catch (e: Exception) {

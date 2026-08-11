@@ -17,6 +17,7 @@ import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
@@ -74,7 +75,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val appDatabase: AppDatabase,
 ) : TeamsRepository, TeamsSyncRepository {
     override fun getTasksFlow(userId: String?): Flow<List<TeamTask>> {
-        return teamTaskDao.getOpenTasksForUser(userId)
+        return teamTaskDao.getOpenTasksForUser(userId).flowOn(dispatcherProvider.default)
     }
 
     override suspend fun getTeamsForUpload(): List<TeamUploadData> {
@@ -200,7 +201,7 @@ class TeamsRepositoryImpl @Inject constructor(
                         it.isRootTeam()
                 }.map { it }
             }
-        }
+        }.flowOn(dispatcherProvider.default)
     }
 
     private suspend fun getMemberTeamIds(userId: String): Set<String> {
@@ -305,7 +306,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 }.map { it }
             }
             mapToTeamDetails(teams, userId)
-        }
+        }.flowOn(dispatcherProvider.default)
     }
 
     override suspend fun getShareableEnterpriseDetails(userId: String?): List<TeamDetails> {
@@ -437,6 +438,10 @@ class TeamsRepositoryImpl @Inject constructor(
                     userId = entity.userId ?: ""
                 )
             }
+    }
+
+    override fun getTeamNameFromPrefs(): String? {
+        return sharedPrefManager.getTeamName()
     }
 
     override suspend fun getTeamNamesByIds(ids: List<String>): Map<String, String> {
@@ -640,29 +645,34 @@ class TeamsRepositoryImpl @Inject constructor(
         val validIds = teamIds.filter { it.isNotBlank() }.distinct()
         if (validIds.isEmpty()) return emptyMap()
 
+        val validIdsSet = validIds.toSet()
         val userEntries = teamDao.getByUserId(userId)
-            .filter { it.teamId in validIds && (it.docType == "membership" || it.docType == "request") }
 
-        val membershipMap = userEntries
-            .filter { it.docType == "membership" && !it.isDeletePending }
-            .mapNotNull { it.teamId }
-            .toSet()
+        val membershipSet = mutableSetOf<String>()
+        val leaderSet = mutableSetOf<String>()
+        val pendingRequestSet = mutableSetOf<String>()
 
-        val leaderMap = userEntries
-            .filter { it.docType == "membership" && it.isLeader }
-            .mapNotNull { it.teamId }
-            .toSet()
+        for (entry in userEntries) {
+            val teamId = entry.teamId ?: continue
+            if (teamId !in validIdsSet) continue
 
-        val pendingRequestMap = userEntries
-            .filter { it.docType == "request" }
-            .mapNotNull { it.teamId }
-            .toSet()
+            if (entry.docType == "membership") {
+                if (!entry.isDeletePending) {
+                    membershipSet.add(teamId)
+                }
+                if (entry.isLeader) {
+                    leaderSet.add(teamId)
+                }
+            } else if (entry.docType == "request") {
+                pendingRequestSet.add(teamId)
+            }
+        }
 
         return validIds.associateWith { teamId ->
             TeamMemberStatus(
-                isMember = teamId in membershipMap,
-                isLeader = teamId in leaderMap,
-                hasPendingRequest = teamId in pendingRequestMap
+                isMember = teamId in membershipSet,
+                isLeader = teamId in leaderSet,
+                hasPendingRequest = teamId in pendingRequestSet
             )
         }
     }
@@ -1433,5 +1443,21 @@ class TeamsRepositoryImpl @Inject constructor(
         selector: (MyTeam) -> T,
     ): List<MyTeam> {
         return if (ascending) sortedBy(selector) else sortedByDescending(selector)
+    }
+
+    override suspend fun getPendingTaskUploads(): List<TeamTask> {
+        return teamTaskDao.getPendingUploads()
+    }
+
+    override suspend fun markTaskUploaded(localId: String, remoteId: String?, remoteRev: String?): Boolean {
+        return teamTaskDao.markUploaded(localId, remoteId, remoteRev) != 0
+    }
+
+    override suspend fun getPendingTeamLogUploads(): List<TeamLog> {
+        return teamLogDao.getPendingUploads()
+    }
+
+    override suspend fun markTeamLogUploaded(localId: String, remoteId: String, rev: String): Boolean {
+        return teamLogDao.markUploaded(localId, remoteId, rev) != 0
     }
 }
