@@ -11,6 +11,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
@@ -38,6 +40,7 @@ class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
     var guest: Boolean = false
+    private var usernameValidationJob: Job? = null
     private var usernameWatcher: TextWatcher? = null
     private var passwordWatcher: TextWatcher? = null
     private var rePasswordWatcher: TextWatcher? = null
@@ -185,6 +188,8 @@ class BecomeMemberActivity : BaseActivity() {
     }
 
     override fun onDestroy() {
+        usernameValidationJob?.cancel()
+        usernameValidationJob = null
         activityBecomeMemberBinding.etUsername.removeTextChangedListener(usernameWatcher)
         activityBecomeMemberBinding.etPassword.removeTextChangedListener(passwordWatcher)
         activityBecomeMemberBinding.etRePassword.removeTextChangedListener(rePasswordWatcher)
@@ -222,19 +227,24 @@ class BecomeMemberActivity : BaseActivity() {
 
             override fun afterTextChanged(s: Editable?) {
                 val input = s?.toString() ?: ""
-                lifecycleScope.launch {
+                usernameValidationJob?.cancel()
+                usernameValidationJob = lifecycleScope.launch {
+                    delay(300)
                     val error = userRepository.validateUsername(input)
-                    withContext(dispatcherProvider.main) {
-                        if (error != null) {
-                            activityBecomeMemberBinding.etUsername.error = error
-                        } else {
-                            val lowercase = input.lowercase()
-                            if (input != lowercase) {
-                                activityBecomeMemberBinding.etUsername.setText(lowercase)
-                                activityBecomeMemberBinding.etUsername.setSelection(lowercase.length)
-                            }
-                            activityBecomeMemberBinding.etUsername.error = null
+
+                    if (activityBecomeMemberBinding.etUsername.text.toString() != input) {
+                        return@launch
+                    }
+
+                    if (error != null) {
+                        activityBecomeMemberBinding.etUsername.error = error
+                    } else {
+                        val lowercase = input.lowercase()
+                        if (input != lowercase) {
+                            activityBecomeMemberBinding.etUsername.setText(lowercase)
+                            activityBecomeMemberBinding.etUsername.setSelection(lowercase.length)
                         }
+                        activityBecomeMemberBinding.etUsername.error = null
                     }
                 }
             }

@@ -169,14 +169,12 @@ open class UserEntity(
     }
 
     fun isManager(): Boolean {
-        val roles = getRoles()
-        val isManager = roles.toString().lowercase(Locale.ROOT).contains("manager") || userAdmin ?: false
-        return isManager
+        val hasManagerRole = rolesList?.any { it.contains("manager", ignoreCase = true) } == true
+        return hasManagerRole || userAdmin ?: false
     }
 
     fun isLeader(): Boolean {
-        val roles = getRoles()
-        return roles.toString().lowercase(Locale.ROOT).contains("leader")
+        return rolesList?.any { it.contains("leader", ignoreCase = true) } == true
     }
 
     fun isGuest(): Boolean {

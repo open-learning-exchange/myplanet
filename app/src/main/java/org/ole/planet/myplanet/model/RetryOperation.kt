@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 import java.util.UUID
 
 /**
- * Room replacement for the former Realm `RetryOperation` model. Persistence goes through
+ * Room replacement for the former `RetryOperation` model. Persistence goes through
  * [org.ole.planet.myplanet.data.room.dao.RetryDao]; the class name is kept because the retry
  * worker/queue and settings screen use it as a plain data holder.
  */

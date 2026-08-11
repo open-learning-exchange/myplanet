@@ -126,7 +126,6 @@ class MembersFragment : BaseTeamFragment() {
                         nextLeader?.id?.let { teamsRepository.updateTeamLeader(teamId, it) }
                         user?.id?.let { teamsRepository.removeMember(teamId, it) }
                         loadMembers()
-                        onMemberChangeListener?.onMemberChanged()
                         Toast.makeText(requireContext(), getString(R.string.left_team), Toast.LENGTH_SHORT).show()
                         requireActivity().supportFragmentManager.popBackStack()
                     } catch (e: Exception) {
@@ -154,6 +153,7 @@ class MembersFragment : BaseTeamFragment() {
                 teamsRepository.removeMember(teamId, memberId)
                 loadMembers()
                 onMemberChangeListener?.onMemberChanged()
+                requestsViewModel.fetchMembers(teamId)
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Error removing member: ${e.message}", Toast.LENGTH_SHORT).show()
             }
@@ -164,6 +164,8 @@ class MembersFragment : BaseTeamFragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 teamsRepository.updateTeamLeader(teamId, userId)
+                val members = teamsRepository.getJoinedMembersWithVisitInfo(teamId)
+                membersAdapter?.updateData(members, false)
                 loadMembers()
                 Toast.makeText(requireContext(), getString(R.string.leader_selected), Toast.LENGTH_SHORT).show()
                 onMemberChangeListener?.onMemberChanged()

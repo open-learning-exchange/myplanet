@@ -39,8 +39,6 @@ class ResourcesAdapter(
     private var listener: OnLibraryItemSelectedListener? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
-    private var isAscending = true
-    private var isTitleAscending = true
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -289,32 +287,6 @@ class ResourcesAdapter(
         if (holder is ResourcesViewHolder) {
             holder.cachedTags = emptyList()
             holder.rowLibraryBinding.flexboxDrawable.removeAllViews()
-        }
-    }
-
-    fun toggleTitleSortOrder(onComplete: (() -> Unit)? = null) {
-        isTitleAscending = !isTitleAscending
-        setLibraryList(sortLibraryListByTitle(), onComplete)
-    }
-
-    fun toggleSortOrder(onComplete: (() -> Unit)? = null) {
-        isAscending = !isAscending
-        setLibraryList(sortLibraryList(), onComplete)
-    }
-
-    private fun sortLibraryListByTitle(): List<ResourceListModel> {
-        return if (isTitleAscending) {
-            currentList.sortedBy { it.item.title?.lowercase(Locale.ROOT) }
-        } else {
-            currentList.sortedByDescending { it.item.title?.lowercase(Locale.ROOT) }
-        }
-    }
-
-    private fun sortLibraryList(): List<ResourceListModel> {
-        return if (isAscending) {
-            currentList.sortedBy { it.item.createdDate }
-        } else {
-            currentList.sortedByDescending { it.item.createdDate }
         }
     }
 

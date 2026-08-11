@@ -8,6 +8,8 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.ProgressRepository
+import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
@@ -17,6 +19,8 @@ class CoursesViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val coursesRepository = mockk<CoursesRepository>(relaxed = true)
+    private val progressRepository = mockk<ProgressRepository>(relaxed = true)
+    private val ratingsRepository = mockk<RatingsRepository>(relaxed = true)
     private val dispatcherProvider = mockk<DispatcherProvider>()
 
     private lateinit var viewModel: CoursesViewModel
@@ -27,6 +31,8 @@ class CoursesViewModelTest {
         io.mockk.every { dispatcherProvider.main } returns Dispatchers.Unconfined
         viewModel = CoursesViewModel(
             coursesRepository,
+            progressRepository,
+            ratingsRepository,
             dispatcherProvider
         )
     }
@@ -34,37 +40,42 @@ class CoursesViewModelTest {
     @Test
     fun testRemoveCoursesWithProgress() = runTest {
         viewModel.removeCourses(listOf("c1", "c2"), "u1", true) {}
-        coVerify { coursesRepository.removeCourseFromShelf("c1", "u1") }
+        coVerify { coursesRepository.removeCoursesFromShelf(listOf("c1", "c2"), "u1") }
         coVerify { coursesRepository.deleteCourseProgress("c1") }
-        coVerify { coursesRepository.removeCourseFromShelf("c2", "u1") }
         coVerify { coursesRepository.deleteCourseProgress("c2") }
     }
 
     @Test
     fun testRemoveCoursesWithoutProgress() = runTest {
         viewModel.removeCourses(listOf("c1", "c2"), "u1", false) {}
-        coVerify { coursesRepository.removeCourseFromShelf("c1", "u1") }
+        coVerify { coursesRepository.removeCoursesFromShelf(listOf("c1", "c2"), "u1") }
         coVerify(exactly = 0) { coursesRepository.deleteCourseProgress("c1") }
-        coVerify { coursesRepository.removeCourseFromShelf("c2", "u1") }
         coVerify(exactly = 0) { coursesRepository.deleteCourseProgress("c2") }
     }
 
     @Test
     fun testRemoveCoursesEmpty() = runTest {
         viewModel.removeCourses(emptyList(), "u1", true) {}
-        coVerify(exactly = 0) { coursesRepository.removeCourseFromShelf(any(), any()) }
+        coVerify(exactly = 0) { coursesRepository.removeCoursesFromShelf(any(), any()) }
         coVerify(exactly = 0) { coursesRepository.deleteCourseProgress(any()) }
     }
 
     @Test
     fun testLoadCourses_MyCoursesLib_CallsGetCourseProgress() = runTest {
         viewModel.loadCourses(true, "u1")
-        coVerify { coursesRepository.getCourseProgress("u1", any<List<String>>()) }
+        coVerify { progressRepository.getCourseProgress(any<List<String>>(), "u1") }
     }
 
     @Test
     fun testLoadCourses_NotMyCoursesLib_StillCallsGetCourseProgress() = runTest {
         viewModel.loadCourses(false, "u1")
-        coVerify { coursesRepository.getCourseProgress("u1", any<List<String>>()) }
+        coVerify { progressRepository.getCourseProgress(any<List<String>>(), "u1") }
+    }
+
+    @Test
+    fun testFilterCourses_ProgressFilter_CallsRepositoryFilter() = runTest {
+        viewModel.filterCourses(false, "u1", "", "", "", emptyList(), "In Progress")
+        coVerify { coursesRepository.filterCourses("", "", "", emptyList()) }
+        coVerify { coursesRepository.getMyCourses("u1", any()) }
     }
 }

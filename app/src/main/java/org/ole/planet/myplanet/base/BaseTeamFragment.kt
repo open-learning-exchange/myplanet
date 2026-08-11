@@ -52,7 +52,7 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
     override fun setData(list: List<News?>?) {}
 
     private fun loadTeamDetails() {
-        val shouldQueryTeam = shouldQueryTeamFromRealm()
+        val shouldQueryTeam = shouldQueryTeamLocally()
         val existingTeam = team
         lifecycleScope.launch(dispatcherProvider.io) {
             val teamResult = if (shouldQueryTeam) {
@@ -82,7 +82,7 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
         }
     }
 
-    protected open fun shouldQueryTeamFromRealm(): Boolean {
+    protected open fun shouldQueryTeamLocally(): Boolean {
         val hasDirectData = requireArguments().containsKey("teamName") &&
                 requireArguments().containsKey("teamType") &&
                 requireArguments().containsKey("teamId")
