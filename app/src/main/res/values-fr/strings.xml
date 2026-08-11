@@ -482,9 +482,7 @@
     <string name="update_profile_alert">Veuillez compléter votre profil pour profiter de toutes les fonctionnalités</string>
     <string name="other_notes">Autres notes</string>
     <string name="archive">Archiver</string>
-    <string name="Q1">Question : 1/%d</string>
     <string name="no_questions">Aucune question disponible</string>
-    <string name="Q">Question: %1$d / %2$d</string>
     <string name="exam_question_of">Question %1$d sur %2$d</string>
     <string name="finish">Terminer</string>
     <string name="finish_and_submit">Terminer et envoyer</string>

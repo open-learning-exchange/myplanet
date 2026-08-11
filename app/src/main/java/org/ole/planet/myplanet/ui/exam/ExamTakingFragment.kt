@@ -7,6 +7,7 @@ import android.graphics.drawable.StateListDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -62,12 +63,11 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     private var isExplicitSubmission = false
     private var examTakingTextWatcher: TextWatcher? = null
     private val answerCache = mutableMapOf<String, AnswerData>()
-    private var elapsedSeconds = 0
+    private var startElapsedRealtime = 0L
     private var isTimerRunning = false
     private val timerHandler = Handler(Looper.getMainLooper())
     private val elapsedTimeRunnable = object : Runnable {
         override fun run() {
-            elapsedSeconds++
             updateElapsedTimeText()
             timerHandler.postDelayed(this, 1000L)
         }
@@ -95,7 +95,8 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        elapsedSeconds = savedInstanceState?.getInt(KEY_ELAPSED_SECONDS) ?: 0
+        val resumedElapsedSeconds = savedInstanceState?.getInt(KEY_ELAPSED_SECONDS) ?: 0
+        startElapsedRealtime = SystemClock.elapsedRealtime() - resumedElapsedSeconds * 1000L
         updateElapsedTimeText()
         initializeExamData()
         setupListeners()
@@ -104,7 +105,20 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putInt(KEY_ELAPSED_SECONDS, elapsedSeconds)
+        outState.putInt(KEY_ELAPSED_SECONDS, currentElapsedSeconds())
+    }
+
+    override fun onPause() {
+        super.onPause()
+        timerHandler.removeCallbacks(elapsedTimeRunnable)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (isTimerRunning) {
+            updateElapsedTimeText()
+            timerHandler.postDelayed(elapsedTimeRunnable, 1000L)
+        }
     }
 
     private fun startTimer() {
@@ -118,9 +132,13 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         timerHandler.removeCallbacks(elapsedTimeRunnable)
     }
 
+    private fun currentElapsedSeconds(): Int =
+        ((SystemClock.elapsedRealtime() - startElapsedRealtime) / 1000L).toInt()
+
     private fun updateElapsedTimeText() {
-        val minutes = elapsedSeconds / 60
-        val seconds = elapsedSeconds % 60
+        val totalSeconds = currentElapsedSeconds()
+        val minutes = totalSeconds / 60
+        val seconds = totalSeconds % 60
         binding.tvElapsedTime.text = String.format(Locale.US, "%02d:%02d", minutes, seconds)
     }
 
