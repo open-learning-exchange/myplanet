@@ -155,6 +155,7 @@ class NotificationsViewModel @Inject constructor(
             }
         }
     }
+
     fun markAsRead(notificationId: String) {
         viewModelScope.launch {
             val markedIds = notificationsRepository.markNotificationsAsRead(setOf(notificationId))
@@ -179,6 +180,7 @@ class NotificationsViewModel @Inject constructor(
             }
         }
     }
+
     fun markAllAsRead(userId: String) {
         viewModelScope.launch {
             val markedIds = notificationsRepository.markAllUnreadAsRead(userId)
@@ -191,9 +193,12 @@ class NotificationsViewModel @Inject constructor(
                     }
                 }
                 _unreadCount.value = 0
+                _expandedGroups.value = emptySet()
+                _collapsedGroups.value = emptySet()
             }
         }
     }
+
     private fun List<Notification>.markAsRead(id: String): List<Notification> {
         return map { if (it.id == id && !it.isRead) it.copy(isRead = true) else it }
     }
@@ -228,7 +233,7 @@ class NotificationsViewModel @Inject constructor(
                 val isExpanded = when {
                     type in expandedGroups -> true
                     type in collapsedGroups -> false
-                    else -> isGroupDefaultExpanded(type, notifications)
+                    else -> unreadCount > 0
                 }
                 add(NotificationListItem.Header(type, typeLabelFor(type), unreadCount, isExpanded))
                 if (isExpanded) {
