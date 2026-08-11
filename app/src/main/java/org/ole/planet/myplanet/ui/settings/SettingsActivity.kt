@@ -31,7 +31,6 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
@@ -55,7 +54,7 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        EdgeToEdgeUtils.setupEdgeToEdge(this, window.decorView)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, findViewById(android.R.id.content))
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         FragmentNavigator.replaceFragment(supportFragmentManager, android.R.id.content, SettingFragment())
         title = getString(R.string.action_settings)
@@ -89,8 +88,6 @@ class SettingsActivity : AppCompatActivity() {
         lateinit var defaultPref: SharedPreferences
         @Inject
         lateinit var sharedPrefManager: SharedPrefManager
-        @Inject
-        lateinit var themeManager: ThemeManager
         @Inject
         lateinit var timeProvider: TimeProvider
         var user: UserEntity? = null
@@ -199,12 +196,6 @@ class SettingsActivity : AppCompatActivity() {
             val lp = findPreference<Preference>("app_language")
             lp?.setOnPreferenceClickListener {
                 context?.let { it1 -> languageChanger(it1) }
-                true
-            }
-
-            val darkMode = findPreference<Preference>("dark_mode")
-            darkMode?.setOnPreferenceClickListener {
-                themeManager.showThemeDialog(requireContext())
                 true
             }
 
@@ -344,10 +335,6 @@ class SettingsActivity : AppCompatActivity() {
             } else if (lastSyncDate != null) {
                 lastSyncDate.title = getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSynced, timeProvider)
             }
-        }
-
-        override fun onDestroy() {
-            super.onDestroy()
         }
 
         companion object {

@@ -276,24 +276,6 @@ class NotificationsRepositoryImpl @Inject constructor(
         return map
     }
 
-    override suspend fun getTeamNotificationInfo(teamId: String, userId: String): TeamNotificationInfo {
-        val current = timeProvider.now()
-        val tomorrow = Calendar.getInstance()
-        tomorrow.add(Calendar.DAY_OF_YEAR, 1)
-
-        val notification = teamNotificationDao.findByParentAndType(teamId, "chat")
-
-        val chatCount = voicesRepository.countTeamChats(teamId)
-
-        val hasChat = notification != null && notification.lastCount < chatCount
-
-        val tasks = teamTaskDao.getTasksForUserBetween(userId, current, tomorrow.timeInMillis)
-
-        val hasTask = tasks.isNotEmpty()
-
-        return TeamNotificationInfo(hasTask, hasChat)
-    }
-
     override suspend fun getTeamNotifications(teamIds: List<String>, userId: String): Map<String, TeamNotificationInfo> {
         if (teamIds.isEmpty()) {
             return emptyMap()

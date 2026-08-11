@@ -7,6 +7,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.unmockkObject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -230,5 +231,100 @@ class HealthRepositoryImplTest {
                     it.first().conditions?.contains("Fever") == true
             })
         }
+    }
+
+    @Test
+    fun uploadHealthData_successful_upload() = testScope.runTest {
+        mockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+        every { org.ole.planet.myplanet.utils.UrlUtils.header } returns "mock-header"
+        every { org.ole.planet.myplanet.utils.UrlUtils.getUrl() } returns "mock-url"
+
+        mockkStatic(android.text.TextUtils::class)
+        every { android.text.TextUtils.isEmpty(any()) } answers {
+            val str = firstArg<CharSequence?>()
+            str.isNullOrEmpty()
+        }
+
+        val myHealths = listOf(HealthExamination().apply {
+            _id = "exam1"
+            userId = "exam1" // Serialize uses userId as _id in the request
+        })
+
+        val mockResponseObject = JsonObject().apply {
+            addProperty("id", "exam1")
+            addProperty("rev", "rev1")
+        }
+        val mockResponse = retrofit2.Response.success(mockResponseObject)
+        coEvery { mockApiInterface.postDoc(any(), any(), any(), any()) } returns mockResponse
+
+        val result = repository.uploadHealthData(myHealths)
+        advanceUntilIdle()
+
+        assertEquals(1, result.size)
+        assertEquals("rev1", result["exam1"])
+
+        unmockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+        io.mockk.unmockkStatic(android.text.TextUtils::class)
+    }
+
+    @Test
+    fun uploadHealthData_failed_upload() = testScope.runTest {
+        mockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+        every { org.ole.planet.myplanet.utils.UrlUtils.header } returns "mock-header"
+        every { org.ole.planet.myplanet.utils.UrlUtils.getUrl() } returns "mock-url"
+
+        mockkStatic(android.text.TextUtils::class)
+        every { android.text.TextUtils.isEmpty(any()) } answers {
+            val str = firstArg<CharSequence?>()
+            str.isNullOrEmpty()
+        }
+
+        val myHealths = listOf(HealthExamination().apply {
+            _id = "exam1"
+            userId = "user1"
+        })
+
+        // Mock a failure response, like a network error
+        coEvery { mockApiInterface.postDoc(any(), any(), any(), any()) } throws RuntimeException("Network Error")
+
+        val result = repository.uploadHealthData(myHealths)
+        advanceUntilIdle()
+
+        assertTrue(result.isEmpty())
+
+        unmockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+        io.mockk.unmockkStatic(android.text.TextUtils::class)
+    }
+
+    @Test
+    fun getByIdOrUserId_returns_examination() = testScope.runTest {
+        val examination = HealthExamination().apply { _id = "exam1" }
+        coEvery { healthExaminationDao.getByIdOrUserId("exam1") } returns examination
+
+        val result = repository.getByIdOrUserId("exam1")
+        advanceUntilIdle()
+
+        assertEquals(examination, result)
+    }
+
+    @Test
+    fun getByProfileId_returns_list() = testScope.runTest {
+        val examination = HealthExamination().apply { _id = "exam1" }
+        coEvery { healthExaminationDao.getByProfileId("profile1") } returns listOf(examination)
+
+        val result = repository.getByProfileId("profile1")
+        advanceUntilIdle()
+
+        assertEquals(1, result.size)
+        assertEquals(examination, result[0])
+    }
+
+    @Test
+    fun upsert_saves_examination() = testScope.runTest {
+        val examination = HealthExamination().apply { _id = "exam1" }
+        repository.upsert(examination)
+        advanceUntilIdle()
+
+        coVerify { healthExaminationDao.upsert(examination) }
     }
 }

@@ -46,6 +46,7 @@ import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
@@ -88,6 +89,9 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private val viewModel: ResourcesViewModel by viewModels()
     
+    @Inject
+    lateinit var realtimeSyncManager: RealtimeSyncManager
+
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private var refreshJob: Job? = null
 
@@ -136,21 +140,23 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override suspend fun getAdapter(): ListAdapter<*, *> {
         allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
 
-        val user = userRepository.getUserModel()
-        val factory = adapterFactory ?: DefaultBaseAdapterFactory()
-        adapterLibrary = factory.createResourcesAdapter(
-            context = requireActivity(),
-            isGuest = user?.isGuest() == true,
-            openedResourceIds = emptySet(),
-            currentUserName = user?.name,
-            onEditClick = { model -> openEditResource(model) }
-        )
-
-        val filteredList = applyFilterModels(filterLocalLibraryByTag(allResourceModels, etSearch.text?.toString()?.trim().orEmpty(), searchTags))
-        adapterLibrary.setLibraryList(filteredList)
+        if (!::adapterLibrary.isInitialized) {
+            val user = userRepository.getUserModel()
+            val factory = adapterFactory ?: DefaultBaseAdapterFactory()
+            adapterLibrary = factory.createResourcesAdapter(
+                context = requireActivity(),
+                isGuest = user?.isGuest() == true,
+                openedResourceIds = emptySet(),
+                currentUserName = user?.name,
+                onEditClick = { model -> openEditResource(model) }
+            )
+        }
 
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
+
+        val filteredList = applyFilterModels(filterLocalLibraryByTag(allResourceModels, etSearch.text?.toString()?.trim().orEmpty(), searchTags))
+        adapterLibrary.setLibraryList(filteredList)
 
         checkList(filteredList.size)
         showNoData(tvMessage, filteredList.size, "resources")
@@ -224,7 +230,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         tvFragmentInfo = binding.tvFragmentInfo
         if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
         
-        realtimeSyncHelper = RealtimeSyncHelper(this, this)
+        realtimeSyncHelper = RealtimeSyncHelper(this, this, realtimeSyncManager)
         realtimeSyncHelper.setupRealtimeSync()
     }
 
@@ -384,7 +390,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
     }
 
-    private fun checkList(listSize: Int = if (::adapterLibrary.isInitialized) adapterLibrary.getLibraryList().size else 0) {
+    private fun checkList(listSize: Int = if (::adapterLibrary.isInitialized) adapterLibrary.currentList.size else 0) {
         val hasAnyLibraryData = allResourceModels.isNotEmpty()
 
         if (!hasAnyLibraryData && listSize == 0) {
@@ -617,6 +623,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             confirmation?.dismiss()
         }
         confirmation = null
+        if (::adapterLibrary.isInitialized) {
+            adapterLibrary.setListener(null)
+            adapterLibrary.setRatingChangeListener(null)
+        }
 
         _binding = null
         super.onDestroyView()
@@ -676,14 +686,20 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
         binding.orderByDateButton.setOnClickListener {
             bottomSheet.visibility = View.GONE
-            adapterLibrary.toggleSortOrder {
-                recyclerView.scrollToPosition(0)
+            viewLifecycleOwner.lifecycleScope.launch {
+                val sorted = viewModel.toggleSortOrder(adapterLibrary.currentList)
+                adapterLibrary.setLibraryList(sorted) {
+                    recyclerView.scrollToPosition(0)
+                }
             }
         }
         binding.orderByTitleButton.setOnClickListener {
             bottomSheet.visibility = View.GONE
-            adapterLibrary.toggleTitleSortOrder {
-                recyclerView.scrollToPosition(0)
+            viewLifecycleOwner.lifecycleScope.launch {
+                val sorted = viewModel.toggleTitleSortOrder(adapterLibrary.currentList)
+                adapterLibrary.setLibraryList(sorted) {
+                    recyclerView.scrollToPosition(0)
+                }
             }
         }
     }
