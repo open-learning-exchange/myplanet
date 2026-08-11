@@ -305,15 +305,19 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             }
         }
 
-        fun handleUncaughtException(e: Throwable) {
-            e.printStackTrace()
-            val error = e.stackTraceToString()
-            val pendingFile = CrashLogStore.save(context, ApkLog.ERROR_TYPE_CRASH, error, coreDependenciesEntryPoint.timeProvider())
+        fun persistCriticalLog(type: String, error: String) {
+            val pendingFile = CrashLogStore.save(context, type, error, coreDependenciesEntryPoint.timeProvider())
             applicationScope.launch {
-                if (saveLogToRoom(ApkLog.ERROR_TYPE_CRASH, error, "${coreDependenciesEntryPoint.timeProvider().now()}")) {
+                if (saveLogToRoom(type, error, "${coreDependenciesEntryPoint.timeProvider().now()}")) {
                     pendingFile?.delete()
                 }
             }
+        }
+
+        fun handleUncaughtException(e: Throwable) {
+            e.printStackTrace()
+            val error = e.stackTraceToString()
+            persistCriticalLog(ApkLog.ERROR_TYPE_CRASH, error)
 
             val homeIntent = Intent(Intent.ACTION_MAIN).apply {
                 addCategory(Intent.CATEGORY_HOME)
@@ -415,12 +419,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 listener = object : ANRWatchdog.ANRListener {
                     override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
                         val error = "ANR detected! Duration: ${duration}ms\n $message"
-                        val pendingFile = CrashLogStore.save(context, ANR_LOG_TYPE, error, coreDependenciesEntryPoint.timeProvider())
-                        applicationScope.launch {
-                            if (saveLogToRoom(ANR_LOG_TYPE, error, "${coreDependenciesEntryPoint.timeProvider().now()}")) {
-                                pendingFile?.delete()
-                            }
-                        }
+                        persistCriticalLog(ANR_LOG_TYPE, error)
                     }
                 },
                 dispatcherProvider = dispatcherProvider
