@@ -163,6 +163,49 @@ Known gaps:
   Also: the chat provider called `sendNewChatRequest` on both branches, so every follow-up
   message opened a fresh conversation instead of continuing the one on screen.
 
+## Harvesting upstream: the 2026-08-11 rebase
+
+The branch was rebased onto master (`6977707ef`), 130 Kotlin commits ahead of the previous
+base. Since the Kotlin app is the port's specification, every one of those commits was
+reviewed for *behavioral* change — refactors, test additions, DI moves and formatter caching
+need nothing from the port. Four changes were harvested:
+
+- **Feedback sync no longer destroys a pending local reply** (`af4605362`). The port
+  replicated the old `mapToFeedback`: a sync overwrote `messages` from the server document and
+  flipped `isUploaded` back to true, so a reply composed offline was silently lost the moment
+  the next sync ran. `FeedbackMapper.fromDoc` now takes the stored row and, when it has an
+  unconfirmed reply, keeps the local thread and stays pending — exactly the Kotlin fix.
+- **Removing a resource from the shelf now writes a `removed_log` row** (`4345d871a`).
+  `ShelfRepository` already *read* `removed_log` rows of type `resources`, but nothing ever
+  wrote one — `ResourceDetailScreen` cleared the userId directly on the row, so the next shelf
+  push re-merged the resource from the server copy and the removal did not stick. The same bug
+  existed in Kotlin and was fixed there; `ResourcesRepository.setShelfMembership` now pairs the
+  membership write with the removal record (and clears it on re-add), mirroring the courses path.
+- **`CourseMapper.mergeUserIds` drops blank entries** (`ff7bb5c7c`). The Kotlin's shelf-merge
+  now filters blank/duplicate user ids; the port deduped through a `Set` already but let a
+  blank string persist forever.
+- **Storage management is guest-gated** (`82140152b`). A guest tapping the settings tile is
+  offered membership (`DialogUtils.guestDialog` → an `AlertDialog` pushing `Routes.becomeMember`)
+  instead of the storage tools.
+
+Recorded as spec debt rather than harvested (the Kotlin change lands on something the port has
+not built, or needs a primitive the port lacks):
+
+- The rest of `82140152b`: the free-up-space button and available-space text inside the
+  breakdown sheet. Free-up-space needs `FreeSpaceWorker`'s delete-and-mark-not-offline pass;
+  available space needs a disk-stats plugin. Related pre-existing stubs:
+  `storage_category_detail_screen.dart`'s `_getResourceTitlesMap` returns `{}` and
+  `_markResourcesAsNotOffline` is empty.
+- `b8e98c550` / `2b39eb329`: the courses progress filter and sort toggle are not ported; when
+  they are, implement the *new* semantics (progress filter over the whole library, `max`
+  falling back to the step count; sort state living in the provider so it survives stream
+  emissions).
+- `4fdc7fcb1`: `BecomeMemberActivity`'s username validation is now debounced 300 ms with a
+  stale-result guard; the port validates on submit only.
+- `9f3fac1d9`: the dashboard key/IV sync (not ported) gained an in-flight re-entrancy guard —
+  carry it when that flow is ported.
+- `dc5659243`: if memberships ever gain a delete-pending state, the roster query must filter it.
+
 ## Strategy
 
 - **Coexistence, green at every commit.** The Flutter app lives in `flutter/` alongside the

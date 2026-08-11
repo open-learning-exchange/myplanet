@@ -59,10 +59,15 @@ class CourseMapper {
   }
 
   /// Port of `MyCourse.setUserId` / `mergeUserIds` — shelf membership is a
-  /// union, so syncing a second user's shelf does not evict the first.
+  /// union, so syncing a second user's shelf does not evict the first. Blank
+  /// entries already persisted in the row are dropped on the way through,
+  /// matching the Kotlin's blank-filtering merge.
   static List<String> mergeUserIds(List<String> existing, String? shelfId) {
-    if (shelfId == null || shelfId.isEmpty) return existing;
-    return {...existing, shelfId}.toList(growable: false);
+    final kept = existing.where((id) => id.isNotEmpty);
+    if (shelfId == null || shelfId.isEmpty) {
+      return {...kept}.toList(growable: false);
+    }
+    return {...kept, shelfId}.toList(growable: false);
   }
 
   /// Port of the `steps` loop in `parseCourseDocument`.

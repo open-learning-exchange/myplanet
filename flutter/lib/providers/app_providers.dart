@@ -258,6 +258,7 @@ final resourcesRepositoryProvider = Provider<ResourcesRepository>(
   (ref) => ResourcesRepository(
     ref.watch(planetApiProvider),
     ref.watch(myLibraryDaoProvider),
+    ref.watch(removedLogDaoProvider),
   ),
 );
 

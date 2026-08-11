@@ -1900,6 +1900,18 @@ class FeedbackDao extends DatabaseAccessor<AppDatabase>
     feedbackEntries,
   )..where((f) => f.id.equals(id))).getSingleOrNull();
 
+  /// Batch read for the sync path, chunked to stay under SQLite's
+  /// variable cap on a large planet.
+  Future<List<FeedbackRow>> getByIds(List<String> ids) async {
+    final rows = <FeedbackRow>[];
+    for (final chunk in _chunked(ids, _sqliteVariableChunk)) {
+      rows.addAll(
+        await (select(feedbackEntries)..where((f) => f.id.isIn(chunk))).get(),
+      );
+    }
+    return rows;
+  }
+
   /// Close feedback by setting status to 'Closed'.
   Future<int> closeById(String id) =>
       (update(feedbackEntries)..where((f) => f.id.equals(id))).write(

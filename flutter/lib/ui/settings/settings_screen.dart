@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/session_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../router.dart';
 
@@ -79,7 +80,16 @@ class SettingsScreen extends ConsumerWidget {
             leading: const Icon(Icons.storage_outlined),
             title: Text(l10n.storageManagement),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push(Routes.storageManagement),
+            // Guest-gated, matching `SettingsActivity`: a guest is offered
+            // membership instead of the storage tools.
+            onTap: () {
+              final session = ref.read(sessionProvider).valueOrNull;
+              if (session != null && session.id.startsWith('guest')) {
+                _showGuestDialog(context, l10n);
+                return;
+              }
+              context.push(Routes.storageManagement);
+            },
           ),
           const Divider(),
           _SectionHeader(title: l10n.about),
@@ -92,6 +102,31 @@ class SettingsScreen extends ConsumerWidget {
             leading: const Icon(Icons.new_releases_outlined),
             title: Text(l10n.appVersion('0.62.97')),
             subtitle: const Text('Build 6297'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Port of `DialogUtils.guestDialog` — offers membership instead of the
+  /// gated feature.
+  void _showGuestDialog(BuildContext context, AppLocalizations l10n) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.becomeMember),
+        content: Text(l10n.toAccessThisFeatureBecomeAMember),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              context.push(Routes.becomeMember);
+            },
+            child: Text(l10n.becomeMember),
           ),
         ],
       ),

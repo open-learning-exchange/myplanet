@@ -786,6 +786,7 @@
   "enterPassword": "Enter password",
   "retypePassword": "Retype password",
   "becomeMember": "Become a member",
+  "toAccessThisFeatureBecomeAMember": "You are currently a guest user. To access this feature, become a member.",
   "creatingMember": "Creating member account...",
   "passwordsDoNotMatch": "Passwords do not match",
   "pleaseSelectGender": "Please select gender",

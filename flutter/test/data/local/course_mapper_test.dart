@@ -204,5 +204,13 @@ void main() {
       expect(CourseMapper.mergeUserIds(const ['user-1'], null), ['user-1']);
       expect(CourseMapper.mergeUserIds(const ['user-1'], ''), ['user-1']);
     });
+
+    test('drops blank entries already persisted in the row', () {
+      expect(CourseMapper.mergeUserIds(const ['', 'user-1', ''], 'user-2'), [
+        'user-1',
+        'user-2',
+      ]);
+      expect(CourseMapper.mergeUserIds(const ['', 'user-1'], null), ['user-1']);
+    });
   });
 }

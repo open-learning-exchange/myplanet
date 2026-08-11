@@ -360,23 +360,16 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
     final errorColor = Theme.of(context).colorScheme.error;
 
     try {
-      // Get current userId list
-      final currentUserIds = _resource!.userId.toList();
-      List<String> newUserIds;
-
-      if (isCurrentlyOnShelf) {
-        // Remove from shelf
-        newUserIds = currentUserIds.where((id) => id != session.id).toList();
-      } else {
-        // Add to shelf
-        newUserIds = [...currentUserIds, session.id];
-      }
-
-      // Update the resource - convert row to companion for upsert
-      final updated = _resource!.copyWith(userId: newUserIds);
-      await ref.read(myLibraryDaoProvider).upsertAll([
-        updated.toCompanion(true),
-      ]);
+      // The repository pairs the membership write with the removed_log
+      // record/clear — without the record, the next shelf push would merge
+      // the resource right back in from the server's copy.
+      await ref
+          .read(resourcesRepositoryProvider)
+          .setShelfMembership(
+            _resource!.id,
+            session.id,
+            joined: !isCurrentlyOnShelf,
+          );
 
       // Reload
       await _loadResource();

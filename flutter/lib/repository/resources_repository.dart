@@ -7,6 +7,7 @@ import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
 import '../data/local/my_library_mapper.dart';
+import 'shelf_repository.dart';
 
 /// Port of the resources phase of `services/sync/SyncManager.kt` (phase 2) plus
 /// the read side of `repository/ResourcesRepositoryImpl.kt`.
@@ -17,13 +18,14 @@ import '../data/local/my_library_mapper.dart';
 /// the updated rows into the open stream — which is what the Kotlin needed
 /// `RealtimeSyncManager`'s `SharedFlow` to do by hand.
 class ResourcesRepository {
-  ResourcesRepository(this._api, this._dao);
+  ResourcesRepository(this._api, this._dao, this._removedLogDao);
 
   /// The Kotlin seeds its `AdaptiveBatchProcessor` with the same page size.
   static const int initialBatchSize = 100;
 
   final PlanetApi _api;
   final MyLibraryDao _dao;
+  final RemovedLogDao _removedLogDao;
 
   /// Reactive, offline-first resource list.
   Stream<List<MyLibraryRow>> watchResources({String? query}) =>
@@ -33,6 +35,48 @@ class ResourcesRepository {
 
   /// Gets a single resource by its local id.
   Future<MyLibraryRow?> getById(String id) => _dao.getById(id);
+
+  /// Port of `ResourcesRepositoryImpl.removeResourcesFromShelf` (and the
+  /// re-add path of `markResourcesAdded`).
+  ///
+  /// Leaving must write a `removed_log` row: the shelf upload merges local
+  /// ids with the server's, so without the record the next push would simply
+  /// re-add the resource — which is the bug the Kotlin fixed by making its
+  /// removal insert `RemovedLog` rows. Joining clears any stale record so a
+  /// re-add beats an old removal, matching the courses path.
+  Future<void> setShelfMembership(
+    String resourceId,
+    String userId, {
+    required bool joined,
+  }) async {
+    // Both writes together: if only one landed, the local shelf and the
+    // removal log would disagree and the next upload would push the wrong
+    // document.
+    await _dao.transaction(() async {
+      final row = await _dao.getById(resourceId);
+      if (row != null) {
+        final userIds = {
+          ...row.userId.where((id) => id.isNotEmpty && id != userId),
+          if (joined) userId,
+        }.toList(growable: false);
+        await _dao.upsertAll([row.copyWith(userId: userIds).toCompanion(true)]);
+      }
+
+      if (joined) {
+        await _removedLogDao.clear(
+          type: ShelfRepository.resourcesType,
+          userId: userId,
+          docId: resourceId,
+        );
+      } else {
+        await _removedLogDao.record(
+          type: ShelfRepository.resourcesType,
+          userId: userId,
+          docId: resourceId,
+        );
+      }
+    });
+  }
 
   /// Port of `SyncManager.syncResources`.
   ///

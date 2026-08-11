@@ -124,6 +124,71 @@ void main() {
   });
 
   test(
+    'sync keeps a pending local reply instead of the server thread',
+    () async {
+      // A synced row picks up a local reply the server has not confirmed…
+      await repository.insertFromJson([
+        {
+          '_id': 'fb1',
+          '_rev': '1-a',
+          'messages': [
+            {'message': 'original', 'time': '1', 'user': 'user1'},
+          ],
+        },
+      ]);
+      await repository.addReply('fb1', 'my pending reply', 'user1');
+
+      // …then the next sync delivers the server's copy of the same document.
+      await repository.insertFromJson([
+        {
+          '_id': 'fb1',
+          '_rev': '2-b',
+          'messages': [
+            {'message': 'original', 'time': '1', 'user': 'user1'},
+          ],
+        },
+      ]);
+
+      final stored = await repository.getFeedbackById('fb1');
+      expect(
+        stored!.isUploaded,
+        isFalse,
+        reason: 'the row must stay queued for upload',
+      );
+      final parsed = FeedbackMapper.parseMessages(stored.messages);
+      expect(parsed.map((m) => m.message), contains('my pending reply'));
+    },
+  );
+
+  test('sync adopts the server thread once the row is uploaded', () async {
+    await repository.insertFromJson([
+      {
+        '_id': 'fb1',
+        '_rev': '1-a',
+        'messages': [
+          {'message': 'original', 'time': '1', 'user': 'user1'},
+        ],
+      },
+    ]);
+
+    await repository.insertFromJson([
+      {
+        '_id': 'fb1',
+        '_rev': '2-b',
+        'messages': [
+          {'message': 'original', 'time': '1', 'user': 'user1'},
+          {'message': 'server reply', 'time': '2', 'user': 'user2'},
+        ],
+      },
+    ]);
+
+    final stored = await repository.getFeedbackById('fb1');
+    expect(stored!.isUploaded, isTrue);
+    final parsed = FeedbackMapper.parseMessages(stored.messages);
+    expect(parsed.map((m) => m.message), contains('server reply'));
+  });
+
+  test(
     'closeFeedback marks status as closed and resets isUploaded to false',
     () async {
       final entry = FeedbackEntriesCompanion.insert(

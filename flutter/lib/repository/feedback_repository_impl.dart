@@ -113,7 +113,23 @@ class FeedbackRepositoryImpl implements FeedbackRepository {
 
   @override
   Future<void> insertFromJson(List<Map<String, dynamic>> docs) async {
-    final companions = docs.map(FeedbackMapper.fromDoc).toList();
+    // A row with an unconfirmed local reply must keep its messages through
+    // the sync, so the mapper needs the stored row to compare against.
+    final ids = docs
+        .map((doc) => doc['_id'] as String? ?? doc['id'] as String? ?? '')
+        .where((id) => id.isNotEmpty)
+        .toList(growable: false);
+    final existingById = {
+      for (final row in await feedbackDao.getByIds(ids)) row.id: row,
+    };
+    final companions = docs
+        .map(
+          (doc) => FeedbackMapper.fromDoc(
+            doc,
+            existingById[doc['_id'] as String? ?? doc['id'] as String? ?? ''],
+          ),
+        )
+        .toList();
     await feedbackDao.upsertAll(companions);
   }
 
