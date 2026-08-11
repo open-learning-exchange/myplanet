@@ -31,7 +31,6 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
@@ -55,7 +54,7 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        EdgeToEdgeUtils.setupEdgeToEdge(this, window.decorView)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, findViewById(android.R.id.content))
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         FragmentNavigator.replaceFragment(supportFragmentManager, android.R.id.content, SettingFragment())
         title = getString(R.string.action_settings)
@@ -200,12 +199,6 @@ class SettingsActivity : AppCompatActivity() {
                 true
             }
 
-            val darkMode = findPreference<Preference>("dark_mode")
-            darkMode?.setOnPreferenceClickListener {
-                ThemeManager.showThemeDialog(requireActivity())
-                true
-            }
-
             val textSize = findPreference<Preference>("text_size")
             textSize?.setOnPreferenceClickListener {
                 textSizeChanger(requireActivity())
@@ -342,10 +335,6 @@ class SettingsActivity : AppCompatActivity() {
             } else if (lastSyncDate != null) {
                 lastSyncDate.title = getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSynced, timeProvider)
             }
-        }
-
-        override fun onDestroy() {
-            super.onDestroy()
         }
 
         companion object {

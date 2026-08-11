@@ -85,6 +85,7 @@ class FeedbackRepositoryImpl @Inject constructor(
             val msgArray = gson.fromJson(feedback.messages, JsonArray::class.java)
             msgArray.add(obj)
             feedback.setMessages(msgArray)
+            feedback.isUploaded = false
             feedbackDao.update(feedback)
         }
     }
@@ -93,19 +94,26 @@ class FeedbackRepositoryImpl @Inject constructor(
         feedbackDao.upsert(feedback)
     }
 
-    override suspend fun insertFromJson(jsonObject: JsonObject) {
-        feedbackDao.upsert(mapToFeedback(jsonObject))
+    suspend fun insertFromJson(jsonObject: JsonObject) {
+        val id = JsonUtils.getString("_id", jsonObject)
+        val existing = feedbackDao.findById(id)
+        feedbackDao.upsert(mapToFeedback(jsonObject, existing))
     }
 
     override suspend fun insertFeedbackList(jsonObjects: List<JsonObject>) {
-        feedbackDao.upsertAll(jsonObjects.map { mapToFeedback(it) })
+        val ids = jsonObjects.map { JsonUtils.getString("_id", it) }
+        val existingById = feedbackDao.getByIds(ids).associateBy { it.id }
+        feedbackDao.upsertAll(
+            jsonObjects.map { mapToFeedback(it, existingById[JsonUtils.getString("_id", it)]) }
+        )
     }
 
     override suspend fun markFeedbackUploaded(id: String): Boolean {
         return feedbackDao.markUploaded(id) > 0
     }
 
-    private fun mapToFeedback(act: JsonObject): Feedback {
+    private fun mapToFeedback(act: JsonObject, existing: Feedback?): Feedback {
+        val hasPendingLocalReply = existing?.isUploaded == false
         return Feedback().apply {
             id = JsonUtils.getString("_id", act)
             _id = JsonUtils.getString("_id", act)
@@ -118,11 +126,16 @@ class FeedbackRepositoryImpl @Inject constructor(
             type = JsonUtils.getString("type", act)
             url = JsonUtils.getString("url", act)
             parentCode = JsonUtils.getString("parentCode", act)
-            messages = JsonUtils.gson.toJson(JsonUtils.getJsonArray("messages", act))
-            isUploaded = true
             item = JsonUtils.getString("item", act)
             state = JsonUtils.getString("state", act)
             _rev = JsonUtils.getString("_rev", act)
+            if (hasPendingLocalReply) {
+                messages = existing.messages
+                isUploaded = false
+            } else {
+                messages = JsonUtils.gson.toJson(JsonUtils.getJsonArray("messages", act))
+                isUploaded = true
+            }
         }
     }
 }
