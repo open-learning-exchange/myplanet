@@ -314,12 +314,12 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         val v = view ?: return
         val myLifeFlex = v.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife) ?: return
         viewLifecycleOwner.lifecycleScope.launch {
-            myLifeFlex.removeAllViews()
             myLifeListInit(myLifeFlex)
         }
     }
 
     private suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
+        flexboxLayout.removeAllViews()
         val userId = prefData.getUserId().ifEmpty { "--" }
         val visibleItems = lifeRepository.getMyLifeForDashboard(userId, getMyLifeListBase(userId))
         if (visibleItems.isEmpty()) {
