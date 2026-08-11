@@ -1038,7 +1038,6 @@ class TeamsRepositoryImpl @Inject constructor(
             .filter { !it.isDeletePending } // Filter so only the not pending members get query
             .mapNotNull { it.userId }
             .distinct()
-            
         return teamMembers.mapNotNull { userRepository.getUserById(it) }
     }
 
