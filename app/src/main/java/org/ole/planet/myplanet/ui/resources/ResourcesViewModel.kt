@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.resources
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +21,11 @@ class ResourcesViewModel @Inject constructor(
     private val resourcesRepository: ResourcesRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
+
+    enum class SortMode { NONE, DATE, TITLE }
+    private var sortMode = SortMode.NONE
+    private var isAscending = true
+    private var isTitleAscending = true
 
     private val _downloadComplete = MutableStateFlow(false)
     val downloadComplete: StateFlow<Boolean> = _downloadComplete.asStateFlow()
@@ -53,6 +59,33 @@ class ResourcesViewModel @Inject constructor(
     }
 
     suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> = withContext(dispatcherProvider.io) {
-        resourcesRepository.getResourceListModels(isMyCourseLib, modelId)
+        applyCurrentSort(resourcesRepository.getResourceListModels(isMyCourseLib, modelId))
+    }
+
+    suspend fun toggleSortOrder(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.io) {
+        sortMode = SortMode.DATE
+        isAscending = !isAscending
+        applyCurrentSort(list)
+    }
+
+    suspend fun toggleTitleSortOrder(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.io) {
+        sortMode = SortMode.TITLE
+        isTitleAscending = !isTitleAscending
+        applyCurrentSort(list)
+    }
+
+    suspend fun applyCurrentSort(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.io) {
+        when (sortMode) {
+            SortMode.DATE -> {
+                if (isAscending) list.sortedBy { it.item.createdDate }
+                else list.sortedByDescending { it.item.createdDate }
+            }
+            SortMode.TITLE -> {
+                val withKeys = list.map { it to (it.item.title?.lowercase(Locale.ROOT) ?: "") }
+                if (isTitleAscending) withKeys.sortedBy { it.second }.map { it.first }
+                else withKeys.sortedByDescending { it.second }.map { it.first }
+            }
+            SortMode.NONE -> list
+        }
     }
 }

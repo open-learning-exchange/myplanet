@@ -14,7 +14,8 @@ import org.ole.planet.myplanet.utils.TimeProvider
 class EventsRepositoryImpl @Inject constructor(
     private val timeProvider: TimeProvider,
     private val meetupDao: MeetupDao,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val gson: Gson
 ) : EventsRepository {
 
     override suspend fun getMeetupsForTeam(teamId: String): List<Meetup> {
@@ -117,7 +118,6 @@ class EventsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun createMeetup(params: MeetupCreationParams): Boolean {
-        val gson = Gson()
         val meetup = Meetup().apply {
             id = "${UUID.randomUUID()}"
             title = params.title
@@ -150,11 +150,6 @@ class EventsRepositoryImpl @Inject constructor(
             e.printStackTrace()
             false
         }
-    }
-
-    override suspend fun getMeetupIdsForUser(userId: String?): List<String> {
-        if (userId.isNullOrBlank()) return emptyList()
-        return meetupDao.getByUserId(userId).mapNotNull { it.meetupId }
     }
 
     override suspend fun getPendingMeetupUploads(): List<Meetup> {

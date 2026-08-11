@@ -1,11 +1,15 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.slot
 import io.mockk.unmockkAll
+import io.mockk.unmockkObject
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -15,30 +19,55 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.model.Personal
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.UrlUtils
+import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PersonalsRepositoryImplTest {
 
     private lateinit var personalDao: PersonalDao
+    private lateinit var apiInterface: ApiInterface
+    private lateinit var uploadRepository: UploadRepository
+    private lateinit var context: Context
     private lateinit var repository: PersonalsRepositoryImpl
 
     @Before
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
         personalDao = mockk(relaxed = true)
-        val apiInterface = mockk<ApiInterface>(relaxed = true)
-        val context = mockk<Context>(relaxed = true)
-        repository = PersonalsRepositoryImpl(personalDao, apiInterface, context)
+        apiInterface = mockk(relaxed = true)
+        uploadRepository = mockk(relaxed = true)
+        context = mockk(relaxed = true)
+
+        mockkObject(UrlUtils)
+        every { UrlUtils.header } returns "mock-header"
+        every { UrlUtils.getUrl() } returns "mock-url"
+
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "mock-unique-id"
+        every { NetworkUtils.getDeviceName() } returns "mock-device-name"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "mock-custom-device-name"
+
+        mockkObject(FileUtils)
+        every { FileUtils.getFileNameFromUrl(any()) } returns "test.txt"
+
+        repository = PersonalsRepositoryImpl(personalDao, apiInterface, uploadRepository, context)
     }
 
     @After
     fun tearDown() {
+        unmockkObject(UrlUtils)
+        unmockkObject(NetworkUtils)
+        unmockkObject(FileUtils)
         unmockkAll()
     }
 
@@ -154,5 +183,110 @@ class PersonalsRepositoryImplTest {
         assertEquals("new-id", personal._id)
         assertEquals("rev-1", personal._rev)
         coVerify { personalDao.update(personal) }
+    }
+
+    @Test
+    fun `uploadPersonalDocument returns Pair of id and rev on success`() = runTest {
+        val personal = Personal().apply { id = "test-id" }
+        coEvery { personalDao.findById("test-id") } returns personal
+
+        val responseJson = JsonObject().apply {
+            addProperty("id", "new-id")
+            addProperty("rev", "rev-1")
+        }
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns Response.success(responseJson)
+
+        val result = repository.uploadPersonalDocument(personal)
+
+        assertEquals("new-id", result?.first)
+        assertEquals("rev-1", result?.second)
+        assertTrue(personal.isUploaded)
+        assertEquals("new-id", personal._id)
+        assertEquals("rev-1", personal._rev)
+        coVerify { personalDao.update(personal) }
+    }
+
+    @Test
+    fun `uploadPersonalDocument returns null when response body is null`() = runTest {
+        val personal = Personal().apply { id = "test-id" }
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns Response.success<JsonObject>(null)
+
+        val result = repository.uploadPersonalDocument(personal)
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `uploadPersonal returns already uploaded when personal is uploaded`() = runTest {
+        val personal = Personal().apply { isUploaded = true }
+
+        val result = repository.uploadPersonal(personal)
+
+        assertEquals("Resource already uploaded", result)
+    }
+
+    @Test
+    fun `uploadPersonal uploads doc and returns success when response is valid without path`() = runTest {
+        val personal = Personal().apply {
+            id = "test-id"
+            isUploaded = false
+            path = null
+        }
+        val mockResponseObject = JsonObject().apply {
+            addProperty("rev", "new-rev")
+            addProperty("id", "new-id")
+        }
+        val mockResponse = Response.success(mockResponseObject)
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns mockResponse
+
+        val result = repository.uploadPersonal(personal)
+
+        assertEquals("Personal resource uploaded successfully", result)
+        coVerify { apiInterface.postDoc(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `uploadPersonal uploads doc and attachment when path is provided`() = runTest {
+        val personal = Personal().apply {
+            id = "test-id"
+            isUploaded = false
+            path = "/local/path/to/test.txt"
+        }
+        val mockResponseObject = JsonObject().apply {
+            addProperty("rev", "new-rev")
+            addProperty("id", "new-id")
+        }
+        val mockResponse = Response.success(mockResponseObject)
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns mockResponse
+        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns mockk()
+
+        val result = repository.uploadPersonal(personal)
+
+        assertEquals("Personal resource uploaded successfully", result)
+        coVerify { apiInterface.postDoc(any(), any(), any(), any()) }
+        coVerify(exactly = 1) {
+            uploadRepository.uploadAttachment(
+                file = any(),
+                destinationFormat = "%s/resources/%s/%s",
+                id = "new-id",
+                rev = "new-rev",
+                name = "test.txt"
+            )
+        }
+    }
+
+    @Test
+    fun `uploadPersonal returns failure message when doc response is null`() = runTest {
+        val personal = Personal().apply {
+            id = "test-id"
+            isUploaded = false
+        }
+        val mockResponse = Response.success<JsonObject>(null)
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns mockResponse
+
+        val result = repository.uploadPersonal(personal)
+
+        assertEquals("Failed to upload personal resource: No response", result)
     }
 }
