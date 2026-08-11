@@ -23,9 +23,9 @@ import com.bumptech.glide.Glide
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.IOException
-import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
-import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -67,9 +67,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         }
 
         binding.exportCSV.setOnClickListener {
-            val currentDate = Date()
-            val dateFormat = SimpleDateFormat("EEE_MMM_dd_yyyy", Locale.US)
-            val formattedDate = dateFormat.format(currentDate)
+            val formattedDate = LocalDate.now().format(dateFormatter)
             val teamName = teamsRepository.getTeamNameFromPrefs()?.replace(" ", "_")
 
             val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
@@ -411,5 +409,9 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
     override fun onDestroyView() {
         _binding = null
         super.onDestroyView()
+    }
+
+    companion object {
+        private val dateFormatter = DateTimeFormatter.ofPattern("EEE_MMM_dd_yyyy", Locale.US)
     }
 }

@@ -9,7 +9,9 @@ import androidx.room.withTransaction
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Date
 import java.util.LinkedHashSet
@@ -1101,14 +1103,13 @@ class TeamsRepositoryImpl @Inject constructor(
 
         val visitCounts = logs.groupingBy { it.user }.eachCount()
         val lastVisits = logs.groupBy { it.user }.mapValues { (_, userLogs) -> userLogs.maxOfOrNull { it.time ?: 0 } }
-        val formatter = SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault())
 
         return orderedMembers.map { member ->
             val visitCount = visitCounts[member.name]?.toLong() ?: 0L
             val lastVisitTimestamp = lastVisits[member.name]
             val lastLogoutTimestamp = activitiesRepository.getLastVisit(member.name ?: "")
             val profileLastVisit = if (lastLogoutTimestamp != null) {
-                formatter.format(Date(lastLogoutTimestamp))
+                DATE_TIME_FORMATTER.format(Instant.ofEpochMilli(lastLogoutTimestamp))
             } else {
                 "No logout record found"
             }
@@ -1459,5 +1460,9 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun markTeamLogUploaded(localId: String, remoteId: String, rev: String): Boolean {
         return teamLogDao.markUploaded(localId, remoteId, rev) != 0
+    }
+
+    companion object {
+        private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("MMMM dd, yyyy hh:mm a", Locale.getDefault()).withZone(ZoneId.systemDefault())
     }
 }
