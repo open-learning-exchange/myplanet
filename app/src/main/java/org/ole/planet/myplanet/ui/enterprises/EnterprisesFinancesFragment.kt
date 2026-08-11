@@ -123,6 +123,20 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }
+
+        val initialDate = if (isFromDate) {
+            val fromDateText = binding.tvFromDateCalendar.text.toString()
+            if (fromDateText.isNotEmpty()) parseDate(fromDateText) ?: now else now
+        } else {
+            val toDateText = binding.etToDate.text.toString()
+            if (toDateText.isNotEmpty()) {
+                parseDate(toDateText) ?: now
+            } else {
+                val fromDateText = binding.tvFromDateCalendar.text.toString()
+                if (fromDateText.isNotEmpty()) parseDate(fromDateText) ?: now else now
+            }
+        }
+
         val datePickerDialog = DatePickerDialog(
             requireContext(),
             { _, year, monthOfYear, dayOfMonth ->
@@ -148,9 +162,9 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
                 filterIfBothDatesSelected()
             },
-            now[Calendar.YEAR],
-            now[Calendar.MONTH],
-            now[Calendar.DAY_OF_MONTH]
+            initialDate[Calendar.YEAR],
+            initialDate[Calendar.MONTH],
+            initialDate[Calendar.DAY_OF_MONTH]
         )
 
         if (!isFromDate) {
