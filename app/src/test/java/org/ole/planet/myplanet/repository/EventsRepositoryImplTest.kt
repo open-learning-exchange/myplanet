@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -35,7 +36,7 @@ class EventsRepositoryImplTest {
     fun setup() {
         meetupDao = mockk(relaxed = true)
         userRepository = mockk(relaxed = true)
-        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, userRepository, com.google.gson.Gson())
+        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, userRepository, Gson())
     }
 
     @Test
