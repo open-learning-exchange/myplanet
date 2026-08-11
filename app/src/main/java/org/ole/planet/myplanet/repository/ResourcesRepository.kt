@@ -4,6 +4,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagEntity
 
@@ -80,6 +81,7 @@ interface ResourcesRepository {
     suspend fun downloadResources(resources: List<MyLibrary>): Boolean
     suspend fun downloadResourcesPriority(resources: List<MyLibrary>): Boolean
     suspend fun getAllLibrariesToSync(): List<MyLibrary>
+    suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrary>
     suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String): Result<Unit>
     suspend fun addAllResourcesToUserLibrary(resources: List<MyLibrary>, userId: String): Result<Unit>
     suspend fun observeOpenedResourceIds(userId: String): Flow<Set<String>>
@@ -99,10 +101,11 @@ interface ResourcesRepository {
     suspend fun getPublicLibraryItems(): List<MyLibrary>
     suspend fun getResourceTitlesMap(): Map<String, String>
     suspend fun markResourcesAsNotOffline(resourceIds: Collection<String>)
-    suspend fun getCourseResourcesGroupedByStepId(courseId: String): Map<String?, List<MyLibrary>>
     suspend fun getPendingResourceUploads(): List<MyLibrary>
     suspend fun markResourceUploaded(localId: String, remoteId: String, remoteRev: String, planetCode: String?): Boolean
     suspend fun trackResourceOpen(item: MyLibrary)
+    suspend fun getOfflineResourceItems(oleDirPath: String, extensions: Set<String>, allKnownExtensions: Set<String>): List<OfflineResourceItem>
+    suspend fun deleteOfflineResources(oleDirPath: String, items: List<OfflineResourceItem>)
 }
 
 sealed class ResourceUrlsResponse {

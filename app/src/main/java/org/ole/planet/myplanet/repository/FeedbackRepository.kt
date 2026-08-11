@@ -20,7 +20,6 @@ interface FeedbackRepository {
     suspend fun closeFeedback(id: String?)
     suspend fun addReply(id: String?, message: String, user: String?)
     suspend fun saveFeedback(feedback: Feedback)
-    suspend fun insertFromJson(jsonObject: JsonObject)
     suspend fun insertFeedbackList(jsonObjects: List<JsonObject>)
     suspend fun markFeedbackUploaded(id: String): Boolean
 }

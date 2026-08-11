@@ -168,6 +168,7 @@
     <string name="cannot_remove_user">Isticmaalaha lama saari karin</string>
     <string name="no_members_task">Wax xubno koox ah looma hayo in shaqo loo xil saaro</string>
     <string name="no_member_selected">Ma jiro xubin la doortay. Fadlan isku day mar kale</string>
+    <string name="last_login_message">Kani waa soo galitaankaagii ugu dambeeyay ka hor intaadan u baahnayn inaad xubin noqoto</string>
 
     <string-array name="level">
         <item>Bilow</item>
