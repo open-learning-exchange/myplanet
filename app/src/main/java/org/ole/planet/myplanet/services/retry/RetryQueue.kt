@@ -4,11 +4,8 @@ import android.content.Context
 import android.util.Log
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import org.ole.planet.myplanet.model.RetryFailure
 import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.repository.RetryRepository
@@ -23,13 +20,10 @@ class RetryQueue @Inject constructor(
         private const val TAG = "RetryQueue"
     }
 
-    private val isProcessing = AtomicBoolean(false)
-    private val mutex = Mutex()
-
-    fun isCurrentlyProcessing(): Boolean = isProcessing.get()
+    fun isCurrentlyProcessing(): Boolean = retryRepository.isCurrentlyProcessing()
 
     internal fun setProcessing(processing: Boolean) {
-        isProcessing.set(processing)
+        retryRepository.setProcessing(processing)
     }
 
     suspend fun queueFailedOperation(
@@ -119,21 +113,7 @@ class RetryQueue @Inject constructor(
      * Returns false if processing is active (cannot clear).
      */
     suspend fun safeClearQueue(): Boolean {
-        if (isProcessing.get()) {
-            Log.w(TAG, "Cannot clear queue while processing is active")
-            return false
-        }
-
-        return mutex.withLock {
-            if (isProcessing.get()) {
-                Log.w(TAG, "Cannot clear queue while processing is active")
-                return@withLock false
-            }
-
-            retryRepository.deletePendingAndAbandonedOperations()
-            Log.i(TAG, "Queue cleared successfully")
-            true
-        }
+        return retryRepository.safeClearQueue()
     }
 
     /**

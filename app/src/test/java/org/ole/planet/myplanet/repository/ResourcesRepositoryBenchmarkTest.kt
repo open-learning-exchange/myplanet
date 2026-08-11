@@ -50,7 +50,8 @@ class ResourcesRepositoryBenchmarkTest {
             userRepository,
             teamDao,
             userSessionManager,
-            mockk(relaxed = true)
+            mockk(relaxed = true),
+            mockk(relaxed = true),
         )
     }
 

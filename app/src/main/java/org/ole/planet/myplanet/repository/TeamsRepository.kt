@@ -153,5 +153,7 @@ interface TeamsRepository {
     suspend fun getAvailableResourcesToAdd(teamId: String): List<MyLibrary>
 
     suspend fun getLastVisit(userName: String?, teamId: String?): Long?
+    fun getTeamNameFromPrefs(): String?
+
     fun observeTableUpdates(tableNames: List<String>): Flow<TableDataUpdate>
 }

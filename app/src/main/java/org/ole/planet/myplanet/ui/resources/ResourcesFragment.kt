@@ -14,7 +14,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.ListAdapter
-import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
@@ -28,8 +27,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
@@ -43,7 +40,6 @@ import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
-import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.model.UserEntity
@@ -135,21 +131,23 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override suspend fun getAdapter(): ListAdapter<*, *> {
         allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
 
-        val user = userRepository.getUserModel()
-        val factory = adapterFactory ?: DefaultBaseAdapterFactory()
-        adapterLibrary = factory.createResourcesAdapter(
-            context = requireActivity(),
-            isGuest = user?.isGuest() == true,
-            openedResourceIds = emptySet(),
-            currentUserName = user?.name,
-            onEditClick = { model -> openEditResource(model) }
-        )
-
-        val filteredList = applyFilterModels(filterLocalLibraryByTag(allResourceModels, etSearch.text?.toString()?.trim().orEmpty(), searchTags))
-        adapterLibrary.setLibraryList(filteredList)
+        if (!::adapterLibrary.isInitialized) {
+            val user = userRepository.getUserModel()
+            val factory = adapterFactory ?: DefaultBaseAdapterFactory()
+            adapterLibrary = factory.createResourcesAdapter(
+                context = requireActivity(),
+                isGuest = user?.isGuest() == true,
+                openedResourceIds = emptySet(),
+                currentUserName = user?.name,
+                onEditClick = { model -> openEditResource(model) }
+            )
+        }
 
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
+
+        val filteredList = applyFilterModels(filterLocalLibraryByTag(allResourceModels, etSearch.text?.toString()?.trim().orEmpty(), searchTags))
+        adapterLibrary.setLibraryList(filteredList)
 
         checkList(filteredList.size)
         showNoData(tvMessage, filteredList.size, "resources")
@@ -630,6 +628,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             confirmation?.dismiss()
         }
         confirmation = null
+        if (::adapterLibrary.isInitialized) {
+            adapterLibrary.setListener(null)
+            adapterLibrary.setRatingChangeListener(null)
+        }
 
         _binding = null
         super.onDestroyView()
@@ -672,6 +674,15 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         filter.setOnClickListener {
             bottomSheet.visibility = if (bottomSheet.isVisible) View.GONE else View.VISIBLE
         }
+        binding.root.findViewById<View>(R.id.btn_close_filter)?.setOnClickListener {
+            bottomSheet.visibility = View.GONE
+        }
+        binding.btnCollections.setOnClickListener {
+            bottomSheet.visibility = View.GONE
+        }
+        binding.btnClearTags.setOnClickListener {
+            bottomSheet.visibility = View.GONE
+        }
         binding.filterCategories.setOnClickListener {
             val f = ResourcesFilterFragment()
             f.setListener(this)
@@ -679,19 +690,18 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             bottomSheet.visibility = View.GONE
         }
         binding.orderByDateButton.setOnClickListener {
+            bottomSheet.visibility = View.GONE
             adapterLibrary.toggleSortOrder {
                 recyclerView.scrollToPosition(0)
             }
         }
         binding.orderByTitleButton.setOnClickListener {
+            bottomSheet.visibility = View.GONE
             adapterLibrary.toggleTitleSortOrder {
                 recyclerView.scrollToPosition(0)
             }
         }
     }
-    
-    
-
 
     private fun filterLocalLibraryByTag(models: List<ResourceListModel>, s: String, tags: List<TagEntity>): List<ResourceListModel> {
         var filteredList = ResourceSearchUtils.searchLocalModels(models, s)
@@ -721,9 +731,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
         if (userId != null && itemsToDelete.isNotEmpty()) {
             lifecycleScope.launch(dispatcherProvider.io) {
-                itemsToDelete.forEach { resourceId ->
-                    resourcesRepository.removeResourceFromShelf(resourceId, userId)
-                }
+                resourcesRepository.removeResourcesFromShelf(itemsToDelete, userId)
                 withContext(dispatcherProvider.main) {
                     _binding ?: return@withContext
                     Utilities.toast(activity, getString(R.string.removed_from_mylibrary))

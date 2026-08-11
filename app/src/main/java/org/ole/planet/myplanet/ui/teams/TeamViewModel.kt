@@ -171,4 +171,37 @@ class TeamViewModel @Inject constructor(
                 onFailure = { TeamActionResult.Failure(it.message) }
             )
     }
+
+    suspend fun updateExistingTeam(
+        teamId: String,
+        name: String,
+        description: String,
+        services: String,
+        rules: String,
+        category: String?,
+        updatedBy: String?
+    ): TeamActionResult {
+        val teamTypeForValidation = if (category == "enterprise") "enterprise" else "team"
+        if (teamsRepository.isTeamNameExists(name, teamTypeForValidation, teamId)) {
+            return TeamActionResult.NameExists
+        }
+
+        return teamsRepository.updateTeam(
+            teamId = teamId,
+            name = name,
+            description = description,
+            services = services,
+            rules = rules,
+            updatedBy = updatedBy,
+        ).fold(
+            onSuccess = { updated ->
+                if (updated) {
+                    TeamActionResult.Success
+                } else {
+                    TeamActionResult.Failure(null)
+                }
+            },
+            onFailure = { TeamActionResult.Failure(it.message) }
+        )
+    }
 }

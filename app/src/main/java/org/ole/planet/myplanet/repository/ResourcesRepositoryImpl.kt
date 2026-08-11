@@ -21,11 +21,14 @@ import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.TagEntity
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -50,7 +53,8 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val userRepository: UserRepository,
     private val teamDao: TeamDao,
     private val userSessionManager: UserSessionManager,
-    private val realtimeSyncManager: RealtimeSyncManager
+    private val configurationsRepository: ConfigurationsRepository,
+    private val realtimeSyncManager: RealtimeSyncManager,
 ) : ResourcesRepository {
 
     // Shelf membership is stored as a JSON userId list; match a single entry with LIKE %"id"%.
@@ -386,6 +390,24 @@ class ResourcesRepositoryImpl @Inject constructor(
         return downloadResources(resources)
     }
 
+override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrary> {
+        var files = libraryList
+        if (files == null) {
+            files = getAllLibrariesToSync()
+        }
+        val safeFiles = files ?: emptyList()
+        val urls = DownloadUtils.downloadAllFiles(safeFiles)
+
+        MainApplication.applicationScope.launch {
+            if (configurationsRepository.checkServerAvailability()) {
+                if (urls.isNotEmpty()) {
+                    DownloadUtils.openDownloadService(context, urls, false)
+                }
+            }
+        }
+        return safeFiles
+    }
+
     override suspend fun getAllLibrariesToSync(): List<MyLibrary> {
         return myLibraryDao.getSyncable().filter { it.needToUpdate() }
     }
@@ -447,6 +469,28 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun removeResourceFromShelf(resourceId: String, userId: String) {
         updateUserLibrary(resourceId, userId, false)
+    }
+
+    override suspend fun removeResourcesFromShelf(resourceIds: List<String>, userId: String): Result<Unit> {
+        return runCatching {
+            if (resourceIds.isEmpty() || userId.isBlank()) return@runCatching
+
+            val libraryItems = myLibraryDao.getByResourceIds(resourceIds)
+            libraryItems.forEach { it.removeUserId(userId) }
+            if (libraryItems.isNotEmpty()) {
+                myLibraryDao.upsertAll(libraryItems)
+            }
+            removedLogDao.insertAll(
+                resourceIds.map { resourceId ->
+                    RemovedLog().apply {
+                        id = UUID.randomUUID().toString()
+                        docId = resourceId
+                        this.userId = userId
+                        type = "resources"
+                    }
+                }
+            )
+        }
     }
 
     override suspend fun getHtmlResourceDownloadUrls(resourceId: String): ResourceUrlsResponse {

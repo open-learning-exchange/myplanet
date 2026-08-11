@@ -98,8 +98,6 @@ class CoursesAdapter(
     private var progressMap: HashMap<String?, JsonObject>? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
     private val config: ChipCloudConfig
-    private var isAscending = true
-    private var isTitleAscending = false
     private var tagsMap: Map<String, List<Tag>> = emptyMap()
     private val courseIdToPosition = mutableMapOf<String, Int>()
 
@@ -158,50 +156,9 @@ class CoursesAdapter(
         }
     }
 
-    fun removeCourses(courseIds: List<String>) {
-        val updated = currentList.filter { it.courseId !in courseIds }
-        submitList(updated)
-    }
-
-    private fun sortCourseListByTitle(list: List<Course>): List<Course> {
-        return list.sortedWith { course1, course2 ->
-            if (isTitleAscending) {
-                course1.courseTitle.compareTo(course2.courseTitle, ignoreCase = true)
-            } else {
-                course2.courseTitle.compareTo(course1.courseTitle, ignoreCase = true)
-            }
-        }
-    }
-
     override fun onViewRecycled(holder: CoursesViewHolder) {
         super.onViewRecycled(holder)
         holder.onRecycled()
-    }
-
-    private fun sortCourseList(list: List<Course>): List<Course> {
-        return list.sortedWith { course1, course2 ->
-            if (isAscending) {
-                course1.createdDate.compareTo(course2.createdDate)
-            } else {
-                course2.createdDate.compareTo(course1.createdDate)
-            }
-        }
-    }
-
-    fun toggleTitleSortOrder(onComplete: (() -> Unit)? = null) {
-        isTitleAscending = !isTitleAscending
-        val sortedList = sortCourseListByTitle(currentList)
-        submitList(sortedList) {
-            onComplete?.invoke()
-        }
-    }
-
-    fun toggleSortOrder(onComplete: (() -> Unit)? = null) {
-        isAscending = !isAscending
-        val sortedList = sortCourseList(currentList)
-        submitList(sortedList) {
-            onComplete?.invoke()
-        }
     }
 
     fun setProgressMap(progressMap: HashMap<String?, JsonObject>?) {
