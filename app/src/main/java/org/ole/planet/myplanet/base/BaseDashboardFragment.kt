@@ -384,10 +384,6 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         val myLifeFlex = view.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife)
         myLifeFlex.flexDirection = FlexDirection.ROW
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            myLifeListInit(myLifeFlex)
-        }
-
         collectWhenStarted(viewModel.syncKeyIdEvent) { state ->
             when (state) {
                 is SyncUiState.Loading -> onSyncStarted()

@@ -11,6 +11,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 
@@ -20,6 +21,8 @@ class CommunityTabFragment : Fragment() {
     private val binding get() = _binding!!
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
+    @Inject
+    lateinit var configurationsRepository: ConfigurationsRepository
     @Inject
     lateinit var userSessionManager: UserSessionManager
 
@@ -32,15 +35,16 @@ class CommunityTabFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         val parentCode = sharedPrefManager.getParentCode()
         val communityName = sharedPrefManager.getCommunityName()
+        val planetType = configurationsRepository.getPlanetType()
         viewLifecycleOwner.lifecycleScope.launch {
             val user = userSessionManager.getUserModel()
             val planetCode = user?.planetCode.orEmpty()
-            binding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "$planetCode@$parentCode", false, sharedPrefManager)
+            binding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "$planetCode@$parentCode", false, planetType)
             TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
                 tab.text = (binding.viewPager2.adapter as CommunityPagerAdapter).getPageTitle(position)
             }.attach()
             binding.title.text = if (planetCode.isEmpty()) communityName else planetCode
-            binding.subtitle.text = sharedPrefManager.getRawString("planetType")
+            binding.subtitle.text = planetType
             binding.llActionButtons.visibility = View.GONE
         }
     }

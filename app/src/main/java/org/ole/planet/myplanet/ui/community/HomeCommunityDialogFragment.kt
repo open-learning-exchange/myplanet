@@ -13,6 +13,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 @AndroidEntryPoint
@@ -23,6 +24,9 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
 
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
+
+    @Inject
+    lateinit var configurationsRepository: ConfigurationsRepository
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTeamDetailBinding.inflate(inflater, container, false)
@@ -84,14 +88,15 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
         binding.llActionButtons.visibility = View.GONE
         val sParentcode = sharedPrefManager.getParentCode()
         val communityName = sharedPrefManager.getCommunityName()
-        binding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "$communityName@$sParentcode", true, sharedPrefManager)
+        val planetType = configurationsRepository.getPlanetType()
+        binding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "$communityName@$sParentcode", true, planetType)
         TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
             tab.text = (binding.viewPager2.adapter as CommunityPagerAdapter).getPageTitle(position)
         }.attach()
         binding.title.text = communityName
         binding.title.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
         binding.subtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-        binding.subtitle.text = sharedPrefManager.getRawString("planetType")
+        binding.subtitle.text = planetType
         binding.appBar.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
     }
 
