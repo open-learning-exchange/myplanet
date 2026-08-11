@@ -1,0 +1,307 @@
+package org.ole.planet.myplanet.repository
+
+import android.content.Context
+import dagger.Lazy
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
+import io.mockk.slot
+import java.util.logging.Level
+import java.util.logging.Logger
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
+import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
+import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
+import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
+import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
+import org.ole.planet.myplanet.model.CourseActivity
+import org.ole.planet.myplanet.model.OfflineActivity
+import org.ole.planet.myplanet.model.RemovedLog
+import org.ole.planet.myplanet.model.ResourceActivity
+import org.ole.planet.myplanet.model.UserChallengeActions
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.TimeProvider
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class ActivitiesRepositoryImplTest {
+
+    private lateinit var context: Context
+    private lateinit var userRepository: UserRepository
+    private lateinit var apiInterface: ApiInterface
+    private lateinit var sharedPrefManager: SharedPrefManager
+    private lateinit var timeProvider: TimeProvider
+    private lateinit var userChallengeActionsDao: UserChallengeActionsDao
+    private lateinit var courseActivityDao: CourseActivityDao
+    private lateinit var resourceActivityDao: ResourceActivityDao
+    private lateinit var offlineActivityDao: OfflineActivityDao
+    private lateinit var removedLogDao: RemovedLogDao
+
+    private lateinit var repository: ActivitiesRepositoryImpl
+
+    @Before
+    fun setup() {
+        Logger.getLogger("io.mockk").level = Level.OFF
+        context = mockk(relaxed = true)
+        userRepository = mockk(relaxed = true)
+        val lazyUserRepository = Lazy { userRepository }
+        apiInterface = mockk(relaxed = true)
+        sharedPrefManager = mockk(relaxed = true)
+        timeProvider = mockk(relaxed = true)
+        userChallengeActionsDao = mockk(relaxed = true)
+        courseActivityDao = mockk(relaxed = true)
+        resourceActivityDao = mockk(relaxed = true)
+        offlineActivityDao = mockk(relaxed = true)
+        removedLogDao = mockk(relaxed = true)
+
+        repository = ActivitiesRepositoryImpl(
+            context,
+            lazyUserRepository,
+            apiInterface,
+            sharedPrefManager,
+            timeProvider,
+            userChallengeActionsDao,
+            courseActivityDao,
+            resourceActivityDao,
+            offlineActivityDao,
+            removedLogDao
+        )
+    }
+
+    @Test
+    fun `getOfflineVisitCount returns correct count`() = runTest {
+        coEvery { offlineActivityDao.countByUserIdAndType("user1", UserSessionManager.KEY_LOGIN) } returns 5
+        val result = repository.getOfflineVisitCount("user1")
+        assertEquals(5, result)
+    }
+
+    @Test
+    fun `getOfflineLoginCount returns correct count`() = runTest {
+        coEvery { offlineActivityDao.countByUserNameAndType("john", UserSessionManager.KEY_LOGIN) } returns 3
+        val result = repository.getOfflineLoginCount("john")
+        assertEquals(3, result)
+    }
+
+    @Test
+    fun `getOfflineLogins returns flow of activities`() = runTest {
+        val mockActivities = listOf(OfflineActivity().apply { userName = "john" })
+        coEvery { offlineActivityDao.observeByUserNameAndType("john", UserSessionManager.KEY_LOGIN) } returns flowOf(mockActivities)
+
+        repository.getOfflineLogins("john").collect {
+            assertEquals(mockActivities, it)
+        }
+    }
+
+    @Test
+    fun `markResourceAdded removes from removedLogDao`() = runTest {
+        repository.markResourceAdded("user1", "res1")
+        coVerify { removedLogDao.deleteByTypeUserAndDoc("resources", "user1", "res1") }
+    }
+
+    @Test
+    fun `markResourceRemoved inserts to removedLogDao`() = runTest {
+        val slot = slot<RemovedLog>()
+        repository.markResourceRemoved("user1", "res1")
+        coVerify { removedLogDao.insert(capture(slot)) }
+        assertEquals("res1", slot.captured.docId)
+        assertEquals("user1", slot.captured.userId)
+        assertEquals("resources", slot.captured.type)
+    }
+
+    @Test
+    fun `logCourseVisit inserts course activity`() = runTest {
+        val mockUser = UserEntity().apply {
+            parentCode = "parent"
+            planetCode = "planet"
+        }
+        coEvery { userRepository.getUserByName("user1") } returns mockUser
+
+        val slot = slot<CourseActivity>()
+        repository.logCourseVisit("course1", "Course Title", "user1")
+
+        coVerify { courseActivityDao.insert(capture(slot)) }
+        assertEquals("course1", slot.captured.courseId)
+        assertEquals("Course Title", slot.captured.title)
+        assertEquals("user1", slot.captured.user)
+        assertEquals("visit", slot.captured.type)
+        assertEquals("parent", slot.captured.parentCode)
+        assertEquals("planet", slot.captured.createdOn)
+    }
+
+    @Test
+    fun `logLogin inserts offline activity`() = runTest {
+        val slot = slot<OfflineActivity>()
+        repository.logLogin("user1", "john", "parent", "planet")
+
+        coVerify { offlineActivityDao.insert(capture(slot)) }
+        assertEquals("user1", slot.captured.userId)
+        assertEquals("john", slot.captured.userName)
+        assertEquals("parent", slot.captured.parentCode)
+        assertEquals("planet", slot.captured.createdOn)
+        assertEquals(UserSessionManager.KEY_LOGIN, slot.captured.type)
+        assertEquals("Member login on offline application", slot.captured.description)
+    }
+
+    @Test
+    fun `logLogout updates logout time`() = runTest {
+        val mockActivity = OfflineActivity().apply { id = "act1" }
+        coEvery { offlineActivityDao.getLatestByType(UserSessionManager.KEY_LOGIN) } returns mockActivity
+
+        repository.logLogout("john")
+
+        coVerify { offlineActivityDao.updateLogoutTime(eq("act1"), any()) }
+    }
+
+    @Test
+    fun `getGlobalLastVisit returns correct value`() = runTest {
+        coEvery { offlineActivityDao.getGlobalLastVisit() } returns 1000L
+        val result = repository.getGlobalLastVisit()
+        assertEquals(1000L, result)
+    }
+
+    @Test
+    fun `getLastVisit returns correct value`() = runTest {
+        coEvery { offlineActivityDao.getLastVisit("john") } returns 2000L
+        val result = repository.getLastVisit("john")
+        assertEquals(2000L, result)
+    }
+
+    @Test
+    fun `logResourceOpen inserts resource activity`() = runTest {
+        val slot = slot<ResourceActivity>()
+        repository.logResourceOpen("john", "parent", "planet", "Res Title", "res1", "pdf")
+
+        coVerify { resourceActivityDao.insert(capture(slot)) }
+        assertEquals("john", slot.captured.user)
+        assertEquals("parent", slot.captured.parentCode)
+        assertEquals("planet", slot.captured.createdOn)
+        assertEquals("Res Title", slot.captured.title)
+        assertEquals("res1", slot.captured.resourceId)
+        assertEquals("pdf", slot.captured.type)
+    }
+
+    @Test
+    fun `getResourceOpenCount returns correct count`() = runTest {
+        coEvery { resourceActivityDao.countByUserAndType("john", "pdf") } returns 10L
+        val result = repository.getResourceOpenCount("john", "pdf")
+        assertEquals(10L, result)
+    }
+
+    @Test
+    fun `getMostOpenedResource returns null when no activities`() = runTest {
+        coEvery { resourceActivityDao.getByUserAndType("john", "pdf") } returns emptyList()
+        val result = repository.getMostOpenedResource("john", "pdf")
+        assertNull(result)
+    }
+
+    @Test
+    fun `getMostOpenedResource returns correct pair`() = runTest {
+        val activities = listOf(
+            ResourceActivity().apply { resourceId = "res1"; title = "Res 1" },
+            ResourceActivity().apply { resourceId = "res1"; title = "Res 1" },
+            ResourceActivity().apply { resourceId = "res2"; title = "Res 2" }
+        )
+        coEvery { resourceActivityDao.getByUserAndType("john", "pdf") } returns activities
+
+        val result = repository.getMostOpenedResource("john", "pdf")
+
+        assertEquals("Res 1", result?.first)
+        assertEquals(2, result?.second)
+    }
+
+    @Test
+    fun `recordSyncUserChallengeAction inserts action`() = runTest {
+        coEvery { timeProvider.now() } returns 5000L
+        val slot = slot<UserChallengeActions>()
+
+        repository.recordSyncUserChallengeAction("user1")
+
+        coVerify { userChallengeActionsDao.insert(capture(slot)) }
+        assertEquals("user1", slot.captured.userId)
+        assertEquals("sync", slot.captured.actionType)
+        assertNull(slot.captured.resourceId)
+        assertEquals(5000L, slot.captured.time)
+    }
+
+    @Test
+    fun `recordSyncActivity inserts resource activity`() = runTest {
+        val mockUser = UserEntity().apply {
+            id = "user1"
+            name = "john"
+            parentCode = "parent"
+            planetCode = "planet"
+        }
+        coEvery { userRepository.getUserById("user1") } returns mockUser
+
+        val slot = slot<ResourceActivity>()
+        repository.recordSyncActivity("user1")
+
+        coVerify { resourceActivityDao.insert(capture(slot)) }
+        assertEquals("john", slot.captured.user)
+        assertEquals("parent", slot.captured.parentCode)
+        assertEquals("planet", slot.captured.createdOn)
+        assertEquals("sync", slot.captured.type)
+    }
+
+    @Test
+    fun `recordSyncActivity does nothing for guest users`() = runTest {
+        val mockUser = UserEntity().apply { id = "guest123" }
+        coEvery { userRepository.getUserById("guest123") } returns mockUser
+
+        repository.recordSyncActivity("guest123")
+
+        coVerify(exactly = 0) { resourceActivityDao.insert(any()) }
+    }
+
+    @Test
+    fun `hasUserSyncAction returns true when sync completed`() = runTest {
+        coEvery { userChallengeActionsDao.countByUserAndType("user1", "sync") } returns 1
+        val result = repository.hasUserSyncAction("user1")
+        assertTrue(result)
+    }
+
+    @Test
+    fun `hasUserSyncAction returns false when userId is null`() = runTest {
+        val result = repository.hasUserSyncAction(null)
+        assertFalse(result)
+    }
+
+    @Test
+    fun `hasUserCompletedSync returns false when userId is empty`() = runTest {
+        val result = repository.hasUserCompletedSync("")
+        assertFalse(result)
+    }
+
+    @Test
+    fun `getPendingCourseActivityUploads returns correct list`() = runTest {
+        val mockList = listOf(CourseActivity())
+        coEvery { courseActivityDao.getPendingUploads() } returns mockList
+
+        val result = repository.getPendingCourseActivityUploads()
+        assertEquals(mockList, result)
+    }
+
+    @Test
+    fun `markCourseActivityUploaded returns true on success`() = runTest {
+        coEvery { courseActivityDao.markUploaded("local1", "remote1", "rev1") } returns 1
+        val result = repository.markCourseActivityUploaded("local1", "remote1", "rev1")
+        assertTrue(result)
+    }
+
+    @Test
+    fun `markCourseActivityUploaded returns false on failure`() = runTest {
+        coEvery { courseActivityDao.markUploaded("local1", "remote1", "rev1") } returns 0
+        val result = repository.markCourseActivityUploaded("local1", "remote1", "rev1")
+        assertFalse(result)
+    }
+}

@@ -80,6 +80,7 @@ interface ResourcesRepository {
     suspend fun downloadResources(resources: List<MyLibrary>): Boolean
     suspend fun downloadResourcesPriority(resources: List<MyLibrary>): Boolean
     suspend fun getAllLibrariesToSync(): List<MyLibrary>
+    suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrary>
     suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String): Result<Unit>
     suspend fun addAllResourcesToUserLibrary(resources: List<MyLibrary>, userId: String): Result<Unit>
     suspend fun observeOpenedResourceIds(userId: String): Flow<Set<String>>
@@ -87,6 +88,7 @@ interface ResourcesRepository {
     suspend fun removeDeletedResources(currentIds: List<String?>)
     suspend fun getMyLibIds(userId: String): JsonArray
     suspend fun removeResourceFromShelf(resourceId: String, userId: String)
+    suspend fun removeResourcesFromShelf(resourceIds: List<String>, userId: String): Result<Unit>
     suspend fun getHtmlResourceDownloadUrls(resourceId: String): ResourceUrlsResponse
     suspend fun getFilterFacets(libraries: List<MyLibrary>): Map<String, Set<String>>
     suspend fun batchInsertResources(documents: List<JsonObject>): List<String>
