@@ -39,8 +39,7 @@ import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.Submission
-import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.SurveysRepository
+
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utils.CameraUtils.capturePhoto
@@ -62,10 +61,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     private val answerCache = mutableMapOf<String, AnswerData>()
     @Inject
     lateinit var userSessionManager: UserSessionManager
-    @Inject
-    lateinit var coursesRepository: CoursesRepository
-    @Inject
-    lateinit var surveysRepository: SurveysRepository
+
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
 
@@ -101,18 +97,18 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         viewLifecycleOwner.lifecycleScope.launch {
             user = userSessionManager.getUserModel()
             initExam()
-            questions = surveysRepository.getExamQuestions(exam?.id ?: "")
+            questions = viewModel.getExamQuestions(exam?.id ?: "")
             binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
             val parentId = computeParentId()
             if (sub == null) {
-                val submissions = submissionsRepository.getSubmissionsByParentId(
-                    parentId, user?.id, "pending"
+                val submissions = viewModel.getSubmissionsByParentId(
+                    parentId ?: "", user?.id, "pending"
                 )
                 sub = submissions.firstOrNull()
             }
             val courseId = exam?.courseId
             isCertified = if (!courseId.isNullOrEmpty()) {
-                coursesRepository.isCourseCertified(courseId)
+                viewModel.isCourseCertified(courseId)
             } else {
                 false
             }
@@ -138,7 +134,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
                         val currentExam = exam
                         if (currentExam != null) {
-                            val newSub = submissionsRepository.createExamSubmission(
+                            val newSub = viewModel.createExamSubmission(
                                 CreateExamSubmissionRequest(
                                     user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
                                 )
@@ -154,7 +150,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                     val currentExam = exam
                     if (currentExam != null) {
                         if (sub == null || isTeam) {
-                            sub = submissionsRepository.createExamSubmission(
+                            sub = viewModel.createExamSubmission(
                                 CreateExamSubmissionRequest(
                                     user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
                                 )
@@ -170,7 +166,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                                 )
                                 answerCache.clear()
                                 currentIndex = 0
-                                sub = submissionsRepository.createExamSubmission(
+                                sub = viewModel.createExamSubmission(
                                     CreateExamSubmissionRequest(
                                         user?.id, user?.dob, user?.gender, currentExam, type, null
                                     )
@@ -681,11 +677,11 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
         if (sub == null) {
             val parentId = computeParentId()
-            sub = submissionsRepository.getSubmissionsByParentId(parentId, user?.id, "pending")
+            sub = viewModel.getSubmissionsByParentId(parentId ?: "", user?.id, "pending")
                 .firstOrNull()
         }
 
-        val result = submissionsRepository.saveExamAnswer(
+        val result = viewModel.saveExamAnswer(
             ExamAnswerData(
                 sub, currentQuestion, ans, listAns, otherText,
                 binding.etAnswer.isVisible, type ?: "exam", currentIndex,
@@ -854,7 +850,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
     override fun saveCourseProgress(courseId: String?, stepNum: Int, isGraded: Boolean) {
         viewLifecycleOwner.lifecycleScope.launch {
-            coursesRepository.updateCourseProgress(courseId, stepNum, isGraded)
+            viewModel.updateCourseProgress(courseId, stepNum, isGraded)
         }
     }
 }
