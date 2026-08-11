@@ -156,6 +156,13 @@ class CoursesAdapter(
         }
     }
 
+    fun removeCourses(courseIds: List<String>, onComplete: (() -> Unit)? = null) {
+        val updated = currentList.filter { it.courseId !in courseIds }
+        submitList(updated) {
+            onComplete?.invoke()
+        }
+    }
+
     override fun onViewRecycled(holder: CoursesViewHolder) {
         super.onViewRecycled(holder)
         holder.onRecycled()

@@ -30,6 +30,7 @@ interface CoursesRepository {
     suspend fun markCoursesAdded(courseIds: List<String>, userId: String?): Result<Boolean>
     suspend fun joinCourse(courseId: String, userId: String): Result<Unit>
     suspend fun leaveCourse(courseId: String, userId: String): Result<Unit>
+    suspend fun leaveCourses(courseIds: List<String>, userId: String): Result<Unit>
     suspend fun isMyCourse(userId: String?, courseId: String?): Boolean
     suspend fun search(query: String): List<MyCourse>
     suspend fun filterCourses(
@@ -54,6 +55,7 @@ interface CoursesRepository {
     suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData
     suspend fun getMyCourseIds(userId: String): JsonArray
     suspend fun removeCourseFromShelf(courseId: String, userId: String)
+    suspend fun removeCoursesFromShelf(courseIds: List<String>, userId: String)
     suspend fun logCourseVisit(courseId: String, title: String, userId: String)
     suspend fun getCurrentProgress(steps: List<CourseStep?>?, userId: String?, courseId: String?): Int
     suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean

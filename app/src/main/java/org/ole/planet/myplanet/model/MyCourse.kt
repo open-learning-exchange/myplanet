@@ -51,12 +51,12 @@ open class MyCourse(
     }
 
     fun setUserId(userId: String?) {
-        if (this.userId == null) {
-            this.userId = mutableListOf()
+        if (userId.isNullOrBlank()) return
+        val current = this.userId.orEmpty().filter { !it.isNullOrBlank() }.toMutableList()
+        if (!current.contains(userId)) {
+            current.add(userId)
         }
-        if (this.userId?.contains(userId) != true && !userId.isNullOrEmpty()) {
-            this.userId = this.userId.orEmpty() + userId
-        }
+        this.userId = current.distinct()
     }
 
     fun removeUserId(userId: String?) {
