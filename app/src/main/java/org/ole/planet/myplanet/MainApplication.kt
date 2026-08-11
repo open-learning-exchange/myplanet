@@ -362,12 +362,10 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
     private suspend fun sweepPendingLogs() {
         try {
-            val pendingLogs = withContext(dispatcherProvider.io) {
-                CrashLogStore.loadPendingLogs(this@MainApplication)
-            }
-            if (pendingLogs.isNotEmpty()) {
-                if (saveLogsToRoom(pendingLogs)) {
-                    withContext(dispatcherProvider.io) {
+            withContext(dispatcherProvider.io) {
+                val pendingLogs = CrashLogStore.loadPendingLogs(this@MainApplication)
+                if (pendingLogs.isNotEmpty()) {
+                    if (saveLogsToRoom(pendingLogs)) {
                         for (pending in pendingLogs) {
                             pending.file.delete()
                         }
