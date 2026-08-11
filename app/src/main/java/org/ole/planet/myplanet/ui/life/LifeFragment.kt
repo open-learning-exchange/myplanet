@@ -5,13 +5,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnStartDragListener
@@ -46,7 +44,10 @@ class LifeFragment : BaseRecyclerFragment<MyLife?>(), OnStartDragListener {
     override suspend fun getAdapter(): ListAdapter<*, *> {
         lifeAdapter = LifeAdapter(requireContext(), this,
             visibilityCallback = { myLife, isVisible ->
-                myLife._id?.let { id ->
+                val id = myLife._id.takeIf { it.isNotBlank() }
+                    ?: myLife.imageId?.takeIf { it.isNotBlank() }
+                    ?: myLife.title
+                if (!id.isNullOrEmpty()) {
                     viewModel.updateVisibility(isVisible, id)
                     if (!isVisible) {
                         Utilities.toast(requireContext(), myLife.title + context?.getString(R.string.is_now_hidden))
@@ -78,7 +79,6 @@ class LifeFragment : BaseRecyclerFragment<MyLife?>(), OnStartDragListener {
         val dividerItemDecoration = DividerItemDecoration(recyclerView.context, RecyclerView.VERTICAL)
         recyclerView.addItemDecoration(dividerItemDecoration)
     }
-
 
     override fun onDestroyView() {
         _binding = null

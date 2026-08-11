@@ -12,6 +12,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import javax.inject.Inject
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -21,6 +22,7 @@ class LifeViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val lifeRepository: LifeRepository,
     private val userRepository: UserRepository,
+    private val sharedPrefManager: SharedPrefManager,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
@@ -30,13 +32,13 @@ class LifeViewModel @Inject constructor(
     fun loadMyLifeList() {
         viewModelScope.launch {
             val list = withContext(dispatcherProvider.io) {
-                val userId = userRepository.getUserModel()?.id
+                val userId = sharedPrefManager.getUserId().ifEmpty { userRepository.getUserModel()?.id }
                 var myLifeList = lifeRepository.getMyLifeByUserId(userId)
                 if (myLifeList.isEmpty()) {
                     lifeRepository.seedMyLifeIfEmpty(userId, MyLife.defaultItems(context, userId))
                     myLifeList = lifeRepository.getMyLifeByUserId(userId)
                 }
-                myLifeList
+                myLifeList.distinctBy { it.imageId ?: it.title }
             }
             _myLifeList.value = list
         }
@@ -56,7 +58,6 @@ class LifeViewModel @Inject constructor(
             withContext(dispatcherProvider.io) {
                 lifeRepository.updateMyLifeListOrder(list)
             }
-            // Update the state as well locally? Usually they don't, just db
         }
     }
 }

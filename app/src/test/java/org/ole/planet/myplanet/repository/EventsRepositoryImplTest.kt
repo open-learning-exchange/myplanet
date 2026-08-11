@@ -35,7 +35,7 @@ class EventsRepositoryImplTest {
     fun setup() {
         meetupDao = mockk(relaxed = true)
         userRepository = mockk(relaxed = true)
-        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, userRepository)
+        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, userRepository, com.google.gson.Gson())
     }
 
     @Test

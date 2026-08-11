@@ -30,6 +30,8 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 object VoicesActions {
+    private val dateFormatter = ThreadLocal.withInitial { SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()) }
+
     data class EditDialogComponents(
         val view: View,
         val editText: EditText,
@@ -133,7 +135,7 @@ object VoicesActions {
         imageList: List<String>?,
         listener: OnNewsItemClickListener?,
         imagesToRemove: MutableSet<String>,
-        onSuccess: () -> Unit
+        onSuccess: (News?) -> Unit
     ) {
         val s = components.editText.text.toString().trim()
         if (s.isEmpty()) {
@@ -144,7 +146,7 @@ object VoicesActions {
         imagesToRemove.clear()
         dialog.dismiss()
         try {
-            if (isEdit) {
+            val updatedNews = if (isEdit) {
                 news?.id?.let {
                     repository.editPost(it, s, imagesToRemoveCopy, imageList)
                 }
@@ -152,10 +154,11 @@ object VoicesActions {
                 if (news != null && currentUser != null) {
                     repository.postReply(s, news, currentUser, imageList)
                 }
+                null
             }
             listener?.clearImages()
             if (isEdit) listener?.onDataChanged() else listener?.onReplyPosted(news?.id)
-            onSuccess()
+            onSuccess(updatedNews)
         } catch (e: Exception) {
             Utilities.toast(dialog.context, "An error occurred: ${e.message}")
         }
@@ -182,6 +185,7 @@ object VoicesActions {
         val news = id?.let { repository.getNewsById(it) }
 
         if (isEdit) {
+            listener?.clearImages()
             components.editText.setText(context.getString(R.string.message_placeholder, news?.message))
             loadExistingImages(context, news, components.imageLayout, imagesToRemove)
         }
@@ -195,8 +199,8 @@ object VoicesActions {
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             val currentImageList = listener?.getCurrentImageList()
             launchAction {
-                handlePositiveButton(dialog, isEdit, components, news, repository, currentUser, currentImageList, listener, imagesToRemove) {
-                    updateReplyButton(viewHolder, news, viewHolder.bindingAdapterPosition)
+                handlePositiveButton(dialog, isEdit, components, news, repository, currentUser, currentImageList, listener, imagesToRemove) { updatedNews ->
+                    updateReplyButton(viewHolder, updatedNews ?: news, viewHolder.bindingAdapterPosition)
                 }
             }
         }
@@ -215,7 +219,7 @@ object VoicesActions {
             userModel.language.toString(),
             userModel.phoneNumber.toString(),
             (userModel.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0).toString(),
-            (activitiesRepository.getLastVisit(userModel.name ?: "")?.let { SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(Date(it)) } ?: "No logout record found"),
+            (activitiesRepository.getLastVisit(userModel.name ?: "")?.let { dateFormatter.get()?.format(Date(it)) } ?: "No logout record found"),
             "${userModel.firstName} ${userModel.lastName}",
             userModel.level.toString(),
             userModel.userImage
