@@ -100,13 +100,15 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
             userModel = userSessionManager.getUserModel()
         }
 
-        val factory = adapterFactory ?: DefaultBaseAdapterFactory()
-        adapterCourses = factory.createCoursesAdapter(
-            context = hostActivity,
-            map = HashMap(),
-            isGuest = userModel?.isGuest() ?: true,
-            isMyCourseLib = isMyCourseLib
-        )
+        if (!::adapterCourses.isInitialized) {
+            val factory = adapterFactory ?: DefaultBaseAdapterFactory()
+            adapterCourses = factory.createCoursesAdapter(
+                context = hostActivity,
+                map = HashMap(),
+                isGuest = userModel?.isGuest() ?: true,
+                isMyCourseLib = isMyCourseLib
+            )
+        }
 
         adapterCourses.setListener(this@CoursesFragment)
         adapterCourses.setRatingChangeListener(this@CoursesFragment)
@@ -460,12 +462,15 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
             filterController.clear()
             filterController.detach()
         }
+        if (::adapterCourses.isInitialized) {
+            adapterCourses.setListener(null)
+            adapterCourses.setRatingChangeListener(null)
+        }
         super.onDestroyView()
     }
 
     override fun onRatingChanged() {
         if (!::adapterCourses.isInitialized) {
-            super.onRatingChanged()
             return
         }
         if (::filterController.isInitialized) {
