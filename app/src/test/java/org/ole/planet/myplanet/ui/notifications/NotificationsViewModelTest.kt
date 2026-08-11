@@ -1,21 +1,43 @@
 package org.ole.planet.myplanet.ui.notifications
 
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Test
-import org.junit.Assert.assertTrue
-import org.junit.Rule
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.runCurrent
+import android.content.Context
+import io.mockk.coEvery
+import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.ole.planet.myplanet.model.NotificationListItem
+import org.ole.planet.myplanet.model.NotificationPayload
+import org.ole.planet.myplanet.repository.NotificationsRepository
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class NotificationsViewModelTest {
 
-    private val testDispatcher = kotlinx.coroutines.test.StandardTestDispatcher()
+    private val testDispatcher = StandardTestDispatcher()
 
     @get:Rule
-    val mainDispatcherRule = org.ole.planet.myplanet.utils.MainDispatcherRule(testDispatcher)
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
+
+    private lateinit var repository: NotificationsRepository
+    private lateinit var viewModel: NotificationsViewModel
+
+    @Before
+    fun setup() {
+        repository = mockk(relaxed = true)
+        viewModel = NotificationsViewModel(repository, mockk<Context>(relaxed = true))
+    }
 
     @Test
     fun testParseTaskDate_withValidDate() {
@@ -82,113 +104,85 @@ class NotificationsViewModelTest {
     }
 
     @Test
-    fun testGroupExpansionTriStateBehavior() = kotlinx.coroutines.test.runTest(testDispatcher) {
-        val context = io.mockk.mockk<android.content.Context>(relaxed = true)
-        io.mockk.every { context.getString(org.ole.planet.myplanet.R.string.tasks) } returns "Tasks"
-        io.mockk.every { context.getString(org.ole.planet.myplanet.R.string.resources) } returns "Resources"
+    fun testGroupIsExpandedByDefaultOnlyWhenItHasUnread() = runTest(testDispatcher) {
+        loadNotifications(unreadTask, readResource)
 
-        val repository = io.mockk.mockk<org.ole.planet.myplanet.repository.NotificationsRepository>(relaxed = true)
+        assertTrue(header("task").isExpanded)
+        assertFalse(header("resource").isExpanded)
+    }
 
-        // Explicitly stub all repository methods called during loadNotifications to avoid implicit mock NPEs
-        io.mockk.coEvery { repository.getTaskTeamNamesByTaskIds(any()) } returns emptyMap()
-        io.mockk.coEvery { repository.getTaskTeamNamesByTaskTitles(any()) } returns emptyMap()
-        io.mockk.coEvery { repository.getJoinRequestDetailsBatch(any()) } returns emptyMap()
-        io.mockk.coEvery { repository.getJoinRequestDetails(any()) } returns Pair("Unknown", "Unknown")
-        io.mockk.coEvery { repository.getUnreadCount(any(), any()) } returns 0
+    @Test
+    fun testToggleGroupExpansionOverridesTheDefault() = runTest(testDispatcher) {
+        loadNotifications(unreadTask, readResource)
 
-        val viewModel = NotificationsViewModel(repository, context)
-
-        // Start collecting groupedItems to trigger subscription
-        val collectJob = backgroundScope.launch {
-            viewModel.groupedItems.collect {}
-        }
-
-        val payload1 = org.ole.planet.myplanet.model.NotificationPayload(
-            id = "1",
-            userId = "user1",
-            message = "Task 1",
-            isRead = false,
-            createdAt = 100L,
-            type = "task",
-            relatedId = null,
-            title = null,
-            link = null,
-            priority = 0,
-            isFromServer = false,
-            rev = null,
-            needsSync = false
-        )
-        val payload2 = org.ole.planet.myplanet.model.NotificationPayload(
-            id = "2",
-            userId = "user1",
-            message = "Resource 1",
-            isRead = true,
-            createdAt = 100L,
-            type = "resource",
-            relatedId = null,
-            title = null,
-            link = null,
-            priority = 0,
-            isFromServer = false,
-            rev = null,
-            needsSync = false
-        )
-        io.mockk.coEvery { repository.getNotifications("user1", "all", false) } returns listOf(payload1, payload2)
-
-        viewModel.loadNotifications("user1", "all", false)
-
-        // Wait for coroutines to execute
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        var groups = viewModel.groupedItems.value
-        println("DEBUG: groups size is ${groups.size}")
-        groups.forEach { println("DEBUG: item is $it") }
-
-        // Let's print notifications too
-        println("DEBUG: notifications size is ${viewModel.notifications.value.size}")
-
-        // 1. Check default derived states from unread counts:
-        // "task" group has unread task -> should be expanded.
-        // "resource" group has only read resource -> should be collapsed.
-        val taskHeaderBeforeToggle = groups.find { it is org.ole.planet.myplanet.model.NotificationListItem.Header && it.type == "task" } as org.ole.planet.myplanet.model.NotificationListItem.Header
-        val resourceHeaderBeforeToggle = groups.find { it is org.ole.planet.myplanet.model.NotificationListItem.Header && it.type == "resource" } as org.ole.planet.myplanet.model.NotificationListItem.Header
-
-        assertTrue(taskHeaderBeforeToggle.isExpanded)
-        assertTrue(!resourceHeaderBeforeToggle.isExpanded)
-
-        // 2. Explicit Toggle Overrides:
-        // Toggle "task" -> should explicitly collapse it.
         viewModel.toggleGroupExpansion("task")
-        runCurrent()
-        groups = viewModel.groupedItems.value
-        val taskHeaderAfterToggle = groups.find { it is org.ole.planet.myplanet.model.NotificationListItem.Header && it.type == "task" } as org.ole.planet.myplanet.model.NotificationListItem.Header
-        assertTrue(!taskHeaderAfterToggle.isExpanded)
-
-        // Toggle "resource" -> should explicitly expand it.
         viewModel.toggleGroupExpansion("resource")
         runCurrent()
-        groups = viewModel.groupedItems.value
-        val resourceHeaderAfterToggle = groups.find { it is org.ole.planet.myplanet.model.NotificationListItem.Header && it.type == "resource" } as org.ole.planet.myplanet.model.NotificationListItem.Header
-        assertTrue(resourceHeaderAfterToggle.isExpanded)
 
-        // Toggle "task" again -> should explicitly expand it.
-        viewModel.toggleGroupExpansion("task")
+        assertFalse(header("task").isExpanded)
+        assertTrue(header("resource").isExpanded)
+    }
+
+    @Test
+    fun testToggleGroupExpansionTwiceRestoresTheDefault() = runTest(testDispatcher) {
+        loadNotifications(unreadTask, readResource)
+
+        repeat(2) { viewModel.toggleGroupExpansion("task") }
         runCurrent()
-        groups = viewModel.groupedItems.value
-        val taskHeaderAfterToggle2 = groups.find { it is org.ole.planet.myplanet.model.NotificationListItem.Header && it.type == "task" } as org.ole.planet.myplanet.model.NotificationListItem.Header
-        assertTrue(taskHeaderAfterToggle2.isExpanded)
 
-        // 3. Mark all as read resets the explicit sets:
-        io.mockk.coEvery { repository.markAllUnreadAsRead("user1") } returns setOf("1")
-        viewModel.markAllAsRead("user1")
-        testDispatcher.scheduler.advanceUntilIdle()
-        groups = viewModel.groupedItems.value
+        assertTrue(header("task").isExpanded)
+    }
 
-        // After markAllAsRead, the groups should collapse since there are no unreads, and explicit overrides are cleared.
-        val taskHeaderAfterMarkAll = groups.find { it is org.ole.planet.myplanet.model.NotificationListItem.Header && it.type == "task" } as org.ole.planet.myplanet.model.NotificationListItem.Header
-        val resourceHeaderAfterMarkAll = groups.find { it is org.ole.planet.myplanet.model.NotificationListItem.Header && it.type == "resource" } as org.ole.planet.myplanet.model.NotificationListItem.Header
+    @Test
+    fun testMarkAllAsReadClearsOverridesAndCollapsesEveryGroup() = runTest(testDispatcher) {
+        loadNotifications(unreadTask, readResource)
+        coEvery { repository.markAllUnreadAsRead(USER_ID) } returns setOf(unreadTask.id)
 
-        assertTrue(!taskHeaderAfterMarkAll.isExpanded)
-        assertTrue(!resourceHeaderAfterMarkAll.isExpanded)
+        viewModel.toggleGroupExpansion("resource")
+        runCurrent()
+        assertTrue(header("resource").isExpanded)
+
+        viewModel.markAllAsRead(USER_ID)
+        advanceUntilIdle()
+
+        assertEquals(0, viewModel.unreadCount.value)
+        assertFalse(header("task").isExpanded)
+        assertFalse(header("resource").isExpanded)
+    }
+
+    private fun TestScope.loadNotifications(vararg payloads: NotificationPayload) {
+        coEvery { repository.getNotifications(USER_ID, FILTER_ALL, false) } returns payloads.toList()
+        backgroundScope.launch { viewModel.groupedItems.collect {} }
+        viewModel.loadNotifications(USER_ID, FILTER_ALL)
+        advanceUntilIdle()
+    }
+
+    private fun header(type: String): NotificationListItem.Header =
+        viewModel.groupedItems.value
+            .filterIsInstance<NotificationListItem.Header>()
+            .first { it.type == type }
+
+    companion object {
+        private const val USER_ID = "user1"
+        private const val FILTER_ALL = "all"
+
+        private val unreadTask = notification(id = "1", type = "task", isRead = false)
+        private val readResource = notification(id = "2", type = "resource", isRead = true)
+
+        private fun notification(id: String, type: String, isRead: Boolean) = NotificationPayload(
+            id = id,
+            userId = USER_ID,
+            message = "message $id",
+            isRead = isRead,
+            createdAt = 0L,
+            type = type,
+            relatedId = null,
+            title = null,
+            link = null,
+            priority = 0,
+            isFromServer = false,
+            rev = null,
+            needsSync = false
+        )
     }
 }
