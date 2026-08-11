@@ -152,11 +152,6 @@ class EventsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getMeetupIdsForUser(userId: String?): List<String> {
-        if (userId.isNullOrBlank()) return emptyList()
-        return meetupDao.getByUserId(userId).mapNotNull { it.meetupId }
-    }
-
     override suspend fun getPendingMeetupUploads(): List<Meetup> {
         return meetupDao.getPendingUploads()
     }
