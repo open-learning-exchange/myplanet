@@ -41,6 +41,8 @@ import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepositoryImpl
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.SurveysRepositoryImpl
+import org.ole.planet.myplanet.repository.SyncRepository
+import org.ole.planet.myplanet.repository.SyncRepositoryImpl
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.repository.TagsRepositoryImpl
 import org.ole.planet.myplanet.repository.TeamsRepository
@@ -157,4 +159,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindUploadRepository(impl: UploadRepositoryImpl): UploadRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSyncRepository(impl: SyncRepositoryImpl): SyncRepository
 }

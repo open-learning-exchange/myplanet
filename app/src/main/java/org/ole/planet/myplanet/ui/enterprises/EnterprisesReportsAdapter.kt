@@ -10,14 +10,13 @@ import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
 import org.ole.planet.myplanet.model.MyTeam
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ImageViewerUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class EnterprisesReportsAdapter(
     private val context: Context,
-    private val prefData: SharedPrefManager,
+    private val teamName: String?,
     private val onEdit: (MyTeam) -> Unit,
     private val onDelete: (MyTeam) -> Unit
 ) : ListAdapter<MyTeam, EnterprisesReportsAdapter.ReportsViewHolder>(diffCallback) {
@@ -38,7 +37,7 @@ class EnterprisesReportsAdapter(
             binding.delete.visibility = View.VISIBLE
         }
         val report = getItem(position)
-        binding.tvReportTitle.text = context.getString(R.string.team_financial_report, prefData.getTeamName())
+        binding.tvReportTitle.text = context.getString(R.string.team_financial_report, teamName)
         report?.let {
             with(binding) {
                 val totalIncome = report.sales + report.otherIncome

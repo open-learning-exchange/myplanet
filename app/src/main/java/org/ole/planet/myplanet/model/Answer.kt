@@ -35,7 +35,7 @@ open class Answer(
         }
 
     companion object {
-        fun serializeRealmAnswer(answers: List<Answer>): JsonArray {
+        fun serializeAnswer(answers: List<Answer>): JsonArray {
             val array = JsonArray()
             for (ans in answers) {
                 array.add(createObject(ans))
