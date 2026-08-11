@@ -9,11 +9,13 @@ import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.OnFeedbackSubmittedListener
 import org.ole.planet.myplanet.databinding.FragmentFeedbackListBinding
 import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -24,6 +26,9 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener, RealtimeSy
     private var _binding: FragmentFeedbackListBinding? = null
     private val binding get() = _binding!!
     private val viewModel: FeedbackListViewModel by viewModels()
+
+    @Inject
+    lateinit var realtimeSyncManager: RealtimeSyncManager
 
     private lateinit var feedbackAdapter: FeedbackAdapter
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
@@ -46,7 +51,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener, RealtimeSy
     }
 
     private fun setupRealtimeSync() {
-        realtimeSyncHelper = RealtimeSyncHelper(this, this)
+        realtimeSyncHelper = RealtimeSyncHelper(this, this, realtimeSyncManager)
         realtimeSyncHelper.setupRealtimeSync()
     }
 
