@@ -19,9 +19,6 @@ interface OfflineActivityDao {
     @Query("SELECT * FROM offline_activity WHERE userName = :userName AND type = :type")
     fun observeByUserNameAndType(userName: String, type: String): Flow<List<OfflineActivity>>
 
-    @Query("SELECT * FROM offline_activity WHERE userId = :userId AND loginTime BETWEEN :startMillis AND :endMillis")
-    suspend fun getByUserIdAndLoginTimeBetween(userId: String, startMillis: Long, endMillis: Long): List<OfflineActivity>
-
     @Query("SELECT * FROM offline_activity WHERE _rev IS NULL AND type = 'login'")
     suspend fun getPendingLoginUploads(): List<OfflineActivity>
 

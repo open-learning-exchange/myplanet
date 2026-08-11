@@ -338,6 +338,7 @@
     <string name="action_disclaimer">Descargo de responsabilidad</string>
     <string name="action_about">Acerca de</string>
     <string name="english_dictionary">Diccionario inglés</string>
+    <string name="last_login_message">Este es tu último inicio de sesión antes de que tengas que hacerte miembro.</string>
 
     <string-array name="team_type">
         <item>Equipo local</item>

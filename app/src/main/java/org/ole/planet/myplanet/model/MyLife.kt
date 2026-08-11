@@ -33,6 +33,27 @@ class MyLife {
         isVisible = true
     }
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is MyLife) return false
+        return _id == other._id &&
+            imageId == other.imageId &&
+            userId == other.userId &&
+            title == other.title &&
+            isVisible == other.isVisible &&
+            weight == other.weight
+    }
+
+    override fun hashCode(): Int {
+        var result = _id.hashCode()
+        result = 31 * result + (imageId?.hashCode() ?: 0)
+        result = 31 * result + (userId?.hashCode() ?: 0)
+        result = 31 * result + (title?.hashCode() ?: 0)
+        result = 31 * result + isVisible.hashCode()
+        result = 31 * result + weight
+        return result
+    }
+
     companion object {
         fun defaultItems(context: Context, userId: String?): List<MyLife> = listOf(
             MyLife("ic_myhealth", userId, context.getString(R.string.myhealth)),

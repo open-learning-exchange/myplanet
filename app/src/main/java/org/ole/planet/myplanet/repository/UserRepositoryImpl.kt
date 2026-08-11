@@ -192,11 +192,6 @@ class UserRepositoryImpl @Inject constructor(
         return sortUsers(users, sortField, descending)
     }
 
-    override suspend fun isUserExists(name: String?): Boolean {
-        if (name.isNullOrBlank()) return false
-        return userDao.getByName(name)?.let { !it._id.orEmpty().startsWith("guest") } == true
-    }
-
     override fun parseLeadersJson(jsonString: String): List<UserEntity> {
         val leadersList = mutableListOf<UserEntity>()
         try {
@@ -390,32 +385,6 @@ class UserRepositoryImpl @Inject constructor(
             "isArchived" -> if (descending) users.sortedByDescending { it.isArchived } else users.sortedBy { it.isArchived }
             else -> users
         }
-    }
-
-    override suspend fun getMonthlyLoginCounts(
-        userId: String,
-        startMillis: Long,
-        endMillis: Long,
-    ): Map<Int, Int> {
-        if (startMillis > endMillis) {
-            return emptyMap()
-        }
-
-        val activities = offlineActivityDao.getByUserIdAndLoginTimeBetween(userId, startMillis, endMillis)
-
-        if (activities.isEmpty()) {
-            return emptyMap()
-        }
-
-        val calendar = Calendar.getInstance()
-        return activities.mapNotNull { it.loginTime }
-            .map { loginTime ->
-                calendar.timeInMillis = loginTime
-                calendar.get(Calendar.MONTH)
-            }
-            .groupingBy { it }
-            .eachCount()
-            .toSortedMap()
     }
 
     override suspend fun saveUser(
@@ -1354,7 +1323,9 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun checkShelfBatchForDataOptimized(shelfIds: List<String>): List<String> {
         val shelvesWithData = mutableListOf<String>()
         val keysObject = JsonObject().apply {
-            add("keys", JsonUtils.gson.fromJson(JsonUtils.gson.toJson(shelfIds), JsonArray::class.java))
+            val jsonArray = JsonArray()
+            shelfIds.forEach { jsonArray.add(it) }
+            add("keys", jsonArray)
         }
 
         val response = org.ole.planet.myplanet.data.api.ApiClient.executeWithRetryAndWrap {
