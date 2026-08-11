@@ -11,7 +11,6 @@ import com.google.gson.JsonObject
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
-import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
@@ -229,28 +228,6 @@ class UploadManager @Inject constructor(
         }
     }
 
-    suspend fun uploadMyPersonal(personal: Personal): String {
-        if (!personal.isUploaded) {
-            return withContext(dispatcherProvider.io) {
-                try {
-                    val result = personalsRepository.uploadPersonalDocument(personal)
-                    if (result != null) {
-                        val (id, rev) = result
-                        uploadAttachment(id, rev, personal) { }
-                        "Personal resource uploaded successfully"
-                    } else {
-                        "Failed to upload personal resource: No response"
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Exception in UploadManager", e)
-                    "Unable to upload resource: ${e.message}"
-                }
-            }
-        } else {
-            return "Resource already uploaded"
-        }
-    }
-
     suspend fun uploadTeamTask() {
         uploadCoordinator.uploadRoom(uploadConfigs.TeamTask)
     }
@@ -456,7 +433,7 @@ class UploadManager @Inject constructor(
                     try {
                         // Upload images first and collect metadata
                         val imagesArray = JsonArray()
-                        var messageWithImages = news.message ?: ""
+                        val messageWithImages = StringBuilder(news.message ?: "")
 
                         news.imageUrls.forEach { imageUrl ->
                             val imgObject = gson.fromJson(imageUrl, JsonObject::class.java)
@@ -491,11 +468,11 @@ class UploadManager @Inject constructor(
                             resourceObject.addProperty("markdown", markdown)
                             imagesArray.add(resourceObject)
 
-                            messageWithImages += "\n$markdown"
+                            messageWithImages.append("\n").append(markdown)
                         }
 
                         val newsJson = news.newsJson
-                        newsJson.addProperty("message", messageWithImages)
+                        newsJson.addProperty("message", messageWithImages.toString())
                         newsJson.add("images", imagesArray)
 
                         bulkDocsArray.add(newsJson)

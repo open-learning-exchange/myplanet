@@ -14,11 +14,11 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import dagger.hilt.android.EntryPointAccessors
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.services.NotificationActionReceiver
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import dagger.hilt.android.EntryPointAccessors
-import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.utils.TimeProvider
 
 data class NotificationConfig(
@@ -90,9 +90,19 @@ object NotificationUtils {
         }
     }
 
+    @Volatile
+    private var notificationManagerInstance: NotificationManager? = null
+
     fun getInstance(context: Context): NotificationManager {
-        val entryPoint = EntryPointAccessors.fromApplication(context.applicationContext, CoreDependenciesEntryPoint::class.java)
-        return NotificationManager(context, entryPoint.timeProvider())
+        return notificationManagerInstance ?: synchronized(this) {
+            notificationManagerInstance ?: run {
+                val appCtx = context.applicationContext
+                val entryPoint = EntryPointAccessors.fromApplication(appCtx, CoreDependenciesEntryPoint::class.java)
+                NotificationManager(appCtx, entryPoint.timeProvider()).also {
+                    notificationManagerInstance = it
+                }
+            }
+        }
     }
 
     fun createSurveyNotification(surveyId: String, surveyTitle: String): NotificationConfig {
@@ -247,8 +257,8 @@ object NotificationUtils {
     class NotificationManager(private val context: Context, private val timeProvider: TimeProvider) {
         private val notificationManager = NotificationManagerCompat.from(context)
         private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        private val activeNotifications = mutableSetOf<String>()
-        private val sessionShownNotifications = mutableSetOf<String>()
+        private val activeNotifications = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+        private val sessionShownNotifications = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
 
         init {
             loadActiveNotifications()

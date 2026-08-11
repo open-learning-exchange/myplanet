@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.UserEntity
 
-
 data class RatingSummaryModel(
     val user: UserEntity?,
     val ratingSummary: RatingSummary?

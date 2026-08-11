@@ -180,7 +180,7 @@ class CoursesRepositoryImpl @Inject constructor(
         if (courseId.isNullOrEmpty()) {
             return 0
         }
-        return examDao.getByCourseIdAndType(courseId, "courses").size
+        return examDao.countByCourseIdAndType(courseId, "courses")
     }
 
     override suspend fun getCourseSteps(courseId: String): List<CourseStep> {
@@ -280,7 +280,7 @@ class CoursesRepositoryImpl @Inject constructor(
         tagNames: List<String>
     ): List<MyCourse> {
         val courseIdsWithTags = if (tagNames.isNotEmpty()) {
-            tagsRepository.getLinkIdsForTagNames("courses", tagNames)
+            tagsRepository.getLinkIdsForTagNames("courses", tagNames).toSet()
         } else {
             null
         }
@@ -553,10 +553,6 @@ class CoursesRepositoryImpl @Inject constructor(
         return progressRepository.getCurrentProgress(steps, userId, courseId)
     }
 
-    override suspend fun getCourseProgress(userId: String?, courseIds: List<String>): HashMap<String?, JsonObject> {
-        return progressRepository.getCourseProgress(courseIds, userId)
-    }
-
     override suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean {
         return submissionsRepository.isStepCompleted(stepId, userId)
     }
@@ -567,10 +563,6 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun getCourseTagsBulk(courseIds: List<String>): Map<String, List<TagEntity>> {
         return tagsRepository.getTagsForCourses(courseIds)
-    }
-
-    override suspend fun getCourseRatings(userId: String?): HashMap<String?, JsonObject> {
-        return ratingsRepository.getCourseRatings(userId)
     }
 
     override suspend fun deleteCourseProgress(courseId: String?) {

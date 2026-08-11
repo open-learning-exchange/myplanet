@@ -12,8 +12,8 @@ import io.mockk.verify
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -109,11 +109,115 @@ class SurveysRepositoryImplTest {
     }
 
     @Test
-    fun `getSurveySubmissionCount uses pending surveys dao query`() = runTest {
-        coEvery { submissionDao.getPendingSurveys("user1") } returns listOf(
-            Submission(id = "sub1"),
-            Submission(id = "sub2")
+    fun `getTeamOwnedSurveys returns empty list when teamId is null`() = runTest {
+        val result = repository.getTeamOwnedSurveys(null)
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun `getTeamOwnedSurveys returns filtered surveys for valid teamId`() = runTest {
+        val teamId = "team1"
+        // Mock team submissions
+        coEvery { submissionDao.getByTeamId(teamId) } returns listOf(
+            Submission(id = "sub1", parent = "{\"_id\":\"exam1\"}")
         )
+        // Mock adopted source survey ids
+        coEvery { examDao.getByTeamIdAndType(teamId, "surveys") } returns listOf(
+            StepExam(id = "survey1", sourceSurveyId = "source1")
+        )
+        // Mock all surveys
+        coEvery { examDao.getByType("surveys") } returns listOf(
+            StepExam(id = "exam1", teamId = "other"), // Filtered by submission ID
+            StepExam(id = "survey2", teamId = teamId), // Filtered by teamId
+            StepExam(id = "survey3", teamId = "other") // Excluded
+        )
+
+        val result = repository.getTeamOwnedSurveys(teamId)
+
+        assertEquals(listOf("exam1", "survey2"), result.map { it.id })
+    }
+
+    @Test
+    fun `getAdoptableTeamSurveys returns empty list when teamId is null`() = runTest {
+        val result = repository.getAdoptableTeamSurveys(null)
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun `getAdoptableTeamSurveys returns unadopted shareable surveys`() = runTest {
+        val teamId = "team1"
+        // Mock team submissions
+        coEvery { submissionDao.getByTeamId(teamId) } returns listOf(
+            Submission(id = "sub1", parent = "{\"_id\":\"exam1\"}")
+        )
+        // Mock adopted source survey ids
+        coEvery { examDao.getByTeamIdAndType(teamId, "surveys") } returns listOf(
+            StepExam(id = "survey1", sourceSurveyId = "source1")
+        )
+        // Mock all surveys
+        coEvery { examDao.getByType("surveys") } returns listOf(
+            StepExam(id = "exam1", isTeamShareAllowed = true), // Excluded (in submissions)
+            StepExam(id = "source1", isTeamShareAllowed = true), // Excluded (adopted source)
+            StepExam(id = "survey2", isTeamShareAllowed = true), // Included
+            StepExam(id = "survey3", isTeamShareAllowed = false) // Excluded (not shareable)
+        )
+
+        val result = repository.getAdoptableTeamSurveys(teamId)
+
+        assertEquals(listOf("survey2"), result.map { it.id })
+    }
+
+    @Test
+    fun `getIndividualSurveys filters surveys without team and not shareable`() = runTest {
+        coEvery { examDao.getByType("surveys") } returns listOf(
+            StepExam(id = "survey1", isTeamShareAllowed = false, teamId = null), // Included
+            StepExam(id = "survey2", isTeamShareAllowed = true, teamId = null), // Excluded (shareable)
+            StepExam(id = "survey3", isTeamShareAllowed = false, teamId = "team1"), // Excluded (has teamId)
+            StepExam(id = "survey4", isTeamShareAllowed = false, teamId = "") // Included (empty teamId)
+        )
+
+        val result = repository.getIndividualSurveys()
+
+        assertEquals(listOf("survey1", "survey4"), result.map { it.id })
+    }
+
+    @Test
+    fun `getSurvey returns survey by id`() = runTest {
+        coEvery { examDao.getById("survey1") } returns StepExam(id = "survey1")
+
+        val result = repository.getSurvey("survey1")
+
+        assertEquals("survey1", result?.id)
+    }
+
+    @Test
+    fun `getSurvey returns survey by name if id not found`() = runTest {
+        coEvery { examDao.getById("Survey Name") } returns null
+        coEvery { examDao.getByType("surveys") } returns listOf(
+            StepExam(id = "survey1", name = "Other Name"),
+            StepExam(id = "survey2", name = "Survey Name")
+        )
+
+        val result = repository.getSurvey("Survey Name")
+
+        assertEquals("survey2", result?.id)
+    }
+
+    @Test
+    fun `getPendingAdoptedSurveys returns pending adoptions`() = runTest {
+        coEvery { examDao.getPendingAdoptedSurveys() } returns listOf(
+            StepExam(id = "survey1"),
+            StepExam(id = "survey2")
+        )
+
+        val result = repository.getPendingAdoptedSurveys()
+
+        assertEquals(listOf("survey1", "survey2"), result.map { it.id })
+    }
+
+    @Test
+    fun `getSurveySubmissionCount uses pending surveys dao query`() = runTest {
+        coEvery { submissionDao.countPendingSurveys("user1") } returns 2
 
         val count = repository.getSurveySubmissionCount("user1")
 
@@ -191,6 +295,50 @@ class SurveysRepositoryImplTest {
 
         verify(exactly = 0) { sharedPreferencesEditor.remove("reminder_time_survey2") }
         verify(exactly = 0) { sharedPreferencesEditor.remove("reminder_surveys_survey2") }
+    }
+
+    @Test
+    fun `getSurveyInfos groups submissions correctly by resolved survey IDs`() = runTest {
+        // Setup surveys
+        val survey1 = StepExam(id = "survey1", createdDate = 1696161600000L)
+        val survey2 = StepExam(id = "survey2", createdDate = 1696248000000L)
+        val surveys = listOf(survey1, survey2)
+
+        // Setup submissions with edge cases
+        val submissions = listOf(
+            // Exact ID
+            Submission(id = "sub1", parentId = "survey1", status = "complete", startTime = 1000L),
+            // Suffixed ID
+            Submission(id = "sub2", parentId = "survey2@some_suffix", status = "requires grading", startTime = 2000L),
+            // Unrelated submission
+            Submission(id = "sub3", parentId = "unrelated_survey", status = "complete", startTime = 3000L),
+            // Incomplete submission
+            Submission(id = "sub4", parentId = "survey1", status = "pending", startTime = 4000L),
+            // Overlapping-looking ID
+            Submission(id = "sub5", parentId = "survey11", status = "complete", startTime = 5000L),
+            // Another valid one for survey1
+            Submission(id = "sub6", parentId = "survey1@another_suffix", status = "complete", startTime = 6000L)
+        )
+
+        val userId = "user1"
+        coEvery { submissionDao.getByUserIdWithoutTeam(userId) } returns submissions
+        every { context.resources.getQuantityString(any(), any(), any()) } returns "N taken"
+
+        val result = repository.getSurveyInfos(isTeam = false, teamId = null, userId = userId, surveys = surveys)
+
+        // survey1 should have sub1 and sub6
+        val info1 = result["survey1"]
+        assertEquals("survey1", info1?.surveyId)
+        // verify counts logic (we mock getQuantityString but we can assert the map keys)
+        assertTrue(result.containsKey("survey1"))
+
+        // survey2 should have sub2
+        val info2 = result["survey2"]
+        assertEquals("survey2", info2?.surveyId)
+        assertTrue(result.containsKey("survey2"))
+
+        // Only 2 surveys were requested
+        assertEquals(2, result.size)
     }
 
 }

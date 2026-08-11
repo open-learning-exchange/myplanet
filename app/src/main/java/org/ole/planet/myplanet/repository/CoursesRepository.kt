@@ -4,13 +4,13 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.HashMap
 import kotlinx.coroutines.flow.Flow
+import org.ole.planet.myplanet.model.CourseDetailModel
 import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.TagEntity
-import org.ole.planet.myplanet.model.CourseDetailModel
 
 interface CoursesRepository {
     suspend fun getAllCourses(): List<MyCourse>
@@ -58,11 +58,9 @@ interface CoursesRepository {
     suspend fun removeCoursesFromShelf(courseIds: List<String>, userId: String)
     suspend fun logCourseVisit(courseId: String, title: String, userId: String)
     suspend fun getCurrentProgress(steps: List<CourseStep?>?, userId: String?, courseId: String?): Int
-    suspend fun getCourseProgress(userId: String?, courseIds: List<String>): HashMap<String?, JsonObject>
     suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean
     suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean
     suspend fun getCourseTagsBulk(courseIds: List<String>): Map<String, List<TagEntity>>
-    suspend fun getCourseRatings(userId: String?): HashMap<String?, JsonObject>
     suspend fun deleteCourseProgress(courseId: String?)
     suspend fun bulkInsertFromSync(jsonArray: JsonArray)
     suspend fun flushPendingCourseResources()

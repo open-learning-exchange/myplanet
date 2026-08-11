@@ -11,9 +11,9 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import org.ole.planet.myplanet.model.CoursesProgressRow
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowMyProgressBinding
+import org.ole.planet.myplanet.model.CoursesProgressRow
 import org.ole.planet.myplanet.utils.DiffUtils
 
 class CoursesProgressAdapter(private val context: Context) : ListAdapter<CoursesProgressRow, CoursesProgressAdapter.CoursesProgressViewHolder>(DIFF_CALLBACK) {

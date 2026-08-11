@@ -5,17 +5,17 @@ import com.google.gson.JsonParser
 import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import io.mockk.every
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -68,7 +68,8 @@ class ResourcesRepositoryImplTest {
             myLibraryDao,
             userRepository,
             teamDao,
-            userSessionManager
+            userSessionManager,
+            mockk(relaxed = true)
         )
     }
 
@@ -288,5 +289,33 @@ class ResourcesRepositoryImplTest {
         val result = repository.getPendingDownloads(userId).first()
 
         assertEquals(expectedList, result)
+    }
+
+    @Test
+    fun `removeResourcesFromShelf batches dao calls instead of one per item`() = runTest {
+        val userId = "testUser123"
+        val resourceIds = (1..50).map { "resource$it" }
+        val libraryItems = resourceIds.map { rid -> MyLibrary().apply { resourceId = rid; setUserId(userId) } }
+
+        coEvery { myLibraryDao.getByResourceIds(resourceIds) } returns libraryItems
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+        coEvery { removedLogDao.insertAll(any()) } returns Unit
+
+        val result = repository.removeResourcesFromShelf(resourceIds, userId)
+
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) { myLibraryDao.getByResourceIds(resourceIds) }
+        coVerify(exactly = 1) { myLibraryDao.upsertAll(match { it.size == 50 }) }
+        coVerify(exactly = 1) { removedLogDao.insertAll(match { it.size == 50 }) }
+        coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+    }
+
+    @Test
+    fun `removeResourcesFromShelf with empty list does nothing`() = runTest {
+        val result = repository.removeResourcesFromShelf(emptyList(), "testUser123")
+
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 0) { myLibraryDao.getByResourceIds(any()) }
+        coVerify(exactly = 0) { removedLogDao.insertAll(any()) }
     }
 }

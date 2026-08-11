@@ -16,27 +16,20 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.preference.Preference
 import androidx.preference.Preference.OnPreferenceChangeListener
 import androidx.preference.Preference.OnPreferenceClickListener
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkInfo
-import androidx.work.WorkManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.services.FreeSpaceWorker
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -97,10 +90,11 @@ class SettingsActivity : AppCompatActivity() {
         @Inject
         lateinit var sharedPrefManager: SharedPrefManager
         @Inject
+        lateinit var themeManager: ThemeManager
+        @Inject
         lateinit var timeProvider: TimeProvider
         var user: UserEntity? = null
         private var libraryList: List<MyLibrary>? = null
-        private lateinit var dialog: DialogUtils.CustomProgressDialog
 
 
         override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -199,7 +193,6 @@ class SettingsActivity : AppCompatActivity() {
                 user = profileDbHandler.getUserModel()
                 blockGuestSwitches()
             }
-            dialog = DialogUtils.getCustomProgressDialog(requireActivity())
 
             setBetaToggleOn()
             setAutoSyncToggleOn()
@@ -211,7 +204,7 @@ class SettingsActivity : AppCompatActivity() {
 
             val darkMode = findPreference<Preference>("dark_mode")
             darkMode?.setOnPreferenceClickListener {
-                ThemeManager.showThemeDialog(requireActivity())
+                themeManager.showThemeDialog(requireContext())
                 true
             }
 
@@ -219,12 +212,6 @@ class SettingsActivity : AppCompatActivity() {
             textSize?.setOnPreferenceClickListener {
                 textSizeChanger(requireActivity())
                 true
-            }
-
-            // Show Available space under the "Freeup Space" preference.
-            val spacePreference = findPreference<Preference>("freeup_space")
-            if (spacePreference != null) {
-                spacePreference.summary = "${getString(R.string.available_space_colon)} ${FileUtils.availableOverTotalMemoryFormattedString(requireContext())}"
             }
 
             val autoDownload = findPreference<SwitchPreference>("beta_auto_download")
@@ -270,10 +257,27 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         private fun initStorageBreakdown() {
+            refreshStorageBreakdownSummary()
             findPreference<Preference>("storage_breakdown")?.setOnPreferenceClickListener {
-                StorageBreakdownFragment().show(parentFragmentManager, "storage_breakdown")
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val userModel = profileDbHandler.getUserModel()
+                    if (userModel?.id?.startsWith("guest") == true) {
+                        DialogUtils.guestDialog(requireActivity())
+                    } else {
+                        StorageBreakdownFragment().show(parentFragmentManager, "storage_breakdown")
+                    }
+                }
                 true
             }
+            parentFragmentManager.setFragmentResultListener(
+                StorageBreakdownFragment.RESULT_KEY,
+                this
+            ) { _, _ -> refreshStorageBreakdownSummary() }
+        }
+
+        private fun refreshStorageBreakdownSummary() {
+            findPreference<Preference>("storage_breakdown")?.summary = getString(R.string.storage_breakdown_summary) +
+                " · ${getString(R.string.available_space_colon)} ${FileUtils.availableOverTotalMemoryFormattedString(requireContext())}"
         }
 
         private fun initRetryQueueDebug() {
@@ -286,35 +290,6 @@ class SettingsActivity : AppCompatActivity() {
 
         private fun showRetryQueueDialog() {
             viewModel.fetchRetryQueueDetails()
-        }
-
-        private fun handleFreeSpaceWorkState(workInfo: WorkInfo, dialog: DialogUtils.CustomProgressDialog) {
-            when (workInfo.state) {
-                WorkInfo.State.RUNNING -> {
-                    val progress = workInfo.progress
-                    val deletedFiles = progress.getInt("deletedFiles", 0)
-                    val freedBytes = progress.getLong("freedBytes", 0)
-                    dialog.setText("Deleting files... $deletedFiles deleted (${FileUtils.formatSize(requireContext(), freedBytes)})")
-                }
-                WorkInfo.State.SUCCEEDED -> {
-                    dialog.dismiss()
-                    Utilities.toast(requireActivity(), getString(R.string.data_cleared))
-                    val output = workInfo.outputData
-                    val deletedFiles = output.getInt("deletedFiles", 0)
-                    val freedBytes = output.getLong("freedBytes", 0)
-                    Utilities.toast(requireActivity(), "Freed ${FileUtils.formatSize(requireContext(), freedBytes)} ($deletedFiles files)")
-                }
-                WorkInfo.State.FAILED -> {
-                    dialog.dismiss()
-                    Utilities.toast(requireActivity(), getString(R.string.unable_to_clear_files))
-                }
-                WorkInfo.State.CANCELLED -> {
-                    dialog.dismiss()
-                }
-                else -> {
-                    // ENQUEUED or BLOCKED
-                }
-            }
         }
 
         private fun clearDataButtonInit() {
@@ -335,40 +310,6 @@ class SettingsActivity : AppCompatActivity() {
                             .setNegativeButton(R.string.no, null)
                             .show()
                     }
-                    false
-                }
-            }
-            val prefFreeUp = findPreference<Preference>("freeup_space")
-            if (prefFreeUp != null) {
-                prefFreeUp.onPreferenceClickListener = OnPreferenceClickListener {
-                    AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure_want_to_delete_all_the_files)
-                        .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            dialog.show()
-                            val workManager = WorkManager.getInstance(requireContext())
-                            val freeSpaceWork = OneTimeWorkRequestBuilder<FreeSpaceWorker>()
-                                .addTag("freeSpaceWork")
-                                .build()
-
-                            workManager.enqueue(freeSpaceWork)
-
-                            viewLifecycleOwner.lifecycleScope.launch {
-                                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                                    workManager.getWorkInfoByIdFlow(freeSpaceWork.id).collect { workInfo ->
-                                        if (workInfo != null) {
-                                            handleFreeSpaceWorkState(workInfo, dialog)
-                                            if (workInfo.state.isFinished) {
-                                                kotlinx.coroutines.currentCoroutineContext().cancel()
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            dialog.setNegativeButton("Cancel") {
-                                workManager.cancelWorkById(freeSpaceWork.id)
-                            }
-
-                        }.setNegativeButton("No", null).show()
                     false
                 }
             }

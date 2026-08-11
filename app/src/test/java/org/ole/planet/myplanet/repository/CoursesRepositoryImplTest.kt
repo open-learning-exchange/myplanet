@@ -3,19 +3,19 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonParser
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
-import io.mockk.every
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.flow.firstOrNull
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -34,8 +34,8 @@ import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyCourse
-import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.model.SearchActivity
+import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -292,7 +292,7 @@ class CoursesRepositoryImplTest {
 
         coEvery { courseDao.observeByCourseId("course_id") } returns kotlinx.coroutines.flow.flowOf(course)
         coEvery { userRepository.get().getUserModel() } returns user
-        coEvery { examDao.getByCourseIdAndType("course_id", "courses") } returns listOf(mockk<org.ole.planet.myplanet.model.StepExam>(), mockk<org.ole.planet.myplanet.model.StepExam>(), mockk<org.ole.planet.myplanet.model.StepExam>(), mockk<org.ole.planet.myplanet.model.StepExam>(), mockk<org.ole.planet.myplanet.model.StepExam>())
+        coEvery { examDao.countByCourseIdAndType("course_id", "courses") } returns 5
         coEvery { myLibraryDao.getCourseResources("course_id", false) } returns emptyList()
         coEvery { myLibraryDao.getCourseResources("course_id", true) } returns emptyList()
         coEvery { courseStepDao.getByCourseId("course_id") } returns listOf(org.ole.planet.myplanet.model.CourseStep().apply { id = "step_1"; stepTitle = "Title" })
