@@ -292,7 +292,7 @@ class CoursesRepositoryImplTest {
 
         coEvery { courseDao.observeByCourseId("course_id") } returns kotlinx.coroutines.flow.flowOf(course)
         coEvery { userRepository.get().getUserModel() } returns user
-        coEvery { examDao.getByCourseIdAndType("course_id", "courses") } returns listOf(mockk<org.ole.planet.myplanet.model.StepExam>(), mockk<org.ole.planet.myplanet.model.StepExam>(), mockk<org.ole.planet.myplanet.model.StepExam>(), mockk<org.ole.planet.myplanet.model.StepExam>(), mockk<org.ole.planet.myplanet.model.StepExam>())
+        coEvery { examDao.countByCourseIdAndType("course_id", "courses") } returns 5
         coEvery { myLibraryDao.getCourseResources("course_id", false) } returns emptyList()
         coEvery { myLibraryDao.getCourseResources("course_id", true) } returns emptyList()
         coEvery { courseStepDao.getByCourseId("course_id") } returns listOf(org.ole.planet.myplanet.model.CourseStep().apply { id = "step_1"; stepTitle = "Title" })

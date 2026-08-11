@@ -72,7 +72,6 @@ data class TeamUploadData(
 interface TeamsRepository {
     suspend fun getAllActiveTeams(): List<MyTeam>
     suspend fun getMyTeamsFlow(userId: String): Flow<List<MyTeam>>
-    suspend fun getResourceIds(teamId: String): List<String>
     suspend fun getTeamSummaries(userId: String?): List<TeamSummary>
     suspend fun getShareableEnterpriseSummaries(userId: String?): List<TeamSummary>
     fun getMyTeamDetailsFlow(userId: String): Flow<List<TeamDetails>>
@@ -114,7 +113,6 @@ interface TeamsRepository {
     suspend fun getReportsFlow(teamId: String): Flow<List<MyTeam>>
     suspend fun exportReportsAsCsv(reports: List<MyTeam>, teamName: String): String
     suspend fun addReport(report: FinanceReportParams)
-    suspend fun attachTeamImage(teamId: String, imageName: String, imageData: ByteArray)
     suspend fun updateReport(reportId: String, payload: FinanceReportParams)
     suspend fun archiveReport(reportId: String)
     suspend fun logTeamVisit(teamId: String, userName: String?, userPlanetCode: String?,
@@ -152,4 +150,5 @@ interface TeamsRepository {
     suspend fun getAvailableResourcesToAdd(teamId: String): List<MyLibrary>
 
     suspend fun getLastVisit(userName: String?, teamId: String?): Long?
+    fun getTeamNameFromPrefs(): String?
 }
