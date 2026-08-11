@@ -68,7 +68,8 @@ class ResourcesRepositoryImplTest {
             myLibraryDao,
             userRepository,
             teamDao,
-            userSessionManager
+            userSessionManager,
+            mockk(relaxed = true)
         )
     }
 

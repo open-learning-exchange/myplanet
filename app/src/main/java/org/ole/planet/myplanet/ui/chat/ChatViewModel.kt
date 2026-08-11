@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ChatRepository
@@ -75,6 +76,14 @@ class ChatViewModel @Inject constructor(
 
     private var loadDataJob: kotlinx.coroutines.Job? = null
     private var searchJob: kotlinx.coroutines.Job? = null
+
+    sealed class ShareChatResult {
+        object AlreadyShared : ShareChatResult()
+        data class Shared(val news: News, val chatId: String) : ShareChatResult()
+    }
+
+    private val _shareResult = MutableSharedFlow<ShareChatResult>()
+    val shareResult: SharedFlow<ShareChatResult> = _shareResult.asSharedFlow()
 
     private val _screenData = MutableStateFlow<ChatHistoryScreenData?>(null)
     val screenData: StateFlow<ChatHistoryScreenData?> = _screenData.asStateFlow()
@@ -345,5 +354,16 @@ class ChatViewModel @Inject constructor(
 
     fun shouldFetchAiProviders(): Boolean {
         return _aiProviders.value == null && !_aiProvidersLoading.value
+    }
+
+    fun shareChatToVoices(chatId: String, viewInId: String, payload: HashMap<String?, String>) {
+        viewModelScope.launch {
+            if (voicesRepository.isAlreadyShared(chatId, viewInId)) {
+                _shareResult.emit(ShareChatResult.AlreadyShared)
+            } else {
+                val news = voicesRepository.createNews(payload, cachedUser, null)
+                _shareResult.emit(ShareChatResult.Shared(news, chatId))
+            }
+        }
     }
 }

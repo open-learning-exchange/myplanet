@@ -110,6 +110,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
+    lateinit var themeManager: ThemeManager
+    @Inject
     override lateinit var timeProvider: TimeProvider
 
     @Inject
@@ -428,7 +430,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             R.id.action_about -> openCallFragment(AboutFragment(), AboutFragment::class.java.simpleName)
             R.id.action_logout -> logout()
             R.id.change_language -> SettingsActivity.SettingFragment.languageChanger(this)
-            R.id.action_theme -> ThemeManager.showThemeDialog(this)
+            R.id.action_theme -> themeManager.showThemeDialog(this)
             else -> {}
         }
     }

@@ -25,7 +25,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnSyncListener
+import org.ole.planet.myplanet.repository.SyncUiState
+import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
 import org.ole.planet.myplanet.model.MyCourse
@@ -33,7 +34,6 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.repository.LifeRepository
-import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardItem
 import org.ole.planet.myplanet.ui.dashboard.DashboardPluginFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardViewModel
@@ -54,15 +54,14 @@ import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
-open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
+open class BaseDashboardFragment : DashboardPluginFragment() {
     private val viewModel: DashboardViewModel by viewModels()
     private val newsViewModel: NewsViewModel by viewModels()
     private var fullName: String? = null
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
 
-    @Inject
-    lateinit var transactionSyncManager: TransactionSyncManager
+
     @Inject
     lateinit var lifeRepository: LifeRepository
 
@@ -111,41 +110,41 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
 
     private fun observeUiState() {
         viewLifecycleOwner.lifecycleScope.launch {
-            launch {
-                viewModel.uiState
-                    .map { it.library }
-                    .distinctUntilChanged()
-                    .collect { library ->
-                        renderMyLibrary(library)
-                    }
-            }
-            launch {
-                viewModel.uiState
-                    .map { it.courses }
-                    .distinctUntilChanged()
-                    .collect { courses ->
-                        renderMyCourses(courses)
-                    }
-            }
-            launch {
-                viewModel.uiState
-                    .map { it.teams }
-                    .distinctUntilChanged()
-                    .collect { teams ->
-                        renderMyTeams(teams)
-                    }
-            }
-            launch {
-                viewModel.uiState
-                    .map { it.fullName to it.offlineLogins }
-                    .distinctUntilChanged()
-                    .collect { (fullName, offlineLogins) ->
-                        view?.findViewById<TextView>(R.id.txtFullName)?.text =
-                            getString(R.string.user_name, fullName, offlineLogins)
-                    }
-            }
-            launch {
-                repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.uiState
+                        .map { it.library }
+                        .distinctUntilChanged()
+                        .collect { library ->
+                            renderMyLibrary(library)
+                        }
+                }
+                launch {
+                    viewModel.uiState
+                        .map { it.courses }
+                        .distinctUntilChanged()
+                        .collect { courses ->
+                            renderMyCourses(courses)
+                        }
+                }
+                launch {
+                    viewModel.uiState
+                        .map { it.teams }
+                        .distinctUntilChanged()
+                        .collect { teams ->
+                            renderMyTeams(teams)
+                        }
+                }
+                launch {
+                    viewModel.uiState
+                        .map { it.fullName to it.offlineLogins }
+                        .distinctUntilChanged()
+                        .collect { (fullName, offlineLogins) ->
+                            view?.findViewById<TextView>(R.id.txtFullName)?.text =
+                                getString(R.string.user_name, fullName, offlineLogins)
+                        }
+                }
+                launch {
                     newsViewModel.privateImageUrls.collect { urls ->
                         if (urls.isNotEmpty()) {
                             Utilities.toast(activity, getString(R.string.downloading_images_please_check_notification))
@@ -388,6 +387,15 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         viewLifecycleOwner.lifecycleScope.launch {
             myLifeListInit(myLifeFlex)
         }
+
+        collectWhenStarted(viewModel.syncKeyIdEvent) { state ->
+            when (state) {
+                is SyncUiState.Loading -> onSyncStarted()
+                is SyncUiState.Success -> onSyncComplete()
+                is SyncUiState.Error -> onSyncFailed(state.message)
+                else -> {}
+            }
+        }
     }
 
     fun showResourceDownloadDialog() {
@@ -418,22 +426,23 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
             .setNegativeButton(R.string.dismiss, null)
             .create()
 
+        val adapter = HealthUsersAdapter { selected ->
+            selected._id?.let { userId ->
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val libraryList = viewModel.getLibraryListForUser(userId)
+                    showDownloadDialog(libraryList)
+                }
+            }
+            dialog.dismiss()
+        }
+        alertHealthListBinding.list.layoutManager = LinearLayoutManager(requireActivity())
+        alertHealthListBinding.list.adapter = adapter
+
         val job = viewLifecycleOwner.lifecycleScope.launch {
             viewModel.uiState.collect {
                 if (dialog.isShowing) {
                     if (it.users.isNotEmpty()) {
-                        val adapter = HealthUsersAdapter { selected ->
-                            selected._id?.let { userId ->
-                                viewLifecycleOwner.lifecycleScope.launch {
-                                    val libraryList = viewModel.getLibraryListForUser(userId)
-                                    showDownloadDialog(libraryList)
-                                }
-                            }
-                            dialog.dismiss()
-                        }
                         adapter.submitList(it.users)
-                        alertHealthListBinding.list.layoutManager = LinearLayoutManager(requireActivity())
-                        alertHealthListBinding.list.adapter = adapter
                         alertHealthListBinding.list.visibility = View.VISIBLE
                     } else {
                         alertHealthListBinding.list.visibility = View.GONE
@@ -448,18 +457,18 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
     }
 
     fun syncKeyId() {
-        transactionSyncManager.syncDashboardKeyId(model?.getRoleAsString(), this)
+        viewModel.syncKeyId(model?.getRoleAsString())
     }
 
-    override fun onSyncStarted() {
+    fun onSyncStarted() {
         di?.show()
     }
 
-    override fun onSyncComplete() {
+    fun onSyncComplete() {
         di?.dismiss()
     }
 
-    override fun onSyncFailed(msg: String?) {
+    fun onSyncFailed(msg: String?) {
         di?.dismiss()
     }
 }

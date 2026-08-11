@@ -456,7 +456,10 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     }
 
     override fun onDestroyView() {
-        if (::filterController.isInitialized) filterController.detach()
+        if (::filterController.isInitialized) {
+            filterController.clear()
+            filterController.detach()
+        }
         super.onDestroyView()
     }
 
