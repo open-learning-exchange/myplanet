@@ -25,7 +25,7 @@ void main() {
   setUp(() {
     db = AppDatabase.memory();
     api = MockPlanetApi();
-    repository = ResourcesRepository(api, db.myLibraryDao);
+    repository = ResourcesRepository(api, db.myLibraryDao, db.removedLogDao);
   });
 
   tearDown(() => db.close());
@@ -294,6 +294,42 @@ void main() {
       await repository.sync(config: config);
 
       expect((await repository.watchResources(query: '  ').first).length, 2);
+    });
+  });
+
+  group('setShelfMembership', () {
+    test(
+      'leaving records the removal so the shelf push cannot re-add',
+      () async {
+        stubCount(1);
+        stubPage(0, 100, [row('res-1', 'Algebra')]);
+        await repository.sync(config: config);
+        await repository.setShelfMembership('res-1', 'user-1', joined: true);
+
+        await repository.setShelfMembership('res-1', 'user-1', joined: false);
+
+        final stored = await db.myLibraryDao.getById('res-1');
+        expect(stored!.userId, isNot(contains('user-1')));
+        expect(await db.removedLogDao.removedDocIds('resources', 'user-1'), [
+          'res-1',
+        ]);
+      },
+    );
+
+    test('re-joining clears the stale removal record', () async {
+      stubCount(1);
+      stubPage(0, 100, [row('res-1', 'Algebra')]);
+      await repository.sync(config: config);
+      await repository.setShelfMembership('res-1', 'user-1', joined: false);
+
+      await repository.setShelfMembership('res-1', 'user-1', joined: true);
+
+      final stored = await db.myLibraryDao.getById('res-1');
+      expect(stored!.userId, contains('user-1'));
+      expect(
+        await db.removedLogDao.removedDocIds('resources', 'user-1'),
+        isEmpty,
+      );
     });
   });
 }

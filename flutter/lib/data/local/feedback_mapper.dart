@@ -13,13 +13,22 @@ class FeedbackMapper {
 
   /// Converts a CouchDB feedback document JSON to a [FeedbackEntriesCompanion].
   ///
-  /// Port of `FeedbackRepositoryImpl.mapToFeedback`.
-  static FeedbackEntriesCompanion fromDoc(Map<String, dynamic> doc) {
+  /// Port of `FeedbackRepositoryImpl.mapToFeedback`. When the stored row has a
+  /// reply the server has not confirmed (`isUploaded == false`), the local
+  /// `messages` are kept and the row stays pending — a sync used to overwrite
+  /// the thread with the server's copy, silently destroying the reply the
+  /// uploader was about to send.
+  static FeedbackEntriesCompanion fromDoc(
+    Map<String, dynamic> doc, [
+    FeedbackRow? existing,
+  ]) {
     final id = doc['_id'] as String? ?? doc['id'] as String? ?? '';
     final rev = doc['_rev'] as String?;
-    final messages = doc['messages'];
+    final hasPendingLocalReply = existing != null && !existing.isUploaded;
+    final messages = hasPendingLocalReply ? null : doc['messages'];
     final openTime = doc['openTime'];
-    final isUploaded = doc.containsKey('_rev') && doc['_rev'] != null;
+    final isUploaded =
+        !hasPendingLocalReply && doc.containsKey('_rev') && doc['_rev'] != null;
 
     return FeedbackEntriesCompanion(
       id: Value(id),
@@ -38,7 +47,11 @@ class FeedbackMapper {
       url: Value(doc['url'] as String?),
       parentCode: Value(doc['parentCode'] as String?),
       isUploaded: Value(isUploaded),
-      messages: Value(messages != null ? jsonEncode(messages) : null),
+      messages: Value(
+        hasPendingLocalReply
+            ? existing.messages
+            : (messages != null ? jsonEncode(messages) : null),
+      ),
       item: Value(doc['item'] as String?),
       state: Value(doc['state'] as String?),
     );
