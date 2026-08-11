@@ -184,6 +184,101 @@ class TagsRepositoryImplTest {
     }
 
     @Test
+    fun `getTagsForCourse resolves linked tags through tagId lookup`() = runTest {
+        val courseId = "course1"
+        val tagId = "tag1"
+        val linkTag = TagEntity().apply {
+            db = "courses"
+            linkId = courseId
+            this.tagId = tagId
+        }
+        val parentTag = TagEntity().apply { id = tagId; name = "Parent Tag" }
+
+        coEvery { tagDao.getByDbAndLinkId("courses", courseId) } returns listOf(linkTag)
+        coEvery { tagDao.getByIds(listOf(tagId)) } returns listOf(parentTag)
+
+        val result = repository.getTagsForCourse(courseId)
+
+        assertEquals(1, result.size)
+        assertEquals("Parent Tag", result[0].name)
+    }
+
+    @Test
+    fun `getTagsForCourses returns correct per-course tag map`() = runTest {
+        val courseIds = listOf("course1", "course2")
+        val linkTag1 = TagEntity().apply {
+            db = "courses"
+            linkId = "course1"
+            tagId = "tag1"
+        }
+        val linkTag2 = TagEntity().apply {
+            db = "courses"
+            linkId = "course2"
+            tagId = "tag2"
+        }
+        val parentTag1 = TagEntity().apply { id = "tag1"; name = "Parent Tag 1" }
+        val parentTag2 = TagEntity().apply { id = "tag2"; name = "Parent Tag 2" }
+
+        coEvery { tagDao.getByDbAndLinkIds("courses", courseIds) } returns
+            listOf(linkTag1, linkTag2)
+        coEvery { tagDao.getByIds(listOf("tag1", "tag2")) } returns
+            listOf(parentTag1, parentTag2)
+
+        val result = repository.getTagsForCourses(courseIds)
+
+        assertEquals(2, result.size)
+        assertEquals(1, result["course1"]?.size)
+        assertEquals("Parent Tag 1", result["course1"]?.get(0)?.name)
+        assertEquals(1, result["course2"]?.size)
+        assertEquals("Parent Tag 2", result["course2"]?.get(0)?.name)
+    }
+
+    @Test
+    fun `getLinkIdsForTagNames returns linkIds for matching tags`() = runTest {
+        val tagNames = listOf("Tag 1", "Tag 2")
+        val tag1 = TagEntity().apply { id = "tag1"; name = "Tag 1" }
+        val tag2 = TagEntity().apply { id = "tag2"; name = "Tag 2" }
+
+        val linkTag1 = TagEntity().apply { linkId = "link1"; tagId = "tag1" }
+        val linkTag2 = TagEntity().apply { linkId = "link2"; tagId = "tag2" }
+
+        coEvery { tagDao.getByNames(tagNames) } returns listOf(tag1, tag2)
+        coEvery { tagDao.getByDbAndTagIds("resources", listOf("tag1", "tag2")) } returns listOf(linkTag1, linkTag2)
+
+        val result = repository.getLinkIdsForTagNames("resources", tagNames)
+
+        assertEquals(2, result.size)
+        assertTrue(result.contains("link1"))
+        assertTrue(result.contains("link2"))
+    }
+
+    @Test
+    fun `getLinkIdsForTagNames returns empty list when no matching tags`() = runTest {
+        val tagNames = listOf("NonExistent Tag")
+        coEvery { tagDao.getByNames(tagNames) } returns emptyList()
+
+        val result = repository.getLinkIdsForTagNames("resources", tagNames)
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { tagDao.getByDbAndTagIds(any(), any()) }
+    }
+
+    @Test
+    fun `getLinkIdsForTagNames ignores tags without linkId`() = runTest {
+        val tagNames = listOf("Tag 1")
+        val tag1 = TagEntity().apply { id = "tag1"; name = "Tag 1" }
+
+        val linkTagWithoutId = TagEntity().apply { linkId = null; tagId = "tag1" }
+
+        coEvery { tagDao.getByNames(tagNames) } returns listOf(tag1)
+        coEvery { tagDao.getByDbAndTagIds("resources", listOf("tag1")) } returns listOf(linkTagWithoutId)
+
+        val result = repository.getLinkIdsForTagNames("resources", tagNames)
+
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
     fun `insert parses json objects and upserts tags`() = runTest {
         val documentList = listOf(
             com.google.gson.JsonObject().apply {
