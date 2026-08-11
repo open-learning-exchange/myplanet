@@ -7,6 +7,8 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyLife
@@ -26,6 +28,7 @@ class LifeRepositoryImpl @Inject constructor(
 ) : LifeRepository {
 
     private val MY_LIFE_CACHE_PREFIX = "myLifeCache_"
+    private val seedMutex = Mutex()
 
     override suspend fun updateVisibility(isVisible: Boolean, myLifeId: String) {
         myLifeDao.updateVisibility(myLifeId, isVisible)
@@ -64,9 +67,9 @@ class LifeRepositoryImpl @Inject constructor(
     }
 
     private fun MyLife.dedupKey(): Any {
-        return _id?.takeIf { it.isNotBlank() }
-            ?: imageId?.takeIf { it.isNotBlank() }
+        return imageId?.takeIf { it.isNotBlank() }
             ?: title?.takeIf { it.isNotBlank() }
+            ?: _id.takeIf { it.isNotBlank() }
             ?: System.identityHashCode(this)
     }
 
@@ -117,20 +120,22 @@ class LifeRepositoryImpl @Inject constructor(
     }
 
     override suspend fun seedMyLifeIfEmpty(userId: String?, items: List<MyLife>) {
-        val existing = myLifeDao.countByUserId(userId)
-        if (existing == 0) {
-            var weight = 1
-            val newItems = items.map { item ->
-                MyLife().apply {
-                    _id = UUID.randomUUID().toString()
-                    title = item.title
-                    imageId = item.imageId
-                    this.weight = weight++
-                    this.userId = item.userId
-                    isVisible = true
+        seedMutex.withLock {
+            val existing = myLifeDao.countByUserId(userId)
+            if (existing == 0) {
+                var weight = 1
+                val newItems = items.map { item ->
+                    MyLife().apply {
+                        _id = UUID.randomUUID().toString()
+                        title = item.title
+                        imageId = item.imageId
+                        this.weight = weight++
+                        this.userId = item.userId
+                        isVisible = true
+                    }
                 }
+                myLifeDao.insertAll(newItems)
             }
-            myLifeDao.insertAll(newItems)
         }
     }
 }
