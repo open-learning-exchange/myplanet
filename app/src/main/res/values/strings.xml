@@ -484,8 +484,11 @@
     <string name="Q1">Question: 1/%d</string>
     <string name="no_questions">No questions available</string>
     <string name="Q">Question: %1$d / %2$d</string>
+    <string name="exam_question_of">Question %1$d of %2$d</string>
     <string name="finish">Finish</string>
+    <string name="finish_and_submit">Finish &amp; Submit</string>
     <string name="submit">Submit</string>
+    <string name="elapsed_time_description">Elapsed time</string>
     <string name="our_courses">Our Courses</string>
     <string name="file">File: %s</string>
     <string name="recording_audio">Recording audio…</string>

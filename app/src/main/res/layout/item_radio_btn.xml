@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RadioButton xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="wrap_content"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:buttonTint="@color/daynight_textColor"
+    android:layout_marginBottom="@dimen/padding_normal"
+    android:minHeight="@dimen/_48dp"
+    android:gravity="center_vertical"
+    android:background="@drawable/bg_choice_card"
+    android:paddingStart="@dimen/padding_normal"
+    android:paddingEnd="@dimen/padding_normal"
+    android:buttonTint="@color/choice_button_tint"
     android:textColor="@color/daynight_textColor">
 </RadioButton>

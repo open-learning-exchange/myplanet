@@ -140,67 +140,83 @@
                     android:id="@+id/content_column"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
+                    android:orientation="horizontal"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintWidth_max="@dimen/exam_content_max_width">
 
-                    <TextView
-                        android:id="@+id/tv_header"
-                        style="@style/HeaderText"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/daynight_textColor"
-                        android:textSize="18sp" />
-
-                    <TextView
-                        android:id="@+id/tv_body"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:padding="@dimen/padding_normal"
-                        android:textColor="@color/daynight_textColor"
-                        android:textSize="16sp" />
-
-                    <RadioGroup
-                        android:id="@+id/group_choices"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:visibility="gone" />
-
                     <LinearLayout
-                        android:id="@+id/ll_checkbox"
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_weight="2"
                         android:orientation="vertical"
-                        android:visibility="gone" />
+                        android:paddingStart="0dp"
+                        android:paddingEnd="@dimen/padding_large">
 
-                    <LinearLayout
-                        android:id="@+id/ll_rating_scale"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:padding="@dimen/padding_large"
-                        android:visibility="gone" />
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tl_answer"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/padding_normal"
-                        android:padding="@dimen/padding_normal"
-                        android:textColorHint="@color/hint_color">
-
-                        <EditText
-                            android:id="@+id/et_answer"
+                        <TextView
+                            android:id="@+id/tv_header"
+                            style="@style/HeaderText"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:backgroundTint="@color/hint_color"
-                            android:hint="@string/your_ans"
-                            android:textColor="@color/daynight_textColor" />
-                    </com.google.android.material.textfield.TextInputLayout>
+                            android:textColor="@color/daynight_textColor"
+                            android:textSize="18sp" />
+
+                        <TextView
+                            android:id="@+id/tv_body"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:padding="@dimen/padding_normal"
+                            android:textColor="@color/daynight_textColor"
+                            android:textSize="16sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="3"
+                        android:orientation="vertical">
+
+                        <RadioGroup
+                            android:id="@+id/group_choices"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:visibility="gone" />
+
+                        <LinearLayout
+                            android:id="@+id/ll_checkbox"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:visibility="gone" />
+
+                        <LinearLayout
+                            android:id="@+id/ll_rating_scale"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:padding="@dimen/padding_large"
+                            android:visibility="gone" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/tl_answer"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/padding_normal"
+                            android:padding="@dimen/padding_normal"
+                            android:textColorHint="@color/hint_color">
+
+                            <EditText
+                                android:id="@+id/et_answer"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:backgroundTint="@color/hint_color"
+                                android:hint="@string/your_ans"
+                                android:textColor="@color/daynight_textColor" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
 
                 </LinearLayout>
             </androidx.constraintlayout.widget.ConstraintLayout>

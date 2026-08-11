@@ -485,8 +485,11 @@
     <string name="Q1">प्रश्न: 1/%d</string>
     <string name="no_questions">कुनै प्रश्न उपलब्ध छैन</string>
     <string name="Q">%1$d / %2$d प्रश्न</string>
+    <string name="exam_question_of">%2$d मध्ये प्रश्न %1$d</string>
     <string name="finish">समाप्त</string>
+    <string name="finish_and_submit">समाप्त गर्नुहोस् र पेश गर्नुहोस्</string>
     <string name="submit">पेश गर्नुहोस्</string>
+    <string name="elapsed_time_description">बितेको समय</string>
     <string name="our_courses">हाम्रा कोर्सहरू</string>
     <string name="file">फाइल: %s</string>
     <string name="recording_audio">आवाज रेकर्ड गर्दै......</string>
