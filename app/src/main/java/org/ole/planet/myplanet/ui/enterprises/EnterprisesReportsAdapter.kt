@@ -94,7 +94,9 @@ class EnterprisesReportsAdapter(
     }
 
     fun setNonTeamMember(nonTeamMember: Boolean) {
+        if (this.nonTeamMember == nonTeamMember) return
         this.nonTeamMember = nonTeamMember
+        notifyItemRangeChanged(0, itemCount)
     }
 
     class ReportsViewHolder(val binding: ReportListItemBinding) : RecyclerView.ViewHolder(binding.root)
@@ -102,7 +104,19 @@ class EnterprisesReportsAdapter(
     companion object {
         val diffCallback = DiffUtils.itemCallback<MyTeam>(
             areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
-            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+            areContentsTheSame = { oldItem, newItem ->
+                oldItem.startDate == newItem.startDate &&
+                    oldItem.endDate == newItem.endDate &&
+                    oldItem.beginningBalance == newItem.beginningBalance &&
+                    oldItem.sales == newItem.sales &&
+                    oldItem.otherIncome == newItem.otherIncome &&
+                    oldItem.wages == newItem.wages &&
+                    oldItem.otherExpenses == newItem.otherExpenses &&
+                    oldItem.description == newItem.description &&
+                    oldItem.createdDate == newItem.createdDate &&
+                    oldItem.updatedDate == newItem.updatedDate &&
+                    oldItem.imageName == newItem.imageName
+            }
         )
     }
 }
