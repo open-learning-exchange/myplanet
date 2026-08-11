@@ -422,7 +422,7 @@ class CoursesRepositoryImpl @Inject constructor(
         val current = progressRepository.getCurrentProgress(stepsList, userId, courseId)
         val courseTitle = getCourseById(courseId)?.courseTitle
         val stepIds = stepsList.map { it.id }
-        val allExams = if (stepIds.isEmpty()) emptyList() else examDao.getByStepIds(stepIds).map { it }
+        val allExams = if (stepIds.isEmpty()) emptyList() else examDao.getByStepIds(stepIds)
         val max = stepsList.size
         val examsByStepId = allExams.groupBy { it.stepId }
 
@@ -567,7 +567,7 @@ class CoursesRepositoryImpl @Inject constructor(
     override suspend fun deleteCourseProgress(courseId: String?) {
         val examIds = courseId?.let { examDao.getByCourseId(it).map { exam -> exam.id } }.orEmpty()
         if (examIds.isNotEmpty()) {
-            val submissions = submissionDao.getUnuploadedNonSurveyByParentIds(examIds.map { it })
+            val submissions = submissionDao.getUnuploadedNonSurveyByParentIds(examIds)
             val submissionIds = submissions.map { it.id }
             if (submissionIds.isNotEmpty()) {
                 answerDao.deleteBySubmissionIds(submissionIds)
