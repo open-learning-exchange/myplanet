@@ -16,16 +16,14 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
-import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentStorageCategoryDetailBinding
 import org.ole.planet.myplanet.databinding.ItemDownloadedResourceBinding
+import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DiffUtils
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 
 @AndroidEntryPoint
@@ -35,22 +33,11 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
 
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
-    @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
-
     private var categoryLabel: String = ""
     private var extensions: Set<String> = emptySet()
     private var allKnownExtensions: Set<String> = emptySet()
 
-    data class ResourceItem(
-        val resourceId: String,
-        val title: String,
-        val files: List<File>,
-        val totalSizeBytes: Long,
-        val isChecked: Boolean = false
-    )
-
-    private var items: List<ResourceItem> = emptyList()
+    private var items: List<OfflineResourceItem> = emptyList()
     private lateinit var adapter: ResourceAdapter
 
     companion object {
@@ -147,7 +134,8 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         binding.selectAllDivider.visibility = View.GONE
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val loaded = withContext(dispatcherProvider.io) { buildResourceItems() }
+            val olePath = FileUtils.getOlePath(requireContext())
+            val loaded = resourcesRepository.getOfflineResourceItems(olePath, extensions, allKnownExtensions)
             binding.progressBar.visibility = View.GONE
 
             if (loaded.isEmpty()) {
@@ -163,33 +151,6 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
             binding.selectAllRow.visibility = View.VISIBLE
             binding.selectAllDivider.visibility = View.VISIBLE
         }
-    }
-
-    private suspend fun buildResourceItems(): List<ResourceItem> {
-        val oleDir = File(FileUtils.getOlePath(requireContext()))
-        if (!oleDir.exists() || !oleDir.isDirectory) return emptyList()
-
-        val titleMap = resourcesRepository.getResourceTitlesMap()
-
-        val grouped = mutableMapOf<String, MutableList<File>>()
-        oleDir.walkTopDown().filter { it.isFile }.forEach { file ->
-            val ext = file.extension.lowercase()
-            val matchesCategory = if (extensions.isEmpty()) {
-                ext !in allKnownExtensions
-            } else {
-                ext in extensions
-            }
-            if (matchesCategory) {
-                val resourceId = file.parentFile?.name ?: return@forEach
-                grouped.getOrPut(resourceId) { mutableListOf() }.add(file)
-            }
-        }
-
-        return grouped.map { (resourceId, files) ->
-            val totalSize = files.sumOf { it.length() }
-            val title = titleMap[resourceId]?.takeIf { it.isNotBlank() } ?: getString(R.string.storage_unknown_resource)
-            ResourceItem(resourceId, title, files, totalSize)
-        }.sortedBy { it.title }
     }
 
     private fun updateSelectionState() {
@@ -217,41 +178,29 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
             .show()
     }
 
-    private fun deleteItems(toDelete: List<ResourceItem>) {
+    private fun deleteItems(toDelete: List<OfflineResourceItem>) {
         if (_binding == null) return
         binding.deleteSelectedButton.isEnabled = false
         binding.deleteAllButton.isEnabled = false
 
         viewLifecycleOwner.lifecycleScope.launch {
-            withContext(dispatcherProvider.io) {
-                val oleDir = File(FileUtils.getOlePath(requireContext()))
-
-                toDelete.forEach { item ->
-                    item.files.forEach { it.delete() }
-                    val parentDir = oleDir.resolve(item.resourceId)
-                    if (parentDir.exists() && parentDir.list().isNullOrEmpty()) {
-                        parentDir.delete()
-                    }
-                }
-
-                val deletedIds = toDelete.map { it.resourceId }.toSet()
-                resourcesRepository.markResourcesAsNotOffline(deletedIds)
-            }
+            val olePath = FileUtils.getOlePath(requireContext())
+            resourcesRepository.deleteOfflineResources(olePath, toDelete)
 
             parentFragmentManager.setFragmentResult(RESULT_KEY, Bundle())
             dismiss()
         }
     }
 
-    private val DIFF_CALLBACK = DiffUtils.itemCallback<ResourceItem>(
+    private val DIFF_CALLBACK = DiffUtils.itemCallback<OfflineResourceItem>(
         areItemsTheSame = { o, n -> o.resourceId == n.resourceId },
         areContentsTheSame = { o, n -> o == n },
         getChangePayload = { o, n -> if (o.copy(isChecked = n.isChecked) == n) PAYLOAD_CHECKED_CHANGED else null }
     )
 
     inner class ResourceAdapter(
-        private val onItemClicked: (ResourceItem) -> Unit
-    ) : ListAdapter<ResourceItem, ResourceAdapter.ViewHolder>(DIFF_CALLBACK) {
+        private val onItemClicked: (OfflineResourceItem) -> Unit
+    ) : ListAdapter<OfflineResourceItem, ResourceAdapter.ViewHolder>(DIFF_CALLBACK) {
 
         inner class ViewHolder(val binding: ItemDownloadedResourceBinding) :
             RecyclerView.ViewHolder(binding.root)
