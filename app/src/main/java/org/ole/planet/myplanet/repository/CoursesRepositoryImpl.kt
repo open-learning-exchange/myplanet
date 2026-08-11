@@ -161,7 +161,7 @@ class CoursesRepositoryImpl @Inject constructor(
         return mapCourses(courseDao.getByCourseIds(courseIds))
     }
 
-    override suspend fun getCourseOnlineResources(courseId: String?): List<MyLibrary> {
+    private suspend fun getCourseOnlineResources(courseId: String?): List<MyLibrary> {
         return getCourseResources(courseId, isOffline = false)
     }
 
@@ -176,11 +176,11 @@ class CoursesRepositoryImpl @Inject constructor(
         return myLibraryDao.getOfflineResourcesForCourses(courseIds)
     }
 
-    override suspend fun getCourseExamCount(courseId: String?): Int {
+    private suspend fun getCourseExamCount(courseId: String?): Int {
         if (courseId.isNullOrEmpty()) {
             return 0
         }
-        return examDao.getByCourseIdAndType(courseId, "courses").size
+        return examDao.countByCourseIdAndType(courseId, "courses")
     }
 
     override suspend fun getCourseSteps(courseId: String): List<CourseStep> {
@@ -192,10 +192,13 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun markCoursesAdded(courseIds: List<String>, userId: String?): Result<Boolean> {
         return runCatching {
-            val validCourseIds = courseIds.filter { it.isNotBlank() }
+            val validCourseIds = courseIds.filter { it.isNotBlank() }.distinct()
             if (validCourseIds.isEmpty()) return@runCatching false
 
-            val courses = courseDao.getByCourseIds(validCourseIds)
+            val courses = validCourseIds.chunked(300).flatMap { chunk ->
+                courseDao.getByCourseIds(chunk)
+            }.distinctBy { it.id }
+
             if (courses.isEmpty()) {
                 return@runCatching false
             }
@@ -207,12 +210,19 @@ class CoursesRepositoryImpl @Inject constructor(
             )
 
             if (!userId.isNullOrBlank()) {
-                validCourseIds.chunked(1000).forEach { chunk ->
+                val idsToDelete = mutableSetOf<String>()
+                idsToDelete.addAll(validCourseIds)
+                courses.forEach { course ->
+                    course.courseId?.takeIf { it.isNotBlank() }?.let { idsToDelete.add(it) }
+                    course.id.takeIf { it.isNotBlank() }?.let { idsToDelete.add(it) }
+                    course._id?.takeIf { it.isNotBlank() }?.let { idsToDelete.add(it) }
+                }
+                idsToDelete.toList().chunked(1000).forEach { chunk ->
                     removedLogDao.deleteByTypeUserAndDocs("courses", userId, chunk)
                 }
             }
 
-            realtimeSyncManager.notifyTableUpdated(TableDataUpdate("courses", 0, validCourseIds.size))
+            realtimeSyncManager.notifyTableUpdated(TableDataUpdate("courses", 0, courses.size))
             true
         }
     }
@@ -270,7 +280,7 @@ class CoursesRepositoryImpl @Inject constructor(
         tagNames: List<String>
     ): List<MyCourse> {
         val courseIdsWithTags = if (tagNames.isNotEmpty()) {
-            tagsRepository.getLinkIdsForTagNames("courses", tagNames)
+            tagsRepository.getLinkIdsForTagNames("courses", tagNames).toSet()
         } else {
             null
         }
@@ -322,27 +332,81 @@ class CoursesRepositoryImpl @Inject constructor(
         return runCatching {
             if (courseId.isBlank() || userId.isBlank()) return@runCatching
 
-            courseDao.getByCourseId(courseId)?.let { course ->
+            val course = courseDao.getByCourseId(courseId)
+            if (course != null) {
                 courseDao.upsert(course.copy(userId = mergeUserIds(course.userId, userId)))
             }
-            removedLogDao.deleteByTypeUserAndDoc("courses", userId, courseId)
+            val idsToDelete = mutableSetOf(courseId)
+            if (course != null) {
+                course.courseId?.takeIf { it.isNotBlank() }?.let { idsToDelete.add(it) }
+                course.id.takeIf { it.isNotBlank() }?.let { idsToDelete.add(it) }
+                course._id?.takeIf { it.isNotBlank() }?.let { idsToDelete.add(it) }
+            }
+            idsToDelete.toList().chunked(1000).forEach { chunk ->
+                removedLogDao.deleteByTypeUserAndDocs("courses", userId, chunk)
+            }
             realtimeSyncManager.notifyTableUpdated(TableDataUpdate("courses", 0, 1))
         }
     }
 
     override suspend fun leaveCourse(courseId: String, userId: String): Result<Unit> {
+        return leaveCourses(listOf(courseId), userId)
+    }
+
+    override suspend fun leaveCourses(courseIds: List<String>, userId: String): Result<Unit> {
         return runCatching {
-            courseDao.getByCourseId(courseId)?.let { course ->
-                val updatedUserIds = course.userId.orEmpty().toMutableList().apply { remove(userId) }
-                courseDao.upsert(course.copy(userId = updatedUserIds))
+            val validCourseIds = courseIds.filter { it.isNotBlank() }.distinct()
+            if (validCourseIds.isEmpty()) return@runCatching
+
+            val courses = validCourseIds.chunked(300).flatMap { chunk ->
+                courseDao.getByCourseIds(chunk)
+            }.distinctBy { it.id }
+
+            if (courses.isNotEmpty()) {
+                val updatedCourses = courses.map { course ->
+                    val updatedUserIds = course.userId.orEmpty().filter { it != userId }
+                    course.copy(userId = updatedUserIds)
+                }
+                courseDao.upsertAll(updatedCourses)
             }
-            removedLogDao.insert(RemovedLog().apply {
-                id = UUID.randomUUID().toString()
-                type = "courses"
-                this.userId = userId
-                docId = courseId
-            })
-            realtimeSyncManager.notifyTableUpdated(TableDataUpdate("courses", 0, 1))
+
+            if (userId.isNotBlank()) {
+                val logsToInsert = mutableMapOf<String, RemovedLog>()
+
+                if (courses.isNotEmpty()) {
+                    courses.forEach { course ->
+                        val canonicalId = course.courseId?.takeIf { it.isNotBlank() }
+                            ?: course.id.takeIf { it.isNotBlank() }
+                            ?: course._id
+                        if (!canonicalId.isNullOrBlank()) {
+                            logsToInsert[canonicalId] = RemovedLog().apply {
+                                id = UUID.randomUUID().toString()
+                                type = "courses"
+                                this.userId = userId
+                                this.docId = canonicalId
+                            }
+                        }
+                    }
+                }
+
+                validCourseIds.forEach { docId ->
+                    if (!logsToInsert.containsKey(docId)) {
+                        logsToInsert[docId] = RemovedLog().apply {
+                            id = UUID.randomUUID().toString()
+                            type = "courses"
+                            this.userId = userId
+                            this.docId = docId
+                        }
+                    }
+                }
+
+                logsToInsert.values.toList().chunked(1000).forEach { chunk ->
+                    removedLogDao.insertAll(chunk)
+                }
+            }
+
+            val finalCount = if (courses.isNotEmpty()) courses.size else validCourseIds.size
+            realtimeSyncManager.notifyTableUpdated(TableDataUpdate("courses", 0, finalCount))
         }
     }
 
@@ -477,16 +541,16 @@ class CoursesRepositoryImpl @Inject constructor(
         leaveCourse(courseId, userId)
     }
 
+    override suspend fun removeCoursesFromShelf(courseIds: List<String>, userId: String) {
+        leaveCourses(courseIds, userId).getOrThrow()
+    }
+
     override suspend fun logCourseVisit(courseId: String, title: String, userId: String) {
         activitiesRepository.logCourseVisit(courseId, title, userId)
     }
 
     override suspend fun getCurrentProgress(steps: List<CourseStep?>?, userId: String?, courseId: String?): Int {
         return progressRepository.getCurrentProgress(steps, userId, courseId)
-    }
-
-    override suspend fun getCourseProgress(userId: String?, courseIds: List<String>): HashMap<String?, JsonObject> {
-        return progressRepository.getCourseProgress(courseIds, userId)
     }
 
     override suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean {
@@ -499,10 +563,6 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun getCourseTagsBulk(courseIds: List<String>): Map<String, List<TagEntity>> {
         return tagsRepository.getTagsForCourses(courseIds)
-    }
-
-    override suspend fun getCourseRatings(userId: String?): HashMap<String?, JsonObject> {
-        return ratingsRepository.getCourseRatings(userId)
     }
 
     override suspend fun deleteCourseProgress(courseId: String?) {
@@ -792,10 +852,10 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     private fun mergeUserIds(existingUserIds: List<String>?, newUserId: String?): List<String>? {
-        val merged = existingUserIds.orEmpty().toMutableList()
+        val merged = existingUserIds.orEmpty().filter { !it.isNullOrBlank() }.toMutableList()
         if (!newUserId.isNullOrBlank() && !merged.contains(newUserId)) {
             merged.add(newUserId)
         }
-        return merged.takeIf { it.isNotEmpty() }
+        return merged.distinct().takeIf { it.isNotEmpty() }
     }
 }
