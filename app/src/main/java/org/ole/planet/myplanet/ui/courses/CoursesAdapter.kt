@@ -83,8 +83,6 @@ class CoursesAdapter(
     private var listener: OnCourseItemSelectedListener? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var progressMap: HashMap<String?, JsonObject>? = null
-    private var isAscending = true
-    private var isTitleAscending = false
 
     companion object {
         const val PAYLOAD_PROGRESS = "payload_progress"
@@ -130,43 +128,9 @@ class CoursesAdapter(
         onChanged?.invoke()
     }
 
-    fun removeCourses(courseIds: List<String>) {
+    fun removeCourses(courseIds: List<String>, onComplete: (() -> Unit)? = null) {
         val updated = currentList.filter { it.courseId !in courseIds }
-        submitList(updated)
-    }
-
-    private fun sortCourseListByTitle(list: List<Course>): List<Course> {
-        return list.sortedWith { course1, course2 ->
-            if (isTitleAscending) {
-                course1.courseTitle.compareTo(course2.courseTitle, ignoreCase = true)
-            } else {
-                course2.courseTitle.compareTo(course1.courseTitle, ignoreCase = true)
-            }
-        }
-    }
-
-    private fun sortCourseList(list: List<Course>): List<Course> {
-        return list.sortedWith { course1, course2 ->
-            if (isAscending) {
-                course1.createdDate.compareTo(course2.createdDate)
-            } else {
-                course2.createdDate.compareTo(course1.createdDate)
-            }
-        }
-    }
-
-    fun toggleTitleSortOrder(onComplete: (() -> Unit)? = null) {
-        isTitleAscending = !isTitleAscending
-        val sortedList = sortCourseListByTitle(currentList)
-        submitList(sortedList) {
-            onComplete?.invoke()
-        }
-    }
-
-    fun toggleSortOrder(onComplete: (() -> Unit)? = null) {
-        isAscending = !isAscending
-        val sortedList = sortCourseList(currentList)
-        submitList(sortedList) {
+        submitList(updated) {
             onComplete?.invoke()
         }
     }

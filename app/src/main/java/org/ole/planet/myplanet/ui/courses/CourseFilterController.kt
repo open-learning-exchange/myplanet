@@ -10,6 +10,8 @@ import android.widget.Spinner
 import android.widget.TextView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -48,7 +50,7 @@ class CourseFilterController(
     private var spinnerListener: AdapterView.OnItemSelectedListener? = null
     private var searchJob: Job? = null
     private val dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider()
-    private val coroutineScope = CoroutineScope(dispatcherProvider.main)
+    private val coroutineScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
 
     fun setup() {
         etSearch = rootView.findViewById(R.id.et_search)
@@ -174,6 +176,10 @@ class CourseFilterController(
             separator = ",",
             prefix = tvSelected.context.getString(R.string.selected)
         ) { it.name.orEmpty() }
+    }
+
+    fun clear() {
+        coroutineScope.cancel()
     }
 
     fun detach() {

@@ -48,6 +48,10 @@ import org.ole.planet.myplanet.model.MyHealth.MyHealthProfile
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -78,8 +82,13 @@ class UserRepositoryImpl @Inject constructor(
     private val removedLogDao: RemovedLogDao,
     private val achievementDao: AchievementDao,
     private val healthRepository: HealthRepository,
-    private val userDao: UserDao
+    private val userDao: UserDao,
+    private val realtimeSyncManager: RealtimeSyncManager
 ) : UserRepository, UserSyncRepository {
+    override val achievementUpdates: Flow<Unit> = realtimeSyncManager.dataUpdateFlow
+        .filter { it.table == "achievements" && it.shouldRefreshUI }
+        .map { }
+
     override suspend fun getDashboardProfile(userId: String): DashboardProfile {
         val user = getUserById(userId)
         val userName = user?.name
@@ -1345,7 +1354,9 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun checkShelfBatchForDataOptimized(shelfIds: List<String>): List<String> {
         val shelvesWithData = mutableListOf<String>()
         val keysObject = JsonObject().apply {
-            add("keys", com.google.gson.Gson().fromJson(com.google.gson.Gson().toJson(shelfIds), JsonArray::class.java))
+            val jsonArray = JsonArray()
+            shelfIds.forEach { jsonArray.add(it) }
+            add("keys", jsonArray)
         }
 
         val response = org.ole.planet.myplanet.data.api.ApiClient.executeWithRetryAndWrap {

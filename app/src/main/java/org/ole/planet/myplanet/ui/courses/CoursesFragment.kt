@@ -95,11 +95,12 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         val userId = userModel?.id ?: return
         val snapshot = selectedItems?.filterNotNull() ?: return
         if (snapshot.isEmpty()) return
-        val courseIds = snapshot.mapNotNull { it.courseId }
+        val courseIds = snapshot.mapNotNull { it.courseId.takeIf { id -> !id.isNullOrBlank() } ?: it.id.takeIf { id -> !id.isNullOrBlank() } ?: it._id }
         viewModel.removeCourses(courseIds, userId, deleteProgress) {
             if (isAdded) {
                 selectedItems?.clear()
                 Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+                viewModel.loadCourses(isMyCourseLib, model?.id)
             }
         }
     }
@@ -224,13 +225,17 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
                 val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
                 deleteSelected(true)
                 selectionController.clearAll(adapterCourses)
-                adapterCourses.removeCourses(courseIds)
+                adapterCourses.removeCourses(courseIds) {
+                    checkList()
+                }
             },
             onArchiveConfirmed = {
                 val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
                 deleteSelected(true)
                 selectionController.clearAll(adapterCourses)
-                adapterCourses.removeCourses(courseIds)
+                adapterCourses.removeCourses(courseIds) {
+                    checkList()
+                }
             },
             onAddToLib = {
                 if ((selectedItems?.size ?: 0) > 0) {
@@ -250,9 +255,11 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
 
     private fun setupButtonVisibility() {
         if (::selectionController.isInitialized) {
+            val isEmpty = !::adapterCourses.isInitialized || adapterCourses.currentList.isEmpty()
+            val hasSelectableItems = if (isMyCourseLib) !isEmpty else (::adapterCourses.isInitialized && adapterCourses.currentList.any { !it.isMyCourse })
             selectionController.onListChanged(
-                isEmpty = !::adapterCourses.isInitialized || adapterCourses.currentList.isEmpty(),
-                hasSelectableItems = isMyCourseLib || (::adapterCourses.isInitialized && adapterCourses.currentList.any { !it.isMyCourse })
+                isEmpty = isEmpty,
+                hasSelectableItems = hasSelectableItems
             )
         }
     }
@@ -305,12 +312,14 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         orderByDate.setOnClickListener {
             bottomSheet.visibility = View.GONE
             if (!::adapterCourses.isInitialized) return@setOnClickListener
-            adapterCourses.toggleSortOrder { scrollToTop() }
+            viewModel.toggleDateSort()
+            scrollToTop()
         }
         orderByTitle.setOnClickListener {
             bottomSheet.visibility = View.GONE
             if (!::adapterCourses.isInitialized) return@setOnClickListener
-            adapterCourses.toggleTitleSortOrder { scrollToTop() }
+            viewModel.toggleTitleSort()
+            scrollToTop()
         }
     }
 
@@ -408,7 +417,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         if (!::adapterCourses.isInitialized || !::filterController.isInitialized || !::selectionController.isInitialized) return
         val isEmpty = adapterCourses.currentList.isEmpty()
         filterController.setListVisible(!isEmpty || filterController.filterApplied())
-        val hasSelectableItems = isMyCourseLib || adapterCourses.currentList.any { !it.isMyCourse }
+        val hasSelectableItems = if (isMyCourseLib) !isEmpty else adapterCourses.currentList.any { !it.isMyCourse }
         selectionController.onListChanged(isEmpty, hasSelectableItems)
     }
 
@@ -418,27 +427,21 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     }
 
     override fun onSelectedListChange(list: MutableList<Course?>) {
-        selectionJob?.cancel()
-        selectionJob = viewLifecycleOwner.lifecycleScope.launch {
-            val realmCourses = list.mapNotNull { course ->
-                course?.let {
-                    var rc = coursesRepository.getCourseById(it.courseId)
-                    if (rc == null) {
-                        rc = MyCourse()
-                        rc.courseId = it.courseId
-                        rc.courseTitle = it.courseTitle
-                        rc.isMyCourse = it.isMyCourse
-                    }
-                    rc
-                }
-            }.toMutableList<MyCourse?>()
-
-            withContext(dispatcherProvider.main) {
-                selectedItems = realmCourses
-                if (::selectionController.isInitialized && ::adapterCourses.isInitialized) {
-                    selectionController.onSelectionChanged(realmCourses.size, adapterCourses.areAllSelected())
+        val myCourses = list.mapNotNull { course ->
+            course?.let {
+                MyCourse().apply {
+                    id = it.courseId
+                    _id = it.courseId
+                    courseId = it.courseId
+                    courseTitle = it.courseTitle
+                    isMyCourse = it.isMyCourse
                 }
             }
+        }.toMutableList<MyCourse?>()
+
+        selectedItems = myCourses
+        if (::selectionController.isInitialized && ::adapterCourses.isInitialized) {
+            selectionController.onSelectionChanged(myCourses.size, adapterCourses.areAllSelected())
         }
     }
 
@@ -463,6 +466,15 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
 
     override fun onOkClicked(list: List<TagEntity>?) {
         if (::filterController.isInitialized) filterController.setTags(list ?: emptyList())
+    }
+
+    override fun addToMyList(onComplete: (() -> Unit)?) {
+        super.addToMyList {
+            if (isAdded && ::selectionController.isInitialized && ::adapterCourses.isInitialized) {
+                selectionController.clearAll(adapterCourses)
+            }
+            onComplete?.invoke()
+        }
     }
 
     private fun createAlertDialog(): AlertDialog {
@@ -556,13 +568,18 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     }
 
     override fun onDestroyView() {
-        if (::filterController.isInitialized) filterController.detach()
+        if (::filterController.isInitialized) {
+            filterController.clear()
+            filterController.detach()
+        }
+        if (::adapterCourses.isInitialized) {
+            adapterCourses.setListener(null)
+        }
         super.onDestroyView()
     }
 
     override fun onRatingChanged() {
         if (!::adapterCourses.isInitialized) {
-            super.onRatingChanged()
             return
         }
         if (::filterController.isInitialized) {

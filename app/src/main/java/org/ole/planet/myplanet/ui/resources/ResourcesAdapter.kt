@@ -13,7 +13,6 @@ import androidx.core.widget.ImageViewCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import java.io.File
-import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
 import org.ole.planet.myplanet.databinding.ItemLibraryGridBinding
@@ -38,8 +37,6 @@ class ResourcesAdapter(
     private val selectedItemIds = mutableSetOf<String>()
     private val selectedItemsMap = LinkedHashMap<String, ResourceItem>()
     private var listener: OnLibraryItemSelectedListener? = null
-    private var isAscending = true
-    private var isTitleAscending = true
     private val locallyOfflineIds = mutableSetOf<String>()
 
     companion object {
@@ -315,32 +312,6 @@ class ResourcesAdapter(
             if (wasOpened != isOpened) {
                 notifyItemChanged(index, PAYLOAD_SELECTION)
             }
-        }
-    }
-
-    fun toggleTitleSortOrder(onComplete: (() -> Unit)? = null) {
-        isTitleAscending = !isTitleAscending
-        setLibraryList(sortLibraryListByTitle(), onComplete)
-    }
-
-    fun toggleSortOrder(onComplete: (() -> Unit)? = null) {
-        isAscending = !isAscending
-        setLibraryList(sortLibraryList(), onComplete)
-    }
-
-    private fun sortLibraryListByTitle(): List<ResourceListModel> {
-        return if (isTitleAscending) {
-            currentList.sortedBy { it.item.title?.lowercase(Locale.ROOT) }
-        } else {
-            currentList.sortedByDescending { it.item.title?.lowercase(Locale.ROOT) }
-        }
-    }
-
-    private fun sortLibraryList(): List<ResourceListModel> {
-        return if (isAscending) {
-            currentList.sortedBy { it.item.createdDate }
-        } else {
-            currentList.sortedByDescending { it.item.createdDate }
         }
     }
 

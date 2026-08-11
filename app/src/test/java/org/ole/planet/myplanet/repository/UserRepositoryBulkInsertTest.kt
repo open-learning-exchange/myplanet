@@ -31,7 +31,8 @@ class UserRepositoryBulkInsertTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
-            userDao
+            userDao,
+            mockk(relaxed = true)
         )
         coEvery { userDao.getAll() } returns emptyList()
 
@@ -76,7 +77,8 @@ class UserRepositoryBulkInsertTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
-            userDao
+            userDao,
+            mockk(relaxed = true)
         )
 
         val existingGuest = org.ole.planet.myplanet.model.UserEntity().apply {
@@ -121,7 +123,8 @@ class UserRepositoryBulkInsertTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
-            userDao
+            userDao,
+            mockk(relaxed = true)
         )
         coEvery { userDao.getAll() } returns emptyList()
 
