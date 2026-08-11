@@ -23,7 +23,7 @@
             android:layout_marginEnd="12dp"
             android:contentDescription="@string/warning_icon"
             android:src="@android:drawable/ic_dialog_info"
-            android:tint="@android:color/white" />
+            app:tint="@android:color/white" />
         <TextView
             android:id="@+id/banner_message"
             android:layout_width="0dp"
@@ -42,6 +42,6 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:scaleType="centerInside"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
-            android:tint="@android:color/white" />
+            app:tint="@android:color/white" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
