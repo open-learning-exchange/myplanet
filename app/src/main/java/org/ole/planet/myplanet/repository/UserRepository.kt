@@ -33,12 +33,6 @@ interface UserRepository {
     suspend fun getAllUsers(): List<UserEntity>
     suspend fun getUsersSortedBy(fieldName: String, descending: Boolean): List<UserEntity>
     suspend fun getPendingSyncUsers(limit: Int): List<UserEntity>
-    suspend fun getMonthlyLoginCounts(
-        userId: String,
-        startMillis: Long,
-        endMillis: Long,
-    ): Map<Int, Int>
-    suspend fun isUserExists(name: String?): Boolean
     fun parseLeadersJson(jsonString: String): List<UserEntity>
     suspend fun ensureUserSecurityKeys(userId: String): UserEntity?
     suspend fun fetchUserSecurityData(name: String)

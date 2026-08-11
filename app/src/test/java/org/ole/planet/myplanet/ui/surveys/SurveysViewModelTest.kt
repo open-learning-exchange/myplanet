@@ -13,7 +13,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
@@ -21,6 +23,8 @@ import org.ole.planet.myplanet.utils.TestDispatcherProvider
 class SurveysViewModelTest {
 
     private lateinit var surveysRepository: SurveysRepository
+    private lateinit var submissionsRepository: SubmissionsRepository
+    private lateinit var userRepository: UserRepository
     private lateinit var userSessionManager: UserSessionManager
     private lateinit var viewModel: SurveysViewModel
     private val testDispatcher = StandardTestDispatcher()
@@ -30,10 +34,14 @@ class SurveysViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         surveysRepository = mockk()
+        submissionsRepository = mockk()
+        userRepository = mockk()
         userSessionManager = mockk()
 
         viewModel = SurveysViewModel(
             surveysRepository,
+            submissionsRepository,
+            userRepository,
             userSessionManager
         )
     }
