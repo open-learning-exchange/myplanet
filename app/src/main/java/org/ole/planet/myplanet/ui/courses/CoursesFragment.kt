@@ -282,16 +282,27 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         requireView().findViewById<View>(R.id.filter).setOnClickListener {
             bottomSheet.visibility = if (bottomSheet.isVisible) View.GONE else View.VISIBLE
         }
+        requireView().findViewById<View>(R.id.btn_close_filter)?.setOnClickListener {
+            bottomSheet.visibility = View.GONE
+        }
+        requireView().findViewById<View>(R.id.btn_collections)?.setOnClickListener {
+            bottomSheet.visibility = View.GONE
+        }
+        requireView().findViewById<View>(R.id.btn_clear_tags)?.setOnClickListener {
+            bottomSheet.visibility = View.GONE
+        }
         orderByDate = requireView().findViewById(R.id.order_by_date_button)
         orderByTitle = requireView().findViewById(R.id.order_by_title_button)
         orderByDate.isEnabled = false
         orderByTitle.isEnabled = false
         orderByDate.setOnClickListener {
+            bottomSheet.visibility = View.GONE
             if (!::adapterCourses.isInitialized) return@setOnClickListener
             viewModel.toggleDateSort()
             scrollToTop()
         }
         orderByTitle.setOnClickListener {
+            bottomSheet.visibility = View.GONE
             if (!::adapterCourses.isInitialized) return@setOnClickListener
             viewModel.toggleTitleSort()
             scrollToTop()
@@ -448,7 +459,10 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     }
 
     override fun onDestroyView() {
-        if (::filterController.isInitialized) filterController.detach()
+        if (::filterController.isInitialized) {
+            filterController.clear()
+            filterController.detach()
+        }
         super.onDestroyView()
     }
 

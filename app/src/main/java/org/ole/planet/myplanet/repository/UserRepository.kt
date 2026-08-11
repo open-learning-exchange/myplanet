@@ -10,8 +10,10 @@ import org.ole.planet.myplanet.model.MemberInfo
 import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
+import kotlinx.coroutines.flow.Flow
 
 interface UserRepository {
+    val achievementUpdates: Flow<Unit>
     suspend fun getSavedUsers(): List<User>
     suspend fun upsertSavedUser(name: String?, encryptedPassword: String?, source: String, userProfile: String?, userName: String?)
     suspend fun resetGuestAsMember(username: String?)

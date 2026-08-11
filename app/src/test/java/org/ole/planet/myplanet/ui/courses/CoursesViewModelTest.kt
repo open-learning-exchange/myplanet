@@ -67,4 +67,11 @@ class CoursesViewModelTest {
         viewModel.loadCourses(false, "u1")
         coVerify { coursesRepository.getCourseProgress("u1", any<List<String>>()) }
     }
+
+    @Test
+    fun testFilterCourses_ProgressFilter_CallsRepositoryFilter() = runTest {
+        viewModel.filterCourses(false, "u1", "", "", "", emptyList(), "In Progress")
+        coVerify { coursesRepository.filterCourses("", "", "", emptyList()) }
+        coVerify { coursesRepository.getMyCourses("u1", any()) }
+    }
 }
