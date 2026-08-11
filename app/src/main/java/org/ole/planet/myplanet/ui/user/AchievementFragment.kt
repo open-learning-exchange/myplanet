@@ -116,10 +116,8 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun setupRealtimeSync() {
-        collectWhenStarted(viewModel.dataUpdateFlow) { update ->
-            if (update.table == "achievements" && update.shouldRefreshUI) {
-                refreshAchievementData()
-            }
+        collectWhenStarted(viewModel.achievementUpdates) {
+            refreshAchievementData()
         }
     }
 

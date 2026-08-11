@@ -54,11 +54,9 @@ interface CoursesRepository {
     suspend fun removeCourseFromShelf(courseId: String, userId: String)
     suspend fun logCourseVisit(courseId: String, title: String, userId: String)
     suspend fun getCurrentProgress(steps: List<CourseStep?>?, userId: String?, courseId: String?): Int
-    suspend fun getCourseProgress(userId: String?, courseIds: List<String>): HashMap<String?, JsonObject>
     suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean
     suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean
     suspend fun getCourseTagsBulk(courseIds: List<String>): Map<String, List<TagEntity>>
-    suspend fun getCourseRatings(userId: String?): HashMap<String?, JsonObject>
     suspend fun deleteCourseProgress(courseId: String?)
     suspend fun bulkInsertFromSync(jsonArray: JsonArray)
     suspend fun flushPendingCourseResources()
