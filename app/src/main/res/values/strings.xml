@@ -705,7 +705,7 @@
     <string name="days_since_you_last_synced_this_device">" days since you last synced this device."</string>
     <string name="connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet">\n Connect it to the server over wifi and sync it to reactivate this tablet</string>
     <string name="okay">Okay</string>
-    <string name="connect_to_the_server_over_wifi_and_sync_your_device_to_continue">Connect to the server over WiFi and sync your device to continue</string>
+    <string name="connect_to_the_server_over_wifi_and_sync_your_device_to_continue">Connect to the server over Wi-Fi and sync your device to continue</string>
     <string name="please_enter_server_url_first">Please enter server url first.</string>
     <string name="username_cannot_be_empty">Username cannot be empty</string>
     <string name="unable_to_login">Unable to login</string>
@@ -1356,8 +1356,6 @@
     <string name="failed_to_update_resource">Failed to update resource</string>
     <string name="join_team_first">Please join a Team to share this chat</string>
     <string name="join_enterprise_first">Please join an Enterprise to share this chat</string>
-
-    <!-- myLibrary / myCourses cover-first redesign -->
     <string name="item_count_pill">%d items</string>
     <string name="view_grid">Grid view</string>
     <string name="view_list">List view</string>

@@ -1350,11 +1350,28 @@
     <string name="failed_to_update_resource">स्रोत अद्यावधिक गर्न असफल भयो</string>
     <string name="join_team_first">यो च्याट साझा गर्न कृपया एउटा टोलीमा सामेल हुनुहोस्।</string>
     <string name="join_enterprise_first">यो च्याट साझा गर्न कृपया एउटा संस्थामा सामेल हुनुहोस्।</string>
-
     <string name="open_link_with">यससँग लिङ्क खोल्नुहोस्</string>
     <string name="just_once">एक पटक मात्र</string>
     <string name="always">सधैं</string>
     <string name="survey_load_failed">सर्वेक्षण लोड गर्न सकिएन। फेरि प्रयास गर्नुहोस्।</string>
     <string name="survey_submitted">सर्वेक्षण पेश गरियो। धन्यवाद!</string>
     <string name="survey_submit_failed">सर्वेक्षण पेश गर्न सकिएन। फेरि प्रयास गर्नुहोस्।</string>
+    <string name="item_count_pill">%d वस्तुहरू</string>
+    <string name="view_grid">ग्रिड दृश्य</string>
+    <string name="view_list">सूची दृश्य</string>
+    <string name="steps_done_of_total">%2$d मध्ये %1$d सम्पन्न</string>
+    <string name="course_steps_count">%d चरणहरू</string>
+    <string name="subject_label_mathematics">गणित</string>
+    <string name="subject_label_literacy">साक्षरता</string>
+    <string name="subject_label_health">स्वास्थ्य</string>
+    <string name="subject_label_social_studies">सामाजिक अध्ययन</string>
+    <string name="subject_label_technology">प्रविधि</string>
+    <string name="filter_all">सबै</string>
+    <string name="filter_books">पुस्तकहरू</string>
+    <string name="filter_videos">भिडियोहरू</string>
+    <string name="filter_audio">अडियो</string>
+    <string name="filter_pdfs">PDFहरू</string>
+    <string name="downloaded">डाउनलोड गरिएको</string>
+    <string name="not_downloaded">डाउनलोड नगरिएको</string>
+
 </resources>
