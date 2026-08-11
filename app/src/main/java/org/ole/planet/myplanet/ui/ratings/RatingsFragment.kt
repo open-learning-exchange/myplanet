@@ -9,7 +9,6 @@ import android.widget.RatingBar
 import android.widget.RatingBar.OnRatingBarChangeListener
 import androidx.core.view.isVisible
 import androidx.fragment.app.DialogFragment
-import androidx.fragment.app.setFragmentResult
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -44,11 +43,6 @@ class RatingsFragment : DialogFragment() {
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
         dismissListener?.invoke()
-        try {
-            setFragmentResult(REQUEST_KEY, Bundle())
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -187,7 +181,6 @@ class RatingsFragment : DialogFragment() {
 
     companion object {
         const val TAG = "RatingsFragment"
-        const val REQUEST_KEY = "request_rating_dialog"
 
         fun newInstance(type: String?, id: String?, title: String?): RatingsFragment {
             val fragment = RatingsFragment()

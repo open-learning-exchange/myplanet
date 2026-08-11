@@ -79,12 +79,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
         }
 
-        parentFragmentManager.setFragmentResultListener(RatingsFragment.REQUEST_KEY, viewLifecycleOwner) { _, _ ->
-            if (isAdded) {
-                FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
-            }
-        }
-
         collectLatestWhenStarted(viewModel.uiState) { state ->
             when (state) {
                 is TakeCourseUiState.Loading -> {
@@ -396,6 +390,11 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         val title = currentCourse?.courseTitle ?: ""
         if (!cId.isNullOrEmpty() && isAdded) {
             val ratingDialog = RatingsFragment.newInstance("course", cId, title)
+            ratingDialog.setOnDismissListener {
+                if (isAdded) {
+                    FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
+                }
+            }
             ratingDialog.show(parentFragmentManager, RatingsFragment.TAG)
         } else if (isAdded) {
             FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
@@ -408,7 +407,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 coursesRepository.hasUnfinishedSurveys(it, userModel?.id)
             } ?: false
 
-            if (hasUnfinishedSurvey && courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
+            if (hasUnfinishedSurvey && courseId == MANDATORY_SURVEY_COURSE_ID) {
                 Toast.makeText(context, getString(R.string.please_complete_survey), Toast.LENGTH_SHORT).show()
             } else {
                 showCourseRatingDialogAndFinish()
@@ -482,6 +481,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private val isValidClickLeft: Boolean get() = binding.viewPager2.adapter != null && binding.viewPager2.currentItem > 0
 
     companion object {
+        // Special course with mandatory completion survey (e.g. MyPlanet Onboarding course)
+        private const val MANDATORY_SURVEY_COURSE_ID = "4e6b78800b6ad18b4e8b0e1e38a98cac"
         private const val JOIN_DIALOG_FALLBACK_MS = 5000L
 
         fun newInstance(b: Bundle?): TakeCourseFragment {
