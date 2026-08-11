@@ -94,7 +94,7 @@ class FeedbackRepositoryImpl @Inject constructor(
         feedbackDao.upsert(feedback)
     }
 
-    override suspend fun insertFromJson(jsonObject: JsonObject) {
+    suspend fun insertFromJson(jsonObject: JsonObject) {
         val id = JsonUtils.getString("_id", jsonObject)
         val existing = feedbackDao.findById(id)
         feedbackDao.upsert(mapToFeedback(jsonObject, existing))

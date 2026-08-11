@@ -161,7 +161,7 @@ class CoursesRepositoryImpl @Inject constructor(
         return mapCourses(courseDao.getByCourseIds(courseIds))
     }
 
-    override suspend fun getCourseOnlineResources(courseId: String?): List<MyLibrary> {
+    private suspend fun getCourseOnlineResources(courseId: String?): List<MyLibrary> {
         return getCourseResources(courseId, isOffline = false)
     }
 
@@ -176,7 +176,7 @@ class CoursesRepositoryImpl @Inject constructor(
         return myLibraryDao.getOfflineResourcesForCourses(courseIds)
     }
 
-    override suspend fun getCourseExamCount(courseId: String?): Int {
+    private suspend fun getCourseExamCount(courseId: String?): Int {
         if (courseId.isNullOrEmpty()) {
             return 0
         }

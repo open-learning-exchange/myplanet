@@ -78,11 +78,6 @@ class LifeRepositoryImpl @Inject constructor(
         return myLifeDao.getByUserId(effectiveUserId).distinctBy { it.dedupKey() }
     }
 
-    override suspend fun getVisibleMyLifeByUserId(userId: String?, ensureLatest: Boolean): List<MyLife> {
-        val effectiveUserId = userId?.ifEmpty { null }
-        return myLifeDao.getVisibleByUserId(effectiveUserId).distinctBy { it.dedupKey() }
-    }
-
     override suspend fun getMyLifeForDashboard(userId: String, seedBase: List<MyLife>): List<MyLife> {
         val effectiveUserId = userId.ifEmpty { null }
         val allForUser = getMyLifeByUserId(effectiveUserId, ensureLatest = false)

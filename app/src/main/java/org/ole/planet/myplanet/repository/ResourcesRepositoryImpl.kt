@@ -665,10 +665,6 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
             .associate { (it.resourceId ?: "") to (it.title ?: "") }
     }
 
-    override suspend fun getCourseResourcesGroupedByStepId(courseId: String): Map<String?, List<MyLibrary>> {
-        return myLibraryDao.getByCourseId(courseId).groupBy { it.stepId }
-    }
-
     override suspend fun markResourcesAsNotOffline(resourceIds: Collection<String>) {
         if (resourceIds.isEmpty()) return
         val results = myLibraryDao.getOfflineByResourceIds(resourceIds.toList())
