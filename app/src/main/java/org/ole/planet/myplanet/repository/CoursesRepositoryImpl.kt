@@ -180,7 +180,7 @@ class CoursesRepositoryImpl @Inject constructor(
         if (courseId.isNullOrEmpty()) {
             return 0
         }
-        return examDao.getByCourseIdAndType(courseId, "courses").size
+        return examDao.countByCourseIdAndType(courseId, "courses")
     }
 
     override suspend fun getCourseSteps(courseId: String): List<CourseStep> {
