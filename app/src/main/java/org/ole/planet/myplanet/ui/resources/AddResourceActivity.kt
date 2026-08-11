@@ -22,7 +22,6 @@ import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.LocalResourceRequest
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
@@ -36,8 +35,6 @@ class AddResourceActivity : AppCompatActivity() {
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
-    @Inject
-    lateinit var teamsRepository: TeamsRepository
     private lateinit var binding: ActivityAddResourceBinding
     var userModel: UserEntity? = null
     var subjects: MutableList<String>? = null

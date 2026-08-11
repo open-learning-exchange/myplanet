@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
@@ -39,8 +38,6 @@ class TeamFragment : Fragment() {
     private var _binding: FragmentTeamBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
-    @Inject
-    lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
@@ -190,45 +187,40 @@ class TeamFragment : Fragment() {
         team: TeamDetails, name: String, description: String, services: String, rules: String,
         userModel: UserEntity, dialog: AlertDialog, failureMessage: String
     ) {
-        val teamTypeForValidation = if (type == "enterprise") "enterprise" else "team"
-        val excludeTeamId = team._id ?: team.teamId
-        val nameExists = teamsRepository.isTeamNameExists(name, teamTypeForValidation, excludeTeamId)
-
-        if (nameExists) {
-            val duplicateMessage = if (type == "enterprise") {
-                getString(R.string.enterprise_name_already_exists)
-            } else {
-                getString(R.string.team_name_already_exists)
-            }
-            Utilities.toast(activity, duplicateMessage)
-            alertCreateTeamBinding.etName.error = duplicateMessage
-            return
-        }
-
         val targetTeamId = team._id ?: team.teamId
         if (targetTeamId.isNullOrBlank()) {
             Utilities.toast(activity, failureMessage)
             return
         }
-        teamsRepository.updateTeam(
+        val result = viewModel.updateExistingTeam(
             teamId = targetTeamId,
             name = name,
             description = description,
             services = services,
             rules = rules,
-            updatedBy = userModel._id,
-        ).onSuccess { updated ->
-            if (updated) {
+            category = type,
+            updatedBy = userModel._id
+        )
+        when (result) {
+            is TeamActionResult.NameExists -> {
+                val duplicateMessage = if (type == "enterprise") {
+                    getString(R.string.enterprise_name_already_exists)
+                } else {
+                    getString(R.string.team_name_already_exists)
+                }
+                Utilities.toast(activity, duplicateMessage)
+                alertCreateTeamBinding.etName.error = duplicateMessage
+            }
+            is TeamActionResult.Success -> {
                 binding.etSearch.visibility = View.VISIBLE
                 binding.tableTitle.visibility = View.VISIBLE
                 Utilities.toast(activity, getString(R.string.team_created))
                 viewModel.loadTeams(fromDashboard, type, user?.id)
                 dialog.dismiss()
-            } else {
+            }
+            is TeamActionResult.Failure -> {
                 Utilities.toast(activity, failureMessage)
             }
-        }.onFailure {
-            Utilities.toast(activity, failureMessage)
         }
     }
 

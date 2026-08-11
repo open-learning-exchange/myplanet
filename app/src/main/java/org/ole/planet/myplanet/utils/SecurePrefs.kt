@@ -76,26 +76,13 @@ object SecurePrefs {
             val plainPrefsFile = File(context.applicationInfo.dataDir, "shared_prefs/$PLAIN_PREFS_FILE_NAME.xml")
             if (plainPrefsFile.exists()) {
                 val plainPrefs = context.getSharedPreferences(PLAIN_PREFS_FILE_NAME, Context.MODE_PRIVATE)
-                if (plainPrefs.all.isNotEmpty()) {
-                    encryptedPrefs.edit(commit = true) {
-                        plainPrefs.all.forEach { (key, value) ->
-                            when (value) {
-                                is String -> putString(key, value)
-                                is Boolean -> putBoolean(key, value)
-                                is Int -> putInt(key, value)
-                                is Long -> putLong(key, value)
-                                is Float -> putFloat(key, value)
-                                is Set<*> -> {
-                                    @Suppress("UNCHECKED_CAST")
-                                    putStringSet(key, value as Set<String>)
-                                }
-                            }
-                        }
-                    }
-                    plainPrefs.edit(commit = true) { clear() }
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        context.deleteSharedPreferences(PLAIN_PREFS_FILE_NAME)
-                    }
+                performMigration(plainPrefs, encryptedPrefs)
+
+                // The legacy "secure_store" file was exclusively used for these two credentials.
+                // We unconditionally clear and delete it to ensure no plaintext legacy file lingers on disk.
+                plainPrefs.edit(commit = true) { clear() }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    context.deleteSharedPreferences(PLAIN_PREFS_FILE_NAME)
                 }
             }
             encryptedPrefs
@@ -125,6 +112,28 @@ object SecurePrefs {
                 )
             } catch (retryEx: Exception) {
                 throw IllegalStateException("Unable to initialize secure storage after retry", retryEx)
+            }
+        }
+    }
+
+    @androidx.annotation.VisibleForTesting
+    internal fun performMigration(plainPrefs: SharedPreferences, encryptedPrefs: SharedPreferences) {
+        val sensitiveKeys = listOf("loginUserName", "loginUserPassword")
+        encryptedPrefs.edit(commit = true) {
+            sensitiveKeys.forEach { key ->
+                if (plainPrefs.contains(key)) {
+                    when (val value = plainPrefs.all[key]) {
+                        is String -> putString(key, value)
+                        is Boolean -> putBoolean(key, value)
+                        is Int -> putInt(key, value)
+                        is Long -> putLong(key, value)
+                        is Float -> putFloat(key, value)
+                        is Set<*> -> {
+                            @Suppress("UNCHECKED_CAST")
+                            putStringSet(key, value as Set<String>)
+                        }
+                    }
+                }
             }
         }
     }
