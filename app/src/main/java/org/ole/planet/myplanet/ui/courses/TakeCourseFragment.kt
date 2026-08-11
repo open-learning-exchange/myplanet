@@ -193,6 +193,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             val stepNumber = position
             binding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", stepNumber, steps.size)
         }
+        binding.nextStep.text = if (position == 0) getString(R.string.start) else getString(R.string.next)
         binding.courseStepProgressBar.max = steps.size
         binding.courseStepProgressBar.progress = position
         viewLifecycleOwner.lifecycleScope.launch {
@@ -229,17 +230,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         }
 
         binding.courseProgress.max = stepsSize
+        binding.courseProgress.visibility = if (containsUserId) View.VISIBLE else View.GONE
 
-        if (containsUserId) {
-            if (position < steps.size - 1) {
-                binding.nextStep.visibility = View.VISIBLE
-            }
-            binding.courseProgress.visibility = View.VISIBLE
-        } else {
-            binding.nextStep.visibility = View.GONE
-            binding.previousStep.visibility = View.GONE
-            binding.courseProgress.visibility = View.GONE
-        }
+        updateNavigationVisibility()
 
         val detachedUserModel = userModel
         val detachedCurrentCourse = currentCourse
@@ -258,9 +251,44 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         }
     }
 
+    private fun updateNavigationVisibility() {
+        val containsUserId = currentCourse?.userId?.contains(userModel?.id) == true
+        if (containsUserId) {
+            if (position >= steps.size) {
+                binding.nextStep.visibility = View.GONE
+                binding.finishStep.visibility = View.VISIBLE
+            } else {
+                binding.nextStep.visibility = View.VISIBLE
+                binding.finishStep.visibility = View.GONE
+            }
+            binding.previousStep.visibility = if (position == 0) View.GONE else View.VISIBLE
+        } else {
+            binding.nextStep.visibility = View.GONE
+            binding.previousStep.visibility = View.GONE
+        }
+
+        binding.root.post {
+            if (_binding != null) {
+                binding.contentLayout.requestLayout()
+                binding.nextStep.requestLayout()
+                binding.previousStep.requestLayout()
+                binding.finishStep.requestLayout()
+            }
+        }
+    }
+
     fun onCourseDetailContentReady() {
         courseDetailContentReady = true
         maybeShowJoinDialog()
+    }
+
+    fun navigateToStep(stepId: String) {
+        if (_binding == null || !this::steps.isInitialized) return
+        val containsUserId = currentCourse?.userId?.contains(userModel?.id) == true
+        if (!containsUserId) return
+        val index = steps.indexOfFirst { it?.id == stepId }
+        if (index < 0) return
+        binding.viewPager2.setCurrentItem(index + 1, true)
     }
 
     private fun maybeShowJoinDialog() {
@@ -274,13 +302,11 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onPageSelected(position: Int) {
         if (!this::steps.isInitialized) return
         isNextStepLocked = false
-        if (position > 0) {
-            if (position - 1 < steps.size) changeNextButtonState(position)
-        } else {
-            binding.nextStep.visibility = View.VISIBLE
-            binding.nextStep.isClickable = true
+        this.position = position
+        if (position > 0 && position - 1 < steps.size) {
+            changeNextButtonState(position)
         }
-
+        updateNavigationVisibility()
         updateStepDisplay(position)
     }
 
@@ -374,6 +400,16 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             }
 
             result.onSuccess {
+                val updatedUserIds = if (isJoined) {
+                    currentCourse?.userId.orEmpty().filter { it != userId }
+                } else {
+                    (currentCourse?.userId.orEmpty() + userId).distinct()
+                }
+                currentCourse = currentCourse?.copy(userId = updatedUserIds)
+                if (_binding != null) {
+                    setCourseData()
+                }
+
                 viewModel.loadCourse(cId, forceRefresh = true)
 
                 val statusMessage = if (isJoined) {
