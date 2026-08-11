@@ -482,11 +482,12 @@
     <string name="update_profile_alert">Por favor, completa tu perfil para disfrutar de todas las funciones</string>
     <string name="other_notes">Otras notas</string>
     <string name="archive">Archivo</string>
-    <string name="Q1">Pregunta: 1/%d</string>
     <string name="no_questions">No hay preguntas disponibles</string>
-    <string name="Q">Pregunta: %1$d / %2$d</string>
+    <string name="exam_question_of">Pregunta %1$d de %2$d</string>
     <string name="finish">Finalizar</string>
+    <string name="finish_and_submit">Finalizar y enviar</string>
     <string name="submit">Enviar</string>
+    <string name="elapsed_time_description">Tiempo transcurrido</string>
     <string name="our_courses">Nuestros cursos</string>
     <string name="file">Archivo: %s</string>
     <string name="recording_audio">Grabando audio…</string>

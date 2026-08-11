@@ -53,4 +53,6 @@
 
     <color name="field_fill">#1A2330</color>
     <color name="md_blue_100">#1E3A5F</color>
+
+    <color name="choice_border_unselected">#33FFFFFF</color>
 </resources>
