@@ -41,12 +41,6 @@ class LifeAdapter(
     private val show = 1f
 
     private val drawableCache = mutableMapOf<String, Int>()
-    private var workingList: MutableList<MyLife> = mutableListOf()
-
-    override fun onCurrentListChanged(previousList: MutableList<MyLife>, currentList: MutableList<MyLife>) {
-        super.onCurrentListChanged(previousList, currentList)
-        workingList = currentList.toMutableList()
-    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val v = LayoutInflater.from(context).inflate(R.layout.row_life, parent, false)
@@ -101,21 +95,32 @@ class LifeAdapter(
         holder.rvItemContainer.alpha = alpha
     }
 
+    private var dragList: MutableList<MyLife>? = null
+
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
+        if (dragList == null) {
+            dragList = currentList.toMutableList()
+        }
+        val list = dragList ?: return false
         if (fromPosition == toPosition ||
-            fromPosition !in workingList.indices ||
-            toPosition !in workingList.indices
+            fromPosition !in list.indices ||
+            toPosition !in list.indices
         ) {
             return false
         }
-        val movedItem = workingList.removeAt(fromPosition)
-        workingList.add(toPosition, movedItem)
-        submitList(workingList.toList())
+        val movedItem = list.removeAt(fromPosition)
+        list.add(toPosition, movedItem)
+        notifyItemMoved(fromPosition, toPosition)
         return true
     }
 
     override fun onItemMoveFinished() {
-        reorderCallback(workingList.toList())
+        dragList?.let { list ->
+            val finalList = list.toList()
+            reorderCallback(finalList)
+            submitList(finalList)
+            dragList = null
+        }
     }
 
     internal inner class LifeViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView),
@@ -143,8 +148,18 @@ class LifeAdapter(
 
     companion object {
         private val DIFF_CALLBACK = DiffUtils.itemCallback<MyLife>(
-            areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
-            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+            areItemsTheSame = { oldItem, newItem ->
+                if (!oldItem._id.isNullOrBlank() && !newItem._id.isNullOrBlank()) {
+                    oldItem._id == newItem._id
+                } else if (!oldItem.imageId.isNullOrBlank() && !newItem.imageId.isNullOrBlank()) {
+                    oldItem.imageId == newItem.imageId
+                } else {
+                    oldItem.title == newItem.title
+                }
+            },
+            areContentsTheSame = { oldItem, newItem ->
+                oldItem.isVisible == newItem.isVisible && oldItem.weight == newItem.weight && oldItem.title == newItem.title
+            }
         )
         private val fragmentCache = mapOf<String, () -> Fragment>(
             "ic_mypersonals" to { PersonalsFragment() },
