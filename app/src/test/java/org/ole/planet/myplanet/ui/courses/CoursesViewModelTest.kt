@@ -40,25 +40,23 @@ class CoursesViewModelTest {
     @Test
     fun testRemoveCoursesWithProgress() = runTest {
         viewModel.removeCourses(listOf("c1", "c2"), "u1", true) {}
-        coVerify { coursesRepository.removeCourseFromShelf("c1", "u1") }
+        coVerify { coursesRepository.removeCoursesFromShelf(listOf("c1", "c2"), "u1") }
         coVerify { coursesRepository.deleteCourseProgress("c1") }
-        coVerify { coursesRepository.removeCourseFromShelf("c2", "u1") }
         coVerify { coursesRepository.deleteCourseProgress("c2") }
     }
 
     @Test
     fun testRemoveCoursesWithoutProgress() = runTest {
         viewModel.removeCourses(listOf("c1", "c2"), "u1", false) {}
-        coVerify { coursesRepository.removeCourseFromShelf("c1", "u1") }
+        coVerify { coursesRepository.removeCoursesFromShelf(listOf("c1", "c2"), "u1") }
         coVerify(exactly = 0) { coursesRepository.deleteCourseProgress("c1") }
-        coVerify { coursesRepository.removeCourseFromShelf("c2", "u1") }
         coVerify(exactly = 0) { coursesRepository.deleteCourseProgress("c2") }
     }
 
     @Test
     fun testRemoveCoursesEmpty() = runTest {
         viewModel.removeCourses(emptyList(), "u1", true) {}
-        coVerify(exactly = 0) { coursesRepository.removeCourseFromShelf(any(), any()) }
+        coVerify(exactly = 0) { coursesRepository.removeCoursesFromShelf(any(), any()) }
         coVerify(exactly = 0) { coursesRepository.deleteCourseProgress(any()) }
     }
 
