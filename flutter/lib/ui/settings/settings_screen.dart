@@ -93,7 +93,10 @@ class SettingsScreen extends ConsumerWidget {
             },
           ),
           const Divider(),
-          _SectionHeader(title: l10n.about),
+          // `about` carries the about *page* body (Kotlin's `about` string);
+          // the heading is `actionAbout` (Kotlin's `action_about`). Using the
+          // former here rendered the whole HTML document as a section title.
+          _SectionHeader(title: l10n.actionAbout),
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: Text(l10n.appTitle),
