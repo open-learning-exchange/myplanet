@@ -35,6 +35,12 @@ dependencies:
   # Navigation — replaces the Activity/Fragment + FragmentNavigator stack.
   go_router: ^14.6.2
 
+  # Deep links — replaces reading `Intent.getData()` in `OnboardingActivity`.
+  # The engine's own handling hands go_router a location that may carry no
+  # scheme or host, and a public-survey link's origin *is* the server to fetch
+  # from, so the full URI has to come from somewhere.
+  app_links: ^7.2.1
+
   # Preferences — replaces SharedPrefManager.
   shared_preferences: ^2.3.3
   # Encrypted credential storage — replaces SecurePrefs (Tink-backed EncryptedSharedPreferences).

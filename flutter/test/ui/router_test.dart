@@ -46,4 +46,40 @@ void main() {
     // to fetch from, and the screen shows its load-failure state.
     expect(publicSurveyBaseUrl(Uri.parse('/survey/t/s'), null), '');
   });
+
+  test('the origin parameter rescues a path-only location', () {
+    // The case the deep-link plugin exists for: the platform handed over a
+    // location with no scheme or host, and `DeepLinkHandler` preserved the real
+    // origin as a query parameter. Before this, a respondent with no configured
+    // server could not load the survey at all.
+    expect(
+      publicSurveyBaseUrl(
+        Uri.parse('/survey/t/s?origin=http%3A%2F%2F192.168.1.73%3A5000'),
+        null,
+      ),
+      'http://192.168.1.73:5000',
+    );
+  });
+
+  test('the origin parameter beats the configured server', () {
+    // A member whose device is configured against one planet can still answer a
+    // survey hosted by another; the link names which.
+    expect(
+      publicSurveyBaseUrl(
+        Uri.parse('/survey/t/s?origin=https%3A%2F%2Fplanet.gt'),
+        'https://planet.example.org',
+      ),
+      'https://planet.gt',
+    );
+  });
+
+  test('a junk origin parameter falls through rather than being trusted', () {
+    expect(
+      publicSurveyBaseUrl(
+        Uri.parse('/survey/t/s?origin=not-a-url'),
+        'https://planet.example.org',
+      ),
+      'https://planet.example.org',
+    );
+  });
 }

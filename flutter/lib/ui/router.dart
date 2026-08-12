@@ -123,17 +123,33 @@ class Routes {
 /// (`"${uri.scheme}://${uri.encodedAuthority}"` in
 /// `OnboardingActivity.maybeLaunchPublicSurvey`), which it can do because the
 /// activity receives the raw `Intent.getData()`. Here the link arrives as a
-/// go_router location, and that is only an absolute URI when the platform
-/// hands one over. A relative location — an in-app `context.go('/survey/...')`,
-/// or an engine that forwards the path alone — has no origin at all, and
-/// `Uri.origin` *throws* `StateError` rather than returning an empty string,
-/// so reading it unguarded crashes the route it is meant to build.
+/// go_router location, and that is only an absolute URI when the platform hands
+/// one over. A relative location — an in-app `context.go('/survey/...')`, or an
+/// engine that forwards the path alone — has no origin at all, and `Uri.origin`
+/// *throws* `StateError` rather than returning an empty string, so reading it
+/// unguarded crashes the route it is meant to build.
 ///
-/// Falling back to the configured server keeps the screen on its own failure
-/// path: it reports "survey could not be loaded" instead of taking the app
-/// down. An anonymous respondent with no server configured lands there too,
-/// which is the honest outcome — there is nowhere to fetch the survey from.
+/// Three sources, in order:
+///
+/// 1. The `origin` query parameter, which `DeepLinkHandler` puts there from the
+///    complete URI `app_links` gives it. This is the reliable one, and the
+///    reason the plugin exists: it is the only path that recovers the origin
+///    when the platform hands over a path-only location.
+/// 2. The location's own origin, for a platform that did pass an absolute URI.
+/// 3. The configured server, which is right for an in-app navigation and is a
+///    guess for anything else.
+///
+/// A respondent with none of the three lands on the screen's own failure path —
+/// "survey could not be loaded" — which is the honest outcome, because there is
+/// nowhere to fetch the survey from.
 String publicSurveyBaseUrl(Uri uri, String? configuredServerUrl) {
+  final origin = uri.queryParameters['origin'];
+  if (origin != null && origin.isNotEmpty) {
+    final parsed = Uri.tryParse(origin);
+    if (parsed != null && parsed.hasScheme && parsed.host.isNotEmpty) {
+      return '${parsed.scheme}://${parsed.authority}';
+    }
+  }
   if (uri.hasScheme && uri.host.isNotEmpty) {
     return '${uri.scheme}://${uri.authority}';
   }

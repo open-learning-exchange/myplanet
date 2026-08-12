@@ -55,6 +55,12 @@ class PlanetPrefs {
   static const String _keyReminderTimePrefix = 'reminder_time_';
   static const String _keyLastSync = 'LastSync';
 
+  /// `OnboardingActivity.DEEP_LINK_SECTION_KEY` / `DEEP_LINK_ID_KEY`. A section
+  /// link that arrives before sign-in is stored under these and applied by the
+  /// dashboard afterwards, so the link survives the login it triggered.
+  static const String _keyDeepLinkSection = 'pending_deep_link_section';
+  static const String _keyDeepLinkId = 'pending_deep_link_id';
+
   static const String _secureKeyServerPin = 'serverPin';
   static const String _secureKeyCouchDbUrl = 'couchdbURL';
   static const String _secureKeyPassword = 'userPassword';
@@ -228,6 +234,34 @@ class PlanetPrefs {
 
   Future<void> setLastSync(int epochMillis) =>
       _prefs.setInt(_keyLastSync, epochMillis);
+
+  /// Section of a deep link waiting for a session, or `''` when there is none.
+  String get pendingDeepLinkSection =>
+      _prefs.getString(_keyDeepLinkSection) ?? '';
+
+  /// Content id that came with [pendingDeepLinkSection], if any.
+  String? get pendingDeepLinkId {
+    final id = _prefs.getString(_keyDeepLinkId);
+    // The Kotlin reads this through `.ifEmpty { null }`, so a stored empty
+    // string and an absent key mean the same thing.
+    return id == null || id.isEmpty ? null : id;
+  }
+
+  Future<void> setPendingDeepLink(String section, String? contentId) async {
+    await _prefs.setString(_keyDeepLinkSection, section);
+    // `else prefData.removeKey(DEEP_LINK_ID_KEY)` — a link without an id must
+    // clear the id left by an earlier one rather than inherit it.
+    if (contentId != null && contentId.isNotEmpty) {
+      await _prefs.setString(_keyDeepLinkId, contentId);
+    } else {
+      await _prefs.remove(_keyDeepLinkId);
+    }
+  }
+
+  Future<void> clearPendingDeepLink() async {
+    await _prefs.remove(_keyDeepLinkSection);
+    await _prefs.remove(_keyDeepLinkId);
+  }
 
   /// Port of `SurveysRepositoryImpl.scheduleSurveyReminder`.
   ///

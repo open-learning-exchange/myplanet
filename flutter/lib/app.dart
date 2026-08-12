@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'l10n/app_localizations.dart';
 import 'providers/settings_provider.dart';
+import 'ui/deep_link_scope.dart';
 import 'ui/outbox_drain_scope.dart';
 import 'ui/router.dart';
 
@@ -43,10 +44,12 @@ class MyPlanetApp extends ConsumerWidget {
         ),
       ),
       themeMode: themeMode,
-      // Wraps the whole navigator so the drain follows the app's lifecycle
-      // rather than any one screen's.
-      builder: (context, child) =>
-          OutboxDrainScope(child: child ?? const SizedBox.shrink()),
+      // Both wrap the whole navigator so they follow the app's lifecycle
+      // rather than any one screen's: the drain on resume, and the deep-link
+      // listener for the launch link and anything that arrives afterwards.
+      builder: (context, child) => OutboxDrainScope(
+        child: DeepLinkScope(child: child ?? const SizedBox.shrink()),
+      ),
     );
   }
 }
