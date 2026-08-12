@@ -28,7 +28,6 @@
             android:buttonTint="@color/daynight_textColor"
             android:scaleX="0.85"
             android:scaleY="0.85" />
-
         <FrameLayout
             android:id="@+id/cover_container"
             android:layout_width="44dp"
@@ -61,7 +60,6 @@
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/isMyCourse"
                 android:layout_width="wrap_content"
@@ -76,7 +74,6 @@
                 android:textColor="@color/md_white_1000"
                 android:textSize="9sp"
                 android:visibility="gone" />
-
             <TextView
                 android:id="@+id/tv_meta"
                 android:layout_width="match_parent"
@@ -99,7 +96,6 @@
             android:paddingBottom="3dp"
             android:textSize="11sp"
             android:textStyle="bold" />
-
         <ImageView
             android:id="@+id/iv_chevron"
             android:layout_width="16dp"
