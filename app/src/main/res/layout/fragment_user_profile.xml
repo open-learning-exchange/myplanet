@@ -17,7 +17,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="@dimen/padding_normal"
             android:orientation="horizontal"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -34,11 +34,11 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
+
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/bt_profile_pic"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentBottom="true"
                 android:contentDescription="@string/edit_image"
                 android:src="@drawable/ic_edit"
                 app:backgroundTint="@color/profile_pic"
@@ -57,6 +57,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/clImage" />
+
         <TextView
             android:id="@+id/txtGender"
             android:layout_width="wrap_content"
@@ -67,6 +68,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/txt_name" />
+
         <TextView
             android:id="@+id/txt_email"
             android:layout_width="wrap_content"
@@ -77,6 +79,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/txtGender" />
+
         <TextView
             android:id="@+id/txt_dob"
             android:layout_width="wrap_content"
@@ -86,6 +89,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/txt_email" />
+
         <TextView
             android:id="@+id/txtLanguage"
             android:layout_width="wrap_content"
@@ -95,6 +99,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/txt_dob" />
+
         <TextView
             android:id="@+id/txtLevel"
             android:layout_width="wrap_content"
@@ -104,6 +109,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/txtLanguage" />
+
         <Button
             android:id="@+id/btEditProfile"
             android:layout_width="wrap_content"
@@ -113,12 +119,13 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/txtLevel" />
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_stat"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:padding="8dp"
+            android:layout_marginTop="@dimen/_10dp"
+            android:padding="@dimen/padding_normal"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/btEditProfile" />
     </androidx.constraintlayout.widget.ConstraintLayout>
