@@ -341,15 +341,26 @@ void main() {
     await tester.tap(find.text('Language'));
     await tester.pumpAndSettle();
 
-    // Only languages with a shipped .arb are offered.
+    // All six languages the Kotlin's `SettingsActivity.languageChanger` offers,
+    // in its order, labelled with the endonyms from `values/strings.xml` — now
+    // that ar/fr/ne/so have shipped .arb files, none of them falls back wholly
+    // to English any more.
     expect(find.text('Select Language'), findsOneWidget);
-    expect(find.text('English'), findsOneWidget);
-    expect(find.text('Español'), findsOneWidget);
+    for (final label in [
+      'english',
+      'español',
+      'somali',
+      'नेपाली',
+      'عربى',
+      'français',
+    ]) {
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
 
-    await tester.tap(find.text('Español'));
+    await tester.tap(find.text('नेपाली'));
     await tester.pumpAndSettle();
 
-    expect(prefs.languageCode, 'es');
+    expect(prefs.languageCode, 'ne');
   });
 
   testWidgets('about overflow navigates to the about screen', (tester) async {

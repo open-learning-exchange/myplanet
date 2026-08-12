@@ -37,10 +37,13 @@ final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(
 /// start keeps the choice — the Kotlin recreates the Activity; Flutter
 /// rebuilds the `MaterialApp` because [MyPlanetApp] watches this provider.
 ///
-/// Only locales with a shipped `.arb` file are offered (en, es). The Kotlin
-/// lists six, but the other four (so, ne, ar, fr) have no Flutter translations
-/// yet — offering them would silently fall back to English, which is worse
-/// than not offering them. See `docs/kotlin-to-flutter-migration.md`.
+/// Only locales with a shipped `.arb` file are offered. All six the Kotlin
+/// lists now qualify: `app_{ar,fr,ne,so}.arb` were carried over from
+/// `values-{ar,fr,ne,so}/strings.xml` by the same name-and-text match already
+/// used for Spanish. Coverage is partial — a key the Kotlin never had falls
+/// back to English per locale, which is what `gen-l10n` does by design — but
+/// the four are no longer absent outright.
+/// See `docs/kotlin-to-flutter-migration.md`.
 class LocaleNotifier extends Notifier<Locale?> {
   @override
   Locale? build() {
@@ -58,13 +61,20 @@ final localeProvider = NotifierProvider<LocaleNotifier, Locale?>(
   LocaleNotifier.new,
 );
 
-/// The languages the language-changer offers. Each must have a shipped
-/// `.arb` file (see `l10n.yaml`); a code with no `.arb` would fall back to
-/// English silently. The display names match the Kotlin's `language` array so
-/// a user switching back and forth sees consistent labels.
+/// The languages the language-changer offers, in `SettingsActivity`'s order
+/// (en, es, so, ne, ar, fr). Each must have a shipped `.arb` file (see
+/// `l10n.yaml`); a code with no `.arb` would fall back to English silently.
+///
+/// The labels are the endonyms from `values/strings.xml` verbatim — including
+/// the lower-case `english`/`somali`, which is how the shipping app renders
+/// them. Title-casing here would make the two apps disagree on the same list.
 const Map<String, String> offeredLocales = {
-  'en': 'English',
-  'es': 'Español',
+  'en': 'english',
+  'es': 'español',
+  'so': 'somali',
+  'ne': 'नेपाली',
+  'ar': 'عربى',
+  'fr': 'français',
 };
 
 /// Port of `BuildConfig.VERSION_NAME` (exposed as `R.string.app_version` via
