@@ -45,10 +45,7 @@
                     android:textStyle="bold"
                     android:maxLines="1"
                     android:minWidth="150dp" />
-
-
                 <include layout="@layout/view_grid_list_toggle" />
-
                 <Button
                     android:id="@+id/btn_remove"
                     android:layout_width="70dp"
