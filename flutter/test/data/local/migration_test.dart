@@ -311,27 +311,33 @@ void main() {
     },
   );
 
-  test('an un-uploaded course-progress row survives a schema upgrade', () async {
-    // The step-view path writes a `passed=false` row the moment a step is
-    // opened, and the exam flips it to `true`. Dropping the table between
-    // the two would discard the pass — the server has nothing to give back
-    // for a row the exam just authored.
-    await database.courseProgressDao.upsert(
-      CourseProgressCompanion.insert(
-        id: 'progress-1',
-        courseId: const Value('course-1'),
-        userId: const Value('user-1'),
-        stepNum: const Value(1),
-        passed: const Value(true),
-      ),
-    );
+  test(
+    'an un-uploaded course-progress row survives a schema upgrade',
+    () async {
+      // The step-view path writes a `passed=false` row the moment a step is
+      // opened, and the exam flips it to `true`. Dropping the table between
+      // the two would discard the pass — the server has nothing to give back
+      // for a row the exam just authored.
+      await database.courseProgressDao.upsert(
+        CourseProgressCompanion.insert(
+          id: 'progress-1',
+          courseId: const Value('course-1'),
+          userId: const Value('user-1'),
+          stepNum: const Value(1),
+          passed: const Value(true),
+        ),
+      );
 
-    await runUpgrade();
+      await runUpgrade();
 
-    final survivor = await database.courseProgressDao
-        .findByCourseUserAndStep('course-1', 'user-1', 1);
-    expect(survivor?.passed, isTrue);
-  });
+      final survivor = await database.courseProgressDao.findByCourseUserAndStep(
+        'course-1',
+        'user-1',
+        1,
+      );
+      expect(survivor?.passed, isTrue);
+    },
+  );
 
   test('an already-uploaded chat is not re-queued after the upgrade', () async {
     // A chat carries a `_rev` only once the server acknowledged it. Leaving
