@@ -574,7 +574,7 @@ Ordered by risk, highest first.
    | | keys | note |
    |---|---|---|
    | `app_en.arb` | 641 | the template |
-   | `app_es.arb` | 296 | 168 pre-existing + mechanical pass |
+   | `app_es.arb` | 293 | 168 pre-existing + mechanical pass |
    | `app_fr.arb` | 240 | |
    | `app_ar.arb` / `app_ne.arb` / `app_so.arb` | 239 | |
 
