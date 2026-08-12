@@ -26,19 +26,21 @@ class DashboardDrawer extends ConsumerWidget {
       children: [
         _DrawerHeader(session: session),
         _destination(context, Icons.home_outlined, l10n.home, Routes.home),
+        // The full Library and Courses lists are open to guests, exactly as
+        // the Kotlin drawer's `menu_library`/`menu_courses` entries are —
+        // browsing is what a guest account is for. Only the *my*-filtered
+        // variants are members-only there.
         _destination(
           context,
           Icons.local_library_outlined,
           l10n.resources,
           Routes.resources,
-          guestBlocked: isGuest,
         ),
         _destination(
           context,
           Icons.school_outlined,
           l10n.courses,
           Routes.courses,
-          guestBlocked: isGuest,
         ),
         _destination(context, Icons.groups_outlined, l10n.teams, Routes.teams),
         _destination(
