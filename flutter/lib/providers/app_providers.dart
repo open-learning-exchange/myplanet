@@ -28,6 +28,7 @@ import '../repository/outbox_repository.dart';
 import '../repository/personals_uploader.dart';
 import '../repository/personals_repository.dart';
 import '../repository/progress_repository.dart';
+import '../repository/public_survey_uploader.dart';
 import '../repository/ratings_repository.dart';
 import '../repository/life_repository.dart';
 import '../repository/resource_downloader.dart';
@@ -403,6 +404,9 @@ final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
           .handler,
       ChatUploader.type: ref.watch(chatUploaderProvider).handler,
       ...ref.watch(activitiesUploaderProvider).handlers,
+      PublicSurveyUploader.type: ref
+          .watch(publicSurveyUploaderProvider)
+          .handler,
     },
   );
 });
@@ -493,6 +497,15 @@ final progressRepositoryProvider = Provider<ProgressRepository>(
     ref.watch(examDaoProvider),
     ref.watch(submissionDaoProvider),
     ref.watch(certificationDaoProvider),
+  ),
+);
+
+final publicSurveyUploaderProvider = Provider<PublicSurveyUploader>(
+  (ref) => PublicSurveyUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(surveysRepositoryProvider),
+    ref.watch(submissionsRepositoryProvider),
+    ref.watch(outboxRepositoryProvider),
   ),
 );
 

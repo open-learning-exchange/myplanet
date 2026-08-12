@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/app_providers.dart';
 import '../repository/personals_uploader.dart';
+import '../repository/public_survey_uploader.dart';
 
 /// Replaces the `WorkManager` registration `MainApplication.kt` performs for
 /// `RetryQueueWorker`.
@@ -65,9 +66,18 @@ class _OutboxDrainScopeState extends ConsumerState<OutboxDrainScope>
 
   Future<void> _drain() async {
     if (!mounted) return;
-    // Nothing to send to before the server handshake; the operations keep.
     final config = ref.read(serverConfigProvider);
-    if (config == null) return;
+    if (config == null) {
+      // Nothing to send *most* of to before the server handshake, and no
+      // credential to send it with. A public-survey answer sheet is the
+      // exception: the respondent followed a link, never configured a server,
+      // and the endpoint they are posting to needs no credential — so holding
+      // the whole queue would hold theirs forever.
+      await ref
+          .read(outboxDrainerProvider)
+          .drain(onlyTypes: const {PublicSurveyUploader.type});
+      return;
+    }
     // The credential must travel as a header: `endpointFor` deliberately
     // stores a credential-free URL, so without this every send is
     // unauthenticated and CouchDB's 401 is classified as permanent.

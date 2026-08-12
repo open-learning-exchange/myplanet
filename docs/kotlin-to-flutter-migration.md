@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 34 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 35 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -22,15 +22,10 @@ Known gaps:
   OS scheduling and is not ported.
 - Team attachments are unported. Personal-note attachments are: the note POSTs, then the file
   PUTs as a CouchDB attachment, best-effort and in that order, as Kotlin does.
-- Public surveys reach `PublicSurveyScreen` only through a deep link whose URI carries an
-  origin. Kotlin reads the host off the raw intent; Flutter sees a go_router location, so a
-  link that arrives path-only falls back to the configured server and, for a respondent who
-  has none, fails to load. Wiring a real deep-link plugin (`app_links` or equivalent) is the
-  fix and is not done.
-- The public-survey response is POSTed straight to the public API rather than through the
-  outbox, so a submission composed offline is lost when the post fails. Kotlin has the same
-  behaviour, so this is parity rather than regression, but it is the weakest write path in the
-  port.
+- Universal links are Android-only. The `myplanet://` scheme is registered on iOS, but the
+  https Planet hosts need an associated-domains entitlement and an
+  `apple-app-site-association` file served by each planet — neither exists, and the shipping
+  app is Android-only.
 - The dashboard's About and Disclaimer destinations are unported — static translated HTML with
   no logic (see Phase 33).
 - Device and tablet usage telemetry (`myplanet_activities`, `MyPlanet.getTabletUsages`) is
@@ -356,6 +351,86 @@ open instead of recording a second one. That is the same defect the chat and fee
 `_generateId` helpers shipped with; a monotonic counter is now part of the key, and the
 most-opened-resource test pins it by logging the same resource twice in a row.
 
+## Phase 35 — deep links, and the last write path that could lose data
+
+Two gaps that were listed separately turned out to be the same slice: a public-survey link
+could not deliver the one thing the screen needs, and the answers it collected had nowhere to go
+if the post failed.
+
+**Deep links now arrive whole.** `app_links` replaces reading `Intent.getData()`, with
+`core/deeplinks/deep_link.dart` (pure Dart, so the URI rules are testable without a platform
+channel) porting `handleDeepLinkIntent` and `maybeLaunchPublicSurvey`, and `DeepLinkScope`
+delivering the launch link and anything that arrives afterwards — the Kotlin's
+`onCreate`/`onNewIntent` pair, which here is a future and a stream from one source.
+
+The origin travels to the route as an `origin` query parameter, because it is the only part of
+the link the route cannot recover for itself: `publicSurveyBaseUrl` now reads that first, the
+location's own origin second, and the configured server last. That is what fixes the broken
+case — a respondent who followed a link and has never configured a server could not load the
+survey at all.
+
+Three behaviours came with it, all the Kotlin's:
+
+- **A section link survives the login it triggers.** `myplanet://courses/<id>` and
+  `https://host/app/courses/<id>` are stored under the Kotlin's own
+  `pending_deep_link_section`/`pending_deep_link_id` keys when there is no session, and applied
+  once one appears — `DashboardActivity` reads them in `openFragmentFromIntent`, clearing them
+  on read so the link does not reopen on every later launch. The section set is exactly the
+  Kotlin's five (`feedbackList`, `courses`, `resources`, `teams`, `surveys`).
+- **A survey link opened by a member is not the public screen.** `maybeLaunchPublicSurvey` bails
+  when logged in, and the section branch then maps the *third* path segment — the survey id, not
+  the team's — onto the surveys section.
+- **A path with no `app` segment still resolves.** `segments.indexOf("app")` is -1, so
+  `appIndex + 1` is 0 and the Kotlin reads the *first* segment as the section. Reproduced: the
+  section names are a closed set, so an unrelated path resolves to a section nothing maps and is
+  dropped a layer up. Narrowing it would change which links work.
+
+The manifest gains what the Kotlin's has and the port's lacked — the `myplanet` scheme, the
+`/app/` path prefix, and the cleartext filter for local community servers — and declares
+`flutter_deeplinking_enabled=false` so the engine's own routing does not race the plugin with a
+host-less location.
+
+**The public-survey answer sheet is durable.** It was the last write in the port that could be
+lost: `PublicSurveyActivity` POSTs to the public API and a failed post takes the answers with
+it. `PublicSurveyUploader` follows `ChatUploader`'s shape — a live attempt first, so the common
+case still ends on "thank you for taking this survey", and the outbox when that attempt fails,
+with the screen reporting "saved offline" instead of "could not save your answers".
+
+Two properties make this upload type unlike every other one, and both needed work elsewhere:
+
+- **It carries no credentials**, being the public API, so the handler ignores the drain's
+  `authHeader` rather than attaching a Planet Basic credential to an anonymous request.
+- **It has to drain with no server configured.** `OutboxDrainScope`'s "nothing to send to before
+  the handshake" guard would otherwise hold this row forever, since a respondent who followed a
+  link never configures a server. `OutboxDrainer.drain` takes an `onlyTypes` filter and the
+  scope drains this type alone in that case — draining *everything* unauthenticated would earn
+  401s, which the retry rule classifies as permanent and would abandon writes that are
+  perfectly deliverable later.
+
+`markPublicSubmitted` records the delivery without a revision, because the public endpoint is
+not a CouchDB insert and its response carries no document handle. Clearing `isUpdated` is the
+part that matters: without it the same answer sheet could be queued twice, and a respondent who
+tapped submit twice would file two.
+
+The mirror fallback (`ServerUrlMapper`'s alternative URL) stays on the live attempt, which tries
+both before anything is queued. A queued row keeps the primary endpoint — the respondent reached
+this app through a link to *that* host, and quietly posting their answers to a different one is
+not a retry.
+
+Two defects were fixed on the way in, both in the new code and both invisible to `flutter
+analyze`:
+
+- **`GoRouter.of(context)` cannot be used from `MaterialApp.router`'s `builder`.** That is where
+  `DeepLinkScope` is mounted — deliberately, so it follows the app rather than a screen — and the
+  builder's context sits *above* the `InheritedGoRouter` the router delegate inserts. Every
+  incoming link would have thrown "No GoRouter found in context" on arrival. Navigation goes
+  through `routerProvider` instead, and `deep_link_scope_test.dart` mounts the scope in exactly
+  that position so the next person cannot reintroduce it.
+- **An empty `queryParameters` map still renders a trailing `?`**, so a link with no origin
+  produced `/survey/t/s?` where the same route reached in-app is `/survey/t/s`. Harmless to
+  go_router's matching, and exactly the kind of difference that makes two locations look
+  unrelated in a log.
+
 ## Harvesting upstream: the 2026-08-12 rebase
 
 Rebased onto master again (8 new Kotlin commits, clean replay). Five changed behavior; four
@@ -486,6 +561,8 @@ not built, or needs a primitive the port lacks):
 | Exam (graded course exams) | `StepExam`, `ExamQuestion`, `ExamTakingFragment`, `UserInformationFragment`, `BaseExamFragment` | `data/local/exam_mapper.dart`, `data/local/tables.dart` (Exams, ExamQuestions), `ui/exam/` |
 | Activity log (logins, resource opens, course visits, syncs) | `ActivitiesRepositoryImpl`, `OfflineActivity`/`ResourceActivity`/`CourseActivity`, `UserSessionManager.setResourceOpenCount`, `UploadConfigs.ResourceActivities`/`ResourceActivitiesSync`/`CourseActivities` | `repository/activities_repository.dart`, `repository/activities_uploader.dart`, `providers/activities_provider.dart` |
 | Profile activity stats | `UserProfileViewModel` (lastVisit, offlineVisits, maxOpenedResource), `UserProfileFragment.createStatsMap`, `TimeUtils.getRelativeTime` | `ui/user/profile_screen.dart`, `ui/components/relative_time.dart` |
+| Deep links | `OnboardingActivity.handleDeepLinkIntent`/`maybeLaunchPublicSurvey`, `DashboardActivity.openFragmentFromIntent`, the manifest's `myplanet`/`/app/`/`/survey` filters | `core/deeplinks/deep_link.dart`, `providers/deep_link_provider.dart`, `ui/deep_link_scope.dart` |
+| Public-survey delivery | `PublicSurveyActivity`'s POST to `/api/public/surveys/…/submissions` | `repository/public_survey_uploader.dart` (live attempt, then the outbox) |
 
 `SharedPrefManager.getFirstLaunch()` is misleadingly named: it defaults to `false` and is set to
 `true` once onboarding finishes, so it actually means "onboarding already done". The port stores
@@ -505,6 +582,7 @@ the same polarity under the clearer name `onboardingComplete`.
 | Secure storage | `SecurePrefs` (Tink `EncryptedSharedPreferences`) | `flutter_secure_storage` | Keystore-backed on Android either way. |
 | Localization | `res/values-{lang}/strings.xml` | `.arb` + `gen-l10n` | Mechanical key-by-key transform; see below. |
 | Background work | AndroidX `WorkManager` | Outbox + lifecycle drain | Durable write-back ported; timed/no-user work still open -- see *Hard subsystems*. |
+| Deep links | `Intent.getData()` in an Activity | `app_links` + go_router | The engine's own routing may hand over a path-only location; a public-survey link's origin is the server to fetch from, so the full URI has to come from the plugin. |
 
 ## Faithful quirks (deliberate non-improvements)
 
@@ -980,6 +1058,6 @@ succeeds, it just doesn't do what the Kotlin did.
 
 ---
 
-**Last updated**: 2026-08-12 (Phase 34 complete)
-**Phase**: 34 of N (27 of 28 UI packages have a screen — see Status for what that does and does
+**Last updated**: 2026-08-12 (Phase 35 complete)
+**Phase**: 35 of N (27 of 28 UI packages have a screen — see Status for what that does and does
 not mean)

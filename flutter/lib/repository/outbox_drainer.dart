@@ -71,7 +71,17 @@ class OutboxDrainer {
   ///
   /// Concurrent calls join the run already in progress rather than starting a
   /// second one, so wiring this to both app-resume and sync-complete is safe.
-  Future<List<OutboxOutcome>> drain({String? authHeader}) {
+  ///
+  /// [onlyTypes] restricts the pass to those `uploadType`s. It exists for one
+  /// case: a public-survey respondent has no server configuration, so there is
+  /// no credential for the rest of the queue and posting it unauthenticated
+  /// would earn a 401 — which the retry rule classifies as *permanent* and would
+  /// abandon writes that are perfectly deliverable later. Draining only the
+  /// credential-free type leaves those rows untouched.
+  Future<List<OutboxOutcome>> drain({
+    String? authHeader,
+    Set<String>? onlyTypes,
+  }) {
     final existing = _inFlight;
     if (existing != null) {
       return existing.then((_) => const <OutboxOutcome>[]);
@@ -80,7 +90,7 @@ class OutboxDrainer {
     final completer = Completer<List<OutboxOutcome>>();
     _inFlight = completer.future.then((_) {}, onError: (_) {});
     unawaited(
-      _drain(authHeader: authHeader)
+      _drain(authHeader: authHeader, onlyTypes: onlyTypes)
           .then(completer.complete)
           .catchError((Object e, StackTrace s) {
             completer.completeError(e, s);
@@ -92,9 +102,13 @@ class OutboxDrainer {
     return completer.future;
   }
 
-  Future<List<OutboxOutcome>> _drain({String? authHeader}) async {
+  Future<List<OutboxOutcome>> _drain({
+    String? authHeader,
+    Set<String>? onlyTypes,
+  }) async {
     final outcomes = <OutboxOutcome>[];
     for (final row in await _outbox.due()) {
+      if (onlyTypes != null && !onlyTypes.contains(row.uploadType)) continue;
       outcomes.add(await _send(row, authHeader: authHeader));
     }
     return outcomes;

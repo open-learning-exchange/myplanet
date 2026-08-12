@@ -346,14 +346,36 @@ class SurveysRepository {
   /// Submits a completed anonymous public survey response to the server. The
   /// [submissionId] must already have been marked complete with the respondent's
   /// profile (via `UserInformationScreen` / `markSubmissionComplete`).
+  ///
+  /// This is the live attempt. It is the whole story in the Kotlin, where a
+  /// failed post loses the answers; here `PublicSurveyUploader` keeps them, so a
+  /// caller that gets `false` back should queue rather than report a loss.
   Future<bool> submitPublicSurvey({
     required String baseUrl,
     required String teamId,
     required String surveyId,
     required String submissionId,
   }) async {
+    final body = await buildPublicSubmissionBody(
+      surveyId: surveyId,
+      submissionId: submissionId,
+    );
+    if (body == null) return false;
+    return _submitPublicSurveyTo(baseUrl, teamId, surveyId, body);
+  }
+
+  /// The document the public API expects, or null when the submission is gone.
+  ///
+  /// Split out of [submitPublicSurvey] so the same body can be stored in the
+  /// outbox and replayed verbatim. It is built once, at send time, from rows
+  /// that never change afterwards — an anonymous respondent cannot come back and
+  /// edit an answer sheet — so replaying it is exactly right.
+  Future<Map<String, dynamic>?> buildPublicSubmissionBody({
+    required String surveyId,
+    required String submissionId,
+  }) async {
     final submission = await _submissions.getById(submissionId);
-    if (submission == null) return false;
+    if (submission == null) return null;
 
     final answers = await _buildPublicAnswers(surveyId, submissionId);
     final userJson = submission.user;
@@ -371,8 +393,7 @@ class SurveysRepository {
     if (respondent != null && respondent.isNotEmpty) {
       body['user'] = respondent;
     }
-
-    return _submitPublicSurveyTo(baseUrl, teamId, surveyId, body);
+    return body;
   }
 
   Future<List<dynamic>> _buildPublicAnswers(
@@ -487,14 +508,26 @@ class SurveysRepository {
     return false;
   }
 
+  /// The public API's submissions endpoint. Shared with
+  /// `PublicSurveyUploader`, which stores it on the outbox row.
+  ///
+  /// No credentials appear in it: this is the *public* API, reached by a
+  /// respondent who has none. That is also why the drain sends this one upload
+  /// type without an `Authorization` header.
+  static String publicSubmissionsUrl(
+    String baseUrl,
+    String teamId,
+    String surveyId,
+  ) =>
+      '${_trimTrailingSlash(baseUrl)}/api/public/surveys/$teamId/$surveyId/submissions';
+
   Future<bool> _postPublicSurvey(
     String baseUrl,
     String teamId,
     String surveyId,
     Map<String, dynamic> body,
   ) async {
-    final url =
-        '${_trimTrailingSlash(baseUrl)}/api/public/surveys/$teamId/$surveyId/submissions';
+    final url = publicSubmissionsUrl(baseUrl, teamId, surveyId);
     final result = await _api.sendJsonDynamic(url, body: body, method: 'POST');
     return result is NetworkSuccess<dynamic>;
   }

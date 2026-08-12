@@ -1574,6 +1574,20 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
         ),
       );
 
+  /// Records that a public-survey answer sheet reached the public API.
+  ///
+  /// No `_id`/`_rev`: the public endpoint is not a CouchDB insert and its
+  /// response carries no document handle, so there is nothing to store. What
+  /// matters is clearing `isUpdated`, which is what keeps `PublicSurveyUploader`
+  /// from queueing the same answer sheet twice.
+  Future<int> markPublicSubmitted(String id) =>
+      (update(submissions)..where((row) => row.id.equals(id))).write(
+        const SubmissionsCompanion(
+          uploaded: Value(true),
+          isUpdated: Value(false),
+        ),
+      );
+
   /// Attaches the demographic profile collected after an attempt and marks it
   /// complete — the port of `markSubmissionComplete`. Clearing `uploaded`
   /// puts the row back in `pendingUploads` so the edit is actually sent.

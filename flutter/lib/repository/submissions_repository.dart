@@ -325,6 +325,10 @@ class SubmissionsRepository {
     await _dao.markUploaded(id, couchId, rev);
   }
 
+  /// A public-survey answer sheet that reached the public API. See
+  /// `SubmissionDao.markPublicSubmitted` for why no revision is recorded.
+  Future<void> markPublicSubmitted(String id) => _dao.markPublicSubmitted(id);
+
   /// Port of `SubmissionsRepositoryImpl.serializeSubmission`.
   ///
   /// `_id`/`_rev` are included whenever the row already exists on the server,

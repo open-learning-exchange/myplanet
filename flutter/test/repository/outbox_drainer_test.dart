@@ -255,4 +255,28 @@ void main() {
     await subject.recoverStuck();
     expect(await subject.drain(), [OutboxOutcome.completed]);
   });
+
+  test('onlyTypes leaves every other type untouched', () async {
+    // The public-survey case: a respondent with no server configuration has no
+    // credential, and posting the rest of the queue unauthenticated would earn a
+    // 401 — which the retry rule calls *permanent* and would abandon writes that
+    // are perfectly deliverable once the app is configured.
+    await enqueue(itemId: 'note-1');
+    await outbox.enqueue(
+      uploadType: 'public_survey',
+      itemId: 'sheet-1',
+      endpoint: endpoint,
+      payload: const {'answers': <String>[]},
+    );
+    stubSend(const NetworkSuccess<Map<String, dynamic>>({'ok': true}));
+    clock = clock.add(const Duration(minutes: 5));
+
+    final outcomes = await drainer().drain(onlyTypes: const {'public_survey'});
+
+    expect(outcomes, [OutboxOutcome.completed]);
+    // The personals row is still pending, not failed.
+    final remaining = await outbox.due();
+    expect(remaining.map((row) => row.uploadType), ['personals']);
+    expect(remaining.single.attemptCount, 0);
+  });
 }

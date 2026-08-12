@@ -232,17 +232,46 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
             surveyId: widget.surveyId,
             submissionId: submissionId,
           );
+      if (success) {
+        // Nothing else records the delivery: the public API is not a CouchDB
+        // insert, so there is no revision to store. Without this the outbox
+        // would accept the same answer sheet again.
+        await ref
+            .read(submissionsRepositoryProvider)
+            .markPublicSubmitted(submissionId);
+      }
+
+      // A failed post used to end here with "could not save your answers",
+      // which was true — the answers were gone. They are kept now, and go out
+      // on the next drain.
+      final queued =
+          !success &&
+          await ref
+              .read(publicSurveyUploaderProvider)
+              .queue(
+                baseUrl: widget.baseUrl,
+                teamId: widget.teamId,
+                surveyId: widget.surveyId,
+                submissionId: submissionId,
+              );
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            success ? l10n.thankYouForTakingSurvey : l10n.surveySubmitFailed,
+            success
+                ? l10n.thankYouForTakingSurvey
+                : queued
+                ? l10n.savedOffline
+                : l10n.surveySubmitFailed,
           ),
         ),
       );
 
-      if (success) {
+      // Leaving the form is right in both delivered cases: the answer sheet is
+      // either on the server or durably queued, and re-submitting it would post
+      // a second copy.
+      if (success || queued) {
         final session = ref.read(sessionProvider).valueOrNull;
         if (mounted) {
           context.go(session != null ? Routes.resources : Routes.login);
