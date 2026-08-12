@@ -154,6 +154,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             openedResourceIds = emptySet(),
             currentUserName = user?.name,
             viewMode = prefManager.getLibraryViewMode(),
+            dispatcherProvider = dispatcherProvider,
             onEditClick = { model -> openEditResource(model) }
         )
 

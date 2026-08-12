@@ -36,6 +36,15 @@
             android:background="@drawable/bg_rounded_thumbnail">
 
             <ImageView
+                android:id="@+id/iv_cover_preview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@null"
+                android:importantForAccessibility="no"
+                android:scaleType="centerCrop"
+                android:visibility="gone" />
+
+            <ImageView
                 android:id="@+id/iv_type_icon"
                 android:layout_width="22dp"
                 android:layout_height="22dp"

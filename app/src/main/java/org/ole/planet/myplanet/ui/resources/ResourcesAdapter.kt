@@ -1,7 +1,11 @@
 package org.ole.planet.myplanet.ui.resources
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.drawable.GradientDrawable
+import android.graphics.pdf.PdfRenderer
+import android.os.ParcelFileDescriptor
+import android.util.LruCache
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,10 +13,20 @@ import android.widget.CheckBox
 import android.widget.ImageView
 import android.widget.PopupMenu
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.createBitmap
 import androidx.core.widget.ImageViewCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import java.io.File
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
 import org.ole.planet.myplanet.databinding.ItemLibraryGridBinding
@@ -20,10 +34,12 @@ import org.ole.planet.myplanet.databinding.ItemLibraryListBinding
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LibraryType
 import org.ole.planet.myplanet.utils.LibraryTypeClassifier
 import org.ole.planet.myplanet.utils.ListViewMode
+import org.ole.planet.myplanet.utils.Utilities
 
 class ResourcesAdapter(
     private val context: Context,
@@ -31,6 +47,7 @@ class ResourcesAdapter(
     private var openedResourceIds: Set<String>,
     private val currentUserName: String? = null,
     private var viewMode: ListViewMode = ListViewMode.GRID,
+    private val dispatcherProvider: DispatcherProvider,
     private val onEditClick: ((ResourceListModel) -> Unit)? = null
 ) : ListAdapter<ResourceListModel, RecyclerView.ViewHolder>(ITEM_CALLBACK) {
 
@@ -38,6 +55,11 @@ class ResourcesAdapter(
     private val selectedItemsMap = LinkedHashMap<String, ResourceItem>()
     private var listener: OnLibraryItemSelectedListener? = null
     private val locallyOfflineIds = mutableSetOf<String>()
+    private val externalFilesDir: File? by lazy { FileUtils.getExternalFilesDir(context) }
+    private var adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
+    private val pdfBitmapCache = object : LruCache<String, Bitmap>((Runtime.getRuntime().maxMemory() / 1024 / 8).toInt()) {
+        override fun sizeOf(key: String, bitmap: Bitmap): Int = bitmap.byteCount / 1024
+    }
 
     companion object {
         const val PAYLOAD_SELECTION = "PAYLOAD_SELECTION"
@@ -98,10 +120,6 @@ class ResourcesAdapter(
         this.listener = listener
     }
 
-    fun getLibraryList(): List<ResourceListModel> {
-        return currentList
-    }
-
     fun setLibraryList(libraryList: List<ResourceListModel?>, onComplete: (() -> Unit)? = null) {
         val updatedList = libraryList.filterNotNull().map {
             it.copy(
@@ -114,6 +132,26 @@ class ResourcesAdapter(
 
     override fun getItemViewType(position: Int): Int {
         return if (viewMode == ListViewMode.GRID) VIEW_TYPE_GRID else VIEW_TYPE_LIST
+    }
+
+    override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
+        super.onAttachedToRecyclerView(recyclerView)
+        if (!adapterScope.isActive) {
+            adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
+        }
+    }
+
+    override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView)
+        adapterScope.cancel()
+    }
+
+    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
+        super.onViewRecycled(holder)
+        when (holder) {
+            is GridViewHolder -> holder.cancelPreviewJob()
+            is ListViewHolder -> holder.cancelPreviewJob()
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -157,8 +195,7 @@ class ResourcesAdapter(
     private fun bindGrid(holder: GridViewHolder, model: ResourceListModel) {
         val binding = holder.binding
         val type = LibraryTypeClassifier.classify(model.library)
-        setCoverColor(binding.coverContainer, type)
-        binding.ivTypeIcon.setImageResource(typeIconRes(type))
+        holder.setPreviewJob(bindCover(binding.coverContainer, binding.ivCoverPreview, binding.ivTypeIcon, type, model))
         binding.title.text = model.item.title
         binding.tvMeta.text = buildMetaLine(model, type)
         bindSelectionAndDownload(binding.checkbox, binding.ivDownloaded, model)
@@ -168,8 +205,7 @@ class ResourcesAdapter(
     private fun bindList(holder: ListViewHolder, model: ResourceListModel) {
         val binding = holder.binding
         val type = LibraryTypeClassifier.classify(model.library)
-        setThumbnailColor(binding.coverContainer, type)
-        binding.ivTypeIcon.setImageResource(typeIconRes(type))
+        holder.setPreviewJob(bindCover(binding.coverContainer, binding.ivCoverPreview, binding.ivTypeIcon, type, model))
         binding.title.text = model.item.title
         binding.tvMeta.text = buildMetaLine(model, type)
         bindSelectionAndDownload(binding.checkbox, binding.ivDownloaded, model)
@@ -183,10 +219,118 @@ class ResourcesAdapter(
         }
     }
 
-    private fun setThumbnailColor(view: View, type: LibraryType) {
-        val background = view.background?.mutate()
-        if (background is GradientDrawable) {
-            background.setColor(ContextCompat.getColor(context, typeColorRes(type)))
+    /**
+     * Shows a real preview of the downloaded resource file (image / video frame / PDF first
+     * page) in [ivPreview] when one can be produced; otherwise falls back to the existing
+     * colored [coverContainer] background + [ivTypeIcon]. Returns the [Job] backing an async
+     * (PDF) render so the caller can cancel it if the holder is rebound/recycled first.
+     */
+    private fun bindCover(
+        coverContainer: View,
+        ivPreview: ImageView,
+        ivTypeIcon: ImageView,
+        type: LibraryType,
+        model: ResourceListModel
+    ): Job? {
+        setCoverColor(coverContainer, type)
+        ivTypeIcon.setImageResource(typeIconRes(type))
+
+        val isOffline = model.item.isOffline || locallyOfflineIds.contains(model.item.id) || model.isLocallyOffline
+        val address = model.library.resourceLocalAddress
+        val dir = externalFilesDir
+        if (!isOffline || address.isNullOrBlank() || dir == null) {
+            showTypeIconOnly(ivPreview, ivTypeIcon)
+            return null
+        }
+
+        val file = File(dir, "ole/${model.library.id}/$address")
+        val mimeType = Utilities.getMimeType(address)
+        return when {
+            mimeType?.startsWith("image") == true -> {
+                showImagePreview(ivPreview, ivTypeIcon, file)
+                null
+            }
+            mimeType?.startsWith("video") == true -> {
+                showVideoPreview(ivPreview, ivTypeIcon, file)
+                null
+            }
+            mimeType?.contains("pdf") == true -> {
+                adapterScope.launch { showPdfPreview(ivPreview, ivTypeIcon, file) }
+            }
+            else -> {
+                showTypeIconOnly(ivPreview, ivTypeIcon)
+                null
+            }
+        }
+    }
+
+    private fun showTypeIconOnly(ivPreview: ImageView, ivTypeIcon: ImageView) {
+        Glide.with(context).clear(ivPreview)
+        ivPreview.visibility = View.GONE
+        ivTypeIcon.visibility = View.VISIBLE
+    }
+
+    private fun showImagePreview(ivPreview: ImageView, ivTypeIcon: ImageView, file: File) {
+        if (!file.exists()) {
+            showTypeIconOnly(ivPreview, ivTypeIcon)
+            return
+        }
+        ivTypeIcon.visibility = View.GONE
+        ivPreview.visibility = View.VISIBLE
+        Glide.with(context)
+            .load(file)
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .centerCrop()
+            .placeholder(R.drawable.ole_logo)
+            .error(R.drawable.ole_logo)
+            .into(ivPreview)
+    }
+
+    private fun showVideoPreview(ivPreview: ImageView, ivTypeIcon: ImageView, file: File) {
+        if (!file.exists()) {
+            showTypeIconOnly(ivPreview, ivTypeIcon)
+            return
+        }
+        ivTypeIcon.visibility = View.GONE
+        ivPreview.visibility = View.VISIBLE
+        Glide.with(context)
+            .load(file)
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .centerCrop()
+            .placeholder(R.drawable.ole_logo)
+            .error(R.drawable.ole_logo)
+            .into(ivPreview)
+    }
+
+    private suspend fun showPdfPreview(ivPreview: ImageView, ivTypeIcon: ImageView, file: File) {
+        if (!file.exists()) {
+            showTypeIconOnly(ivPreview, ivTypeIcon)
+            return
+        }
+        val cacheKey = "${file.absolutePath}_${file.lastModified()}_${file.length()}"
+        val bitmap = pdfBitmapCache.get(cacheKey) ?: withContext(dispatcherProvider.io) {
+            try {
+                ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { fd ->
+                    PdfRenderer(fd).use { renderer ->
+                        renderer.openPage(0).use { page ->
+                            val scale = 2
+                            createBitmap(page.width * scale, page.height * scale).also {
+                                page.render(it, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                null
+            }
+        }?.also { pdfBitmapCache.put(cacheKey, it) }
+
+        if (bitmap != null) {
+            ivTypeIcon.visibility = View.GONE
+            ivPreview.visibility = View.VISIBLE
+            ivPreview.setImageBitmap(bitmap)
+        } else {
+            showTypeIconOnly(ivPreview, ivTypeIcon)
         }
     }
 
@@ -316,8 +460,26 @@ class ResourcesAdapter(
     }
 
     internal class GridViewHolder(val binding: ItemLibraryGridBinding) :
-        RecyclerView.ViewHolder(binding.root)
+        RecyclerView.ViewHolder(binding.root) {
+        private var previewJob: Job? = null
+
+        fun setPreviewJob(job: Job?) {
+            previewJob?.cancel()
+            previewJob = job
+        }
+
+        fun cancelPreviewJob() = setPreviewJob(null)
+    }
 
     internal class ListViewHolder(val binding: ItemLibraryListBinding) :
-        RecyclerView.ViewHolder(binding.root)
+        RecyclerView.ViewHolder(binding.root) {
+        private var previewJob: Job? = null
+
+        fun setPreviewJob(job: Job?) {
+            previewJob?.cancel()
+            previewJob = job
+        }
+
+        fun cancelPreviewJob() = setPreviewJob(null)
+    }
 }
