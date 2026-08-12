@@ -63,20 +63,20 @@ class ProgressRepository {
     String? userId,
   ) async {
     final steps = await _courseDao.getSteps(courseId);
-    final progressRows = await _progressDao.getByUserAndCourse(userId, courseId);
-    final progressByStep = {
-      for (final row in progressRows) row.stepNum: row,
-    };
-
-    final stepExams = await _examDao.getByStepIds(
-      [for (final s in steps) s.id],
+    final progressRows = await _progressDao.getByUserAndCourse(
+      userId,
+      courseId,
     );
+    final progressByStep = {for (final row in progressRows) row.stepNum: row};
+
+    final stepExams = await _examDao.getByStepIds([
+      for (final s in steps) s.id,
+    ]);
     final examByStep = {for (final exam in stepExams) exam.stepId: exam};
     final examIds = [for (final exam in stepExams) exam.id];
     final questionCountByExam = <String, int>{};
     for (final q in await _examDao.questionsForExams(examIds)) {
-      questionCountByExam[q.examId] =
-          (questionCountByExam[q.examId] ?? 0) + 1;
+      questionCountByExam[q.examId] = (questionCountByExam[q.examId] ?? 0) + 1;
     }
 
     final submissions = await _submissionDao.getExamSubmissionsByUser(userId);
@@ -89,7 +89,11 @@ class ProgressRepository {
         CourseStepProgress(
           step: step,
           progress: progressByStep[step.stepIndex + 1],
-          questionCount: _questionCountForStep(step, examByStep, questionCountByExam),
+          questionCount: _questionCountForStep(
+            step,
+            examByStep,
+            questionCountByExam,
+          ),
           totalMistakes: _mistakesForStep(step, examByStep, mistakesByExam),
         ),
     ];
@@ -110,7 +114,8 @@ class ProgressRepository {
     }
     final bySubmission = <String, List<SubmissionAnswerRow>>{};
     for (final a in answers) {
-      bySubmission.putIfAbsent(a.submissionId, () => <SubmissionAnswerRow>[])
+      bySubmission
+          .putIfAbsent(a.submissionId, () => <SubmissionAnswerRow>[])
           .add(a);
     }
     final result = <String, int>{};
@@ -168,8 +173,10 @@ class ProgressRepository {
     for (final course in shelf) {
       stepCounts[course.id] = (await _courseDao.getSteps(course.id)).length;
     }
-    final progress =
-        await _progressDao.getByUserAndCourseIds(userId, courseIds);
+    final progress = await _progressDao.getByUserAndCourseIds(
+      userId,
+      courseIds,
+    );
     final passedByCourse = <String, int>{};
     for (final row in progress) {
       if (row.passed) {
@@ -220,6 +227,66 @@ class ProgressRepository {
   /// Port of `ProgressRepositoryImpl.getProgressRecords`.
   Future<List<CourseProgressRow>> getProgressRecords(String? userId) =>
       _progressDao.getByUser(userId);
+
+  /// Port of `ProgressRepositoryImpl.getCourseProgress(courseIds, userId)` —
+  /// the list-view progress map the courses screen's progress filter and the
+  /// "my progress" grid read.
+  ///
+  /// Returns `{courseId: CourseProgressSummary}` where `max` is the course's
+  /// step count and `current` is the contiguous run of steps **from step 1**
+  /// that have a progress row, **ignoring `passed`** — a step the user merely
+  /// opened counts as "current". This matches the Kotlin's
+  /// `calculateCurrentProgress`, which marks `completed[stepNum] = true` for
+  /// any progress row regardless of its `passed` flag, and deliberately differs
+  /// from [completedCourseIds] (which requires `passed`). A course with no
+  /// steps still appears, with `max = 0` and `current = 0`.
+  Future<Map<String, CourseProgressSummary>> courseProgressSummary(
+    List<String> courseIds,
+    String? userId,
+  ) async {
+    if (courseIds.isEmpty) return const {};
+    final stepCounts = await _courseDao.stepCountsByCourseIds(courseIds);
+    final progress = await _progressDao.getByUserAndCourseIds(
+      userId,
+      courseIds,
+    );
+    final byCourse = <String, List<CourseProgressRow>>{};
+    for (final row in progress) {
+      final cid = row.courseId;
+      if (cid != null) {
+        byCourse.putIfAbsent(cid, () => <CourseProgressRow>[]).add(row);
+      }
+    }
+    return {
+      for (final courseId in courseIds)
+        courseId: CourseProgressSummary(
+          max: stepCounts[courseId] ?? 0,
+          current: _contiguousCurrent(
+            stepCounts[courseId] ?? 0,
+            byCourse[courseId] ?? const [],
+          ),
+        ),
+    };
+  }
+
+  /// The contiguous-run calculation shared by [courseProgressSummary] and
+  /// [getCurrentProgress]. Marks a step complete when *any* progress row
+  /// exists for it (no `passed` check), then walks from 1 until the first gap.
+  int _contiguousCurrent(int stepsSize, List<CourseProgressRow> progresses) {
+    if (stepsSize == 0) return 0;
+    final completed = List<bool>.filled(stepsSize + 1, false);
+    for (final progress in progresses) {
+      final stepNum = progress.stepNum;
+      if (stepNum >= 1 && stepNum <= stepsSize) {
+        completed[stepNum] = true;
+      }
+    }
+    var i = 1;
+    while (i <= stepsSize && completed[i]) {
+      i++;
+    }
+    return i - 1;
+  }
 
   /// Port of `ProgressRepositoryImpl.isCourseCertified(courseId)`.
   Future<bool> isCourseCertified(String courseId) =>
@@ -339,7 +406,8 @@ class ProgressRepository {
           : int.tryParse('${doc['stepNum']}') ?? 0;
 
       final existing = (await _progressDao.getByIds([docId])).firstOrNull;
-      final localRecord = existing ??
+      final localRecord =
+          existing ??
           (courseId != null && userId != null
               ? (await _progressDao.findByCourseUserAndStep(
                   courseId,
@@ -557,4 +625,20 @@ class CourseStepProgress {
   final int totalMistakes;
 
   bool get passed => progress?.passed ?? false;
+}
+
+/// The list-view progress summary for one course: [max] is its step count,
+/// [current] the contiguous run of steps (from step 1) that have a progress
+/// row. Mirrors the Kotlin `progressMap[courseId] = {max, current}`.
+class CourseProgressSummary {
+  const CourseProgressSummary({required this.max, required this.current});
+
+  final int max;
+  final int current;
+
+  /// `max` falling back to the course's step count when the server map carried
+  /// none — the Kotlin's `p?.get("max")?.takeIf { it > 0 } ?: course.getNumberOfSteps()`.
+  /// Here `max` is already the step count, so the fallback is implicit; this
+  /// exists so the filter predicates read identically to the Kotlin source.
+  int get effectiveMax => max;
 }

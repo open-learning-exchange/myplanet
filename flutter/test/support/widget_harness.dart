@@ -107,6 +107,7 @@ CourseRow buildCourseRow({
   String? subjectLevel,
   String? description,
   List<String> userId = const [],
+  int createdDate = 0,
 }) {
   return CourseRow(
     id: id,
@@ -116,7 +117,7 @@ CourseRow buildCourseRow({
     gradeLevel: gradeLevel,
     subjectLevel: subjectLevel,
     description: description,
-    createdDate: 0,
+    createdDate: createdDate,
   );
 }
 

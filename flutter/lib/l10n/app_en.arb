@@ -916,6 +916,13 @@
   "teamCalendar": "Team Calendar",
   "noMeetupsOnDate": "No meetups on this date",
   "myProgress": "My Progress",
+  "progress": "Progress",
+  "orderByTitle": "Order by Title",
+  "orderByDate": "Order by Date",
+  "progressFilterAll": "All",
+  "progressFilterNotStarted": "Not Started",
+  "progressFilterInProgress": "In Progress",
+  "progressFilterCompleted": "Completed",
   "stepProgress": "{current} of {max} steps",
   "@stepProgress": {
     "placeholders": {
