@@ -872,14 +872,13 @@ class CourseProgress extends Table {
 
 /// Port of `model/OfflineActivity.kt` (`@Entity(tableName = "offline_activity")`).
 ///
-/// The device's own record of what the user did while offline. Only the `login`
-/// rows are read here — the dashboard's offline-login count and the activity
-/// chart — but the table keeps the Kotlin's shape so a later slice can record
-/// resource opens and carry all of it to `UploadManager`'s `activities` upload.
+/// The device's own record of the user's offline sessions, read by the
+/// dashboard's offline-login count and the activity chart and carried to the
+/// server's `login_activities` database by `ActivitiesUploader`.
 ///
-/// Preserved across a schema bump (see [AppDatabase.localAuthorityTables]): the
-/// port has no activities uploader yet, so these rows exist nowhere but this
-/// table and no sync can give them back.
+/// Preserved across a schema bump (see [AppDatabase.localAuthorityTables]): a
+/// row that has not been uploaded yet exists nowhere else, and the port does not
+/// sync `login_activities` back in, so a drop is permanent for the rest.
 @DataClassName('OfflineActivityRow')
 @TableIndex(name: 'offline_activity_user_name', columns: {#userName})
 @TableIndex(name: 'offline_activity_type', columns: {#type})
@@ -888,8 +887,10 @@ class OfflineActivities extends Table {
   @override
   String get tableName => 'offline_activity';
 
-  /// Locally-minted UUID. `_id`/`_rev` stay null until an upload path exists —
-  /// the Kotlin sets them explicitly to null when logging a login, too.
+  /// Locally-minted id. `_id`/`_rev` stay null until the upload lands — the
+  /// Kotlin sets them explicitly to null when logging a login, and
+  /// `getPendingLoginUploads` selects exactly the rows where `_rev` is still
+  /// null.
   TextColumn get id => text()();
   TextColumn get couchId => text().named('_id').nullable()();
   TextColumn get rev => text().named('_rev').nullable()();
@@ -911,6 +912,82 @@ class OfflineActivities extends Table {
   IntColumn get loginTime => integer().nullable()();
   IntColumn get logoutTime => integer().nullable()();
   TextColumn get androidId => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Port of `model/ResourceActivity.kt` (`@Entity(tableName = "resource_activity")`).
+///
+/// One row per resource open or download, plus one per completed sync. The
+/// `type` separates them and decides where the row is posted:
+/// `visit`/`download` go to the `resource_activities` database
+/// (`UploadConfigs.ResourceActivities`) and `sync` goes to `admin_activities`
+/// (`UploadConfigs.ResourceActivitiesSync`) — the Kotlin's two configs differ
+/// only in that predicate and that endpoint.
+///
+/// Preserved across a schema bump (see [AppDatabase.localAuthorityTables]).
+/// The test is "can a sync restore this?", and here it cannot in either
+/// direction: an un-uploaded row exists nowhere else, and neither app syncs
+/// `resource_activities` or `admin_activities` back in — they are write-only
+/// telemetry databases.
+@DataClassName('ResourceActivityRow')
+@TableIndex(name: 'resource_activity_type', columns: {#type})
+@TableIndex(name: 'resource_activity_user', columns: {#user})
+class ResourceActivities extends Table {
+  @override
+  String get tableName => 'resource_activity';
+
+  TextColumn get id => text()();
+  TextColumn get couchId => text().named('_id').nullable()();
+  TextColumn get rev => text().named('_rev').nullable()();
+
+  /// The user's *name*, not id — the Kotlin's column is `user` and
+  /// `logResourceOpen` stores `model?.name` in it. Every read keys on the name.
+  TextColumn get user => text().nullable()();
+
+  /// `visit` (`KEY_RESOURCE_OPEN`), `download` (`KEY_RESOURCE_DOWNLOAD`), or
+  /// `sync` (`recordSyncActivity`).
+  TextColumn get type => text().nullable()();
+  TextColumn get title => text().nullable()();
+  TextColumn get resourceId => text().nullable()();
+
+  /// The user's planet code, as on [OfflineActivities] — not a timestamp.
+  TextColumn get createdOn => text().nullable()();
+  TextColumn get parentCode => text().nullable()();
+  IntColumn get time => integer().withDefault(const Constant(0))();
+  TextColumn get androidId => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Port of `model/CourseActivity.kt` (`@Entity(tableName = "course_activity")`).
+///
+/// One `visit` row per course opened in the take-course view, posted to the
+/// `course_activities` database (`UploadConfigs.CourseActivities`). Preserved
+/// for the same reason as [ResourceActivities].
+@DataClassName('CourseActivityRow')
+@TableIndex(name: 'course_activity_course_id', columns: {#courseId})
+@TableIndex(name: 'course_activity_type', columns: {#type})
+class CourseActivities extends Table {
+  @override
+  String get tableName => 'course_activity';
+
+  TextColumn get id => text()();
+  TextColumn get couchId => text().named('_id').nullable()();
+  TextColumn get rev => text().named('_rev').nullable()();
+
+  /// The user's name, matching [ResourceActivities.user] — `logCourseVisit`
+  /// takes what it calls a `userId` and looks the user up by *name*
+  /// (`getUserByName`), then stores that same string here.
+  TextColumn get user => text().nullable()();
+  TextColumn get type => text().nullable()();
+  TextColumn get title => text().nullable()();
+  TextColumn get courseId => text().nullable()();
+  TextColumn get createdOn => text().nullable()();
+  TextColumn get parentCode => text().nullable()();
+  IntColumn get time => integer().withDefault(const Constant(0))();
 
   @override
   Set<Column> get primaryKey => {id};

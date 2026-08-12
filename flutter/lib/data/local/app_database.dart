@@ -52,6 +52,8 @@ part 'app_database.g.dart';
     CourseProgress,
     Certifications,
     OfflineActivities,
+    ResourceActivities,
+    CourseActivities,
     TeamNotifications,
   ],
   daos: [
@@ -78,6 +80,8 @@ part 'app_database.g.dart';
     CourseProgressDao,
     CertificationDao,
     OfflineActivityDao,
+    ResourceActivityDao,
+    CourseActivityDao,
     TeamNotificationDao,
   ],
 )
@@ -91,7 +95,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 27;
+  int get schemaVersion => 28;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -169,11 +173,18 @@ class AppDatabase extends _$AppDatabase {
     // than overwriting it.
     'course_progress',
     // The device's own log of offline logins, written by `SessionNotifier`.
-    // Kotlin uploads these through `UploadManager`'s `activities` config; the
-    // port has no activities uploader yet, so every row lives only here and a
-    // sync cannot refill them. Dropping the table would reset the user's
-    // offline-login count to zero and empty the activity chart.
+    // `ActivitiesUploader` now carries them to `login_activities`, but nothing
+    // syncs that database back in, so an uploaded row still only exists here —
+    // and a row that has not drained yet exists nowhere at all. Dropping the
+    // table would reset the user's offline-login count to zero and empty the
+    // activity chart.
     'offline_activity',
+    // Resource opens/downloads and completed syncs, and course visits. Same
+    // shape as `offline_activity`: pending rows exist nowhere else, and
+    // `resource_activities`, `admin_activities` and `course_activities` are
+    // write-only from this app's side — no sync pulls them back.
+    'resource_activity',
+    'course_activity',
   };
 
   @override
@@ -2463,8 +2474,9 @@ class CertificationDao extends DatabaseAccessor<AppDatabase>
 
 /// Port of `data/room/dao/OfflineActivityDao.kt`.
 ///
-/// Only the `login` rows have readers today: the dashboard's offline-login
-/// count and the activity chart's monthly buckets.
+/// The `login` rows drive the dashboard's offline-login count, the activity
+/// chart's monthly buckets, the profile's last-login and total-visits rows, and
+/// the `login_activities` upload.
 @DriftAccessor(tables: [OfflineActivities])
 class OfflineActivityDao extends DatabaseAccessor<AppDatabase>
     with _$OfflineActivityDaoMixin {
@@ -2516,6 +2528,187 @@ class OfflineActivityDao extends DatabaseAccessor<AppDatabase>
   Future<void> updateLogoutTime(String id, int logoutTime) =>
       (update(offlineActivities)..where((row) => row.id.equals(id))).write(
         OfflineActivitiesCompanion(logoutTime: Value(logoutTime)),
+      );
+
+  /// Port of `countByUserIdAndType`, behind the profile's "Total visits" row
+  /// and the member-details sheet. Keyed on `userId`, where the dashboard's
+  /// count keys on `userName` — the Kotlin really does use both columns for
+  /// what reads as the same number, so both queries are kept.
+  Future<int> countByUserIdAndType(String userId, String type) async {
+    final count = offlineActivities.id.count();
+    final row =
+        await (selectOnly(offlineActivities)
+              ..addColumns([count])
+              ..where(
+                offlineActivities.userId.equals(userId) &
+                    offlineActivities.type.equals(type),
+              ))
+            .getSingle();
+    return row.read(count) ?? 0;
+  }
+
+  /// Port of `getPendingLoginUploads` — `_rev IS NULL AND type = 'login'`.
+  ///
+  /// The guest exclusion is `getUnuploadedLoginActivities`', which drops rows
+  /// with a null or `guest`-prefixed `userId` after the query rather than in
+  /// it; expressed in SQL here as `CourseProgressDao.getPendingUploads`
+  /// already does. A guest has no CouchDB user document, so the server has
+  /// nothing to attribute the session to.
+  Future<List<OfflineActivityRow>> pendingLoginUploads() =>
+      (select(offlineActivities)..where(
+            (row) =>
+                row.rev.isNull() &
+                row.type.equals(ActivityTypes.login) &
+                row.userId.isNotNull() &
+                row.userId.like('guest%').not(),
+          ))
+          .get();
+
+  /// Port of `getGlobalLastVisit` — `MAX(loginTime)` over the whole table, with
+  /// no user predicate. That is what `UserProfileViewModel` shows as "Last
+  /// login", so on a shared handset it is the newest login by anyone.
+  Future<int?> globalLastVisit() async {
+    final max = offlineActivities.loginTime.max();
+    final row = await (selectOnly(
+      offlineActivities,
+    )..addColumns([max])).getSingle();
+    return row.read(max);
+  }
+
+  /// Port of `getLastVisit(userName)`.
+  Future<int?> lastVisit(String userName) async {
+    final max = offlineActivities.loginTime.max();
+    final row =
+        await (selectOnly(offlineActivities)
+              ..addColumns([max])
+              ..where(offlineActivities.userName.equals(userName)))
+            .getSingle();
+    return row.read(max);
+  }
+
+  /// The `_id`/`_rev` half of `markActivitiesUploaded`. Returns the number of
+  /// rows written so the uploader can tell a vanished row from a stored one.
+  Future<int> markUploaded(String localId, String remoteId, String rev) =>
+      (update(offlineActivities)..where((row) => row.id.equals(localId))).write(
+        OfflineActivitiesCompanion(couchId: Value(remoteId), rev: Value(rev)),
+      );
+}
+
+/// The `type` values shared by the activity tables, from
+/// `UserSessionManager`'s companion object plus the `sync` literal
+/// `recordSyncActivity` writes.
+abstract final class ActivityTypes {
+  /// `UserSessionManager.KEY_LOGIN`.
+  static const String login = 'login';
+
+  /// `UserSessionManager.KEY_RESOURCE_OPEN` — note the value is `visit`, not
+  /// `open`, and `CourseActivity` rows use the same literal.
+  static const String visit = 'visit';
+
+  /// `UserSessionManager.KEY_RESOURCE_DOWNLOAD`.
+  static const String download = 'download';
+
+  /// Written by `recordSyncActivity`; routed to `admin_activities` rather than
+  /// `resource_activities`.
+  static const String sync = 'sync';
+}
+
+/// Port of `data/room/dao/ResourceActivityDao.kt`.
+@DriftAccessor(tables: [ResourceActivities])
+class ResourceActivityDao extends DatabaseAccessor<AppDatabase>
+    with _$ResourceActivityDaoMixin {
+  ResourceActivityDao(super.db);
+
+  Future<void> insert(ResourceActivitiesCompanion row) =>
+      into(resourceActivities).insertOnConflictUpdate(row);
+
+  /// Port of `getPendingUploads` — everything unsent that is *not* a sync row.
+  /// The two predicates partition the table, so no row is posted twice.
+  Future<List<ResourceActivityRow>> pendingUploads() =>
+      (select(resourceActivities)..where(
+            (row) =>
+                row.rev.isNull() & row.type.equals(ActivityTypes.sync).not(),
+          ))
+          .get();
+
+  /// Port of `getPendingSyncUploads` — the `sync` rows, bound for
+  /// `admin_activities`.
+  Future<List<ResourceActivityRow>> pendingSyncUploads() =>
+      (select(resourceActivities)..where(
+            (row) => row.rev.isNull() & row.type.equals(ActivityTypes.sync),
+          ))
+          .get();
+
+  /// Port of `getByUserAndType`, which `getMostOpenedResource` groups in Dart.
+  Future<List<ResourceActivityRow>> byUserAndType(
+    String userName,
+    String type,
+  ) => (select(
+    resourceActivities,
+  )..where((row) => row.user.equals(userName) & row.type.equals(type))).get();
+
+  /// Port of `countByUserAndType`.
+  Future<int> countByUserAndType(String userName, String type) async {
+    final count = resourceActivities.id.count();
+    final row =
+        await (selectOnly(resourceActivities)
+              ..addColumns([count])
+              ..where(
+                resourceActivities.user.equals(userName) &
+                    resourceActivities.type.equals(type),
+              ))
+            .getSingle();
+    return row.read(count) ?? 0;
+  }
+
+  /// Port of `observeByUserAndType`, the flow `ResourcesRepositoryImpl` exposes
+  /// for the `resource_opened` count.
+  Stream<List<ResourceActivityRow>> watchByUserAndType(
+    String userName,
+    String type,
+  ) => (select(
+    resourceActivities,
+  )..where((row) => row.user.equals(userName) & row.type.equals(type))).watch();
+
+  Future<int> markUploaded(String localId, String remoteId, String rev) =>
+      (update(
+        resourceActivities,
+      )..where((row) => row.id.equals(localId))).write(
+        ResourceActivitiesCompanion(couchId: Value(remoteId), rev: Value(rev)),
+      );
+}
+
+/// Port of `data/room/dao/CourseActivityDao.kt`.
+@DriftAccessor(tables: [CourseActivities])
+class CourseActivityDao extends DatabaseAccessor<AppDatabase>
+    with _$CourseActivityDaoMixin {
+  CourseActivityDao(super.db);
+
+  Future<void> insert(CourseActivitiesCompanion row) =>
+      into(courseActivities).insertOnConflictUpdate(row);
+
+  /// Port of `getPendingUploads`. The `type != 'sync'` filter is the Kotlin's;
+  /// nothing writes a `sync` course activity, but the predicate is kept so the
+  /// two DAOs agree.
+  Future<List<CourseActivityRow>> pendingUploads() =>
+      (select(courseActivities)..where(
+            (row) =>
+                row.rev.isNull() & row.type.equals(ActivityTypes.sync).not(),
+          ))
+          .get();
+
+  Future<List<CourseActivityRow>> byUserAndCourse(
+    String userName,
+    String courseId,
+  ) =>
+      (select(courseActivities)..where(
+            (row) => row.user.equals(userName) & row.courseId.equals(courseId),
+          ))
+          .get();
+
+  Future<int> markUploaded(String localId, String remoteId, String rev) =>
+      (update(courseActivities)..where((row) => row.id.equals(localId))).write(
+        CourseActivitiesCompanion(couchId: Value(remoteId), rev: Value(rev)),
       );
 }
 

@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/activities_repository.dart';
@@ -9,7 +9,11 @@ void main() {
 
   setUp(() {
     database = AppDatabase.memory();
-    repository = ActivitiesRepository(database.offlineActivityDao);
+    repository = ActivitiesRepository(
+      database.offlineActivityDao,
+      database.resourceActivityDao,
+      database.courseActivityDao,
+    );
   });
   tearDown(() => database.close());
 
@@ -109,5 +113,209 @@ void main() {
       (await repository.watchOfflineLogins('ada').first).single.id,
       'login-1',
     );
+  });
+
+  test('a resource open is recorded against the user name', () async {
+    await repository.logResourceOpen(
+      id: 'visit-1',
+      userId: 'user-ada',
+      userName: 'ada',
+      parentCode: 'parent',
+      planetCode: 'planet',
+      title: 'Algebra',
+      resourceId: 'res-1',
+      type: ActivityTypes.visit,
+      time: 4000,
+    );
+
+    final rows = await database.resourceActivityDao.byUserAndType(
+      'ada',
+      ActivityTypes.visit,
+    );
+    final row = rows.single;
+    // The column is `user` and it holds the name, not the id — every read keys
+    // on it, so storing the id here would make all of them return nothing.
+    expect(row.user, 'ada');
+    expect(row.title, 'Algebra');
+    expect(row.resourceId, 'res-1');
+    expect(row.parentCode, 'parent');
+    expect(row.createdOn, 'planet');
+    expect(row.time, 4000);
+    expect(row.rev, null);
+  });
+
+  test('a guest opens nothing the server could attribute', () async {
+    // `UserSessionManager.setResourceOpenCount` returns early for a
+    // guest-prefixed id: the server has no user document to hang the row on.
+    await repository.logResourceOpen(
+      id: 'visit-1',
+      userId: 'guest_ada',
+      userName: 'guest_ada',
+      type: ActivityTypes.visit,
+      time: 4000,
+    );
+    await repository.logCourseVisit(
+      id: 'course-1',
+      userId: 'guest_ada',
+      userName: 'guest_ada',
+      courseId: 'c1',
+      time: 4000,
+    );
+    await repository.recordSyncActivity(
+      id: 'sync-1',
+      userId: 'guest_ada',
+      userName: 'guest_ada',
+      time: 4000,
+    );
+
+    expect(await repository.pendingResourceUploads(), isEmpty);
+    expect(await repository.pendingSyncUploads(), isEmpty);
+    expect(await repository.pendingCourseUploads(), isEmpty);
+  });
+
+  test('sync rows and visit rows partition the pending lists', () async {
+    // The Kotlin's two configs differ only in this predicate, and they post to
+    // different databases. A row appearing in both lists would be uploaded
+    // twice, to `resource_activities` and `admin_activities`.
+    await repository.logResourceOpen(
+      id: 'visit-1',
+      userId: 'user-ada',
+      userName: 'ada',
+      type: ActivityTypes.visit,
+      time: 1,
+    );
+    await repository.logResourceOpen(
+      id: 'download-1',
+      userId: 'user-ada',
+      userName: 'ada',
+      type: ActivityTypes.download,
+      time: 2,
+    );
+    await repository.recordSyncActivity(
+      id: 'sync-1',
+      userId: 'user-ada',
+      userName: 'ada',
+      time: 3,
+    );
+
+    expect(
+      (await repository.pendingResourceUploads()).map((row) => row.id),
+      containsAll(['visit-1', 'download-1']),
+    );
+    expect(
+      (await repository.pendingResourceUploads()).map((row) => row.id),
+      isNot(contains('sync-1')),
+    );
+    expect((await repository.pendingSyncUploads()).single.id, 'sync-1');
+  });
+
+  test('an uploaded row stops being pending', () async {
+    await repository.logResourceOpen(
+      id: 'visit-1',
+      userId: 'user-ada',
+      userName: 'ada',
+      type: ActivityTypes.visit,
+      time: 1,
+    );
+
+    expect(await repository.markResourceUploaded('visit-1', 'r1', '1-a'), 1);
+    expect(await repository.pendingResourceUploads(), isEmpty);
+  });
+
+  test('a pending login upload excludes guests and uploaded rows', () async {
+    await logLogin('login-1', 'ada');
+    await repository.logLogin(
+      id: 'login-guest',
+      userId: 'guest_bob',
+      userName: 'guest_bob',
+      loginTime: 2000,
+    );
+    await logLogin('login-2', 'grace', loginTime: 3000);
+    await repository.markLoginUploaded('login-2', 'r1', '1-a');
+
+    final pending = await repository.pendingLoginUploads();
+    expect(pending.map((row) => row.id), ['login-1']);
+  });
+
+  test(
+    'the most opened resource wins on count, ignoring untitled rows',
+    () async {
+      Future<void> open(String id, String resourceId, String? title) =>
+          repository.logResourceOpen(
+            id: id,
+            userId: 'user-ada',
+            userName: 'ada',
+            title: title,
+            resourceId: resourceId,
+            type: ActivityTypes.visit,
+            time: 1,
+          );
+
+      await open('a1', 'res-1', 'Algebra');
+      await open('a2', 'res-1', 'Algebra');
+      await open('b1', 'res-2', 'Botany');
+      // Three opens, but no title: the Kotlin filters these out rather than
+      // showing a blank winner.
+      await open('c1', 'res-3', null);
+      await open('c2', 'res-3', null);
+      await open('c3', 'res-3', null);
+
+      final best = await repository.mostOpenedResource(
+        'ada',
+        ActivityTypes.visit,
+      );
+      expect(best?.title, 'Algebra');
+      expect(best?.count, 2);
+      expect(await repository.resourceOpenCount('ada', ActivityTypes.visit), 6);
+      expect(
+        await repository.mostOpenedResource('grace', ActivityTypes.visit),
+        isNull,
+      );
+    },
+  );
+
+  test('a course visit records the visit type and the course id', () async {
+    await repository.logCourseVisit(
+      id: 'course-1',
+      userId: 'user-ada',
+      userName: 'ada',
+      parentCode: 'parent',
+      planetCode: 'planet',
+      title: 'Intro',
+      courseId: 'c1',
+      time: 7000,
+    );
+
+    final row = (await repository.pendingCourseUploads()).single;
+    expect(row.user, 'ada');
+    // `logCourseVisit` hard-codes `visit`, the same literal a resource open
+    // uses.
+    expect(row.type, ActivityTypes.visit);
+    expect(row.courseId, 'c1');
+    expect(row.title, 'Intro');
+    expect(row.time, 7000);
+  });
+
+  test('visit counts key on the id, login counts on the name', () async {
+    // `getOfflineVisitCount(userId)` and `getOfflineLoginCount(userName)` are
+    // two different queries over the same rows in the Kotlin; keeping both is
+    // deliberate.
+    await logLogin('login-1', 'ada');
+    await logLogin('login-2', 'ada', loginTime: 2000);
+
+    expect(await repository.offlineVisitCount('user-ada'), 2);
+    expect(await repository.offlineVisitCount('ada'), 0);
+    expect(await repository.offlineLoginCount('ada'), 2);
+  });
+
+  test('the last visit is global, and per user on request', () async {
+    await logLogin('login-1', 'ada', loginTime: 1000);
+    await logLogin('login-2', 'grace', loginTime: 9000);
+
+    // `getGlobalLastVisit()` has no user predicate — this is what the profile
+    // shows as "Last login".
+    expect(await repository.globalLastVisit(), 9000);
+    expect(await repository.lastVisit('ada'), 1000);
+    expect(await repository.lastVisit('nobody'), isNull);
   });
 }

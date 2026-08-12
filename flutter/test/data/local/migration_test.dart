@@ -361,9 +361,10 @@ void main() {
   });
 
   test('an offline login record survives a schema upgrade', () async {
-    // The port has no activities uploader, so this row exists nowhere else. A
-    // drop would silently reset the dashboard's login count and empty the
-    // activity chart.
+    // `ActivitiesUploader` carries these to `login_activities`, but nothing
+    // syncs that database back in, so an uploaded row still exists only here —
+    // and a pending one exists nowhere at all. A drop would silently reset the
+    // dashboard's login count and empty the activity chart.
     await database.offlineActivityDao.insert(
       OfflineActivitiesCompanion.insert(
         id: 'login-1',
@@ -379,6 +380,46 @@ void main() {
     expect(
       await database.offlineActivityDao.countByUserNameAndType('ada', 'login'),
       1,
+    );
+  });
+
+  test('resource and course activity rows survive a schema upgrade', () async {
+    // Same test as `offline_activity`: can a sync put this back? It cannot in
+    // either direction — a pending row exists nowhere else, and
+    // `resource_activities`/`admin_activities`/`course_activities` are
+    // write-only from this app's side.
+    await database.resourceActivityDao.insert(
+      ResourceActivitiesCompanion.insert(
+        id: 'visit-1',
+        user: const Value('ada'),
+        type: const Value('visit'),
+        resourceId: const Value('res-1'),
+        title: const Value('Algebra'),
+        time: const Value(1000),
+      ),
+    );
+    await database.courseActivityDao.insert(
+      CourseActivitiesCompanion.insert(
+        id: 'course-1',
+        user: const Value('ada'),
+        type: const Value('visit'),
+        courseId: const Value('c1'),
+        time: const Value(1000),
+      ),
+    );
+
+    await runUpgrade();
+
+    expect(
+      (await database.resourceActivityDao.byUserAndType(
+        'ada',
+        'visit',
+      )).single.id,
+      'visit-1',
+    );
+    expect(
+      (await database.courseActivityDao.pendingUploads()).single.id,
+      'course-1',
     );
   });
 
@@ -426,6 +467,8 @@ void main() {
       'users',
       'course_progress',
       'offline_activity',
+      'resource_activity',
+      'course_activity',
     };
     expect(
       AppDatabase.localAuthorityTables,

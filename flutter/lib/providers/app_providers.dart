@@ -7,6 +7,7 @@ import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
 import '../repository/activities_repository.dart';
+import '../repository/activities_uploader.dart';
 import '../repository/chat_repository.dart';
 import '../repository/chat_repository_impl.dart';
 import '../repository/chat_uploader.dart';
@@ -172,12 +173,32 @@ final offlineActivityDaoProvider = Provider<OfflineActivityDao>(
   (ref) => ref.watch(appDatabaseProvider).offlineActivityDao,
 );
 
+final resourceActivityDaoProvider = Provider<ResourceActivityDao>(
+  (ref) => ref.watch(appDatabaseProvider).resourceActivityDao,
+);
+
+final courseActivityDaoProvider = Provider<CourseActivityDao>(
+  (ref) => ref.watch(appDatabaseProvider).courseActivityDao,
+);
+
 final teamNotificationDaoProvider = Provider<TeamNotificationDao>(
   (ref) => ref.watch(appDatabaseProvider).teamNotificationDao,
 );
 
 final activitiesRepositoryProvider = Provider<ActivitiesRepository>(
-  (ref) => ActivitiesRepository(ref.watch(offlineActivityDaoProvider)),
+  (ref) => ActivitiesRepository(
+    ref.watch(offlineActivityDaoProvider),
+    ref.watch(resourceActivityDaoProvider),
+    ref.watch(courseActivityDaoProvider),
+  ),
+);
+
+final activitiesUploaderProvider = Provider<ActivitiesUploader>(
+  (ref) => ActivitiesUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(activitiesRepositoryProvider),
+    ref.watch(outboxRepositoryProvider),
+  ),
 );
 
 final resourceDownloaderProvider = Provider<ResourceDownloader>(
@@ -381,6 +402,7 @@ final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
           .watch(courseProgressUploaderProvider)
           .handler,
       ChatUploader.type: ref.watch(chatUploaderProvider).handler,
+      ...ref.watch(activitiesUploaderProvider).handlers,
     },
   );
 });
