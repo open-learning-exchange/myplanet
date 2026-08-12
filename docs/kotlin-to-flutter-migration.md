@@ -972,11 +972,21 @@ flutter pub get 2>&1 | grep -i discontinued
 
 ## Remaining UI packages (2 of 28)
 
-`components`, `enterprises` -- plus team voices, team/public survey sharing, personal attachments/upload,
-storage/retry, and the rest of `settings`, plus profile photo/upload, membership, and the rest of `user`,
-and the rest of `sync`. `dashboard` is complete as of Phase 33 apart from the About and Disclaimer
-destinations (static translated HTML) and OS-scheduled sync, which is a platform gap rather than a
-screen.
+`components` and `enterprises` are the two packages with no screen of their own. What remains
+*within* ported packages, as of Phase 35:
+
+- `user` -- profile photo capture and upload (`PhotoUploader`, `updateUserImage`); membership
+  registration landed in Phase 27, and `BecomeMemberActivity`'s debounced username validation is
+  still validate-on-submit here.
+- `settings` -- the free-up-space button and available-space text inside the storage sheet, which
+  need `FreeSpaceWorker`'s delete-and-mark-not-offline pass and a disk-stats plugin.
+- `dashboard` -- the About and Disclaimer destinations, static translated HTML.
+- `teams` -- team attachments.
+- `sync` -- OS-scheduled background work, a platform gap rather than a screen.
+
+Earlier revisions of this list also named team voices, team/public survey sharing and personal
+attachments; those landed in Phases 26 and 28, and deep links and the durable public-survey
+response in Phase 35.
 
 **Notes on remaining packages:**
 - `components` -- reusable utility widgets. `CheckboxList` is in use; `ChallengeDialog` and
@@ -988,9 +998,9 @@ screen.
 **Completed infrastructure:** ratings upload (`RatingsUploader`), offline maps, and storage
 management all landed in Phase 25.
 
-Course progress and certification are deliberately deferred with their own packages rather than bundled
-into the courses slice. `events` and `surveys` are now ported for the individual case; team meetups
-and team/public survey sharing arrive with `teams`.
+Course progress and certification are deliberately deferred with their own packages rather than
+bundled into the courses slice. `events` and `surveys` are ported for the individual case, and team
+meetups and team/public survey sharing arrived with `teams`.
 
 ## Working on the Flutter app
 
