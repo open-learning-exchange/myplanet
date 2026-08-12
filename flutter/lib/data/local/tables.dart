@@ -840,7 +840,10 @@ class HealthExaminations extends Table {
 @DataClassName('CourseProgressRow')
 @TableIndex(name: 'course_progress_user', columns: {#userId})
 @TableIndex(name: 'course_progress_course', columns: {#courseId})
-@TableIndex(name: 'course_progress_course_user_step', columns: {#courseId, #userId, #stepNum})
+@TableIndex(
+  name: 'course_progress_course_user_step',
+  columns: {#courseId, #userId, #stepNum},
+)
 class CourseProgress extends Table {
   @override
   String get tableName => 'course_progress';

@@ -1478,12 +1478,9 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
   /// submission for a user. The course progress calc maps each onto an exam
   /// by stripping the `@user` suffix the Kotlin stores in `parentId`.
   Future<List<SubmissionRow>> getExamSubmissionsByUser(String? userId) =>
-      (select(submissions)
-            ..where(
-              (row) =>
-                  row.userId.equals(userId ?? '') &
-                  row.type.equals('exam'),
-            ))
+      (select(submissions)..where(
+            (row) => row.userId.equals(userId ?? '') & row.type.equals('exam'),
+          ))
           .get();
 
   /// Port of `AnswerDao.getBySubmissionIds` — every answer for [submissionIds]
@@ -2247,11 +2244,7 @@ class CourseProgressDao extends DatabaseAccessor<AppDatabase>
     final rows = <CourseProgressRow>[];
     for (final chunk in _chunked(courseIds, _sqliteVariableChunk)) {
       final stmt = select(courseProgress)
-        ..where(
-          (r) =>
-              r.userId.equals(userId ?? '') &
-              r.courseId.isIn(chunk),
-        );
+        ..where((r) => r.userId.equals(userId ?? '') & r.courseId.isIn(chunk));
       rows.addAll(await stmt.get());
     }
     return rows;
@@ -2261,17 +2254,16 @@ class CourseProgressDao extends DatabaseAccessor<AppDatabase>
     String? userId,
     String? courseId,
   ) =>
-      (select(courseProgress)
-            ..where(
-              (r) =>
-                  r.userId.equals(userId ?? '') &
-                  r.courseId.equals(courseId ?? ''),
-            ))
+      (select(courseProgress)..where(
+            (r) =>
+                r.userId.equals(userId ?? '') &
+                r.courseId.equals(courseId ?? ''),
+          ))
           .get();
 
-  Future<List<CourseProgressRow>> getByUser(String? userId) =>
-      (select(courseProgress)..where((r) => r.userId.equals(userId ?? '')))
-          .get();
+  Future<List<CourseProgressRow>> getByUser(String? userId) => (select(
+    courseProgress,
+  )..where((r) => r.userId.equals(userId ?? ''))).get();
 
   Future<CourseProgressRow?> findByCourseUserAndStep(
     String? courseId,
@@ -2292,9 +2284,9 @@ class CourseProgressDao extends DatabaseAccessor<AppDatabase>
     final rows = <CourseProgressRow>[];
     for (final chunk in _chunked(ids, _sqliteVariableChunk)) {
       rows.addAll(
-        await (select(courseProgress)
-              ..where((r) => r.id.isIn(chunk) | r.couchId.isIn(chunk)))
-            .get(),
+        await (select(
+          courseProgress,
+        )..where((r) => r.id.isIn(chunk) | r.couchId.isIn(chunk))).get(),
       );
     }
     return rows;
@@ -2316,13 +2308,12 @@ class CourseProgressDao extends DatabaseAccessor<AppDatabase>
       for (final userChunk in _chunked(userIds, _sqliteVariableChunk)) {
         for (final stepChunk in _chunked(stepNums, _sqliteVariableChunk)) {
           rows.addAll(
-            await (select(courseProgress)
-                  ..where(
-                    (r) =>
-                        r.courseId.isIn(courseChunk) &
-                        r.userId.isIn(userChunk) &
-                        r.stepNum.isIn(stepChunk),
-                  ))
+            await (select(courseProgress)..where(
+                  (r) =>
+                      r.courseId.isIn(courseChunk) &
+                      r.userId.isIn(userChunk) &
+                      r.stepNum.isIn(stepChunk),
+                ))
                 .get(),
           );
         }
@@ -2334,14 +2325,14 @@ class CourseProgressDao extends DatabaseAccessor<AppDatabase>
   /// Rows authored here — `couchId IS NULL` — excluding guest accounts, which
   /// have no CouchDB user document and so cannot upload. Mirrors
   /// `CourseProgressDao.getPendingUploads`.
-  Future<List<CourseProgressRow>> getPendingUploads() => (select(
-    courseProgress,
-  )..where(
-    (r) =>
-        r.couchId.isNull() &
-        r.userId.isNotNull() &
-        r.userId.like('guest%').not(),
-  )).get();
+  Future<List<CourseProgressRow>> getPendingUploads() =>
+      (select(courseProgress)..where(
+            (r) =>
+                r.couchId.isNull() &
+                r.userId.isNotNull() &
+                r.userId.like('guest%').not(),
+          ))
+          .get();
 
   Future<int> markUploaded(String localId, String remoteId, String rev) =>
       (update(courseProgress)..where((r) => r.id.equals(localId))).write(
@@ -2356,10 +2347,9 @@ class CourseProgressDao extends DatabaseAccessor<AppDatabase>
     int stepNum,
     bool passed,
   ) =>
-      (update(courseProgress)
-            ..where(
-              (r) => r.courseId.equals(courseId) & r.stepNum.equals(stepNum),
-            ))
+      (update(courseProgress)..where(
+            (r) => r.courseId.equals(courseId) & r.stepNum.equals(stepNum),
+          ))
           .write(CourseProgressCompanion(passed: Value(passed)));
 
   Future<void> upsert(CourseProgressCompanion row) =>
@@ -2382,10 +2372,11 @@ class CertificationDao extends DatabaseAccessor<AppDatabase>
   /// `contains("courseIds", id)` and the Kotlin's `LIKE '%id%'`.
   Future<int> countByCourseId(String courseId) async {
     final count = certifications.id.count();
-    final row = await (selectOnly(certifications)
-          ..addColumns([count])
-          ..where(certifications.courseIds.like('%$courseId%')))
-        .getSingle();
+    final row =
+        await (selectOnly(certifications)
+              ..addColumns([count])
+              ..where(certifications.courseIds.like('%$courseId%')))
+            .getSingle();
     return row.read(count) ?? 0;
   }
 
@@ -2398,10 +2389,10 @@ class CertificationDao extends DatabaseAccessor<AppDatabase>
   /// are a pure server cache, so nothing here needs sparing.
   Future<int> deleteNotIn(List<String> keepIds) async {
     final keep = keepIds.toSet();
-    final all = await (selectOnly(
-      certifications,
-    )..addColumns([certifications.id])).map((row) => row.read(certifications.id)!)
-        .get();
+    final all =
+        await (selectOnly(certifications)..addColumns([certifications.id]))
+            .map((row) => row.read(certifications.id)!)
+            .get();
     final stale = all.where((id) => !keep.contains(id)).toList(growable: false);
     var deleted = 0;
     for (final chunk in _chunked(stale, _sqliteVariableChunk)) {

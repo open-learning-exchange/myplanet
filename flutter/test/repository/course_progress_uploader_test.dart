@@ -105,8 +105,11 @@ void main() {
 
     await uploader.handler(rowFor('progress-1'), {}, 'auth');
 
-    final survivor = await database.courseProgressDao
-        .findByCourseUserAndStep('course-1', 'user-1', 1);
+    final survivor = await database.courseProgressDao.findByCourseUserAndStep(
+      'course-1',
+      'user-1',
+      1,
+    );
     expect(survivor?.couchId, 'p1');
     expect(survivor?.rev, '1-a');
   });
@@ -129,8 +132,11 @@ void main() {
     // pending, and the next `queuePending` would post the progress a second
     // time as a fresh document. This asserts the opposite.
     expect(result, isA<NetworkError<Map<String, dynamic>>>());
-    final survivor = await database.courseProgressDao
-        .findByCourseUserAndStep('course-1', 'user-1', 1);
+    final survivor = await database.courseProgressDao.findByCourseUserAndStep(
+      'course-1',
+      'user-1',
+      1,
+    );
     expect(survivor?.couchId, isNull);
   });
 

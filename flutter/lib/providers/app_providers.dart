@@ -359,8 +359,9 @@ final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
       FeedbackUploader.type: ref.watch(feedbackUploaderProvider).handler,
       HealthUploader.type: ref.watch(healthUploaderProvider).handler,
       RatingsUploader.type: ref.watch(ratingsUploaderProvider).handler,
-      CourseProgressUploader.type:
-          ref.watch(courseProgressUploaderProvider).handler,
+      CourseProgressUploader.type: ref
+          .watch(courseProgressUploaderProvider)
+          .handler,
       ChatUploader.type: ref.watch(chatUploaderProvider).handler,
     },
   );

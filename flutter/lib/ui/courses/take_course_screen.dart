@@ -11,8 +11,7 @@ import '../../providers/session_provider.dart';
 /// Mints a local key for a new `course_progress` row. Mirrors
 /// `RatingsRepository`'s `_defaultId` — the row's identity is reused on
 /// re-open once it exists, so this only stamps the first visit.
-String _localProgressId() =>
-    DateTime.now().microsecondsSinceEpoch.toString();
+String _localProgressId() => DateTime.now().microsecondsSinceEpoch.toString();
 
 /// Port of `ui/courses/TakeCourseFragment.kt`.
 ///
@@ -147,7 +146,9 @@ class _CourseContent extends ConsumerWidget {
     final userId = this.userId;
     if (userId == null) return;
 
-    await ref.read(progressRepositoryProvider).saveCourseProgress(
+    await ref
+        .read(progressRepositoryProvider)
+        .saveCourseProgress(
           id: _localProgressId(),
           courseId: course.id,
           userId: userId,
