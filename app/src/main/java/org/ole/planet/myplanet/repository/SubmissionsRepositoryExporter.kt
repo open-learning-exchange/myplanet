@@ -30,6 +30,8 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
 ) {
 
     companion object {
+        private val dateFormatter = ThreadLocal.withInitial { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
+
         private const val PAGE_WIDTH = 595
         private const val PAGE_HEIGHT = 842
         private const val MARGIN = 50f
@@ -170,7 +172,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
 
                 canvas.drawText("Total Submissions: ${submissions.size}", MARGIN, yPosition, normalPaint)
                 yPosition += LINE_HEIGHT
-                canvas.drawText("Generated: ${SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date())}", MARGIN, yPosition, normalPaint)
+                canvas.drawText("Generated: ${dateFormatter.get()?.format(Date())}", MARGIN, yPosition, normalPaint)
                 yPosition += LINE_HEIGHT * 3
 
                 val examId = getExamId(submissions.firstOrNull()?.parentId)

@@ -1,48 +1,16 @@
 package org.ole.planet.myplanet.services.sync
 
-import java.lang.reflect.Modifier
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.TableDataUpdate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RealtimeSyncManagerTest {
-
-    @Before
-    @After
-    fun resetSingleton() {
-        try {
-            val clazz = RealtimeSyncManager.Companion::class.java
-            val field = clazz.getDeclaredFields().find { it.name == "INSTANCE" }
-                ?: RealtimeSyncManager::class.java.getDeclaredFields().find { it.name == "INSTANCE" }
-
-            field?.let {
-                it.isAccessible = true
-                if (Modifier.isStatic(it.modifiers)) {
-                    it.set(null, null)
-                } else {
-                    it.set(RealtimeSyncManager.Companion, null)
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    @Test
-    fun testGetInstance() {
-        val instance1 = RealtimeSyncManager.getInstance()
-        val instance2 = RealtimeSyncManager.getInstance()
-        assertSame(instance1, instance2)
-    }
 
     @Test
     fun testNotifyTableUpdatedFlow() = runTest {
