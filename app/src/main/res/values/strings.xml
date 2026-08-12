@@ -777,7 +777,7 @@
     <string name="are_you_sure_want_to_delete_all_the_files">Are you sure want to delete all the files?</string>
     <string name="unable_to_clear_files">Unable to clear files</string>
     <string name="last_synced_never">Never synced</string>
-    <string name="last_synced_colon">Last synced: </string>
+    <string name="last_synced_colon">"Last synced: "</string>
     <string name="dashboard_sync_status">Sync · %1$s</string>
     <string name="last_login_message">This is your last login before you need to become a member.</string>
 
