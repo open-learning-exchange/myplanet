@@ -32,7 +32,6 @@
                     android:layout_height="@dimen/dashboard_tile_icon_size"
                     app:srcCompat="@drawable/meetups"
                     android:contentDescription="@string/txt_myLife" />
-
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -42,9 +41,7 @@
                     android:textColor="@color/md_white_1000"
                     android:textSize="12sp"
                     android:textStyle="bold" />
-
             </LinearLayout>
-
         </FrameLayout>
 
         <ScrollView
@@ -65,5 +62,4 @@
                 app:flexWrap="wrap" />
         </ScrollView>
     </LinearLayout>
-
 </com.google.android.material.card.MaterialCardView>
