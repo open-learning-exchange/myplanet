@@ -3,35 +3,46 @@ package org.ole.planet.myplanet.services
 import android.app.Activity
 import android.app.ActivityManager
 import android.app.Application
+import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
+import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.OneTimeWorkRequest
-import androidx.work.WorkManager
-import androidx.work.WorkInfo
-import androidx.work.Configuration
 import androidx.work.WorkRequest
 import androidx.work.impl.WorkManagerImpl
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
+import io.mockk.slot
+import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
-import io.mockk.slot
+import java.lang.reflect.Field
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.utils.DownloadUtils
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.util.ReflectionHelpers
-import java.util.concurrent.Executors
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.UPSIDE_DOWN_CAKE], application = Application::class)
 class DownloadServiceTest {
@@ -40,8 +51,15 @@ class DownloadServiceTest {
 
     @Before
     fun setUp() {
-        mockPreferences = mockk()
+        mockPreferences = mockk(relaxed = true)
         mockkStatic(ContextCompat::class)
+        mockkObject(DownloadUtils)
+        mockkStatic(Log::class)
+        every { Log.d(any(), any()) } returns 0
+        every { Log.e(any(), any()) } returns 0
+        every { Log.e(any(), any(), any()) } returns 0
+        every { Log.w(any(), any<String>()) } returns 0
+        every { Log.i(any(), any()) } returns 0
     }
 
     @After
@@ -257,7 +275,7 @@ class DownloadServiceTest {
 
         try {
             DownloadService.startService(context, "test_urls_fallback", true)
-        } catch(e: Exception) {
+        } catch (e: Exception) {
             // expected
         }
 
@@ -267,5 +285,49 @@ class DownloadServiceTest {
         val req = slotRequest.captured as OneTimeWorkRequest
         assertEquals("test_urls_fallback", req.workSpec.input.getString("urls_key"))
         assertEquals(true, req.workSpec.input.getBoolean("fromSync", false))
+    }
+
+    @Test
+    fun `test queueRunning is reset when exception occurs`() = runBlocking {
+        val service = spyk(DownloadService())
+
+        val notificationManager = mockk<NotificationManager>(relaxed = true)
+        every { service.getSystemService(Context.NOTIFICATION_SERVICE) } returns notificationManager
+        every { service.startForeground(any(), any()) } returns Unit
+
+        every { service.packageName } returns "org.ole.planet.myplanet"
+        every { service.applicationInfo } returns mockk(relaxed = true)
+
+        every { DownloadUtils.createChannels(any()) } returns Unit
+        every { DownloadUtils.buildInitialNotification(any()) } returns mockk(relaxed = true)
+
+        val job = SupervisorJob()
+        val exceptionHandler = CoroutineExceptionHandler { _, _ -> }
+
+        val testScope = CoroutineScope(job + Dispatchers.IO + exceptionHandler)
+
+        val prefsField: Field = DownloadService::class.java.getDeclaredField("preferences")
+        prefsField.isAccessible = true
+        prefsField.set(service, mockPreferences)
+
+        val appScopeField: Field = DownloadService::class.java.getDeclaredField("appScope")
+        appScopeField.isAccessible = true
+        appScopeField.set(service, testScope)
+
+        every { mockPreferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, any()) } throws RuntimeException("Simulated coroutine error")
+
+        val intent = mockk<Intent>(relaxed = true)
+
+        // This launches the coroutine asynchronously
+        service.onStartCommand(intent, 0, 1)
+
+        // Wait for coroutines to complete
+        job.children.forEach { it.join() }
+
+        val isQueueRunningField: Field = DownloadService::class.java.getDeclaredField("isQueueRunning")
+        isQueueRunningField.isAccessible = true
+        val isQueueRunning = isQueueRunningField.get(service) as Boolean
+
+        assertFalse("isQueueRunning should be false after exception", isQueueRunning)
     }
 }

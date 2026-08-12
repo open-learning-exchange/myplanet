@@ -27,57 +27,23 @@ class SurveysAdapter(
     private val bindingDataMap: Map<String, SurveyFormState>
 ) : ListAdapter<StepExam, SurveysAdapter.SurveysViewHolder>(DiffUtils.itemCallback(
     { oldItem, newItem -> oldItem.id == newItem.id },
-    { oldItem, newItem -> oldItem == newItem }
+    { oldItem, newItem ->
+        oldItem.name == newItem.name &&
+                oldItem.description == newItem.description &&
+                oldItem.isTeamShareAllowed == newItem.isTeamShareAllowed &&
+                oldItem.isFromNation == newItem.isFromNation
+    }
 )), OnDiffRefreshListener {
     override fun refreshWithDiff() {
         submitList(currentList.toList())
     }
 
     private var listener: OnHomeItemClickListener? = null
-    private var isTitleAscending = true
-    private var sortStrategy: (List<StepExam>) -> List<StepExam> = { list ->
-        sortSurveyList(false, list)
-    }
 
     init {
         if (context is OnHomeItemClickListener) {
             listener = context
         }
-    }
-
-    private fun sortSurveyList(
-        isAscend: Boolean,
-        list: List<StepExam>
-    ): List<StepExam> {
-        return if (isAscend) {
-            list.sortedBy { it.createdDate }
-        } else {
-            list.sortedByDescending { it.createdDate }
-        }
-    }
-
-    fun sortByDate(isAscend: Boolean) {
-        sortStrategy = { list -> sortSurveyList(isAscend, list) }
-        val sortedList = sortStrategy(currentList)
-        submitList(sortedList)
-    }
-
-    private fun sortSurveyListByName(
-        isAscend: Boolean,
-        list: List<StepExam>
-    ): List<StepExam> {
-        return if (isAscend) {
-            list.sortedBy { it.name?.lowercase() }
-        } else {
-            list.sortedByDescending { it.name?.lowercase() }
-        }
-    }
-
-    fun toggleTitleSortOrder() {
-        isTitleAscending = !isTitleAscending
-        sortStrategy = { list -> sortSurveyListByName(isTitleAscending, list) }
-        val sortedList = sortStrategy(currentList)
-        submitList(sortedList)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SurveysViewHolder {

@@ -11,6 +11,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.ListViewMode
 
 @Singleton
 class SharedPrefManager @Inject constructor(
@@ -63,6 +64,8 @@ class SharedPrefManager @Inject constructor(
         private const val KEY_NOTIFICATION_SHOWN = "notification_shown"
         private const val VERSION_DETAIL = "versionDetail"
         private const val CONCATENATED_LINKS = "concatenated_links"
+        private const val LIBRARY_VIEW_MODE = "libraryViewMode"
+        private const val COURSE_VIEW_MODE = "courseViewMode"
     }
 
     fun getSavedUsers(): List<User> {
@@ -252,6 +255,12 @@ class SharedPrefManager @Inject constructor(
 
     fun getVersionDetail(): String? = pref.getString(VERSION_DETAIL, null)
     fun setVersionDetail(json: String) = pref.edit { putString(VERSION_DETAIL, json) }
+
+    fun getLibraryViewMode(): ListViewMode = ListViewMode.fromPref(pref.getString(LIBRARY_VIEW_MODE, null))
+    fun setLibraryViewMode(mode: ListViewMode) = pref.edit { putString(LIBRARY_VIEW_MODE, mode.name) }
+
+    fun getCourseViewMode(): ListViewMode = ListViewMode.fromPref(pref.getString(COURSE_VIEW_MODE, null))
+    fun setCourseViewMode(mode: ListViewMode) = pref.edit { putString(COURSE_VIEW_MODE, mode.name) }
 
     fun getConcatenatedLinks(): String? = pref.getString(CONCATENATED_LINKS, null)
     fun setConcatenatedLinks(json: String) = pref.edit { putString(CONCATENATED_LINKS, json) }

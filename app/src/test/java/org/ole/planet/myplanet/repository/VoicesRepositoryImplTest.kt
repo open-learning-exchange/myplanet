@@ -229,6 +229,22 @@ class VoicesRepositoryImplTest {
     }
 
     @Test
+    fun `postReply sets replyTo to the parent's local id, not its server _id`() = testScope.runTest {
+        val repoWithRealGson = newRepository(Gson())
+        val parentNews = News().apply {
+            id = "local-uuid-1234"
+            _id = "server-doc-id-5678"
+        }
+        val currentUser = UserEntity()
+
+        repoWithRealGson.postReply("Hello reply", parentNews, currentUser, null)
+
+        val slot = slot<News>()
+        coVerify(exactly = 1) { newsDao.upsert(capture(slot)) }
+        assertEquals("local-uuid-1234", slot.captured.replyTo)
+    }
+
+    @Test
     fun `getUserById delegates to userRepository`() = testScope.runTest {
         val testUserId = "test_user_123"
         val mockUser = mockk<UserEntity>()

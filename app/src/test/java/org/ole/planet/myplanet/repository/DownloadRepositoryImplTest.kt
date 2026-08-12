@@ -191,4 +191,94 @@ class DownloadRepositoryImplTest {
         assertTrue(result is DownloadResult.Error)
         assertEquals("Network error: Unknown IO error", (result as DownloadResult.Error).message)
     }
+
+    @Test
+    fun `downloadFileResponse handles generic Exception without message`() = runTest {
+        val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns testDispatcher
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider)
+
+        val url = "http://example.com/file"
+        val authHeader = "auth"
+
+        coEvery { mockApiInterface.downloadFile(authHeader, url) } throws RuntimeException()
+
+        val result = repository.downloadFileResponse(url, authHeader)
+
+        assertTrue(result is DownloadResult.Error)
+        assertEquals("Network error: Unknown error", (result as DownloadResult.Error).message)
+    }
+
+    @Test
+    fun `downloadFileResponse handles generic Exception with message`() = runTest {
+        val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns testDispatcher
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider)
+
+        val url = "http://example.com/file"
+        val authHeader = "auth"
+
+        coEvery { mockApiInterface.downloadFile(authHeader, url) } throws RuntimeException("Test Generic Exception")
+
+        val result = repository.downloadFileResponse(url, authHeader)
+
+        assertTrue(result is DownloadResult.Error)
+        assertEquals("Network error: Test Generic Exception", (result as DownloadResult.Error).message)
+    }
+
+    @Test
+    fun `downloadFileResponse logs original URL on 404 exception`() = runTest {
+        val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns testDispatcher
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider)
+
+        val url = "http://example.com/file"
+        val authHeader = "auth"
+
+        val mockResponse = mockk<Response<okhttp3.ResponseBody>>()
+        every { mockResponse.isSuccessful } returns false
+        every { mockResponse.code() } returns 404
+        every { mockResponse.toString() } throws RuntimeException("Simulated exception")
+
+        coEvery { mockApiInterface.downloadFile(authHeader, url) } returns mockResponse
+
+        val result = repository.downloadFileResponse(url, authHeader)
+
+        assertTrue(result is DownloadResult.Error)
+        io.mockk.verify { MainApplication.createLog("File Not Found", url) }
+    }
+
+    @Test
+    fun `downloadFileResponse logs extracted URL on 404`() = runTest {
+        val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns testDispatcher
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider)
+
+        val url = "http://example.com/file"
+        val authHeader = "auth"
+
+        val mockResponse = mockk<Response<okhttp3.ResponseBody>>()
+        every { mockResponse.isSuccessful } returns false
+        every { mockResponse.code() } returns 404
+        every { mockResponse.toString() } returns "Response{protocol=http/1.1, code=404, message=Not Found, url=http://example.com/extractedUrl}"
+
+        coEvery { mockApiInterface.downloadFile(authHeader, url) } returns mockResponse
+
+        val result = repository.downloadFileResponse(url, authHeader)
+
+        assertTrue(result is DownloadResult.Error)
+        io.mockk.verify { MainApplication.createLog("File Not Found", "http://example.com/extractedUrl") }
+    }
 }

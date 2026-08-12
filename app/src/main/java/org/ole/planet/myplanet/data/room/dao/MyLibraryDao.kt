@@ -112,10 +112,10 @@ interface MyLibraryDao {
     fun getRecentForUserPatternFlow(userPattern: String): Flow<List<MyLibrary>>
 
     @Query(
-        "SELECT * FROM my_library WHERE userId LIKE :userPattern ESCAPE '\\' " +
+        "SELECT id FROM my_library WHERE userId LIKE :userPattern ESCAPE '\\' " +
             "AND resourceOffline = 0 AND resourceLocalAddress IS NOT NULL"
     )
-    fun getPendingDownloadsForUserPatternFlow(userPattern: String): Flow<List<MyLibrary>>
+    fun getPendingDownloadsForUserPatternFlow(userPattern: String): Flow<List<String>>
 
     @Query(
         "SELECT * FROM my_library WHERE resourceId IN (:resourceIds) " +

@@ -168,6 +168,7 @@
     <string name="cannot_remove_user">L\'utilisateur n\'a pas pu être supprimé</string>
     <string name="no_members_task">Aucun membre de l\'équipe présent pour attribuer des tâches</string>
     <string name="no_member_selected">Aucun membre sélectionné. Veuillez réessayer</string>
+    <string name="last_login_message">Il s\'agit de votre dernière connexion avant de devoir devenir membre.</string>
 
     <string-array name="level">
         <item>Débutant</item>
@@ -944,6 +945,9 @@
     <string name="virtual_assistant_currently_not_available">assistant virtuel actuellement non disponible</string>
     <string name="no_courses">aucun cours disponible</string>
     <string name="no_resources">aucune ressource disponible</string>
+    <string name="no_resources_added_yet">Vous pouvez ajouter des ressources</string>
+    <string name="no_courses_joined_yet">Vous pouvez rejoindre des cours</string>
+    <string name="no_teams_joined_yet">Vous pouvez rejoindre une équipe</string>
     <string name="no_finance_record">aucun enregistrement financier disponible</string>
     <string name="no_team_courses">aucun cours d\'équipe disponible</string>
     <string name="no_team_resources">aucune ressource d\'équipe disponible</string>
@@ -1351,11 +1355,28 @@
     <string name="failed_to_update_resource">Échec de la mise à jour de la ressource</string>
     <string name="join_team_first">Veuillez rejoindre une équipe pour partager cette conversation</string>
     <string name="join_enterprise_first">Veuillez rejoindre une entreprise pour partager cette conversation</string>
-
     <string name="open_link_with">Ouvrir le lien avec</string>
     <string name="just_once">Une seule fois</string>
     <string name="always">Toujours</string>
     <string name="survey_load_failed">Impossible de charger l\'enquête. Veuillez réessayer.</string>
     <string name="survey_submitted">Enquête envoyée. Merci !</string>
     <string name="survey_submit_failed">Impossible d\'envoyer l\'enquête. Veuillez réessayer.</string>
+    <string name="item_count_pill">%d éléments</string>
+    <string name="view_grid">Vue en grille</string>
+    <string name="view_list">Vue en liste</string>
+    <string name="steps_done_of_total">%1$d sur %2$d terminées</string>
+    <string name="course_steps_count">%d étapes</string>
+    <string name="subject_label_mathematics">Mathématiques</string>
+    <string name="subject_label_literacy">Alphabétisation</string>
+    <string name="subject_label_health">Santé</string>
+    <string name="subject_label_social_studies">Sciences sociales</string>
+    <string name="subject_label_technology">Technologie</string>
+    <string name="filter_all">Tous</string>
+    <string name="filter_books">Livres</string>
+    <string name="filter_videos">Vidéos</string>
+    <string name="filter_audio">Audio</string>
+    <string name="filter_pdfs">PDF</string>
+    <string name="downloaded">Téléchargé</string>
+    <string name="not_downloaded">Non téléchargé</string>
+
 </resources>

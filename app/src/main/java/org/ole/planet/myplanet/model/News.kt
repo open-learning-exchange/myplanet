@@ -13,12 +13,12 @@ import java.util.UUID
 import org.ole.planet.myplanet.utils.JsonUtils
 
 /**
- * Room replacement for the former Realm `News` model (voices/discussion posts).
+ * Room replacement for the former `News` model (voices/discussion posts).
  *
  * `imageUrls` and `labels` (formerly `RealmList<String>`) are plain `List<String>` stored as JSON
  * via the shared [org.ole.planet.myplanet.data.room.Converters]. Persistence goes through
  * [org.ole.planet.myplanet.data.room.dao.NewsDao]. The class name is kept (`News`) so the
- * large voices UI surface is untouched; a later rename pass drops the `Realm` prefix.
+ * large voices UI surface is untouched.
  */
 @Entity(tableName = "news", indices = [Index("userId"), Index("replyTo"), Index("_id")])
 open class News {
