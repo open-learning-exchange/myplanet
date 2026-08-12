@@ -17,7 +17,6 @@
             app:srcCompat="@drawable/mycourses"
             app:tint="@color/dashboard_tile_courses"
             android:contentDescription="@null" />
-
         <TextView
             android:id="@+id/title"
             android:layout_width="match_parent"
