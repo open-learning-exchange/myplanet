@@ -1351,11 +1351,28 @@
     <string name="failed_to_update_resource">Cusbooneysiin kheyraadka waxay ku guuldareysatay</string>
     <string name="join_team_first">Fadlan ku biir koox si aad u wadaagto wada sheekaysigan</string>
     <string name="join_enterprise_first">Fadlan ku biir shirkad si aad u wadaagto wada sheekaysigan</string>
-
     <string name="open_link_with">Ku fur xiriirka adigoo isticmaalaya</string>
     <string name="just_once">Hal mar kaliya</string>
     <string name="always">Mar walba</string>
     <string name="survey_load_failed">Sahanka lama soo rarin. Fadlan isku day mar kale.</string>
     <string name="survey_submitted">Sahanka waa la gudbiyay. Mahadsanid!</string>
     <string name="survey_submit_failed">Sahanka lama gudbin. Fadlan isku day mar kale.</string>
+    <string name="item_count_pill">%d shay</string>
+    <string name="view_grid">Muuqaal shabag</string>
+    <string name="view_list">Muuqaal liis</string>
+    <string name="steps_done_of_total">%1$d ka mid ah %2$d ayaa la dhammeeyay</string>
+    <string name="course_steps_count">%d tallaabo</string>
+    <string name="subject_label_mathematics">Xisaabta</string>
+    <string name="subject_label_literacy">Aqoonyahannimada</string>
+    <string name="subject_label_health">Caafimaadka</string>
+    <string name="subject_label_social_studies">Cilmiga Bulshada</string>
+    <string name="subject_label_technology">Tignoolajiyadda</string>
+    <string name="filter_all">Dhammaan</string>
+    <string name="filter_books">Buugag</string>
+    <string name="filter_videos">Muuqaallo</string>
+    <string name="filter_audio">Codad</string>
+    <string name="filter_pdfs">PDF-yo</string>
+    <string name="downloaded">La soo dejiyay</string>
+    <string name="not_downloaded">Lama soo dejin</string>
+
 </resources>
