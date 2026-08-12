@@ -167,18 +167,24 @@ class ProgressRepository {
   /// sync can deliver several progress rows for the same step — one per
   /// device or attempt — so counting rows instead of steps would let a
   /// twice-passed step 1 complete a two-step course.
-  Future<Set<String>> completedCourseIds(String? userId) async {
+  Future<Set<String>> completedCourseIds(String? userId) =>
+      completedCourses(userId).then((cs) => {for (final c in cs) c.courseId});
+
+  /// The completed-course list the home dashboard's star row renders — a
+  /// faithful port of `ProgressRepositoryImpl.getCompletedCourses`, which
+  /// returns `CourseCompletion(courseId, courseTitle)` for each course whose
+  /// every step is passed. [completedCourseIds] delegates here so the two
+  /// paths can never disagree on what "complete" means.
+  Future<List<CompletedCourse>> completedCourses(String? userId) async {
     final shelf = await _courseDao.coursesOnShelf(userId ?? '');
-    if (shelf.isEmpty) return <String>{};
-    final courseIds = [for (final c in shelf) c.id];
+    if (shelf.isEmpty) return const <CompletedCourse>[];
     final stepCounts = <String, int>{};
     for (final course in shelf) {
       stepCounts[course.id] = (await _courseDao.getSteps(course.id)).length;
     }
-    final progress = await _progressDao.getByUserAndCourseIds(
-      userId,
-      courseIds,
-    );
+    final progress = await _progressDao.getByUserAndCourseIds(userId, [
+      for (final c in shelf) c.id,
+    ]);
     final passedStepsByCourse = <String, Set<int>>{};
     for (final row in progress) {
       if (row.passed) {
@@ -187,12 +193,14 @@ class ProgressRepository {
             .add(row.stepNum);
       }
     }
-    final completed = <String>{};
+    final completed = <CompletedCourse>[];
     for (final course in shelf) {
       final stepCount = stepCounts[course.id] ?? 0;
       if (stepCount == 0) continue;
       if ((passedStepsByCourse[course.id]?.length ?? 0) >= stepCount) {
-        completed.add(course.id);
+        completed.add(
+          CompletedCourse(courseId: course.id, courseTitle: course.courseTitle),
+        );
       }
     }
     return completed;
@@ -644,4 +652,13 @@ class CourseProgressSummary {
   /// Here `max` is already the step count, so the fallback is implicit; this
   /// exists so the filter predicates read identically to the Kotlin source.
   int get effectiveMax => max;
+}
+
+/// A completed course's identity, for the home dashboard's star row. Port of
+/// `model/CourseCompletion.kt`.
+class CompletedCourse {
+  const CompletedCourse({required this.courseId, this.courseTitle});
+
+  final String courseId;
+  final String? courseTitle;
 }

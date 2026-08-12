@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -255,4 +256,136 @@ void main() {
 
     expect(prefs.themeModeName, 'light');
   });
+
+  testWidgets('shows a star for each completed course', (tester) async {
+    final database = AppDatabase.memory();
+    await _seedCompletedCourse(database, 'course-1', title: 'Algebra');
+    await _seedCompletedCourse(database, 'course-2', title: 'Geometry');
+
+    await tester.pumpWidget(
+      wrapScreen(
+        const HomeScreen(),
+        overrides: [
+          ...await homeOverrides(user: _user('user-1')),
+          appDatabaseProvider.overrideWith((ref) {
+            ref.onDispose(database.close);
+            return database;
+          }),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.star), findsNWidgets(2));
+    expect(find.byTooltip('completed course Algebra'), findsOneWidget);
+    expect(find.byTooltip('completed course Geometry'), findsOneWidget);
+  });
+
+  testWidgets('a certified course star uses the primary color', (tester) async {
+    final database = AppDatabase.memory();
+    await _seedCompletedCourse(database, 'course-1', title: 'Algebra');
+    await database.certificationDao.upsertAll([
+      CertificationsCompanion.insert(
+        id: 'cert-1',
+        courseIds: const Value('["course-1"]'),
+      ),
+    ]);
+
+    await tester.pumpWidget(
+      wrapScreen(
+        const HomeScreen(),
+        overrides: [
+          ...await homeOverrides(user: _user('user-1')),
+          appDatabaseProvider.overrideWith((ref) {
+            ref.onDispose(database.close);
+            return database;
+          }),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final icon = tester.widget<Icon>(find.byIcon(Icons.star));
+    expect(
+      icon.color,
+      Theme.of(tester.element(find.byIcon(Icons.star))).colorScheme.primary,
+    );
+  });
+
+  testWidgets('tapping a completed-course star opens the take-course route', (
+    tester,
+  ) async {
+    final database = AppDatabase.memory();
+    await _seedCompletedCourse(database, 'course-1', title: 'Algebra');
+
+    await tester.pumpWidget(
+      wrapScreen(
+        const HomeScreen(),
+        overrides: [
+          ...await homeOverrides(user: _user('user-1')),
+          appDatabaseProvider.overrideWith((ref) {
+            ref.onDispose(database.close);
+            return database;
+          }),
+        ],
+        pushTargets: {
+          '/courses/course-1/take': (_) =>
+              const Scaffold(body: Center(child: Text('Take course Algebra'))),
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('completed course Algebra'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Take course Algebra'), findsOneWidget);
+  });
+
+  testWidgets('hides the star row when no course is complete', (tester) async {
+    await tester.pumpWidget(
+      wrapScreen(
+        const HomeScreen(),
+        overrides: await homeOverrides(user: _user('user-1')),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.star), findsNothing);
+  });
+}
+
+/// Seeds a completed course: on the user's shelf, with one passed step, so the
+/// star row surfaces it.
+Future<void> _seedCompletedCourse(
+  AppDatabase database,
+  String courseId, {
+  required String title,
+}) async {
+  await database.courseDao.upsertAll(
+    [
+      CoursesCompanion.insert(
+        id: courseId,
+        courseId: Value(courseId),
+        courseTitle: Value(title),
+        userId: const Value(['user-1']),
+      ),
+    ],
+    [
+      CourseStepsCompanion.insert(
+        id: '$courseId:0',
+        courseId: Value(courseId),
+        stepIndex: const Value(0),
+      ),
+    ],
+  );
+  await database.courseProgressDao.upsert(
+    CourseProgressCompanion.insert(
+      id: 'p-$courseId',
+      courseId: Value(courseId),
+      userId: const Value('user-1'),
+      stepNum: const Value(1),
+      passed: const Value(true),
+    ),
+  );
 }

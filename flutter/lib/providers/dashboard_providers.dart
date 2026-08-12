@@ -113,3 +113,43 @@ String _nameFromParentJson(String? parentJson) {
   } catch (_) {}
   return '';
 }
+
+/// One star on the home dashboard's completed-course row. Port of
+/// `BellDashboardFragment.showBadges` + `setColor`: a course is complete when
+/// every step is passed, and the star is tinted with the primary color when
+/// the course is certified, otherwise a muted blue-grey.
+class CompletedCourseBadge {
+  const CompletedCourseBadge({
+    required this.courseId,
+    this.courseTitle,
+    required this.certified,
+  });
+
+  final String courseId;
+  final String? courseTitle;
+  final bool certified;
+}
+
+/// Port of `BellDashboardViewModel.loadCompletedCourses` — the completed-course
+/// list for the home dashboard's star row, each resolved to whether it is
+/// certified. The Kotlin calls `progressRepository.getCompletedCourses` once and
+/// `coursesRepository.isCourseCertified` per star (in `setColor`); the count is
+/// small, so the certifications are resolved in the provider and the widget
+/// stays synchronous.
+final completedCoursesProvider =
+    FutureProvider.family<List<CompletedCourseBadge>, String>((
+      ref,
+      userId,
+    ) async {
+      final progress = ref.watch(progressRepositoryProvider);
+      final completed = await progress.completedCourses(userId);
+      if (completed.isEmpty) return const <CompletedCourseBadge>[];
+      return [
+        for (final course in completed)
+          CompletedCourseBadge(
+            courseId: course.courseId,
+            courseTitle: course.courseTitle,
+            certified: await progress.isCourseCertified(course.courseId),
+          ),
+      ];
+    });

@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 32 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 33 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -161,11 +161,11 @@ Known gaps:
   a survey and is not an answer sheet for the adopter. The myLife feature registry moved to
   `ui/life/life_features.dart`, shared with
   `LifeScreen`; `DialogUtils.guestDialog` became the shared `ui/components/guest_dialog.dart`.
-  Still unported after Phase 30 (each needs infrastructure the port lacks): the completed-course
-  star row (per-step progress records), the avatar's network-status ring (connectivity plugin), team
-  chat/task alert badges (team notifications), the offline-logins count and activity-chart FAB
-  (login activity tracking), the navigation drawer and overflow menu, and
-  the "remind later" reminder scheduler.
+  Still unported after Phase 30 (each needs infrastructure the port lacks): the avatar's
+  network-status ring (connectivity plugin), team chat/task alert badges (team notifications), the
+  offline-logins count and activity-chart FAB (login activity tracking), the navigation drawer
+  and overflow menu, and the "remind later" reminder scheduler. The completed-course star row
+  landed in Phase 33, once per-step progress records were syncing.
 
 - **Phase 30** — successful foreground syncs now persist Kotlin's `LastSync` timestamp and
   publish it through reactive Riverpod state. The home dashboard displays the missing last-sync
@@ -190,6 +190,17 @@ Known gaps:
   walks on resource-constrained community devices; durable outbox writes remain separate and are
   still drained by `OutboxDrainScope`. This is foreground orchestration, not a claim that the
   missing WorkManager-equivalent scheduling gap is solved.
+
+- **Phase 33** — the home dashboard's completed-course star row: the profile card renders one star
+  per completed course (every step passed, at least one step), a faithful port of
+  `BellDashboardFragment.showBadges`/`setColor`. A certified course (`isCourseCertified`) tints the
+  star with the theme primary color; an uncertified one uses a muted blue-grey, matching Kotlin's
+  `colorPrimary`/`md_blue_grey_300`. Each star carries a "completed course <title>" tooltip
+  (semantics content description) and opens the take-course route on tap. `ProgressRepository`
+  gained `completedCourses(userId)` — returning id+title, the Kotlin `CourseCompletion` shape —
+  with `completedCourseIds` now delegating to it so the two paths cannot disagree. The row is
+  driven by `completedCoursesProvider` (a `FutureProvider.family`), which resolves each course's
+  certified flag up front so the widget stays synchronous.
 
 - **Phase 27** — chat upload, member registration against `_users`, and the resource detail
   screen with its filter sheet. Three fixes were needed around it:
@@ -744,8 +755,8 @@ flutter pub get 2>&1 | grep -i discontinued
 
 `components`, `enterprises` -- plus team voices, team/public survey sharing, personal attachments/upload,
 storage/retry, and the rest of `settings`, plus profile photo/upload, membership, and the rest of `user`,
-and the rest of `sync` and `dashboard` (the home cards and pending-survey dialog are ported as of
-Phase 32; still missing are the completed-course stars, network ring, team alert badges, activity
+and the rest of `sync` and `dashboard` (the home cards, pending-survey dialog, and completed-course
+star row are ported as of Phase 33; still missing are the network ring, team alert badges, activity
 chart, language/about/disclaimer overflow actions, OS-scheduled sync, and survey reminders).
 
 **Notes on remaining packages:**
@@ -828,6 +839,6 @@ succeeds, it just doesn't do what the Kotlin did.
 
 ---
 
-**Last updated**: 2026-08-12 (Phase 32 complete)
-**Phase**: 32 of N (27 of 28 UI packages have a screen — see Status for what that does and does
+**Last updated**: 2026-08-12 (Phase 33 complete)
+**Phase**: 33 of N (27 of 28 UI packages have a screen — see Status for what that does and does
 not mean)

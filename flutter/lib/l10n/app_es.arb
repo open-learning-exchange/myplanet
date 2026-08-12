@@ -30,6 +30,7 @@
   "lastSynced": "Última sincronización: {time}",
   "courses": "Cursos",
   "myCourses": "misCursos",
+  "completedCourse": "curso completado {courseTitle}",
   "gradeLevel": "Nivel de grado",
   "calendar": "Calendario",
   "skip": "Omitir",

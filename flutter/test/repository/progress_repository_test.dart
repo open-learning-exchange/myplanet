@@ -111,6 +111,25 @@ void main() {
     expect(await repository.completedCourseIds('user-1'), {'course-1'});
   });
 
+  test('completedCourses carries the course title for the star row', () async {
+    // course-1 is on the shelf (seeded with title "Course course-1") with 3
+    // steps; passing all three completes it.
+    for (var i = 1; i <= 3; i++) {
+      await repository.saveCourseProgress(
+        id: 'p-$i',
+        courseId: 'course-1',
+        userId: 'user-1',
+        stepNum: i,
+        passed: true,
+      );
+    }
+
+    final completed = await repository.completedCourses('user-1');
+    expect(completed, hasLength(1));
+    expect(completed.first.courseId, 'course-1');
+    expect(completed.first.courseTitle, 'Course course-1');
+  });
+
   test('duplicate rows for one step do not complete a course', () async {
     // Sync can deliver several rows for the same step — one per device or
     // attempt. The Kotlin counts unique passed stepNums (`toSet()`), so two

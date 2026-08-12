@@ -169,6 +169,14 @@
     }
   },
   "courseNotFound": "Course not found",
+  "completedCourse": "completed course {courseTitle}",
+  "@completedCourse": {
+    "placeholders": {
+      "courseTitle": {
+        "type": "String"
+      }
+    }
+  },
   "calendar": "Calendar",
   "profile": "Profile",
   "profileUnavailable": "Profile unavailable",

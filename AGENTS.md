@@ -58,3 +58,13 @@ UI package at a time. Conventions worth remembering across slices:
 - **Tests**: `flutter analyze` (must be clean) + `flutter test` (CI gate).
   Repository tests use `AppDatabase.memory()` + mocktail `Mock implements
   PlanetApi`. Uploader tests mirror `test/repository/ratings_uploader_test.dart`.
+- **Phase 33** (completed-course star row): `ProgressRepository.completedCourses(userId)`
+  returns `List<CompletedCourse>` (id+title) — the Kotlin `CourseCompletion` shape.
+  `completedCourseIds` delegates to it (`.then((cs) => {for (final c in cs) c.courseId})`),
+  so completion rule has one source. `completedCoursesProvider`
+  (`FutureProvider.family<userId>`) resolves each course's `isCourseCertified` up front
+  → `List<CompletedCourseBadge>`; the widget stays sync. Stars: certified →
+  `colorScheme.primary`, uncertified → `Colors.blueGrey.shade300`; tap →
+  `context.push('${Routes.courses}/$courseId/take')`. Tooltip = `l10n.completedCourse(title)`.
+  Home-screen tests seed via the real in-memory DB (override `appDatabaseProvider`) +
+  `wrapScreen(pushTargets:)` for go_router navigation.

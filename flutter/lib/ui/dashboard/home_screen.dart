@@ -24,9 +24,8 @@ enum _HomeMenuAction { sync, feedback, settings, theme, logout }
 /// myLife cards, plus the pending-survey dialog.
 ///
 /// Deliberately not (yet) ported from the Kotlin home screen, all tracked in
-/// the migration doc: the completed-course star row (needs per-step progress
-/// data the port does not sync), the network-status ring around the avatar
-/// (needs a connectivity plugin), team chat/task alert badges (needs team
+/// the migration doc: the network-status ring around the avatar (needs a
+/// connectivity plugin), team chat/task alert badges (needs team
 /// notifications), the offline-logins count in the name line and the activity
 /// chart FAB (needs login activity tracking), and the "remind later" survey
 /// scheduler.
@@ -359,16 +358,18 @@ String _relativeSyncTime(AppLocalizations l10n, int elapsedMillis) {
   return l10n.daysAgo(elapsed.inDays);
 }
 
-/// The profile card: avatar, full name, role, planet code. Port of
-/// `card_profile_bell.xml` minus the star row and network ring (see the
-/// class comment on [HomeScreen]).
-class _ProfileCard extends StatelessWidget {
+/// The profile card: avatar, full name, role, planet code, and the
+/// completed-course star row. Port of `card_profile_bell.xml`'s `ll_badges`
+/// and `BellDashboardFragment.showBadges`/`setColor`. The network ring is the
+/// only piece of the Kotlin card still absent (see the class comment on
+/// [HomeScreen]).
+class _ProfileCard extends ConsumerWidget {
   const _ProfileCard({required this.session});
 
   final UserRow session;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final fullName = [
       session.firstName,
       session.middleName,
@@ -376,6 +377,9 @@ class _ProfileCard extends StatelessWidget {
     ].whereType<String>().where((part) => part.isNotEmpty).join(' ');
     final displayName = fullName.isNotEmpty ? fullName : (session.name ?? '');
     final role = session.rolesList.join(', ');
+    final badges =
+        ref.watch(completedCoursesProvider(session.id)).valueOrNull ??
+        const <CompletedCourseBadge>[];
 
     return Card(
       margin: const EdgeInsets.all(8),
@@ -401,6 +405,23 @@ class _ProfileCard extends StatelessWidget {
                         '- $role',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
+                    if (badges.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: SizedBox(
+                          height: 28,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: badges.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(width: 4),
+                            itemBuilder: (context, index) {
+                              final badge = badges[index];
+                              return _CompletedCourseStar(badge: badge);
+                            },
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -413,6 +434,32 @@ class _ProfileCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// One completed-course star. Tinted with the primary color when the course is
+/// certified, otherwise a muted blue-grey — `BellDashboardFragment.setColor`'s
+/// `colorPrimary` / `md_blue_grey_300`. Tapping opens the take-course screen,
+/// as `openCourse` does.
+class _CompletedCourseStar extends StatelessWidget {
+  const _CompletedCourseStar({required this.badge});
+
+  final CompletedCourseBadge badge;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final color = badge.certified
+        ? Theme.of(context).colorScheme.primary
+        : Colors.blueGrey.shade300;
+    return IconButton(
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+      iconSize: 24,
+      tooltip: l10n.completedCourse(badge.courseTitle ?? badge.courseId),
+      onPressed: () => context.push('${Routes.courses}/${badge.courseId}/take'),
+      icon: Icon(Icons.star, color: color),
     );
   }
 }
