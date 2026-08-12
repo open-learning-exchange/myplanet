@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    app:cardElevation="2dp"
-    app:cardUseCompatPadding="true">
+    android:minHeight="@dimen/dashboard_tile_min_height"
+    app:cardBackgroundColor="@color/card_bg"
+    app:cardCornerRadius="@dimen/dashboard_tile_corner_radius"
+    app:cardElevation="@dimen/dashboard_tile_elevation"
+    app:strokeColor="@color/dashboard_hairline"
+    app:strokeWidth="@dimen/dashboard_hairline_width">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -13,70 +17,71 @@
         <FrameLayout
             android:id="@+id/ll_home_team"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_gravity="center"
-            android:foregroundGravity="center">
+            android:layout_height="match_parent">
 
             <LinearLayout
                 android:id="@+id/myTeamsImageButton"
-                android:layout_width="@dimen/dashboard_card_title"
+                android:layout_width="@dimen/dashboard_tile_color_block_width"
                 android:layout_height="match_parent"
-                android:layout_gravity="center"
-                android:background="@color/md_green_700"
+                android:background="@color/dashboard_tile_teams"
                 android:gravity="center"
                 android:orientation="vertical"
-                android:padding="@dimen/padding_normal">
+                android:padding="@dimen/padding_small">
 
                 <ImageView
-                    android:layout_width="@dimen/image_size_home_card"
-                    android:layout_height="@dimen/image_size_home_card"
-                    android:layout_marginLeft="16dp"
-                    android:layout_marginRight="16dp"
+                    android:layout_width="@dimen/dashboard_tile_icon_size"
+                    android:layout_height="@dimen/dashboard_tile_icon_size"
                     app:srcCompat="@drawable/team"
                     android:contentDescription="@string/txt_myTeams" />
-
                 <TextView
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center"
+                    android:layout_marginTop="@dimen/padding_small"
                     android:gravity="center"
                     android:text="@string/txt_myTeams"
-                    android:textColor="@color/md_white_1000" />
-
+                    android:textColor="@color/md_white_1000"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
             <TextView
                 android:id="@+id/count_team"
-                android:layout_width="35dp"
-                android:layout_height="34dp"
-                android:layout_gravity="end"
-                android:layout_margin="@dimen/padding_small"
-                android:background="@drawable/oval_white"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|end"
+                android:layout_margin="6dp"
+                android:background="@drawable/oval_dashboard_badge"
                 android:gravity="center"
-                android:padding="@dimen/padding_small"
+                android:minWidth="@dimen/dashboard_badge_size"
+                android:minHeight="@dimen/dashboard_badge_size"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
                 android:text="12"
-                android:textColor="@color/daynight_textColor"
-                android:textSize="18sp"
+                android:textColor="@color/dashboard_badge_ink"
+                android:textSize="11sp"
                 android:textStyle="bold" />
-
         </FrameLayout>
-
 
         <HorizontalScrollView
             android:layout_width="0dp"
             android:contentDescription="@string/txt_myTeams"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:background="@color/card_bg">
+            android:background="@color/card_bg"
+            android:scrollbars="none">
 
             <com.google.android.flexbox.FlexboxLayout
                 android:id="@+id/flexboxLayoutTeams"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
+                android:paddingStart="@dimen/dashboard_chip_gap"
+                android:paddingTop="@dimen/dashboard_chip_gap"
+                android:paddingBottom="@dimen/dashboard_chip_gap"
                 app:alignContent="stretch"
                 app:alignItems="stretch"
                 app:flexWrap="wrap" />
         </HorizontalScrollView>
     </LinearLayout>
-
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>

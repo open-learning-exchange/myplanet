@@ -44,7 +44,7 @@
             </LinearLayout>
         </FrameLayout>
 
-        <HorizontalScrollView
+        <ScrollView
             android:layout_width="0dp"
             android:contentDescription="@string/txt_myLife"
             android:layout_height="match_parent"
@@ -54,14 +54,12 @@
 
             <com.google.android.flexbox.FlexboxLayout
                 android:id="@+id/flexboxLayoutMyLife"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:paddingStart="@dimen/dashboard_chip_gap"
-                android:paddingTop="@dimen/dashboard_chip_gap"
-                android:paddingBottom="@dimen/dashboard_chip_gap"
-                app:alignContent="stretch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/dashboard_chip_gap"
+                app:alignContent="flex_start"
                 app:alignItems="stretch"
                 app:flexWrap="wrap" />
-        </HorizontalScrollView>
+        </ScrollView>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
