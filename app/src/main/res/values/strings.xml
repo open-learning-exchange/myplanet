@@ -332,9 +332,9 @@
     <string name="tasks">Tasks</string>
     <string name="join_requests">Join Requests</string>
     <string name="add_image">Add Image</string>
-    <string name="clear_data">clear data</string>
-    <string name="reset_app">reset app</string>
-    <string name="freeup_space">free-up disk space</string>
+    <string name="clear_data">Clear data</string>
+    <string name="reset_app">Reset app</string>
+    <string name="freeup_space">Free up disk space</string>
     <string name="action_disclaimer">Disclaimer</string>
     <string name="action_about">About</string>
     <string name="english_dictionary">English Dictionary</string>
@@ -705,7 +705,7 @@
     <string name="days_since_you_last_synced_this_device">" days since you last synced this device."</string>
     <string name="connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet">\n Connect it to the server over wifi and sync it to reactivate this tablet</string>
     <string name="okay">Okay</string>
-    <string name="connect_to_the_server_over_wifi_and_sync_your_device_to_continue">Connect to the server over WiFi and sync your device to continue</string>
+    <string name="connect_to_the_server_over_wifi_and_sync_your_device_to_continue">Connect to the server over Wi-Fi and sync your device to continue</string>
     <string name="please_enter_server_url_first">Please enter server url first.</string>
     <string name="username_cannot_be_empty">Username cannot be empty</string>
     <string name="unable_to_login">Unable to login</string>
@@ -776,8 +776,9 @@
     <string name="data_cleared">Data cleared</string>
     <string name="are_you_sure_want_to_delete_all_the_files">Are you sure want to delete all the files?</string>
     <string name="unable_to_clear_files">Unable to clear files</string>
-    <string name="last_synced_never">never synced</string>
-    <string name="last_synced_colon">last synced: </string>
+    <string name="last_synced_never">Never synced</string>
+    <string name="last_synced_colon">Last synced: </string>
+    <string name="last_login_message">This is your last login before you need to become a member.</string>
 
     <string name="disclaimer">
     <![CDATA[
@@ -864,18 +865,18 @@
     <string name="upgrade_local">Upgrade(Local)</string>
     <string name="upgrade">Upgrade</string>
     <string name="apk_already_exists">Apk already exists</string>
-    <string name="auto_sync">auto sync</string>
-    <string name="force_weekly_sync">force weekly sync</string>
-    <string name="force_monthly_sync">force monthly sync</string>
-    <string name="beta_function_for_wifi_switch">beta function for wifi switch</string>
-    <string name="upgrade_application">upgrade application</string>
+    <string name="auto_sync">Auto sync</string>
+    <string name="force_weekly_sync">Force weekly sync</string>
+    <string name="force_monthly_sync">Force monthly sync</string>
+    <string name="beta_function_for_wifi_switch">Beta function for wifi switch</string>
+    <string name="upgrade_application">Upgrade application</string>
     <string name="always_move_to_maximum_version">Always move to maximum version</string>
-    <string name="all_beta_functions">all beta functions</string>
-    <string name="auto_sync_device">auto sync device</string>
-    <string name="beta_functionality">beta functionality</string>
-    <string name="main_controls">main controls</string>
+    <string name="all_beta_functions">All beta functions</string>
+    <string name="auto_sync_device">Auto sync device</string>
+    <string name="beta_functionality">Beta functionality</string>
+    <string name="main_controls">Main controls</string>
     <string name="dismiss">Dismiss</string>
-    <string name="available_space_colon">available space: </string>
+    <string name="available_space_colon">Available space: </string>
     <string name="community_leaders">Community Leaders</string>
     <string name="services">Services</string>
 
@@ -946,6 +947,9 @@
     <string name="virtual_assistant_currently_not_available">virtual assistant currently not available</string>
     <string name="no_courses">no courses available</string>
     <string name="no_resources">no resources available</string>
+    <string name="no_resources_added_yet">You can add resources</string>
+    <string name="no_courses_joined_yet">You can join courses</string>
+    <string name="no_teams_joined_yet">You can join a team</string>
     <string name="no_finance_record">finance record not available</string>
     <string name="no_team_courses">team courses not available</string>
     <string name="no_team_resources">team resources not available</string>
@@ -1007,9 +1011,9 @@
     <string name="member_description">%1$s (%2$d visits)</string>
     <string name="last_visit">Last visit: %1$s</string>
     <string name="no_visit">No visit</string>
-    <string name="dark_mode">dark mode</string>
-    <string name="dark_mode_off">off</string>
-    <string name="dark_mode_on">on</string>
+    <string name="dark_mode">Dark mode</string>
+    <string name="dark_mode_off">Off</string>
+    <string name="dark_mode_on">On</string>
     <string name="dark_mode_follow_system">Follow System</string>
     <string name="theme_mode_light">Light</string>
     <string name="theme_mode_dark">Dark</string>
@@ -1037,7 +1041,7 @@
     <string name="show_less">show less</string>
     <string name="show_more">show more</string>
     <string name="server_address_content_description">server address: %1$s</string>
-    <string name="select_theme_mode">select theme mode</string>
+    <string name="select_theme_mode">Select theme mode</string>
     <string name="beta_resources_auto_download">Beta resources auto download</string>
     <string name="course_steps">Course Steps</string>
     <string name="to_access_this_feature_become_a_member">You are currently a guest user. To access this feature, become a member.</string>
@@ -1272,8 +1276,8 @@
     <string name="tts_not_available">Text-to-speech is not available on this device</string>
     <string name="pdf_no_text_layer">This PDF doesn\'t contain readable text</string>
     <string name="pdf_extracting_text">Preparing text, please wait…</string>
-    <string name="storage_breakdown">storage breakdown</string>
-    <string name="storage_breakdown_summary">view and manage space used by downloads</string>
+    <string name="storage_breakdown">Storage breakdown</string>
+    <string name="storage_breakdown_summary">View and manage space used by downloads</string>
     <string name="storage_breakdown_title">Downloaded Content</string>
     <string name="storage_total_downloaded">Total downloaded</string>
     <string name="storage_videos">Videos</string>
@@ -1353,5 +1357,22 @@
     <string name="failed_to_update_resource">Failed to update resource</string>
     <string name="join_team_first">Please join a Team to share this chat</string>
     <string name="join_enterprise_first">Please join an Enterprise to share this chat</string>
+    <string name="item_count_pill">%d items</string>
+    <string name="view_grid">Grid view</string>
+    <string name="view_list">List view</string>
+    <string name="steps_done_of_total">%1$d of %2$d done</string>
+    <string name="course_steps_count">%d steps</string>
+    <string name="subject_label_mathematics">Mathematics</string>
+    <string name="subject_label_literacy">Literacy</string>
+    <string name="subject_label_health">Health</string>
+    <string name="subject_label_social_studies">Social Studies</string>
+    <string name="subject_label_technology">Technology</string>
+    <string name="filter_all">All</string>
+    <string name="filter_books">Books</string>
+    <string name="filter_videos">Videos</string>
+    <string name="filter_audio">Audio</string>
+    <string name="filter_pdfs">PDFs</string>
+    <string name="downloaded">Downloaded</string>
+    <string name="not_downloaded">Not downloaded</string>
 
 </resources>

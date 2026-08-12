@@ -79,7 +79,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         viewLifecycleOwner.lifecycleScope.launch {
             model = userRepository.getUserModel()
             val adapter = getAdapter()
-            recyclerView.adapter = adapter
+            if (recyclerView.adapter != adapter) {
+                recyclerView.adapter = adapter
+            }
             if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
                 resources?.let { showDownloadDialog(it) }
             }
@@ -107,7 +109,10 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     override fun onRatingChanged() {
         viewLifecycleOwner.lifecycleScope.launch {
-            recyclerView.adapter = getAdapter()
+            val adapter = getAdapter()
+            if (recyclerView.adapter != adapter) {
+                recyclerView.adapter = adapter
+            }
         }
     }
 
@@ -128,8 +133,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
         itemsToAdd.forEach { item ->
             when (item) {
-                is MyLibrary -> item.resourceId?.let(resourceIds::add)
-                is MyCourse -> item.courseId?.let(courseIds::add)
+                is MyLibrary -> (item.resourceId.takeIf { !it.isNullOrBlank() } ?: item.id.takeIf { !it.isNullOrBlank() } ?: item._id)?.let(resourceIds::add)
+                is MyCourse -> (item.courseId.takeIf { !it.isNullOrBlank() } ?: item.id.takeIf { !it.isNullOrBlank() } ?: item._id)?.let(courseIds::add)
                 else -> {}
             }
         }
@@ -191,7 +196,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     protected open suspend fun postAddRefresh() {
         val newAdapter = getAdapter()
-        recyclerView.adapter = newAdapter
+        if (recyclerView.adapter != newAdapter) {
+            recyclerView.adapter = newAdapter
+        }
         showNoData(tvMessage, newAdapter.itemCount, "")
     }
 
@@ -230,6 +237,13 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     fun countSelected(): Int {
         return selectedItems?.size ?: 0
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        if (::recyclerView.isInitialized) {
+            recyclerView.adapter = null
+        }
     }
 
     override fun onDetach() {

@@ -80,6 +80,7 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
             )
             isLevelsExpanded = !isLevelsExpanded
         }
+        binding.btnApplyFilter.setOnClickListener { dismiss() }
         return binding.root
     }
 
@@ -97,8 +98,15 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
         super.onStart()
         dialog?.window?.let { window ->
             val params = window.attributes
-            params.width = (resources.displayMetrics.widthPixels * 0.9).toInt()
-            params.height = ViewGroup.LayoutParams.WRAP_CONTENT
+            val isLandscape = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+            if (isLandscape) {
+                params.width = (resources.displayMetrics.widthPixels * 0.55).toInt()
+                params.height = (resources.displayMetrics.heightPixels * 0.85).toInt()
+                params.gravity = android.view.Gravity.END or android.view.Gravity.CENTER_VERTICAL
+            } else {
+                params.width = (resources.displayMetrics.widthPixels * 0.9).toInt()
+                params.height = ViewGroup.LayoutParams.WRAP_CONTENT
+            }
             window.attributes = params
         }
     }
