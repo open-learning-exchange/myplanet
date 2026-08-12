@@ -20,7 +20,6 @@
             android:padding="6dp"
             android:src="@drawable/ic_view_grid"
             app:tint="@android:color/white" />
-
         <ImageButton
             android:id="@+id/toggle_list"
             android:layout_width="32dp"
