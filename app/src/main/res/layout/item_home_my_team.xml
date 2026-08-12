@@ -17,7 +17,6 @@
             app:srcCompat="@drawable/team"
             app:tint="@color/dashboard_tile_teams"
             android:contentDescription="@null" />
-
         <TextView
             android:id="@+id/tv_name"
             android:layout_width="match_parent"
@@ -44,7 +43,6 @@
             android:visibility="gone"
             app:srcCompat="@drawable/message_alert"
             app:tint="@color/md_red_500" />
-
         <ImageView
             android:id="@+id/img_task"
             android:layout_width="@dimen/dashboard_chip_icon_size"
