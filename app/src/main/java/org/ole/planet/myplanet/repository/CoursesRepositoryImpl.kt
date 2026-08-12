@@ -122,7 +122,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 val rawSteps = getCourseSteps(courseId)
 
                 val steps = rawSteps.map { step ->
-                    val count = step.id?.let { submissionsRepository.getExamQuestionCount(it) } ?: 0
+                    val count = step.id.let { submissionsRepository.getExamQuestionCount(it) }
                     StepItem(
                         id = step.id,
                         stepTitle = step.stepTitle,
@@ -421,13 +421,12 @@ class CoursesRepositoryImpl @Inject constructor(
         val stepsList = getCourseSteps(courseId)
         val current = progressRepository.getCurrentProgress(stepsList, userId, courseId)
         val courseTitle = getCourseById(courseId)?.courseTitle
-        val stepIds = stepsList.mapNotNull { it.id }
-        val allExams = if (stepIds.isEmpty()) emptyList() else examDao.getByStepIds(stepIds).map { it }
+        val stepIds = stepsList.map { it.id }
+        val allExams = if (stepIds.isEmpty()) emptyList() else examDao.getByStepIds(stepIds)
         val max = stepsList.size
-        val title = courseTitle
         val examsByStepId = allExams.groupBy { it.stepId }
 
-        val examIds = allExams.mapNotNull { it.id }
+        val examIds = allExams.map { it.id }
         val questionsByExamId = if (examIds.isEmpty()) {
             emptyMap()
         } else {
@@ -446,7 +445,7 @@ class CoursesRepositoryImpl @Inject constructor(
             getParentBaseId(sub.parentId).orEmpty()
         }.filterKeys { it.isNotEmpty() }
 
-        val submissionIds = relevantSubmissions.mapNotNull { it.id }
+        val submissionIds = relevantSubmissions.map { it.id }
         val answersBySubmissionId = if (submissionIds.isEmpty()) {
             emptyMap()
         } else {
@@ -464,7 +463,7 @@ class CoursesRepositoryImpl @Inject constructor(
             getExamObject(exams, ob, questionsByExamId, submissionsByExamId, answersBySubmissionId)
             array.add(ob)
         }
-        return CourseProgressData(title, current, max, array)
+        return CourseProgressData(courseTitle, current, max, array)
     }
 
     private fun getParentBaseId(parentId: String?): String? {
@@ -479,10 +478,10 @@ class CoursesRepositoryImpl @Inject constructor(
         answersBySubmissionId: Map<String, List<Answer>>
     ) {
         exams.forEach { exam ->
-            exam.id?.let { examId ->
+            exam.id.let { examId ->
                 val submissionsForExam = submissionsByExamId[examId] ?: emptyList()
                 submissionsForExam.forEach { submission ->
-                    val answers = submission.id?.let { answersBySubmissionId[it] } ?: emptyList()
+                    val answers = submission.id.let { answersBySubmissionId[it] } ?: emptyList()
                     val questions = questionsByExamId[examId] ?: emptyList()
                     val questionCount = questions.size
                     if (questionCount == 0) {
@@ -568,7 +567,7 @@ class CoursesRepositoryImpl @Inject constructor(
     override suspend fun deleteCourseProgress(courseId: String?) {
         val examIds = courseId?.let { examDao.getByCourseId(it).map { exam -> exam.id } }.orEmpty()
         if (examIds.isNotEmpty()) {
-            val submissions = submissionDao.getUnuploadedNonSurveyByParentIds(examIds.mapNotNull { it })
+            val submissions = submissionDao.getUnuploadedNonSurveyByParentIds(examIds)
             val submissionIds = submissions.map { it.id }
             if (submissionIds.isNotEmpty()) {
                 answerDao.deleteBySubmissionIds(submissionIds)
@@ -826,7 +825,7 @@ class CoursesRepositoryImpl @Inject constructor(
 
     private suspend fun mapCourses(courses: List<MyCourse>): List<MyCourse> {
         if (courses.isEmpty()) return emptyList()
-        val courseIds = courses.mapNotNull { it.courseId ?: it.id }.distinct()
+        val courseIds = courses.map { it.courseId ?: it.id }.distinct()
         val stepsByCourseId = if (courseIds.isEmpty()) {
             emptyMap()
         } else {

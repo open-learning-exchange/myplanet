@@ -326,7 +326,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         return myLibraryDao.getRecentForUserPatternFlow(userIdPattern(userId))
     }
 
-    override fun getPendingDownloads(userId: String): Flow<List<MyLibrary>> {
+    override fun getPendingDownloads(userId: String): Flow<List<String>> {
         return myLibraryDao.getPendingDownloadsForUserPatternFlow(userIdPattern(userId))
     }
 
