@@ -62,10 +62,7 @@ final localeProvider = NotifierProvider<LocaleNotifier, Locale?>(
 /// `.arb` file (see `l10n.yaml`); a code with no `.arb` would fall back to
 /// English silently. The display names match the Kotlin's `language` array so
 /// a user switching back and forth sees consistent labels.
-const Map<String, String> offeredLocales = {
-  'en': 'English',
-  'es': 'Español',
-};
+const Map<String, String> offeredLocales = {'en': 'English', 'es': 'Español'};
 
 /// Port of `BuildConfig.VERSION_NAME` (exposed as `R.string.app_version` via
 /// a `resValue` in `app/build.gradle`). The Kotlin's `AboutFragment` formats
