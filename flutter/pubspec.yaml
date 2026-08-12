@@ -2,8 +2,11 @@ name: myplanet
 description: "myPlanet — offline extension of the Planet Learning Management System (Flutter port)."
 publish_to: 'none'
 
-# Kept in step with the Kotlin app's versionName/versionCode in app/build.gradle.
-version: 0.62.97+6297
+# Mirrors the Kotlin app's versionName/versionCode in app/build.gradle, and is
+# re-synced with every upstream rebase — nothing enforces it, so it drifts
+# between rebases (it had fallen 138 codes behind before this one). Re-check it
+# when harvesting.
+version: 0.64.35+6435
 
 environment:
   sdk: '>=3.11.0 <4.0.0'
@@ -15,8 +18,6 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: any
-
-  cupertino_icons: ^1.0.8
 
   # State management — replaces Hilt + ViewModel/StateFlow.
   flutter_riverpod: ^2.6.1

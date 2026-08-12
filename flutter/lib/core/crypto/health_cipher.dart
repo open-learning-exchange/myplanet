@@ -18,6 +18,14 @@ import 'package:pointycastle/export.dart';
 ///   - `key` and `iv` arrive as hex strings and are decoded into a 32-byte key
 ///     and a 16-byte IV. Short input is zero-padded, long input truncated,
 ///     which is what `System.arraycopy` into a fixed-size array does.
+///
+///     One deliberate divergence: Kotlin pads that way when *encrypting* but
+///     passes the decoded bytes straight to `SecretKeySpec`/`IvParameterSpec`
+///     when decrypting, so a mis-sized key throws there and `decrypt` returns
+///     null — meaning Kotlin cannot read back what it just wrote. This port
+///     pads on both paths, so a record stays readable. Unreachable for
+///     well-formed input, since `generateKey`/`generateIv` always produce
+///     64/32 hex characters; noted because fidelity is the rule here.
 ///   - The output is hex of `iv + ciphertext` — the IV is prepended, not
 ///     stored separately.
 class HealthCipher {

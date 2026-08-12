@@ -43,7 +43,7 @@ jobs:
       - name: Generate code
         run: |
           rm -rf .dart_tool/build
-          dart run build_runner build --delete-conflicting-outputs
+          dart run build_runner build
           flutter gen-l10n
 
       - name: Verify formatting
@@ -80,7 +80,7 @@ jobs:
       - name: Generate code
         run: |
           rm -rf .dart_tool/build
-          dart run build_runner build --delete-conflicting-outputs
+          dart run build_runner build
           flutter gen-l10n
 
       - name: Build debug APK
