@@ -804,6 +804,28 @@ class CourseDao extends DatabaseAccessor<AppDatabase> with _$CourseDaoMixin {
         .watch();
   }
 
+  /// Step count per course, batched — the `max` behind the courses list's
+  /// progress filter and the take-course progress bar. Mirrors
+  /// `CourseStepDao.getByCourseIds(courseIds).groupBy { it.courseId }` without
+  /// materializing every step row; only the count is needed here.
+  Future<Map<String, int>> stepCountsByCourseIds(List<String> courseIds) async {
+    if (courseIds.isEmpty) return const {};
+    final counts = <String, int>{};
+    for (final chunk in _chunked(courseIds, _sqliteVariableChunk)) {
+      final stmt = selectOnly(courseSteps)
+        ..addColumns([courseSteps.courseId, courseSteps.id.count()])
+        ..where(courseSteps.courseId.isIn(chunk))
+        ..groupBy([courseSteps.courseId]);
+      for (final row in await stmt.get()) {
+        final courseId = row.read(courseSteps.courseId);
+        if (courseId != null) {
+          counts[courseId] = row.read(courseSteps.id.count()) ?? 0;
+        }
+      }
+    }
+    return counts;
+  }
+
   /// Reactive course list. Combines the read paths of
   /// `CoursesRepositoryImpl.getMyCoursesFlow`, `search` and `filterCourses`.
   ///

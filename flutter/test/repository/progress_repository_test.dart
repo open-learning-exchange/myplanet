@@ -30,25 +30,34 @@ void main() {
   });
   tearDown(() => database.close());
 
-  test('a step the user opens advances the contiguous current-progress run', () async {
-    final steps = await database.courseDao.getSteps('course-1');
+  test(
+    'a step the user opens advances the contiguous current-progress run',
+    () async {
+      final steps = await database.courseDao.getSteps('course-1');
 
-    expect(await repository.getCurrentProgress(steps, 'user-1', 'course-1'), 0);
+      expect(
+        await repository.getCurrentProgress(steps, 'user-1', 'course-1'),
+        0,
+      );
 
-    // Opening step 1 (passed=null: an exam will grade it later) creates a row.
-    await repository.saveCourseProgress(
-      id: 'p-1',
-      courseId: 'course-1',
-      userId: 'user-1',
-      stepNum: 1,
-    );
-    expect(await repository.getCurrentProgress(steps, 'user-1', 'course-1'), 1);
+      // Opening step 1 (passed=null: an exam will grade it later) creates a row.
+      await repository.saveCourseProgress(
+        id: 'p-1',
+        courseId: 'course-1',
+        userId: 'user-1',
+        stepNum: 1,
+      );
+      expect(
+        await repository.getCurrentProgress(steps, 'user-1', 'course-1'),
+        1,
+      );
 
-    // Step 2 is not yet opened, so the run stops at 1 even though step 1's row
-    // has passed=false — current-progress measures reach, not pass.
-    final grid = await repository.courseProgress('course-1', 'user-1');
-    expect(grid[0].passed, isFalse);
-  });
+      // Step 2 is not yet opened, so the run stops at 1 even though step 1's row
+      // has passed=false — current-progress measures reach, not pass.
+      final grid = await repository.courseProgress('course-1', 'user-1');
+      expect(grid[0].passed, isFalse);
+    },
+  );
 
   test('a re-open does not clobber a pass the exam previously set', () async {
     await repository.saveCourseProgress(
@@ -140,14 +149,63 @@ void main() {
     ]);
     expect(await repository.isCourseCertified('course-1'), isTrue);
   });
+
+  test(
+    'courseProgressSummary reports max as step count and current as the contiguous run',
+    () async {
+      // course-1 has 3 steps (seeded). The user has opened steps 1 and 2 only.
+      await repository.saveCourseProgress(
+        id: 'p-1',
+        courseId: 'course-1',
+        userId: 'user-1',
+        stepNum: 1,
+      );
+      await repository.saveCourseProgress(
+        id: 'p-2',
+        courseId: 'course-1',
+        userId: 'user-1',
+        stepNum: 2,
+      );
+
+      final summary = await repository.courseProgressSummary([
+        'course-1',
+      ], 'user-1');
+      expect(summary['course-1']?.max, 3);
+      expect(summary['course-1']?.current, 2);
+
+      // A course with no steps still appears, with max=0/current=0 — matching the
+      // Kotlin, whose map always contains an entry per requested id.
+      await _seedCourse(database, 'course-empty', stepCount: 0);
+      final withEmpty = await repository.courseProgressSummary([
+        'course-1',
+        'course-empty',
+      ], 'user-1');
+      expect(withEmpty['course-empty']?.max, 0);
+      expect(withEmpty['course-empty']?.current, 0);
+      // The presence of step 3 only (a gap at 1) yields current=0 — the run walks
+      // from step 1 and stops at the first missing step.
+      await _seedCourse(database, 'course-gap', stepCount: 3);
+      await repository.saveCourseProgress(
+        id: 'gap-3',
+        courseId: 'course-gap',
+        userId: 'user-1',
+        stepNum: 3,
+      );
+      final gap = await repository.courseProgressSummary([
+        'course-gap',
+      ], 'user-1');
+      expect(gap['course-gap']?.current, 0);
+    },
+  );
 }
 
 /// Seeds a course with [stepCount] steps, mirroring the `course_steps` shape
 /// `CourseMapper` produces (0-based `stepIndex`, local id `<course>:<pos>`).
 Future<void> _seedCourse(
   AppDatabase database,
-  String courseId,
-  {required int stepCount}) async {
+  String courseId, {
+  required int stepCount,
+}) async {
   await database.courseDao.upsertAll(
     [
       CoursesCompanion.insert(

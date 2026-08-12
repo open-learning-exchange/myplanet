@@ -33,7 +33,7 @@ class _CoursesScreenState extends ConsumerState<CoursesScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final courses = ref.watch(coursesStreamProvider);
+    final courses = ref.watch(filteredSortedCoursesProvider);
     final syncState = ref.watch(courseSyncProvider);
 
     ref.listen<SyncUiState>(courseSyncProvider, (previous, next) {
@@ -127,6 +127,8 @@ class _CourseFilterBar extends ConsumerWidget {
     final notifier = ref.read(courseFilterProvider.notifier);
     final grades = ref.watch(gradeLevelsProvider).valueOrNull ?? const [];
     final subjects = ref.watch(subjectLevelsProvider).valueOrNull ?? const [];
+    final sort = ref.watch(courseSortProvider);
+    final progressFilter = ref.watch(courseProgressFilterProvider);
 
     return SizedBox(
       height: 48,
@@ -155,16 +157,43 @@ class _CourseFilterBar extends ConsumerWidget {
             allLabel: l10n.allLevels,
             onChanged: notifier.setSubjectLevel,
           ),
+          const SizedBox(width: 8),
+          _ProgressFilterDropdown(
+            value: progressFilter,
+            onChanged: ref.read(courseProgressFilterProvider.notifier).set,
+          ),
+          const SizedBox(width: 8),
+          _SortButton(
+            label: l10n.orderByDate,
+            active: sort.field == CourseSortField.date,
+            ascending: sort.field == CourseSortField.date
+                ? sort.dateAscending
+                : null,
+            onTap: ref.read(courseSortProvider.notifier).toggleDate,
+          ),
+          const SizedBox(width: 8),
+          _SortButton(
+            label: l10n.orderByTitle,
+            active: sort.field == CourseSortField.title,
+            ascending: sort.field == CourseSortField.title
+                ? sort.titleAscending
+                : null,
+            onTap: ref.read(courseSortProvider.notifier).toggleTitle,
+          ),
           if (filter.gradeLevel != null ||
               filter.subjectLevel != null ||
               filter.myCoursesOnly ||
-              filter.query.isNotEmpty) ...[
+              filter.query.isNotEmpty ||
+              progressFilter != CourseProgressFilter.all ||
+              sort.field != null) ...[
             const SizedBox(width: 8),
             ActionChip(
               avatar: const Icon(Icons.clear, size: 18),
               label: Text(l10n.clearFilters),
               onPressed: () {
                 notifier.clear();
+                ref.read(courseProgressFilterProvider.notifier).clear();
+                ref.read(courseSortProvider.notifier).clear();
                 onCleared();
               },
             ),
@@ -209,6 +238,81 @@ class _LevelDropdown extends StatelessWidget {
         ],
         onChanged: onChanged,
       ),
+    );
+  }
+}
+
+/// The progress filter spinner — `CourseFilterController`'s `spnProgress`,
+/// whose items are the `progress_filter` array (All / Not Started / In
+/// Progress / Completed).
+class _ProgressFilterDropdown extends StatelessWidget {
+  const _ProgressFilterDropdown({required this.value, required this.onChanged});
+
+  final CourseProgressFilter value;
+  final ValueChanged<CourseProgressFilter> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Center(
+      child: DropdownButton<CourseProgressFilter>(
+        value: value,
+        hint: Text(l10n.progress),
+        borderRadius: BorderRadius.circular(8),
+        items: [
+          DropdownMenuItem(
+            value: CourseProgressFilter.all,
+            child: Text(l10n.progressFilterAll),
+          ),
+          DropdownMenuItem(
+            value: CourseProgressFilter.notStarted,
+            child: Text(l10n.progressFilterNotStarted),
+          ),
+          DropdownMenuItem(
+            value: CourseProgressFilter.inProgress,
+            child: Text(l10n.progressFilterInProgress),
+          ),
+          DropdownMenuItem(
+            value: CourseProgressFilter.completed,
+            child: Text(l10n.progressFilterCompleted),
+          ),
+        ],
+        onChanged: (v) {
+          if (v != null) onChanged(v);
+        },
+      ),
+    );
+  }
+}
+
+/// A sort toggle — `CoursesFragment`'s `order_by_date_button` /
+/// `order_by_title_button`. An active sort shows its direction arrow; tapping
+/// a non-active sort makes it active without flipping (the Kotlin sets
+/// `activeSort` first, flipping only on the next tap).
+class _SortButton extends StatelessWidget {
+  const _SortButton({
+    required this.label,
+    required this.active,
+    required this.ascending,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool active;
+  final bool? ascending;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ActionChip(
+      label: Text(label),
+      avatar: active
+          ? Icon(
+              ascending == true ? Icons.arrow_upward : Icons.arrow_downward,
+              size: 18,
+            )
+          : const Icon(Icons.sort, size: 18),
+      onPressed: onTap,
     );
   }
 }

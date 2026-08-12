@@ -65,6 +65,102 @@ class CourseFilterNotifier extends Notifier<CourseFilter> {
   void clear() => state = const CourseFilter();
 }
 
+/// The progress filter spinner on the courses screen - `""` means "All".
+///
+/// Port of `CourseFilterController`'s `spnProgress` selection, whose values
+/// are the `progress_filter` array: All / Not Started / In Progress / Completed.
+enum CourseProgressFilter {
+  all,
+  notStarted,
+  inProgress,
+  completed;
+
+  static const _labels = {
+    CourseProgressFilter.all: 'All',
+    CourseProgressFilter.notStarted: 'Not Started',
+    CourseProgressFilter.inProgress: 'In Progress',
+    CourseProgressFilter.completed: 'Completed',
+  };
+
+  /// The Kotlin compares the spinner's `selectedItem.toString()` against these
+  /// exact strings; the port keeps the same spelling so a future sync of
+  /// server-side filters matches.
+  String get label => _labels[this]!;
+}
+
+class CourseProgressFilterNotifier extends Notifier<CourseProgressFilter> {
+  @override
+  CourseProgressFilter build() => CourseProgressFilter.all;
+
+  void set(CourseProgressFilter value) => state = value;
+  void clear() => state = CourseProgressFilter.all;
+}
+
+final courseProgressFilterProvider =
+    NotifierProvider<CourseProgressFilterNotifier, CourseProgressFilter>(
+      CourseProgressFilterNotifier.new,
+    );
+
+/// Which column the courses list sorts by, and in which direction. Port of
+/// `CoursesViewModel`'s `activeSort` / `isTitleAscending` / `isDateAscending`.
+/// `field == null` means "no sort applied" - the stream's natural order,
+/// matching the Kotlin's fall-through branch.
+enum CourseSortField { title, date }
+
+class CourseSortState {
+  const CourseSortState({
+    this.field,
+    this.titleAscending = false,
+    this.dateAscending = true,
+  });
+
+  final CourseSortField? field;
+
+  // Per-field direction, persisted in state so a provider rebuild (hot reload,
+  // dispose+recreate) does not reset a direction the user already chose. The
+  // Kotlin keeps these as independent ViewModel fields for the same reason.
+  final bool titleAscending;
+  final bool dateAscending;
+
+  /// The direction of the active field - what `sortCourses` reads.
+  bool get ascending =>
+      field == CourseSortField.title ? titleAscending : dateAscending;
+}
+
+class CourseSortNotifier extends Notifier<CourseSortState> {
+  @override
+  CourseSortState build() => const CourseSortState();
+
+  /// Toggling a sort sets it active and flips its direction, exactly as
+  /// `CoursesViewModel.toggleTitleSort`/`toggleDateSort` do: the same field
+  /// flips asc/desc; the other field becomes active carrying its own last
+  /// direction.
+  void toggleTitle() {
+    final s = state;
+    state = CourseSortState(
+      field: CourseSortField.title,
+      titleAscending: !s.titleAscending,
+      dateAscending: s.dateAscending,
+    );
+  }
+
+  void toggleDate() {
+    final s = state;
+    state = CourseSortState(
+      field: CourseSortField.date,
+      titleAscending: s.titleAscending,
+      dateAscending: !s.dateAscending,
+    );
+  }
+
+  void clear() => state = const CourseSortState();
+}
+
+final courseSortProvider =
+    NotifierProvider<CourseSortNotifier, CourseSortState>(
+      CourseSortNotifier.new,
+    );
+
 final courseFilterProvider =
     NotifierProvider<CourseFilterNotifier, CourseFilter>(
       CourseFilterNotifier.new,
@@ -84,6 +180,71 @@ final coursesStreamProvider = StreamProvider<List<CourseRow>>((ref) {
         subjectLevel: filter.subjectLevel,
       );
 });
+
+/// The courses list with the progress filter and sort applied. This is what
+/// `CoursesScreen` renders.
+///
+/// Port of `CoursesViewModel`'s `filterCourses` + `sortCourses`, run together.
+/// The sort state lives in [courseSortProvider] (surviving stream emissions,
+/// not reset when the SQL-filtered list re-emits) and the progress filter in
+/// [courseProgressFilterProvider]; both re-trigger this provider on change.
+final filteredSortedCoursesProvider = StreamProvider<List<CourseRow>>((
+  ref,
+) async* {
+  final courses = ref.watch(coursesStreamProvider);
+  final sort = ref.watch(courseSortProvider);
+  final progressFilter = ref.watch(courseProgressFilterProvider);
+
+  final items = courses.valueOrNull;
+  if (items == null || items.isEmpty) {
+    yield items ?? const [];
+    return;
+  }
+
+  // "All" is the common case - skip the progress query entirely, matching the
+  // Kotlin's `if (progressFilter.isEmpty() || progressMap == null) baseCourses`.
+  var filtered = items;
+  if (progressFilter != CourseProgressFilter.all) {
+    final userId = ref.watch(sessionProvider).valueOrNull?.id;
+    final summary = await ref
+        .watch(progressRepositoryProvider)
+        .courseProgressSummary([for (final c in items) c.id], userId);
+    filtered = items.where((course) {
+      final s = summary[course.id];
+      final current = s?.current ?? 0;
+      final max = s?.effectiveMax ?? 0;
+      switch (progressFilter) {
+        case CourseProgressFilter.notStarted:
+          return current == 0;
+        case CourseProgressFilter.inProgress:
+          return current > 0 && (max == 0 || current < max);
+        case CourseProgressFilter.completed:
+          return max > 0 && current >= max;
+        case CourseProgressFilter.all:
+          return true;
+      }
+    }).toList();
+  }
+
+  yield _sortCourses(filtered, sort);
+});
+
+List<CourseRow> _sortCourses(List<CourseRow> courses, CourseSortState sort) {
+  final field = sort.field;
+  if (field == null) return courses;
+  final sorted = [...courses];
+  switch (field) {
+    case CourseSortField.title:
+      sorted.sort(
+        (a, b) => (a.courseTitle ?? '').toLowerCase().compareTo(
+          (b.courseTitle ?? '').toLowerCase(),
+        ),
+      );
+    case CourseSortField.date:
+      sorted.sort((a, b) => a.createdDate.compareTo(b.createdDate));
+  }
+  return sort.ascending ? sorted : sorted.reversed.toList();
+}
 
 /// A single course, for the detail screen.
 final courseProvider = StreamProvider.family<CourseRow?, String>((ref, id) {
@@ -124,7 +285,7 @@ class CourseSyncNotifier extends SyncNotifier {
 
     // The three CouchDB caches are independent tables, so the pulls run
     // concurrently. A "sync courses" refreshes progress and certifications in
-    // the same pass — the take-course view reads them together, and a stale
+    // the same pass - the take-course view reads them together, and a stale
     // `certification` row is what gates the "certified" badge.
     final courseResult = courses.sync(config: config, onProgress: onProgress);
     final progressResult = progress.syncCourseProgress(
@@ -195,23 +356,18 @@ final courseProgressStreamProvider = StreamProvider<List<CourseProgressRow>>((
 
   final courseIds = myCourses.map((c) => c.id).toList();
 
-  // Get steps and submissions in parallel
+  // The contiguous-run progress (current) and step count (max) come from the
+  // same repository method the courses list uses, so the "My Progress" grid and
+  // the list's progress filter agree on what "current" means — a step the user
+  // opened counts, regardless of `passed`, walked from step 1 until the first
+  // gap. Previously this grid counted submissions, which over-reported
+  // (re-taking an exam inflated "current") and bore no relation to the list.
+  final progress = ref.watch(progressRepositoryProvider);
+  final summary = await progress.courseProgressSummary(courseIds, userId);
+
   final db = ref.watch(appDatabaseProvider);
 
-  // Get all steps for these courses
-  final allStepsFutures = courseIds.map((id) => coursesRepo.getCourseSteps(id));
-  final allStepsList = await Future.wait(allStepsFutures);
-  final stepsByCourse = <String, int>{};
-  for (final steps in allStepsList) {
-    for (final step in steps) {
-      if (step.courseId != null) {
-        stepsByCourse[step.courseId!] =
-            (stepsByCourse[step.courseId!] ?? 0) + 1;
-      }
-    }
-  }
-
-  // Get submissions for the user
+  // Get submissions for the user — used only for the per-step mistake counts.
   final submissions = await db.submissionDao.watchForUser(userId ?? '').first;
   final submissionsByCourse = <String, List<SubmissionRow>>{};
   for (final sub in submissions) {
@@ -249,18 +405,13 @@ final courseProgressStreamProvider = StreamProvider<List<CourseProgressRow>>((
   // Build result rows
   final rows = <CourseProgressRow>[];
   for (final course in myCourses) {
-    final stepCount = stepsByCourse[course.id] ?? 0;
-    final submissionCount = submissionsByCourse[course.id]?.length ?? 0;
-    final progressCurrent = stepCount > 0
-        ? submissionCount.clamp(0, stepCount)
-        : 0;
-
+    final s = summary[course.id];
     rows.add(
       CourseProgressRow(
         courseId: course.id,
         courseName: course.courseTitle ?? 'Untitled Course',
-        progressCurrent: progressCurrent,
-        progressMax: stepCount,
+        progressCurrent: s?.current,
+        progressMax: s?.max,
         mistakes: mistakesByCourse[course.id] ?? 0,
         stepMistakes: stepMistakesByCourse[course.id],
       ),

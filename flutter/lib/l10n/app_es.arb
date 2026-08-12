@@ -155,6 +155,13 @@
   "teamCalendar": "Calendario del equipo",
   "noMeetupsOnDate": "No hay reuniones en esta fecha",
   "myProgress": "Mi Progreso",
+  "progress": "Progreso",
+  "orderByTitle": "Ordenar por título",
+  "orderByDate": "Ordenar por fecha",
+  "progressFilterAll": "Todos",
+  "progressFilterNotStarted": "No iniciado",
+  "progressFilterInProgress": "En curso",
+  "progressFilterCompleted": "Completado",
   "stepProgress": "{current} de {max} pasos",
   "@stepProgress": {
     "placeholders": {
