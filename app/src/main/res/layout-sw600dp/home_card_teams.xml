@@ -33,7 +33,6 @@
                     android:layout_height="@dimen/dashboard_tile_icon_size"
                     app:srcCompat="@drawable/team"
                     android:contentDescription="@string/txt_myTeams" />
-
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -43,7 +42,6 @@
                     android:textColor="@color/md_white_1000"
                     android:textSize="12sp"
                     android:textStyle="bold" />
-
             </LinearLayout>
 
             <TextView
@@ -64,7 +62,6 @@
                 android:textColor="@color/dashboard_badge_ink"
                 android:textSize="11sp"
                 android:textStyle="bold" />
-
         </FrameLayout>
 
         <ScrollView
@@ -85,5 +82,4 @@
                 app:flexWrap="wrap" />
         </ScrollView>
     </LinearLayout>
-
 </com.google.android.material.card.MaterialCardView>
