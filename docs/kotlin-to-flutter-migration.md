@@ -5,9 +5,11 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 33 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 34 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
-working. Counted honestly:
+working. All **six** locales the Kotlin offers now ship an `.arb` (partial coverage — see
+*The 5 existing locales* below), which removes the outright-absent case that made a non-English
+release a regression. Counted honestly:
 
 - `enterprises` has no screens of its own; the teams slice (Phase 18) covers what it did.
 - `components`: `CheckboxList` is used by four screens. `ChallengeDialog` and `CustomDropdown`
@@ -205,6 +207,30 @@ Known gaps:
   guard-free because the progress filter that reads it needs none. The
   `completedCoursesProvider` and `isCourseCertifiedProvider` mirror the Kotlin
   ViewModel's one-load-per-user and the fragment's per-star certification coroutine.
+
+- **Phase 34** — the last three dashboard overflow items: About, Disclaimer and the
+  language changer. `AboutScreen` renders the `about` HTML with the running version spliced
+  in after the `<h3>MyPlanet</h3>` heading (`package_info_plus` for `versionName`, matching
+  `AboutFragment`), `DisclaimerScreen` renders `disclaimer` with tappable links through
+  `flutter_widget_from_html`, and the overflow menu now follows the Kotlin's order: sync,
+  feedback, language, theme, about, disclaimer, settings, logout. Two corrections went in with
+  it:
+  - **`about` was defined twice in `app_en.arb`.** The page body was appended under the name
+    the *menu label* already had. A duplicate key is legal JSON and the last one wins, so
+    `gen-l10n` and `flutter analyze` both stayed silent while `l10n.about` — still read by
+    `settings_screen.dart` as a section heading — became a two-thousand-character HTML
+    document. The label is `actionAbout` (Kotlin's `action_about`), the body is `about`
+    (Kotlin's `about`), and the settings heading now reads the former.
+  - **Four more keys were already shadowed the same way** before this phase: `justNow`,
+    `language`, `description`, `apply` (identical values, harmless) and `untitledResource`
+    (*different* values — "Untitled resource" was dead, "Untitled Resource" shipped). All six
+    are deduped keeping the value JSON already resolved to, so nothing changed at runtime.
+    `test/l10n/arb_integrity_test.dart` now fails on a duplicate key, on a translated key
+    English does not have, and on a body/label pair that has collapsed into one key.
+
+    Worth stating plainly, because it is the same lesson as the preserved-table guard: no
+    existing test asserted the settings About heading, so the suite was green with the bug in
+    it. A screen having a test file is not the same as its strings being pinned.
 
 - **Phase 27** — chat upload, member registration against `_users`, and the resource detail
   screen with its filter sheet. Three fixes were needed around it:
@@ -431,6 +457,34 @@ extending it:
 Not yet solved: uploads only run while the user is in the app and acting. Submissions, news and
 team writes need retry and background delivery -- see item 1 below.
 
+### "Sync now" has to push as well as pull
+
+The Phase 32 Sync centre ran nine pulls and drained nothing. `OutboxDrainer.drain` had exactly
+two callers — `OutboxDrainScope` (startup and resume) and the submissions screen's refresh — so
+a user who worked offline, reconnected and pressed the button built for that moment got their
+data pulled and sent nothing. Kotlin pairs the two: `SyncActivity` calls `startUpload` on a
+forced sync. `DashboardSyncNotifier.drainOutbox` now runs at the end of `syncAll` and `retry`.
+
+Two details are load-bearing:
+
+- **It is gated on at least one area having succeeded.** Not tidiness: a drain attempted with no
+  route to the server consumes one of the operation's five attempts and pushes its backoff out,
+  so firing it after a wholly failed run spends the retry budget proving the network is still
+  down.
+- **A drain failure must not mark the sync failed.** Per-operation outcomes are already recorded
+  in the outbox; the pulls genuinely succeeded.
+
+`OutboxDrainer`'s own docstring had claimed drain ran "after a successful sync" for several
+phases while nothing called it — a reminder that a doc comment is not a caller. The greps in *A
+screen is not ported until something fills it and something leaves it* are the check that finds
+this class of gap; run them on triggers, not just on mappers and routes.
+
+`OutboxDrainScope` also had no test whatsoever — it never appeared in the coverage report,
+because nothing ever loaded the file. Writing one surfaced a second asymmetry: the startup drain
+routed a thrown error to `FlutterError.reportError`, but the resume path called `_drain()`
+fire-and-forget with no guard, so a drain that fell over while foregrounding the app raised an
+unhandled async error. Both paths now share the guard.
+
 ## Platform policy
 
 Both platforms must permit cleartext, because the primary myPlanet deployment is a local community
@@ -492,13 +546,50 @@ Ordered by risk, highest first.
    Kotlin never had, the English is authored and the other locales are left absent so `gen-l10n`
    falls back and Crowdin can translate it properly. Arabic also needs an RTL pass.
 
-   As of the ratings/personals/notifications batch, `app_en.arb` holds 166 keys and `app_es.arb`
-   64. A key is carried into Spanish only when a `values-es` counterpart is unambiguous -- the
-   Kotlin string name normalises to the ARB key *and* its English text matches, or the English
-   text matches exactly and every candidate shares one translation. That leaves **102 keys
-   English-only**, and they are genuinely new phrasings (`profileUnavailable`,
-   `dictionaryDownloadFailed`, `savedOffline`, the rating messages), not an unfinished pass.
-   `gen-l10n` reports them on every build; they are Crowdin's to fill.
+   **As of Phase 34 all six locales ship an `.arb`.** For most of the port only `en` and `es`
+   existed, so `ar`, `fr`, `ne` and `so` fell back to English in full — a language *regression*
+   against a Kotlin app that has all five translated at ~100% (1,041 strings each). The same
+   rule already used for Spanish was run for the other four:
+
+   > A key is carried into a locale only when its `values-<loc>` counterpart is unambiguous —
+   > the Kotlin string name normalises to the ARB key *and* its English text matches, or the
+   > English text matches exactly and every candidate name shares one translation.
+
+   with one widening, which is what took coverage from 25% to 37%: the English texts are
+   compared with case and trailing punctuation folded. `sync` is `"Sync"` in the ARB and
+   `"sync"` in `strings.xml`; `appTheme` is `"App theme"` against `"App Theme"`. Same key, same
+   string — the capitalisation is not what got translated. A name match differing in
+   *substance* is still skipped, because the translation answers a different string
+   (`subjectLevel`: `"Subject"` vs `"Subject Level"`).
+
+   Nothing is machine-translated, and nothing existing was overwritten: a reviewed entry always
+   wins over the mechanical result. Where the two disagreed, the *committed* Spanish was
+   sometimes the less faithful of the two — `amount` reads "Monto" where `values-es` says
+   "Cantidad", and `myProgress` reads "Mi Progreso" where `values-es` ships the untranslated
+   `miProgreso` this document elsewhere commits to reproducing. Those 13 disagreements are left
+   as they are rather than silently rewritten; they want a human call.
+
+   Current state, out of 641 translatable English keys:
+
+   | | keys | note |
+   |---|---|---|
+   | `app_en.arb` | 641 | the template |
+   | `app_es.arb` | 296 | 168 pre-existing + mechanical pass |
+   | `app_fr.arb` | 240 | |
+   | `app_ar.arb` / `app_ne.arb` / `app_so.arb` | 239 | |
+
+   The ceiling is not 641. **311 keys have no Kotlin counterpart at all** — they are genuinely
+   new phrasings the shipping app never had — and 50 more carry ICU placeholders that cannot be
+   filled from Kotlin's printf strings (`%1$s` → `{count}`) without emitting a message
+   `gen-l10n` refuses to compile. Of the ~280 keys a mechanical pass could reach, ~239 are
+   carried. The rest, and every new phrasing, remain Crowdin's to fill; `gen-l10n` lists them on
+   every build.
+
+   The generator lives outside the repo deliberately — it reads `app/src/main/res`, which is the
+   Kotlin app's tree, and re-running it is a rebase-time chore, not a build step. Two things are
+   still open: `crowdin.yml` does not exist anywhere in this repository, so there is no
+   configuration routing translators at `flutter/lib/l10n/*.arb`, and Arabic still needs an RTL
+   layout pass now that it is reachable from the language changer.
 
    Two quirks are reproduced rather than corrected, because they are what Spanish users see in
    the shipping app today: `myCourses`/`myLife`/`myHealth`/`myPersonals`/`achievements` resolve to
@@ -843,6 +934,6 @@ succeeds, it just doesn't do what the Kotlin did.
 
 ---
 
-**Last updated**: 2026-08-12 (Phase 33 complete)
-**Phase**: 33 of N (27 of 28 UI packages have a screen — see Status for what that does and does
+**Last updated**: 2026-08-12 (Phase 34 complete)
+**Phase**: 34 of N (27 of 28 UI packages have a screen — see Status for what that does and does
 not mean)
