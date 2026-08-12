@@ -140,6 +140,53 @@ String publicSurveyBaseUrl(Uri uri, String? configuredServerUrl) {
   return configuredServerUrl ?? '';
 }
 
+/// The gate every navigation passes through, collapsing the per-activity
+/// `SharedPreferences` checks the Kotlin spreads across `SyncActivity`,
+/// `LoginActivity` and `DashboardActivity` into one declarative rule.
+///
+/// Kept as a pure function of the four inputs the router reads, so the whole
+/// truth table is testable without a widget tree or a provider container —
+/// the same reason [publicSurveyBaseUrl] is separate. Returning null means
+/// "stay here".
+String? gateRedirect({
+  required String location,
+  required List<String> pathSegments,
+  required bool hasServer,
+  required bool onboardingComplete,
+  required bool sessionRestoring,
+  required bool isSignedIn,
+}) {
+  // Public surveys are answerable without onboarding, server config or a
+  // signed-in session. Match before any gating redirects.
+  if (pathSegments.isNotEmpty && pathSegments.first == 'survey') {
+    return null;
+  }
+
+  // Onboarding does not depend on the asynchronous session restoration. Gate it
+  // first to avoid flashing the resources screen on a fresh install.
+  if (!onboardingComplete) {
+    return location == Routes.onboarding ? null : Routes.onboarding;
+  }
+
+  // Hold position until the persisted session has been read back.
+  if (sessionRestoring) return null;
+
+  if (location == Routes.onboarding) {
+    return hasServer ? Routes.login : Routes.server;
+  }
+
+  if (!hasServer) {
+    return location == Routes.server ? null : Routes.server;
+  }
+  if (!isSignedIn) {
+    return location == Routes.login ? null : Routes.login;
+  }
+  if (location == Routes.server || location == Routes.login) {
+    return Routes.home;
+  }
+  return null;
+}
+
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -149,42 +196,15 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: Routes.home,
     refreshListenable: _RouterRefresh(ref),
     redirect: (context, state) {
-      // Public surveys are answerable without onboarding, server config or a
-      // signed-in session. Match before any gating redirects.
-      final pathSegments = state.uri.pathSegments;
-      if (pathSegments.isNotEmpty && pathSegments.first == 'survey') {
-        return null;
-      }
-
-      final hasServer = ref.read(serverConfigProvider) != null;
-      final onboardingComplete = ref.read(onboardingProvider);
       final session = ref.read(sessionProvider);
-      final location = state.matchedLocation;
-
-      // Onboarding does not depend on the asynchronous session restoration.
-      // Gate it first to avoid flashing the resources screen on a fresh install.
-      if (!onboardingComplete) {
-        return location == Routes.onboarding ? null : Routes.onboarding;
-      }
-
-      // Hold position until the persisted session has been read back.
-      if (session.isLoading) return null;
-
-      final isSignedIn = session.valueOrNull != null;
-      if (location == Routes.onboarding) {
-        return hasServer ? Routes.login : Routes.server;
-      }
-
-      if (!hasServer) {
-        return location == Routes.server ? null : Routes.server;
-      }
-      if (!isSignedIn) {
-        return location == Routes.login ? null : Routes.login;
-      }
-      if (location == Routes.server || location == Routes.login) {
-        return Routes.home;
-      }
-      return null;
+      return gateRedirect(
+        location: state.matchedLocation,
+        pathSegments: state.uri.pathSegments,
+        hasServer: ref.read(serverConfigProvider) != null,
+        onboardingComplete: ref.read(onboardingProvider),
+        sessionRestoring: session.isLoading,
+        isSignedIn: session.valueOrNull != null,
+      );
     },
     routes: [
       GoRoute(
