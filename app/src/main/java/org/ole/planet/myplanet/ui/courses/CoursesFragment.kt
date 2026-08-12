@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.Tag
 import org.ole.planet.myplanet.model.TagEntity
@@ -63,6 +64,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     var userModel: UserEntity? = null
     private lateinit var confirmation: AlertDialog
     private var selectionJob: Job? = null
+    private val refreshJobs = mutableMapOf<String, Job>()
     private var pendingScrollState: Parcelable? = null
     private val viewModel: CoursesViewModel by viewModels()
 
@@ -595,10 +597,15 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
 
     override fun onRatingChanged(type: String, id: String) {
         if (type == "course" && ::adapterCourses.isInitialized) {
-            viewLifecycleOwner.lifecycleScope.launch {
+            refreshJobs[id]?.cancel()
+            refreshJobs[id] = viewLifecycleOwner.lifecycleScope.launch {
                 viewModel.refreshCourseRatings(model?.id)
                 adapterCourses.refreshWithDiff(id)
             }
         }
+    }
+
+    override fun showDownloadDialog(dbMyLibrary: List<MyLibrary?>) {
+        // Do not show download suggestion dialog in Courses and My Course (Fix #15435)
     }
 }
