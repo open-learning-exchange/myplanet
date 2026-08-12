@@ -143,8 +143,11 @@ class EventsRepository {
   Future<MeetupRow?> toggleAttendance(String meetupId, String? userId) async {
     final row = await _dao.getByMeetupId(meetupId);
     if (row == null) return null;
+    // No signed-in user, no write in either direction — the Kotlin's old
+    // guard allowed a joined meetup to be *left* with no current user
+    // (writing userId = ''), which 2a49db978 closed. Bail out unchanged.
+    if (userId == null || userId.isEmpty) return row;
     final joined = row.userId?.isNotEmpty == true;
-    if (!joined && (userId == null || userId.isEmpty)) return row;
     await _dao.upsert(
       row.toCompanion(false).copyWith(userId: Value(joined ? '' : userId)),
     );

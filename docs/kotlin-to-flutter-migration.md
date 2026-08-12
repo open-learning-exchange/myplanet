@@ -206,6 +206,28 @@ Known gaps:
   Also: the chat provider called `sendNewChatRequest` on both branches, so every follow-up
   message opened a fresh conversation instead of continuing the one on screen.
 
+## Harvesting upstream: the 2026-08-12 rebase
+
+Rebased onto master again (8 new Kotlin commits, clean replay). Five changed behavior; four
+were harvested, one (notification group expand/collapse defaults) lands on a grouping model
+the port has not built:
+
+- **The home-card placeholders became invitations** (`48fbf109d`): "You can add resources" /
+  "You can join courses" / "You can join a team", in every locale — the ARB texts follow.
+- **A reply keys on its parent's local id** (`5f3198970`): `postReply` was `news._id ?: news.id`
+  and is now `news.id`. The port follows; the delete walk still probes both keys for rows
+  written under the old rule.
+- **No attendance write without a signed-in user** (`2a49db978`): the old guard let a joined
+  meetup be *left* with no current user, writing `userId = ''`. Toggling is now a no-op in both
+  directions without a session.
+- **The finances "to" date picker falls back to the "from" date** (`437a3d28a`) before today.
+
+The same pass adopted the `flutter-openhands2` branch (course progress + certification data
+layer, the progress filter/sort on the courses screen) with one correction: its completion rule
+counted passed *rows*; the Kotlin counts unique passed `stepNum`s (`toSet()`, "matches web"),
+and sync can deliver several rows per step — one per device — so row-counting would let a
+twice-passed step 1 complete a two-step course.
+
 ## Harvesting upstream: the 2026-08-11 rebase
 
 The branch was rebased onto master (`6977707ef`), 130 Kotlin commits ahead of the previous

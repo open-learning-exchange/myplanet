@@ -114,6 +114,28 @@ void main() {
     });
   });
 
+  test('a reply keys on the parent local id even with a server _id', () async {
+    // Port of the Kotlin test added in 5f3198970: `postReply` switched from
+    // `news._id ?: news.id` to `news.id`. The discriminating case is a post
+    // authored offline and then uploaded — its row keeps the local id while
+    // `docId` carries the server's.
+    final rootId = await repository.createPost(
+      message: 'Root',
+      userId: 'user-1',
+      userName: 'Ada',
+    );
+    await repository.markUploaded(rootId, 'server-id-1', '1-abc');
+
+    final replyId = await repository.postReply(
+      parentId: rootId,
+      message: 'Child',
+      userId: 'user-1',
+      userName: 'Ada',
+    );
+
+    expect((await repository.getById(replyId!))?.replyTo, rootId);
+  });
+
   test(
     'a reply inherits its parent audience and threads by server id',
     () async {

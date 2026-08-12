@@ -159,12 +159,14 @@ class ProgressRepository {
     return mistakesByExam[exam.id] ?? 0;
   }
 
-  /// Port of `CoursesRepositoryImpl.getCompletedCourses(userId)`.
+  /// Port of `ProgressRepositoryImpl.getCompletedCourses(userId)`.
   ///
-  /// A course is complete when a progress row exists for **every** step and
-  /// each is `passed`. Mirrors the Kotlin's `stepCount <= progress.size` and
-  /// `all { it.passed }` rule — note the `<=`, which the Kotlin uses so a
-  /// course with no steps is never "complete" (it has nothing to pass).
+  /// A course is complete when every step is `passed` and the course has at
+  /// least one step. The Kotlin counts **unique** passed `stepNum`s
+  /// (`passedStepNumbers.toSet()`, "matches web: step.passed === true"):
+  /// sync can deliver several progress rows for the same step — one per
+  /// device or attempt — so counting rows instead of steps would let a
+  /// twice-passed step 1 complete a two-step course.
   Future<Set<String>> completedCourseIds(String? userId) async {
     final shelf = await _courseDao.coursesOnShelf(userId ?? '');
     if (shelf.isEmpty) return <String>{};
@@ -177,18 +179,19 @@ class ProgressRepository {
       userId,
       courseIds,
     );
-    final passedByCourse = <String, int>{};
+    final passedStepsByCourse = <String, Set<int>>{};
     for (final row in progress) {
       if (row.passed) {
-        passedByCourse[row.courseId ?? ''] =
-            (passedByCourse[row.courseId ?? ''] ?? 0) + 1;
+        passedStepsByCourse
+            .putIfAbsent(row.courseId ?? '', () => <int>{})
+            .add(row.stepNum);
       }
     }
     final completed = <String>{};
     for (final course in shelf) {
       final stepCount = stepCounts[course.id] ?? 0;
       if (stepCount == 0) continue;
-      if ((passedByCourse[course.id] ?? 0) >= stepCount) {
+      if ((passedStepsByCourse[course.id]?.length ?? 0) >= stepCount) {
         completed.add(course.id);
       }
     }

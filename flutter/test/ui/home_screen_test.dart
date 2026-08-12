@@ -105,9 +105,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text("You haven't added any resources yet"), findsOneWidget);
-    expect(find.text("You haven't joined any courses yet"), findsOneWidget);
-    expect(find.text("You haven't joined a team yet"), findsOneWidget);
+    expect(find.text('You can add resources'), findsOneWidget);
+    expect(find.text('You can join courses'), findsOneWidget);
+    expect(find.text('You can join a team'), findsOneWidget);
     expect(find.text('No data available'), findsOneWidget);
     expect(find.text('0'), findsNothing);
     expect(find.text('Last synced: Never synced'), findsOneWidget);

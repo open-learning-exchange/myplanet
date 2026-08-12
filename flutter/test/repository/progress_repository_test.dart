@@ -111,6 +111,30 @@ void main() {
     expect(await repository.completedCourseIds('user-1'), {'course-1'});
   });
 
+  test('duplicate rows for one step do not complete a course', () async {
+    // Sync can deliver several rows for the same step — one per device or
+    // attempt. The Kotlin counts unique passed stepNums (`toSet()`), so two
+    // passes of step 1 plus one of step 2 must NOT complete a 3-step course,
+    // even though the passed-row count reaches the step count.
+    Future<void> seedRow(String id, int stepNum) => database
+        .into(database.courseProgress)
+        .insert(
+          CourseProgressCompanion.insert(
+            id: id,
+            courseId: const Value('course-1'),
+            userId: const Value('user-1'),
+            stepNum: Value(stepNum),
+            passed: const Value(true),
+          ),
+        );
+
+    await seedRow('device-a-step1', 1);
+    await seedRow('device-b-step1', 1);
+    await seedRow('device-a-step2', 2);
+
+    expect(await repository.completedCourseIds('user-1'), isEmpty);
+  });
+
   test('a server progress row preserves a local pass on merge', () async {
     await repository.saveCourseProgress(
       id: 'p-1',

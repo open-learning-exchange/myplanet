@@ -156,9 +156,13 @@ class _TeamFinancesScreenState extends ConsumerState<TeamFinancesScreen> {
           ? (_startDate != null
                 ? DateTime.fromMillisecondsSinceEpoch(_startDate!)
                 : now)
+          // The "to" picker falls back to the selected "from" date before
+          // today, as the Kotlin's does (437a3d28a).
           : (_endDate != null
                 ? DateTime.fromMillisecondsSinceEpoch(_endDate!)
-                : now),
+                : (_startDate != null
+                      ? DateTime.fromMillisecondsSinceEpoch(_startDate!)
+                      : now)),
     );
     if (date != null) {
       setState(() {

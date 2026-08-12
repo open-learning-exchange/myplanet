@@ -104,6 +104,24 @@ void main() {
     );
   });
 
+  test('a joined meetup is not left when there is no signed-in user', () async {
+    await repository.cacheDocuments([
+      {'_id': 'meetup-1', 'title': 'Meetup'},
+    ]);
+    await repository.toggleAttendance('meetup-1', 'user-1');
+
+    // The Kotlin's old guard wrote userId = '' here; 2a49db978 made a
+    // missing user a no-op in both directions.
+    expect(
+      (await repository.toggleAttendance('meetup-1', null))?.userId,
+      'user-1',
+    );
+    expect(
+      (await repository.toggleAttendance('meetup-1', ''))?.userId,
+      'user-1',
+    );
+  });
+
   test('a server refresh does not un-join the user', () async {
     // The `meetups` document says nothing about whether *this* user joined,
     // so a sync that writes `userId` from it wipes the attendance marker —

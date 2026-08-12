@@ -78,9 +78,9 @@
   "homeMyCourses": "myCourses",
   "homeMyTeams": "myTeams",
   "homeMyLife": "myLife",
-  "noResourcesAddedYet": "You haven't added any resources yet",
-  "noCoursesJoinedYet": "You haven't joined any courses yet",
-  "noTeamsJoinedYet": "You haven't joined a team yet",
+  "noResourcesAddedYet": "You can add resources",
+  "noCoursesJoinedYet": "You can join courses",
+  "noTeamsJoinedYet": "You can join a team",
   "surveysToComplete": "You have {count, plural, =1{1 survey} other{{count} surveys}} to complete",
   "@surveysToComplete": {
     "placeholders": {

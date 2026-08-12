@@ -180,9 +180,12 @@ class VoicesRepository {
         parentCode: Value(parentCode),
         userId: Value(userId),
         user: Value(userJson),
-        // `postReply` keys the reply to the server id when there is one, so a
-        // reply written offline against a synced post still threads correctly.
-        replyTo: Value(parent.docId ?? parent.id),
+        // `postReply` keys the reply to the parent's *local* id — the Kotlin
+        // switched from `news._id ?: news.id` to `news.id` (5f3198970), and
+        // its test pins "replyTo is the parent's local id, not its server
+        // _id". Rows are keyed by `_id` after a sync, so the two coincide for
+        // synced posts; this matters for replies on posts not yet uploaded.
+        replyTo: Value(parent.id),
         viewableBy: Value(parent.viewableBy ?? ''),
         viewableId: Value(parent.viewableId ?? ''),
         messageType: Value(parent.messageType ?? ''),
@@ -268,9 +271,10 @@ class VoicesRepository {
   ) async {
     if (!seen.add(newsId)) return;
     ids.add(newsId);
-    // Replies key on the parent's server id when it has one, so the walk has
-    // to look for both — the Kotlin passes `reply.id` and works only because
-    // its rows are keyed by `_id` after a sync.
+    // New replies key on the parent's local id, but rows written before the
+    // Kotlin's 5f3198970 switch may carry the server id, so the walk still
+    // probes both keys — belt-and-braces for existing data rather than
+    // load-bearing for new rows.
     final row = await _dao.getById(newsId);
     final keys = <String>{newsId, if (row?.docId != null) row!.docId!};
     for (final key in keys) {
