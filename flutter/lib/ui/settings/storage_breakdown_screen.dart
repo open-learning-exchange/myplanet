@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/files/resource_files.dart';
 import '../../core/utils/file_utils.dart';
 import '../../l10n/app_localizations.dart';
 import '../router.dart';
@@ -40,49 +41,41 @@ class _StorageBreakdownScreenState extends State<StorageBreakdownScreen> {
   }
 
   Future<List<_CategoryData>> _scanStorage() async {
-    final documentsDir = Directory.current.path;
-    final oleDir = Directory('$documentsDir/ole');
-
-    if (!oleDir.existsSync()) {
+    final oleDir = await ResourceFiles.oleDirectory();
+    if (!await oleDir.exists()) {
       return [];
     }
 
-    final videoExt = {'mp4', 'mkv', 'avi', 'webm', 'mov', '3gp', 'flv'};
-    final audioExt = {'mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac', 'opus'};
-    final pdfExt = {'pdf'};
-    final imageExt = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'};
-
     final categories = <_CategoryData>[
-      _CategoryData(label: CategoryLabel.videos, extensions: videoExt),
-      _CategoryData(label: CategoryLabel.audio, extensions: audioExt),
-      _CategoryData(label: CategoryLabel.pdfs, extensions: pdfExt),
-      _CategoryData(label: CategoryLabel.images, extensions: imageExt),
+      _CategoryData(label: CategoryLabel.videos, extensions: videoExtensions),
+      _CategoryData(label: CategoryLabel.audio, extensions: audioExtensions),
+      _CategoryData(label: CategoryLabel.pdfs, extensions: pdfExtensions),
+      _CategoryData(label: CategoryLabel.images, extensions: imageExtensions),
       _CategoryData(label: CategoryLabel.other, extensions: const {}),
     ];
 
     try {
       await for (final entity in oleDir.list(recursive: true)) {
-        if (entity is File) {
-          final ext = entity.path.split('.').last.toLowerCase();
-          final size = entity.lengthSync();
+        if (entity is! File) continue;
+        final ext = entity.path.split('.').last.toLowerCase();
+        final size = entity.lengthSync();
 
-          CategoryLabel label;
-          if (videoExt.contains(ext)) {
-            label = CategoryLabel.videos;
-          } else if (audioExt.contains(ext)) {
-            label = CategoryLabel.audio;
-          } else if (pdfExt.contains(ext)) {
-            label = CategoryLabel.pdfs;
-          } else if (imageExt.contains(ext)) {
-            label = CategoryLabel.images;
-          } else {
-            label = CategoryLabel.other;
-          }
-
-          final category = categories.firstWhere((c) => c.label == label);
-          category.sizeBytes += size;
-          category.fileCount++;
+        CategoryLabel label;
+        if (videoExtensions.contains(ext)) {
+          label = CategoryLabel.videos;
+        } else if (audioExtensions.contains(ext)) {
+          label = CategoryLabel.audio;
+        } else if (pdfExtensions.contains(ext)) {
+          label = CategoryLabel.pdfs;
+        } else if (imageExtensions.contains(ext)) {
+          label = CategoryLabel.images;
+        } else {
+          label = CategoryLabel.other;
         }
+
+        final category = categories.firstWhere((c) => c.label == label);
+        category.sizeBytes += size;
+        category.fileCount++;
       }
     } catch (e) {
       // Ignore errors during file scanning
@@ -222,3 +215,43 @@ class StorageCategoryExtra {
 
   StorageCategoryExtra({required this.label, required this.extensions});
 }
+
+/// Extension sets mirroring `StorageBreakdownFragment.categories`. Shared so the
+/// breakdown and the category detail never disagree on what belongs where.
+const Set<String> videoExtensions = {
+  'mp4',
+  'mkv',
+  'avi',
+  'webm',
+  'mov',
+  '3gp',
+  'flv',
+};
+const Set<String> audioExtensions = {
+  'mp3',
+  'wav',
+  'ogg',
+  'm4a',
+  'flac',
+  'aac',
+  'opus',
+};
+const Set<String> pdfExtensions = {'pdf'};
+const Set<String> imageExtensions = {
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'webp',
+  'bmp',
+};
+
+/// Every known extension, matching `StorageBreakdownFragment`'s
+/// `categories.dropLast(1).flatMap { it.extensions }.toSet()`. Used by the
+/// category detail to route unrecognised extensions into "other".
+const Set<String> allKnownExtensions = {
+  ...videoExtensions,
+  ...audioExtensions,
+  ...pdfExtensions,
+  ...imageExtensions,
+};

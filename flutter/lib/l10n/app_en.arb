@@ -812,6 +812,15 @@
     }
   },
   "storageUnknownResource": "Unknown resource",
+  "areYouSure": "Are you sure?",
+  "failedToDelete": "Failed to delete: {error}",
+  "@failedToDelete": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
   "storageDeleteSelectedConfirm": "Delete {count} selected items?",
   "@storageDeleteSelectedConfirm": {
     "placeholders": {

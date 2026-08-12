@@ -1,102 +1,62 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/utils/file_utils.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/app_providers.dart';
+import '../../data/local/offline_resource_item.dart';
 import 'storage_breakdown_screen.dart';
 
 /// Port of `ui/settings/StorageCategoryDetailFragment.kt`.
 ///
-/// Shows files in a storage category and allows deletion.
-class StorageCategoryDetailScreen extends StatefulWidget {
+/// Lists the downloaded files in one storage category and lets the user delete
+/// a selection or all of them. Item discovery and deletion are owned by
+/// [ResourcesRepository] (port of `getOfflineResourceItems` /
+/// `deleteOfflineResources`); this widget only renders the rows and forwards
+/// the chosen items back. Deletion clears the library rows' offline flag, so
+/// the resources list reflects it before the next sync re-checks the disk.
+class StorageCategoryDetailScreen extends ConsumerStatefulWidget {
   const StorageCategoryDetailScreen({super.key, required this.extra});
 
   final StorageCategoryExtra extra;
 
   @override
-  State<StorageCategoryDetailScreen> createState() =>
+  ConsumerState<StorageCategoryDetailScreen> createState() =>
       _StorageCategoryDetailScreenState();
 }
 
 class _StorageCategoryDetailScreenState
-    extends State<StorageCategoryDetailScreen> {
+    extends ConsumerState<StorageCategoryDetailScreen> {
   bool _isLoading = true;
-  List<_ResourceItem> _items = [];
+  List<OfflineResourceItem> _items = [];
   final Set<String> _selectedIds = {};
-  bool _allSelected = false;
+  bool _loaded = false;
 
   @override
-  void initState() {
-    super.initState();
-    _loadResources();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Triggered after localisations (and other inherited dependencies) resolve,
+    // so [AppLocalizations.of] is ready. `initState` runs before the delegates
+    // finish loading, so reading l10n there throws and leaves the spinner up.
+    if (!_loaded) {
+      _loaded = true;
+      _loadResources();
+    }
   }
 
   Future<void> _loadResources() async {
-    final resources = await _buildResourceItems();
+    final repository = ref.read(resourcesRepositoryProvider);
+    final items = await repository.getOfflineResourceItems(
+      extensions: widget.extra.extensions.toSet(),
+      allKnownExtensions: allKnownExtensions,
+      unknownTitle: AppLocalizations.of(context).storageUnknownResource,
+    );
     if (mounted) {
       setState(() {
-        _items = resources;
+        _items = items;
         _isLoading = false;
       });
     }
-  }
-
-  Future<List<_ResourceItem>> _buildResourceItems() async {
-    final documentsDir = Directory.current.path;
-    final oleDir = Directory('$documentsDir/ole');
-
-    if (!oleDir.existsSync()) {
-      return [];
-    }
-
-    // Get resource titles from the database
-    final resourceTitles = await _getResourceTitlesMap();
-    final allKnownExt = {
-      'mp4', 'mkv', 'avi', 'webm', 'mov', '3gp', 'flv', // videos
-      'mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac', 'opus', // audio
-      'pdf', // pdfs
-      'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', // images
-    };
-
-    final grouped = <String, List<File>>{};
-
-    try {
-      await for (final entity in oleDir.list(recursive: true)) {
-        if (entity is File) {
-          final ext = entity.path.split('.').last.toLowerCase();
-          final matchesCategory = widget.extra.extensions.isEmpty
-              ? !allKnownExt.contains(ext)
-              : widget.extra.extensions.contains(ext);
-
-          if (matchesCategory) {
-            final parentName = entity.parent.path.split('/').last;
-            grouped.putIfAbsent(parentName, () => []).add(entity);
-          }
-        }
-      }
-    } catch (e) {
-      // Ignore errors during file scanning
-    }
-
-    return grouped.entries.map((entry) {
-      final resourceId = entry.key;
-      final files = entry.value;
-      final totalSize = files.fold<int>(0, (sum, f) => sum + f.lengthSync());
-      final title = resourceTitles[resourceId] ?? '';
-      return _ResourceItem(
-        resourceId: resourceId,
-        title: title.isNotEmpty ? title : 'Unknown resource',
-        files: files,
-        totalSizeBytes: totalSize,
-      );
-    }).toList()..sortBy((item) => item.title);
-  }
-
-  Future<Map<String, String>> _getResourceTitlesMap() async {
-    // This would need to be implemented to query the database
-    // For now, return empty map
-    return {};
   }
 
   void _toggleSelection(String resourceId) {
@@ -106,7 +66,6 @@ class _StorageCategoryDetailScreenState
       } else {
         _selectedIds.add(resourceId);
       }
-      _updateAllSelected();
     });
   }
 
@@ -117,21 +76,19 @@ class _StorageCategoryDetailScreenState
       } else {
         _selectedIds.addAll(_items.map((i) => i.resourceId));
       }
-      _allSelected = !_allSelected;
     });
   }
 
-  void _updateAllSelected() {
-    _allSelected = _selectedIds.length == _items.length && _items.isNotEmpty;
-  }
+  bool get _allSelected =>
+      _selectedIds.length == _items.length && _items.isNotEmpty;
 
   Future<void> _deleteSelected() async {
     final selected = _items
         .where((i) => _selectedIds.contains(i.resourceId))
         .toList();
+    final l10n = AppLocalizations.of(context);
     final confirmed = await _showDeleteConfirmation(
-      selected.length,
-      'Delete ${selected.length} selected items?',
+      l10n.storageDeleteSelectedConfirm(selected.length),
     );
     if (confirmed) {
       await _deleteItems(selected);
@@ -139,29 +96,30 @@ class _StorageCategoryDetailScreenState
   }
 
   Future<void> _deleteAll() async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await _showDeleteConfirmation(
-      _items.length,
-      'Delete all files in this category?',
+      l10n.storageDeleteConfirm(_getCategoryTitle()),
     );
     if (confirmed) {
       await _deleteItems(_items);
     }
   }
 
-  Future<bool> _showDeleteConfirmation(int count, String message) async {
+  Future<bool> _showDeleteConfirmation(String message) async {
+    final l10n = AppLocalizations.of(context);
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Are you sure?'),
+        title: Text(l10n.areYouSure),
         content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('No'),
+            child: Text(l10n.no),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Yes'),
+            child: Text(l10n.yes),
           ),
         ],
       ),
@@ -169,60 +127,44 @@ class _StorageCategoryDetailScreenState
     return result ?? false;
   }
 
-  Future<void> _deleteItems(List<_ResourceItem> toDelete) async {
+  Future<void> _deleteItems(List<OfflineResourceItem> toDelete) async {
     setState(() => _isLoading = true);
 
     try {
-      final documentsDir = Directory.current.path;
-      final oleDir = Directory('$documentsDir/ole');
-
-      for (final item in toDelete) {
-        for (final file in item.files) {
-          await file.delete();
-        }
-        // Remove empty parent directory
-        final parentDir = Directory('${oleDir.path}/${item.resourceId}');
-        if (parentDir.existsSync()) {
-          final contents = parentDir.listSync();
-          if (contents.isEmpty) {
-            await parentDir.delete();
-          }
-        }
-      }
-
-      // Mark resources as not offline in the database
-      final deletedIds = toDelete.map((i) => i.resourceId).toSet();
-      await _markResourcesAsNotOffline(deletedIds);
-
+      await ref
+          .read(resourcesRepositoryProvider)
+          .deleteOfflineResources(toDelete);
       if (mounted) {
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       }
     } catch (e) {
+      // The Kotlin dismisses unconditionally; this surfaces a failure rather
+      // than silently swallowing a file-system error, which is a port-only
+      // deviation.
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to delete: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).failedToDelete(e)),
+          ),
+        );
         setState(() => _isLoading = false);
       }
     }
   }
 
-  Future<void> _markResourcesAsNotOffline(Set<String> ids) async {
-    // This would need to be implemented to update the database
-  }
-
   String _getCategoryTitle() {
+    final l10n = AppLocalizations.of(context);
     switch (widget.extra.label) {
       case CategoryLabel.videos:
-        return AppLocalizations.of(context).storageVideos;
+        return l10n.storageVideos;
       case CategoryLabel.audio:
-        return AppLocalizations.of(context).storageAudio;
+        return l10n.storageAudio;
       case CategoryLabel.pdfs:
-        return AppLocalizations.of(context).storagePdfs;
+        return l10n.storagePdfs;
       case CategoryLabel.images:
-        return AppLocalizations.of(context).storageImages;
+        return l10n.storageImages;
       case CategoryLabel.other:
-        return AppLocalizations.of(context).storageOther;
+        return l10n.storageOther;
     }
   }
 
@@ -243,14 +185,12 @@ class _StorageCategoryDetailScreenState
   Widget _buildContent(BuildContext context, AppLocalizations l10n) {
     return Column(
       children: [
-        // Select all row
         CheckboxListTile(
           value: _allSelected,
           onChanged: (_) => _toggleSelectAll(),
           title: Text(l10n.selectAll),
         ),
         const Divider(),
-        // Selected count
         if (_selectedIds.isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -265,7 +205,6 @@ class _StorageCategoryDetailScreenState
               ],
             ),
           ),
-        // File list
         Expanded(
           child: ListView.builder(
             itemCount: _items.length,
@@ -281,7 +220,6 @@ class _StorageCategoryDetailScreenState
             },
           ),
         ),
-        // Delete all button
         Padding(
           padding: const EdgeInsets.all(16),
           child: SizedBox(
@@ -294,26 +232,5 @@ class _StorageCategoryDetailScreenState
         ),
       ],
     );
-  }
-}
-
-class _ResourceItem {
-  final String resourceId;
-  final String title;
-  final List<File> files;
-  final int totalSizeBytes;
-
-  _ResourceItem({
-    required this.resourceId,
-    required this.title,
-    required this.files,
-    required this.totalSizeBytes,
-  });
-}
-
-extension _ListSort<T> on List<T> {
-  List<T> sortBy(Comparable Function(T) keyExtractor) {
-    sort((a, b) => keyExtractor(a).compareTo(keyExtractor(b)));
-    return this;
   }
 }
