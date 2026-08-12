@@ -140,7 +140,7 @@ class ChatDetailFragment : Fragment() {
             binding.courseContextBanner.visibility = View.VISIBLE
             binding.courseContextBanner.text = buildBannerText()
         }
-        val prefill = selectedText
+        val prefill = if (!selectedText.isNullOrBlank()) selectedText else sharedViewModel.getDraftMessage()
         if (!prefill.isNullOrBlank()) {
             binding.editGchatMessage.setText(prefill)
             binding.editGchatMessage.setSelection(prefill.length)
@@ -302,6 +302,7 @@ class ChatDetailFragment : Fragment() {
                     }
                 }
                 binding.editGchatMessage.text.clear()
+                sharedViewModel.clearDraftMessage()
                 binding.textGchatIndicator.visibility = View.GONE
             }
         }
@@ -326,8 +327,9 @@ class ChatDetailFragment : Fragment() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 binding.textGchatIndicator.visibility = View.GONE
             }
-            @Suppress("EmptyMethod")
-            override fun afterTextChanged(s: Editable?) {}
+            override fun afterTextChanged(s: Editable?) {
+                sharedViewModel.setDraftMessage(s?.toString() ?: "")
+            }
         }
         binding.editGchatMessage.addTextChangedListener(messageTextWatcher)
     }
@@ -402,7 +404,6 @@ class ChatDetailFragment : Fragment() {
                     sharedViewModel.selectedChatHistory.collect { conversations ->
                         mAdapter.clearData()
                         sharedViewModel.clearPaginationState()
-                        binding.editGchatMessage.text.clear()
                         binding.textGchatIndicator.visibility = View.GONE
                         if (!conversations.isNullOrEmpty()) {
                             val messages = sharedViewModel.processChatHistory(conversations)
@@ -554,7 +555,6 @@ class ChatDetailFragment : Fragment() {
         _id = ""
         _rev = ""
         currentID = ""
-        binding.editGchatMessage.text.clear()
         binding.textGchatIndicator.visibility = View.GONE
     }
 
@@ -709,6 +709,9 @@ class ChatDetailFragment : Fragment() {
         clearAlternativeUrlIfPrimaryRestored()
         loadingJob?.cancel()
         speechRecognizer?.destroy()
+        if (activity?.isFinishing == true || isRemoving) {
+            sharedViewModel.clearDraftMessage()
+        }
         _binding = null
         super.onDestroyView()
     }
