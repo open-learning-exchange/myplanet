@@ -59,4 +59,20 @@ void main() {
       expect(sharedPreferences.getInt('LastSync'), 123456789);
     },
   );
+
+  test('language code defaults to empty and persists a selection', () async {
+    SharedPreferences.setMockInitialValues({});
+    final sharedPreferences = await SharedPreferences.getInstance();
+    final prefs = PlanetPrefs(
+      sharedPreferences,
+      secureStorage: _MockSecureStorage(),
+    );
+
+    expect(prefs.languageCode, isEmpty);
+
+    await prefs.setLanguageCode('es');
+
+    expect(prefs.languageCode, 'es');
+    expect(sharedPreferences.getString('languageCode'), 'es');
+  });
 }

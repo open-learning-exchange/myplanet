@@ -40,6 +40,7 @@ class PlanetPrefs {
   static const String _keyLoggedInUserId = 'loggedInUserId';
   static const String _keyOnboardingComplete = 'onboardingComplete';
   static const String _keyThemeMode = 'themeMode';
+  static const String _keyLanguageCode = 'languageCode';
   static const String _keyCommunityLeaders = 'communityLeaders';
   static const String _keyCommunityName = 'communityName';
   static const String _keyPlanetType = 'planetType';
@@ -147,6 +148,15 @@ class PlanetPrefs {
 
   Future<void> setThemeModeName(String value) =>
       _prefs.setString(_keyThemeMode, value);
+
+  /// Persisted language code (`en`, `es`, …) or `''` to follow the device
+  /// locale. Port of `LocaleUtils.getLanguage` / `setLocale` in the Kotlin
+  /// `SettingsActivity` language changer — the empty-string sentinel matches
+  /// the Kotlin's "no override" default before a user picks one.
+  String get languageCode => _prefs.getString(_keyLanguageCode) ?? '';
+
+  Future<void> setLanguageCode(String code) =>
+      _prefs.setString(_keyLanguageCode, code);
 
   Future<void> setLoggedInUserId(String? userId) async {
     if (userId == null) {

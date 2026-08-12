@@ -63,6 +63,8 @@ dependencies:
   latlong2: ^0.9.1
   # Calendar widget — replaces applandeo/materialcalendarview for team calendar.
   table_calendar: ^3.1.3
+  flutter_widget_from_html: ^0.17.2
+  package_info_plus: ^9.0.1
 
 dev_dependencies:
   flutter_test:
@@ -77,3 +79,5 @@ flutter:
   uses-material-design: true
   # Generates AppLocalizations from lib/l10n/*.arb (see l10n.yaml).
   generate: true
+  assets:
+    - assets/images/

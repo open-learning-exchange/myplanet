@@ -16,6 +16,8 @@ import 'courses/courses_progress_screen.dart';
 import 'courses/take_course_screen.dart';
 import 'dashboard/dashboard_shell.dart';
 import 'dashboard/home_screen.dart';
+import 'dashboard/about_screen.dart';
+import 'dashboard/disclaimer_screen.dart';
 import 'dictionary/dictionary_screen.dart';
 import 'events/event_detail_screen.dart';
 import 'events/events_screen.dart';
@@ -86,6 +88,8 @@ class Routes {
   static const String calendar = '/calendar';
   static const String profile = '/profile';
   static const String settings = '/profile/settings';
+  static const String about = '/profile/about';
+  static const String disclaimer = '/profile/disclaimer';
   static const String dictionary = '/profile/settings/dictionary';
   static const String storageManagement = '/profile/settings/storage';
   static const String storageCategory = '/profile/settings/storage/category';
@@ -327,6 +331,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: Routes.profile,
                 builder: (context, state) => const ProfileScreen(),
                 routes: [
+                  GoRoute(
+                    path: 'about',
+                    builder: (context, state) => const AboutScreen(),
+                  ),
+                  GoRoute(
+                    path: 'disclaimer',
+                    builder: (context, state) => const DisclaimerScreen(),
+                  ),
                   GoRoute(
                     path: 'notifications',
                     builder: (context, state) => const NotificationsScreen(),

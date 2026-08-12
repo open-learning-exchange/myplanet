@@ -18,7 +18,16 @@ import '../life/life_features.dart';
 import '../router.dart';
 import 'dashboard_drawer.dart';
 
-enum _HomeMenuAction { sync, feedback, settings, theme, logout }
+enum _HomeMenuAction {
+  sync,
+  feedback,
+  language,
+  theme,
+  about,
+  disclaimer,
+  settings,
+  logout,
+}
 
 /// Port of `ui/dashboard/BellDashboardFragment.kt` — the home ("bell")
 /// dashboard: the profile card and the four myLibrary / myCourses / myTeams /
@@ -182,10 +191,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
               PopupMenuItem(
-                value: _HomeMenuAction.settings,
+                value: _HomeMenuAction.language,
                 child: ListTile(
-                  leading: const Icon(Icons.settings_outlined),
-                  title: Text(l10n.settings),
+                  leading: const Icon(Icons.translate),
+                  title: Text(l10n.language),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
@@ -194,6 +203,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: ListTile(
                   leading: const Icon(Icons.contrast_outlined),
                   title: Text(l10n.appTheme),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: _HomeMenuAction.about,
+                child: ListTile(
+                  leading: const Icon(Icons.info_outline),
+                  title: Text(l10n.actionAbout),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: _HomeMenuAction.disclaimer,
+                child: ListTile(
+                  leading: const Icon(Icons.description_outlined),
+                  title: Text(l10n.actionDisclaimer),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: _HomeMenuAction.settings,
+                child: ListTile(
+                  leading: const Icon(Icons.settings_outlined),
+                  title: Text(l10n.settings),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
@@ -300,8 +333,8 @@ Future<void> _handleMenuAction(
         context.push(Routes.feedback);
       }
       return;
-    case _HomeMenuAction.settings:
-      context.push(Routes.settings);
+    case _HomeMenuAction.language:
+      await _showLanguageDialog(context, ref);
       return;
     case _HomeMenuAction.theme:
       final current = ref.read(themeModeProvider);
@@ -312,10 +345,61 @@ Future<void> _handleMenuAction(
       };
       await ref.read(themeModeProvider.notifier).select(next);
       return;
+    case _HomeMenuAction.about:
+      context.push(Routes.about);
+      return;
+    case _HomeMenuAction.disclaimer:
+      context.push(Routes.disclaimer);
+      return;
+    case _HomeMenuAction.settings:
+      context.push(Routes.settings);
+      return;
     case _HomeMenuAction.logout:
       await ref.read(sessionProvider.notifier).signOut();
       return;
   }
+}
+
+/// Port of `SettingsActivity.SettingFragment.languageChanger`.
+///
+/// A single-choice dialog of the languages with shipped `.arb` files. The
+/// Kotlin offers six, but only English and Spanish have Flutter translations
+/// — see `offeredLocales`. Selecting one persists it; the `MaterialApp`
+/// rebuilds because it watches [localeProvider].
+Future<void> _showLanguageDialog(BuildContext context, WidgetRef ref) async {
+  final l10n = AppLocalizations.of(context);
+  final current = ref.read(localeProvider);
+  final currentCode = current?.languageCode ?? '';
+
+  await showDialog<void>(
+    context: context,
+    builder: (context) {
+      return SimpleDialog(
+        title: Text(l10n.selectLanguage),
+        children: [
+          RadioGroup<String>(
+            groupValue: currentCode,
+            onChanged: (value) {
+              if (value != null) {
+                ref.read(localeProvider.notifier).select(value);
+              }
+              Navigator.of(context).pop();
+            },
+            child: Column(
+              children: offeredLocales.entries
+                  .map(
+                    (entry) => RadioListTile<String>(
+                      value: entry.key,
+                      title: Text(entry.value),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+        ],
+      );
+    },
+  );
 }
 
 class _LastSyncStrip extends StatelessWidget {

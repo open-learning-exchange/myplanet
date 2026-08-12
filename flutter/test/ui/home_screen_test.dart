@@ -325,4 +325,68 @@ void main() {
 
     expect(prefs.themeModeName, 'light');
   });
+
+  testWidgets('language overflow opens a single-choice dialog', (tester) async {
+    final prefs = await _prefs();
+    await tester.pumpWidget(
+      wrapScreen(
+        const HomeScreen(),
+        overrides: await homeOverrides(user: _user('user-1'), prefs: prefs),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('More options'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Language'));
+    await tester.pumpAndSettle();
+
+    // Only languages with a shipped .arb are offered.
+    expect(find.text('Select Language'), findsOneWidget);
+    expect(find.text('English'), findsOneWidget);
+    expect(find.text('Español'), findsOneWidget);
+
+    await tester.tap(find.text('Español'));
+    await tester.pumpAndSettle();
+
+    expect(prefs.languageCode, 'es');
+  });
+
+  testWidgets('about overflow navigates to the about screen', (tester) async {
+    await tester.pumpWidget(
+      wrapScreen(
+        const HomeScreen(),
+        overrides: await homeOverrides(user: _user('user-1')),
+        pushTargets: {'/profile/about': (_) => const Placeholder()},
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('More options'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('About'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(Placeholder), findsOneWidget);
+  });
+
+  testWidgets('disclaimer overflow navigates to the disclaimer screen', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wrapScreen(
+        const HomeScreen(),
+        overrides: await homeOverrides(user: _user('user-1')),
+        pushTargets: {'/profile/disclaimer': (_) => const Placeholder()},
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('More options'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Disclaimer'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(Placeholder), findsOneWidget);
+  });
 }
