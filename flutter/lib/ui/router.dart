@@ -38,6 +38,7 @@ import 'settings/storage_breakdown_screen.dart';
 import 'settings/storage_category_detail_screen.dart';
 import 'sync/login_screen.dart';
 import 'sync/server_config_screen.dart';
+import 'sync/sync_center_screen.dart';
 import 'user/profile_screen.dart';
 import 'user/become_member_screen.dart';
 import 'submissions/submissions_screen.dart';
@@ -109,6 +110,7 @@ class Routes {
   static const String exam = '/courses/exam/:examId';
   static const String userInfo = '/exam/user-info/:submissionId';
   static const String publicSurvey = '/survey/:teamId/:surveyId';
+  static const String syncCenter = '/sync-center';
 }
 
 /// The server a public-survey deep link points at.
@@ -227,6 +229,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.community,
         builder: (context, state) => const CommunityScreen(fromLogin: false),
+      ),
+      GoRoute(
+        path: Routes.syncCenter,
+        builder: (context, state) => const SyncCenterScreen(),
       ),
       GoRoute(
         path: Routes.exam,

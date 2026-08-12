@@ -32,6 +32,26 @@ class SyncErrored extends SyncUiState {
   final String message;
 }
 
+/// Reactive view of `SharedPrefManager.getLastSync()`.
+///
+/// Keeping this as provider state (rather than reading SharedPreferences in a
+/// widget) lets every successful foreground sync update the dashboard strip
+/// immediately.
+class LastSyncNotifier extends Notifier<int> {
+  @override
+  int build() => ref.watch(planetPrefsProvider).lastSync;
+
+  Future<void> recordSuccess({DateTime? at}) async {
+    final timestamp = (at ?? DateTime.now()).millisecondsSinceEpoch;
+    await ref.read(planetPrefsProvider).setLastSync(timestamp);
+    state = timestamp;
+  }
+}
+
+final lastSyncProvider = NotifierProvider<LastSyncNotifier, int>(
+  LastSyncNotifier.new,
+);
+
 /// Shared driver for a single table's pull.
 ///
 /// Both the resources and courses screens run the same cycle — refuse to start
@@ -65,6 +85,9 @@ abstract class SyncNotifier extends Notifier<SyncUiState> {
         SyncComplete(:final savedCount) => SyncSucceeded(savedCount),
         SyncFailed(:final message) => SyncErrored(message),
       };
+      if (result is SyncComplete) {
+        await ref.read(lastSyncProvider.notifier).recordSuccess();
+      }
     } catch (error) {
       // Repositories return SyncFailed for network problems, but a database or
       // parsing fault still throws. Without this the state would stay

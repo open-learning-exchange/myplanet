@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 28 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 32 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -156,16 +156,38 @@ Known gaps:
   guest gates (library/courses headers and five of the seven myLife tiles gated; teams and life
   headers, References and Calendar open), the localized empty-state placeholders, and the
   pending-survey dialog with its one-hour throttle, per-survey dedupe, and dropped-survey
-  filtering. The myLife feature registry moved to `ui/life/life_features.dart`, shared with
+  filtering. Empty-status adoption records are deliberately excluded: survey assignments are
+  created with Kotlin's explicit `pending` status, while an adoption records the act of copying
+  a survey and is not an answer sheet for the adopter. The myLife feature registry moved to
+  `ui/life/life_features.dart`, shared with
   `LifeScreen`; `DialogUtils.guestDialog` became the shared `ui/components/guest_dialog.dart`.
-  Not ported, by decision (each needs infrastructure the port lacks): the completed-course star
-  row (per-step progress records), the avatar's network-status ring (connectivity plugin), team
+  Still unported after Phase 30 (each needs infrastructure the port lacks): the completed-course
+  star row (per-step progress records), the avatar's network-status ring (connectivity plugin), team
   chat/task alert badges (team notifications), the offline-logins count and activity-chart FAB
-  (login activity tracking), the last-sync strip, the navigation drawer and overflow menu, and
-  the "remind later" reminder scheduler. One flagged fidelity question: the dashboard treats
-  both `''` and `'pending'` submission statuses as pending, because this port's survey
-  get-or-create writes `''` where the Kotlin writes `'pending'` — reconciling the write side is
-  open.
+  (login activity tracking), the navigation drawer and overflow menu, and
+  the "remind later" reminder scheduler.
+
+- **Phase 30** — successful foreground syncs now persist Kotlin's `LastSync` timestamp and
+  publish it through reactive Riverpod state. The home dashboard displays the missing last-sync
+  strip, including localized never/just-now/minutes/hours/days labels, updates immediately after
+  a successful sync, and preserves it across launches. Failed syncs deliberately do not advance
+  the timestamp.
+
+- **Phase 31** — dashboard navigation parity: the home app bar now exposes AI chat directly and
+  restores the Kotlin overflow actions for feedback, settings, theme cycling, and logout. A
+  profile-aware navigation drawer makes resources, courses, teams, calendar, My life, community,
+  chat, feedback, references, and settings directly reachable; resource/course/chat/feedback
+  entries preserve the existing guest membership gates. The theme action persists through the
+  shared `ThemeModeNotifier`, rather than applying a one-screen-only color change.
+
+- **Phase 32** — foreground sync orchestration: a dashboard Sync center runs resources, courses,
+  teams, events, surveys, voices, feedback, chat, and health sequentially, surfaces per-area
+  waiting/running/success/failure state, reports aggregate progress and saved counts, and permits
+  an isolated retry after failure. It is reachable from both the drawer and Kotlin-style overflow
+  "Sync now" action. Sequential execution deliberately avoids nine simultaneous CouchDB page
+  walks on resource-constrained community devices; durable outbox writes remain separate and are
+  still drained by `OutboxDrainScope`. This is foreground orchestration, not a claim that the
+  missing WorkManager-equivalent scheduling gap is solved.
 
 - **Phase 27** — chat upload, member registration against `_users`, and the resource detail
   screen with its filter sheet. Three fixes were needed around it:
@@ -697,8 +719,8 @@ flutter pub get 2>&1 | grep -i discontinued
 `components`, `enterprises` -- plus team voices, team/public survey sharing, personal attachments/upload,
 storage/retry, and the rest of `settings`, plus profile photo/upload, membership, and the rest of `user`,
 and the rest of `sync` and `dashboard` (the home cards and pending-survey dialog are ported as of
-Phase 29; still missing are the completed-course stars, network ring, team alert badges, activity
-chart, last-sync strip, drawer/overflow menu, and survey reminders).
+Phase 32; still missing are the completed-course stars, network ring, team alert badges, activity
+chart, language/about/disclaimer overflow actions, OS-scheduled sync, and survey reminders).
 
 **Notes on remaining packages:**
 - `components` -- reusable utility widgets. `CheckboxList` is in use; `ChallengeDialog` and
@@ -780,6 +802,6 @@ succeeds, it just doesn't do what the Kotlin did.
 
 ---
 
-**Last updated**: 2026-08-12 (Phase 29 complete)
-**Phase**: 27 of N (27 of 28 UI packages have a screen — see Status for what that does and does
+**Last updated**: 2026-08-12 (Phase 32 complete)
+**Phase**: 32 of N (27 of 28 UI packages have a screen — see Status for what that does and does
 not mean)

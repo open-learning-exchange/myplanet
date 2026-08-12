@@ -1404,16 +1404,16 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
   /// dashboard's "you have N surveys to complete" check. Individual surveys
   /// only, matching the Kotlin `teamId IS NULL`.
   ///
-  /// The Kotlin matches `status = 'pending'` alone; this port's survey
-  /// get-or-create writes `''` for a submission the user has not started,
-  /// so both spellings count as pending here.
+  /// Adoption records use an empty status and describe the act of copying a
+  /// survey, not an answer sheet assigned to the user. Only explicit pending
+  /// submissions belong in the dashboard prompt, matching Kotlin.
   Future<List<SubmissionRow>> pendingSurveySubmissions(String userId) =>
       (select(submissions)
             ..where(
               (row) =>
                   row.userId.equals(userId) &
                   row.type.equals('survey') &
-                  (row.status.equals('') | row.status.equals('pending')) &
+                  row.status.equals('pending') &
                   (row.teamId.isNull() | row.teamId.equals('')),
             )
             ..orderBy([(row) => OrderingTerm(expression: row.startTime)]))

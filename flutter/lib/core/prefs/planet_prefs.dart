@@ -44,6 +44,7 @@ class PlanetPrefs {
   static const String _keyCommunityName = 'communityName';
   static const String _keyPlanetType = 'planetType';
   static const String _keyLastSurveyDialog = 'lastSurveyDialogShown';
+  static const String _keyLastSync = 'LastSync';
 
   static const String _secureKeyServerPin = 'serverPin';
   static const String _secureKeyCouchDbUrl = 'couchdbURL';
@@ -195,4 +196,13 @@ class PlanetPrefs {
 
   Future<void> setLastSurveyDialogShown(int epochMillis) =>
       _prefs.setInt(_keyLastSurveyDialog, epochMillis);
+
+  /// Most recent successful server sync, in epoch milliseconds.
+  ///
+  /// The key deliberately matches `SharedPrefManager.LAST_SYNC`, making the
+  /// meaning and persisted representation identical to the Kotlin app.
+  int get lastSync => _prefs.getInt(_keyLastSync) ?? 0;
+
+  Future<void> setLastSync(int epochMillis) =>
+      _prefs.setInt(_keyLastSync, epochMillis);
 }

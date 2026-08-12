@@ -40,4 +40,23 @@ void main() {
     expect(prefs.themeModeName, 'dark');
     expect(sharedPreferences.getString('themeMode'), 'dark');
   });
+
+  test(
+    'last sync defaults to never and persists successful sync time',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final sharedPreferences = await SharedPreferences.getInstance();
+      final prefs = PlanetPrefs(
+        sharedPreferences,
+        secureStorage: _MockSecureStorage(),
+      );
+
+      expect(prefs.lastSync, 0);
+
+      await prefs.setLastSync(123456789);
+
+      expect(prefs.lastSync, 123456789);
+      expect(sharedPreferences.getInt('LastSync'), 123456789);
+    },
+  );
 }

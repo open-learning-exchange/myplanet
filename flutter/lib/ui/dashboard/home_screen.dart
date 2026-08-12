@@ -10,10 +10,14 @@ import '../../providers/dashboard_providers.dart';
 import '../../providers/life_provider.dart';
 import '../../providers/notifications_provider.dart';
 import '../../providers/session_provider.dart';
+import '../../providers/settings_provider.dart';
+import '../../providers/sync_state.dart';
 import '../components/guest_dialog.dart';
 import '../life/life_features.dart';
 import '../router.dart';
-import 'dashboard_shell.dart';
+import 'dashboard_drawer.dart';
+
+enum _HomeMenuAction { sync, feedback, settings, theme, logout }
 
 /// Port of `ui/dashboard/BellDashboardFragment.kt` — the home ("bell")
 /// dashboard: the profile card and the four myLibrary / myCourses / myTeams /
@@ -24,8 +28,8 @@ import 'dashboard_shell.dart';
 /// data the port does not sync), the network-status ring around the avatar
 /// (needs a connectivity plugin), team chat/task alert badges (needs team
 /// notifications), the offline-logins count in the name line and the activity
-/// chart FAB (needs login activity tracking), the last-sync strip, and the
-/// "remind later" survey scheduler.
+/// chart FAB (needs login activity tracking), and the "remind later" survey
+/// scheduler.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -122,6 +126,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final session = ref.watch(sessionProvider).valueOrNull;
     final prefs = ref.watch(planetPrefsProvider);
     final unread = ref.watch(unreadNotificationCountProvider).valueOrNull ?? 0;
+    final lastSync = ref.watch(lastSyncProvider);
 
     // `DashboardActivity.updateAppTitle`: "Planet <planetCode>", falling back
     // to the community name from preferences.
@@ -135,9 +140,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final isGuest = session != null && session.id.startsWith('guest');
 
     return Scaffold(
+      drawer: const DashboardDrawer(),
       appBar: AppBar(
         title: Text(title),
         actions: [
+          IconButton(
+            tooltip: l10n.aiChat,
+            onPressed: () => isGuest
+                ? showGuestDialog(context)
+                : context.push(Routes.chatHistory),
+            icon: const Icon(Icons.forum_outlined),
+          ),
           IconButton(
             tooltip: l10n.notifications,
             onPressed: () => context.push(Routes.notifications),
@@ -147,13 +160,60 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: const Icon(Icons.notifications_outlined),
             ),
           ),
-          const LogoutAction(),
+          PopupMenuButton<_HomeMenuAction>(
+            tooltip: l10n.moreOptions,
+            onSelected: (action) =>
+                _handleMenuAction(context, ref, action, isGuest: isGuest),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: _HomeMenuAction.sync,
+                child: ListTile(
+                  leading: const Icon(Icons.sync),
+                  title: Text(l10n.syncNow),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: _HomeMenuAction.feedback,
+                child: ListTile(
+                  leading: const Icon(Icons.feedback_outlined),
+                  title: Text(l10n.feedback),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: _HomeMenuAction.settings,
+                child: ListTile(
+                  leading: const Icon(Icons.settings_outlined),
+                  title: Text(l10n.settings),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: _HomeMenuAction.theme,
+                child: ListTile(
+                  leading: const Icon(Icons.contrast_outlined),
+                  title: Text(l10n.appTheme),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: _HomeMenuAction.logout,
+                child: ListTile(
+                  leading: const Icon(Icons.logout),
+                  title: Text(l10n.logOut),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
       body: session == null
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
+                _LastSyncStrip(timestamp: lastSync),
                 _ProfileCard(session: session),
                 Expanded(
                   child: _HomeCard(
@@ -221,6 +281,82 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
     );
   }
+}
+
+Future<void> _handleMenuAction(
+  BuildContext context,
+  WidgetRef ref,
+  _HomeMenuAction action, {
+  required bool isGuest,
+}) async {
+  switch (action) {
+    case _HomeMenuAction.sync:
+      context.push(Routes.syncCenter);
+      return;
+    case _HomeMenuAction.feedback:
+      if (isGuest) {
+        showGuestDialog(context);
+      } else {
+        context.push(Routes.feedback);
+      }
+      return;
+    case _HomeMenuAction.settings:
+      context.push(Routes.settings);
+      return;
+    case _HomeMenuAction.theme:
+      final current = ref.read(themeModeProvider);
+      final next = switch (current) {
+        ThemeMode.system => ThemeMode.light,
+        ThemeMode.light => ThemeMode.dark,
+        ThemeMode.dark => ThemeMode.system,
+      };
+      await ref.read(themeModeProvider.notifier).select(next);
+      return;
+    case _HomeMenuAction.logout:
+      await ref.read(sessionProvider.notifier).signOut();
+      return;
+  }
+}
+
+class _LastSyncStrip extends StatelessWidget {
+  const _LastSyncStrip({required this.timestamp});
+
+  final int timestamp;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final value = timestamp <= 0
+        ? l10n.neverSynced
+        : _relativeSyncTime(
+            l10n,
+            DateTime.now().millisecondsSinceEpoch - timestamp,
+          );
+    return Semantics(
+      liveRegion: true,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        child: Text(
+          l10n.lastSynced(value),
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.labelMedium,
+        ),
+      ),
+    );
+  }
+}
+
+String _relativeSyncTime(AppLocalizations l10n, int elapsedMillis) {
+  if (elapsedMillis <= 0 ||
+      elapsedMillis < const Duration(minutes: 1).inMilliseconds) {
+    return l10n.justNow;
+  }
+  final elapsed = Duration(milliseconds: elapsedMillis);
+  if (elapsed.inHours < 1) return l10n.minutesAgo(elapsed.inMinutes);
+  if (elapsed.inDays < 1) return l10n.hoursAgo(elapsed.inHours);
+  return l10n.daysAgo(elapsed.inDays);
 }
 
 /// The profile card: avatar, full name, role, planet code. Port of

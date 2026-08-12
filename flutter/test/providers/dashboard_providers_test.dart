@@ -40,13 +40,13 @@ void main() {
     SurveysCompanion survey(String id, String name) =>
         SurveysCompanion.insert(id: id, name: Value(name));
 
-    test('counts both pending spellings and dedupes per survey', () async {
+    test('counts pending answer sheets and dedupes per survey', () async {
       await db.surveyDao.upsertAll([
         survey('survey-1', 'Health check'),
         survey('survey-2', 'Feedback'),
       ], const {});
       await db.submissionDao.upsertAll([
-        submission('sub-1', 'survey-1', status: ''),
+        submission('sub-1', 'survey-1', status: 'pending'),
         submission('sub-2', 'survey-1', status: 'pending'),
         submission('sub-3', 'survey-2'),
         submission('sub-4', 'survey-2', status: 'complete'),
@@ -58,6 +58,24 @@ void main() {
 
       expect(pending.map((p) => p.name), ['Health check', 'Feedback']);
     });
+
+    test(
+      'does not present blank-status adoption records as assignments',
+      () async {
+        await db.surveyDao.upsertAll([
+          survey('survey-1', 'Adopted survey'),
+        ], const {});
+        await db.submissionDao.upsertAll([
+          submission('adoption-1', 'survey-1', status: ''),
+        ]);
+
+        final pending = await container.read(
+          pendingSurveysProvider('user-1').future,
+        );
+
+        expect(pending, isEmpty);
+      },
+    );
 
     test('drops team submissions and surveys that no longer exist', () async {
       await db.surveyDao.upsertAll([

@@ -8,6 +8,7 @@ import 'package:myplanet/providers/dashboard_providers.dart';
 import 'package:myplanet/providers/life_provider.dart';
 import 'package:myplanet/providers/notifications_provider.dart';
 import 'package:myplanet/providers/session_provider.dart';
+import 'package:myplanet/providers/sync_state.dart';
 import 'package:myplanet/ui/dashboard/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -39,6 +40,15 @@ Future<PlanetPrefs> _prefs() async {
   return PlanetPrefs(await SharedPreferences.getInstance());
 }
 
+class _TestLastSyncNotifier extends LastSyncNotifier {
+  _TestLastSyncNotifier(this.value);
+
+  final int value;
+
+  @override
+  int build() => value;
+}
+
 void main() {
   Future<List<Override>> homeOverrides({
     UserRow? user,
@@ -58,6 +68,9 @@ void main() {
     myTeamsStreamProvider.overrideWith((ref, userId) => Stream.value(const [])),
     lifeItemsProvider.overrideWith((ref) => Stream.value(const [])),
     pendingSurveysProvider.overrideWith((ref, userId) async => pendingSurveys),
+    lastSyncProvider.overrideWith(
+      () => _TestLastSyncNotifier(prefs?.lastSync ?? 0),
+    ),
   ];
 
   testWidgets('renders the four cards with the planet title', (tester) async {
@@ -97,6 +110,23 @@ void main() {
     expect(find.text("You haven't joined a team yet"), findsOneWidget);
     expect(find.text('No data available'), findsOneWidget);
     expect(find.text('0'), findsNothing);
+    expect(find.text('Last synced: Never synced'), findsOneWidget);
+  });
+
+  testWidgets('shows a relative last-sync value', (tester) async {
+    final prefs = await _prefs();
+    await prefs.setLastSync(
+      DateTime.now().subtract(const Duration(hours: 2)).millisecondsSinceEpoch,
+    );
+    await tester.pumpWidget(
+      wrapScreen(
+        const HomeScreen(),
+        overrides: await homeOverrides(user: _user('user-1'), prefs: prefs),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Last synced: 2 hours ago'), findsOneWidget);
   });
 
   testWidgets('shows the pending-survey dialog once and stamps the throttle', (
@@ -185,5 +215,44 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('drawer exposes the wider dashboard navigation', (tester) async {
+    await tester.pumpWidget(
+      wrapScreen(
+        const HomeScreen(),
+        overrides: await homeOverrides(user: _user('user-1')),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Open navigation menu'));
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(NavigationDrawer), const Offset(0, -400));
+    await tester.pumpAndSettle();
+    expect(find.text('AI chat'), findsOneWidget);
+    expect(find.text('Feedback'), findsOneWidget);
+    expect(find.text('References'), findsOneWidget);
+    expect(find.text('Community'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
+  });
+
+  testWidgets('overflow menu changes and persists the theme', (tester) async {
+    final prefs = await _prefs();
+    await tester.pumpWidget(
+      wrapScreen(
+        const HomeScreen(),
+        overrides: await homeOverrides(user: _user('user-1'), prefs: prefs),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('More options'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('App theme'));
+    await tester.pumpAndSettle();
+
+    expect(prefs.themeModeName, 'light');
   });
 }
