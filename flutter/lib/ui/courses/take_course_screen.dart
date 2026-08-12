@@ -8,6 +8,12 @@ import '../../providers/app_providers.dart';
 import '../../providers/courses_providers.dart';
 import '../../providers/session_provider.dart';
 
+/// Mints a local key for a new `course_progress` row. Mirrors
+/// `RatingsRepository`'s `_defaultId` — the row's identity is reused on
+/// re-open once it exists, so this only stamps the first visit.
+String _localProgressId() =>
+    DateTime.now().microsecondsSinceEpoch.toString();
+
 /// Port of `ui/courses/TakeCourseFragment.kt`.
 ///
 /// Step-by-step course navigation with previous/next buttons and progress tracking.
@@ -95,6 +101,11 @@ class _CourseContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isMyCourse = userId != null && course.userId.contains(userId!);
 
+    void goToStep(int index) {
+      onStepChanged(index);
+      _recordProgress(ref, index);
+    }
+
     return Column(
       children: [
         // Progress indicator
@@ -104,7 +115,7 @@ class _CourseContent extends ConsumerWidget {
           child: PageView.builder(
             itemCount: steps.length,
             controller: PageController(initialPage: currentStep),
-            onPageChanged: onStepChanged,
+            onPageChanged: goToStep,
             itemBuilder: (context, index) => _StepContent(
               step: steps[index],
               stepNumber: index + 1,
@@ -117,17 +128,37 @@ class _CourseContent extends ConsumerWidget {
           currentStep: currentStep,
           totalSteps: steps.length,
           isMyCourse: isMyCourse,
-          onPrevious: currentStep > 0
-              ? () => onStepChanged(currentStep - 1)
-              : null,
+          onPrevious: currentStep > 0 ? () => goToStep(currentStep - 1) : null,
           onNext: currentStep < steps.length - 1
-              ? () => onStepChanged(currentStep + 1)
+              ? () => goToStep(currentStep + 1)
               : null,
           onFinish: () => context.pop(),
           onToggleMembership: () => _toggleMembership(context, ref, isMyCourse),
         ),
       ],
     );
+  }
+
+  /// Port of `TakeCourseFragment.onPageSelected` — landing on a step records a
+  /// `course_progress` row (passed=null: an exam grades it later) and queues
+  /// it for upload. The row is keyed by `(courseId, userId, stepNum)`, so a
+  /// re-visit upserts in place rather than creating duplicates.
+  Future<void> _recordProgress(WidgetRef ref, int index) async {
+    final userId = this.userId;
+    if (userId == null) return;
+
+    await ref.read(progressRepositoryProvider).saveCourseProgress(
+          id: _localProgressId(),
+          courseId: course.id,
+          userId: userId,
+          stepNum: index + 1,
+        );
+    final config = ref.read(serverConfigProvider);
+    if (config != null) {
+      await ref
+          .read(courseProgressUploaderProvider)
+          .queuePending(config: config);
+    }
   }
 
   Future<void> _toggleMembership(

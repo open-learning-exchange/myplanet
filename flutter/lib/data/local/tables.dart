@@ -828,3 +828,63 @@ class HealthExaminations extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Port of `model/CourseProgress.kt` (`@Entity(tableName = "course_progress")`).
+///
+/// One row per (course, user, step) recording whether the user *passed* that
+/// step. Unlike most tables here it is a *mixed* authority: rows the user
+/// authored on-device (a step viewed or an exam passed offline) carry no `_id`
+/// and survive a schema upgrade, while rows pulled from the `courses_progress`
+/// CouchDB database are a cache the next sync refills. See
+/// [AppDatabase.localAuthorityTables] for why it is preserved.
+@DataClassName('CourseProgressRow')
+@TableIndex(name: 'course_progress_user', columns: {#userId})
+@TableIndex(name: 'course_progress_course', columns: {#courseId})
+@TableIndex(name: 'course_progress_course_user_step', columns: {#courseId, #userId, #stepNum})
+class CourseProgress extends Table {
+  @override
+  String get tableName => 'course_progress';
+
+  /// Locally-minted UUID for rows authored here; the CouchDB `_id` once the
+  /// server has acknowledged the upload. Kotlin's `getPendingUploads` keys off
+  /// `_id IS NULL` to tell them apart, and so does the uploader.
+  TextColumn get id => text()();
+  TextColumn get couchId => text().named('_id').nullable()();
+  TextColumn get rev => text().named('_rev').nullable()();
+  TextColumn get createdOn => text().nullable()();
+  IntColumn get createdDate => integer().withDefault(const Constant(0))();
+  IntColumn get updatedDate => integer().withDefault(const Constant(0))();
+
+  /// 1-based step position within the course — matches
+  /// `CourseProgress.stepNum` and the `stepNumber` the take-course view passes.
+  IntColumn get stepNum => integer().withDefault(const Constant(0))();
+  BoolColumn get passed => boolean().withDefault(const Constant(false))();
+  TextColumn get userId => text().nullable()();
+  TextColumn get courseId => text().nullable()();
+  TextColumn get parentCode => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Port of `model/Certification.kt` (`@Entity(tableName = "certification")`).
+///
+/// Read-only sync data; `courseIds` stores the certification's course-id array
+/// as a JSON string, and a `LIKE` substring match mirrors the Kotlin's
+/// `CertificationDao.countByCourseId`. A completed course whose id appears in a
+/// certification is shown with a tinted star on the dashboard.
+@DataClassName('CertificationRow')
+class Certifications extends Table {
+  @override
+  String get tableName => 'certification';
+
+  TextColumn get id => text().named('_id')();
+  TextColumn get rev => text().named('_rev').nullable()();
+  TextColumn get name => text().nullable()();
+
+  /// JSON array string of course ids — kept verbatim to match the `LIKE` query.
+  TextColumn get courseIds => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

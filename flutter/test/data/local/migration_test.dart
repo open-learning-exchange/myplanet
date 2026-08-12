@@ -18,12 +18,12 @@ void main() {
   });
   tearDown(() => database.close());
 
-  Future<void> runUpgrade() =>
+  Future<void> runUpgrade({int? from}) =>
       database.customStatement('SELECT 1').then((_) async {
         final migrator = database.createMigrator();
         await database.migration.onUpgrade(
           migrator,
-          database.schemaVersion - 1,
+          from ?? database.schemaVersion - 1,
           database.schemaVersion,
         );
       });
@@ -299,7 +299,7 @@ void main() {
         'ALTER TABLE chat_history DROP COLUMN is_uploaded',
       );
 
-      await runUpgrade();
+      await runUpgrade(from: 24);
 
       final columns = await database
           .customSelect('PRAGMA table_info(chat_history)')
@@ -310,6 +310,28 @@ void main() {
       );
     },
   );
+
+  test('an un-uploaded course-progress row survives a schema upgrade', () async {
+    // The step-view path writes a `passed=false` row the moment a step is
+    // opened, and the exam flips it to `true`. Dropping the table between
+    // the two would discard the pass — the server has nothing to give back
+    // for a row the exam just authored.
+    await database.courseProgressDao.upsert(
+      CourseProgressCompanion.insert(
+        id: 'progress-1',
+        courseId: const Value('course-1'),
+        userId: const Value('user-1'),
+        stepNum: const Value(1),
+        passed: const Value(true),
+      ),
+    );
+
+    await runUpgrade();
+
+    final survivor = await database.courseProgressDao
+        .findByCourseUserAndStep('course-1', 'user-1', 1);
+    expect(survivor?.passed, isTrue);
+  });
 
   test('an already-uploaded chat is not re-queued after the upgrade', () async {
     // A chat carries a `_rev` only once the server acknowledged it. Leaving
@@ -327,7 +349,7 @@ void main() {
       'ALTER TABLE chat_history DROP COLUMN is_uploaded',
     );
 
-    await runUpgrade();
+    await runUpgrade(from: 24);
 
     expect(await database.chatDao.getPending(), isEmpty);
   });
@@ -352,6 +374,7 @@ void main() {
       'feedback',
       'health_examinations',
       'users',
+      'course_progress',
     };
     expect(
       AppDatabase.localAuthorityTables,

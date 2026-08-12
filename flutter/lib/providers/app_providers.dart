@@ -10,6 +10,7 @@ import '../repository/chat_repository.dart';
 import '../repository/chat_repository_impl.dart';
 import '../repository/chat_uploader.dart';
 import '../repository/configurations_repository.dart';
+import '../repository/course_progress_uploader.dart';
 import '../repository/courses_repository.dart';
 import '../repository/dictionary_repository.dart';
 import '../repository/events_repository.dart';
@@ -24,6 +25,7 @@ import '../repository/outbox_drainer.dart';
 import '../repository/outbox_repository.dart';
 import '../repository/personals_uploader.dart';
 import '../repository/personals_repository.dart';
+import '../repository/progress_repository.dart';
 import '../repository/ratings_repository.dart';
 import '../repository/life_repository.dart';
 import '../repository/resource_downloader.dart';
@@ -155,6 +157,14 @@ final surveyDaoProvider = Provider<SurveyDao>(
 
 final examDaoProvider = Provider<ExamDao>(
   (ref) => ref.watch(appDatabaseProvider).examDao,
+);
+
+final courseProgressDaoProvider = Provider<CourseProgressDao>(
+  (ref) => ref.watch(appDatabaseProvider).courseProgressDao,
+);
+
+final certificationDaoProvider = Provider<CertificationDao>(
+  (ref) => ref.watch(appDatabaseProvider).certificationDao,
 );
 
 final resourceDownloaderProvider = Provider<ResourceDownloader>(
@@ -349,6 +359,8 @@ final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
       FeedbackUploader.type: ref.watch(feedbackUploaderProvider).handler,
       HealthUploader.type: ref.watch(healthUploaderProvider).handler,
       RatingsUploader.type: ref.watch(ratingsUploaderProvider).handler,
+      CourseProgressUploader.type:
+          ref.watch(courseProgressUploaderProvider).handler,
       ChatUploader.type: ref.watch(chatUploaderProvider).handler,
     },
   );
@@ -428,6 +440,25 @@ final ratingsUploaderProvider = Provider<RatingsUploader>(
     ref.watch(ratingsRepositoryProvider),
     ref.watch(appDatabaseProvider).ratingDao,
     ref.watch(userDaoProvider),
+    ref.watch(outboxRepositoryProvider),
+  ),
+);
+
+final progressRepositoryProvider = Provider<ProgressRepository>(
+  (ref) => ProgressRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(courseDaoProvider),
+    ref.watch(courseProgressDaoProvider),
+    ref.watch(examDaoProvider),
+    ref.watch(submissionDaoProvider),
+    ref.watch(certificationDaoProvider),
+  ),
+);
+
+final courseProgressUploaderProvider = Provider<CourseProgressUploader>(
+  (ref) => CourseProgressUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(courseProgressDaoProvider),
     ref.watch(outboxRepositoryProvider),
   ),
 );

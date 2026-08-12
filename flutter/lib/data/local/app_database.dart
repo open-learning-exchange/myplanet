@@ -49,6 +49,8 @@ part 'app_database.g.dart';
     ChatEntries,
     FeedbackEntries,
     HealthExaminations,
+    CourseProgress,
+    Certifications,
   ],
   daos: [
     UserDao,
@@ -71,6 +73,8 @@ part 'app_database.g.dart';
     ChatDao,
     FeedbackDao,
     HealthExaminationDao,
+    CourseProgressDao,
+    CertificationDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -83,7 +87,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 25;
+  int get schemaVersion => 26;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -151,6 +155,15 @@ class AppDatabase extends _$AppDatabase {
     // permanently unreadable. Dropping this table also signs the user out,
     // since the session restores by looking their id up here.
     'users',
+    // Mixed authority: rows pulled from the `courses_progress` CouchDB
+    // database are a cache, but rows the user authored offline — a step viewed
+    // or an exam passed with no connectivity — carry no `_id` and exist nowhere
+    // else until the uploader delivers them. A sync can refill the cache half
+    // but not the other, so dropping the table would discard progress made
+    // offline. `insertCourseProgressFromSync` merges by (courseId, userId,
+    // stepNum) so a refilled cache row adopts the local `passed` flag rather
+    // than overwriting it.
+    'course_progress',
   };
 
   @override
@@ -1439,6 +1452,36 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
           ))
           .get();
 
+  /// Port of `SubmissionDao.getExamSubmissionsByUser` — every `exam`-typed
+  /// submission for a user. The course progress calc maps each onto an exam
+  /// by stripping the `@user` suffix the Kotlin stores in `parentId`.
+  Future<List<SubmissionRow>> getExamSubmissionsByUser(String? userId) =>
+      (select(submissions)
+            ..where(
+              (row) =>
+                  row.userId.equals(userId ?? '') &
+                  row.type.equals('exam'),
+            ))
+          .get();
+
+  /// Port of `AnswerDao.getBySubmissionIds` — every answer for [submissionIds]
+  /// in one read, so the progress calc totalises mistakes without N queries.
+  Future<List<SubmissionAnswerRow>> answersForSubmissions(
+    List<String> submissionIds,
+  ) async {
+    if (submissionIds.isEmpty) return const [];
+    final rows = <SubmissionAnswerRow>[];
+    for (final chunk in _chunked(submissionIds, _sqliteVariableChunk)) {
+      rows.addAll(
+        await (select(submissionAnswers)
+              ..where((row) => row.submissionId.isIn(chunk))
+              ..orderBy([(row) => OrderingTerm(expression: row.id)]))
+            .get(),
+      );
+    }
+    return rows;
+  }
+
   /// Port of `SubmissionDao.getUniquePendingSurveyCandidates` — the home
   /// dashboard's "you have N surveys to complete" check. Individual surveys
   /// only, matching the Kotlin `teamId IS NULL`.
@@ -1709,6 +1752,45 @@ class ExamDao extends DatabaseAccessor<AppDatabase> with _$ExamDaoMixin {
 
   Stream<List<ExamRow>> watchByCourseId(String courseId) =>
       (select(exams)..where((row) => row.courseId.equals(courseId))).watch();
+
+  /// Port of `ExamDao.getByCourseIds` — exams attached to any of [courseIds].
+  /// Chunked for the same `SQLITE_MAX_VARIABLE_NUMBER` reason as the rest.
+  Future<List<ExamRow>> getByCourseIds(List<String> courseIds) async {
+    final rows = <ExamRow>[];
+    for (final chunk in _chunked(courseIds, _sqliteVariableChunk)) {
+      rows.addAll(
+        await (select(exams)..where((row) => row.courseId.isIn(chunk))).get(),
+      );
+    }
+    return rows;
+  }
+
+  /// Port of `ExamDao.getByStepIds` — the per-step exam lookup the course
+  /// progress detail uses to map each step to its exam.
+  Future<List<ExamRow>> getByStepIds(List<String> stepIds) async {
+    final rows = <ExamRow>[];
+    for (final chunk in _chunked(stepIds, _sqliteVariableChunk)) {
+      rows.addAll(
+        await (select(exams)..where((row) => row.stepId.isIn(chunk))).get(),
+      );
+    }
+    return rows;
+  }
+
+  /// Port of `QuestionDao.getByExamIds` — every question for [examIds] in one
+  /// read, so the progress calc groups mistakes by exam without N queries.
+  Future<List<ExamQuestionRow>> questionsForExams(List<String> examIds) async {
+    final rows = <ExamQuestionRow>[];
+    for (final chunk in _chunked(examIds, _sqliteVariableChunk)) {
+      rows.addAll(
+        await (select(examQuestions)
+              ..where((row) => row.examId.isIn(chunk))
+              ..orderBy([(row) => OrderingTerm(expression: row.position)]))
+            .get(),
+      );
+    }
+    return rows;
+  }
 
   Future<List<ExamQuestionRow>> questionsFor(String examId) =>
       (select(examQuestions)
@@ -2121,4 +2203,190 @@ class HealthExaminationDao extends DatabaseAccessor<AppDatabase>
       (update(healthExaminations)..where((h) => h.id.equals(id))).write(
         HealthExaminationsCompanion(userId: Value(userId)),
       );
+}
+
+/// Port of `data/room/dao/CourseProgressDao.kt`.
+///
+/// One row per (course, user, step). Rows authored on-device carry a
+/// locally-minted `id` and a null `couchId`; rows pulled from the
+/// `courses_progress` CouchDB database carry the server `_id`/`_rev`. The
+/// uploader keys the pending set off `couchId IS NULL` to tell them apart, as
+/// the Kotlin does.
+@DriftAccessor(tables: [CourseProgress])
+class CourseProgressDao extends DatabaseAccessor<AppDatabase>
+    with _$CourseProgressDaoMixin {
+  CourseProgressDao(super.db);
+
+  Future<List<CourseProgressRow>> getByUserAndCourseIds(
+    String? userId,
+    List<String> courseIds,
+  ) async {
+    if (courseIds.isEmpty) return const [];
+    final rows = <CourseProgressRow>[];
+    for (final chunk in _chunked(courseIds, _sqliteVariableChunk)) {
+      final stmt = select(courseProgress)
+        ..where(
+          (r) =>
+              r.userId.equals(userId ?? '') &
+              r.courseId.isIn(chunk),
+        );
+      rows.addAll(await stmt.get());
+    }
+    return rows;
+  }
+
+  Future<List<CourseProgressRow>> getByUserAndCourse(
+    String? userId,
+    String? courseId,
+  ) =>
+      (select(courseProgress)
+            ..where(
+              (r) =>
+                  r.userId.equals(userId ?? '') &
+                  r.courseId.equals(courseId ?? ''),
+            ))
+          .get();
+
+  Future<List<CourseProgressRow>> getByUser(String? userId) =>
+      (select(courseProgress)..where((r) => r.userId.equals(userId ?? '')))
+          .get();
+
+  Future<CourseProgressRow?> findByCourseUserAndStep(
+    String? courseId,
+    String? userId,
+    int stepNum,
+  ) =>
+      (select(courseProgress)
+            ..where(
+              (r) =>
+                  r.courseId.equals(courseId ?? '') &
+                  r.userId.equals(userId ?? '') &
+                  r.stepNum.equals(stepNum),
+            )
+            ..limit(1))
+          .getSingleOrNull();
+
+  Future<List<CourseProgressRow>> getByIds(List<String> ids) async {
+    final rows = <CourseProgressRow>[];
+    for (final chunk in _chunked(ids, _sqliteVariableChunk)) {
+      rows.addAll(
+        await (select(courseProgress)
+              ..where((r) => r.id.isIn(chunk) | r.couchId.isIn(chunk)))
+            .get(),
+      );
+    }
+    return rows;
+  }
+
+  /// Kotlin matches on `(courseId, userId, stepNum)` triples to find the local
+  /// row a synced document corresponds to. Chunked per dimension for the same
+  /// `SQLITE_MAX_VARIABLE_NUMBER` reason as the rest of this file.
+  Future<List<CourseProgressRow>> getByCourseUsersAndSteps(
+    List<String> courseIds,
+    List<String> userIds,
+    List<int> stepNums,
+  ) async {
+    if (courseIds.isEmpty || userIds.isEmpty || stepNums.isEmpty) {
+      return const [];
+    }
+    final rows = <CourseProgressRow>[];
+    for (final courseChunk in _chunked(courseIds, _sqliteVariableChunk)) {
+      for (final userChunk in _chunked(userIds, _sqliteVariableChunk)) {
+        for (final stepChunk in _chunked(stepNums, _sqliteVariableChunk)) {
+          rows.addAll(
+            await (select(courseProgress)
+                  ..where(
+                    (r) =>
+                        r.courseId.isIn(courseChunk) &
+                        r.userId.isIn(userChunk) &
+                        r.stepNum.isIn(stepChunk),
+                  ))
+                .get(),
+          );
+        }
+      }
+    }
+    return rows;
+  }
+
+  /// Rows authored here — `couchId IS NULL` — excluding guest accounts, which
+  /// have no CouchDB user document and so cannot upload. Mirrors
+  /// `CourseProgressDao.getPendingUploads`.
+  Future<List<CourseProgressRow>> getPendingUploads() => (select(
+    courseProgress,
+  )..where(
+    (r) =>
+        r.couchId.isNull() &
+        r.userId.isNotNull() &
+        r.userId.like('guest%').not(),
+  )).get();
+
+  Future<int> markUploaded(String localId, String remoteId, String rev) =>
+      (update(courseProgress)..where((r) => r.id.equals(localId))).write(
+        CourseProgressCompanion(couchId: Value(remoteId), rev: Value(rev)),
+      );
+
+  /// Port of `CourseProgressDao.updatePassedByCourseAndStep`. Used by the exam
+  /// path (`CoursesRepository.updateCourseProgress`) to flip the `passed` flag
+  /// for every user who reached a step, since an exam result is not per-user.
+  Future<int> updatePassedByCourseAndStep(
+    String courseId,
+    int stepNum,
+    bool passed,
+  ) =>
+      (update(courseProgress)
+            ..where(
+              (r) => r.courseId.equals(courseId) & r.stepNum.equals(stepNum),
+            ))
+          .write(CourseProgressCompanion(passed: Value(passed)));
+
+  Future<void> upsert(CourseProgressCompanion row) =>
+      into(courseProgress).insertOnConflictUpdate(row);
+
+  Future<void> upsertAll(List<CourseProgressCompanion> rows) async {
+    if (rows.isEmpty) return;
+    await batch((b) => b.insertAllOnConflictUpdate(courseProgress, rows));
+  }
+}
+
+/// Port of `data/room/dao/CertificationDao.kt`. Read-only sync data; the only
+/// query is the `LIKE` membership check behind `isCourseCertified`.
+@DriftAccessor(tables: [Certifications])
+class CertificationDao extends DatabaseAccessor<AppDatabase>
+    with _$CertificationDaoMixin {
+  CertificationDao(super.db);
+
+  /// `courseIds` is a JSON array string; a substring match mirrors Realm's
+  /// `contains("courseIds", id)` and the Kotlin's `LIKE '%id%'`.
+  Future<int> countByCourseId(String courseId) async {
+    final count = certifications.id.count();
+    final row = await (selectOnly(certifications)
+          ..addColumns([count])
+          ..where(certifications.courseIds.like('%$courseId%')))
+        .getSingle();
+    return row.read(count) ?? 0;
+  }
+
+  Future<void> upsertAll(List<CertificationsCompanion> rows) async {
+    if (rows.isEmpty) return;
+    await batch((b) => b.insertAllOnConflictUpdate(certifications, rows));
+  }
+
+  /// Drops stale certification rows the server no longer lists. Certifications
+  /// are a pure server cache, so nothing here needs sparing.
+  Future<int> deleteNotIn(List<String> keepIds) async {
+    final keep = keepIds.toSet();
+    final all = await (selectOnly(
+      certifications,
+    )..addColumns([certifications.id])).map((row) => row.read(certifications.id)!)
+        .get();
+    final stale = all.where((id) => !keep.contains(id)).toList(growable: false);
+    var deleted = 0;
+    for (final chunk in _chunked(stale, _sqliteVariableChunk)) {
+      deleted += await (delete(
+        certifications,
+      )..where((row) => row.id.isIn(chunk))).go();
+    }
+    return deleted;
+  }
 }
