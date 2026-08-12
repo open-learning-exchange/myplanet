@@ -51,10 +51,8 @@
                     android:textSize="@dimen/text_size_large"
                     android:textStyle="bold"
                     android:minWidth="150dp" />
-
-
-                <include layout="@layout/view_grid_list_toggle" />
-
+                <include
+                    layout="@layout/view_grid_list_toggle" />
                 <TextView
                     android:id="@+id/tv_add"
                     style="@style/Widget.AppCompat.Button.Borderless.Colored"
