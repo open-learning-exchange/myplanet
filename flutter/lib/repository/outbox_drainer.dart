@@ -39,9 +39,11 @@ typedef OutboxHandler =
 /// The Kotlin worker is a `CoroutineWorker` that `WorkManager` wakes on a
 /// periodic schedule with a network constraint. Flutter has no equivalent that
 /// runs while the app is closed, so the trigger changes rather than the queue:
-/// [drain] is called on app resume and after a successful sync, and the queue
-/// itself — being a SQLite table — carries pending work across process death
-/// exactly as before.
+/// [drain] is called at startup and on app resume by `OutboxDrainScope`, and at
+/// the end of a dashboard sync run that reached the server (see
+/// `DashboardSyncNotifier.drainOutbox`, which mirrors the Kotlin's pairing of
+/// a forced sync with `startUpload`). The queue itself — being a SQLite table —
+/// carries pending work across process death exactly as before.
 ///
 /// The honest gap this leaves is documented in
 /// `docs/kotlin-to-flutter-migration.md`: a write made offline is sent the next

@@ -1,5 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../repository/personals_uploader.dart';
+import 'app_providers.dart';
 import 'chat_provider.dart';
 import 'courses_providers.dart';
 import 'events_provider.dart';
@@ -119,6 +122,7 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
       await _syncArea(area);
     }
 
+    await drainOutbox();
     state = state.copyWith(running: false, finishedAt: DateTime.now());
   }
 
@@ -130,7 +134,35 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
       clearFinishedAt: true,
     );
     await _syncArea(area);
+    await drainOutbox();
     state = state.copyWith(running: false, finishedAt: DateTime.now());
+  }
+
+  /// Pushes queued writes once the pulls are done, so "Sync now" means both
+  /// directions — as it does in Kotlin, where `SyncActivity` pairs a forced
+  /// sync with `startUpload`. Without this the outbox waited for an app
+  /// resume, which is the one thing a user who just reconnected and pressed
+  /// Sync is not about to do.
+  ///
+  /// Gated on at least one area having succeeded, and that gate is load-bearing
+  /// rather than tidiness: a drain attempted with no route to the server
+  /// consumes one of the operation's five attempts and pushes its backoff out,
+  /// so firing it after a wholly failed run would spend the retry budget
+  /// proving the network is still down.
+  @visibleForTesting
+  Future<void> drainOutbox() async {
+    if (state.successCount == 0) return;
+
+    final config = ref.read(serverConfigProvider);
+    if (config == null) return;
+    try {
+      await ref
+          .read(outboxDrainerProvider)
+          .drain(authHeader: PersonalsUploader.authHeaderFor(config));
+    } catch (_) {
+      // A drain failure is already recorded per operation in the outbox; it
+      // must not turn a successful pull into a failed sync on screen.
+    }
   }
 
   Future<void> _syncArea(DashboardSyncArea area) async {

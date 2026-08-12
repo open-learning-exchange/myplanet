@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -46,21 +48,42 @@ class _OutboxDrainScopeState extends ConsumerState<OutboxDrainScope>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _drain();
+    // Nothing awaits this, so it carries the same guard as the startup path:
+    // an escaping error here would be an unhandled async exception raised by
+    // the act of bringing the app to the foreground.
+    if (state == AppLifecycleState.resumed) unawaited(_reportingDrain());
   }
 
   Future<void> _startupDrain() async {
     if (!mounted) return;
-    // Runs from a post-frame callback, so an escaping error would surface as
-    // an unhandled async exception during startup rather than a failed drain.
     try {
       await ref.read(outboxDrainerProvider).recoverStuck();
+    } catch (error, stack) {
+      _report(error, stack);
+      return;
+    }
+    await _reportingDrain();
+  }
+
+  /// A drain whose failure is reported rather than thrown.
+  ///
+  /// Both callers are fire-and-forget — a post-frame callback and a lifecycle
+  /// notification — so a raised error would surface as an unhandled async
+  /// exception instead of a failed upload. Per-operation outcomes are already
+  /// recorded in the outbox table; this only catches a drain that fell over
+  /// before it could record anything.
+  Future<void> _reportingDrain() async {
+    try {
       await _drain();
     } catch (error, stack) {
-      FlutterError.reportError(
-        FlutterErrorDetails(exception: error, stack: stack, library: 'outbox'),
-      );
+      _report(error, stack);
     }
+  }
+
+  void _report(Object error, StackTrace stack) {
+    FlutterError.reportError(
+      FlutterErrorDetails(exception: error, stack: stack, library: 'outbox'),
+    );
   }
 
   Future<void> _drain() async {
