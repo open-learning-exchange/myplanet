@@ -49,7 +49,6 @@
             android:importantForAccessibility="no"
             android:src="@drawable/ic_search"
             app:tint="@color/hint_color" />
-
         <EditText
             android:id="@+id/et_search"
             android:layout_width="0dp"
