@@ -945,9 +945,9 @@
     <string name="virtual_assistant_currently_not_available">assistant virtuel actuellement non disponible</string>
     <string name="no_courses">aucun cours disponible</string>
     <string name="no_resources">aucune ressource disponible</string>
-    <string name="no_resources_added_yet">Vous n\'avez encore ajouté aucune ressource</string>
-    <string name="no_courses_joined_yet">Vous n\'avez encore rejoint aucun cours</string>
-    <string name="no_teams_joined_yet">Vous n\'avez pas encore rejoint d\'équipe</string>
+    <string name="no_resources_added_yet">Vous pouvez ajouter des ressources</string>
+    <string name="no_courses_joined_yet">Vous pouvez rejoindre des cours</string>
+    <string name="no_teams_joined_yet">Vous pouvez rejoindre une équipe</string>
     <string name="no_finance_record">aucun enregistrement financier disponible</string>
     <string name="no_team_courses">aucun cours d\'équipe disponible</string>
     <string name="no_team_resources">aucune ressource d\'équipe disponible</string>
