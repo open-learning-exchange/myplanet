@@ -33,6 +33,11 @@ class DashboardShell extends StatelessWidget {
         ),
         destinations: [
           NavigationDestination(
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: const Icon(Icons.home),
+            label: l10n.home,
+          ),
+          NavigationDestination(
             icon: const Icon(Icons.menu_book_outlined),
             selectedIcon: const Icon(Icons.menu_book),
             label: l10n.resources,

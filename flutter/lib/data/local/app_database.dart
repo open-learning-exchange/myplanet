@@ -295,6 +295,27 @@ class TeamDao extends DatabaseAccessor<AppDatabase> with _$TeamDaoMixin {
           ))
           .watch();
 
+  /// The team documents behind a set of membership rows, for the home
+  /// dashboard's myTeams card: real team documents only (no `docType`
+  /// sub-documents), not archived, sorted by name. Chunked like every other
+  /// id-list query so a planet with many teams stays under the variable cap.
+  Future<List<TeamRow>> teamsByIds(List<String> ids) async {
+    final rows = <TeamRow>[];
+    for (final chunk in _chunked(ids, _sqliteVariableChunk)) {
+      rows.addAll(
+        await (select(teams)..where(
+              (t) =>
+                  t.id.isIn(chunk) &
+                  t.docType.isNull() &
+                  (t.status.isNull() | t.status.equals('archived').not()),
+            ))
+            .get(),
+      );
+    }
+    rows.sort((a, b) => (a.name ?? '').compareTo(b.name ?? ''));
+    return rows;
+  }
+
   Stream<int> watchMemberCount(String teamId) {
     final count = teams.id.count();
     final query = selectOnly(teams)
@@ -1379,6 +1400,25 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
           ))
           .get();
 
+  /// Port of `SubmissionDao.getUniquePendingSurveyCandidates` — the home
+  /// dashboard's "you have N surveys to complete" check. Individual surveys
+  /// only, matching the Kotlin `teamId IS NULL`.
+  ///
+  /// The Kotlin matches `status = 'pending'` alone; this port's survey
+  /// get-or-create writes `''` for a submission the user has not started,
+  /// so both spellings count as pending here.
+  Future<List<SubmissionRow>> pendingSurveySubmissions(String userId) =>
+      (select(submissions)
+            ..where(
+              (row) =>
+                  row.userId.equals(userId) &
+                  row.type.equals('survey') &
+                  (row.status.equals('') | row.status.equals('pending')) &
+                  (row.teamId.isNull() | row.teamId.equals('')),
+            )
+            ..orderBy([(row) => OrderingTerm(expression: row.startTime)]))
+          .get();
+
   Future<List<SubmissionRow>> pendingUploads(String userId) =>
       (select(submissions)..where(
             (row) => row.userId.equals(userId) & row.isUpdated.equals(true),
@@ -1544,6 +1584,18 @@ class SurveyDao extends DatabaseAccessor<AppDatabase> with _$SurveyDaoMixin {
 
   Future<SurveyRow?> getById(String id) =>
       (select(surveys)..where((row) => row.id.equals(id))).getSingleOrNull();
+
+  /// Batch read for the dashboard's pending-survey dialog, chunked to stay
+  /// under SQLite's variable cap.
+  Future<List<SurveyRow>> getByIds(List<String> ids) async {
+    final rows = <SurveyRow>[];
+    for (final chunk in _chunked(ids, _sqliteVariableChunk)) {
+      rows.addAll(
+        await (select(surveys)..where((row) => row.id.isIn(chunk))).get(),
+      );
+    }
+    return rows;
+  }
 
   Future<List<SurveyRow>> allRows() => select(surveys).get();
 
