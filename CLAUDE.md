@@ -26,8 +26,11 @@ profile, appearance settings, the dictionary, notifications, My life, references
 ratings, offline submissions with question-aware answer review, events/meetups, individual
 surveys, teams, chat, feedback, community, graded course exams, and the resource viewer with
 its download path, encrypted health records, the chat and feedback sync-in directions, chat
-upload, member registration, team and public survey sharing, and personal-note attachments have
-landed. Everything below in this document describes the Kotlin app and still applies to it.
+upload, member registration, team and public survey sharing, personal-note attachments, and the
+completed home dashboard — completed-course stars, the server-reachability ring, team alert
+badges, offline-login counting with its activity chart, survey remind-later, and the language
+action — have landed. Everything below in this document describes the Kotlin app and still
+applies to it.
 
 See **`docs/kotlin-to-flutter-migration.md`** for scope, the technology mapping (Hilt→Riverpod,
 Room→Drift, Retrofit→Dio, strings.xml→.arb), and the open problems. The `WorkManager` gap is

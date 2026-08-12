@@ -182,5 +182,20 @@
   "adoptSurvey": "Adoptar encuesta",
   "areYouSure": "¿Estás seguro?",
   "yes": "Sí",
-  "no": "No"
+  "no": "No",
+  "completedCourse": "curso completado",
+  "remindMeLater": "Recuérdame más tarde",
+  "remindLater": "Recordar más tarde",
+  "setReminder": "Establecer recordatorio",
+  "minutes": "Minutos",
+  "hours": "horas",
+  "days": "Días",
+  "chartLabel": "N.º de inicios de sesión",
+  "selectLanguage": "Seleccionar idioma",
+  "english": "english",
+  "spanish": "español",
+  "somali": "somali",
+  "nepali": "नेपाली",
+  "arabic": "عربى",
+  "french": "français"
 }

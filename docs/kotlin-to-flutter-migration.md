@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 32 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 33 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -31,6 +31,11 @@ Known gaps:
   outbox, so a submission composed offline is lost when the post fails. Kotlin has the same
   behaviour, so this is parity rather than regression, but it is the weakest write path in the
   port.
+- The dashboard's About and Disclaimer destinations are unported — static translated HTML with
+  no logic (see Phase 33).
+- Offline activity rows are recorded but never uploaded: Kotlin carries them to the server with
+  `UploadManager`'s `activities` upload, which the port has no equivalent for. Only `login`
+  rows are written at all; resource-open and rating activity are not logged.
 
 - **Phase 1** -- skeleton plus the server configuration → login → resources slice.
 - **Phase 2** -- dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -205,6 +210,84 @@ Known gaps:
     send dropped the message rather than storing it. `savePendingChat` keeps it and queues it.
   Also: the chat provider called `sendNewChatRequest` on both branches, so every follow-up
   message opened a fresh conversation instead of continuing the one on screen.
+
+## Phase 33 — finishing the home dashboard
+
+Phase 32 left the bell dashboard with its profile card, four count cards and the pending-survey
+dialog. The rest of `BellDashboardFragment` and `BaseDashboardFragment` is now ported, along with
+`ActivitiesFragment` and the language action from the overflow menu.
+
+**Completed-course stars.** `progressRepository.completedCourseIds` and `isCourseCertified`
+already existed from the Phase 32 harvest with only the courses screen reading them; the star row
+gives them their dashboard caller. A star per completed course, tinted `colorPrimary` when a
+certification covers the course and `md_blue_grey_300` when not, tapping through to the course.
+The Kotlin hides its spinner after a two-second timer so an empty result does not spin forever;
+Riverpod's `loading` state says the same thing without the timer.
+
+**Team alert badges.** Needed two things the port did not have: a `team_notification` table (the
+per-team "seen" chat watermark) and a count of team-visible posts. Two Kotlin quirks are
+reproduced rather than fixed, and both are worth knowing:
+
+- `hasTask` is computed **once** for the whole team list — the user's tasks due between now and
+  this time tomorrow — and written onto every team. A task in one team lights the dot on all of
+  them. The window also starts at *now*, so an already-overdue task lights nothing.
+- `hasChat` requires a watermark row to exist (`notification != null && lastCount < chatCount`),
+  so a team whose voices the user has never opened shows no dot however many posts it has. The
+  dot means "new since you last looked", and never-looked reads as nothing new.
+
+`updateTeamNotification` moves the watermark, keyed `<teamId>:chat` rather than a fresh UUID —
+the Kotlin mints a UUID but always looks the row up by `(parentId, type)` first, so a derived key
+is the same row with one fewer way to duplicate it.
+
+**Offline logins and the activity chart.** A new `offline_activity` table, written by
+`SessionNotifier` on sign-in (`UserSessionManager.onLoginAsync`) and stamped with a logout time on
+sign-out. It feeds the `(n)` in the name line — `R.string.user_name` is `"%1$s (%2$s)"`, which the
+port had been rendering without its count — and `ActivitiesScreen`'s bar chart.
+
+The table is **preserved** across a schema bump: Kotlin carries these rows to the server through
+`UploadManager`'s `activities` upload, the port has no activities uploader yet, so they exist
+nowhere else and no sync can give them back. `logLogout` reproduces a real Kotlin quirk — it
+stamps the newest `login` row *globally*, ignoring the user name it is handed, so on a shared
+handset the logout lands on whichever login is newest.
+
+The chart is drawn with plain widgets rather than a charting dependency: the data is at most
+twelve integers and the Kotlin's chart is a bar chart with month labels. `monthlyLoginCounts`
+keeps `computeMonthlyCounts`' bucketing exactly, including grouping on `Calendar.MONTH` with no
+year component.
+
+**The network-status ring.** The colour around the avatar, probed against the configured server
+(primary, then the mapped alternative) as `MainApplication.isServerReachable` does — success being
+any 2xx. Two deliberate differences, both from having no connectivity plugin, which did not earn
+its keep for one ring:
+
+- No connectivity trigger. The Kotlin re-probes on OS connectivity changes; this probes when the
+  dashboard builds and on demand, and deliberately does **not** poll on a timer.
+- The three states are inferred from the failure kind rather than the radio: a transport failure
+  (socket error, timeout) reads red, a response that arrived but was not 2xx reads yellow. That
+  lands on the Kotlin's colour in the ordinary cases — no network fails at the transport, and a
+  reachable-but-sick server answers with a status.
+
+**Remind-later.** The survey dialog's neutral button, and the reminders it schedules. Stored as
+`reminder_time_<ids>` preference keys exactly as `SurveysRepositoryImpl` stores them, with the ids
+being the comma-joined submission list so a reminder re-opens the same set. `checkPendingSurveys`
+now also consults `isReminderScheduled`, so the hourly dialog cannot undo a snooze — that guard
+existed in the Kotlin and was missing from the port. The Kotlin's polling flow
+(`while (true) { … delay(60_000) }`) became a `Timer.periodic` cancelled in `onDispose`: an
+un-cancellable `Future.delayed` outlives the provider, keeps polling after the dashboard is gone,
+and leaves a pending timer that fails every widget test that mounted the screen.
+
+The Kotlin's `NumberPicker` + `RadioGroup` became a slider and a segmented button, keeping the
+per-unit caps (60 minutes / 24 hours / 30 days) and the clamp when a unit change lowers the cap.
+
+**The language action.** `R.id.change_language` → `SettingsActivity.languageChanger`: the six
+supported languages, stored under the Kotlin's own `language` preference key and applied through
+`MaterialApp.locale`. Unset means "follow the device", which is what the app did before. The
+labels were already translated upstream and are seeded from `values-es` as usual.
+
+Still unported from this screen: the **About** and **Disclaimer** destinations. They are static
+HTML bodies in `strings.xml` (1.8 KB and 6.8 KB, translated into five languages) with no logic at
+all, and porting ~43 KB of translated markup earns less than anything else left on the list.
+OS-scheduled background sync remains out of scope for the same reason it always has.
 
 ## Harvesting upstream: the 2026-08-12 rebase
 
@@ -744,9 +827,9 @@ flutter pub get 2>&1 | grep -i discontinued
 
 `components`, `enterprises` -- plus team voices, team/public survey sharing, personal attachments/upload,
 storage/retry, and the rest of `settings`, plus profile photo/upload, membership, and the rest of `user`,
-and the rest of `sync` and `dashboard` (the home cards and pending-survey dialog are ported as of
-Phase 32; still missing are the completed-course stars, network ring, team alert badges, activity
-chart, language/about/disclaimer overflow actions, OS-scheduled sync, and survey reminders).
+and the rest of `sync`. `dashboard` is complete as of Phase 33 apart from the About and Disclaimer
+destinations (static translated HTML) and OS-scheduled sync, which is a platform gap rather than a
+screen.
 
 **Notes on remaining packages:**
 - `components` -- reusable utility widgets. `CheckboxList` is in use; `ChallengeDialog` and

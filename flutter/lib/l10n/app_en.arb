@@ -975,5 +975,38 @@
   "adoptableSurveys": "Surveys available to adopt",
   "noAdoptableSurveys": "No surveys available to adopt",
   "adoptSurvey": "Adopt survey",
-  "surveyAdopted": "Survey adopted"
+  "surveyAdopted": "Survey adopted",
+  "completedCourse": "completed course",
+  "userNameWithLogins": "{name} ({logins})",
+  "@userNameWithLogins": {
+    "description": "Profile name line with the offline login count, R.string.user_name",
+    "placeholders": {
+      "name": {"type": "String"},
+      "logins": {"type": "int"}
+    }
+  },
+  "remindMeLater": "Remind Me Later",
+  "remindLater": "Remind Later",
+  "setReminder": "Set Reminder",
+  "minutes": "Minutes",
+  "hours": "hours",
+  "days": "Days",
+  "reminderSurveysToComplete": "Reminder: You have {count, plural, =1{1 survey} other{{count} surveys}} to complete",
+  "@reminderSurveysToComplete": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "myActivities": "My activities",
+  "chartLabel": "No. of login",
+  "selectLanguage": "select language",
+  "english": "english",
+  "spanish": "español",
+  "somali": "somali",
+  "nepali": "नेपाली",
+  "arabic": "عربى",
+  "french": "français",
+  "serverReachable": "Server reachable",
+  "serverUnreachable": "Server unreachable",
+  "serverChecking": "Checking server"
 }

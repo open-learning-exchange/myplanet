@@ -14,6 +14,7 @@ import 'courses/course_detail_screen.dart';
 import 'courses/courses_screen.dart';
 import 'courses/courses_progress_screen.dart';
 import 'courses/take_course_screen.dart';
+import 'dashboard/activities_screen.dart';
 import 'dashboard/dashboard_shell.dart';
 import 'dashboard/home_screen.dart';
 import 'dictionary/dictionary_screen.dart';
@@ -111,6 +112,9 @@ class Routes {
   static const String userInfo = '/exam/user-info/:submissionId';
   static const String publicSurvey = '/survey/:teamId/:surveyId';
   static const String syncCenter = '/sync-center';
+
+  /// `ActivitiesFragment`, opened from the dashboard's `fab_my_activity`.
+  static const String activities = '/activities';
 }
 
 /// The server a public-survey deep link points at.
@@ -233,6 +237,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.syncCenter,
         builder: (context, state) => const SyncCenterScreen(),
+      ),
+      GoRoute(
+        path: Routes.activities,
+        builder: (context, state) => const ActivitiesScreen(),
       ),
       GoRoute(
         path: Routes.exam,

@@ -8,28 +8,29 @@ import '../../providers/app_providers.dart';
 import '../../providers/courses_providers.dart';
 import '../../providers/dashboard_providers.dart';
 import '../../providers/life_provider.dart';
+import '../../providers/network_status_provider.dart';
 import '../../providers/notifications_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/sync_state.dart';
+import '../../repository/notifications_repository.dart';
 import '../components/guest_dialog.dart';
 import '../life/life_features.dart';
 import '../router.dart';
 import 'dashboard_drawer.dart';
 
-enum _HomeMenuAction { sync, feedback, settings, theme, logout }
+enum _HomeMenuAction { sync, feedback, settings, theme, language, logout }
 
 /// Port of `ui/dashboard/BellDashboardFragment.kt` — the home ("bell")
-/// dashboard: the profile card and the four myLibrary / myCourses / myTeams /
-/// myLife cards, plus the pending-survey dialog.
+/// dashboard: the profile card with its completed-course stars, network-status
+/// ring and offline-login count, the four myLibrary / myCourses / myTeams /
+/// myLife cards with team alert badges, the activity-chart action, and the
+/// pending-survey dialog with its remind-later scheduler.
 ///
-/// Deliberately not (yet) ported from the Kotlin home screen, all tracked in
-/// the migration doc: the completed-course star row (needs per-step progress
-/// data the port does not sync), the network-status ring around the avatar
-/// (needs a connectivity plugin), team chat/task alert badges (needs team
-/// notifications), the offline-logins count in the name line and the activity
-/// chart FAB (needs login activity tracking), and the "remind later" survey
-/// scheduler.
+/// Still unported from the Kotlin home screen, tracked in the migration doc:
+/// the About and Disclaimer overflow destinations (static HTML bodies in
+/// `strings.xml`, translated into five languages), and OS-scheduled background
+/// sync, which needs platform scheduling rather than a screen.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -58,6 +59,46 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         );
       }
     });
+
+    // `observeSurveyReminders` — a snoozed set reappears when its time comes,
+    // with the "Reminder:" title and no hourly throttle.
+    ref.listenManual(dueSurveyRemindersProvider, (previous, next) {
+      final due = next.valueOrNull;
+      if (due == null || due.isEmpty) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showDue(due));
+    });
+  }
+
+  /// Port of `handleDueReminders` — resolves each snoozed id set back to the
+  /// submissions that are *still* pending and re-shows the dialog for it.
+  Future<void> _showDue(List<String> due) async {
+    final session = ref.read(sessionProvider).valueOrNull;
+    if (session == null || !mounted) return;
+
+    // Re-reading the pending set rather than trusting the stored ids is what
+    // the Kotlin does (`filter { it.status == "pending" }`): a survey answered
+    // during the snooze must not be nagged about.
+    final pending = await ref.read(pendingSurveysProvider(session.id).future);
+    if (pending.isEmpty || !mounted) return;
+
+    for (final surveyIds in due) {
+      final ids = surveyIds.split(',').where((id) => id.isNotEmpty).toSet();
+      final stillPending = pending
+          .where((survey) => ids.contains(survey.submissionId))
+          .toList(growable: false);
+      if (stillPending.isEmpty) continue;
+      if (!mounted) return;
+      await _showSurveyDialog(
+        stillPending,
+        AppLocalizations.of(
+          context,
+        ).reminderSurveysToComplete(stillPending.length),
+        // `showPendingSurveysReminder` passes `dismissOnNeutral = true`, so
+        // snoozing a reminder closes it rather than leaving it stacked under the
+        // remind-later sheet.
+        dismissOnNeutral: true,
+      );
+    }
   }
 
   Future<void> _checkPendingSurveys(UserRow session) async {
@@ -77,16 +118,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final pending = await ref.read(pendingSurveysProvider(session.id).future);
     if (pending.isEmpty || !mounted) return;
 
+    // `checkPendingSurveys` skips a set the user has already snoozed, so the
+    // hourly dialog cannot undo a remind-later.
+    if (prefs.isReminderScheduled(_reminderKeyFor(pending))) return;
+
     // The "shown at" stamp is written when the dialog appears, not when it is
     // answered — dismissing it still starts the hour, as the Kotlin does.
     await prefs.setLastSurveyDialogShown(now);
     if (!mounted) return;
 
+    await _showSurveyDialog(
+      pending,
+      AppLocalizations.of(context).surveysToComplete(pending.length),
+    );
+  }
+
+  /// The comma-joined submission ids the Kotlin uses as its reminder key
+  /// (`pendingSurveys.joinToString(",") { it.id }`).
+  String _reminderKeyFor(List<PendingSurvey> surveys) =>
+      surveys.map((survey) => survey.submissionId).join(',');
+
+  /// Port of `showSurveyListDialog`. Shared by the hourly check and the
+  /// reminder path, which differ only in title and in whether snoozing also
+  /// dismisses this dialog.
+  Future<void> _showSurveyDialog(
+    List<PendingSurvey> pending,
+    String title, {
+    bool dismissOnNeutral = false,
+  }) async {
     final l10n = AppLocalizations.of(context);
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.surveysToComplete(pending.length)),
+        title: Text(title),
         content: SizedBox(
           width: double.maxFinite,
           child: ListView(
@@ -108,6 +172,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onPressed: () => Navigator.of(dialogContext).pop(),
             child: Text(l10n.cancel),
           ),
+          // The Kotlin's BUTTON_NEUTRAL, wired so it does *not* dismiss unless
+          // `dismissOnNeutral` — the remind-later sheet opens over it.
+          TextButton(
+            onPressed: () async {
+              if (dismissOnNeutral) Navigator.of(dialogContext).pop();
+              await _showRemindLaterDialog(pending);
+            },
+            child: Text(l10n.remindLater),
+          ),
           FilledButton(
             onPressed: () {
               Navigator.of(dialogContext).pop();
@@ -118,6 +191,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
     );
+  }
+
+  /// Port of `showRemindLaterDialog` — pick a unit and an amount, then store the
+  /// reminder.
+  ///
+  /// The Kotlin uses a `RadioGroup` plus a `NumberPicker` whose max changes with
+  /// the unit (60 minutes / 24 hours / 30 days) and resets nothing else. A
+  /// segmented button and a slider express the same constrained pick with
+  /// Material 3 widgets; the caps are the Kotlin's.
+  Future<void> _showRemindLaterDialog(List<PendingSurvey> pending) async {
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
+    final selection = await showDialog<Duration>(
+      context: context,
+      builder: (dialogContext) => _RemindLaterDialog(l10n: l10n),
+    );
+    if (selection == null) return;
+    await ref
+        .read(planetPrefsProvider)
+        .scheduleSurveyReminder(_reminderKeyFor(pending), selection);
   }
 
   @override
@@ -141,6 +234,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return Scaffold(
       drawer: const DashboardDrawer(),
+      // `binding.fabMyActivity` — opens the login-activity chart.
+      floatingActionButton: FloatingActionButton.small(
+        tooltip: l10n.myActivities,
+        onPressed: () => context.push(Routes.activities),
+        child: const Icon(Icons.insights_outlined),
+      ),
       appBar: AppBar(
         title: Text(title),
         actions: [
@@ -194,6 +293,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: ListTile(
                   leading: const Icon(Icons.contrast_outlined),
                   title: Text(l10n.appTheme),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: _HomeMenuAction.language,
+                child: ListTile(
+                  leading: const Icon(Icons.language),
+                  title: Text(l10n.selectLanguage),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
@@ -312,9 +419,140 @@ Future<void> _handleMenuAction(
       };
       await ref.read(themeModeProvider.notifier).select(next);
       return;
+    case _HomeMenuAction.language:
+      await _showLanguageDialog(context, ref);
+      return;
     case _HomeMenuAction.logout:
       await ref.read(sessionProvider.notifier).signOut();
       return;
+  }
+}
+
+/// Port of `SettingsActivity.SettingFragment.languageChanger` — a single-choice
+/// list of the six supported languages, applied immediately.
+///
+/// The Kotlin's list order and labels are kept (`english`, `español`, `somali`,
+/// `नेपाली`, `عربى`, `français` — each in its own language, and each already
+/// translated upstream).
+Future<void> _showLanguageDialog(BuildContext context, WidgetRef ref) async {
+  final l10n = AppLocalizations.of(context);
+  final labels = <String, String>{
+    'en': l10n.english,
+    'es': l10n.spanish,
+    'so': l10n.somali,
+    'ne': l10n.nepali,
+    'ar': l10n.arabic,
+    'fr': l10n.french,
+  };
+  // `LocaleUtils.getLanguage` falls back to index 0 ("en") when nothing is
+  // stored, so an unset override shows English checked.
+  final current = ref.read(localeProvider)?.languageCode ?? 'en';
+
+  final selected = await showDialog<String>(
+    context: context,
+    builder: (dialogContext) => SimpleDialog(
+      title: Text(l10n.selectLanguage),
+      children: [
+        // A checked `ListTile` rather than `RadioListTile`: the radio's
+        // `groupValue`/`onChanged` pair is deprecated in favour of a
+        // `RadioGroup` ancestor, and `flutter analyze` fails the build on the
+        // resulting info.
+        for (final entry in labels.entries)
+          ListTile(
+            title: Text(entry.value),
+            trailing: entry.key == current ? const Icon(Icons.check) : null,
+            selected: entry.key == current,
+            onTap: () => Navigator.of(dialogContext).pop(entry.key),
+          ),
+      ],
+    ),
+  );
+  if (selected == null) return;
+  await ref.read(localeProvider.notifier).select(selected);
+}
+
+/// The unit choices `showRemindLaterDialog` offers, with the Kotlin's per-unit
+/// `numberPicker.maxValue`.
+enum _RemindUnit {
+  minutes(60),
+  hours(24),
+  days(30);
+
+  const _RemindUnit(this.maxValue);
+
+  final int maxValue;
+
+  Duration durationFor(int value) => switch (this) {
+    _RemindUnit.minutes => Duration(minutes: value),
+    _RemindUnit.hours => Duration(hours: value),
+    _RemindUnit.days => Duration(days: value),
+  };
+}
+
+class _RemindLaterDialog extends StatefulWidget {
+  const _RemindLaterDialog({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  State<_RemindLaterDialog> createState() => _RemindLaterDialogState();
+}
+
+class _RemindLaterDialogState extends State<_RemindLaterDialog> {
+  /// `radioGroup.check(R.id.radioButtonMinutes)` and `minValue = 1`.
+  _RemindUnit _unit = _RemindUnit.minutes;
+  int _value = 1;
+
+  String _labelFor(_RemindUnit unit) => switch (unit) {
+    _RemindUnit.minutes => widget.l10n.minutes,
+    _RemindUnit.hours => widget.l10n.hours,
+    _RemindUnit.days => widget.l10n.days,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.l10n.remindMeLater),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SegmentedButton<_RemindUnit>(
+            segments: [
+              for (final unit in _RemindUnit.values)
+                ButtonSegment(value: unit, label: Text(_labelFor(unit))),
+            ],
+            selected: {_unit},
+            onSelectionChanged: (selected) => setState(() {
+              _unit = selected.first;
+              // Changing the unit lowers the cap, so an out-of-range value has
+              // to come back inside it — the Kotlin's NumberPicker clamps for
+              // the same reason.
+              if (_value > _unit.maxValue) _value = _unit.maxValue;
+            }),
+          ),
+          const SizedBox(height: 16),
+          Text('$_value ${_labelFor(_unit)}'),
+          Slider(
+            value: _value.toDouble(),
+            min: 1,
+            max: _unit.maxValue.toDouble(),
+            divisions: _unit.maxValue - 1,
+            label: '$_value',
+            onChanged: (value) => setState(() => _value = value.round()),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(widget.l10n.cancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_unit.durationFor(_value)),
+          child: Text(widget.l10n.setReminder),
+        ),
+      ],
+    );
   }
 }
 
@@ -359,16 +597,17 @@ String _relativeSyncTime(AppLocalizations l10n, int elapsedMillis) {
   return l10n.daysAgo(elapsed.inDays);
 }
 
-/// The profile card: avatar, full name, role, planet code. Port of
-/// `card_profile_bell.xml` minus the star row and network ring (see the
-/// class comment on [HomeScreen]).
-class _ProfileCard extends StatelessWidget {
+/// The profile card: avatar ringed by the server-reachability colour, full name
+/// with its offline-login count, role, planet code, and a star per completed
+/// course. Port of `card_profile_bell.xml`.
+class _ProfileCard extends ConsumerWidget {
   const _ProfileCard({required this.session});
 
   final UserRow session;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final fullName = [
       session.firstName,
       session.middleName,
@@ -376,6 +615,12 @@ class _ProfileCard extends StatelessWidget {
     ].whereType<String>().where((part) => part.isNotEmpty).join(' ');
     final displayName = fullName.isNotEmpty ? fullName : (session.name ?? '');
     final role = session.rolesList.join(', ');
+    // `getDashboardProfile` counts by user name, so a session with no name
+    // contributes no count — and the Kotlin renders `user_name` regardless,
+    // showing "(0)".
+    final logins =
+        ref.watch(offlineLoginCountProvider(session.name ?? '')).valueOrNull ??
+        0;
 
     return Card(
       margin: const EdgeInsets.all(8),
@@ -383,36 +628,148 @@ class _ProfileCard extends StatelessWidget {
         onTap: () => context.go(Routes.profile),
         child: Padding(
           padding: const EdgeInsets.all(8),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const CircleAvatar(radius: 24, child: Icon(Icons.person)),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      displayName,
-                      style: Theme.of(context).textTheme.titleMedium,
-                      overflow: TextOverflow.ellipsis,
+              Row(
+                children: [
+                  const _NetworkRingAvatar(),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.userNameWithLogins(displayName, logins),
+                          style: Theme.of(context).textTheme.titleMedium,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (role.isNotEmpty)
+                          Text(
+                            '- $role',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                      ],
                     ),
-                    if (role.isNotEmpty)
-                      Text(
-                        '- $role',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                  ],
-                ),
+                  ),
+                  if ((session.planetCode ?? '').isNotEmpty)
+                    Text(
+                      session.planetCode!,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                ],
               ),
-              if ((session.planetCode ?? '').isNotEmpty)
-                Text(
-                  session.planetCode!,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+              _CompletedCourseStars(userId: session.id),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The avatar with `imageView.borderColor` set from the network status, as
+/// `setNetworkIndicatorColor` does.
+class _NetworkRingAvatar extends ConsumerWidget {
+  const _NetworkRingAvatar();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final status = ref.watch(networkStatusProvider);
+    // The Kotlin's three colour resources: md_red_700, md_yellow_600, green.
+    final (color, label) = switch (status) {
+      NetworkStatus.disconnected => (
+        const Color(0xFFD32F2F),
+        l10n.serverUnreachable,
+      ),
+      NetworkStatus.connecting => (
+        const Color(0xFFFDD835),
+        l10n.serverChecking,
+      ),
+      NetworkStatus.connected => (
+        const Color(0xFF4CAF50),
+        l10n.serverReachable,
+      ),
+    };
+
+    return Semantics(
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: Container(
+          padding: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: color, width: 3),
+          ),
+          child: const CircleAvatar(radius: 24, child: Icon(Icons.person)),
+        ),
+      ),
+    );
+  }
+}
+
+/// The star row: one per completed course, tinted when a certification covers
+/// it. Port of `showBadges`/`setColor`.
+///
+/// The Kotlin shows a spinner (`progressBarBadges`) until the completions
+/// arrive, then hides it — and hides it unconditionally after two seconds so an
+/// empty result does not spin forever. Riverpod's loading state expresses the
+/// same thing without the timer: the spinner is the `loading` case, and an empty
+/// list renders nothing.
+class _CompletedCourseStars extends ConsumerWidget {
+  const _CompletedCourseStars({required this.userId});
+
+  final String userId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final completed = ref.watch(completedCoursesProvider(userId));
+
+    return completed.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.only(top: 6, left: 4),
+        child: SizedBox(
+          height: 16,
+          width: 16,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (courses) {
+        if (courses.isEmpty) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final course in courses)
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    // `star.contentDescription = "completed course <title>"`.
+                    tooltip: '${l10n.completedCourse} ${course.courseTitle}',
+                    onPressed: () =>
+                        context.push('${Routes.courses}/${course.courseId}'),
+                    icon: Icon(
+                      Icons.star,
+                      size: 20,
+                      // `colorPrimary` when certified, `md_blue_grey_300` when
+                      // not — the star says "done", the colour says "certified".
+                      color: course.certified
+                          ? Theme.of(context).colorScheme.primary
+                          : const Color(0xFF90A4AE),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -682,23 +1039,69 @@ class _TeamTiles extends ConsumerWidget {
       );
     }
 
+    final notifications =
+        ref.watch(teamNotificationsProvider(userId)).valueOrNull ?? const {};
+
     return _TileGrid(
       children: [
         for (final (index, team) in teams.indexed)
           _Tile(
             index: index,
             onTap: () => context.push('${Routes.teams}/${team.id}'),
-            child: Text(
-              team.name ?? '',
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              // A sync-type team renders bold, as `renderMyTeams` does.
-              style: team.type == 'sync'
-                  ? const TextStyle(fontWeight: FontWeight.bold)
-                  : null,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  team.name ?? '',
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  // A sync-type team renders bold, as `renderMyTeams` does.
+                  style: team.type == 'sync'
+                      ? const TextStyle(fontWeight: FontWeight.bold)
+                      : null,
+                ),
+                _TeamAlertBadges(info: notifications[team.id]),
+              ],
             ),
           ),
       ],
+    );
+  }
+}
+
+/// The `img_chat`/`img_task` icons on a team tile, shown or hidden by
+/// `showNotificationIcons`.
+class _TeamAlertBadges extends StatelessWidget {
+  const _TeamAlertBadges({required this.info});
+
+  final TeamNotificationInfo? info;
+
+  @override
+  Widget build(BuildContext context) {
+    // No info yet (the query is still running, or the team is absent from the
+    // map) draws nothing, matching a Kotlin tile before `updateTeamNotifications`
+    // reaches it.
+    if (info == null || !info!.hasAny) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context);
+    final color = Theme.of(context).colorScheme.primary;
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (info!.hasChat)
+            Semantics(
+              label: l10n.aiChat,
+              child: Icon(Icons.chat_bubble, size: 12, color: color),
+            ),
+          if (info!.hasTask)
+            Semantics(
+              label: l10n.teamTasks,
+              child: Icon(Icons.assignment_late, size: 12, color: color),
+            ),
+        ],
+      ),
     );
   }
 }
