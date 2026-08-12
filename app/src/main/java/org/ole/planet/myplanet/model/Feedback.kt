@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
  * are stored as a JSON array string in [messages]; the derived [messageList]/[message] views are
  * ignored by Room.
  */
-@Entity(tableName = "feedback")
+@Entity(tableName = "feedback", indices = [androidx.room.Index("openTime"), androidx.room.Index("owner"), androidx.room.Index("isUploaded")])
 open class Feedback {
     // @JvmField on id/_id so Room does not see ambiguous getId/get_id accessors.
     @PrimaryKey
