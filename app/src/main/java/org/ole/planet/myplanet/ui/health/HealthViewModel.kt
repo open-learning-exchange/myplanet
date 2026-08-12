@@ -49,6 +49,7 @@ class HealthViewModel @Inject constructor(
     val loggedInUser: StateFlow<UserEntity?> = _loggedInUser.asStateFlow()
 
     private var searchJob: Job? = null
+    private var selectPatientJob: Job? = null
 
     fun loadPatients(sortBy: String = "joinDate", descending: Boolean = true) {
         viewModelScope.launch {
@@ -84,7 +85,8 @@ class HealthViewModel @Inject constructor(
     }
 
     fun selectPatient(userId: String) {
-        viewModelScope.launch {
+        selectPatientJob?.cancel()
+        selectPatientJob = viewModelScope.launch {
             _isLoading.value = true
             val user = healthRepository.getPatientById(userId)
             if (user != null) {
