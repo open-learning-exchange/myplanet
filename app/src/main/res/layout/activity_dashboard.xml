@@ -41,7 +41,6 @@
                 app:srcCompat="@drawable/sync_icon"
                 app:tint="@color/dashboard_accent_blue"
                 android:contentDescription="@string/sync" />
-
             <TextView
                 android:id="@+id/dashboard_last_sync_status"
                 android:layout_width="0dp"
@@ -53,7 +52,6 @@
                 android:textColor="@color/dashboard_ink_2"
                 android:textSize="12sp"
                 android:text="" />
-
             <TextView
                 android:id="@+id/dashboard_sync_now"
                 android:layout_width="wrap_content"
@@ -71,6 +69,7 @@
                 android:textSize="12sp"
                 android:textStyle="bold" />
         </LinearLayout>
+
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/top_bar_navigation"
             android:layout_width="match_parent"
@@ -84,12 +83,11 @@
             android:id="@+id/banner_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/card_bg"/>
+            android:background="@color/card_bg" />
         <FrameLayout
             android:id="@+id/fragment_container"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1">
-        </FrameLayout>
+            android:layout_weight="1" />
     </LinearLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
