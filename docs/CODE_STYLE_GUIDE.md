@@ -210,7 +210,7 @@ companion object {
 | Repository interface | `*Repository.kt` | `CoursesRepository.kt` |
 | Repository implementation | `*RepositoryImpl.kt` | `CoursesRepositoryImpl.kt` |
 | Room entity | plain name in `model/` | `MyCourse.kt`, `Submission.kt`, `UserEntity.kt` |
-| Room DAO | `*Dao.kt` in `data/room/dao/` | `RatingDao.kt` (several small DAOs share `LegacyEntityDaos.kt`) |
+| Room DAO | `*Dao.kt` in `data/room/dao/` | `RatingDao.kt`, `CourseDao.kt` — one file per DAO |
 | Worker | `*Worker.kt` | `AutoSyncWorker.kt` |
 | Callback interface | `On` prefix | `OnCourseItemSelectedListener.kt` |
 | DI module | `Module` suffix | `RepositoryModule.kt` |
