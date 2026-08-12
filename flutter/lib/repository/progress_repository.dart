@@ -198,6 +198,46 @@ class ProgressRepository {
     return completed;
   }
 
+  /// Port of `ProgressRepositoryImpl.getCompletedCourses(userId)` — the
+  /// completed-course list the home dashboard renders as a star badge row.
+  ///
+  /// Returns `(courseId, courseTitle)` pairs, unlike [completedCourseIds]
+  /// (which the courses screen's progress filter reads and which therefore
+  /// omits the title). The Kotlin guards each entry with `hasValidId` and
+  /// `hasValidTitle` before showing a badge, so a course whose title never
+  /// synced does not appear here — `BellDashboardFragment.showBadges` would
+  /// otherwise render a star with an empty content description and no label.
+  /// [completedCourseIds] deliberately drops those guards because its callers
+  /// (the progress filter) only need the id; keep the two in step if those
+  /// guards ever change upstream.
+  Future<List<CourseCompletion>> completedCourses(String? userId) async {
+    final shelf = await _courseDao.coursesOnShelf(userId ?? '');
+    if (shelf.isEmpty) return const <CourseCompletion>[];
+    final progress = await _progressDao.getByUserAndCourseIds(userId, [
+      for (final c in shelf) c.id,
+    ]);
+    final passedStepsByCourse = <String, Set<int>>{};
+    for (final row in progress) {
+      if (row.passed) {
+        passedStepsByCourse
+            .putIfAbsent(row.courseId ?? '', () => <int>{})
+            .add(row.stepNum);
+      }
+    }
+    final completed = <CourseCompletion>[];
+    for (final course in shelf) {
+      final id = course.id;
+      final title = course.courseTitle;
+      if (id.isEmpty || title == null || title.trim().isEmpty) continue;
+      final stepCount = await _courseDao.getSteps(id).then((s) => s.length);
+      if (stepCount == 0) continue;
+      if ((passedStepsByCourse[id]?.length ?? 0) >= stepCount) {
+        completed.add(CourseCompletion(courseId: id, courseTitle: title));
+      }
+    }
+    return completed;
+  }
+
   /// Port of `ProgressRepositoryImpl.getCurrentProgress` — the take-course
   /// progress bar.
   ///
@@ -644,4 +684,13 @@ class CourseProgressSummary {
   /// Here `max` is already the step count, so the fallback is implicit; this
   /// exists so the filter predicates read identically to the Kotlin source.
   int get effectiveMax => max;
+}
+
+/// A completed course: its id and title, for the home dashboard's star badge
+/// row. Port of `model/CourseCompletion.kt`.
+class CourseCompletion {
+  const CourseCompletion({required this.courseId, required this.courseTitle});
+
+  final String courseId;
+  final String courseTitle;
 }

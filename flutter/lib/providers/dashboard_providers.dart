@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/local/app_database.dart';
+import '../repository/progress_repository.dart';
 import 'app_providers.dart';
 
 /// The home dashboard's card data, replacing `DashboardViewModel.loadUserContent`
@@ -113,3 +114,30 @@ String _nameFromParentJson(String? parentJson) {
   } catch (_) {}
   return '';
 }
+
+/// Port of `BellDashboardViewModel.loadCompletedCourses(userId)` — the
+/// completed-course list the home profile card renders as a star badge row.
+///
+/// Keyed on `userId` (not the whole session) because the Kotlin loads it once
+/// per user and re-loads on a user change; a `FutureProvider.family` matches
+/// that lifetime without holding the value in a `Notifier`'s state. A
+/// successful course-progress sync should refresh this — callers invalidate it
+/// after `syncCourseProgress` returns, as the Kotlin's `collectLatestWhenStarted`
+/// re-emits on the ViewModel's own `_completedCourses`.
+final completedCoursesProvider =
+    FutureProvider.family<List<CourseCompletion>, String>(
+      (ref, userId) =>
+          ref.watch(progressRepositoryProvider).completedCourses(userId),
+    );
+
+/// Port of `BellDashboardFragment.setColor` — whether a completed course is
+/// certified, so its star renders in the primary colour rather than the
+/// greyed-out "completed but not certified" tint.
+///
+/// Per-course, fetched lazily: the Kotlin launches a coroutine per star, and a
+/// family provider mirrors that without pre-loading certification rows for
+/// courses that never completed.
+final isCourseCertifiedProvider = FutureProvider.family<bool, String>(
+  (ref, courseId) =>
+      ref.watch(progressRepositoryProvider).isCourseCertified(courseId),
+);

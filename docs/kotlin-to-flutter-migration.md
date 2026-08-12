@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 32 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 33 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -190,6 +190,21 @@ Known gaps:
   walks on resource-constrained community devices; durable outbox writes remain separate and are
   still drained by `OutboxDrainScope`. This is foreground orchestration, not a claim that the
   missing WorkManager-equivalent scheduling gap is solved.
+
+- **Phase 33** — the home profile card's completed-course star row. Porting
+  `BellDashboardFragment.showBadges`/`setColor`/`openCourse`: one star per
+  completed course, horizontally scrollable under the name line, tinted
+  `colorPrimary` (`md_blue_700`) when the course is certified and
+  `md_blue_grey_300` when it is not, tapping a star opening the course. The
+  data path it depended on was already there — `syncCourseProgress` and
+  `syncCertifications` landed in the course-progress slice — but `completedCourseIds`
+  returned ids only and dropped the Kotlin's `hasValidId`/`hasValidTitle` guards,
+  so a star would have rendered with an empty label. A new `completedCourses(userId)`
+  returns `(courseId, courseTitle)` pairs and keeps those guards, since the star's
+  content description is `"${completed_course} ${courseTitle}"`; the id-only set stays
+  guard-free because the progress filter that reads it needs none. The
+  `completedCoursesProvider` and `isCourseCertifiedProvider` mirror the Kotlin
+  ViewModel's one-load-per-user and the fragment's per-star certification coroutine.
 
 - **Phase 27** — chat upload, member registration against `_users`, and the resource detail
   screen with its filter sheet. Three fixes were needed around it:
@@ -745,7 +760,7 @@ flutter pub get 2>&1 | grep -i discontinued
 `components`, `enterprises` -- plus team voices, team/public survey sharing, personal attachments/upload,
 storage/retry, and the rest of `settings`, plus profile photo/upload, membership, and the rest of `user`,
 and the rest of `sync` and `dashboard` (the home cards and pending-survey dialog are ported as of
-Phase 32; still missing are the completed-course stars, network ring, team alert badges, activity
+Phase 33; still missing are the network ring, team alert badges, activity
 chart, language/about/disclaimer overflow actions, OS-scheduled sync, and survey reminders).
 
 **Notes on remaining packages:**
@@ -828,6 +843,6 @@ succeeds, it just doesn't do what the Kotlin did.
 
 ---
 
-**Last updated**: 2026-08-12 (Phase 32 complete)
-**Phase**: 32 of N (27 of 28 UI packages have a screen — see Status for what that does and does
+**Last updated**: 2026-08-12 (Phase 33 complete)
+**Phase**: 33 of N (27 of 28 UI packages have a screen — see Status for what that does and does
 not mean)

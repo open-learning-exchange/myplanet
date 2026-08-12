@@ -9,6 +9,7 @@ import 'package:myplanet/providers/life_provider.dart';
 import 'package:myplanet/providers/notifications_provider.dart';
 import 'package:myplanet/providers/session_provider.dart';
 import 'package:myplanet/providers/sync_state.dart';
+import 'package:myplanet/repository/progress_repository.dart';
 import 'package:myplanet/ui/dashboard/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -55,6 +56,8 @@ void main() {
     PlanetPrefs? prefs,
     List<MyLibraryRow> library = const [],
     List<PendingSurvey> pendingSurveys = const [],
+    List<CourseCompletion> completedCourses = const [],
+    bool Function(String courseId)? isCertified,
   }) async => [
     sessionProvider.overrideWith(() => _TestSessionNotifier(user)),
     planetPrefsProvider.overrideWithValue(prefs ?? await _prefs()),
@@ -71,6 +74,13 @@ void main() {
     lastSyncProvider.overrideWith(
       () => _TestLastSyncNotifier(prefs?.lastSync ?? 0),
     ),
+    completedCoursesProvider.overrideWith(
+      (ref, userId) async => completedCourses,
+    ),
+    if (isCertified != null)
+      isCourseCertifiedProvider.overrideWith(
+        (ref, courseId) async => isCertified(courseId),
+      ),
   ];
 
   testWidgets('renders the four cards with the planet title', (tester) async {
@@ -111,6 +121,66 @@ void main() {
     expect(find.text('No data available'), findsOneWidget);
     expect(find.text('0'), findsNothing);
     expect(find.text('Last synced: Never synced'), findsOneWidget);
+  });
+
+  testWidgets('renders a star per completed course, tinted by certification', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wrapScreen(
+        const HomeScreen(),
+        overrides: await homeOverrides(
+          user: _user('user-1'),
+          completedCourses: const [
+            CourseCompletion(courseId: 'cert-course', courseTitle: 'Math 101'),
+            CourseCompletion(
+              courseId: 'plain-course',
+              courseTitle: 'Reading 101',
+            ),
+          ],
+          // Only `cert-course` is certified; the Kotlin's `setColor` tints it
+          // primary and the other `md_blue_grey_300`.
+          isCertified: (courseId) => courseId == 'cert-course',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Two stars, each carrying a content-description prefix the Kotlin uses.
+    expect(find.byTooltip('completed course Math 101'), findsOneWidget);
+    expect(find.byTooltip('completed course Reading 101'), findsOneWidget);
+
+    // The certified star is primary blue; the uncertified one is blue-grey.
+    final certifiedIcon = tester.widget<Icon>(
+      find.descendant(
+        of: find.byTooltip('completed course Math 101'),
+        matching: find.byType(Icon),
+      ),
+    );
+    expect(certifiedIcon.color, const Color(0xFF1976D2));
+
+    final plainIcon = tester.widget<Icon>(
+      find.descendant(
+        of: find.byTooltip('completed course Reading 101'),
+        matching: find.byType(Icon),
+      ),
+    );
+    expect(plainIcon.color, const Color(0xFF90A4AE));
+  });
+
+  testWidgets('hides the star row when no courses are completed', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wrapScreen(
+        const HomeScreen(),
+        overrides: await homeOverrides(user: _user('user-1')),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // No star icons render: `find.byIcon(Icons.star)` is the badge's signature.
+    expect(find.byIcon(Icons.star), findsNothing);
   });
 
   testWidgets('shows a relative last-sync value', (tester) async {

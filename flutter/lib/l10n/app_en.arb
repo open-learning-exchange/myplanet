@@ -975,5 +975,6 @@
   "adoptableSurveys": "Surveys available to adopt",
   "noAdoptableSurveys": "No surveys available to adopt",
   "adoptSurvey": "Adopt survey",
-  "surveyAdopted": "Survey adopted"
+  "surveyAdopted": "Survey adopted",
+  "completedCourse": "completed course"
 }

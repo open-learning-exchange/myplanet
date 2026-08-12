@@ -82,6 +82,7 @@ void main() {
   test('a course is complete only when every step is passed', () async {
     // No passes yet.
     expect(await repository.completedCourseIds('user-1'), isEmpty);
+    expect(await repository.completedCourses('user-1'), isEmpty);
 
     // Two of three steps passed: not complete.
     await repository.saveCourseProgress(
@@ -99,6 +100,7 @@ void main() {
       passed: true,
     );
     expect(await repository.completedCourseIds('user-1'), isEmpty);
+    expect(await repository.completedCourses('user-1'), isEmpty);
 
     // All three passed: complete.
     await repository.saveCourseProgress(
@@ -109,6 +111,10 @@ void main() {
       passed: true,
     );
     expect(await repository.completedCourseIds('user-1'), {'course-1'});
+    final completed = await repository.completedCourses('user-1');
+    expect(completed, hasLength(1));
+    expect(completed.first.courseId, 'course-1');
+    expect(completed.first.courseTitle, 'Course course-1');
   });
 
   test('duplicate rows for one step do not complete a course', () async {
@@ -161,6 +167,55 @@ void main() {
     final grid = await repository.courseProgress('course-1', 'user-1');
     expect(grid[0].passed, isTrue);
   });
+
+  test(
+    'completedCourses drops a course whose title never synced, as Kotlin does',
+    () async {
+      // Seed a course with all steps passed but a blank title — the Kotlin's
+      // `hasValidTitle` guard excludes it from the badge row, even though
+      // `completedCourseIds` (which the progress filter reads) would include
+      // it. The star would otherwise render with an empty label.
+      await database.courseDao.upsertAll(
+        [
+          CoursesCompanion.insert(
+            id: 'blank-title',
+            courseId: const Value('blank-title'),
+            courseTitle: const Value(''),
+            userId: const Value(['user-1']),
+          ),
+        ],
+        [
+          for (var i = 0; i < 2; i++)
+            CourseStepsCompanion.insert(
+              id: 'blank-title:$i',
+              courseId: const Value('blank-title'),
+              stepIndex: Value(i),
+            ),
+        ],
+      );
+      await repository.saveCourseProgress(
+        id: 'b-1',
+        courseId: 'blank-title',
+        userId: 'user-1',
+        stepNum: 1,
+        passed: true,
+      );
+      await repository.saveCourseProgress(
+        id: 'b-2',
+        courseId: 'blank-title',
+        userId: 'user-1',
+        stepNum: 2,
+        passed: true,
+      );
+
+      // The id-only set still lists it (the progress filter does not need a title).
+      expect(await repository.completedCourseIds('user-1'), {'blank-title'});
+      // The badge row does not — `BellDashboardFragment.showBadges` would
+      // otherwise render a star with an empty content description.
+      final completed = await repository.completedCourses('user-1');
+      expect(completed, isEmpty);
+    },
+  );
 
   test('isCourseCertified reports a certification row', () async {
     expect(await repository.isCourseCertified('course-1'), isFalse);

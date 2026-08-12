@@ -182,5 +182,6 @@
   "adoptSurvey": "Adoptar encuesta",
   "areYouSure": "¿Estás seguro?",
   "yes": "Sí",
-  "no": "No"
+  "no": "No",
+  "completedCourse": "curso completado"
 }

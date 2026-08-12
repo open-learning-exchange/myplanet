@@ -12,6 +12,7 @@ import '../../providers/notifications_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/sync_state.dart';
+import '../../repository/progress_repository.dart';
 import '../components/guest_dialog.dart';
 import '../life/life_features.dart';
 import '../router.dart';
@@ -24,9 +25,8 @@ enum _HomeMenuAction { sync, feedback, settings, theme, logout }
 /// myLife cards, plus the pending-survey dialog.
 ///
 /// Deliberately not (yet) ported from the Kotlin home screen, all tracked in
-/// the migration doc: the completed-course star row (needs per-step progress
-/// data the port does not sync), the network-status ring around the avatar
-/// (needs a connectivity plugin), team chat/task alert badges (needs team
+/// the migration doc: the network-status ring around the avatar (needs a
+/// connectivity plugin), team chat/task alert badges (needs team
 /// notifications), the offline-logins count in the name line and the activity
 /// chart FAB (needs login activity tracking), and the "remind later" survey
 /// scheduler.
@@ -359,16 +359,24 @@ String _relativeSyncTime(AppLocalizations l10n, int elapsedMillis) {
   return l10n.daysAgo(elapsed.inDays);
 }
 
-/// The profile card: avatar, full name, role, planet code. Port of
-/// `card_profile_bell.xml` minus the star row and network ring (see the
-/// class comment on [HomeScreen]).
-class _ProfileCard extends StatelessWidget {
+/// The profile card: avatar, full name, role, planet code, and the
+/// completed-course star badge row. Port of `card_profile_bell.xml` +
+/// `BellDashboardFragment.showBadges` minus the network ring (see the class
+/// comment on [HomeScreen]).
+///
+/// The stars render below the name line, in a horizontally scrollable row,
+/// coloured by [isCourseCertifiedProvider]: the Kotlin tints a certified
+/// course's star with `colorPrimary` (`md_blue_700`) and an uncertified one
+/// with `md_blue_grey_300`. Tapping a star opens the course, as
+/// `BellDashboardFragment.openCourse` does.
+class _ProfileCard extends ConsumerWidget {
   const _ProfileCard({required this.session});
 
   final UserRow session;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final fullName = [
       session.firstName,
       session.middleName,
@@ -376,6 +384,9 @@ class _ProfileCard extends StatelessWidget {
     ].whereType<String>().where((part) => part.isNotEmpty).join(' ');
     final displayName = fullName.isNotEmpty ? fullName : (session.name ?? '');
     final role = session.rolesList.join(', ');
+    final completed =
+        ref.watch(completedCoursesProvider(session.id)).valueOrNull ??
+        const <CourseCompletion>[];
 
     return Card(
       margin: const EdgeInsets.all(8),
@@ -401,6 +412,23 @@ class _ProfileCard extends StatelessWidget {
                         '- $role',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
+                    if (completed.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              for (final course in completed)
+                                _CompletedCourseStar(
+                                  course: course,
+                                  label:
+                                      '${l10n.completedCourse} ${course.courseTitle}',
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -413,6 +441,37 @@ class _ProfileCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// One completed-course star badge. Port of `BellDashboardFragment`'s inflated
+/// `image_start` + `setColor`. The star is tinted by certification status and
+/// opens the course on tap.
+class _CompletedCourseStar extends ConsumerWidget {
+  const _CompletedCourseStar({required this.course, required this.label});
+
+  final CourseCompletion course;
+  final String label;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final certified =
+        ref.watch(isCourseCertifiedProvider(course.courseId)).valueOrNull ??
+        false;
+    // `md_blue_700` (#1976D2) for certified, `md_blue_grey_300` (#90A4AE) for
+    // a completed-but-not-certified course, matching the Kotlin's
+    // `setColor` filter.
+    final color = certified ? const Color(0xFF1976D2) : const Color(0xFF90A4AE);
+
+    return IconButton(
+      padding: const EdgeInsets.all(4),
+      constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+      tooltip: label,
+      onPressed: () => context.push(
+        '${Routes.courses}/${Uri.encodeComponent(course.courseId)}',
+      ),
+      icon: Icon(Icons.star, size: 30, color: color),
     );
   }
 }
