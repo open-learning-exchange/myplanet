@@ -176,9 +176,11 @@ Known gaps:
 - **Phase 31** — dashboard navigation parity: the home app bar now exposes AI chat directly and
   restores the Kotlin overflow actions for feedback, settings, theme cycling, and logout. A
   profile-aware navigation drawer makes resources, courses, teams, calendar, My life, community,
-  chat, feedback, references, and settings directly reachable; resource/course/chat/feedback
-  entries preserve the existing guest membership gates. The theme action persists through the
-  shared `ThemeModeNotifier`, rather than applying a one-screen-only color change.
+  chat, feedback, references, and settings directly reachable. Chat and feedback keep their guest
+  gates (the Kotlin toolbar gates both); the Library and Courses entries are deliberately *open*
+  to guests, as the Kotlin drawer's `menu_library`/`menu_courses` are — browsing is what a guest
+  account is for, and only the *my*-filtered variants are members-only. The theme action persists
+  through the shared `ThemeModeNotifier`, rather than applying a one-screen-only color change.
 
 - **Phase 32** — foreground sync orchestration: a dashboard Sync center runs resources, courses,
   teams, events, surveys, voices, feedback, chat, and health sequentially, surfaces per-area
