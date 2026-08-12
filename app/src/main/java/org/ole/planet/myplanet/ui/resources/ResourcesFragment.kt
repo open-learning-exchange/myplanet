@@ -209,6 +209,9 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         lifecycleScope.launch {
             userModel = userRepository.getUserModel()
             setupGuestUserRestrictions()
+            if (::adapterLibrary.isInitialized) {
+                checkList()
+            }
 
             val userId = userModel?.id
             if (userId != null) {
@@ -438,15 +441,17 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
     }
 
-    private fun hideButton(){
+    private fun hideButton(listSizeParam: Int? = null) {
+        val listSize = listSizeParam ?: if (::adapterLibrary.isInitialized) adapterLibrary.currentList.size else 0
         val count = selectedItems?.size ?: 0
         tvDelete?.isEnabled = count != 0
         tvAddToLib.isEnabled = count != 0
-        if(count != 0){
-            if(isMyCourseLib) tvDelete?.visibility = View.VISIBLE
+        val isGuest = userModel?.isGuest() == true
+        if (count != 0 && !isGuest && listSize > 0) {
+            if (isMyCourseLib) tvDelete?.visibility = View.VISIBLE
             else tvAddToLib.visibility = View.VISIBLE
         } else {
-            if(isMyCourseLib) tvDelete?.visibility = View.GONE
+            if (isMyCourseLib) tvDelete?.visibility = View.GONE
             else tvAddToLib.visibility = View.GONE
         }
     }
@@ -454,22 +459,25 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private fun checkList(listSize: Int = if (::adapterLibrary.isInitialized) adapterLibrary.currentList.size else 0) {
         val hasAnyLibraryData = allResourceModels.isNotEmpty()
 
-        if (!hasAnyLibraryData && listSize == 0) {
+        if (listSize == 0) {
             selectAll.visibility = View.GONE
+        } else {
+            selectAll.visibility = if (userModel?.isGuest() == true) View.GONE else View.VISIBLE
+        }
+
+        if (!hasAnyLibraryData && listSize == 0) {
             etSearch.visibility = View.GONE
-            tvAddToLib.visibility = View.GONE
             tvSelected.visibility = View.GONE
             binding.btnCollections.visibility = View.GONE
             filter.visibility = View.GONE
             clearTags.visibility = View.GONE
-            tvDelete?.visibility = View.GONE
         } else {
-            selectAll.visibility = View.VISIBLE
             etSearch.visibility = View.VISIBLE
             binding.btnCollections.visibility = View.VISIBLE
             filter.visibility = View.VISIBLE
             clearTags.visibility = if (hasActiveFilters()) View.VISIBLE else View.GONE
         }
+        hideButton(listSize)
     }
 
     private fun hasActiveFilters(): Boolean {
