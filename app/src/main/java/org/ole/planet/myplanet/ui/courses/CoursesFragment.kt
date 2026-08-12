@@ -3,13 +3,21 @@ package org.ole.planet.myplanet.ui.courses
 import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
+import android.content.res.ColorStateList
 import android.os.Bundle
 import android.os.Parcelable
 import android.view.View
 import android.widget.Button
+import android.widget.ImageButton
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import androidx.core.widget.ImageViewCompat
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
@@ -32,14 +40,18 @@ import org.ole.planet.myplanet.model.Tag
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.GridSpanCalculator
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
+import org.ole.planet.myplanet.utils.ListViewMode
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
+import kotlin.time.Duration.Companion.milliseconds
 
 @AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedListener, OnTagClickListener, RealtimeSyncMixin {
@@ -56,6 +68,9 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
 
     @Inject
     lateinit var userSessionManager: UserSessionManager
+
+    @Inject
+    lateinit var realtimeSyncManager: RealtimeSyncManager
 
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
 
@@ -84,11 +99,12 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         val userId = userModel?.id ?: return
         val snapshot = selectedItems?.filterNotNull() ?: return
         if (snapshot.isEmpty()) return
-        val courseIds = snapshot.mapNotNull { it.courseId }
+        val courseIds = snapshot.mapNotNull { it.courseId.takeIf { id -> !id.isNullOrBlank() } ?: it.id.takeIf { id -> !id.isNullOrBlank() } ?: it._id }
         viewModel.removeCourses(courseIds, userId, deleteProgress) {
             if (isAdded) {
                 selectedItems?.clear()
                 Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+                viewModel.loadCourses(isMyCourseLib, model?.id)
             }
         }
     }
@@ -103,20 +119,17 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         val factory = adapterFactory ?: DefaultBaseAdapterFactory()
         adapterCourses = factory.createCoursesAdapter(
             context = hostActivity,
-            map = HashMap(),
             isGuest = userModel?.isGuest() ?: true,
-            isMyCourseLib = isMyCourseLib
+            isMyCourseLib = isMyCourseLib,
+            viewMode = sharedPrefManager.getCourseViewMode()
         )
 
         adapterCourses.setListener(this@CoursesFragment)
-        adapterCourses.setRatingChangeListener(this@CoursesFragment)
         enableSortButtons()
 
         val cachedState = viewModel.coursesState.value
         if (cachedState.courses.isNotEmpty()) {
             adapterCourses.setProgressMap(cachedState.progressMap)
-            adapterCourses.setRatingMap(cachedState.map)
-            adapterCourses.setTagsMap(cachedState.tagsMap)
             adapterCourses.submitList(cachedState.courses) {
                 if (isAdded) showNoData(tvMessage, cachedState.courses.size, "courses")
             }
@@ -131,6 +144,8 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
         additionalSetup()
         setupMyProgressButton()
+        setupViewModeToggle()
+        setupCourseFilterChips()
 
         viewLifecycleOwner.lifecycleScope.launch {
             userModel = userSessionManager.getUserModel()
@@ -149,14 +164,12 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
             if (!::adapterCourses.isInitialized) return@collectLatestWhenStarted
 
                 if (isMyCourseLib) {
-                    val courseIds = state.courses.mapNotNull { it.courseId }
+                    val courseIds = state.courses.map { it.courseId }
                     resources = coursesRepository.getCourseOfflineResources(courseIds)
                     courseLib = "courses"
                 }
 
                 adapterCourses.setProgressMap(state.progressMap)
-                adapterCourses.setRatingMap(state.map)
-                adapterCourses.setTagsMap(state.tagsMap)
                 adapterCourses.submitList(state.courses) {
                     if (isAdded && ::selectionController.isInitialized) {
                         selectedItems?.clear()
@@ -171,7 +184,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
                 }
             }
 
-        realtimeSyncHelper = RealtimeSyncHelper(this, this)
+        realtimeSyncHelper = RealtimeSyncHelper(this, this, realtimeSyncManager)
         realtimeSyncHelper.setupRealtimeSync()
     }
 
@@ -199,7 +212,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
             if (state == lastState) return@collectLatestWhenStarted
 
             if (lastState != null && state.searchText != lastState?.searchText && state.copy(searchText = "") == lastState?.copy(searchText = "")) {
-                delay(300)
+                delay(300.milliseconds)
             }
             lastState = state
             viewModel.filterCourses(
@@ -216,13 +229,17 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
                 val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
                 deleteSelected(true)
                 selectionController.clearAll(adapterCourses)
-                adapterCourses.removeCourses(courseIds)
+                adapterCourses.removeCourses(courseIds) {
+                    checkList()
+                }
             },
             onArchiveConfirmed = {
                 val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
                 deleteSelected(true)
                 selectionController.clearAll(adapterCourses)
-                adapterCourses.removeCourses(courseIds)
+                adapterCourses.removeCourses(courseIds) {
+                    checkList()
+                }
             },
             onAddToLib = {
                 if ((selectedItems?.size ?: 0) > 0) {
@@ -242,9 +259,11 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
 
     private fun setupButtonVisibility() {
         if (::selectionController.isInitialized) {
+            val isEmpty = !::adapterCourses.isInitialized || adapterCourses.currentList.isEmpty()
+            val hasSelectableItems = if (isMyCourseLib) !isEmpty else (::adapterCourses.isInitialized && adapterCourses.currentList.any { !it.isMyCourse })
             selectionController.onListChanged(
-                isEmpty = !::adapterCourses.isInitialized || adapterCourses.currentList.isEmpty(),
-                hasSelectableItems = isMyCourseLib || (::adapterCourses.isInitialized && adapterCourses.currentList.any { !it.isMyCourse })
+                isEmpty = isEmpty,
+                hasSelectableItems = hasSelectableItems
             )
         }
     }
@@ -297,12 +316,14 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         orderByDate.setOnClickListener {
             bottomSheet.visibility = View.GONE
             if (!::adapterCourses.isInitialized) return@setOnClickListener
-            adapterCourses.toggleSortOrder { scrollToTop() }
+            viewModel.toggleDateSort()
+            scrollToTop()
         }
         orderByTitle.setOnClickListener {
             bottomSheet.visibility = View.GONE
             if (!::adapterCourses.isInitialized) return@setOnClickListener
-            adapterCourses.toggleTitleSortOrder { scrollToTop() }
+            viewModel.toggleTitleSort()
+            scrollToTop()
         }
     }
 
@@ -311,11 +332,96 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         if (::orderByTitle.isInitialized) orderByTitle.isEnabled = true
     }
 
+    private fun setupViewModeToggle() {
+        updateToggleUi(sharedPrefManager.getCourseViewMode())
+        requireView().findViewById<ImageButton>(R.id.toggle_grid).setOnClickListener { setViewMode(ListViewMode.GRID) }
+        requireView().findViewById<ImageButton>(R.id.toggle_list).setOnClickListener { setViewMode(ListViewMode.LIST) }
+        recyclerView.addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
+            if (right - left != oldRight - oldLeft) {
+                recyclerView.post { updateGridSpanIfNeeded() }
+            }
+        }
+    }
+
+    private fun setViewMode(mode: ListViewMode) {
+        sharedPrefManager.setCourseViewMode(mode)
+        updateToggleUi(mode)
+        if (::adapterCourses.isInitialized) {
+            adapterCourses.setViewMode(mode)
+        }
+    }
+
+    private fun applyRecyclerLayoutManager(mode: ListViewMode) {
+        recyclerView.layoutManager = if (mode == ListViewMode.GRID) {
+            GridLayoutManager(requireContext(), currentSpanCount())
+        } else {
+            LinearLayoutManager(requireContext())
+        }
+    }
+
+    private fun currentSpanCount(): Int {
+        val displayMetrics = requireContext().resources.displayMetrics
+        val widthPx = recyclerView.width.takeIf { it > 0 } ?: displayMetrics.widthPixels
+        val widthDp = (widthPx / displayMetrics.density).toInt()
+        return GridSpanCalculator.columnCount(widthDp)
+    }
+
+    private fun updateGridSpanIfNeeded() {
+        val layoutManager = recyclerView.layoutManager
+        if (layoutManager is GridLayoutManager) {
+            layoutManager.spanCount = currentSpanCount()
+        }
+    }
+
+    private fun updateToggleUi(mode: ListViewMode) {
+        val isGrid = mode == ListViewMode.GRID
+        val activeColor = ContextCompat.getColor(requireContext(), android.R.color.white)
+        val inactiveColor = ContextCompat.getColor(requireContext(), R.color.daynight_textColor)
+        val gridButton = requireView().findViewById<ImageButton>(R.id.toggle_grid)
+        val listButton = requireView().findViewById<ImageButton>(R.id.toggle_list)
+        gridButton.setBackgroundResource(if (isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
+        listButton.setBackgroundResource(if (!isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
+        ImageViewCompat.setImageTintList(gridButton, ColorStateList.valueOf(if (isGrid) activeColor else inactiveColor))
+        ImageViewCompat.setImageTintList(listButton, ColorStateList.valueOf(if (!isGrid) activeColor else inactiveColor))
+        applyRecyclerLayoutManager(mode)
+    }
+
+    private fun setupCourseFilterChips() {
+        val chipRow = requireView().findViewById<LinearLayout>(R.id.chip_filter_row)
+        chipRow.removeAllViews()
+        val options = requireContext().resources.getStringArray(R.array.progress_filter)
+        options.forEach { label ->
+            val chip = layoutInflater.inflate(R.layout.item_filter_chip, chipRow, false) as TextView
+            chip.text = label
+            chip.tag = label
+            chip.setOnClickListener {
+                if (::filterController.isInitialized) {
+                    filterController.setProgressFilter(if (label == options.first()) "" else label)
+                }
+                renderCourseChipSelection(chipRow)
+            }
+            chipRow.addView(chip)
+        }
+        renderCourseChipSelection(chipRow)
+    }
+
+    private fun renderCourseChipSelection(chipRow: LinearLayout) {
+        val selected = if (::filterController.isInitialized) filterController.currentState().progressFilter else ""
+        for (i in 0 until chipRow.childCount) {
+            val chip = chipRow.getChildAt(i) as? TextView ?: continue
+            val isSelected = (chip.tag as? String)?.let { it == selected || (selected.isEmpty() && i == 0) } == true
+            chip.setBackgroundResource(if (isSelected) R.drawable.bg_chip_selected else R.drawable.bg_chip_unselected)
+            chip.setTextColor(
+                ContextCompat.getColor(requireContext(), if (isSelected) R.color.chip_selected_text else R.color.daynight_textColor)
+            )
+        }
+    }
+
     private fun checkList() {
         if (!::adapterCourses.isInitialized || !::filterController.isInitialized || !::selectionController.isInitialized) return
         val isEmpty = adapterCourses.currentList.isEmpty()
         filterController.setListVisible(!isEmpty || filterController.filterApplied())
-        val hasSelectableItems = isMyCourseLib || adapterCourses.currentList.any { !it.isMyCourse }
+        val hasSelectableItems = if (isMyCourseLib) !isEmpty else adapterCourses.currentList.any { !it.isMyCourse }
         selectionController.onListChanged(isEmpty, hasSelectableItems)
     }
 
@@ -325,27 +431,21 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     }
 
     override fun onSelectedListChange(list: MutableList<Course?>) {
-        selectionJob?.cancel()
-        selectionJob = viewLifecycleOwner.lifecycleScope.launch {
-            val realmCourses = list.mapNotNull { course ->
-                course?.let {
-                    var rc = coursesRepository.getCourseById(it.courseId)
-                    if (rc == null) {
-                        rc = MyCourse()
-                        rc.courseId = it.courseId
-                        rc.courseTitle = it.courseTitle
-                        rc.isMyCourse = it.isMyCourse
-                    }
-                    rc
-                }
-            }.toMutableList<MyCourse?>()
-
-            withContext(dispatcherProvider.main) {
-                selectedItems = realmCourses
-                if (::selectionController.isInitialized && ::adapterCourses.isInitialized) {
-                    selectionController.onSelectionChanged(realmCourses.size, adapterCourses.areAllSelected())
+        val myCourses = list.mapNotNull { course ->
+            course?.let {
+                MyCourse().apply {
+                    id = it.courseId
+                    _id = it.courseId
+                    courseId = it.courseId
+                    courseTitle = it.courseTitle
+                    isMyCourse = it.isMyCourse
                 }
             }
+        }.toMutableList<MyCourse?>()
+
+        selectedItems = myCourses
+        if (::selectionController.isInitialized && ::adapterCourses.isInitialized) {
+            selectionController.onSelectionChanged(myCourses.size, adapterCourses.areAllSelected())
         }
     }
 
@@ -370,6 +470,15 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
 
     override fun onOkClicked(list: List<TagEntity>?) {
         if (::filterController.isInitialized) filterController.setTags(list ?: emptyList())
+    }
+
+    override fun addToMyList(onComplete: (() -> Unit)?) {
+        super.addToMyList {
+            if (isAdded && ::selectionController.isInitialized && ::adapterCourses.isInitialized) {
+                selectionController.clearAll(adapterCourses)
+            }
+            onComplete?.invoke()
+        }
     }
 
     private fun createAlertDialog(): AlertDialog {
@@ -435,6 +544,13 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (::recyclerView.isInitialized) {
+            recyclerView.post { updateGridSpanIfNeeded() }
+        }
+    }
+
     override fun onPause() {
         super.onPause()
         saveSearchActivity()
@@ -456,13 +572,18 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     }
 
     override fun onDestroyView() {
-        if (::filterController.isInitialized) filterController.detach()
+        if (::filterController.isInitialized) {
+            filterController.clear()
+            filterController.detach()
+        }
+        if (::adapterCourses.isInitialized) {
+            adapterCourses.setListener(null)
+        }
         super.onDestroyView()
     }
 
     override fun onRatingChanged() {
         if (!::adapterCourses.isInitialized) {
-            super.onRatingChanged()
             return
         }
         if (::filterController.isInitialized) {

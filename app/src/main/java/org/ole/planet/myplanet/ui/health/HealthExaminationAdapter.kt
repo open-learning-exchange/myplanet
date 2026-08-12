@@ -143,7 +143,17 @@ class HealthExaminationAdapter(
         private val colonRegex by lazy { ":".toRegex() }
         private val DIFF_CALLBACK = DiffUtils.itemCallback<HealthExamination>(
             { oldItem, newItem -> oldItem._id == newItem._id },
-            { oldItem, newItem -> oldItem == newItem }
+            { oldItem, newItem ->
+                oldItem.temperature == newItem.temperature &&
+                        oldItem.date == newItem.date &&
+                        oldItem.data == newItem.data &&
+                        oldItem.pulse == newItem.pulse &&
+                        oldItem.bp == newItem.bp &&
+                        oldItem.hearing == newItem.hearing &&
+                        oldItem.height == newItem.height &&
+                        oldItem.weight == newItem.weight &&
+                        oldItem.vision == newItem.vision
+            }
         )
     }
 }

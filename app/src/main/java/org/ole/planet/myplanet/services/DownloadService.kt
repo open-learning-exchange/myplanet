@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.repository.DownloadRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.DownloadWorker
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -57,6 +58,9 @@ class DownloadService : Service() {
 
     @Inject
     lateinit var downloadRepository: DownloadRepository
+
+    @Inject
+    lateinit var resourcesRepository: ResourcesRepository
 
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
@@ -214,7 +218,11 @@ class DownloadService : Service() {
 
             if (FileUtils.checkFileExist(this, url)) {
                 Log.d(TAG, "initDownload: $fileName already on disk, marking offline and skipping download")
-                DownloadUtils.updateResourceOfflineStatus(url)
+                try {
+                    resourcesRepository.markResourceOfflineByUrl(url)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
                 onDownloadComplete(url)
                 return true
             }
@@ -231,35 +239,8 @@ class DownloadService : Service() {
 
             if (primaryResult is DownloadResult.Error && primaryResult.code == null) {
                 Log.w(TAG, "initDownload: primary failed with network error (${primaryResult.message}), checking for alternative URL")
-                val mapping = serverUrlMapper.processUrl(url)
-                val altBase = mapping.alternativeUrl
-                val primaryBase = mapping.extractedBaseUrl
-
-                val resolvedAltBase: String?
-                val resolvedPrimaryBase: String?
-                if (altBase != null && primaryBase != null) {
-                    resolvedAltBase = altBase
-                    resolvedPrimaryBase = primaryBase
-                    Log.d(TAG, "initDownload: found hardcoded mapping $primaryBase → $altBase")
-                } else {
-                    val storedAlt = sharedPrefManager.getProcessedAlternativeUrl()
-                    if (storedAlt.isNotEmpty() && primaryBase != null) {
-                        resolvedAltBase = storedAlt.trimEnd('/')
-                        resolvedPrimaryBase = primaryBase
-                        Log.d(TAG, "initDownload: no hardcoded mapping for $primaryBase — using stored alternative $resolvedAltBase")
-                    } else {
-                        resolvedAltBase = null
-                        resolvedPrimaryBase = null
-                        Log.w(TAG, "initDownload: no alternative URL available for primary base '$primaryBase', giving up")
-                    }
-                }
-
-                if (resolvedAltBase != null && resolvedPrimaryBase != null) {
-                    val parsed = Uri.parse(url)
-                    val path = parsed.path.orEmpty()
-                    val query = if (parsed.query != null) "?${parsed.query}" else ""
-                    val altUrl = resolvedAltBase + path + query
-                    Log.d(TAG, "initDownload: switching $fileName — primary=$resolvedPrimaryBase → alternative=$resolvedAltBase")
+                val altUrl = resolveAlternativeUrl(url, fileName)
+                if (altUrl != null) {
                     Log.d(TAG, "initDownload: retrying with $altUrl")
                     currentDownloadUrl = altUrl
                     val altResult = downloadRepository.downloadFileResponse(altUrl, authHeader)
@@ -275,6 +256,41 @@ class DownloadService : Service() {
         }
     }
 
+    private fun resolveAlternativeUrl(url: String, fileName: String): String? {
+        val mapping = serverUrlMapper.processUrl(url)
+        val altBase = mapping.alternativeUrl
+        val primaryBase = mapping.extractedBaseUrl
+
+        val resolvedAltBase: String?
+        val resolvedPrimaryBase: String?
+        if (altBase != null && primaryBase != null) {
+            resolvedAltBase = altBase
+            resolvedPrimaryBase = primaryBase
+            Log.d(TAG, "initDownload: found hardcoded mapping $primaryBase → $altBase")
+        } else {
+            val storedAlt = sharedPrefManager.getProcessedAlternativeUrl()
+            if (storedAlt.isNotEmpty() && primaryBase != null) {
+                resolvedAltBase = storedAlt.trimEnd('/')
+                resolvedPrimaryBase = primaryBase
+                Log.d(TAG, "initDownload: no hardcoded mapping for $primaryBase — using stored alternative $resolvedAltBase")
+            } else {
+                resolvedAltBase = null
+                resolvedPrimaryBase = null
+                Log.w(TAG, "initDownload: no alternative URL available for primary base '$primaryBase', giving up")
+            }
+        }
+
+        if (resolvedAltBase != null && resolvedPrimaryBase != null) {
+            val parsed = Uri.parse(url)
+            val path = parsed.path.orEmpty()
+            val query = if (parsed.query != null) "?${parsed.query}" else ""
+            val altUrl = resolvedAltBase + path + query
+            Log.d(TAG, "initDownload: switching $fileName — primary=$resolvedPrimaryBase → alternative=$resolvedAltBase")
+            return altUrl
+        }
+        return null
+    }
+
     private fun tryDownloadFromResult(
         result: DownloadResult,
         url: String,
@@ -283,39 +299,37 @@ class DownloadService : Service() {
         isAlternative: Boolean
     ): Boolean {
         val source = if (isAlternative) "alternative" else "primary"
-        return when (result) {
-            is DownloadResult.Success -> {
-                val contentLength = result.body.contentLength()
-                Log.d(TAG, "tryDownload [$source]: $fileName responded contentLength=${if (contentLength == -1L) "unknown" else "${contentLength}B"}")
-                val storageError = getStorageError(contentLength)
-                when {
-                    storageError != null -> {
-                        Log.e(TAG, "tryDownload [$source]: storage check failed — $storageError")
-                        downloadFailed(storageError, fromSync)
-                        false
-                    }
-                    contentLength == 0L -> {
-                        Log.e(TAG, "tryDownload [$source]: server returned empty body for $fileName")
-                        downloadFailed("Empty file from server", fromSync)
-                        false
-                    }
-                    else -> {
-                        try {
-                            downloadFile(result.body, url)
-                            true
-                        } catch (e: Exception) {
-                            Log.e(TAG, "tryDownload [$source]: write failed for $fileName", e)
-                            downloadFailed(e.localizedMessage ?: "Write failed", fromSync)
-                            false
-                        }
-                    }
-                }
-            }
-            is DownloadResult.Error -> {
-                Log.e(TAG, "tryDownload [$source]: $fileName — ${result.message} (code=${result.code})")
-                downloadFailed(result.message, fromSync)
-                false
-            }
+
+        if (result is DownloadResult.Error) {
+            Log.e(TAG, "tryDownload [$source]: $fileName — ${result.message} (code=${result.code})")
+            downloadFailed(result.message, fromSync)
+            return false
+        }
+
+        result as DownloadResult.Success
+        val contentLength = result.body.contentLength()
+        Log.d(TAG, "tryDownload [$source]: $fileName responded contentLength=${if (contentLength == -1L) "unknown" else "${contentLength}B"}")
+
+        val storageError = getStorageError(contentLength)
+        if (storageError != null) {
+            Log.e(TAG, "tryDownload [$source]: storage check failed — $storageError")
+            downloadFailed(storageError, fromSync)
+            return false
+        }
+
+        if (contentLength == 0L) {
+            Log.e(TAG, "tryDownload [$source]: server returned empty body for $fileName")
+            downloadFailed("Empty file from server", fromSync)
+            return false
+        }
+
+        return try {
+            downloadFile(result.body, url)
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "tryDownload [$source]: write failed for $fileName", e)
+            downloadFailed(e.localizedMessage ?: "Write failed", fromSync)
+            false
         }
     }
 
@@ -370,29 +384,7 @@ class DownloadService : Service() {
                         currentFileProgress = -1
                     }
 
-                    while (true) {
-                        val readCount = bis.read(data)
-                        if (readCount == -1) break
-
-                        if (readCount > 0) {
-                            total += readCount
-                            val current = (total / 1024.0).roundToInt().toDouble()
-
-                            if (fileSize > 0) {
-                                val progress = (total * 100 / fileSize).toInt()
-                                download.progress = progress
-                                currentFileProgress = progress
-                            }
-
-                            val now = SystemClock.elapsedRealtime()
-                            if (now - lastNotificationUpdateTime >= NOTIFICATION_UPDATE_INTERVAL_MS) {
-                                download.currentFileSize = current.toInt()
-                                sendNotification(download)
-                                lastNotificationUpdateTime = now
-                            }
-                            output.write(data, 0, readCount)
-                        }
-                    }
+                    total = copyStreamWithProgress(bis, output, download, fileSize, total)
                 }
             }
             if (!tempFile.renameTo(finalFile)) {
@@ -407,6 +399,40 @@ class DownloadService : Service() {
             throw e
         }
         onDownloadComplete(url)
+    }
+
+    private fun copyStreamWithProgress(
+        bis: BufferedInputStream,
+        output: FileOutputStream,
+        download: Download,
+        fileSize: Long,
+        initialTotal: Long
+    ): Long {
+        var total = initialTotal
+        while (true) {
+            val readCount = bis.read(data)
+            if (readCount == -1) break
+
+            if (readCount > 0) {
+                total += readCount
+                val current = (total / 1024.0).roundToInt().toDouble()
+
+                if (fileSize > 0) {
+                    val progress = (total * 100 / fileSize).toInt()
+                    download.progress = progress
+                    currentFileProgress = progress
+                }
+
+                val now = SystemClock.elapsedRealtime()
+                if (now - lastNotificationUpdateTime >= NOTIFICATION_UPDATE_INTERVAL_MS) {
+                    download.currentFileSize = current.toInt()
+                    sendNotification(download)
+                    lastNotificationUpdateTime = now
+                }
+                output.write(data, 0, readCount)
+            }
+        }
+        return total
     }
 
     private fun getStorageError(fileSize: Long): String? {
@@ -462,7 +488,13 @@ class DownloadService : Service() {
 
     private fun onDownloadComplete(url: String) {
         if ((outputFile?.length() ?: 0) > 0) {
-            DownloadUtils.updateResourceOfflineStatus(url)
+            appScope.launch {
+                try {
+                    resourcesRepository.markResourceOfflineByUrl(url)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
         }
 
         val remainingPriority = preferences.getStringSet(PRIORITY_DOWNLOADS_KEY, emptySet())?.count { it !in processedUrls } ?: 0
@@ -544,32 +576,21 @@ class DownloadService : Service() {
                 putExtra("fromSync", fromSync)
             }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val canStart = when {
-                    context is Activity -> true
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> {
-                        hasValidForegroundServiceContext(context)
-                    }
-                    else -> true
-                }
-
-                if (canStart) {
-                    try {
-                        ContextCompat.startForegroundService(context, intent)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to start foreground service", e)
-                        handleForegroundServiceError(context, urlsKey, fromSync)
-                    }
-                } else {
-                    startDownloadWork(context, urlsKey, fromSync)
-                }
+            val canStart = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                context is Activity || hasValidForegroundServiceContext(context)
             } else {
+                true
+            }
+
+            if (canStart) {
                 try {
                     ContextCompat.startForegroundService(context, intent)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to start foreground service", e)
                     handleForegroundServiceError(context, urlsKey, fromSync)
                 }
+            } else {
+                startDownloadWork(context, urlsKey, fromSync)
             }
         }
 

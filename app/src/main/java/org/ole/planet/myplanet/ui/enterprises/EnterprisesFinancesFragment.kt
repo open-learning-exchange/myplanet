@@ -123,13 +123,27 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }
+
+        val initialDate = if (isFromDate) {
+            val fromDateText = binding.tvFromDateCalendar.text.toString()
+            if (fromDateText.isNotEmpty()) parseDate(fromDateText) ?: now else now
+        } else {
+            val toDateText = binding.etToDate.text.toString()
+            if (toDateText.isNotEmpty()) {
+                parseDate(toDateText) ?: now
+            } else {
+                val fromDateText = binding.tvFromDateCalendar.text.toString()
+                if (fromDateText.isNotEmpty()) parseDate(fromDateText) ?: now else now
+            }
+        }
+
         val datePickerDialog = DatePickerDialog(
             requireContext(),
             { _, year, monthOfYear, dayOfMonth ->
                 val selectedDate = Calendar.getInstance().apply {
                     set(year, monthOfYear, dayOfMonth)
                 }
-                val formattedDate = selectedDate.formatToString("yyyy-MM-dd")
+                val formattedDate = selectedDate.formatToString()
 
                 if (isFromDate) {
                     binding.tvFromDateCalendar.setText(formattedDate)
@@ -148,9 +162,9 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
                 filterIfBothDatesSelected()
             },
-            now[Calendar.YEAR],
-            now[Calendar.MONTH],
-            now[Calendar.DAY_OF_MONTH]
+            initialDate[Calendar.YEAR],
+            initialDate[Calendar.MONTH],
+            initialDate[Calendar.DAY_OF_MONTH]
         )
 
         if (!isFromDate) {
@@ -166,9 +180,8 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     }
 
 
-    private fun Calendar.formatToString(pattern: String): String {
-        val dateFormat = if (pattern == "yyyy-MM-dd") dateFormatter else SimpleDateFormat(pattern, Locale.getDefault())
-        return dateFormat.format(this.time)
+    private fun Calendar.formatToString(): String {
+        return dateFormatter.format(this.time)
     }
 
     private fun updateToDateState(enabled: Boolean) {
