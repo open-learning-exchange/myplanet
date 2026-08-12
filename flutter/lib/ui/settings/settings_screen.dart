@@ -6,6 +6,7 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../components/guest_dialog.dart';
 import '../router.dart';
 
 /// First vertical slice of `ui/settings/SettingsActivity.kt`.
@@ -85,7 +86,7 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () {
               final session = ref.read(sessionProvider).valueOrNull;
               if (session != null && session.id.startsWith('guest')) {
-                _showGuestDialog(context, l10n);
+                showGuestDialog(context);
                 return;
               }
               context.push(Routes.storageManagement);
@@ -102,31 +103,6 @@ class SettingsScreen extends ConsumerWidget {
             leading: const Icon(Icons.new_releases_outlined),
             title: Text(l10n.appVersion('0.62.97')),
             subtitle: const Text('Build 6297'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Port of `DialogUtils.guestDialog` — offers membership instead of the
-  /// gated feature.
-  void _showGuestDialog(BuildContext context, AppLocalizations l10n) {
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.becomeMember),
-        content: Text(l10n.toAccessThisFeatureBecomeAMember),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              context.push(Routes.becomeMember);
-            },
-            child: Text(l10n.becomeMember),
           ),
         ],
       ),

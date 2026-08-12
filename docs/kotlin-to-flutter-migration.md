@@ -148,6 +148,25 @@ Known gaps:
     posted. This predates the phase but survey adoption is built entirely around the user
     document it carries, which is what surfaced it.
 
+- **Phase 29** — the home ("bell") dashboard: a `/home` shell tab, first in the bottom nav and
+  the post-login landing route, porting `BellDashboardFragment`'s content — the profile card
+  (name, role, planet code), the four myLibrary/myCourses/myTeams/myLife cards with their count
+  badges (hidden at zero), alternating fixed-size tiles in a horizontally scrolling grid,
+  card-header navigation (myCourses sets the existing my-courses filter), the Kotlin's exact
+  guest gates (library/courses headers and five of the seven myLife tiles gated; teams and life
+  headers, References and Calendar open), the localized empty-state placeholders, and the
+  pending-survey dialog with its one-hour throttle, per-survey dedupe, and dropped-survey
+  filtering. The myLife feature registry moved to `ui/life/life_features.dart`, shared with
+  `LifeScreen`; `DialogUtils.guestDialog` became the shared `ui/components/guest_dialog.dart`.
+  Not ported, by decision (each needs infrastructure the port lacks): the completed-course star
+  row (per-step progress records), the avatar's network-status ring (connectivity plugin), team
+  chat/task alert badges (team notifications), the offline-logins count and activity-chart FAB
+  (login activity tracking), the last-sync strip, the navigation drawer and overflow menu, and
+  the "remind later" reminder scheduler. One flagged fidelity question: the dashboard treats
+  both `''` and `'pending'` submission statuses as pending, because this port's survey
+  get-or-create writes `''` where the Kotlin writes `'pending'` — reconciling the write side is
+  open.
+
 - **Phase 27** — chat upload, member registration against `_users`, and the resource detail
   screen with its filter sheet. Three fixes were needed around it:
   - `chat_history` gained an `is_uploaded` column with no `schemaVersion` bump and no
@@ -677,8 +696,9 @@ flutter pub get 2>&1 | grep -i discontinued
 
 `components`, `enterprises` -- plus team voices, team/public survey sharing, personal attachments/upload,
 storage/retry, and the rest of `settings`, plus profile photo/upload, membership, and the rest of `user`,
-and the rest of `sync` and `dashboard` (the Kotlin dashboard's activity cards, surveys widget and drawer
-are not ported; only the navigation host is).
+and the rest of `sync` and `dashboard` (the home cards and pending-survey dialog are ported as of
+Phase 29; still missing are the completed-course stars, network ring, team alert badges, activity
+chart, last-sync strip, drawer/overflow menu, and survey reminders).
 
 **Notes on remaining packages:**
 - `components` -- reusable utility widgets. `CheckboxList` is in use; `ChallengeDialog` and
@@ -760,6 +780,6 @@ succeeds, it just doesn't do what the Kotlin did.
 
 ---
 
-**Last updated**: 2026-08-05 (Phase 27 complete)
+**Last updated**: 2026-08-12 (Phase 29 complete)
 **Phase**: 27 of N (27 of 28 UI packages have a screen — see Status for what that does and does
 not mean)

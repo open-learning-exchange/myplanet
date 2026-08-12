@@ -43,6 +43,7 @@ class PlanetPrefs {
   static const String _keyCommunityLeaders = 'communityLeaders';
   static const String _keyCommunityName = 'communityName';
   static const String _keyPlanetType = 'planetType';
+  static const String _keyLastSurveyDialog = 'lastSurveyDialogShown';
 
   static const String _secureKeyServerPin = 'serverPin';
   static const String _secureKeyCouchDbUrl = 'couchdbURL';
@@ -185,4 +186,13 @@ class PlanetPrefs {
 
   Future<void> setPlanetType(String type) =>
       _prefs.setString(_keyPlanetType, type);
+
+  /// When the pending-survey dialog was last shown, epoch millis.
+  ///
+  /// Port of `SurveysRepositoryImpl.getLastSurveyDialogShown` — the home
+  /// dashboard throttles the dialog to once an hour.
+  int get lastSurveyDialogShown => _prefs.getInt(_keyLastSurveyDialog) ?? 0;
+
+  Future<void> setLastSurveyDialogShown(int epochMillis) =>
+      _prefs.setInt(_keyLastSurveyDialog, epochMillis);
 }

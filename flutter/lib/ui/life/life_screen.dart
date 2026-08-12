@@ -7,6 +7,7 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/life_provider.dart';
 import '../dashboard/dashboard_shell.dart';
 import '../router.dart';
+import 'life_features.dart';
 
 /// Port of `ui/life/LifeFragment.kt` and its reorder/visibility adapter.
 class LifeScreen extends ConsumerWidget {
@@ -82,16 +83,16 @@ class _LifeTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final title = _featureTitle(l10n, row.feature, row.title);
+    final title = lifeFeatureTitle(l10n, row.feature, row.title);
     return Opacity(
       opacity: row.isVisible ? 1 : 0.5,
       child: ListTile(
-        leading: CircleAvatar(child: Icon(_featureIcon(row.feature))),
+        leading: CircleAvatar(child: Icon(lifeFeatureIcon(row.feature))),
         title: Text(title),
         subtitle: Text(
           row.isVisible ? l10n.shownOnDashboard : l10n.hiddenFromDashboard,
         ),
-        onTap: () => _openFeature(context, row.feature),
+        onTap: () => openLifeFeature(context, row.feature),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -122,54 +123,3 @@ class _LifeTile extends ConsumerWidget {
     );
   }
 }
-
-void _openFeature(BuildContext context, String feature) {
-  switch (feature) {
-    case 'calendar':
-      context.go(Routes.calendar);
-      return;
-    case 'references':
-      context.push(Routes.references);
-      return;
-    case 'personals':
-      context.push(Routes.personals);
-      return;
-    case 'submissions':
-      context.push(Routes.submissions);
-      return;
-    case 'surveys':
-      context.push(Routes.surveys);
-      return;
-    case 'health':
-      context.push(Routes.health);
-      return;
-    default:
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context).featureComingSoon)),
-      );
-      return;
-  }
-}
-
-IconData _featureIcon(String feature) => switch (feature) {
-  'health' => Icons.favorite_outline,
-  'achievements' => Icons.emoji_events_outlined,
-  'submissions' => Icons.assignment_outlined,
-  'surveys' => Icons.poll_outlined,
-  'references' => Icons.library_books_outlined,
-  'calendar' => Icons.calendar_month_outlined,
-  'personals' => Icons.lock_person_outlined,
-  _ => Icons.apps,
-};
-
-String _featureTitle(AppLocalizations l10n, String feature, String? fallback) =>
-    switch (feature) {
-      'health' => l10n.myHealth,
-      'achievements' => l10n.achievements,
-      'submissions' => l10n.submissions,
-      'surveys' => l10n.mySurveys,
-      'references' => l10n.references,
-      'calendar' => l10n.calendar,
-      'personals' => l10n.myPersonals,
-      _ => fallback ?? feature,
-    };

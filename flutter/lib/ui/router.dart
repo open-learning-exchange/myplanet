@@ -15,6 +15,7 @@ import 'courses/courses_screen.dart';
 import 'courses/courses_progress_screen.dart';
 import 'courses/take_course_screen.dart';
 import 'dashboard/dashboard_shell.dart';
+import 'dashboard/home_screen.dart';
 import 'dictionary/dictionary_screen.dart';
 import 'events/event_detail_screen.dart';
 import 'events/events_screen.dart';
@@ -70,6 +71,7 @@ import 'viewer/resource_viewer_screen.dart';
 class Routes {
   const Routes._();
 
+  static const String home = '/home';
   static const String server = '/server';
   static const String onboarding = '/onboarding';
   static const String login = '/login';
@@ -137,7 +139,8 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: Routes.resources,
+    // The Kotlin app lands on the bell dashboard after login.
+    initialLocation: Routes.home,
     refreshListenable: _RouterRefresh(ref),
     redirect: (context, state) {
       // Public surveys are answerable without onboarding, server config or a
@@ -173,7 +176,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         return location == Routes.login ? null : Routes.login;
       }
       if (location == Routes.server || location == Routes.login) {
-        return Routes.resources;
+        return Routes.home;
       }
       return null;
     },
@@ -244,6 +247,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state, navigationShell) =>
             DashboardShell(navigationShell: navigationShell),
         branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Routes.home,
+                builder: (context, state) => const HomeScreen(),
+              ),
+            ],
+          ),
           StatefulShellBranch(
             routes: [
               GoRoute(
