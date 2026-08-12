@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.ratings.RatingsFragment
@@ -43,6 +44,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var coursesRepository: CoursesRepository
+    @Inject
+    lateinit var ratingsRepository: RatingsRepository
     private val viewModel: TakeCourseViewModel by viewModels()
     private var courseId: String? = null
     private var userModel: UserEntity? = null
@@ -385,10 +388,22 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         }
     }
 
-    private fun showCourseRatingDialogAndFinish() {
+    private suspend fun showCourseRatingDialogAndFinish() {
         val cId = courseId ?: currentCourse?.courseId
         val title = currentCourse?.courseTitle ?: ""
-        if (!cId.isNullOrEmpty() && isAdded) {
+        val userId = userModel?.id
+        val hasRated = if (!cId.isNullOrEmpty() && !userId.isNullOrEmpty()) {
+            try {
+                val summary = ratingsRepository.getRatingSummary("course", cId, userId)
+                summary.userRating != null || summary.existingRating != null
+            } catch (e: Exception) {
+                false
+            }
+        } else {
+            false
+        }
+
+        if (!cId.isNullOrEmpty() && !hasRated && isAdded) {
             val ratingDialog = RatingsFragment.newInstance("course", cId, title)
             ratingDialog.setOnDismissListener {
                 if (isAdded) {
