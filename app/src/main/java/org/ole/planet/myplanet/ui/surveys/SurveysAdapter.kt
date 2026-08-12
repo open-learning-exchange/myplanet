@@ -27,7 +27,12 @@ class SurveysAdapter(
     private val bindingDataMap: Map<String, SurveyFormState>
 ) : ListAdapter<StepExam, SurveysAdapter.SurveysViewHolder>(DiffUtils.itemCallback(
     { oldItem, newItem -> oldItem.id == newItem.id },
-    { oldItem, newItem -> oldItem == newItem }
+    { oldItem, newItem ->
+        oldItem.name == newItem.name &&
+                oldItem.description == newItem.description &&
+                oldItem.isTeamShareAllowed == newItem.isTeamShareAllowed &&
+                oldItem.isFromNation == newItem.isFromNation
+    }
 )), OnDiffRefreshListener {
     override fun refreshWithDiff() {
         submitList(currentList.toList())

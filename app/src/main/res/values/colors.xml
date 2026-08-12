@@ -71,4 +71,31 @@
     <color name="dashboard_avatar_ring">#0D47A1</color>
     <color name="dashboard_accent_blue">#1976D2</color>
     <color name="dashboard_sync_banner_bg">#E3F2FD</color>
+
+    <!-- myLibrary / myCourses cover-first redesign -->
+    <color name="card_border">#E8E2D5</color>
+    <color name="chip_selected_bg">#E3F2FD</color>
+    <color name="chip_selected_border">#1976D2</color>
+    <color name="chip_selected_text">#0D47A1</color>
+
+    <color name="type_pdf">#D32F2F</color>
+    <color name="type_video">#7B1FA2</color>
+    <color name="type_audio">#388E3C</color>
+    <color name="type_book">#F57C00</color>
+
+    <color name="subject_math">#F57C00</color>
+    <color name="subject_literacy">#D32F2F</color>
+    <color name="subject_health">#388E3C</color>
+    <color name="subject_social_studies">#7B1FA2</color>
+    <color name="subject_technology">#1976D2</color>
+
+    <color name="progress_track_bg">#F4EFE6</color>
+    <color name="progress_fill">#7CB342</color>
+
+    <color name="list_status_completed_bg">#E8F5E9</color>
+    <color name="list_status_completed_text">#2E7D32</color>
+    <color name="list_status_in_progress_bg">#FFF3D6</color>
+    <color name="list_status_in_progress_text">#8A6400</color>
+    <color name="list_status_not_started_bg">#F4EFE6</color>
+    <color name="list_status_not_started_text">#807868</color>
 </resources>

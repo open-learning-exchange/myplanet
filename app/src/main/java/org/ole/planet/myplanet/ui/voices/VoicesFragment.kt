@@ -98,6 +98,7 @@ class VoicesFragment : BaseVoicesFragment() {
             if (user?.id?.startsWith("guest") == true) {
                 binding.btnNewVoice.visibility = View.GONE
             }
+            (binding.rvNews.adapter as? VoicesAdapter)?.setCurrentUser(user)
 
             voicesViewModel.observeCommunityNews(getUserIdentifier())
         }
