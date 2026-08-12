@@ -29,7 +29,6 @@
                 android:layout_gravity="center"
                 android:contentDescription="@null"
                 android:importantForAccessibility="no" />
-
             <FrameLayout
                 android:layout_width="24dp"
                 android:layout_height="24dp"
@@ -72,7 +71,6 @@
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/tv_meta"
                 android:layout_width="match_parent"
