@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/activities_provider.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/courses_providers.dart';
 import '../../providers/session_provider.dart';
@@ -27,6 +28,28 @@ class TakeCourseScreen extends ConsumerStatefulWidget {
 class _TakeCourseScreenState extends ConsumerState<TakeCourseScreen> {
   int _currentStep = 0;
 
+  /// One `course_activity` row per open. `TakeCourseFragment` logs the visit
+  /// from `setData`, which can run again on a rebuild; this fires once per
+  /// mount, which is what the Kotlin means by a visit.
+  bool _visitLogged = false;
+
+  void _logVisitOnce(CourseRow course) {
+    if (_visitLogged) return;
+    _visitLogged = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // The Kotlin passes `currentCourse.courseId` — the server's id for the
+      // course, which is what the server's `course_activities` documents key
+      // on — falling back to the local row key when a course has none.
+      ref
+          .read(activityLogProvider)
+          .logCourseVisit(
+            courseId: course.courseId ?? course.id,
+            title: course.courseTitle,
+          );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -49,6 +72,7 @@ class _TakeCourseScreenState extends ConsumerState<TakeCourseScreen> {
           if (data == null) {
             return Center(child: Text(l10n.courseNotFound));
           }
+          _logVisitOnce(data);
           return steps.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(child: Text(l10n.syncFailed('$e'))),

@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/activities_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/notifications_provider.dart';
+import '../components/relative_time.dart';
 import '../dashboard/dashboard_shell.dart';
 import '../router.dart';
 
@@ -249,13 +251,13 @@ class _ProfileFormValue {
   final String dateOfBirth;
 }
 
-class _ProfileBody extends StatelessWidget {
+class _ProfileBody extends ConsumerWidget {
   const _ProfileBody({required this.user});
 
   final UserRow user;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final name = _displayName(user);
@@ -319,19 +321,86 @@ class _ProfileBody extends StatelessWidget {
             child: Text(l10n.noProfileDetails),
           )
         else
-          Card(
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              children: [
-                for (var index = 0; index < details.length; index++) ...[
-                  _DetailTile(detail: details[index]),
-                  if (index != details.length - 1)
-                    const Divider(height: 1, indent: 56),
-                ],
-              ],
-            ),
-          ),
+          _DetailCard(details: details),
+        ..._activitySection(context, ref),
       ],
+    );
+  }
+
+  /// Port of `UserProfileFragment.createStatsMap`, minus its community-name row
+  /// — the port already shows the planet code among the account details above.
+  ///
+  /// The Kotlin renders every row unconditionally, showing "N/A" through
+  /// `Utilities.checkNA` when a value is missing; here an absent value drops the
+  /// row, which is what the rest of this screen already does with account
+  /// details. The whole block is absent until the activity log has something in
+  /// it, rather than showing a card of zeroes and N/As on a fresh install.
+  List<Widget> _activitySection(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final stats = ref.watch(profileActivityStatsProvider).valueOrNull;
+    if (stats == null) return const [];
+
+    final lastVisit = stats.lastVisit;
+    final mostOpened = stats.mostOpened;
+    final rows = <_ProfileDetail>[
+      if (lastVisit != null)
+        _ProfileDetail(
+          Icons.login_outlined,
+          l10n.lastLogin,
+          relativeTimeLabel(
+            l10n,
+            DateTime.now().millisecondsSinceEpoch - lastVisit,
+          ),
+        ),
+      if (stats.offlineVisits > 0)
+        _ProfileDetail(
+          Icons.history_outlined,
+          l10n.totalVisits,
+          '${stats.offlineVisits}',
+        ),
+      if (mostOpened != null)
+        _ProfileDetail(
+          Icons.star_outline,
+          l10n.mostOpenedResource,
+          l10n.resourceOpenedTimes(mostOpened.title, mostOpened.count),
+        ),
+      if (stats.resourceOpenCount > 0)
+        _ProfileDetail(
+          Icons.menu_book_outlined,
+          l10n.numberOfResourcesOpened,
+          l10n.resourcesOpenedTimes(stats.resourceOpenCount),
+        ),
+    ];
+    if (rows.isEmpty) return const [];
+
+    return [
+      const SizedBox(height: 28),
+      Text(l10n.activitySummary, style: theme.textTheme.titleMedium),
+      const SizedBox(height: 8),
+      _DetailCard(details: rows),
+    ];
+  }
+}
+
+class _DetailCard extends StatelessWidget {
+  const _DetailCard({required this.details});
+
+  final List<_ProfileDetail> details;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          for (var index = 0; index < details.length; index++) ...[
+            _DetailTile(detail: details[index]),
+            if (index != details.length - 1)
+              const Divider(height: 1, indent: 56),
+          ],
+        ],
+      ),
     );
   }
 }

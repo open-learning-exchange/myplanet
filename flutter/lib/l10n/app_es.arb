@@ -197,5 +197,9 @@
   "somali": "somali",
   "nepali": "नेपाली",
   "arabic": "عربى",
-  "french": "français"
+  "french": "français",
+  "lastLogin": "Último inicio de sesión",
+  "totalVisits": "Total de visitas",
+  "mostOpenedResource": "Recurso más abierto",
+  "numberOfResourcesOpened": "Número de recursos abiertos"
 }

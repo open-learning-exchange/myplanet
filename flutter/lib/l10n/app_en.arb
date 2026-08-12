@@ -1006,6 +1006,20 @@
   "nepali": "नेपाली",
   "arabic": "عربى",
   "french": "français",
+  "activitySummary": "Activity",
+  "lastLogin": "Last login",
+  "totalVisits": "Total visits",
+  "mostOpenedResource": "Most opened resource",
+  "numberOfResourcesOpened": "Number of resources opened",
+  "resourceOpenedTimes": "{title} opened {count} times",
+  "@resourceOpenedTimes": {
+    "placeholders": {
+      "title": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "resourcesOpenedTimes": "{count, plural, =1{Resource opened 1 time} other{Resource opened {count} times}}",
+  "@resourcesOpenedTimes": {"placeholders": {"count": {"type": "int"}}},
   "serverReachable": "Server reachable",
   "serverUnreachable": "Server unreachable",
   "serverChecking": "Checking server"

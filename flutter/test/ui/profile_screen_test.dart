@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/providers/activities_provider.dart';
 import 'package:myplanet/providers/notifications_provider.dart';
+import 'package:myplanet/repository/activities_repository.dart';
 import 'package:myplanet/providers/session_provider.dart';
 import 'package:myplanet/ui/user/profile_screen.dart';
 
@@ -147,7 +149,71 @@ void main() {
     expect(find.text('Correo electrónico'), findsOneWidget);
     expect(find.text('Número de teléfono'), findsOneWidget);
   });
+  testWidgets('shows the activity stats the Kotlin stats list shows', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wrapScreen(
+        const ProfileScreen(),
+        overrides: [
+          ...profileOverrides(_TestSessionNotifier(_user())),
+          profileActivityStatsProvider.overrideWith(
+            (ref) async => ProfileActivityStats(
+              lastVisit:
+                  DateTime.now().millisecondsSinceEpoch -
+                  const Duration(hours: 3).inMilliseconds,
+              offlineVisits: 7,
+              mostOpened: const MostOpenedResource('Algebra', 4),
+              resourceOpenCount: 9,
+            ),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Last login'), findsOneWidget);
+    expect(find.text('3 hours ago'), findsOneWidget);
+    expect(find.text('Total visits'), findsOneWidget);
+    expect(find.text('7'), findsOneWidget);
+    expect(find.text('Most opened resource'), findsOneWidget);
+    expect(find.text('Algebra opened 4 times'), findsOneWidget);
+    expect(find.text('Number of resources opened'), findsOneWidget);
+    expect(find.text('Resource opened 9 times'), findsOneWidget);
+  });
+
+  testWidgets('omits the activity block until something has been logged', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wrapScreen(
+        const ProfileScreen(),
+        overrides: [
+          ...profileOverrides(_TestSessionNotifier(_user())),
+          profileActivityStatsProvider.overrideWith(
+            (ref) async => const ProfileActivityStats(),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The Kotlin renders every row with "N/A"; a fresh install here shows no
+    // card at all rather than a column of zeroes.
+    expect(find.text('Activity'), findsNothing);
+    expect(find.text('Total visits'), findsNothing);
+  });
 }
+
+UserRow _user() => UserRow(
+  id: 'user-1',
+  name: 'ada',
+  rolesList: const [],
+  userAdmin: false,
+  joinDate: 0,
+  firstName: 'Ada',
+  isArchived: false,
+);
 
 class _TestSessionNotifier extends SessionNotifier {
   _TestSessionNotifier(this.user);

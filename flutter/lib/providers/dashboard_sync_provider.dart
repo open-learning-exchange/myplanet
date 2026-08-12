@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'activities_provider.dart';
 import 'chat_provider.dart';
 import 'courses_providers.dart';
 import 'events_provider.dart';
@@ -119,6 +120,8 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
       await _syncArea(area);
     }
 
+    await _recordSyncActivity();
+
     state = state.copyWith(running: false, finishedAt: DateTime.now());
   }
 
@@ -131,6 +134,19 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
     );
     await _syncArea(area);
     state = state.copyWith(running: false, finishedAt: DateTime.now());
+  }
+
+  /// Port of `SyncManager`'s `recordSyncActivity` call.
+  ///
+  /// Kotlin records one row per `SyncManager` run; the port's equivalent of a
+  /// run is this whole pass, not an individual table pull, so it is recorded
+  /// here rather than inside `SyncNotifier.sync`. Recorded when at least one
+  /// area succeeded: the Kotlin records unconditionally at the end of its sync,
+  /// but its sync aborts on failure, so a pass where every area failed has no
+  /// Kotlin counterpart to be faithful to.
+  Future<void> _recordSyncActivity() async {
+    if (state.successCount == 0) return;
+    await ref.read(activityLogProvider).recordSyncActivity();
   }
 
   Future<void> _syncArea(DashboardSyncArea area) async {

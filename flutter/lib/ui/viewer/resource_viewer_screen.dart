@@ -10,6 +10,7 @@ import '../../core/files/resource_files.dart';
 import '../../core/network/network_result.dart';
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/activities_provider.dart';
 import '../../providers/app_providers.dart';
 import '../../repository/resource_downloader.dart';
 
@@ -64,6 +65,12 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
         _localPath = path;
         _loading = false;
       });
+      // Port of `ResourcesRepositoryImpl.trackResourceOpen`, which the Kotlin
+      // calls when a resource is opened. Awaited after the frame state is set
+      // so a slow write cannot delay the render.
+      if (resource != null) {
+        await ref.read(activityLogProvider).logResourceOpen(resource);
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -151,6 +158,10 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
         _localPath = data;
         _downloading = false;
       });
+      // `BaseContainerFragment` logs the download alongside starting it; the
+      // port logs it on success, so a failed fetch is not reported to the
+      // server as a download that happened.
+      await ref.read(activityLogProvider).logResourceDownload(resource);
       return;
     }
     setState(() {

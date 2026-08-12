@@ -29,8 +29,9 @@ its download path, encrypted health records, the chat and feedback sync-in direc
 upload, member registration, team and public survey sharing, personal-note attachments, and the
 completed home dashboard — completed-course stars, the server-reachability ring, team alert
 badges, offline-login counting with its activity chart, survey remind-later, and the language
-action — have landed. Everything below in this document describes the Kotlin app and still
-applies to it.
+action — and the activity log (resource opens/downloads, course visits, completed syncs) with the
+four-database upload path that carries it and the profile stats that read it, have landed.
+Everything below in this document describes the Kotlin app and still applies to it.
 
 See **`docs/kotlin-to-flutter-migration.md`** for scope, the technology mapping (Hilt→Riverpod,
 Room→Drift, Retrofit→Dio, strings.xml→.arb), and the open problems. The `WorkManager` gap is

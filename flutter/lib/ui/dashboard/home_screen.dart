@@ -15,6 +15,7 @@ import '../../providers/settings_provider.dart';
 import '../../providers/sync_state.dart';
 import '../../repository/notifications_repository.dart';
 import '../components/guest_dialog.dart';
+import '../components/relative_time.dart';
 import '../life/life_features.dart';
 import '../router.dart';
 import 'dashboard_drawer.dart';
@@ -566,7 +567,7 @@ class _LastSyncStrip extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final value = timestamp <= 0
         ? l10n.neverSynced
-        : _relativeSyncTime(
+        : relativeTimeLabel(
             l10n,
             DateTime.now().millisecondsSinceEpoch - timestamp,
           );
@@ -584,17 +585,6 @@ class _LastSyncStrip extends StatelessWidget {
       ),
     );
   }
-}
-
-String _relativeSyncTime(AppLocalizations l10n, int elapsedMillis) {
-  if (elapsedMillis <= 0 ||
-      elapsedMillis < const Duration(minutes: 1).inMilliseconds) {
-    return l10n.justNow;
-  }
-  final elapsed = Duration(milliseconds: elapsedMillis);
-  if (elapsed.inHours < 1) return l10n.minutesAgo(elapsed.inMinutes);
-  if (elapsed.inDays < 1) return l10n.hoursAgo(elapsed.inHours);
-  return l10n.daysAgo(elapsed.inDays);
 }
 
 /// The profile card: avatar ringed by the server-reachability colour, full name

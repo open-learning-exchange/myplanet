@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 33 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 34 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -33,9 +33,10 @@ Known gaps:
   port.
 - The dashboard's About and Disclaimer destinations are unported — static translated HTML with
   no logic (see Phase 33).
-- Offline activity rows are recorded but never uploaded: Kotlin carries them to the server with
-  `UploadManager`'s `activities` upload, which the port has no equivalent for. Only `login`
-  rows are written at all; resource-open and rating activity are not logged.
+- Device and tablet usage telemetry (`myplanet_activities`, `MyPlanet.getTabletUsages`) is
+  unported: it needs a device-info plugin, and the same absence is why the activity documents
+  the port posts omit the `androidId`/`deviceName`/`customDeviceName` trio. Challenge actions
+  (`user_challenge_actions`) are unported because the challenge feature has no screen here.
 
 - **Phase 1** -- skeleton plus the server configuration → login → resources slice.
 - **Phase 2** -- dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -289,6 +290,72 @@ HTML bodies in `strings.xml` (1.8 KB and 6.8 KB, translated into five languages)
 all, and porting ~43 KB of translated markup earns less than anything else left on the list.
 OS-scheduled background sync remains out of scope for the same reason it always has.
 
+## Phase 34 — the activity log, and something that leaves it
+
+`offline_activity` arrived in Phase 33 with a writer (`SessionNotifier`) and two readers (the
+dashboard count, the activity chart) and no way off the device. It was the last table in the port
+in that shape, and the reason it was on the preserved list. The rest of
+`ActivitiesRepositoryImpl` is now ported with it.
+
+**What is logged.** Three kinds, all of which the Kotlin records and none of which the port did:
+
+- **Resource opens and downloads** (`resource_activity`), from the viewer —
+  `ResourcesRepositoryImpl.trackResourceOpen` for `visit`, `BaseContainerFragment` for
+  `download`. The Kotlin logs a download when the fetch *starts*; the port logs it on success, so
+  a failed download is not reported to the server as one that happened.
+- **Course visits** (`course_activity`), once per take-course open. `TakeCourseFragment` logs from
+  `setData`, which a rebuild can run again; a mount-scoped flag is what "a visit" means.
+- **Completed syncs** (`resource_activity`, type `sync`), from the dashboard Sync center. Kotlin
+  records one row per `SyncManager` run, and the port's equivalent of a run is the whole
+  sequential pass rather than one table pull. Recorded only when at least one area succeeded:
+  the Kotlin records unconditionally at the end of a sync that aborts on failure, so an
+  all-failed pass has no counterpart to be faithful to.
+
+**What leaves.** `ActivitiesUploader` registers four outbox handlers, one per destination
+database — `login_activities`, `resource_activities`, `admin_activities` (the `sync` rows) and
+`course_activities`. They are separate `uploadType`s rather than one type with a variable
+endpoint because the handler has to know which table to mark, and a `sync` row and a `visit` row
+share a table while going to different databases. `pendingUploads`/`pendingSyncUploads` partition
+that table on the same predicate the Kotlin's two configs differ by, so no row is posted twice.
+
+**What the profile now shows.** `UserProfileViewModel`'s stats had no port: last login (global,
+with no user predicate — that is the Kotlin's), total visits, most-opened resource, and the
+resource-open count. `getMostOpenedResource`'s title filter is reproduced, so an untitled resource
+cannot win the row. The Kotlin renders every row with `Utilities.checkNA`; here an absent value
+drops its row and an empty log drops the whole card, rather than showing a column of zeroes on a
+fresh install. `TimeUtils.getRelativeTime` became the shared `relativeTimeLabel`, which the
+dashboard's last-sync strip already had a private copy of.
+
+Three things worth knowing about the shape of the Kotlin here, two of them deliberate
+divergences:
+
+- **`changeRev` reads the wrong keys.** It pulls `_id`/`_rev` out of a CouchDB insert response,
+  which carries `id`/`rev`; through `JsonUtils.getString` those misses become `""`. The row does
+  drop out of `getPendingLoginUploads` (`""` is not null, so it is not re-posted) but the document
+  can never be updated again. The port records the real values and treats a response without them
+  as an error, as every other uploader here does.
+- **`serializeLoginActivities` writes the logout timestamp as `_id`.** `ob.addProperty("_id",
+  activity.logoutTime)`. It is unreachable — the rows it serializes are exactly those with a null
+  `_rev`, and nothing sets `_id` without also setting `_rev` — so the branch is omitted rather
+  than reproduced. Reproducing a nonsense document id on the chance it is reached would corrupt
+  the document.
+- **The guest exclusion is real and load-bearing.** `getUnuploadedLoginActivities` drops rows with
+  a null or `guest`-prefixed `userId`, because a guest has no CouchDB user document for the server
+  to attribute the session to. Expressed in SQL here, as `CourseProgressDao.getPendingUploads`
+  already does, and repeated at the write site so no caller can log an unattributable row.
+
+`resource_activity` and `course_activity` join the preserved set. The test is the one this doc
+already states — *can a sync restore this?* — and the answer is no in both directions: a pending
+row exists nowhere else, and `resource_activities`, `admin_activities` and `course_activities` are
+write-only from this app's side.
+
+One defect was fixed on the way in rather than shipped: the row-id minter derived its key from
+`DateTime.now().microsecondsSinceEpoch` alone, and two opens minted in the same microsecond
+collide on a primary key — so the second `insertOnConflictUpdate` silently overwrote the first
+open instead of recording a second one. That is the same defect the chat and feedback
+`_generateId` helpers shipped with; a monotonic counter is now part of the key, and the
+most-opened-resource test pins it by logging the same resource twice in a row.
+
 ## Harvesting upstream: the 2026-08-12 rebase
 
 Rebased onto master again (8 new Kotlin commits, clean replay). Five changed behavior; four
@@ -417,6 +484,8 @@ not built, or needs a primitive the port lacks):
 | Feedback | `Feedback`, `FeedbackReply`, `FeedbackDao`, `FeedbackRepositoryImpl`, `FeedbackListFragment`, `FeedbackFragment`, `FeedbackDetailActivity` | `data/local/feedback_mapper.dart`, `repository/feedback_repository.dart`, `repository/feedback_repository_impl.dart`, `ui/feedback/` |
 | Community (leaders, services, bottom sheet) | `CommunityTabFragment`, `LeadersFragment`, `CommunityServicesFragment`, `HomeCommunityDialogFragment`, `CommunityLeadersAdapter`, `CommunityPagerAdapter` | `ui/community/`, `core/prefs/planet_prefs.dart` (communityLeaders, communityName, planetType) |
 | Exam (graded course exams) | `StepExam`, `ExamQuestion`, `ExamTakingFragment`, `UserInformationFragment`, `BaseExamFragment` | `data/local/exam_mapper.dart`, `data/local/tables.dart` (Exams, ExamQuestions), `ui/exam/` |
+| Activity log (logins, resource opens, course visits, syncs) | `ActivitiesRepositoryImpl`, `OfflineActivity`/`ResourceActivity`/`CourseActivity`, `UserSessionManager.setResourceOpenCount`, `UploadConfigs.ResourceActivities`/`ResourceActivitiesSync`/`CourseActivities` | `repository/activities_repository.dart`, `repository/activities_uploader.dart`, `providers/activities_provider.dart` |
+| Profile activity stats | `UserProfileViewModel` (lastVisit, offlineVisits, maxOpenedResource), `UserProfileFragment.createStatsMap`, `TimeUtils.getRelativeTime` | `ui/user/profile_screen.dart`, `ui/components/relative_time.dart` |
 
 `SharedPrefManager.getFirstLaunch()` is misleadingly named: it defaults to `false` and is set to
 `true` once onboarding finishes, so it actually means "onboarding already done". The port stores
@@ -911,6 +980,6 @@ succeeds, it just doesn't do what the Kotlin did.
 
 ---
 
-**Last updated**: 2026-08-12 (Phase 32 complete)
-**Phase**: 32 of N (27 of 28 UI packages have a screen — see Status for what that does and does
+**Last updated**: 2026-08-12 (Phase 34 complete)
+**Phase**: 34 of N (27 of 28 UI packages have a screen — see Status for what that does and does
 not mean)
