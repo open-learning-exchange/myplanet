@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../providers/app_providers.dart';
 import '../../providers/teams_provider.dart';
 import '../../providers/voices_provider.dart';
 import '../router.dart';
@@ -24,6 +25,22 @@ class TeamVoicesScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final team = ref.watch(teamProvider(teamId)).valueOrNull;
     final voices = ref.watch(teamVoicesProvider(teamId));
+
+    // Opening this screen is what clears the dashboard's chat badge for the
+    // team: `TeamsVoicesViewModel.getFilteredNews` moves the watermark to the
+    // post count it just read, and the badge is `lastCount < currentCount`.
+    // Without this the badge could never clear — and, since `hasChat` requires
+    // a watermark row to exist at all, could never appear either.
+    // The `watch` above starts the subscription, so the first emission arrives
+    // after this build and the listener catches it; a later post re-emits and
+    // moves the watermark again.
+    ref.listen(teamVoicesProvider(teamId), (previous, next) {
+      final rows = next.valueOrNull;
+      if (rows == null) return;
+      ref
+          .read(notificationsRepositoryProvider)
+          .updateTeamNotification(teamId, rows.length);
+    });
     final memberships =
         ref.watch(teamMembershipsProvider).valueOrNull ?? const {};
     final membership = memberships[teamId];
