@@ -870,6 +870,80 @@ class CourseProgress extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+/// Port of `model/OfflineActivity.kt` (`@Entity(tableName = "offline_activity")`).
+///
+/// The device's own record of what the user did while offline. Only the `login`
+/// rows are read here — the dashboard's offline-login count and the activity
+/// chart — but the table keeps the Kotlin's shape so a later slice can record
+/// resource opens and carry all of it to `UploadManager`'s `activities` upload.
+///
+/// Preserved across a schema bump (see [AppDatabase.localAuthorityTables]): the
+/// port has no activities uploader yet, so these rows exist nowhere but this
+/// table and no sync can give them back.
+@DataClassName('OfflineActivityRow')
+@TableIndex(name: 'offline_activity_user_name', columns: {#userName})
+@TableIndex(name: 'offline_activity_type', columns: {#type})
+@TableIndex(name: 'offline_activity_login_time', columns: {#loginTime})
+class OfflineActivities extends Table {
+  @override
+  String get tableName => 'offline_activity';
+
+  /// Locally-minted UUID. `_id`/`_rev` stay null until an upload path exists —
+  /// the Kotlin sets them explicitly to null when logging a login, too.
+  TextColumn get id => text()();
+  TextColumn get couchId => text().named('_id').nullable()();
+  TextColumn get rev => text().named('_rev').nullable()();
+  TextColumn get userName => text().nullable()();
+  TextColumn get userId => text().nullable()();
+
+  /// `login` for the rows this slice writes — `UserSessionManager.KEY_LOGIN`.
+  TextColumn get type => text().nullable()();
+  TextColumn get description => text().nullable()();
+
+  /// The user's planet code, not a timestamp, matching the Kotlin's
+  /// `createdOn = planetCode`.
+  TextColumn get createdOn => text().nullable()();
+  TextColumn get parentCode => text().nullable()();
+
+  /// Nullable in the Kotlin entity and nullable here: `ActivitiesFragment`
+  /// filters logins with `mapNotNull { it.loginTime }`, so a row without one
+  /// must be representable.
+  IntColumn get loginTime => integer().nullable()();
+  IntColumn get logoutTime => integer().nullable()();
+  TextColumn get androidId => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Port of `model/TeamNotification.kt` (`@Entity(tableName = "team_notification")`).
+///
+/// One row per team per notification type, holding the chat count as of the
+/// last time the user looked. The dashboard's chat badge is
+/// `lastCount < currentCount`, so this is the "seen" watermark.
+///
+/// Deliberately **not** preserved across a schema bump, matching the Kotlin —
+/// Room drops this table too under `fallbackToDestructiveMigration`. Losing a
+/// watermark row makes `getTeamNotifications` read `notification == null`,
+/// which suppresses the badge until the user next opens that team's voices;
+/// nothing the user authored is lost.
+@DataClassName('TeamNotificationRow')
+@TableIndex(name: 'team_notification_type', columns: {#type})
+class TeamNotifications extends Table {
+  @override
+  String get tableName => 'team_notification';
+
+  TextColumn get id => text()();
+  TextColumn get type => text().nullable()();
+
+  /// The team's `_id` for the `chat` type.
+  TextColumn get parentId => text().nullable()();
+  IntColumn get lastCount => integer().withDefault(const Constant(0))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 /// Port of `model/Certification.kt` (`@Entity(tableName = "certification")`).
 ///
 /// Read-only sync data; `courseIds` stores the certification's course-id array

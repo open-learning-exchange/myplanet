@@ -23,10 +23,49 @@ class SessionNotifier extends AsyncNotifier<UserRow?> {
     if (password != null) {
       await prefs.savePassword(password);
     }
+    await _logLogin(user);
     state = AsyncData(user);
   }
 
+  /// Port of `UserSessionManager.onLoginAsync`, which every login path calls
+  /// (`LoginActivity`, `SyncActivity`, and the guest path) once credentials
+  /// check out.
+  ///
+  /// Failure is swallowed: the Kotlin runs this on `applicationScope` with its
+  /// own try/catch, so a failed write never blocks the sign-in. Losing an
+  /// activity row costs a number on the dashboard; failing the login would cost
+  /// the session.
+  Future<void> _logLogin(UserRow user) async {
+    final userName = user.name;
+    if (userName == null || userName.isEmpty) return;
+    try {
+      await ref
+          .read(activitiesRepositoryProvider)
+          .logLogin(
+            id: 'login:${DateTime.now().microsecondsSinceEpoch}',
+            userId: user.id,
+            userName: userName,
+            parentCode: user.parentCode,
+            planetCode: user.planetCode,
+            loginTime: DateTime.now().millisecondsSinceEpoch,
+          );
+    } catch (_) {
+      // Deliberately ignored — see above.
+    }
+  }
+
   Future<void> signOut() async {
+    // Stamps the logout time before the session goes, mirroring
+    // `UserSessionManager.logoutAsync`. Swallowed for the same reason as the
+    // login write: a failed stamp must not strand the user in a signed-in
+    // state they asked to leave.
+    try {
+      await ref
+          .read(activitiesRepositoryProvider)
+          .logLogout(DateTime.now().millisecondsSinceEpoch);
+    } catch (_) {
+      // Deliberately ignored.
+    }
     await ref.read(planetPrefsProvider).clearSession();
     state = const AsyncData(null);
   }

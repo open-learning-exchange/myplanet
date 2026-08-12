@@ -360,6 +360,50 @@ void main() {
     expect(await database.chatDao.getPending(), isEmpty);
   });
 
+  test('an offline login record survives a schema upgrade', () async {
+    // The port has no activities uploader, so this row exists nowhere else. A
+    // drop would silently reset the dashboard's login count and empty the
+    // activity chart.
+    await database.offlineActivityDao.insert(
+      OfflineActivitiesCompanion.insert(
+        id: 'login-1',
+        userName: const Value('ada'),
+        userId: const Value('user-1'),
+        type: const Value('login'),
+        loginTime: const Value(1000),
+      ),
+    );
+
+    await runUpgrade();
+
+    expect(
+      await database.offlineActivityDao.countByUserNameAndType('ada', 'login'),
+      1,
+    );
+  });
+
+  test('a team chat watermark is dropped, as Room drops it', () async {
+    // Deliberately *not* preserved: the Kotlin's Room database drops
+    // `team_notification` too. Losing the watermark only suppresses a badge
+    // until the user next opens that team's voices.
+    await database.teamNotificationDao.upsert(
+      TeamNotificationsCompanion.insert(
+        id: 'team-1:chat',
+        parentId: const Value('team-1'),
+        type: const Value('chat'),
+        lastCount: const Value(5),
+      ),
+    );
+
+    await runUpgrade();
+
+    // `isNull` would be ambiguous here — drift's query builder exports one too.
+    expect(
+      await database.teamNotificationDao.findByParentAndType('team-1', 'chat'),
+      null,
+    );
+  });
+
   test('every preserved table has a preservation test', () {
     // `my_life` and the submissions tables were added to the preserved set
     // without one. This fails the moment another name is added, so the next
@@ -381,6 +425,7 @@ void main() {
       'health_examinations',
       'users',
       'course_progress',
+      'offline_activity',
     };
     expect(
       AppDatabase.localAuthorityTables,

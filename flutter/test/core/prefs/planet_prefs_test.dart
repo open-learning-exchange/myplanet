@@ -59,4 +59,93 @@ void main() {
       expect(sharedPreferences.getInt('LastSync'), 123456789);
     },
   );
+
+  group('survey reminders', () {
+    Future<PlanetPrefs> prefs() async {
+      SharedPreferences.setMockInitialValues({});
+      return PlanetPrefs(
+        await SharedPreferences.getInstance(),
+        secureStorage: _MockSecureStorage(),
+      );
+    }
+
+    test('a scheduled reminder is recorded against its id set', () async {
+      final planetPrefs = await prefs();
+
+      expect(planetPrefs.isReminderScheduled('a,b'), isFalse);
+
+      await planetPrefs.scheduleSurveyReminder(
+        'a,b',
+        const Duration(minutes: 30),
+      );
+
+      expect(planetPrefs.isReminderScheduled('a,b'), isTrue);
+      // A different set is a different reminder, which is why the ids are the
+      // key suffix rather than a single "snoozed" flag.
+      expect(planetPrefs.isReminderScheduled('a'), isFalse);
+    });
+
+    test('a reminder comes due only once its time passes', () async {
+      final planetPrefs = await prefs();
+      await planetPrefs.scheduleSurveyReminder(
+        'a,b',
+        const Duration(minutes: 30),
+      );
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      expect(await planetPrefs.takeDueSurveyReminders(now), isEmpty);
+
+      final afterwards = now + const Duration(minutes: 31).inMilliseconds;
+      expect(await planetPrefs.takeDueSurveyReminders(afterwards), ['a,b']);
+    });
+
+    test('taking a due reminder clears it, so it fires once', () async {
+      final planetPrefs = await prefs();
+      await planetPrefs.scheduleSurveyReminder('a,b', Duration.zero);
+      final now = DateTime.now().millisecondsSinceEpoch + 1;
+
+      expect(await planetPrefs.takeDueSurveyReminders(now), ['a,b']);
+      expect(await planetPrefs.takeDueSurveyReminders(now), isEmpty);
+      expect(planetPrefs.isReminderScheduled('a,b'), isFalse);
+    });
+
+    test('unrelated preferences are not mistaken for reminders', () async {
+      SharedPreferences.setMockInitialValues({
+        'themeMode': 'dark',
+        'LastSync': 42,
+      });
+      final planetPrefs = PlanetPrefs(
+        await SharedPreferences.getInstance(),
+        secureStorage: _MockSecureStorage(),
+      );
+
+      expect(
+        await planetPrefs.takeDueSurveyReminders(
+          DateTime.now().millisecondsSinceEpoch,
+        ),
+        isEmpty,
+      );
+      expect(planetPrefs.themeModeName, 'dark');
+    });
+  });
+
+  test('the language override defaults to unset and can be cleared', () async {
+    SharedPreferences.setMockInitialValues({});
+    final sharedPreferences = await SharedPreferences.getInstance();
+    final prefs = PlanetPrefs(
+      sharedPreferences,
+      secureStorage: _MockSecureStorage(),
+    );
+
+    expect(prefs.languageCode, null);
+
+    await prefs.setLanguageCode('es');
+    expect(prefs.languageCode, 'es');
+    // The key matches the Kotlin's, which `LocaleUtils` reads.
+    expect(sharedPreferences.getString('language'), 'es');
+
+    await prefs.setLanguageCode(null);
+    expect(prefs.languageCode, null);
+    expect(sharedPreferences.containsKey('language'), isFalse);
+  });
 }

@@ -6,6 +6,7 @@ import '../core/sync/server_url_mapper.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
+import '../repository/activities_repository.dart';
 import '../repository/chat_repository.dart';
 import '../repository/chat_repository_impl.dart';
 import '../repository/chat_uploader.dart';
@@ -167,6 +168,18 @@ final certificationDaoProvider = Provider<CertificationDao>(
   (ref) => ref.watch(appDatabaseProvider).certificationDao,
 );
 
+final offlineActivityDaoProvider = Provider<OfflineActivityDao>(
+  (ref) => ref.watch(appDatabaseProvider).offlineActivityDao,
+);
+
+final teamNotificationDaoProvider = Provider<TeamNotificationDao>(
+  (ref) => ref.watch(appDatabaseProvider).teamNotificationDao,
+);
+
+final activitiesRepositoryProvider = Provider<ActivitiesRepository>(
+  (ref) => ActivitiesRepository(ref.watch(offlineActivityDaoProvider)),
+);
+
 final resourceDownloaderProvider = Provider<ResourceDownloader>(
   (ref) => ResourceDownloader(
     ref.watch(planetApiProvider),
@@ -280,7 +293,12 @@ final dictionaryRepositoryProvider = Provider<DictionaryRepository>(
 );
 
 final notificationsRepositoryProvider = Provider<NotificationsRepository>(
-  (ref) => NotificationsRepository(ref.watch(notificationDaoProvider)),
+  (ref) => NotificationsRepository(
+    ref.watch(notificationDaoProvider),
+    teamNotificationDao: ref.watch(teamNotificationDaoProvider),
+    newsDao: ref.watch(newsDaoProvider),
+    teamTaskDao: ref.watch(teamTaskDaoProvider),
+  ),
 );
 
 final lifeRepositoryProvider = Provider<LifeRepository>(

@@ -40,10 +40,19 @@ class PlanetPrefs {
   static const String _keyLoggedInUserId = 'loggedInUserId';
   static const String _keyOnboardingComplete = 'onboardingComplete';
   static const String _keyThemeMode = 'themeMode';
+
+  /// Matches the Kotlin's `language` preference key, read by `LocaleUtils`.
+  static const String _keyLanguage = 'language';
   static const String _keyCommunityLeaders = 'communityLeaders';
   static const String _keyCommunityName = 'communityName';
   static const String _keyPlanetType = 'planetType';
   static const String _keyLastSurveyDialog = 'lastSurveyDialogShown';
+
+  /// Prefix of the per-reminder keys, matching the Kotlin's
+  /// `reminder_time_<surveyIds>` in its `survey_reminders` preferences file.
+  /// The Kotlin scans `reminderPrefs.all` for this prefix; the port scans
+  /// `getKeys()` on the one shared preferences store for the same thing.
+  static const String _keyReminderTimePrefix = 'reminder_time_';
   static const String _keyLastSync = 'LastSync';
 
   static const String _secureKeyServerPin = 'serverPin';
@@ -148,6 +157,20 @@ class PlanetPrefs {
   Future<void> setThemeModeName(String value) =>
       _prefs.setString(_keyThemeMode, value);
 
+  /// The chosen language override, or null to follow the device.
+  ///
+  /// Port of the `language` preference `LocaleUtils` reads. Stored as a bare
+  /// code so `lib/core/` keeps its no-Flutter rule and never sees a `Locale`.
+  String? get languageCode => _prefs.getString(_keyLanguage);
+
+  Future<void> setLanguageCode(String? code) async {
+    if (code == null) {
+      await _prefs.remove(_keyLanguage);
+      return;
+    }
+    await _prefs.setString(_keyLanguage, code);
+  }
+
   Future<void> setLoggedInUserId(String? userId) async {
     if (userId == null) {
       await _prefs.remove(_keyLoggedInUserId);
@@ -205,4 +228,44 @@ class PlanetPrefs {
 
   Future<void> setLastSync(int epochMillis) =>
       _prefs.setInt(_keyLastSync, epochMillis);
+
+  /// Port of `SurveysRepositoryImpl.scheduleSurveyReminder`.
+  ///
+  /// [surveyIds] is the comma-joined submission id list the dialog was showing,
+  /// used verbatim as the key suffix so the reminder re-opens the same set. The
+  /// Kotlin also writes a `reminder_surveys_<ids>` string holding the same ids
+  /// it already encoded in the key; that second key is never read, so it is not
+  /// ported.
+  Future<void> scheduleSurveyReminder(String surveyIds, Duration delay) =>
+      _prefs.setInt(
+        '$_keyReminderTimePrefix$surveyIds',
+        DateTime.now().add(delay).millisecondsSinceEpoch,
+      );
+
+  /// Port of `SurveysRepositoryImpl.isReminderScheduled` — the guard that stops
+  /// the hourly dialog from reappearing for a set the user has snoozed.
+  bool isReminderScheduled(String surveyIds) =>
+      _prefs.containsKey('$_keyReminderTimePrefix$surveyIds');
+
+  /// Reminder id-sets whose time has arrived, clearing them as it reports them.
+  ///
+  /// Port of the body of `SurveysRepositoryImpl.dueRemindersFlow`, minus its
+  /// `while (true) { … delay(60_000) }` loop — the polling belongs to the
+  /// caller (`dueSurveyRemindersProvider`) so this stays synchronous and
+  /// testable. Reading and removing together matches the Kotlin, which removes
+  /// each key in the same pass that emits it, so a reminder fires once.
+  Future<List<String>> takeDueSurveyReminders(int nowMillis) async {
+    final due = <String>[];
+    for (final key in _prefs.getKeys()) {
+      if (!key.startsWith(_keyReminderTimePrefix)) continue;
+      final at = _prefs.getInt(key) ?? 0;
+      if (at <= nowMillis) {
+        due.add(key.substring(_keyReminderTimePrefix.length));
+      }
+    }
+    for (final surveyIds in due) {
+      await _prefs.remove('$_keyReminderTimePrefix$surveyIds');
+    }
+    return due;
+  }
 }

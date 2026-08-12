@@ -51,6 +51,8 @@ part 'app_database.g.dart';
     HealthExaminations,
     CourseProgress,
     Certifications,
+    OfflineActivities,
+    TeamNotifications,
   ],
   daos: [
     UserDao,
@@ -75,6 +77,8 @@ part 'app_database.g.dart';
     HealthExaminationDao,
     CourseProgressDao,
     CertificationDao,
+    OfflineActivityDao,
+    TeamNotificationDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -87,7 +91,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 26;
+  int get schemaVersion => 27;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -164,6 +168,12 @@ class AppDatabase extends _$AppDatabase {
     // stepNum) so a refilled cache row adopts the local `passed` flag rather
     // than overwriting it.
     'course_progress',
+    // The device's own log of offline logins, written by `SessionNotifier`.
+    // Kotlin uploads these through `UploadManager`'s `activities` config; the
+    // port has no activities uploader yet, so every row lives only here and a
+    // sync cannot refill them. Dropping the table would reset the user's
+    // offline-login count to zero and empty the activity chart.
+    'offline_activity',
   };
 
   @override
@@ -272,6 +282,23 @@ class TeamTaskDao extends DatabaseAccessor<AppDatabase>
       );
   Future<void> deleteById(String id) =>
       (delete(teamTasks)..where((t) => t.id.equals(id))).go();
+
+  /// Port of `TeamTaskDao.getTasksForUserBetween` — the deadline window behind
+  /// the dashboard's team task badge.
+  ///
+  /// `BETWEEN` in SQL is inclusive on both ends, and Drift's `isBetweenValues`
+  /// generates the same, so the boundary behaviour matches.
+  Future<List<TeamTaskRow>> tasksForUserBetween(
+    String userId,
+    int start,
+    int end,
+  ) =>
+      (select(teamTasks)..where(
+            (t) =>
+                t.assignee.equals(userId) &
+                t.deadline.isBetweenValues(start, end),
+          ))
+          .get();
 }
 
 /// Port of the team catalog queries in `data/room/dao/MyTeamDao.kt`.
@@ -1898,6 +1925,36 @@ class NewsDao extends DatabaseAccessor<AppDatabase> with _$NewsDaoMixin {
 
   Future<List<NewsRow>> getAll() => select(newsEntries).get();
 
+  /// Port of `NewsDao.getTeamChatViewableIds` — the team-visible post count per
+  /// team, for the dashboard's chat badge.
+  ///
+  /// The Kotlin selects the raw `viewableId` column and counts duplicates in
+  /// Dart-equivalent code (`chatCountsById[viewableId] + 1`); this groups in
+  /// SQL instead and returns the same tallies. Teams with no posts are absent
+  /// from the map, as they are absent from the Kotlin's map.
+  Future<Map<String, int>> teamChatCounts(List<String> teamIds) async {
+    if (teamIds.isEmpty) return const {};
+    final counts = <String, int>{};
+    final total = newsEntries.id.count();
+    for (final chunk in _chunked(teamIds, _sqliteVariableChunk)) {
+      final rows =
+          await (selectOnly(newsEntries)
+                ..addColumns([newsEntries.viewableId, total])
+                ..where(
+                  newsEntries.viewableBy.equals('teams') &
+                      newsEntries.viewableId.isIn(chunk),
+                )
+                ..groupBy([newsEntries.viewableId]))
+              .get();
+      for (final row in rows) {
+        final teamId = row.read(newsEntries.viewableId);
+        if (teamId == null) continue;
+        counts[teamId] = (counts[teamId] ?? 0) + (row.read(total) ?? 0);
+      }
+    }
+    return counts;
+  }
+
   /// `replyTo IS NULL OR replyTo = ''` — the Kotlin's definition of a top-level
   /// post, kept verbatim because a reply written by this app stores `''` while
   /// one synced from a server that omitted the field stores null.
@@ -2402,4 +2459,102 @@ class CertificationDao extends DatabaseAccessor<AppDatabase>
     }
     return deleted;
   }
+}
+
+/// Port of `data/room/dao/OfflineActivityDao.kt`.
+///
+/// Only the `login` rows have readers today: the dashboard's offline-login
+/// count and the activity chart's monthly buckets.
+@DriftAccessor(tables: [OfflineActivities])
+class OfflineActivityDao extends DatabaseAccessor<AppDatabase>
+    with _$OfflineActivityDaoMixin {
+  OfflineActivityDao(super.db);
+
+  Future<void> insert(OfflineActivitiesCompanion row) =>
+      into(offlineActivities).insertOnConflictUpdate(row);
+
+  /// Port of `countByUserNameAndType`, the number behind the dashboard's
+  /// "(n)" login count. Keyed on `userName`, not `userId`, exactly as the
+  /// Kotlin's `getOfflineLoginCount(userName)` is.
+  Future<int> countByUserNameAndType(String userName, String type) async {
+    final count = offlineActivities.id.count();
+    final row =
+        await (selectOnly(offlineActivities)
+              ..addColumns([count])
+              ..where(
+                offlineActivities.userName.equals(userName) &
+                    offlineActivities.type.equals(type),
+              ))
+            .getSingle();
+    return row.read(count) ?? 0;
+  }
+
+  /// Port of `observeByUserNameAndType` — the flow `ActivitiesFragment`
+  /// collects to build its chart.
+  Stream<List<OfflineActivityRow>> watchByUserNameAndType(
+    String userName,
+    String type,
+  ) =>
+      (select(offlineActivities)
+            ..where(
+              (row) => row.userName.equals(userName) & row.type.equals(type),
+            )
+            ..orderBy([(row) => OrderingTerm.asc(row.loginTime)]))
+          .watch();
+
+  /// Port of `getLatestByType`, used by `logLogout` to stamp the session that
+  /// is ending. Ordered by `loginTime` descending — the Kotlin orders by the
+  /// same column.
+  Future<OfflineActivityRow?> latestByType(String type) =>
+      (select(offlineActivities)
+            ..where((row) => row.type.equals(type))
+            ..orderBy([(row) => OrderingTerm.desc(row.loginTime)])
+            ..limit(1))
+          .getSingleOrNull();
+
+  /// Port of `updateLogoutTime`.
+  Future<void> updateLogoutTime(String id, int logoutTime) =>
+      (update(offlineActivities)..where((row) => row.id.equals(id))).write(
+        OfflineActivitiesCompanion(logoutTime: Value(logoutTime)),
+      );
+}
+
+/// Port of `data/room/dao/TeamNotificationDao.kt` — the per-team "seen" chat
+/// watermark behind the dashboard's team chat badge.
+@DriftAccessor(tables: [TeamNotifications])
+class TeamNotificationDao extends DatabaseAccessor<AppDatabase>
+    with _$TeamNotificationDaoMixin {
+  TeamNotificationDao(super.db);
+
+  /// Port of `findByParentAndType`.
+  Future<TeamNotificationRow?> findByParentAndType(
+    String parentId,
+    String type,
+  ) =>
+      (select(teamNotifications)..where(
+            (row) => row.parentId.equals(parentId) & row.type.equals(type),
+          ))
+          .getSingleOrNull();
+
+  /// Port of `getByTypeAndParentIds`, the single query
+  /// `getTeamNotifications` runs for the whole team list.
+  Future<List<TeamNotificationRow>> byTypeAndParentIds(
+    String type,
+    List<String> parentIds,
+  ) async {
+    if (parentIds.isEmpty) return const [];
+    final rows = <TeamNotificationRow>[];
+    for (final chunk in _chunked(parentIds, _sqliteVariableChunk)) {
+      rows.addAll(
+        await (select(
+              teamNotifications,
+            )..where((row) => row.type.equals(type) & row.parentId.isIn(chunk)))
+            .get(),
+      );
+    }
+    return rows;
+  }
+
+  Future<void> upsert(TeamNotificationsCompanion row) =>
+      into(teamNotifications).insertOnConflictUpdate(row);
 }
