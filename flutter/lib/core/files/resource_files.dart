@@ -47,6 +47,18 @@ class ResourceFiles {
     return file;
   }
 
+  /// The `<base>/ole` directory every downloaded resource lives under.
+  ///
+  /// Storage management scans this tree; the downloader and viewer resolve
+  /// individual files through [fileFor]. Routing all three through the same
+  /// [baseDirectory] is what keeps "where the file is" and "where storage
+  /// management looks" from drifting — the original port scanned
+  /// `Directory.current` instead, which is the CWD, not the documents dir.
+  static Future<Directory> oleDirectory() async {
+    final base = await baseDirectory();
+    return Directory(p.join(base.path, 'ole'));
+  }
+
   /// Keeps a `..` or a path separator in a server-supplied id or filename from
   /// escaping the resource directory.
   static String _segment(String raw) {

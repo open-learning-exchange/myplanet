@@ -236,9 +236,11 @@ not built, or needs a primitive the port lacks):
 
 - The rest of `82140152b`: the free-up-space button and available-space text inside the
   breakdown sheet. Free-up-space needs `FreeSpaceWorker`'s delete-and-mark-not-offline pass;
-  available space needs a disk-stats plugin. Related pre-existing stubs:
-  `storage_category_detail_screen.dart`'s `_getResourceTitlesMap` returns `{}` and
-  `_markResourcesAsNotOffline` is empty.
+  available space needs a disk-stats plugin. The category-detail stubs that blocked this are
+  now ported — `getResourceTitlesMap`, `markResourcesAsNotOffline`,
+  `getOfflineResourceItems`, and `deleteOfflineResources` live on `ResourcesRepository`, and
+  `StorageCategoryDetailScreen` reads from it (no more `_getResourceTitlesMap` returning
+  `{}` or no-op `_markResourcesAsNotOffline`).
 - `b8e98c550` / `2b39eb329`: the courses progress filter and sort toggle are not ported; when
   they are, implement the *new* semantics (progress filter over the whole library, `max`
   falling back to the step count; sort state living in the provider so it survives stream

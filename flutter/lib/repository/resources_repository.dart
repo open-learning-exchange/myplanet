@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import '../core/config/server_config.dart';
+import '../core/files/resource_files.dart';
 import '../core/network/network_result.dart';
 import '../core/sync/adaptive_batch_processor.dart';
 import '../core/sync/sync_result.dart';
@@ -7,6 +10,7 @@ import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
 import '../data/local/my_library_mapper.dart';
+import '../data/local/offline_resource_item.dart';
 import 'shelf_repository.dart';
 
 /// Port of the resources phase of `services/sync/SyncManager.kt` (phase 2) plus
@@ -35,6 +39,25 @@ class ResourcesRepository {
 
   /// Gets a single resource by its local id.
   Future<MyLibraryRow?> getById(String id) => _dao.getById(id);
+
+  /// Port of `ResourcesRepositoryImpl.getResourceTitlesMap` — maps a resource's
+  /// `resourceId` (the on-disk `docId` directory name) to its title, so storage
+  /// management can label a downloaded file. Rows without a `resourceId` are
+  /// excluded, matching `MyLibraryDao.getWithResourceId`.
+  Future<Map<String, String>> getResourceTitlesMap() async {
+    final rows = await _dao.getWithResourceId();
+    return {
+      for (final r in rows)
+        if (r.resourceId != null) r.resourceId!: r.title ?? '',
+    };
+  }
+
+  /// Port of `ResourcesRepositoryImpl.markResourcesAsNotOffline` — clears the
+  /// offline flag on library rows whose files were just deleted, so the
+  /// resources list stops offering them as available offline before the next
+  /// sync re-checks file existence.
+  Future<void> markResourcesAsNotOffline(Iterable<String> resourceIds) =>
+      _dao.markResourcesNotOffline(resourceIds.toList());
 
   /// Port of `ResourcesRepositoryImpl.removeResourcesFromShelf` (and the
   /// re-add path of `markResourcesAdded`).
@@ -171,4 +194,82 @@ class ResourcesRepository {
 
     return SyncComplete(savedIds.length);
   }
+
+  /// Port of `ResourcesRepositoryImpl.getOfflineResourceItems`.
+  ///
+  /// Walks the `ole` tree, grouping files by their `docId` directory (the
+  /// parent folder name, which is the resource id), keeping only those whose
+  /// extension matches the requested category. An empty [extensions] matches
+  /// every extension *not* in [allKnownExtensions] — the "other" bucket.
+  /// Titles come from [getResourceTitlesMap], falling back to [unknownTitle]
+  /// exactly as `R.string.storage_unknown_resource` does. Sorted by title.
+  Future<List<OfflineResourceItem>> getOfflineResourceItems({
+    required Set<String> extensions,
+    required Set<String> allKnownExtensions,
+    required String unknownTitle,
+  }) async {
+    final oleDir = await _oleDir;
+    if (!await oleDir.exists()) return const [];
+
+    final titleMap = await getResourceTitlesMap();
+    final grouped = <String, List<File>>{};
+
+    await for (final entity in oleDir.list(recursive: true)) {
+      if (entity is! File) continue;
+      final ext = entity.path.split('.').last.toLowerCase();
+      final matchesCategory = extensions.isEmpty
+          ? !allKnownExtensions.contains(ext)
+          : extensions.contains(ext);
+      if (!matchesCategory) continue;
+
+      final resourceId = entity.parent.path.split(Platform.pathSeparator).last;
+      if (resourceId.isEmpty) continue;
+      grouped.putIfAbsent(resourceId, () => []).add(entity);
+    }
+
+    return grouped.entries.map((entry) {
+      final resourceId = entry.key;
+      final files = entry.value;
+      final totalSize = files.fold<int>(0, (sum, f) => sum + f.lengthSync());
+      final stored = titleMap[resourceId];
+      final title = (stored != null && stored.isNotEmpty)
+          ? stored
+          : unknownTitle;
+      return OfflineResourceItem(
+        resourceId: resourceId,
+        title: title,
+        filePaths: files.map((f) => f.path).toList(growable: false),
+        totalSizeBytes: totalSize,
+      );
+    }).toList()..sort((a, b) => a.title.compareTo(b.title));
+  }
+
+  /// Port of `ResourcesRepositoryImpl.deleteOfflineResources`.
+  ///
+  /// Deletes each item's files, removes the `docId` directory when it is left
+  /// empty, then clears the offline flag on the matching library rows so the
+  /// resources list reflects the deletion before the next sync.
+  Future<void> deleteOfflineResources(List<OfflineResourceItem> items) async {
+    final oleDir = await _oleDir;
+    for (final item in items) {
+      for (final path in item.filePaths) {
+        final file = File(path);
+        if (await file.exists()) await file.delete();
+      }
+      final parentDir = Directory(
+        '${oleDir.path}${Platform.pathSeparator}${item.resourceId}',
+      );
+      if (await parentDir.exists()) {
+        final contents = await parentDir.list().isEmpty;
+        if (contents) await parentDir.delete();
+      }
+    }
+    final deletedIds = items.map((i) => i.resourceId).toSet();
+    await markResourcesAsNotOffline(deletedIds);
+  }
+
+  /// The `ole` directory resources are downloaded into. Resolved through
+  /// `ResourceFiles` so this stays in step with the downloader and viewer,
+  /// which are the only writers to that tree.
+  Future<Directory> get _oleDir => ResourceFiles.oleDirectory();
 }

@@ -1,11 +1,16 @@
+import 'dart:io';
+
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/network/network_result.dart';
 import 'package:myplanet/core/sync/sync_result.dart';
+import 'package:myplanet/core/files/resource_files.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/resources_repository.dart';
+import 'package:myplanet/ui/settings/storage_breakdown_screen.dart';
 
 class MockPlanetApi extends Mock implements PlanetApi {}
 
@@ -332,4 +337,143 @@ void main() {
       );
     });
   });
+
+  group('offline storage management', () {
+    late Directory tempDir;
+
+    setUp(() async {
+      tempDir = await Directory.systemTemp.createTemp('resources_storage_test');
+      ResourceFiles.baseDirectory = () async => tempDir;
+    });
+
+    tearDown(() async {
+      ResourceFiles.baseDirectory = getApplicationDocumentsDirectoryFallback;
+      if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+    });
+
+    Future<void> seedOffline({
+      required String id,
+      required String title,
+      required String filename,
+      List<int> bytes = const [1, 2, 3],
+    }) async {
+      await db.myLibraryDao.upsertAll([
+        MyLibraryTableCompanion.insert(
+          id: id,
+          couchId: Value(id),
+          resourceId: Value(id),
+          title: Value(title),
+          filename: Value(filename),
+          resourceOffline: const Value(true),
+          resourceLocalAddress: Value('${tempDir.path}/ole/$id/$filename'),
+        ),
+      ]);
+      final dir = Directory('${tempDir.path}/ole/$id');
+      await dir.create(recursive: true);
+      await File('${dir.path}/$filename').writeAsBytes(bytes);
+    }
+
+    test('getResourceTitlesMap maps resourceId to title', () async {
+      await seedOffline(id: 'res-1', title: 'Algebra', filename: 'a.pdf');
+      await seedOffline(id: 'res-2', title: 'Biology', filename: 'b.mp4');
+
+      final titles = await repository.getResourceTitlesMap();
+
+      expect(titles, {'res-1': 'Algebra', 'res-2': 'Biology'});
+    });
+
+    test(
+      'getOfflineResourceItems groups files by docId and resolves titles',
+      () async {
+        await seedOffline(
+          id: 'res-1',
+          title: 'Algebra',
+          filename: 'lecture.mp4',
+        );
+        await seedOffline(id: 'res-2', title: 'Biology', filename: 'notes.pdf');
+        await seedOffline(
+          id: 'res-3',
+          title: 'Unknown on disk',
+          filename: 'gone.pdf',
+        );
+        // A file with no matching library row falls back to the unknown label.
+        await Directory('${tempDir.path}/ole/orphan').create(recursive: true);
+        await File('${tempDir.path}/ole/orphan/lost.mp4').writeAsBytes([9]);
+
+        final items = await repository.getOfflineResourceItems(
+          extensions: videoExtensions,
+          allKnownExtensions: allKnownExtensions,
+          unknownTitle: 'Unknown resource',
+        );
+
+        expect(items, hasLength(2));
+        final titles = items.map((i) => i.title).toList();
+        expect(titles, containsAll(['Algebra', 'Unknown resource']));
+        final algebra = items.firstWhere((i) => i.resourceId == 'res-1');
+        expect(algebra.filePaths, hasLength(1));
+        expect(algebra.totalSizeBytes, 3);
+      },
+    );
+
+    test(
+      'getOfflineResourceItems routes non-matching extensions to the other bucket',
+      () async {
+        await seedOffline(
+          id: 'res-1',
+          title: 'Algebra',
+          filename: 'lecture.mp4',
+        );
+
+        final items = await repository.getOfflineResourceItems(
+          extensions: pdfExtensions,
+          allKnownExtensions: allKnownExtensions,
+          unknownTitle: 'Unknown resource',
+        );
+
+        expect(items, isEmpty);
+      },
+    );
+
+    test(
+      'deleteOfflineResources removes files and clears the offline flag',
+      () async {
+        await seedOffline(
+          id: 'res-1',
+          title: 'Algebra',
+          filename: 'lecture.mp4',
+        );
+        final items = await repository.getOfflineResourceItems(
+          extensions: videoExtensions,
+          allKnownExtensions: allKnownExtensions,
+          unknownTitle: 'Unknown resource',
+        );
+
+        await repository.deleteOfflineResources(items);
+
+        expect(
+          File('${tempDir.path}/ole/res-1/lecture.mp4').existsSync(),
+          isFalse,
+        );
+        expect(Directory('${tempDir.path}/ole/res-1').existsSync(), isFalse);
+        final row = await db.myLibraryDao.getById('res-1');
+        expect(row!.resourceOffline, isFalse);
+      },
+    );
+
+    test(
+      'markResourcesAsNotOffline clears the flag without touching files',
+      () async {
+        await seedOffline(id: 'res-1', title: 'Algebra', filename: 'a.pdf');
+
+        await repository.markResourcesAsNotOffline(['res-1']);
+
+        final row = await db.myLibraryDao.getById('res-1');
+        expect(row!.resourceOffline, isFalse);
+        expect(File('${tempDir.path}/ole/res-1/a.pdf').existsSync(), isTrue);
+      },
+    );
+  });
 }
+
+Future<Directory> getApplicationDocumentsDirectoryFallback() async =>
+    Directory.systemTemp;

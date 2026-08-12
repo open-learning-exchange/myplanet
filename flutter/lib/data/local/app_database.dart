@@ -659,6 +659,45 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
           resourceOffline: Value(false),
         ),
       );
+
+  /// Port of `MyLibraryDao.getWithResourceId` — every library row that carries
+  /// a `resourceId`, so storage management can resolve a file's on-disk
+  /// `docId` directory back to a title.
+  Future<List<MyLibraryRow>> getWithResourceId() =>
+      (select(myLibraryTable)..where((r) => r.resourceId.isNotNull())).get();
+
+  /// Port of `MyLibraryDao.getOfflineByResourceIds` — rows currently marked
+  /// offline for a set of resource ids, so a delete can clear exactly those
+  /// flags. Chunked for the same reason as [deleteNotIn].
+  Future<List<MyLibraryRow>> getOfflineByResourceIds(
+    List<String> resourceIds,
+  ) async {
+    final rows = <MyLibraryRow>[];
+    for (final chunk in _chunked(resourceIds, _sqliteVariableChunk)) {
+      rows.addAll(
+        await (select(myLibraryTable)..where(
+              (r) => r.resourceId.isIn(chunk) & r.resourceOffline.equals(true),
+            ))
+            .get(),
+      );
+    }
+    return rows;
+  }
+
+  /// Clears the offline flag for a set of resource ids. Port of
+  /// `ResourcesRepositoryImpl.markResourcesAsNotOffline`, which upserts the
+  /// fetched rows with `resourceOffline = false`. Done in chunks because the
+  /// set of ids can exceed SQLite's bound-variable limit.
+  Future<void> markResourcesNotOffline(List<String> resourceIds) async {
+    if (resourceIds.isEmpty) return;
+    final rows = await getOfflineByResourceIds(resourceIds);
+    if (rows.isEmpty) return;
+    await upsertAll(
+      rows
+          .map((r) => r.copyWith(resourceOffline: false).toCompanion(true))
+          .toList(growable: false),
+    );
+  }
 }
 
 /// Comfortably under SQLite's 999-variable floor.
