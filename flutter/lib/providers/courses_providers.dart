@@ -118,10 +118,36 @@ class CourseSyncNotifier extends SyncNotifier {
   Future<SyncResult> runSync(
     ServerConfig config,
     void Function(SyncProgress) onProgress,
-  ) {
-    return ref
-        .read(coursesRepositoryProvider)
-        .sync(config: config, onProgress: onProgress);
+  ) async {
+    final courses = ref.read(coursesRepositoryProvider);
+    final progress = ref.read(progressRepositoryProvider);
+
+    // The three CouchDB caches are independent tables, so the pulls run
+    // concurrently. A "sync courses" refreshes progress and certifications in
+    // the same pass — the take-course view reads them together, and a stale
+    // `certification` row is what gates the "certified" badge.
+    final courseResult = courses.sync(config: config, onProgress: onProgress);
+    final progressResult = progress.syncCourseProgress(
+      config: config,
+      onProgress: onProgress,
+    );
+    final certResult = progress.syncCertifications(
+      config: config,
+      onProgress: onProgress,
+    );
+
+    final [a, b, c] = await Future.wait([
+      courseResult,
+      progressResult,
+      certResult,
+    ]);
+    final totalSaved = [
+      a,
+      b,
+      c,
+    ].fold<int>(0, (sum, r) => sum + (r is SyncComplete ? r.savedCount : 0));
+    final failed = [a, b, c].whereType<SyncFailed>().firstOrNull;
+    return failed ?? SyncComplete(totalSaved);
   }
 }
 
