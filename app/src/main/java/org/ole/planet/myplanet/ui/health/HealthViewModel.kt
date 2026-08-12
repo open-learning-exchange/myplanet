@@ -10,10 +10,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.HealthRepository
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.HealthRecord
+import android.text.TextUtils
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 
 @HiltViewModel
 class HealthViewModel @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val healthRepository: HealthRepository
 ) : ViewModel() {
 
     private val _healthData = MutableStateFlow<HealthData?>(null)
@@ -24,6 +31,73 @@ class HealthViewModel @Inject constructor(
 
     private val _isSaved = MutableStateFlow(false)
     val isSaved: StateFlow<Boolean> = _isSaved.asStateFlow()
+
+
+    private val _patientList = MutableStateFlow<List<UserEntity>>(emptyList())
+    val patientList: StateFlow<List<UserEntity>> = _patientList.asStateFlow()
+
+    private val _patientDetailState = MutableStateFlow(PatientDetailState(null, null))
+    val patientDetailState: StateFlow<PatientDetailState> = _patientDetailState.asStateFlow()
+
+    private val _isListLoading = MutableStateFlow(false)
+    val isListLoading: StateFlow<Boolean> = _isListLoading.asStateFlow()
+
+
+
+
+    private val _loggedInUser = MutableStateFlow<UserEntity?>(null)
+    val loggedInUser: StateFlow<UserEntity?> = _loggedInUser.asStateFlow()
+
+    private var searchJob: Job? = null
+    private var selectPatientJob: Job? = null
+
+    fun loadPatients(sortBy: String = "joinDate", descending: Boolean = true) {
+        viewModelScope.launch {
+            _patientList.value = healthRepository.getPatientsSortedBy(sortBy, descending)
+        }
+    }
+
+    fun searchPatients(query: String, sortBy: String = "joinDate", descending: Boolean = true) {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            delay(300)
+            val loadingJob = launch {
+                delay(100)
+                _isListLoading.value = true
+            }
+            val result = healthRepository.searchPatients(query, sortBy, descending)
+            loadingJob.cancel()
+            _patientList.value = result
+            _isListLoading.value = false
+        }
+    }
+
+    fun loadInitialPatient() {
+        viewModelScope.launch {
+            val currentUser = userRepository.getUserModel()
+            _loggedInUser.value = currentUser
+            val uid = if (currentUser?._id.isNullOrEmpty()) currentUser?.id else currentUser?._id
+            val normalizedId = uid?.trim()
+            if (!normalizedId.isNullOrEmpty()) {
+                selectPatient(normalizedId)
+            }
+        }
+    }
+
+    fun selectPatient(userId: String) {
+        selectPatientJob?.cancel()
+        selectPatientJob = viewModelScope.launch {
+            _isLoading.value = true
+            val user = healthRepository.getPatientById(userId)
+            if (user != null) {
+                val record = healthRepository.getPatientHealthRecords(userId, user)
+                _patientDetailState.value = PatientDetailState(user, record)
+            } else {
+                _patientDetailState.value = PatientDetailState(null, null)
+            }
+            _isLoading.value = false
+        }
+    }
 
     fun loadHealthData(userId: String) {
         viewModelScope.launch {
@@ -52,6 +126,11 @@ class HealthViewModel @Inject constructor(
         }
     }
 }
+
+data class PatientDetailState(
+    val user: UserEntity?,
+    val healthRecord: HealthRecord?
+)
 
 data class HealthData(
     val myHealth: MyHealth?,

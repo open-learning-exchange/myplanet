@@ -1,14 +1,15 @@
 package org.ole.planet.myplanet.model
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
- * Room replacement for the former Realm `ChatHistory` model. The nested conversation list is
+ * Room replacement for the former `ChatHistory` model. The nested conversation list is
  * stored as embedded JSON (see [org.ole.planet.myplanet.data.room.Converters]); persistence goes
  * through [org.ole.planet.myplanet.data.room.dao.ChatDao].
  */
-@Entity(tableName = "chat_history")
+@Entity(tableName = "chat_history", indices = [Index("user")])
 open class ChatHistory {
     // @JvmField on id/_id so Room does not see ambiguous getId/get_id accessors.
     @PrimaryKey

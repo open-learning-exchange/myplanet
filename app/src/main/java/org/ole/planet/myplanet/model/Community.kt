@@ -4,11 +4,11 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 /**
- * Room replacement for the former Realm `Community` model. Persistence goes through
+ * Room replacement for the former `Community` model. Persistence goes through
  * [org.ole.planet.myplanet.data.room.dao.CommunityDao]; the class name is kept because the sync
  * dialog and server-config utilities use it as a plain data holder.
  */
-@Entity(tableName = "community")
+@Entity(tableName = "community", indices = [androidx.room.Index("weight")])
 open class Community {
     @PrimaryKey
     var id: String = ""
