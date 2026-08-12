@@ -23,7 +23,6 @@
             android:contentDescription="@string/profile"
             app:civ_border_color="@color/dashboard_avatar_ring"
             app:civ_border_width="2dp" />
-
         <TextView
             android:id="@+id/txtFullName"
             android:layout_width="match_parent"
@@ -35,7 +34,6 @@
             android:textColor="@color/dashboard_ink_1"
             android:textSize="15sp"
             android:textStyle="bold" />
-
         <TextView
             android:id="@+id/txtRole"
             android:layout_width="match_parent"
@@ -46,7 +44,6 @@
             android:maxLines="1"
             android:textColor="@color/dashboard_ink_2"
             android:textSize="11.5sp" />
-
         <TextView
             android:id="@+id/txt_community_name"
             android:layout_width="match_parent"
@@ -57,7 +54,6 @@
             android:maxLines="1"
             android:textColor="@color/dashboard_ink_3"
             android:textSize="11sp" />
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -93,7 +89,6 @@
             android:layout_marginTop="14dp"
             android:layout_marginBottom="14dp"
             android:background="@color/dashboard_hairline" />
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -106,7 +101,6 @@
                 app:srcCompat="@drawable/sync_icon"
                 app:tint="@color/dashboard_accent_blue"
                 android:contentDescription="@string/sync" />
-
             <TextView
                 android:id="@+id/rail_sync_status"
                 android:layout_width="0dp"
