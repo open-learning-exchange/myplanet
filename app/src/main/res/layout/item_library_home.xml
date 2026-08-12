@@ -18,7 +18,6 @@
             app:srcCompat="@drawable/library"
             app:tint="@color/dashboard_tile_library"
             android:contentDescription="@null" />
-
         <TextView
             android:id="@+id/title"
             android:layout_width="match_parent"
