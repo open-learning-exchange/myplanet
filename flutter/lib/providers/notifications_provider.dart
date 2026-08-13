@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/local/app_database.dart';
+import '../ui/notifications/notification_grouping.dart';
 import 'app_providers.dart';
 import 'session_provider.dart';
 
@@ -43,6 +44,9 @@ class NotificationActions {
     final user = ref.read(sessionProvider).valueOrNull;
     if (user == null) return;
     await ref.read(notificationsRepositoryProvider).markAllAsRead(user.id);
+    // Port of `markAllAsRead`: clearing both override sets collapses every
+    // group back to its (now-all-read) default of collapsed.
+    ref.read(notificationExpansionProvider.notifier).resetOverrides();
   }
 
   Future<void> delete(String id) async {
@@ -51,3 +55,63 @@ class NotificationActions {
 }
 
 final notificationActionsProvider = Provider(NotificationActions.new);
+
+/// Holds the manual expand/collapse overrides, porting the
+/// `_collapsedGroups`/`_expandedGroups` pair in `NotificationsViewModel`.
+/// A group's effective state is the explicit override if present, otherwise
+/// the unread-driven default computed in `buildGroupedList`.
+class NotificationExpansionState {
+  const NotificationExpansionState({
+    this.collapsed = const {},
+    this.expanded = const {},
+  });
+
+  final Set<String> collapsed;
+  final Set<String> expanded;
+}
+
+/// `toggleGroupExpansion`: if the group is currently expanded (explicitly, or
+/// by the unread default) collapse it; otherwise expand it. The current
+/// notifications are needed to evaluate the default, so they are passed in.
+NotificationExpansionState toggleExpansion(
+  NotificationExpansionState state,
+  String type,
+  List<NotificationRow> notifications,
+) {
+  final isExpanded = state.expanded.contains(type)
+      ? true
+      : state.collapsed.contains(type)
+      ? false
+      : notifications.any(
+          (n) => normalizeNotificationType(n.type) == type && !n.isRead,
+        );
+  if (isExpanded) {
+    return NotificationExpansionState(
+      expanded: state.expanded.where((t) => t != type).toSet(),
+      collapsed: {...state.collapsed, type},
+    );
+  }
+  return NotificationExpansionState(
+    collapsed: state.collapsed.where((t) => t != type).toSet(),
+    expanded: {...state.expanded, type},
+  );
+}
+
+class NotificationExpansionNotifier
+    extends StateNotifier<NotificationExpansionState> {
+  NotificationExpansionNotifier() : super(const NotificationExpansionState());
+
+  void toggle(String type, List<NotificationRow> notifications) {
+    state = toggleExpansion(state, type, notifications);
+  }
+
+  void resetOverrides() {
+    state = const NotificationExpansionState();
+  }
+}
+
+final notificationExpansionProvider =
+    StateNotifierProvider<
+      NotificationExpansionNotifier,
+      NotificationExpansionState
+    >((ref) => NotificationExpansionNotifier());

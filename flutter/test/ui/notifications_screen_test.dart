@@ -7,7 +7,7 @@ import 'package:myplanet/ui/notifications/notifications_screen.dart';
 import '../support/widget_harness.dart';
 
 void main() {
-  testWidgets('renders unread notification content and type presentation', (
+  testWidgets('renders grouped unread notification with header and content', (
     tester,
   ) async {
     final row = NotificationRow(
@@ -37,9 +37,77 @@ void main() {
     expect(find.text('Notifications'), findsOneWidget);
     expect(find.text('Unread (1)'), findsOneWidget);
     expect(find.text('Mark all read'), findsOneWidget);
-    expect(find.text('Resources'), findsOneWidget);
+    // The unread resource group is expanded by default, so its header and the
+    // notification content are both present.
     expect(find.text('4 new resources are available'), findsOneWidget);
-    expect(find.byIcon(Icons.folder_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.folder_outlined), findsNWidgets(2));
+    // The expanded group shows an up arrow.
+    expect(find.byIcon(Icons.keyboard_arrow_up), findsOneWidget);
+  });
+
+  testWidgets('a group with only read notifications is collapsed by default', (
+    tester,
+  ) async {
+    final row = NotificationRow(
+      id: 'resource-1',
+      userId: 'user-1',
+      message: '4 new resources are available',
+      type: 'resource',
+      isRead: true,
+      createdAt: DateTime(2026, 8, 2, 12).millisecondsSinceEpoch,
+      priority: 0,
+      isFromServer: false,
+      needsSync: false,
+    );
+    await tester.pumpWidget(
+      wrapScreen(
+        const NotificationsScreen(),
+        overrides: [
+          notificationsProvider.overrideWith((ref) => Stream.value([row])),
+          unreadNotificationCountProvider.overrideWith(
+            (ref) => Stream.value(0),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The collapsed group header is present, but its item is hidden.
+    expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+    expect(find.text('4 new resources are available'), findsNothing);
+  });
+
+  testWidgets('tapping a collapsed group header expands it', (tester) async {
+    final row = NotificationRow(
+      id: 'resource-1',
+      userId: 'user-1',
+      message: '4 new resources are available',
+      type: 'resource',
+      isRead: true,
+      createdAt: DateTime(2026, 8, 2, 12).millisecondsSinceEpoch,
+      priority: 0,
+      isFromServer: false,
+      needsSync: false,
+    );
+    await tester.pumpWidget(
+      wrapScreen(
+        const NotificationsScreen(),
+        overrides: [
+          notificationsProvider.overrideWith((ref) => Stream.value([row])),
+          unreadNotificationCountProvider.overrideWith(
+            (ref) => Stream.value(0),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('4 new resources are available'), findsNothing);
+    await tester.tap(find.byIcon(Icons.keyboard_arrow_down));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.keyboard_arrow_up), findsOneWidget);
+    expect(find.text('4 new resources are available'), findsOneWidget);
   });
 
   testWidgets('renders the filter-specific empty state', (tester) async {

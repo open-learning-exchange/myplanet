@@ -5,8 +5,14 @@ import 'package:intl/intl.dart';
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/notifications_provider.dart';
+import 'notification_grouping.dart';
 
 /// Port of `ui/notifications/NotificationsFragment.kt`.
+///
+/// Notifications are grouped by type with expandable headers, porting the
+/// grouping model added to `NotificationsViewModel` (commit 8f4d06d5d). A
+/// group is expanded by default only while it has unread items; tapping a
+/// header overrides that, and *Mark all read* collapses every group.
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
 
@@ -16,6 +22,7 @@ class NotificationsScreen extends ConsumerWidget {
     final filter = ref.watch(notificationFilterProvider);
     final notifications = ref.watch(notificationsProvider);
     final unread = ref.watch(unreadNotificationCountProvider).valueOrNull ?? 0;
+    final expansion = ref.watch(notificationExpansionProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -63,12 +70,7 @@ class NotificationsScreen extends ConsumerWidget {
                   Center(child: Text(l10n.notificationsUnavailable)),
               data: (items) => items.isEmpty
                   ? _EmptyNotifications(filter: filter)
-                  : ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 24),
-                      itemCount: items.length,
-                      itemBuilder: (context, index) =>
-                          _NotificationTile(notification: items[index]),
-                    ),
+                  : _GroupedList(items: items, expansion: expansion),
             ),
           ),
         ],
@@ -102,6 +104,86 @@ class _EmptyNotifications extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(message, textAlign: TextAlign.center),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Renders the grouped list, porting `NotificationsAdapter`'s header/item
+/// view types. A header tap toggles that group's expansion.
+class _GroupedList extends ConsumerWidget {
+  const _GroupedList({required this.items, required this.expansion});
+
+  final List<NotificationRow> items;
+  final NotificationExpansionState expansion;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final grouped = buildGroupedList(
+      items,
+      collapsedGroups: expansion.collapsed,
+      expandedGroups: expansion.expanded,
+    );
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 24),
+      itemCount: grouped.length,
+      itemBuilder: (context, index) {
+        final node = grouped[index];
+        return switch (node) {
+          NotificationHeaderItem() => _GroupHeader(header: node),
+          NotificationEntryItem(:final notification) => _NotificationTile(
+            notification: notification,
+          ),
+        };
+      },
+    );
+  }
+}
+
+class _GroupHeader extends ConsumerWidget {
+  const _GroupHeader({required this.header});
+
+  final NotificationHeaderItem header;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final colors = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: () => ref
+          .read(notificationExpansionProvider.notifier)
+          .toggle(
+            header.type,
+            ref.read(notificationsProvider).valueOrNull ?? const [],
+          ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Icon(_iconFor(header.type), size: 22, color: colors.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                _groupLabel(l10n, header.type),
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+            ),
+            if (header.unreadCount > 0)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Badge(
+                  isLabelVisible: true,
+                  label: Text('${header.unreadCount}'),
+                ),
+              ),
+            Icon(
+              header.isExpanded
+                  ? Icons.keyboard_arrow_up
+                  : Icons.keyboard_arrow_down,
+              color: colors.outline,
+            ),
           ],
         ),
       ),
@@ -209,3 +291,9 @@ String _titleFor(AppLocalizations l10n, String type) =>
       'team_join' => l10n.teamNotification,
       _ => l10n.notification,
     };
+
+/// The group-header label, delegating to [groupLabelFor]. Differs from
+/// [_titleFor]: the grouping labels are collective ("Join Requests",
+/// "Tasks"), not the per-notification titles.
+String _groupLabel(AppLocalizations l10n, String type) =>
+    groupLabelFor(l10n, type);

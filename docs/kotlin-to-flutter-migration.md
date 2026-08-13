@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 36 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 37 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -1119,8 +1119,51 @@ succeeds, it just doesn't do what the Kotlin did.
   "Timer is still pending" failure at teardown: when you see it, override the provider the screen
   actually reads.
 
+## Phase 37 — notifications grouping
+
+The 2026-08-12 rebase recorded commit `8f4d06d5d` ("smoother notifications group view modelling")
+as landing on "a grouping model the port has not built" and deferred it. This phase builds it,
+harvesting the grouping/expansion model `NotificationsViewModel` gained. The port's notifications
+screen had been a flat filtered list; it is now grouped by type with expandable headers.
+
+**The model.** `ui/notifications/notification_grouping.dart` is a pure-Dart port of
+`buildGroupedList`/`isGroupDefaultExpanded`/`typeLabelFor`, plus a sealed `NotificationListItem`
+(`Header`/`Entry`) mirroring the Kotlin's. Three rules carry over exactly, and the Kotlin test
+suite (`NotificationsViewModelTest`) is mirrored as a unit test so the behaviour is pinned:
+
+- **A group is expanded by default only when it has unread items.** `unreadCount > 0` is the
+  default; a read-only group arrives collapsed.
+- **A tap on a header overrides the default in either direction.** Two sets (`collapsed`/
+  `expanded`, in `NotificationExpansionState` via `notificationExpansionProvider`) make "user
+  said so" outrank "unread says so", exactly as `_collapsedGroups`/`_expandedGroups` do.
+  `toggleExpansion` evaluates the *effective* state (explicit override, else the unread default)
+  and flips it. Toggling twice restores the default — not by emptying the sets (the Kotlin keeps
+  the type in `expanded` after the second toggle) but by leaving the effective state equal to
+  the default; the test asserts the effective state, not the set contents.
+- **`markAllAsRead` clears both override sets.** Once everything is read every group's default is
+  collapsed, so the screen collapses to a list of headers. `NotificationActions.markAllAsRead`
+  calls `resetOverrides` after the write, the way the Kotlin resets both flows.
+
+Unrecognized types normalize to a single `notification` ("Other") group via the `KNOWN_TYPES`
+guard, and groups appear in the Kotlin's fixed `typeOrder` (`join_request`, `team_join`, `task`,
+`chat`, `voice_reply`, `resource`, `storage`) with any remainder appended.
+
+**The screen.** `notifications_screen.dart` renders the grouped list: headers show the type
+icon, the collective label (`groupLabelFor` — "Join Requests", "Tasks", …, distinct from the
+per-notification `_titleFor`), an unread-count badge, and an expand/collapse arrow. A header tap
+toggles through `notificationExpansionProvider`. The existing filter bar, empty states, swipe-to-
+delete, and mark-as-read are unchanged.
+
+One detail the Kotlin deferred and so does this: `resolveType`'s message-content inference (it
+re-classifies a `notification`-typed payload as `join_request`/`task`/… from the message text) is
+not ported. The port persists `type` at write time (resource/storage/chat rows are typed by their
+writers), so grouping on the stored column is correct for what this app produces; the inference
+matters for server-originated payloads whose `type` field is unreliable, and the grouping this
+commit added is orthogonal to that classification. The six group label strings and a `tasks`
+string were added to `app_en.arb`.
+
 ---
 
-**Last updated**: 2026-08-13 (Phase 36 complete)
-**Phase**: 36 of N (27 of 28 UI packages have a screen — see Status for what that does and does
+**Last updated**: 2026-08-13 (Phase 37 complete)
+**Phase**: 37 of N (27 of 28 UI packages have a screen — see Status for what that does and does
 not mean)
