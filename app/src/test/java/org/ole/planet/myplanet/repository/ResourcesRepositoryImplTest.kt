@@ -283,7 +283,7 @@ class ResourcesRepositoryImplTest {
     fun `getPendingDownloads returns flow from dao with correct pattern`() = runTest {
         val userId = "testUser123"
         val expectedPattern = "%\"testUser123\"%"
-        val expectedList = listOf(mockk<MyLibrary>())
+        val expectedList = listOf("lib1")
 
         every { myLibraryDao.getPendingDownloadsForUserPatternFlow(expectedPattern) } returns flowOf(expectedList)
 

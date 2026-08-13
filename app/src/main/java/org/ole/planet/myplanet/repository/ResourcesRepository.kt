@@ -46,7 +46,7 @@ interface ResourcesRepository {
     suspend fun getMyLibrary(userId: String?): List<MyLibrary>
     suspend fun getAllStepResources(stepId: String?): List<MyLibrary>
     fun getRecentResources(userId: String): Flow<List<MyLibrary>>
-    fun getPendingDownloads(userId: String): Flow<List<MyLibrary>>
+    fun getPendingDownloads(userId: String): Flow<List<String>>
     suspend fun countLibrariesNeedingUpdate(userId: String?): Int
     suspend fun resourceTitleExists(title: String): Boolean
     suspend fun saveLocalResource(request: LocalResourceRequest): Result<Unit>

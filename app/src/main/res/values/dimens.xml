@@ -36,4 +36,21 @@
     <dimen name="profile_image_size">150dp</dimen>
     <dimen name="profile_name_text_size">18sp</dimen>
     <dimen name="profile_detail_text_size">16sp</dimen>
+
+    <dimen name="dashboard_tile_min_height">116dp</dimen>
+    <dimen name="dashboard_tile_corner_radius">12dp</dimen>
+    <dimen name="dashboard_hairline_width">1dp</dimen>
+    <dimen name="dashboard_tile_elevation">2dp</dimen>
+    <dimen name="dashboard_badge_size">24dp</dimen>
+    <dimen name="dashboard_tile_icon_size">32dp</dimen>
+    <dimen name="dashboard_chip_radius">8dp</dimen>
+    <dimen name="dashboard_chip_padding">10dp</dimen>
+    <dimen name="dashboard_chip_gap">8dp</dimen>
+    <dimen name="dashboard_chip_icon_size">16dp</dimen>
+    <dimen name="dashboard_page_padding">12dp</dimen>
+    <dimen name="dashboard_tile_gap">12dp</dimen>
+    <!-- Small-phone tier (sw &lt; 360dp); values-sw360dp/values-sw600dp override per breakpoint -->
+    <dimen name="dashboard_tile_color_block_width">72dp</dimen>
+    <dimen name="dashboard_chip_width">92dp</dimen>
+    <dimen name="dashboard_rail_width">182dp</dimen>
 </resources>

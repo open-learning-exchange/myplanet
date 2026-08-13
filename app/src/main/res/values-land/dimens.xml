@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Landscape phones share screen height across 4 stacked tile rows, so each row gets
+         far less vertical room than portrait: tighten paddings/icons so chip content fits. -->
+    <dimen name="dashboard_tile_min_height">64dp</dimen>
+    <dimen name="dashboard_tile_icon_size">22dp</dimen>
+    <dimen name="dashboard_chip_icon_size">14dp</dimen>
+    <dimen name="dashboard_chip_padding">4dp</dimen>
+    <dimen name="dashboard_chip_gap">2dp</dimen>
+    <dimen name="dashboard_page_padding">6dp</dimen>
+    <dimen name="dashboard_tile_gap">4dp</dimen>
+</resources>

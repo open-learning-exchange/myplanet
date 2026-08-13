@@ -705,7 +705,7 @@
     <string name="days_since_you_last_synced_this_device">" days since you last synced this device."</string>
     <string name="connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet">\n Connect it to the server over wifi and sync it to reactivate this tablet</string>
     <string name="okay">Okay</string>
-    <string name="connect_to_the_server_over_wifi_and_sync_your_device_to_continue">Connect to the server over WiFi and sync your device to continue</string>
+    <string name="connect_to_the_server_over_wifi_and_sync_your_device_to_continue">Connect to the server over Wi-Fi and sync your device to continue</string>
     <string name="please_enter_server_url_first">Please enter server url first.</string>
     <string name="username_cannot_be_empty">Username cannot be empty</string>
     <string name="unable_to_login">Unable to login</string>
@@ -777,7 +777,8 @@
     <string name="are_you_sure_want_to_delete_all_the_files">Are you sure want to delete all the files?</string>
     <string name="unable_to_clear_files">Unable to clear files</string>
     <string name="last_synced_never">Never synced</string>
-    <string name="last_synced_colon">Last synced: </string>
+    <string name="last_synced_colon">"Last synced: "</string>
+    <string name="dashboard_sync_status">Sync · %1$s</string>
     <string name="last_login_message">This is your last login before you need to become a member.</string>
 
     <string name="disclaimer">
@@ -947,9 +948,9 @@
     <string name="virtual_assistant_currently_not_available">virtual assistant currently not available</string>
     <string name="no_courses">no courses available</string>
     <string name="no_resources">no resources available</string>
-    <string name="no_resources_added_yet">You haven\'t added any resources yet</string>
-    <string name="no_courses_joined_yet">You haven\'t joined any courses yet</string>
-    <string name="no_teams_joined_yet">You haven\'t joined a team yet</string>
+    <string name="no_resources_added_yet">You can add resources</string>
+    <string name="no_courses_joined_yet">You can join courses</string>
+    <string name="no_teams_joined_yet">You can join a team</string>
     <string name="no_finance_record">finance record not available</string>
     <string name="no_team_courses">team courses not available</string>
     <string name="no_team_resources">team resources not available</string>
@@ -1357,5 +1358,22 @@
     <string name="failed_to_update_resource">Failed to update resource</string>
     <string name="join_team_first">Please join a Team to share this chat</string>
     <string name="join_enterprise_first">Please join an Enterprise to share this chat</string>
+    <string name="item_count_pill">%d items</string>
+    <string name="view_grid">Grid view</string>
+    <string name="view_list">List view</string>
+    <string name="steps_done_of_total">%1$d of %2$d done</string>
+    <string name="course_steps_count">%d steps</string>
+    <string name="subject_label_mathematics">Mathematics</string>
+    <string name="subject_label_literacy">Literacy</string>
+    <string name="subject_label_health">Health</string>
+    <string name="subject_label_social_studies">Social Studies</string>
+    <string name="subject_label_technology">Technology</string>
+    <string name="filter_all">All</string>
+    <string name="filter_books">Books</string>
+    <string name="filter_videos">Videos</string>
+    <string name="filter_audio">Audio</string>
+    <string name="filter_pdfs">PDFs</string>
+    <string name="downloaded">Downloaded</string>
+    <string name="not_downloaded">Not downloaded</string>
 
 </resources>
