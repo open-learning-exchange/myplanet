@@ -1,6 +1,6 @@
 # myPlanet Refactor Tasks — Consolidated & Validated
 
-Extracted from 8 agent task lists (2 prompts), deduplicated, validated against the codebase, and rated 1–100 (evidence quality × impact × risk-adjusted feasibility). Sorted by rating. False-premise tasks (LiveData cleanup, GlobalScope removal, "migrate adapters to ListAdapter" — none of which exist as problems) and vague audit-only tasks were removed.
+Extracted from 16 agent task lists (8 agents × 2 prompts), deduplicated, validated against the codebase, and rated 1–100 (evidence quality × impact × risk-adjusted feasibility). Sorted by rating. False-premise tasks (LiveData cleanup, GlobalScope removal, "migrate adapters to ListAdapter" — none of which exist as problems) and vague audit-only tasks were removed.
 
 ---
 
@@ -336,7 +336,7 @@ The only `SharingStarted.WhileSubscribed()` in the codebase without a stop timeo
 
 **Files:** `ui/chat/ChatDetailFragment.kt`, `ui/chat/ChatViewModel.kt`.
 
-The fragment runs two `repeatOnLifecycle` blocks with seven separate `launch { collect }` loops and still injects `ChatRepository`/`UserRepository` for send/fetch/AI work alongside an existing `ChatViewModel`. Combine the fields read together into one `chatUiState` via `combine` + `stateIn(WhileSubscribed(5000))`, collect once with `collectWhenStarted`, and move the direct repository calls behind narrowly named ViewModel operations so both repository fields can be deleted. Keep the PR thin — observation consolidation plus the repo moves; no speech-recognizer or layout changes. *(Merged from three agents.)*
+The fragment runs two `repeatOnLifecycle` blocks with seven separate `launch { collect }` loops and still injects `ChatRepository`/`UserRepository` for send/fetch/AI work alongside an existing `ChatViewModel`. Combine the fields read together into one `chatUiState` via `combine` + `stateIn(WhileSubscribed(5000))`, collect once with `collectWhenStarted`, and move the direct repository calls behind narrowly named ViewModel operations so both repository fields can be deleted. Keep the PR thin — observation consolidation plus the repo moves; no speech-recognizer or layout changes. Same pattern applies as a sibling PR to `SurveyFragment.setupObservers`, which launches six collectors of which three only mutate fragment-side `surveyInfoMap`/`bindingDataMap` the adapter already holds by reference — combine into one `SurveyListUiState`, keeping snackbars on `SharedFlow`. *(Merged from three agents.)*
 
 ---
 
@@ -473,6 +473,14 @@ ViewModels needing one narrow slice are coupled to the full 66-function surface 
 **Files (one PR per screen):** `ui/exam/ExamTakingFragment.kt` (4 repositories, 11 call sites, no ViewModel), `ui/courses/CourseStepFragment.kt` (6 repositories, no ViewModel), `ui/courses/TakeCourseFragment.kt` (direct `coursesRepository` calls beside its VM), `ui/surveys/PublicSurveyActivity` (surveys + submissions repos), `ui/health` examination screen.
 
 The largest ViewModel-expansion cluster from the boundary-focused lists. Each screen gets a narrowly scoped ViewModel absorbing its direct repository calls (load paths first), leaving rendering/dialogs in the UI. Rated below the mechanical tasks because each is a bigger-than-average PR; do at most one per review round.
+
+---
+
+## Extract `SyncActivity` provisioning logic out of the UI layer (62/100)
+
+**Files:** `ui/sync/SyncActivity.kt` (~lines 294, 585), `repository/ConfigurationsRepository{,Impl}.kt` or a new `services/sync/SyncProvisioning.kt` — whichever needs fewer new types.
+
+`SyncActivity` injects 6+ repositories plus `UserSessionManager` and additionally owns provisioning work: direct file setup (`File(FileUtils.getOlePath(this))`) and the concatenated-links `openDownloadService` kickoff. Extract that directory-setup/download-kickoff block into one function on the config side so the Activity makes a single call. Deliberately scoped to `SyncActivity` only — leave `LoginActivity` untouched to keep the diff small and avoid clashing with auth work. Rated moderate: real boundary fix on the app's most sensitive flow (login/sync), so it wants its own round with manual sync testing.
 
 ---
 
