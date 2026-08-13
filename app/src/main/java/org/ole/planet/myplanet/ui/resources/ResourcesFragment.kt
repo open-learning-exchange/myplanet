@@ -205,7 +205,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                 }
             }
         }
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             userModel = userRepository.getUserModel()
             setupGuestUserRestrictions()
 
@@ -662,7 +662,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     override suspend fun getData(): Map<String, Set<String>> {
         // Keep facet options stable so applying one filter does not hide other available options.
-        return resourcesRepository.getFilterFacets(allResourceModels.map { it.library })
+        return viewModel.getFilterFacets(allResourceModels.map { it.library })
     }
 
     override fun getSelectedFilter(): Map<String, Set<String>> {
@@ -710,12 +710,12 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val planetCode = model?.planetCode
         val parentCode = model?.parentCode
 
-        lifecycleScope.launch(dispatcherProvider.io) {
+        viewLifecycleOwner.lifecycleScope.launch {
             if (!filterApplied(searchText) || userName == null || planetCode == null || parentCode == null) {
                 return@launch
             }
 
-            resourcesRepository.saveSearchActivity(
+            viewModel.saveSearchActivity(
                 userName,
                 searchText,
                 planetCode,
@@ -811,10 +811,9 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val itemsToDelete = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToDelete.isNotEmpty()) {
-            lifecycleScope.launch(dispatcherProvider.io) {
-                resourcesRepository.removeResourcesFromShelf(itemsToDelete, userId)
-                withContext(dispatcherProvider.main) {
-                    _binding ?: return@withContext
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewModel.removeResourcesFromShelf(itemsToDelete, userId).onSuccess {
+                    _binding ?: return@onSuccess
                     Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
                     refreshResourcesData()
                     selectedItems?.clear()
