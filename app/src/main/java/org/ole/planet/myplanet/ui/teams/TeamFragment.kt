@@ -17,8 +17,6 @@ import javax.inject.Inject
 import kotlin.OptIn
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
@@ -30,7 +28,7 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.utils.Utilities
-import org.ole.planet.myplanet.utils.collectLatestWhenStarted
+import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
@@ -303,7 +301,7 @@ class TeamFragment : Fragment() {
     }
 
     private fun observeTeamData() {
-        collectLatestWhenStarted(viewModel.teamData) { teamDataList ->
+        collectWhenStarted(viewModel.teamData) { teamDataList ->
             teamListAdapter.submitList(teamDataList)
             showNoResultsMessage(teamDataList.isEmpty())
             listContentDescription(conditionApplied)
@@ -312,10 +310,11 @@ class TeamFragment : Fragment() {
 
     @OptIn(FlowPreview::class)
     private fun setupTextWatcher() {
-        binding.etSearch.textChanges()
-            .debounce(300)
-            .onEach { text -> viewModel.searchTeams(text?.toString() ?: "") }
-            .launchIn(viewLifecycleOwner.lifecycleScope)
+        collectWhenStarted(
+            binding.etSearch.textChanges().debounce(300)
+        ) { text ->
+            viewModel.searchTeams(text?.toString() ?: "")
+        }
     }
 
 
