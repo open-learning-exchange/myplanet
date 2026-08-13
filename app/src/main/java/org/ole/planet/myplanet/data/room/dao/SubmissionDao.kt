@@ -31,6 +31,7 @@ interface SubmissionDao {
     @Query("SELECT * FROM submissions WHERE userId = :userId AND status = 'pending' ORDER BY startTime DESC LIMIT 1") suspend fun getLatestPendingByUser(userId: String?): Submission?
     @Query("SELECT * FROM submissions WHERE parentId LIKE '%' || :parentIdFragment || '%' LIMIT 1") suspend fun getFirstByParentIdContaining(parentIdFragment: String): Submission?
     @Query("SELECT * FROM submissions WHERE parentId IN (:parentIds) AND type != 'survey' AND uploaded = 0") suspend fun getUnuploadedNonSurveyByParentIds(parentIds: List<String>): List<Submission>
+    @Query("SELECT * FROM submissions WHERE userId IN (:userIds) AND parentId = :parentId AND status = 'pending' ORDER BY lastUpdateTime DESC") suspend fun getPendingByUsersAndParent(userIds: List<String>, parentId: String): List<Submission>
     @Query("UPDATE submissions SET user = :userJson, status = 'complete', isUpdated = 1 WHERE id = :id") suspend fun markComplete(id: String, userJson: String): Int
     @Query("UPDATE submissions SET status = :status WHERE id = :id") suspend fun updateStatus(id: String, status: String): Int
     @Query("UPDATE submissions SET status = :status, lastUpdateTime = :lastUpdateTime WHERE id = :id") suspend fun updateStatusAndLastUpdate(id: String, status: String, lastUpdateTime: Long): Int
