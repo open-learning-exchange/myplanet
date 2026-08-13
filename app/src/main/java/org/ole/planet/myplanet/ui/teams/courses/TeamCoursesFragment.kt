@@ -183,5 +183,6 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
 
     override fun showDownloadDialog(dbMyLibrary: List<MyLibrary?>) {
         // Do not show download suggestion dialog in Team Courses (Fix #15435)
+        return
     }
 }
