@@ -7,6 +7,8 @@ import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
@@ -101,7 +103,7 @@ class CoursesRepositoryImpl @Inject constructor(
     override suspend fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>> {
         return courseDao.observeAll().map { courses ->
             mapCourses(courses).filter { it.userId?.contains(userId) == true }
-        }
+        }.distinctUntilChanged().flowOn(dispatcherProvider.default)
     }
 
     override suspend fun getCourseById(courseId: String): MyCourse? {
@@ -113,46 +115,44 @@ class CoursesRepositoryImpl @Inject constructor(
         return getCourseByCourseIdFlow(courseId).map { course ->
             if (course == null) return@map null
 
-            withContext(dispatcherProvider.io) {
-                val user = userRepository.get().getUserModel()
-                val examCount = getCourseExamCount(courseId)
-                val resources = getCourseOnlineResources(courseId)
-                val downloadedResources = getCourseOfflineResources(courseId)
-                val rawSteps = getCourseSteps(courseId)
+            val user = userRepository.get().getUserModel()
+            val examCount = getCourseExamCount(courseId)
+            val resources = getCourseOnlineResources(courseId)
+            val downloadedResources = getCourseOfflineResources(courseId)
+            val rawSteps = getCourseSteps(courseId)
 
-                val steps = rawSteps.map { step ->
-                    val count = step.id.let { submissionsRepository.getExamQuestionCount(it) }
-                    StepItem(
-                        id = step.id,
-                        stepTitle = step.stepTitle,
-                        questionCount = count
-                    )
-                }
-
-                val userId = user?.id
-                val ratingSummary = if (userId != null) {
-                    ratingsRepository.getRatingSummary("course", courseId, userId)
-                } else {
-                    null
-                }
-
-                CourseDetailModel(
-                    course = course,
-                    user = user,
-                    ratingSummary = ratingSummary,
-                    examCount = examCount,
-                    resources = resources,
-                    downloadedResources = downloadedResources,
-                    steps = steps
+            val steps = rawSteps.map { step ->
+                val count = step.id.let { submissionsRepository.getExamQuestionCount(it) }
+                StepItem(
+                    id = step.id,
+                    stepTitle = step.stepTitle,
+                    questionCount = count
                 )
             }
-        }
+
+            val userId = user?.id
+            val ratingSummary = if (userId != null) {
+                ratingsRepository.getRatingSummary("course", courseId, userId)
+            } else {
+                null
+            }
+
+            CourseDetailModel(
+                course = course,
+                user = user,
+                ratingSummary = ratingSummary,
+                examCount = examCount,
+                resources = resources,
+                downloadedResources = downloadedResources,
+                steps = steps
+            )
+        }.flowOn(dispatcherProvider.io)
     }
 
     override fun getCourseByCourseIdFlow(courseId: String): Flow<MyCourse?> {
         return courseDao.observeByCourseId(courseId).map { course ->
             mapCourse(course)
-        }
+        }.flowOn(dispatcherProvider.default)
     }
 
     override suspend fun getCoursesByIds(courseIds: List<String>): List<MyCourse> {
