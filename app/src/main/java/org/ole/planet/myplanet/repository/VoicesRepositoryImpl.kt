@@ -165,10 +165,9 @@ class VoicesRepositoryImpl @Inject constructor(
             }
             .map { allNews ->
                 allNews.mapNotNull { news ->
-                    val viewInStr = news.viewIn
-                    if (viewInStr.isNullOrEmpty()) return@mapNotNull null
-                    val viewInArray = try { gson.fromJson(viewInStr, JsonArray::class.java) } catch (e: Exception) { null }
-                    news.parsedViewIn = viewInArray
+                    news.viewIn?.takeIf { it.isNotEmpty() }?.let { s ->
+                        news.parsedViewIn = try { gson.fromJson(s, JsonArray::class.java) } catch (e: Exception) { null }
+                    }
 
                     if (isVisibleToUser(news, userIdentifier)) {
                         news.sortDate = news.calculateSortDate()
@@ -398,12 +397,12 @@ class VoicesRepositoryImpl @Inject constructor(
         val mappedDocs = docs.map { it to JsonUtils.getString("_id", it) }
         val underscoreIds = mappedDocs.map { it.second }.filter { it.isNotEmpty() }
         val existing = newsDao.getByUnderscoreIds(underscoreIds).associateBy { it._id }
-        val newsList = mappedDocs.map { (doc, id) -> buildNewsFromJson(doc, existing, id) }
+        val newsList = mappedDocs.map { (doc, id) -> buildNewsFromJson(doc, id, existing) }
         newsDao.upsertAll(newsList)
         saveConcatenatedLinksToPrefs()
     }
 
-    private suspend fun buildNewsFromJson(doc: JsonObject, existing: Map<String?, News>? = null, underscoreId: String): News {
+    private suspend fun buildNewsFromJson(doc: JsonObject, underscoreId: String, existing: Map<String?, News>? = null): News {
         val news = (existing?.get(underscoreId) ?: newsDao.getByUnderscoreId(underscoreId))
             ?: News().apply { id = underscoreId }
         news._rev = JsonUtils.getString("_rev", doc)

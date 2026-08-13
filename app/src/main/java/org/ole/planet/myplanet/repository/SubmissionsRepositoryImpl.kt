@@ -261,10 +261,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                             formattedAnswer = choices.joinToString(", ") { choiceId ->
                                 try {
                                         val choiceObject = choicesArray?.find {
-                                        it.isJsonObject && it.asJsonObject.has("id") && it.asJsonObject.get(
-                                            "id"
-                                        ).asString == choiceId
-                                    }?.asJsonObject
+                                            it.isJsonObject && it.asJsonObject.has("id") && it.asJsonObject.get(
+                                                "id"
+                                            ).asString == choiceId
+                                        }?.asJsonObject
                                     choiceObject?.get("text")?.asString ?: choiceId
                                 } catch (_: Exception) {
                                     choiceId
