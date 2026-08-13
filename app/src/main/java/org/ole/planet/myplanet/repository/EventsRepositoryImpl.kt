@@ -78,17 +78,27 @@ class EventsRepositoryImpl @Inject constructor(
             .map { it }
     }
 
-    override suspend fun toggleAttendance(meetupId: String, currentUserId: String?): Meetup? {
+    override suspend fun toggleCurrentUserAttendance(meetupId: String): Meetup? {
         if (meetupId.isBlank()) {
             return null
         }
 
+        val currentUser = userRepository.getUserModel()
+        val currentUserId = currentUser?.id
+
+        if (currentUserId.isNullOrBlank()) {
+            return getMeetupById(meetupId)
+        }
+
         val meetup = meetupDao.getByMeetupId(meetupId) ?: return null
         val isJoined = !meetup.userId.isNullOrEmpty()
-        if (isJoined || !currentUserId.isNullOrEmpty()) {
-            meetup.userId = if (isJoined) "" else currentUserId
-            meetupDao.upsert(meetup)
+        if (isJoined) {
+            meetup.userId = ""
+        } else {
+            meetup.userId = currentUserId
         }
+        meetupDao.upsert(meetup)
+
         return getMeetupById(meetupId)
     }
 
@@ -150,11 +160,6 @@ class EventsRepositoryImpl @Inject constructor(
             e.printStackTrace()
             false
         }
-    }
-
-    override suspend fun getMeetupIdsForUser(userId: String?): List<String> {
-        if (userId.isNullOrBlank()) return emptyList()
-        return meetupDao.getByUserId(userId).mapNotNull { it.meetupId }
     }
 
     override suspend fun getPendingMeetupUploads(): List<Meetup> {

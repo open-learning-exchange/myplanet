@@ -10,7 +10,6 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.io.File
 import java.io.InputStream
-import java.util.Locale
 import org.apache.commons.lang3.StringUtils
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utils.NetworkUtils

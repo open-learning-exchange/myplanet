@@ -244,50 +244,52 @@ class TeamFragment : Fragment() {
     private fun setupRecyclerView() {
         binding.rvTeamList.layoutManager = LinearLayoutManager(activity)
         (binding.rvTeamList.itemAnimator as? SimpleItemAnimator)?.supportsChangeAnimations = false
-        teamListAdapter = TeamsAdapter(
-            isGuestUser = user?.isGuest() == true,
-            onItemClick = { team ->
-                val activity = getActivity() as? AppCompatActivity ?: return@TeamsAdapter
-                val fragment = TeamDetailFragment.newInstance(
-                    teamId = team._id.orEmpty(),
-                    teamName = "${team.name}",
-                    teamType = "${team.type}",
-                    isMyTeam = team.teamStatus?.isMember == true
-                )
-                FragmentNavigator.replaceFragment(
-                    activity.supportFragmentManager,
-                    R.id.fragment_container,
-                    fragment,
-                    addToBackStack = true,
-                    tag = "TeamDetailFragment"
-                )
-                sharedPrefManager.setTeamName(team.name)
-            },
-            onFeedbackClick = { team ->
-                val feedbackFragment = FeedbackFragment()
-                feedbackFragment.show(childFragmentManager, "")
-                feedbackFragment.arguments = getBundle(team)
-            },
-            onEditTeamClick = { team ->
-                createTeamAlert(team)
-            },
-            onLeaveTeamClick = { team ->
-                AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
-                    .setMessage(R.string.confirm_exit)
-                    .setPositiveButton(R.string.yes) { _, _ ->
-                        val teamId = team._id ?: return@setPositiveButton
-                        viewModel.leaveTeam(teamId, user?.id)
+        if (!::teamListAdapter.isInitialized) {
+            teamListAdapter = TeamsAdapter(
+                isGuestUser = user?.isGuest() == true,
+                onItemClick = { team ->
+                    val activity = getActivity() as? AppCompatActivity ?: return@TeamsAdapter
+                    val fragment = TeamDetailFragment.newInstance(
+                        teamId = team._id.orEmpty(),
+                        teamName = "${team.name}",
+                        teamType = "${team.type}",
+                        isMyTeam = team.teamStatus?.isMember == true
+                    )
+                    FragmentNavigator.replaceFragment(
+                        activity.supportFragmentManager,
+                        R.id.fragment_container,
+                        fragment,
+                        addToBackStack = true,
+                        tag = "TeamDetailFragment"
+                    )
+                    sharedPrefManager.setTeamName(team.name)
+                },
+                onFeedbackClick = { team ->
+                    val feedbackFragment = FeedbackFragment()
+                    feedbackFragment.show(childFragmentManager, "")
+                    feedbackFragment.arguments = getBundle(team)
+                },
+                onEditTeamClick = { team ->
+                    createTeamAlert(team)
+                },
+                onLeaveTeamClick = { team ->
+                    AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
+                        .setMessage(R.string.confirm_exit)
+                        .setPositiveButton(R.string.yes) { _, _ ->
+                            val teamId = team._id ?: return@setPositiveButton
+                            viewModel.leaveTeam(teamId, user?.id)
+                        }
+                        .setNegativeButton(R.string.no, null)
+                        .show()
+                },
+                onRequestToJoinClick = { team ->
+                    team._id?.let { teamId ->
+                        viewModel.requestToJoin(teamId, user?.id, user?.planetCode, team.teamType)
                     }
-                    .setNegativeButton(R.string.no, null)
-                    .show()
-            },
-            onRequestToJoinClick = { team ->
-                team._id?.let { teamId ->
-                    viewModel.requestToJoin(teamId, user?.id, user?.planetCode, team.teamType)
                 }
+            ).apply {
+                setType(type)
             }
-        ).apply {
-            setType(type)
         }
         binding.rvTeamList.adapter = teamListAdapter
     }
@@ -352,6 +354,7 @@ class TeamFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        binding.rvTeamList.adapter = null
         _binding = null
         super.onDestroyView()
     }

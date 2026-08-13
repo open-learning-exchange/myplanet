@@ -32,7 +32,7 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE _id IS NOT NULL AND TRIM(_id) != ''")
     suspend fun getUsersForHealthSync(): List<UserEntity>
 
-    @Query("SELECT * FROM users WHERE (_id IS NULL OR TRIM(_id) = '') OR isUpdated = 1 LIMIT :limit")
+    @Query("SELECT * FROM users WHERE (_id IS NULL OR TRIM(_id) = '') OR isUpdated = 1 ORDER BY id LIMIT :limit")
     suspend fun getPendingSyncUsers(limit: Int): List<UserEntity>
 
     @Query("SELECT * FROM users WHERE name = :name AND SUBSTR(_id, 1, 6) = 'guest_' LIMIT 1")

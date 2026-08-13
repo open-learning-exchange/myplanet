@@ -23,18 +23,53 @@
         <include
             android:id="@+id/appBarBell"
             layout="@layout/app_bar_bell" />
-        <TextView
-            android:id="@+id/dashboard_last_sync_status"
+        <LinearLayout
+            android:id="@+id/dashboard_sync_banner"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@color/dashboard_sync_banner_bg"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
             android:paddingStart="16dp"
-            android:paddingEnd="16dp"
+            android:paddingEnd="8dp"
             android:paddingTop="8dp"
-            android:paddingBottom="8dp"
-            android:background="@color/card_bg"
-            android:textColor="@color/daynight_textColor"
-            android:textSize="12sp"
-            android:text="" />
+            android:paddingBottom="8dp">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                app:srcCompat="@drawable/sync_icon"
+                app:tint="@color/dashboard_accent_blue"
+                android:contentDescription="@string/sync" />
+            <TextView
+                android:id="@+id/dashboard_last_sync_status"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/dashboard_ink_2"
+                android:textSize="12sp"
+                android:text="" />
+            <TextView
+                android:id="@+id/dashboard_sync_now"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="44dp"
+                android:minWidth="44dp"
+                android:gravity="center"
+                android:background="?attr/selectableItemBackground"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/sync_now"
+                android:textColor="@color/dashboard_accent_blue"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/top_bar_navigation"
             android:layout_width="match_parent"
@@ -48,12 +83,11 @@
             android:id="@+id/banner_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/card_bg"/>
+            android:background="@color/card_bg" />
         <FrameLayout
             android:id="@+id/fragment_container"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1">
-        </FrameLayout>
+            android:layout_weight="1" />
     </LinearLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -92,6 +92,16 @@ class UserDaoTest {
     }
 
     @Test
+    fun getPendingSyncUsers_ordersByIdWhenLimited() = runBlocking {
+        userDao.upsert(createUser("user3", null, "Third"))
+        userDao.upsert(createUser("user1", null, "First"))
+        userDao.upsert(createUser("user2", null, "Second"))
+
+        val result = userDao.getPendingSyncUsers(2)
+        assertEquals(listOf("user1", "user2"), result.map { it.id })
+    }
+
+    @Test
     fun getGuestUserByName_matchesNameAndGuest_Id() = runBlocking {
         userDao.upsert(createUser("id1", "guest_userA", "userA"))
         userDao.upsert(createUser("id2", "guestuserB", "userB")) // Excluded, SUBSTR(_id, 1, 6) != 'guest_'

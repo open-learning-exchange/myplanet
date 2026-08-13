@@ -136,11 +136,10 @@ class ChatHistoryAdapter(
             val sharedChildren = if (isCommunityShared) setOf(context.getString(R.string.community)) else emptySet()
             val dataMap = getData() as? Map<String, List<String>> ?: emptyMap()
 
-            var currentFlatList = generateFlatList(dataMap, sharedChildren, emptySet())
-
             chatShareDialogBinding.listView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context)
             shareTargetAdapter = ChatShareTargetAdapter { clickedItem ->
                 if (clickedItem.isGroup) {
+                    val currentFlatList = shareTargetAdapter.currentList
                     val currentlyExpanded = currentFlatList.firstOrNull { it.isGroup && it.title == clickedItem.title }?.isExpanded ?: false
                     val expandedGroups = currentFlatList.filter { it.isGroup && it.isExpanded }.map { it.title }.toMutableSet()
                     if (currentlyExpanded) {
@@ -148,8 +147,8 @@ class ChatHistoryAdapter(
                     } else {
                         expandedGroups.add(clickedItem.title)
                     }
-                    currentFlatList = generateFlatList(dataMap, sharedChildren, expandedGroups)
-                    shareTargetAdapter.submitList(currentFlatList)
+                    val newFlatList = generateFlatList(dataMap, sharedChildren, expandedGroups)
+                    shareTargetAdapter.submitList(newFlatList)
                 } else {
                     if (clickedItem.parentTitle == context.getString(R.string.share_with_team_enterprise)) {
                         if (clickedItem.title == context.getString(R.string.teams)) {
@@ -164,7 +163,7 @@ class ChatHistoryAdapter(
                     }
                 }
             }
-            shareTargetAdapter.submitList(currentFlatList)
+            shareTargetAdapter.submitList(generateFlatList(dataMap, sharedChildren, emptySet()))
             chatShareDialogBinding.listView.adapter = shareTargetAdapter
 
             val builder = AlertDialog.Builder(context)

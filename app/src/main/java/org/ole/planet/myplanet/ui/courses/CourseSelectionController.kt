@@ -78,13 +78,13 @@ class CourseSelectionController(
     }
 
     fun onListChanged(isEmpty: Boolean, hasSelectableItems: Boolean) {
-        if (isEmpty) {
+        if (isEmpty || !hasSelectableItems || isGuest) {
             selectAll.visibility = View.GONE
             tvAddToLib.visibility = View.GONE
             btnRemove.visibility = View.GONE
             btnArchive.visibility = View.GONE
-        } else if (!isGuest) {
-            selectAll.visibility = if (hasSelectableItems) View.VISIBLE else View.GONE
+        } else {
+            selectAll.visibility = View.VISIBLE
         }
     }
 
@@ -93,6 +93,11 @@ class CourseSelectionController(
         currentSelectedCount = 0
         syncSelectAll(false)
         refreshActionVisibility()
+        if (adapter != null) {
+            val isEmpty = adapter.currentList.isEmpty()
+            val hasSelectableItems = if (isMyCourseLib) !isEmpty else adapter.currentList.any { !it.isMyCourse }
+            onListChanged(isEmpty, hasSelectableItems)
+        }
     }
 
     private fun refreshActionVisibility() {

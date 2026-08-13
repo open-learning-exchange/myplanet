@@ -138,10 +138,7 @@ class VoicesAdapter(
         )
     }
 
-    private var originalList: List<News> = emptyList()
-
     private fun prepareSubmitList(list: List<News>?): List<News> {
-        originalList = list ?: emptyList()
         val finalList = mutableListOf<News>()
         parentNews?.let {
             preParseNews(it)
@@ -344,23 +341,17 @@ class VoicesAdapter(
             parentNews = null
         }
 
-        val updatedOriginalList = originalList.toMutableList()
-        val posInOriginal = updatedOriginalList.indexOfFirst { it.id == newsId }
-        if (posInOriginal != -1) {
-            updatedOriginalList.removeAt(posInOriginal)
-            originalList = updatedOriginalList.toList()
-        }
-
         val updatedCurrentList = currentList.toMutableList()
         if (posInCurrent != -1) {
             updatedCurrentList.removeAt(posInCurrent)
         }
-        val listToSubmit = if (parentNews != null && updatedCurrentList.isNotEmpty() && updatedCurrentList[0].id == parentNews?.id) {
+
+        val children = if (parentNews != null && updatedCurrentList.isNotEmpty() && updatedCurrentList[0].id == parentNews?.id) {
             updatedCurrentList.drop(1)
         } else {
             updatedCurrentList
         }
-        submitList(listToSubmit)
+        super.submitList(prepareSubmitList(children))
 
         parentNews?.id?.let { pid ->
             val current = replyCountCache[pid]
@@ -557,7 +548,12 @@ class VoicesAdapter(
     fun updateParentNews(news: News?) {
         parentNews = news
         preParseNews(parentNews)
-        submitList(originalList)
+        val children = if (currentList.isNotEmpty() && currentList[0].id == parentNews?.id) {
+            currentList.drop(1)
+        } else {
+            currentList
+        }
+        super.submitList(prepareSubmitList(children))
     }
 
     private fun parseViewIn(viewIn: String?): JsonArray? {
