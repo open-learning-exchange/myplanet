@@ -1,0 +1,4 @@
+The task mentions three inefficiencies in `VoicesAdapter` bind path:
+a) `onBindViewHolder` parses JSON per bind (`extractSharedTeamName`, image parsing) despite an existing `preParseNews` cache - hoist all parsing to submit time and cache `parsedImages` like `parsedViewIn`/`parsedConversations`
+b) common fine-grained updates rerun the full bind pipeline - extend `PAYLOAD_REPLY_COUNT` / `getChangePayload` path to partial-bind only affected views
+c) on user fetch, the adapter does full O(n) scan `currentList.forEachIndexed` per fetched user - maintain a `userId -> positions` map rebuilt on list commit and notify only those indices

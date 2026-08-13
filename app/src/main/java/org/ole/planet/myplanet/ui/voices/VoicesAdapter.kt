@@ -93,9 +93,12 @@ class VoicesAdapter(
             val payloads = mutableListOf<String>()
 
             if (oldItem.labels?.toList() != newItem.labels?.toList()) {
-                payloads.add(PAYLOAD_TEAM_LEADER_CHANGED)
+                payloads.add(PAYLOAD_LABELS_CHANGED)
             }
-            if (oldItem.userId != newItem.userId || oldItem.userName != newItem.userName || oldItem.avatar != newItem.avatar || oldItem.imageUrls?.toList() != newItem.imageUrls?.toList() || oldItem.images != newItem.images || oldItem.parsedImageUrls != newItem.parsedImageUrls) {
+            if (oldItem.imageUrls?.toList() != newItem.imageUrls?.toList() || oldItem.images != newItem.images || oldItem.parsedImageUrls != newItem.parsedImageUrls) {
+                payloads.add(PAYLOAD_IMAGES_CHANGED)
+            }
+            if (oldItem.userId != newItem.userId || oldItem.userName != newItem.userName || oldItem.avatar != newItem.avatar) {
                 payloads.add(PAYLOAD_USER_FETCHED)
             }
             if (oldItem.message != newItem.message || oldItem.isEdited != newItem.isEdited || oldItem.time != newItem.time || oldItem.sharedBy != newItem.sharedBy || oldItem.replyTo != newItem.replyTo) {
@@ -116,6 +119,8 @@ class VoicesAdapter(
         const val PAYLOAD_REPLY_COUNT = "PAYLOAD_REPLY_COUNT"
         const val PAYLOAD_USER_FETCHED = "PAYLOAD_USER_FETCHED"
         const val PAYLOAD_EDIT_ACTION = "PAYLOAD_EDIT_ACTION"
+        const val PAYLOAD_LABELS_CHANGED = "PAYLOAD_LABELS_CHANGED"
+        const val PAYLOAD_IMAGES_CHANGED = "PAYLOAD_IMAGES_CHANGED"
     }
 
     private data class RowState(
@@ -159,6 +164,17 @@ class VoicesAdapter(
         super.submitList(prepareSubmitList(list), commitCallback)
     }
 
+    override fun onCurrentListChanged(previousList: List<News>, currentList: List<News>) {
+        super.onCurrentListChanged(previousList, currentList)
+        userIdPositions.clear()
+        currentList.forEachIndexed { index, news ->
+            val uId = news.userId
+            if (!uId.isNullOrEmpty()) {
+                userIdPositions.getOrPut(uId) { mutableListOf() }.add(index)
+            }
+        }
+    }
+
     private val externalFilesDir = FileUtils.getExternalFilesDir(context)
     private var listener: OnNewsItemClickListener? = null
     private var imageList: List<String>? = null
@@ -168,6 +184,7 @@ class VoicesAdapter(
     private val userCache = object : LinkedHashMap<String, UserEntity?>(64, 0.75f, true) { override fun removeEldestEntry(e: Map.Entry<String, UserEntity?>) = size > 128 }
     private val fetchingUserIds = mutableSetOf<String>()
     private val replyCountCache = mutableMapOf<String, Int>()
+    private val userIdPositions = mutableMapOf<String, MutableList<Int>>()
     private val leadersList: List<UserEntity> by lazy {
         val raw = getCommunityLeadersFn()
         userRepository.parseLeadersJson(raw)
@@ -262,6 +279,14 @@ class VoicesAdapter(
                         labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
                         labelManager.showChips(holder.binding, news, canManageLabels)
                     }
+                    PAYLOAD_LABELS_CHANGED -> {
+                        val canManageLabels = canAddLabel(news)
+                        labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
+                        labelManager.showChips(holder.binding, news, canManageLabels)
+                    }
+                    PAYLOAD_IMAGES_CHANGED -> {
+                        loadImage(holder.binding, news)
+                    }
                     PAYLOAD_CURRENT_USER_CHANGED -> {
                         val userModel = configureUser(holder, news)
                         configureEditDeleteButtons(holder, news)
@@ -286,16 +311,16 @@ class VoicesAdapter(
                         val userModel = configureUser(holder, news)
                         val currentLeader = getCurrentLeader(userModel, news)
                         setMemberClickListeners(holder, userModel, currentLeader)
-                        loadImage(holder.binding, news)
                         configureEditDeleteButtons(holder, news)
                     }
                     PAYLOAD_EDIT_ACTION -> {
-                        val sharedTeamName = JsonUtils.extractSharedTeamName(news)
+                        val sharedTeamName = news.parsedSharedTeamName ?: ""
                         setMessageAndDate(holder, news, sharedTeamName)
                         configureEditDeleteButtons(holder, news)
                         showReplyButton(holder, news, position)
-                        handleChat(holder, news)
-                        loadImage(holder.binding, news)
+                        if (news.chat) {
+                            handleChat(holder, news)
+                        }
                     }
                 }
             }
@@ -310,7 +335,7 @@ class VoicesAdapter(
             val news = getNews(holder, position)
 
             run {
-                val sharedTeamName = JsonUtils.extractSharedTeamName(news)
+                val sharedTeamName = news.parsedSharedTeamName ?: ""
                 resetViews(holder)
                 updateReplyCount(holder, news, position)
                 val userModel = configureUser(holder, news)
@@ -421,10 +446,8 @@ class VoicesAdapter(
                 getUserFn(userId) { userModel ->
                     userCache[userId] = userModel
                     fetchingUserIds.remove(userId)
-                    currentList.forEachIndexed { index, item ->
-                        if (item.userId == userId) {
-                            safeNotifyItemChanged(index, PAYLOAD_USER_FETCHED)
-                        }
+                    userIdPositions[userId]?.forEach { index ->
+                        safeNotifyItemChanged(index, PAYLOAD_USER_FETCHED)
                     }
                 }
             }
@@ -617,6 +640,12 @@ class VoicesAdapter(
                         it.rawImageUrls = null
                     }
                 }
+                if (it.rawImages != it.images) {
+                    it.parsedImagesArray = it.imagesArray
+                    it.rawImages = it.images
+                }
+
+                it.parsedSharedTeamName = JsonUtils.extractSharedTeamName(it)
             } catch (e: IllegalStateException) {
                 // If Realm manages the object, and we are on a different thread, mutating @Ignore fields might throw.
                 e.printStackTrace()
@@ -846,7 +875,7 @@ class VoicesAdapter(
             }
         }
 
-        news?.imagesArray?.let { imagesArray ->
+        news?.parsedImagesArray?.let { imagesArray ->
             if (imagesArray.size() > 0) {
                 if (imagesArray.size() == 1) {
                     val ob = imagesArray[0]?.asJsonObject
