@@ -100,53 +100,44 @@
                 android:gravity="end|center_vertical"
                 android:orientation="horizontal">
 
-                <TextView
+                <ImageView
                     android:id="@+id/tv_download"
-                    style="@style/Widget.AppCompat.Button.Borderless.Colored"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:layout_marginStart="4dp"
                     android:layout_marginEnd="4dp"
-                    android:drawablePadding="4dp"
-                    android:gravity="center"
-                    android:text="@string/download"
-                    android:textColor="@color/daynight_textColor"
-                    android:textSize="@dimen/text_size_mid"
+                    android:padding="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/download"
                     android:visibility="gone"
-                    app:drawableLeftCompat="@drawable/ic_download"
-                    app:drawableTint="@color/daynight_textColor" />
+                    android:src="@drawable/ic_download"
+                    app:tint="@color/daynight_textColor" />
 
-                <TextView
+                <ImageView
                     android:id="@+id/tv_add"
-                    style="@style/Widget.AppCompat.Button.Borderless.Colored"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:layout_marginStart="4dp"
                     android:layout_marginEnd="4dp"
-                    android:drawablePadding="4dp"
-                    android:gravity="center"
-                    android:text="@string/add_to_mylib"
-                    android:textColor="@color/daynight_textColor"
-                    android:textSize="@dimen/text_size_mid"
+                    android:padding="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/add_to_mylib"
                     android:visibility="gone"
-                    app:drawableLeftCompat="@drawable/ic_add_library"
-                    app:drawableTint="@color/daynight_textColor" />
+                    android:src="@drawable/ic_add_library"
+                    app:tint="@color/daynight_textColor" />
 
-                <TextView
+                <ImageView
                     android:id="@+id/tv_delete"
-                    style="@style/Widget.AppCompat.Button.Borderless.Colored"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:layout_marginStart="4dp"
                     android:layout_marginEnd="4dp"
-                    android:drawablePadding="4dp"
-                    android:gravity="center"
-                    android:text="@string/remove_selected"
-                    android:textColor="@color/daynight_textColor"
-                    android:textSize="@dimen/text_size_mid"
+                    android:padding="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/remove_selected"
                     android:visibility="gone"
-                    app:drawableLeftCompat="@drawable/ic_delete"
-                    app:drawableTint="@color/daynight_textColor" />
+                    android:src="@drawable/ic_delete"
+                    app:tint="@color/daynight_textColor" />
             </LinearLayout>
 
             <include

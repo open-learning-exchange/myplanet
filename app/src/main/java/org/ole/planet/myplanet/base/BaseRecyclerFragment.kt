@@ -31,7 +31,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     lateinit var recyclerView: RecyclerView
     var tvMessage: View? = null
     lateinit var tvFragmentInfo: TextView
-    var tvDelete: TextView? = null
+    var tvDelete: View? = null
     var list: MutableList<LI>? = null
     var resources: List<MyLibrary>? = null
     var courseLib: String? = null
@@ -65,7 +65,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         if (isMyCourseLib) {
             tvDelete = v.findViewById(R.id.tv_delete)
             initDeleteButton()
-            v.findViewById<TextView>(R.id.tv_add)?.visibility = View.GONE
+            v.findViewById<View>(R.id.tv_add)?.visibility = View.GONE
         }
         tvMessage = v.findViewById(R.id.tv_message)
         selectedItems = mutableListOf()
