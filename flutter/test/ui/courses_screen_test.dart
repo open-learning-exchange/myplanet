@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -336,6 +338,84 @@ void main() {
           )
           .toList();
       expect(tiles, ['Completed']);
+    });
+
+    testWidgets('grid tile shows the subject fallback when no cover image', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrapScreen(
+          const CoursesScreen(),
+          overrides: courseOverrides([
+            buildCourseRow(
+              id: 'c1',
+              courseTitle: 'Algebra',
+              subjectLevel: 'Mathematics',
+            ),
+          ]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Switch to grid view to render _CourseGridTile.
+      await tester.tap(find.byTooltip('Grid view'));
+      await tester.pumpAndSettle();
+
+      // No cover image is fetched — the fallback container with the math icon
+      // is shown.
+      expect(find.byIcon(Icons.calculate_outlined), findsOneWidget);
+      expect(find.text('Mathematics'), findsWidgets);
+      expect(find.byType(Image), findsNothing);
+    });
+
+    testWidgets('grid tile shows the cover image when one is available', (
+      tester,
+    ) async {
+      // A 1x1 transparent PNG — the smallest valid image Image.memory can
+      // decode without throwing.
+      final pngBytes = [
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
+        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, // IHDR chunk
+        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+        0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
+        0x89, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x44, 0x41, // IDAT chunk
+        0x54, 0x78, 0x9C, 0x62, 0x00, 0x01, 0x00, 0x00,
+        0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00,
+        0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, // IEND chunk
+        0x42, 0x60, 0x82,
+      ];
+
+      await tester.pumpWidget(
+        wrapScreen(
+          const CoursesScreen(),
+          overrides: [
+            ...courseOverrides([
+              buildCourseRow(
+                id: 'c1',
+                courseTitle: 'Algebra',
+                subjectLevel: 'Mathematics',
+                coverFileName: 'cover.png',
+              ),
+            ]),
+            courseCoverImageProvider(
+              const CourseCoverImageRequest(
+                courseId: 'c1',
+                coverFileName: 'cover.png',
+              ),
+            ).overrideWith((ref) async => Uint8List.fromList(pngBytes)),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Switch to grid view.
+      await tester.tap(find.byTooltip('Grid view'));
+      await tester.pumpAndSettle();
+
+      // The cover image is rendered — Image.memory is present and the
+      // subject fallback icon is not.
+      expect(find.byType(Image), findsOneWidget);
+      expect(find.byIcon(Icons.calculate_outlined), findsNothing);
     });
   });
 

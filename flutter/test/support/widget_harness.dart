@@ -110,6 +110,7 @@ CourseRow buildCourseRow({
   String? gradeLevel,
   String? subjectLevel,
   String? description,
+  String? coverFileName,
   List<String> userId = const [],
   int createdDate = 0,
 }) {
@@ -121,6 +122,7 @@ CourseRow buildCourseRow({
     gradeLevel: gradeLevel,
     subjectLevel: subjectLevel,
     description: description,
+    coverFileName: coverFileName,
     createdDate: createdDate,
   );
 }

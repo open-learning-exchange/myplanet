@@ -82,6 +82,11 @@
   "noResourcesAddedYet": "You can add resources",
   "noCoursesJoinedYet": "You can join courses",
   "noTeamsJoinedYet": "You can join a team",
+  "subjectLabelMathematics": "Mathematics",
+  "subjectLabelLiteracy": "Literacy",
+  "subjectLabelHealth": "Health",
+  "subjectLabelSocialStudies": "Social Studies",
+  "subjectLabelTechnology": "Technology",
   "surveysToComplete": "You have {count, plural, =1{1 survey} other{{count} surveys}} to complete",
   "@surveysToComplete": {
     "placeholders": {

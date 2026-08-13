@@ -1,7 +1,12 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:meta/meta.dart';
 
 import '../core/config/server_config.dart';
+import '../core/network/network_result.dart';
 import '../core/sync/sync_result.dart';
+import '../core/utils/url_utils.dart';
 import '../data/local/app_database.dart';
 import 'app_providers.dart';
 import 'session_provider.dart';
@@ -420,3 +425,59 @@ final courseProgressStreamProvider = StreamProvider<List<CourseProgressRow>>((
 
   yield rows;
 });
+
+/// A course cover image fetched from the CouchDB `courses` attachment endpoint
+/// behind Basic auth — the same pattern as [profileImageProvider]. A course's
+/// `coverFileName` is persisted on the row (mapped from the CouchDB doc by
+/// `CourseMapper`); the URL is rebuilt here against the current
+/// [serverConfigProvider] and fetched as bytes through [PlanetApi.getBytes].
+///
+/// Port of `CoursesAdapter.bindCover` (818732139). Returns `null` when there
+/// is no attachment, the config is absent, or the fetch fails — the grid tile
+/// falls back to the subject-tinted icon.
+final courseCoverImageProvider =
+    FutureProvider.family<Uint8List?, CourseCoverImageRequest>((
+      ref,
+      key,
+    ) async {
+      if (key.courseId.isEmpty || key.coverFileName.isEmpty) return null;
+      final config = ref.watch(serverConfigProvider);
+      if (config == null) return null;
+      final url = UrlUtils.courseImageUrl(
+        config,
+        key.courseId,
+        key.coverFileName,
+      );
+      if (url == null) return null;
+      final authHeader = UrlUtils.basicAuthHeader('satellite', config.pin);
+      final result = await ref
+          .watch(planetApiProvider)
+          .getBytes(url, authHeader: authHeader);
+      return switch (result) {
+        NetworkSuccess<List<int>>(:final data) => Uint8List.fromList(data),
+        NetworkError<List<int>>() => null,
+        NetworkException<List<int>>() => null,
+      };
+    });
+
+/// The key for [courseCoverImageProvider] — the course's local id and the
+/// CouchDB attachment name.
+@immutable
+class CourseCoverImageRequest {
+  const CourseCoverImageRequest({
+    required this.courseId,
+    required this.coverFileName,
+  });
+
+  final String courseId;
+  final String coverFileName;
+
+  @override
+  bool operator ==(Object other) =>
+      other is CourseCoverImageRequest &&
+      other.courseId == courseId &&
+      other.coverFileName == coverFileName;
+
+  @override
+  int get hashCode => Object.hash(courseId, coverFileName);
+}

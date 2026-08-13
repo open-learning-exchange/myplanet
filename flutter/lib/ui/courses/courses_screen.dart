@@ -12,6 +12,7 @@ import '../components/list_view_mode.dart';
 import '../components/view_mode_toggle.dart';
 import '../dashboard/dashboard_shell.dart';
 import '../router.dart';
+import 'course_subject.dart';
 
 /// Port of `ui/courses/CoursesFragment.kt`.
 ///
@@ -386,14 +387,17 @@ class _CourseTile extends StatelessWidget {
 /// `item_library_grid.xml` layout the Kotlin `CoursesAdapter` inflates in
 /// grid mode — a card with a subject icon placeholder, the title, and the
 /// grade/subject subtitle.
-class _CourseGridTile extends StatelessWidget {
+class _CourseGridTile extends ConsumerWidget {
   const _CourseGridTile(this.course);
 
   final CourseRow course;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final subject = classifyCourseSubject(course.subjectLevel);
+    final coverFileName = course.coverFileName?.trim() ?? '';
     final subtitleParts = [
       if (course.gradeLevel != null && course.gradeLevel!.isNotEmpty)
         course.gradeLevel!,
@@ -412,12 +416,17 @@ class _CourseGridTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Center(
-                  child: Icon(
-                    Icons.school_outlined,
-                    size: 40,
-                    color: theme.colorScheme.primary.withValues(alpha: 0.6),
-                  ),
+                // Port of `CoursesAdapter.bindCover` (818732139): when the
+                // course has a cover attachment it is fetched via the
+                // authenticated `courseCoverImageProvider` and shown with
+                // `Image.memory`; otherwise the subject-tinted background
+                // with the subject icon is shown, matching the Kotlin's
+                // `setCoverColor` + `subjectIconRes` fallback path.
+                child: _CourseCover(
+                  courseId: course.id,
+                  coverFileName: coverFileName,
+                  subject: subject,
+                  subjectLabel: courseSubjectLabel(subject, l10n),
                 ),
               ),
               const SizedBox(height: 4),
@@ -441,6 +450,86 @@ class _CourseGridTile extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The cover area of a course grid tile. Shows the fetched cover image when
+/// available, or the subject-tinted icon fallback otherwise.
+class _CourseCover extends ConsumerWidget {
+  const _CourseCover({
+    required this.courseId,
+    required this.coverFileName,
+    required this.subject,
+    required this.subjectLabel,
+  });
+
+  final String courseId;
+  final String coverFileName;
+  final CourseSubject subject;
+  final String subjectLabel;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (coverFileName.isEmpty) {
+      return _SubjectFallback(subject: subject, label: subjectLabel);
+    }
+    final image = ref.watch(
+      courseCoverImageProvider(
+        CourseCoverImageRequest(
+          courseId: courseId,
+          coverFileName: coverFileName,
+        ),
+      ),
+    );
+    return image.when(
+      data: (bytes) => bytes == null || bytes.isEmpty
+          ? _SubjectFallback(subject: subject, label: subjectLabel)
+          : ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.memory(bytes, fit: BoxFit.cover),
+            ),
+      loading: () => _SubjectFallback(subject: subject, label: subjectLabel),
+      error: (_, _) => _SubjectFallback(subject: subject, label: subjectLabel),
+    );
+  }
+}
+
+/// The subject-tinted icon shown when there is no cover image — the Flutter
+/// counterpart of `setCoverColor` + `subjectIconRes`.
+class _SubjectFallback extends StatelessWidget {
+  const _SubjectFallback({required this.subject, required this.label});
+
+  final CourseSubject subject;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: courseSubjectColor(subject).withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            courseSubjectIcon(subject),
+            size: 40,
+            color: courseSubjectColor(subject),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: courseSubjectColor(subject),
+            ),
+          ),
+        ],
       ),
     );
   }
