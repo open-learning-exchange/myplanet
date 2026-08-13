@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
@@ -301,7 +302,7 @@ class TeamFragment : Fragment() {
     }
 
     private fun observeTeamData() {
-        collectWhenStarted(viewModel.teamData) { teamDataList ->
+        collectLatestWhenStarted(viewModel.teamData) { teamDataList ->
             teamListAdapter.submitList(teamDataList)
             showNoResultsMessage(teamDataList.isEmpty())
             listContentDescription(conditionApplied)
