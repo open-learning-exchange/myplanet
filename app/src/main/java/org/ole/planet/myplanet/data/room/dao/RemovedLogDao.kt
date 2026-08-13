@@ -14,6 +14,13 @@ interface RemovedLogDao {
     @Query("DELETE FROM removed_log WHERE type = :type AND userId = :userId AND docId IN (:docIds)")
     suspend fun deleteByTypeUserAndDocs(type: String, userId: String?, docIds: List<String>)
 
+    @androidx.room.Transaction
+    suspend fun deleteByTypeUserAndDocsTransaction(type: String, userId: String?, docIds: List<String>) {
+        docIds.chunked(999).forEach { chunk ->
+            deleteByTypeUserAndDocs(type, userId, chunk)
+        }
+    }
+
     @Query("SELECT docId FROM removed_log WHERE type = :type AND userId = :userId")
     suspend fun getRemovedDocIds(type: String, userId: String?): List<String?>
 
