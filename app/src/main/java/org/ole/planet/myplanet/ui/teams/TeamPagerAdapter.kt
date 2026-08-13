@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.ui.teams
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.AsyncListDiffer
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import org.ole.planet.myplanet.MainApplication
@@ -19,11 +21,10 @@ import org.ole.planet.myplanet.ui.teams.courses.TeamCoursesFragment
 import org.ole.planet.myplanet.ui.teams.members.MembersFragment
 import org.ole.planet.myplanet.ui.teams.members.RequestsFragment
 import org.ole.planet.myplanet.ui.teams.resources.TeamResourcesFragment
-import org.ole.planet.myplanet.utils.DiffUtils
 
 class TeamPagerAdapter(
     private val parentFragment: Fragment,
-    private var pages: List<TeamPageConfig>,
+    initialPages: List<TeamPageConfig>,
     private val teamId: String?,
     private val onMemberChangeListener: OnMemberChangeListener,
     private val teamUpdateListener: OnTeamUpdateListener
@@ -31,12 +32,23 @@ class TeamPagerAdapter(
     private val itemIds = mutableMapOf<String, Long>()
     private var nextId = 1L
 
+    private val differ = AsyncListDiffer(this, object : DiffUtil.ItemCallback<TeamPageConfig>() {
+        override fun areItemsTheSame(oldItem: TeamPageConfig, newItem: TeamPageConfig): Boolean {
+            return oldItem.id == newItem.id
+        }
+
+        override fun areContentsTheSame(oldItem: TeamPageConfig, newItem: TeamPageConfig): Boolean {
+            return oldItem == newItem
+        }
+    })
+
     init {
-        pages.forEach { page ->
+        initialPages.forEach { page ->
             if (!itemIds.containsKey(page.id)) {
                 itemIds[page.id] = nextId++
             }
         }
+        differ.submitList(initialPages.toList())
     }
 
     fun updatePages(newPages: List<TeamPageConfig>) {
@@ -45,33 +57,26 @@ class TeamPagerAdapter(
                 itemIds[page.id] = nextId++
             }
         }
-        val diffResult = DiffUtils.calculateDiff(
-            oldList = pages,
-            newList = newPages,
-            areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
-            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
-        )
-        pages = newPages.toList()
-        diffResult.dispatchUpdatesTo(this)
+        differ.submitList(newPages.toList())
     }
 
-    override fun getItemCount(): Int = pages.size
+    override fun getItemCount(): Int = differ.currentList.size
 
     fun getPageTitle(position: Int): CharSequence =
-        parentFragment.getString(pages[position].titleRes)
+        parentFragment.getString(differ.currentList[position].titleRes)
 
-    fun getPageConfig(position: Int): TeamPageConfig? = pages.getOrNull(position)
+    fun getPageConfig(position: Int): TeamPageConfig? = differ.currentList.getOrNull(position)
 
     override fun getItemId(position: Int): Long {
-        return itemIds[pages[position].id] ?: RecyclerView.NO_ID
+        return itemIds[differ.currentList[position].id] ?: RecyclerView.NO_ID
     }
 
     override fun containsItem(itemId: Long): Boolean {
-        return pages.any { itemIds[it.id] == itemId }
+        return differ.currentList.any { itemIds[it.id] == itemId }
     }
 
     override fun createFragment(position: Int): Fragment {
-        val page = pages[position]
+        val page = differ.currentList[position]
         val fragment = page.createFragment()
 
         when (page) {

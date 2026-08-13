@@ -2,54 +2,52 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.AsyncListDiffer
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
-import org.ole.planet.myplanet.utils.DiffUtils
 
 class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : FragmentStateAdapter(fm) {
-    private val steps = mutableListOf<String>()
     private val itemIds = mutableMapOf<String, Long>()
     private var nextId = 1L
+
+    private val differ = AsyncListDiffer(this, object : DiffUtil.ItemCallback<String?>() {
+        override fun areItemsTheSame(oldItem: String, newItem: String): Boolean {
+            return oldItem == newItem
+        }
+
+        override fun areContentsTheSame(oldItem: String, newItem: String): Boolean {
+            return oldItem == newItem
+        }
+    })
 
     companion object {
         private const val COURSE_DETAIL_ID = 0L
     }
 
     fun submitList(newSteps: List<String>) {
-        if (newSteps == steps) return
-
         newSteps.forEach { stepId ->
             if (!itemIds.containsKey(stepId)) {
                 itemIds[stepId] = nextId++
             }
         }
 
-        val oldItems = listOf(null) + steps
-        val newItems = listOf(null) + newSteps
-        val diffResult = DiffUtils.calculateDiff(
-            oldList = oldItems,
-            newList = newItems,
-            areItemsTheSame = { oldItem, newItem -> oldItem == newItem },
-            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
-        )
-
-        steps.clear()
-        steps.addAll(newSteps)
-        diffResult.dispatchUpdatesTo(this)
+        differ.submitList(listOf(null) + newSteps)
     }
 
     override fun createFragment(position: Int): Fragment {
         val b = Bundle()
         val f: Fragment
+        val currentList = differ.currentList
         if (position == 0) {
             f = CourseDetailFragment()
             b.putString("courseId", courseId)
         } else {
             f = CourseStepFragment()
-            b.putString("stepId", steps[position - 1])
+            b.putString("stepId", currentList[position])
             b.putInt("stepNumber", position)
-            if (position < steps.size) {
-                b.putString("nextStepId", steps[position])
+            if (position + 1 < currentList.size) {
+                b.putString("nextStepId", currentList[position + 1])
             }
         }
         f.arguments = b
@@ -57,15 +55,23 @@ class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : Fragmen
     }
 
     override fun getItemCount(): Int {
-        return steps.size + 1
+        return differ.currentList.size
     }
 
     override fun getItemId(position: Int): Long {
         if (position == 0) return COURSE_DETAIL_ID
-        return itemIds[steps[position - 1]] ?: RecyclerView.NO_ID
+        return differ.currentList[position]?.let { itemIds[it] } ?: RecyclerView.NO_ID
     }
 
     override fun containsItem(itemId: Long): Boolean {
-        return itemId == COURSE_DETAIL_ID || steps.any { itemIds[it] == itemId }
+        if (itemId == COURSE_DETAIL_ID) return true
+        val currentList = differ.currentList
+        for (i in 1 until currentList.size) {
+            val stepId = currentList[i]
+            if (stepId != null && itemIds[stepId] == itemId) {
+                return true
+            }
+        }
+        return false
     }
 }
