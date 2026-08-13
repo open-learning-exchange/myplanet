@@ -12,7 +12,6 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.HealthExamination.Companion.serialize
 import org.ole.planet.myplanet.model.HealthRecord
@@ -27,10 +26,10 @@ class HealthRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
     private val dispatcherProvider: DispatcherProvider,
     private val healthExaminationDao: HealthExaminationDao,
-    private val userDao: UserDao
+    private val userRepositoryLazy: dagger.Lazy<UserRepository>
 ) : HealthRepository {
     override suspend fun getHealthEntry(userId: String): Pair<UserEntity?, HealthExamination?> {
-        val userCopy = userDao.getById(userId)
+        val userCopy = userRepositoryLazy.get().getUserById(userId)
         val pojoCopy = healthExaminationDao.getByIdOrUserId(userId)
 
         return Pair(userCopy, pojoCopy)
@@ -64,7 +63,7 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveExamination(examination: HealthExamination?, pojo: HealthExamination?, user: UserEntity?) {
-        user?.let { userDao.upsert(it) }
+        user?.let { userRepositoryLazy.get().saveUser(it) }
         pojo?.let { healthExaminationDao.upsert(it) }
         examination?.let { healthExaminationDao.upsert(it) }
     }
@@ -148,19 +147,19 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getPatientById(id: String): UserEntity? {
-        return userDao.getById(id)
+        return userRepositoryLazy.get().getUserById(id)
     }
 
     override suspend fun getPatientsSortedBy(fieldName: String, descending: Boolean): List<UserEntity> {
-        val users = userDao.getAll()
+        val users = userRepositoryLazy.get().getAllUsers()
         return sortPatients(users, fieldName, descending)
     }
 
     override suspend fun searchPatients(query: String, sortField: String, descending: Boolean): List<UserEntity> {
         val users = if (query.isBlank()) {
-            userDao.getAll()
+            userRepositoryLazy.get().getAllUsers()
         } else {
-            userDao.search(query)
+            userRepositoryLazy.get().searchUsers(query)
         }
         return sortPatients(users, sortField, descending)
     }
@@ -203,7 +202,7 @@ class HealthRepositoryImpl @Inject constructor(
             emptyMap()
         } else {
             val userIdSet = userIds.toSet()
-            userDao.getAll()
+            userRepositoryLazy.get().getAllUsers()
                 .filter { it.id in userIdSet }
                 .associateBy { it.id ?: "" }
         }

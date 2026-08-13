@@ -36,16 +36,18 @@ class HealthRepositoryImplTest {
     private val testScope = TestScope(testDispatcher)
     private val mockApiInterface: ApiInterface = mockk(relaxed = true)
     private val healthExaminationDao: HealthExaminationDao = mockk(relaxed = true)
-    private val userDao: UserDao = mockk(relaxed = true)
+    private val userRepositoryLazy: dagger.Lazy<UserRepository> = mockk(relaxed = true)
+    private val userRepository: UserRepository = mockk(relaxed = true)
 
     @Before
     fun setUp() {
+        every { userRepositoryLazy.get() } returns userRepository
         every { dispatcherProvider.default } returns testDispatcher
         repository = HealthRepositoryImpl(
             mockApiInterface,
             dispatcherProvider,
             healthExaminationDao,
-            userDao
+            userRepositoryLazy
         )
     }
 
@@ -71,7 +73,7 @@ class HealthRepositoryImplTest {
     @Test
     fun getHealthEntry_returns_user_and_examination() = testScope.runTest {
         val examination = HealthExamination().apply { _id = "user1" }
-        coEvery { userDao.getById("user1") } returns UserEntity(id = "user1")
+        coEvery { userRepository.getUserById("user1") } returns UserEntity(id = "user1")
         coEvery { healthExaminationDao.getByIdOrUserId("user1") } returns examination
 
         val result = repository.getHealthEntry("user1")
@@ -87,7 +89,7 @@ class HealthRepositoryImplTest {
             _id = "exam1"
             userId = "user1"
         }
-        coEvery { userDao.getById("user1") } returns UserEntity(id = "user1", _id = "remote-user1")
+        coEvery { userRepository.getUserById("user1") } returns UserEntity(id = "user1", _id = "remote-user1")
         coEvery { healthExaminationDao.getByIdOrUserId("user1") } returns examination
 
         val result = repository.getHealthEntry("user1")
@@ -159,7 +161,7 @@ class HealthRepositoryImplTest {
         repository.saveExamination(examination, pojo, user)
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { userDao.upsert(match { it.id == "user1" }) }
+        coVerify(exactly = 1) { userRepository.saveUser(match { it.id == "user1" }) }
         coVerify(exactly = 1) { healthExaminationDao.upsert(pojo) }
         coVerify(exactly = 1) { healthExaminationDao.upsert(examination) }
     }
@@ -171,7 +173,7 @@ class HealthRepositoryImplTest {
         repository.saveExamination(examination, null, null)
         advanceUntilIdle()
 
-        coVerify(exactly = 0) { userDao.upsert(any()) }
+        coVerify(exactly = 0) { userRepository.saveUser(any()) }
         coVerify(exactly = 1) { healthExaminationDao.upsert(examination) }
     }
 

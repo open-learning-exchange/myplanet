@@ -48,7 +48,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     private val answerDao: AnswerDao,
     private val examDao: ExamDao,
     private val questionDao: QuestionDao,
-    private val userDao: UserDao
+    private val userRepositoryLazy: dagger.Lazy<UserRepository>
 ) : SubmissionsRepository {
 
     override suspend fun generateSubmissionPdf(submissionId: String): File? {
@@ -238,7 +238,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         val examId = submission.parentId?.substringBefore('@')
         val exam = examId?.let { getExamById(it) }
 
-        val user = submission.userId?.let { userDao.getById(it) }
+        val user = submission.userId?.let { userRepositoryLazy.get().getUserById(it) }
 
         val questions = examId?.let { questionDao.getByExamId(it).map { question -> question } } ?: emptyList()
 
@@ -682,7 +682,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     )
 
     private suspend fun getPayloadData(submission: Submission): PayloadData {
-        val user = submission.userId?.let { userDao.getById(it) }
+        val user = submission.userId?.let { userRepositoryLazy.get().getUserById(it) }
         val examId = submission.examIdFromParentId()
         val exam = examId?.let { examDao.getById(it) }
         val questions = exam?.id?.let { questionDao.getByExamId(it).map { question -> question } } ?: emptyList()

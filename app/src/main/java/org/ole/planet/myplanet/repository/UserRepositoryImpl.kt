@@ -173,6 +173,14 @@ class UserRepositoryImpl @Inject constructor(
         return sortUsers(getAllUsers(), fieldName, descending)
     }
 
+    override suspend fun searchUsers(query: String): List<UserEntity> {
+        return userDao.search(query)
+    }
+
+    override suspend fun saveUser(user: UserEntity) {
+        userDao.upsert(user)
+    }
+
     override suspend fun getPendingSyncUsers(limit: Int): List<UserEntity> {
         return userDao.getAll()
             .asSequence()
