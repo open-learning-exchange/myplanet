@@ -243,11 +243,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
 
         collectWhenStarted(syncManager.syncStatus) { status ->
-            if (status != lastSyncStatus) {
-                lastSyncStatus = status
-                if (status is SyncManager.SyncStatus.Success) {
-                    updateLastSyncStatus()
-                }
+            if (status == lastSyncStatus) return@collectWhenStarted
+            lastSyncStatus = status
+            if (status is SyncManager.SyncStatus.Success) {
+                updateLastSyncStatus()
             }
         }
     }
