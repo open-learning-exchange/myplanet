@@ -22,11 +22,11 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.base.DefaultBaseAdapterFactory
@@ -52,7 +52,6 @@ import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.ListViewMode
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
-import kotlin.time.Duration.Companion.milliseconds
 
 @AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedListener, OnTagClickListener, RealtimeSyncMixin {

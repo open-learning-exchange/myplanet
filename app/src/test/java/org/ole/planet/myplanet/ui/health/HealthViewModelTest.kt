@@ -2,20 +2,17 @@ package org.ole.planet.myplanet.ui.health
 
 import io.mockk.coEvery
 import io.mockk.mockk
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-
-import org.ole.planet.myplanet.utils.MainDispatcherRule
-import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HealthViewModelTest {
