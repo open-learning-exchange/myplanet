@@ -15,6 +15,8 @@ import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.services.FileUploader
 import org.ole.planet.myplanet.utils.FileUtils
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
@@ -24,6 +26,7 @@ class UploadRepositoryImpl @Inject constructor(
     private val examDao: ExamDao,
     private val submissionDao: SubmissionDao,
     private val answerDao: AnswerDao,
+    private val dispatcherProvider: DispatcherProvider,
 ) : UploadRepository {
 
     @Suppress("UNCHECKED_CAST")
@@ -113,10 +116,13 @@ class UploadRepositoryImpl @Inject constructor(
         rev: String,
         name: String
     ): Response<JsonObject> {
-        val connection = file.toURI().toURL().openConnection()
-        val mimeType = connection.contentType ?: "application/octet-stream"
-        val body = FileUtils.fullyReadFileToBytes(file)
-            .toRequestBody("application/octet-stream".toMediaTypeOrNull())
+        val (mimeType, body) = withContext(dispatcherProvider.io) {
+            val connection = file.toURI().toURL().openConnection()
+            val type = connection.contentType ?: "application/octet-stream"
+            val requestBody = FileUtils.fullyReadFileToBytes(file)
+                .toRequestBody("application/octet-stream".toMediaTypeOrNull())
+            type to requestBody
+        }
         val url = String.format(destinationFormat, UrlUtils.getUrl(), id, name)
 
         return apiInterface.uploadResource(
