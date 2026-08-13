@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.services.UserSessionManager
 data class RequestsUiState(
     val members: List<UserEntity> = emptyList(),
     val isLeader: Boolean = false,
+    val isMember: Boolean = false,
     val memberCount: Int = 0
 )
 
@@ -35,11 +36,21 @@ class RequestsViewModel @Inject constructor(
 
     fun fetchMembers(teamId: String) {
         viewModelScope.launch {
-            val members = teamsRepository.getRequestedMembers(teamId)
-            val memberCount = teamsRepository.getJoinedMembers(teamId).size
             val user = userSessionManager.getUserModel()
+            val isMember = teamsRepository.isMember(user?.id, teamId)
             val isLeader = teamsRepository.isTeamLeader(teamId, user?.id)
-            _uiState.value = RequestsUiState(members, isLeader, memberCount)
+            val memberCount = teamsRepository.getJoinedMembers(teamId).size
+            val members = if (isMember) {
+                teamsRepository.getRequestedMembers(teamId)
+            } else {
+                emptyList()
+            }
+            _uiState.value = RequestsUiState(
+                members = members,
+                isLeader = isLeader,
+                isMember = isMember,
+                memberCount = memberCount
+            )
         }
     }
 

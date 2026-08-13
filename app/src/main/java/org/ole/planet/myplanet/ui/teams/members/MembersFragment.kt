@@ -88,7 +88,7 @@ class MembersFragment : BaseTeamFragment() {
                 launch {
                     requestsViewModel.uiState.collect { state ->
                         requestsAdapter?.setData(state.members, state.isLeader, state.memberCount)
-                        val hasRequests = state.members.isNotEmpty()
+                        val hasRequests = state.isMember && state.members.isNotEmpty()
                         binding.llRequestsSection.visibility = if (hasRequests) View.VISIBLE else View.GONE
                         if (hasRequests) {
                             binding.tvRequestsHeader.text = getString(R.string.join_requests) + " (${state.members.size})"

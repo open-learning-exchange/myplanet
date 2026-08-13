@@ -34,7 +34,8 @@ class RequestsViewModelTest {
         teamsRepository = mockk()
         teamsSyncRepository = mockk()
         userSessionManager = mockk()
-                viewModel = RequestsViewModel(teamsRepository, teamsSyncRepository, userSessionManager)
+        coEvery { teamsRepository.isMember(any(), any()) } returns true
+        viewModel = RequestsViewModel(teamsRepository, teamsSyncRepository, userSessionManager)
     }
 
     @After
