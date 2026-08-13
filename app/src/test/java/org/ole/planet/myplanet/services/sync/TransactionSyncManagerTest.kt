@@ -55,7 +55,6 @@ class TransactionSyncManagerTest {
     private val userRepository: UserRepository = mockk()
     private val userSyncRepository: UserSyncRepository = mockk()
     private val activitiesRepository: ActivitiesRepository = mockk()
-    private val teamsRepository: Lazy<TeamsRepository> = mockk()
     private val teamsSyncRepository: Lazy<TeamsSyncRepository> = mockk()
 	private val notificationsRepository: NotificationsRepository = mockk()
     private val tagsRepository: TagsRepository = mockk()
@@ -89,7 +88,6 @@ class TransactionSyncManagerTest {
             userRepository,
             userSyncRepository,
             activitiesRepository,
-			teamsRepository,
             teamsSyncRepository,
 			notificationsRepository,
             tagsRepository,
