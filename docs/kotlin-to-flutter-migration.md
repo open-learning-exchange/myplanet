@@ -771,10 +771,12 @@ flutter pub get 2>&1 | grep -i discontinued
 ## Remaining UI packages (2 of 28)
 
 `components`, `enterprises` -- plus team voices, team/public survey sharing, personal attachments/upload,
-storage/retry, and the rest of `settings`, plus profile photo/upload, membership, and the rest of `user`,
-and the rest of `sync` and `dashboard` (the home cards, pending-survey dialog, and completed-course
-star row are ported as of Phase 33; still missing are the network ring, team alert badges, activity
-chart, language/about/disclaimer overflow actions, OS-scheduled sync, and survey reminders).
+storage/retry, and the rest of `settings`, plus profile photo/upload (photo *rendering* landed in
+Phase 34; attachment *upload* remains), membership, and the rest of `user`,
+and the rest of `sync` and `dashboard` (the home cards, pending-survey dialog, completed-course
+star row, profile photo avatar, and login-activity chart are ported as of Phase 35; still missing
+are the network ring, team alert badges, language/about/disclaimer overflow actions,
+OS-scheduled sync, and survey reminders).
 
 **Notes on remaining packages:**
 - `components` -- reusable utility widgets. `CheckboxList` is in use; `ChallengeDialog` and

@@ -891,3 +891,44 @@ class Certifications extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Port of `model/OfflineActivity.kt` (`@Entity(tableName =
+/// "offline_activity")`).
+///
+/// Mixed authority: rows pulled from the `login_activities` CouchDB database
+/// during sync carry an `_id`/`_rev` and are a cache, but rows the app authors
+/// itself when recording a login (see `ActivitiesRepository.logLogin`) carry no
+/// `_id` — they exist only here until the uploader delivers them. Like
+/// `course_progress`, dropping the table would discard offline login records,
+/// so it is in [AppDatabase.localAuthorityTables] and a schema bump steps over
+/// it. The "My Activity" chart reads the `loginTime` of every `type = 'login'`
+/// row for the current user.
+@DataClassName('OfflineActivityRow')
+@TableIndex(name: 'offline_activity_rev', columns: {#rev})
+@TableIndex(name: 'offline_activity_user_id', columns: {#userId})
+@TableIndex(name: 'offline_activity_type', columns: {#type})
+@TableIndex(name: 'offline_activity_couch_id', columns: {#couchId})
+@TableIndex(name: 'offline_activity_login_time', columns: {#loginTime})
+@TableIndex(name: 'offline_activity_user_name', columns: {#userName})
+class OfflineActivities extends Table {
+  @override
+  String get tableName => 'offline_activity';
+
+  TextColumn get id => text()();
+  TextColumn get couchId => text().named('_id').nullable()();
+  TextColumn get rev => text().named('_rev').nullable()();
+  TextColumn get userName => text().nullable()();
+  TextColumn get userId => text().nullable()();
+  TextColumn get type => text().nullable()();
+  TextColumn get description => text().nullable()();
+  TextColumn get createdOn => text().nullable()();
+  TextColumn get parentCode => text().nullable()();
+
+  /// Epoch millis of the login this row records. The chart buckets by month.
+  IntColumn get loginTime => integer().nullable()();
+  IntColumn get logoutTime => integer().nullable()();
+  TextColumn get androidId => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

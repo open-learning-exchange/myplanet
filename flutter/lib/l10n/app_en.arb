@@ -983,5 +983,8 @@
   "adoptableSurveys": "Surveys available to adopt",
   "noAdoptableSurveys": "No surveys available to adopt",
   "adoptSurvey": "Adopt survey",
-  "surveyAdopted": "Survey adopted"
+  "surveyAdopted": "Survey adopted",
+  "myActivity": "My Activity",
+  "chartLabel": "No. of login",
+  "noLoginActivity": "No login activity yet"
 }

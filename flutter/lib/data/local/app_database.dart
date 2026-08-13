@@ -51,6 +51,7 @@ part 'app_database.g.dart';
     HealthExaminations,
     CourseProgress,
     Certifications,
+    OfflineActivities,
   ],
   daos: [
     UserDao,
@@ -75,6 +76,7 @@ part 'app_database.g.dart';
     HealthExaminationDao,
     CourseProgressDao,
     CertificationDao,
+    OfflineActivityDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -87,7 +89,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 26;
+  int get schemaVersion => 27;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -164,6 +166,14 @@ class AppDatabase extends _$AppDatabase {
     // stepNum) so a refilled cache row adopts the local `passed` flag rather
     // than overwriting it.
     'course_progress',
+    // Mixed authority: rows pulled from the `login_activities` CouchDB
+    // database are a cache, but rows the app authors when recording a login
+    // carry no `_id` and exist nowhere else until the uploader delivers them.
+    // A sync can refill the cache half but not the other, so dropping the
+    // table would discard offline login records. `insertLoginActivitiesFromSync`
+    // merges by `_id` (with a loginTime+userName fallback) so a refilled cache
+    // row adopts the local row instead of duplicating it.
+    'offline_activity',
   };
 
   @override
@@ -2402,4 +2412,74 @@ class CertificationDao extends DatabaseAccessor<AppDatabase>
     }
     return deleted;
   }
+}
+
+/// Port of `data/room/dao/OfflineActivityDao.kt`.
+///
+/// The "My Activity" chart watches the login rows for the current user; the
+/// sync path merges incoming `login_activities` documents by `_id`, falling
+/// back to a (loginTime, userName) pair so a cache row the app authored
+/// offline — before it had a server `_id` — is adopted rather than duplicated.
+@DriftAccessor(tables: [OfflineActivities])
+class OfflineActivityDao extends DatabaseAccessor<AppDatabase>
+    with _$OfflineActivityDaoMixin {
+  OfflineActivityDao(super.db);
+
+  /// The chart's data source: every `type = 'login'` row for [userName],
+  /// newest first. Matches `observeByUserNameAndType` in the Kotlin DAO.
+  Stream<List<OfflineActivityRow>> watchLoginsByUserName(String userName) =>
+      (select(offlineActivities)
+            ..where(
+              (a) => a.userName.equals(userName) & a.type.equals('login'),
+            )
+            ..orderBy([(a) => OrderingTerm.desc(a.loginTime)]))
+          .watch();
+
+  /// Total login count for [userName]. Matches `countByUserNameAndType`.
+  Future<int> loginCount(String userName) async {
+    final count = offlineActivities.id.count();
+    final row = await (selectOnly(offlineActivities)
+          ..addColumns([count])
+          ..where(
+            offlineActivities.userName.equals(userName) &
+                offlineActivities.type.equals('login'),
+          ))
+        .getSingle();
+    return row.read(count) ?? 0;
+  }
+
+  /// Batch read for the sync merge, keyed by the CouchDB `_id`.
+  Future<List<OfflineActivityRow>> getByCouchIds(List<String> ids) async {
+    final rows = <OfflineActivityRow>[];
+    for (final chunk in _chunked(ids, _sqliteVariableChunk)) {
+      rows.addAll(
+        await (select(
+          offlineActivities,
+        )..where((a) => a.couchId.isIn(chunk))).get(),
+      );
+    }
+    return rows;
+  }
+
+  /// Fallback merge key for offline-authored rows that have no `_id` yet:
+  /// the (loginTime, userName) pair the server document also carries.
+  Future<List<OfflineActivityRow>> getByLoginTimesAndUserNames(
+    List<int> loginTimes,
+    List<String> userNames,
+  ) {
+    final query = select(offlineActivities)
+      ..where(
+        (a) =>
+            a.loginTime.isIn(loginTimes) & a.userName.isIn(userNames),
+      );
+    return query.get();
+  }
+
+  Future<void> upsertAll(List<OfflineActivitiesCompanion> rows) async {
+    if (rows.isEmpty) return;
+    await batch((b) => b.insertAllOnConflictUpdate(offlineActivities, rows));
+  }
+
+  Future<void> upsert(OfflineActivitiesCompanion row) =>
+      into(offlineActivities).insertOnConflictUpdate(row);
 }

@@ -183,5 +183,8 @@
   "adoptSurvey": "Adoptar encuesta",
   "areYouSure": "¿Estás seguro?",
   "yes": "Sí",
-  "no": "No"
+  "no": "No",
+  "myActivity": "Mi actividad",
+  "chartLabel": "N.º de inicios de sesión",
+  "noLoginActivity": "Aún no hay actividad de inicio de sesión"
 }

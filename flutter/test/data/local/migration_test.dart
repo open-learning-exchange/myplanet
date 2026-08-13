@@ -339,6 +339,30 @@ void main() {
     },
   );
 
+  test('an un-uploaded offline login row survives a schema upgrade', () async {
+    // The login the app records on its own behalf carries no `_id` until the
+    // uploader delivers it, so a sync can never give it back. Dropping the
+    // table would silently lose the user's login history, and the chart's
+    // counts would drop the moment a schema bump landed.
+    await database.offlineActivityDao.upsert(
+      OfflineActivitiesCompanion.insert(
+        id: 'login-1',
+        userName: const Value('ada'),
+        type: const Value('login'),
+        loginTime: const Value(1700000000000),
+      ),
+    );
+
+    await runUpgrade();
+
+    final survivor =
+        (await database.offlineActivityDao.watchLoginsByUserName('ada').first)
+            .firstWhere((r) => r.id == 'login-1');
+    expect(survivor.userName, 'ada');
+    expect(survivor.type, 'login');
+    expect(survivor.loginTime, 1700000000000);
+  });
+
   test('an already-uploaded chat is not re-queued after the upgrade', () async {
     // A chat carries a `_rev` only once the server acknowledged it. Leaving
     // those at the column default would mark every synced conversation pending
@@ -381,6 +405,7 @@ void main() {
       'health_examinations',
       'users',
       'course_progress',
+      'offline_activity',
     };
     expect(
       AppDatabase.localAuthorityTables,

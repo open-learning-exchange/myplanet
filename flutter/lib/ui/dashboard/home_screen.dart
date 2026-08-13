@@ -141,6 +141,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return Scaffold(
       drawer: const DashboardDrawer(),
+      floatingActionButton: FloatingActionButton(
+        tooltip: l10n.myActivity,
+        onPressed: () => isGuest
+            ? showGuestDialog(context)
+            : context.push(Routes.activities),
+        child: const Icon(Icons.bar_chart_outlined),
+      ),
       appBar: AppBar(
         title: Text(title),
         actions: [
