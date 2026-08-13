@@ -153,7 +153,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         adapterLibrary.setListener(this)
 
         checkList(filteredList.size)
-        hideButton()
         showNoData(tvMessage, filteredList.size, "resources")
         changeButtonStatus()
         return adapterLibrary
@@ -196,11 +195,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                 }
             }
         }
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             userModel = userRepository.getUserModel()
             if (::adapterLibrary.isInitialized && _binding != null) {
                 checkList()
-                hideButton()
             }
             val userId = userModel?.id
             if (userId != null) {
@@ -219,7 +217,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             showNoData(tvMessage, adapterLibrary.itemCount, "resources")
             changeButtonStatus()
             checkList()
-            hideButton()
         }
         clearTagsButton()
         setupUI(binding.myLibraryParentLayout, requireActivity())
@@ -324,7 +321,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
 
         checkList(filteredList.size)
-        hideButton()
         showNoData(tvMessage, filteredList.size, "resources")
     }
 
@@ -382,7 +378,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
     }
 
-    private fun checkList(listSize: Int = if (::adapterLibrary.isInitialized) adapterLibrary.getLibraryList().size else 0) {
+    private fun checkList(listSize: Int = if (::adapterLibrary.isInitialized) adapterLibrary.currentList.size else 0) {
         val hasAnyLibraryData = allResourceModels.isNotEmpty()
         val isGuest = userModel?.isGuest() == true
 
@@ -401,6 +397,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             filter.visibility = View.VISIBLE
             clearTags.visibility = if (hasActiveFilters()) View.VISIBLE else View.GONE
         }
+        hideButton()
     }
 
     private fun hasActiveFilters(): Boolean {
