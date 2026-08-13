@@ -30,6 +30,7 @@ class ProgressRepositoryImpl @Inject constructor(
     private val answerDao: AnswerDao,
     private val questionDao: QuestionDao
 ) : ProgressRepository {
+    @Deprecated("Use getCourseProgressTyped instead", ReplaceWith("getCourseProgressTyped(courseIds, userId)"))
     override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): HashMap<String?, JsonObject> {
         val allSteps = if (courseIds.isEmpty()) {
             emptyList()
@@ -49,6 +50,29 @@ class ProgressRepositoryImpl @Inject constructor(
             progressObject.addProperty("max", steps.size)
             progressObject.addProperty("current", calculateCurrentProgress(steps, progresses))
             map[courseId] = progressObject
+        }
+        return map
+    }
+
+    override suspend fun getCourseProgressTyped(courseIds: List<String>, userId: String?): Map<String, org.ole.planet.myplanet.model.CourseProgressState> {
+        val allSteps = if (courseIds.isEmpty()) {
+            emptyList()
+        } else {
+            courseStepDao.getByCourseIds(courseIds).map { it }
+        }
+        val allProgresses = if (courseIds.isEmpty()) emptyList() else courseProgressDao.getByUserAndCourseIds(userId, courseIds)
+
+        val stepsByCourseId = allSteps.groupBy { it.courseId }
+        val progressesByCourseId = allProgresses.groupBy { it.courseId }
+
+        val map = HashMap<String, org.ole.planet.myplanet.model.CourseProgressState>()
+        for (courseId in courseIds) {
+            val steps = stepsByCourseId[courseId] ?: emptyList()
+            val progresses = progressesByCourseId[courseId] ?: emptyList()
+            map[courseId] = org.ole.planet.myplanet.model.CourseProgressState(
+                max = steps.size,
+                current = calculateCurrentProgress(steps, progresses)
+            )
         }
         return map
     }

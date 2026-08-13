@@ -63,13 +63,13 @@ class CoursesViewModelTest {
     @Test
     fun testLoadCourses_MyCoursesLib_CallsGetCourseProgress() = runTest {
         viewModel.loadCourses(true, "u1")
-        coVerify { progressRepository.getCourseProgress(any<List<String>>(), "u1") }
+        coVerify { progressRepository.getCourseProgressTyped(any<List<String>>(), "u1") }
     }
 
     @Test
     fun testLoadCourses_NotMyCoursesLib_StillCallsGetCourseProgress() = runTest {
         viewModel.loadCourses(false, "u1")
-        coVerify { progressRepository.getCourseProgress(any<List<String>>(), "u1") }
+        coVerify { progressRepository.getCourseProgressTyped(any<List<String>>(), "u1") }
     }
 
     @Test

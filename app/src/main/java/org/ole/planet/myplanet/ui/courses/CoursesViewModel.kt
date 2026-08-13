@@ -16,6 +16,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.Tag
+import org.ole.planet.myplanet.model.CourseProgressState
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
@@ -24,7 +25,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 data class CoursesUiState(
     val courses: List<Course> = emptyList(),
     val map: HashMap<String?, JsonObject> = HashMap(),
-    val progressMap: HashMap<String?, JsonObject>? = null,
+    val progressMap: Map<String, CourseProgressState>? = null,
     val tagsMap: Map<String, List<Tag>> = emptyMap()
 )
 
@@ -79,7 +80,7 @@ class CoursesViewModel @Inject constructor(
         validCourses: List<MyCourse>,
         myCourses: List<MyCourse>,
         map: HashMap<String?, JsonObject>,
-        progressMap: HashMap<String?, JsonObject>?,
+        progressMap: Map<String, CourseProgressState>?,
         tagsMap: Map<String, List<Tag>>
     ): CoursesUiState {
         val sortedCourseList = if (isMyCourseLib) {
@@ -112,7 +113,7 @@ class CoursesViewModel @Inject constructor(
                     val (map, progressMap) = coroutineScope {
                         val ratingsDeferred = async { ratingsRepository.getCourseRatings(userId) }
                         val progressDeferred = async {
-                            progressRepository.getCourseProgress(allCourseIds, userId)
+                            progressRepository.getCourseProgressTyped(allCourseIds, userId)
                         }
                         Pair(ratingsDeferred.await(), progressDeferred.await())
                     }
@@ -173,8 +174,8 @@ class CoursesViewModel @Inject constructor(
                             ?: course.id.takeIf { !it.isNullOrBlank() }
                             ?: course._id
                         val p = progressMap[courseKey] ?: progressMap[course.courseId] ?: progressMap[course.id]
-                        val current = p?.get("current")?.asInt ?: 0
-                        val max = p?.get("max")?.asInt?.takeIf { it > 0 } ?: course.getNumberOfSteps()
+                        val current = p?.current ?: 0
+                        val max = p?.max?.takeIf { it > 0 } ?: course.getNumberOfSteps()
                         when (progressFilter) {
                             "Not Started" -> current == 0
                             "In Progress" -> current > 0 && (max == 0 || current < max)

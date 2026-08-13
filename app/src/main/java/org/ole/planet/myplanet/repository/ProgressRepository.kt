@@ -7,7 +7,9 @@ import org.ole.planet.myplanet.model.CourseProgress
 import org.ole.planet.myplanet.model.CourseStep
 
 interface ProgressRepository {
+    @Deprecated("Use getCourseProgressTyped instead", ReplaceWith("getCourseProgressTyped(courseIds, userId)"))
     suspend fun getCourseProgress(courseIds: List<String>, userId: String?): HashMap<String?, JsonObject>
+    suspend fun getCourseProgressTyped(courseIds: List<String>, userId: String?): Map<String, org.ole.planet.myplanet.model.CourseProgressState>
     suspend fun getCurrentProgress(steps: List<CourseStep?>?, userId: String?, courseId: String?): Int
     suspend fun fetchCourseData(userId: String?): JsonArray
     suspend fun getProgressRecords(userId: String?): List<CourseProgress>
