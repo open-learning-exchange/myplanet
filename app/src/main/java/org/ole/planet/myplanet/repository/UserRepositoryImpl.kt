@@ -110,7 +110,7 @@ class UserRepositoryImpl @Inject constructor(
         if (userIds.isEmpty()) return emptyList()
         val userIdList = userIds.distinct()
         val result = mutableListOf<UserEntity>()
-        userIdList.chunked(500).forEach { chunk ->
+        userIdList.chunked(400).forEach { chunk ->
             result.addAll(userDao.getUsersByAnyIds(chunk))
         }
         return result.distinctBy { it.id }
@@ -1258,7 +1258,7 @@ class UserRepositoryImpl @Inject constructor(
 
         val existingUsersList = mutableListOf<UserEntity>()
         if (idsToFetch.isNotEmpty()) {
-            idsToFetch.chunked(500).forEach { chunk ->
+            idsToFetch.chunked(400).forEach { chunk ->
                 existingUsersList.addAll(userDao.getUsersByAnyIds(chunk))
             }
         }
