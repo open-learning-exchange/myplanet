@@ -62,6 +62,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         val v = inflater.inflate(getLayout(), container, false)
         recyclerView = v.findViewById(R.id.recycler)
         recyclerView.layoutManager = LinearLayoutManager(activity)
+        recyclerView.setHasFixedSize(true)
         if (isMyCourseLib) {
             tvDelete = v.findViewById(R.id.tv_delete)
             initDeleteButton()
@@ -112,6 +113,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             val adapter = getAdapter()
             if (recyclerView.adapter != adapter) {
                 recyclerView.adapter = adapter
+            } else {
+                recyclerView.adapter?.notifyDataSetChanged()
             }
         }
     }
@@ -198,6 +201,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         val newAdapter = getAdapter()
         if (recyclerView.adapter != newAdapter) {
             recyclerView.adapter = newAdapter
+        } else {
+            recyclerView.adapter?.notifyDataSetChanged()
         }
         showNoData(tvMessage, newAdapter.itemCount, "")
     }
