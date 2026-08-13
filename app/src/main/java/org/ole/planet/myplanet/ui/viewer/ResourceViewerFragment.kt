@@ -468,7 +468,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             .into(imageViewer)
     }
 
-    private fun setupTextViewer() {
+    private suspend fun setupTextViewer() {
         binding.stubText.visibility = View.VISIBLE
         val textFileTitle = binding.root.findViewById<TextView>(R.id.textFileTitle)
         val textContent = binding.root.findViewById<TextView>(R.id.textContent)
@@ -476,9 +476,17 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
         val file = File(externalFilesDir, "ole/$filePath")
         if (file.exists()) {
-            val text = file.readText()
-            if (type == ResourceType.MARKDOWN) {
-                MarkdownUtils.setMarkdownText(textContent, text)
+            val (text, spanned) = withContext(dispatcherProvider.io) {
+                val rawText = file.readText()
+                if (type == ResourceType.MARKDOWN) {
+                    Pair(rawText, MarkdownUtils.parseMarkdown(requireContext(), rawText))
+                } else {
+                    Pair(rawText, null)
+                }
+            }
+
+            if (type == ResourceType.MARKDOWN && spanned != null) {
+                MarkdownUtils.setParsedMarkdown(textContent, spanned)
             } else {
                 textContent.text = text
             }

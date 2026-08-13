@@ -77,6 +77,16 @@ object MarkdownUtils {
         textView.movementMethod = CustomLinkMovementMethod()
     }
 
+    fun parseMarkdown(context: Context, markdown: String): android.text.Spanned {
+        return create(context).toMarkdown(markdown)
+    }
+
+    fun setParsedMarkdown(textView: TextView, spanned: android.text.Spanned) {
+        val markwon = create(textView.context)
+        markwon.setParsedMarkdown(textView, spanned)
+        textView.movementMethod = CustomLinkMovementMethod()
+    }
+
     private class CustomImageSpan(private val theme: MarkwonTheme, private val url: String) : ClickableSpan() {
         override fun onClick(widget: View) {
             showZoomableImage(widget.context, url)
