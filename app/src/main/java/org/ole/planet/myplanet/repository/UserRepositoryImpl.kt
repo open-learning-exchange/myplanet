@@ -945,22 +945,34 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun cleanupDuplicateUsers() {
         val allUsers = userDao.getAll()
-        val usersByName = allUsers.groupBy { it.name }
+        val seenUsers = HashMap<String?, org.ole.planet.myplanet.model.UserEntity>()
+        val duplicates = HashMap<String?, MutableList<org.ole.planet.myplanet.model.UserEntity>>()
 
-        usersByName.forEach { (_, users) ->
-            if (users.size > 1) {
-                val sortedUsers = users.sortedWith { user1, user2 ->
-                    when {
-                        user1._id?.startsWith("org.couchdb.user:") == true &&
-                            user2._id?.startsWith("guest_") == true -> -1
-                        user1._id?.startsWith("guest_") == true &&
-                            user2._id?.startsWith("org.couchdb.user:") == true -> 1
-                        else -> 0
-                    }
+        for (user in allUsers) {
+            val name = user.name
+            val duplicateList = duplicates[name]
+            if (duplicateList != null) {
+                duplicateList.add(user)
+            } else {
+                val existing = seenUsers.put(name, user)
+                if (existing != null) {
+                    duplicates[name] = mutableListOf(existing, user)
                 }
-
-                userDao.deleteByIds(sortedUsers.drop(1).map { it.id })
             }
+        }
+
+        duplicates.forEach { (_, users) ->
+            val sortedUsers = users.sortedWith { user1, user2 ->
+                when {
+                    user1._id?.startsWith("org.couchdb.user:") == true &&
+                        user2._id?.startsWith("guest_") == true -> -1
+                    user1._id?.startsWith("guest_") == true &&
+                        user2._id?.startsWith("org.couchdb.user:") == true -> 1
+                    else -> 0
+                }
+            }
+
+            userDao.deleteByIds(sortedUsers.drop(1).map { it.id })
         }
     }
 
