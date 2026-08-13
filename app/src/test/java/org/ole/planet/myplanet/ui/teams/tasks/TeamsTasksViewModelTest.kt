@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.teams.tasks
 
+import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import java.util.Calendar
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -7,14 +8,42 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.Rule
+import org.mockito.Mockito.mock
+import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.utils.DefaultDispatcherProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.setMain
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
+import org.junit.After
+
+@ExperimentalCoroutinesApi
 class TeamsTasksViewModelTest {
 
+    @get:Rule
+    val instantTaskExecutorRule = InstantTaskExecutorRule()
+
     private lateinit var viewModel: TeamsTasksViewModel
+    private val mockTeamsRepository = mock(TeamsRepository::class.java)
+    private val mockUserRepository = mock(UserRepository::class.java)
+    private val dispatcherProvider = mock(org.ole.planet.myplanet.utils.DispatcherProvider::class.java)
+
+    private val testDispatcher = kotlinx.coroutines.Dispatchers.Unconfined
 
     @Before
     fun setUp() {
-        viewModel = TeamsTasksViewModel()
+        Dispatchers.setMain(testDispatcher)
+        viewModel = TeamsTasksViewModel(mockTeamsRepository, mockUserRepository, dispatcherProvider)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
     }
 
     @Test
