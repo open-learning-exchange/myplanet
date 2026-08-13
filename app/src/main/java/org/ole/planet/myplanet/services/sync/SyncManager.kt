@@ -37,7 +37,6 @@ import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SyncRepository
@@ -70,7 +69,6 @@ class SyncManager @Inject constructor(
     private val timeProvider: TimeProvider,
     private val teamsRepository: TeamsRepository,
     private val teamsSyncRepository: TeamsSyncRepository,
-    private val coursesRepository: CoursesRepository,
     private val eventsRepository: EventsRepository,
     private val userSyncRepository: UserSyncRepository,
     private val syncRepository: SyncRepository
