@@ -70,7 +70,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
                 selectedImageUri = uri
                 dialogImagePreview?.let { preview ->
                     preview.visibility = View.VISIBLE
-                    Glide.with(requireView()).load(uri).into(preview)
+                    Glide.with(this).load(uri).into(preview)
                 }
             }
         }

@@ -355,7 +355,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
         val isDarkMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
         val bgRes = if (isDarkMode) R.drawable.bg_player_dark else R.drawable.bg_player_white
-        Glide.with(requireView()).load(bgRes).into(backgroundImage)
+        Glide.with(this).load(bgRes).into(backgroundImage)
 
         initializeAudioPlayer(playerView)
     }
@@ -461,7 +461,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
         val imageFile = if (isFullPath) filePath?.let { File(it) }
                         else File(externalFilesDir, "ole/$filePath")
-        Glide.with(requireView())
+        Glide.with(this)
             .load(imageFile)
             .diskCacheStrategy(DiskCacheStrategy.ALL)
             .placeholder(R.drawable.ole_logo)
