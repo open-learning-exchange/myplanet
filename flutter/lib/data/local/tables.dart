@@ -750,6 +750,8 @@ class ChatEntries extends Table {
 /// type, status, and embedded message list.
 @DataClassName('FeedbackRow')
 @TableIndex(name: 'feedback_owner', columns: {#owner})
+@TableIndex(name: 'feedback_open_time', columns: {#openTime})
+@TableIndex(name: 'feedback_is_uploaded', columns: {#isUploaded})
 class FeedbackEntries extends Table {
   @override
   String get tableName => 'feedback';

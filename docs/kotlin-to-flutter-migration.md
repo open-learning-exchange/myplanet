@@ -1162,6 +1162,24 @@ matters for server-originated payloads whose `type` field is unreliable, and the
 commit added is orthogonal to that classification. The six group label strings and a `tasks`
 string were added to `app_en.arb`.
 
+### Schema harvest — `all: smoother model database indexing` (8f993472e)
+
+The same rebase brought a schema-only commit adding `@Entity` indices to seven Kotlin tables.
+Only two of those tables exist in the port yet (`chat_history`, `feedback`); the rest
+(`achievements`, `apk_log`, `community`, `submit_photos`, `user_challenge_actions`) have not been
+ported as drift tables and so have nothing to index. Of the two that do exist:
+
+- `chat_history` already carried a `chat_user` index (added in Phase 19), matching the Kotlin's
+  `Index("user")`.
+- `feedback` carried `feedback_owner` (matching `Index("owner")`) but was missing the Kotlin's
+  `Index("openTime")` and `Index("isUploaded")`. Both are added as `@TableIndex` annotations.
+
+Both are preserved tables (`localAuthorityTables`), so the indices land via the migration
+strategy's existing index-drop-then-`createAll` loop — no hand-written `ALTER` step is needed,
+because `createAll` emits bare `CREATE INDEX` and the pre-drop clears any collision. The
+`schemaVersion` bumps 28 → 29; a migration test asserts both indices exist after an upgrade and
+that the preserved feedback row survives.
+
 ---
 
 **Last updated**: 2026-08-13 (Phase 37 complete)

@@ -445,6 +445,34 @@ void main() {
     );
   });
 
+  test('feedback indexes are present after an upgrade', () async {
+    // The Kotlin `all: smoother model database indexing` commit (8f993472e)
+    // added `openTime` and `isUploaded` indices to the feedback table. Both
+    // land on a preserved table, so they are created by the drop-all-indexes
+    // then `createAll` step in the migration — not by a hand-written ALTER.
+    await database.feedbackDao.upsert(
+      FeedbackEntriesCompanion.insert(
+        id: 'fb-1',
+        title: const Value('broken login'),
+        openTime: const Value(1723000000),
+        isUploaded: const Value(false),
+      ),
+    );
+
+    await runUpgrade();
+
+    final indexes = await database
+        .customSelect(
+          "SELECT name FROM sqlite_master "
+          "WHERE type = 'index' AND tbl_name = 'feedback'",
+        )
+        .get();
+    final names = indexes.map((r) => r.read<String>('name')).toSet();
+    expect(names, containsAll(['feedback_open_time', 'feedback_is_uploaded']));
+    // The row survives — it is a preserved table.
+    expect((await database.feedbackDao.getById('fb-1'))?.id, 'fb-1');
+  });
+
   test('every preserved table has a preservation test', () {
     // `my_life` and the submissions tables were added to the preserved set
     // without one. This fails the moment another name is added, so the next
