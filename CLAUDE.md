@@ -79,8 +79,8 @@ myplanet/
 |---------|---------|-------|-----------|
 | `base/` | Base classes for common functionality | 13 | BaseActivity, BaseRecyclerFragment, BasePermissionActivity, BaseContainerFragment, BaseDashboardFragment, BaseResourceFragment, BaseTeamFragment, BaseExamFragment, BaseMemberFragment, BaseDialogFragment, BaseVoicesFragment, BaseRecyclerParentFragment |
 | `callback/` | Event listeners and interfaces | 28 | OnLibraryItemSelectedListener, OnSyncListener, OnTeamUpdateListener, OnChatItemClickListener, OnNewsItemClickListener, and more |
-| `data/` | Data access, Room persistence, and API | 40 | DatabaseService.kt, NetworkResult.kt; `room/` (AppDatabase, Converters, 37 DAO interfaces in 30 files — several share `LegacyEntityDaos.kt`), `api/` (ApiInterface, ApiClient, ChatApiService, RetryInterceptor), `auth/` (AuthSessionUpdater) |
-| `di/` | Hilt dependency injection | 10 | Modules (NetworkModule, DatabaseModule, RoomModule, RepositoryModule, ServiceModule, SharedPreferencesModule, DispatcherModule, TimeModule) + entry points (CoreDependenciesEntryPoint, ServiceDependenciesEntryPoint) |
+| `data/` | Data access, Room persistence, and API | 40 | NetworkResult.kt; `room/` (AppDatabase, Converters, 37 DAO interfaces in 30 files — several share `LegacyEntityDaos.kt`), `api/` (ApiInterface, ApiClient, ChatApiService, RetryInterceptor), `auth/` (AuthSessionUpdater) |
+| `di/` | Hilt dependency injection | 10 | Modules (NetworkModule, RoomModule, RepositoryModule, ServiceModule, SharedPreferencesModule, DispatcherModule, TimeModule) + entry points (CoreDependenciesEntryPoint, ServiceDependenciesEntryPoint) |
 | `model/` | Room `@Entity` models and DTOs | 92 | 37 `@Entity` classes (MyCourse, MyLibrary, News, Submission, TeamTask, UserEntity, …) + DTOs (ChatMessage, ChatRequest, ChatResponse, CourseProgressData, Download, ServerAddress, User) |
 | `repository/` | Repository pattern implementations | 50 | 23 domain Interface + Impl pairs + sync-facing interfaces (SyncRepository, TeamsSyncRepository, UserSyncRepository) + SubmissionsRepositoryExporter |
 | `services/` | Background services and workers | 39 | 22 root-level + `sync/` (7), `upload/` (8), `retry/` (2) |
@@ -215,7 +215,7 @@ Data Sources (Room local DB via DAOs, REST API, SharedPreferences)
 
 ### 2. Repository Pattern
 
-**Convention**: Each data domain has an interface and implementation. Implementations inject the **Room DAOs** they need (plus `ApiInterface`, `DispatcherProvider`, other repositories as needed) and return plain `@Entity`/data-class instances. `DatabaseService` still exists (`data/DatabaseService.kt`) but is essentially vestigial — no repository injects it anymore; multi-DAO atomic work uses Room's `withTransaction` on the `AppDatabase`.
+**Convention**: Each data domain has an interface and implementation. Implementations inject the **Room DAOs** they need (plus `ApiInterface`, `DispatcherProvider`, other repositories as needed) and return plain `@Entity`/data-class instances. Multi-DAO atomic work uses Room's `withTransaction` on the `AppDatabase`.
 
 ```kotlin
 // Real example — repository/CommunityRepositoryImpl.kt
@@ -253,7 +253,6 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 **Module Structure (8 modules):**
 - `NetworkModule.kt` - Provides Retrofit, OkHttp
 - `RoomModule.kt` - Builds the `AppDatabase` (with `fallbackToDestructiveMigration`) and provides every DAO
-- `DatabaseModule.kt` - Provides `DatabaseService` (wraps `AppDatabase` + dispatcher helpers)
 - `RepositoryModule.kt` - Binds repository interfaces to implementations
 - `ServiceModule.kt` - Provides service dependencies
 - `SharedPreferencesModule.kt` - Provides SharedPreferences
@@ -487,7 +486,7 @@ suspend fun upsertAll(items: List<Rating>)
 ```
 
 **Rules:**
-- Inject the specific DAO into a repository. For an atomic multi-DAO transaction, use Room's `withTransaction` on the `AppDatabase`. (`DatabaseService.withRoomAsync`/`executeRoomTransactionAsync` still exist but no repository uses them anymore.)
+- Inject the specific DAO into a repository. For an atomic multi-DAO transaction, use Room's `withTransaction` on the `AppDatabase`.
 - DAO methods are `suspend` (Room runs the query off the main thread via its own executors, so they're safe to call from any dispatcher) or `Flow`-returning — never block the main thread with DB work. `DictionaryActivity` also uses a DAO (`DictionaryDao`) now; there is no raw-DB escape hatch.
 - Use `IS` (not `=`) in DAO `@Query` predicates when a `null` argument should match `NULL` rows (`=` never matches `NULL` in SQL).
 - **Migration strategy is drop-and-resync**: `RoomModule` builds the DB with `fallbackToDestructiveMigration(true)`. On any schema change bump `version` in `AppDatabase`; there are **no** hand-written `Migration` objects — data is re-pulled from the Planet/CouchDB server on the **next sync** (login-triggered or scheduled auto-sync; the rebuild itself does not start one). ⚠️ The rebuild also discards **unsynced local writes** (pending uploads, drafts) — a schema bump ships that loss to any device that hasn't synced, so treat version bumps as releases that need pending data uploaded first.
@@ -662,7 +661,6 @@ When making changes, verify:
 | Upload handling | `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt` | ~615 |
 | Upload orchestration | `app/src/main/java/org/ole/planet/myplanet/services/upload/UploadCoordinator.kt` | ~478 |
 | Team management | `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt` | ~1437 |
-| DB service wrapper | `app/src/main/java/org/ole/planet/myplanet/data/DatabaseService.kt` | ~33 |
 | Build configuration | `app/build.gradle` | ~231 |
 | Dependency versions | `gradle/libs.versions.toml` | ~132 |
 
