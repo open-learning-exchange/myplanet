@@ -55,6 +55,7 @@ import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedListener, OnTagClickListener, RealtimeSyncMixin {
+    override val shouldShowDownloadDialog = false
     private lateinit var adapterCourses: CoursesAdapter
     private lateinit var orderByDate: Button
     private lateinit var orderByTitle: Button
@@ -604,7 +605,4 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         }
     }
 
-    override fun showDownloadDialog(dbMyLibrary: List<MyLibrary?>) {
-        // Do not show download suggestion dialog in Courses and My Course (Fix #15435)
-    }
 }
