@@ -14,6 +14,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.combine
+import org.ole.planet.myplanet.model.AiProvider
+import org.ole.planet.myplanet.repository.ChatResult
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.ChatShareTargets
@@ -30,6 +35,17 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.RetryUtils
 import org.ole.planet.myplanet.utils.Utilities
+
+
+data class ChatUiState(
+    val selectedChatHistory: List<Conversation>? = null,
+    val selectedAiProvider: String? = null,
+    val selectedId: String = "",
+    val selectedRev: String = "",
+    val aiProviders: Map<String, Boolean>? = null,
+    val aiProvidersLoading: Boolean = false,
+    val aiProvidersError: Boolean = false
+)
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
@@ -114,6 +130,28 @@ class ChatViewModel @Inject constructor(
 
     private val _aiProvidersError = MutableStateFlow(false)
     val aiProvidersError: StateFlow<Boolean> = _aiProvidersError.asStateFlow()
+
+    val chatUiState: StateFlow<ChatUiState> = combine(
+        _selectedChatHistory,
+        _selectedAiProvider,
+        _selectedId,
+        _selectedRev,
+        _aiProviders,
+        _aiProvidersLoading,
+        _aiProvidersError
+    ) { args: Array<Any?> ->
+        @Suppress("UNCHECKED_CAST")
+        ChatUiState(
+            selectedChatHistory = args[0] as List<Conversation>?,
+            selectedAiProvider = args[1] as String?,
+            selectedId = args[2] as String,
+            selectedRev = args[3] as String,
+            aiProviders = args[4] as Map<String, Boolean>?,
+            aiProvidersLoading = args[5] as Boolean,
+            aiProvidersError = args[6] as Boolean
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ChatUiState())
+
     fun loadChatHistoryScreenData(
         userId: String?,
         parentCode: String?,
@@ -365,5 +403,24 @@ class ChatViewModel @Inject constructor(
                 _shareResult.emit(ShareChatResult.Shared(news, chatId))
             }
         }
+    }
+    suspend fun fetchAiProviders(serverUrl: String): Map<String, Boolean>? {
+        return chatRepository.fetchAiProviders(serverUrl)
+    }
+
+    suspend fun getLatestRev(id: String): String? {
+        return chatRepository.getLatestRev(id)
+    }
+
+    suspend fun sendNewChatRequest(query: String, userName: String?, aiProvider: AiProvider): ChatResult {
+        return chatRepository.sendNewChatRequest(query, userName, aiProvider)
+    }
+
+    suspend fun sendContinueChatRequest(query: String, userName: String?, aiProvider: AiProvider, id: String, rev: String): ChatResult {
+        return chatRepository.sendContinueChatRequest(query, userName, aiProvider, id, rev)
+    }
+
+    suspend fun getUserById(userId: String): UserEntity? {
+        return userRepository.getUserById(userId)
     }
 }
