@@ -29,6 +29,7 @@ class CoursesViewModelTest {
     fun setup() {
         io.mockk.every { dispatcherProvider.io } returns Dispatchers.Unconfined
         io.mockk.every { dispatcherProvider.main } returns Dispatchers.Unconfined
+        io.mockk.every { dispatcherProvider.default } returns Dispatchers.Unconfined
         viewModel = CoursesViewModel(
             coursesRepository,
             progressRepository,
@@ -77,5 +78,13 @@ class CoursesViewModelTest {
         viewModel.filterCourses(false, "u1", "", "", "", emptyList(), "In Progress")
         coVerify { coursesRepository.filterCourses("", "", "", emptyList()) }
         coVerify { coursesRepository.getMyCourses("u1", any()) }
+    }
+
+    @Test
+    fun testToggleSort_AppliesSortOffMainThread() = runTest {
+        // Toggle title sort to apply sort
+        viewModel.toggleTitleSort()
+        // Wait for coroutine to finish
+        io.mockk.verify { dispatcherProvider.default }
     }
 }

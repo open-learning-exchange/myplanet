@@ -5,10 +5,12 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
@@ -26,7 +28,8 @@ class SurveysViewModel @Inject constructor(
     private val surveysRepository: SurveysRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val userRepository: UserRepository,
-    private val userSessionManager: UserSessionManager
+    private val userSessionManager: UserSessionManager,
+    private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
 ) : ViewModel() {
 
     enum class SortOption {
@@ -38,6 +41,7 @@ class SurveysViewModel @Inject constructor(
     private var currentSortOption: SortOption = SortOption.DATE_DESC
     private var isTeam: Boolean = false
     private var teamId: String? = null
+    private var filterSortJob: Job? = null
 
     private val _surveys = MutableStateFlow<List<StepExam>>(emptyList())
     val surveys: StateFlow<List<StepExam>> = _surveys.asStateFlow()
@@ -121,20 +125,24 @@ class SurveysViewModel @Inject constructor(
     }
 
     private fun applyFilterAndSort() {
-        var list = if (currentSearchQuery.isNotEmpty()) {
-            filter(currentSearchQuery, rawSurveys)
-        } else {
-            rawSurveys
-        }
+        filterSortJob?.cancel()
+        filterSortJob = viewModelScope.launch {
+            val list = withContext(dispatcherProvider.default) {
+                var filteredList = if (currentSearchQuery.isNotEmpty()) {
+                    filter(currentSearchQuery, rawSurveys)
+                } else {
+                    rawSurveys
+                }
 
-        list = when (currentSortOption) {
-            SortOption.DATE_DESC -> list.sortedByDescending { getSortDate(it) }
-            SortOption.DATE_ASC -> list.sortedBy { getSortDate(it) }
-            SortOption.TITLE_ASC -> list.sortedBy { it.name?.lowercase(Locale.getDefault()) }
-            SortOption.TITLE_DESC -> list.sortedByDescending { it.name?.lowercase(Locale.getDefault()) }
+                when (currentSortOption) {
+                    SortOption.DATE_DESC -> filteredList.sortedByDescending { getSortDate(it) }
+                    SortOption.DATE_ASC -> filteredList.sortedBy { getSortDate(it) }
+                    SortOption.TITLE_ASC -> filteredList.sortedBy { it.name?.lowercase(Locale.getDefault()) }
+                    SortOption.TITLE_DESC -> filteredList.sortedByDescending { it.name?.lowercase(Locale.getDefault()) }
+                }
+            }
+            _surveys.value = list
         }
-
-        _surveys.value = list
     }
 
     private fun getSortDate(survey: StepExam): Long {

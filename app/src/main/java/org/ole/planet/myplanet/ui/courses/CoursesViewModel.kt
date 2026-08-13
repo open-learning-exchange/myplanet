@@ -8,6 +8,7 @@ import java.util.HashMap
 import javax.inject.Inject
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,19 +43,31 @@ class CoursesViewModel @Inject constructor(
     private var isTitleAscending = false
     private var isDateAscending = true
     private var activeSort: SortType? = null
+    private var sortJob: Job? = null
 
     enum class SortType { TITLE, DATE }
 
     fun toggleTitleSort() {
         isTitleAscending = !isTitleAscending
         activeSort = SortType.TITLE
-        _coursesState.value = _coursesState.value.copy(courses = sortCourses(_coursesState.value.courses))
+        applySort()
     }
 
     fun toggleDateSort() {
         isDateAscending = !isDateAscending
         activeSort = SortType.DATE
-        _coursesState.value = _coursesState.value.copy(courses = sortCourses(_coursesState.value.courses))
+        applySort()
+    }
+
+    private fun applySort() {
+        sortJob?.cancel()
+        sortJob = viewModelScope.launch {
+            val currentCourses = _coursesState.value.courses
+            val sortedCourses = withContext(dispatcherProvider.default) {
+                sortCourses(currentCourses)
+            }
+            _coursesState.value = _coursesState.value.copy(courses = sortedCourses)
+        }
     }
 
     private fun sortCourses(courses: List<Course>): List<Course> {
