@@ -11,7 +11,7 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.utils.JsonUtils
 
-@Entity(tableName = "achievements")
+@Entity(tableName = "achievements", indices = [androidx.room.Index("isUpdated")])
 class Achievement {
     var achievements: List<String>? = null
     var references: List<String>? = null
