@@ -126,6 +126,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var systemNotificationReceiver: BroadcastReceiver? = null
     private var onGlobalLayoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
     private var exitSnackbar: Snackbar? = null
+    private var lastSyncStatus: SyncManager.SyncStatus? = null
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleUtils.onAttach(base))
@@ -242,8 +243,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
 
         collectWhenStarted(syncManager.syncStatus) { status ->
-            if (status is SyncManager.SyncStatus.Success) {
-                updateLastSyncStatus()
+            if (status != lastSyncStatus) {
+                lastSyncStatus = status
+                if (status is SyncManager.SyncStatus.Success) {
+                    updateLastSyncStatus()
+                }
             }
         }
     }

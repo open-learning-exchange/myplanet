@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
+import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
@@ -58,6 +59,7 @@ class MyHealthFragment : Fragment() {
     var dialog: AlertDialog? = null
 
     private var textWatcher: TextWatcher? = null
+    private var lastHandledUpdate: TableDataUpdate? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -248,8 +250,11 @@ class MyHealthFragment : Fragment() {
 
     private fun setupRealtimeSync() {
         collectWhenStarted(realtimeSyncManager.dataUpdateFlow) { update ->
-            if (update.table == "health" && update.shouldRefreshUI) {
-                refreshHealthData()
+            if (update != lastHandledUpdate) {
+                lastHandledUpdate = update
+                if (update.table == "health" && update.shouldRefreshUI) {
+                    refreshHealthData()
+                }
             }
         }
     }
