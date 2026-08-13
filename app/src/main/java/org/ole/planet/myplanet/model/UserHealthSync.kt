@@ -2,8 +2,11 @@ package org.ole.planet.myplanet.model
 
 import androidx.room.ColumnInfo
 
-data class UserHealthSync(
-    @ColumnInfo(name = "id") val id: String,
-    @ColumnInfo(name = "_id") val _id: String?,
-    @ColumnInfo(name = "planetCode") val planetCode: String?
-)
+class UserHealthSync {
+    @ColumnInfo(name = "id")
+    @JvmField var id: String = ""
+    @ColumnInfo(name = "_id")
+    @JvmField var _id: String? = null
+    @ColumnInfo(name = "planetCode")
+    @JvmField var planetCode: String? = null
+}
