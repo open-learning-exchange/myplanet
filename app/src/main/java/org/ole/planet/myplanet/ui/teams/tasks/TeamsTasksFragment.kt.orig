@@ -21,7 +21,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.nex3z.togglebuttongroup.SingleSelectToggleGroup
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import java.util.Calendar
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest

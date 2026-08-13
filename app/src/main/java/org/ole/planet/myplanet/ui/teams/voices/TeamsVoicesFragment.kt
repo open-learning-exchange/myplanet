@@ -42,7 +42,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
     @Inject
     lateinit var voicesRepository: VoicesRepository
     @Inject
-    override lateinit var dispatcherProvider: DispatcherProvider
+    lateinit var dispatcherProvider: DispatcherProvider
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentDiscussionListBinding.inflate(inflater, container, false)
@@ -204,11 +204,11 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     teamName = effectiveTeamName,
                     teamId = teamId,
                     isTeamLeaderFn = { onResult ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
+                        val job = viewLifecycleOwner.lifecycleScope.launch {
                             val result = kotlinx.coroutines.withTimeoutOrNull(2000) {
                                 viewModel.isTeamLeader(teamId, user?._id)
                             }
-                            kotlinx.coroutines.withContext(dispatcherProvider.main) { onResult(result ?: false) }
+                            onResult(result ?: false)
                         }
                     },
                     getUserFn = { userId, onResult ->

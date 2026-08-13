@@ -7,7 +7,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.MyTeam
@@ -32,7 +31,8 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
     lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var teamsSyncRepository: TeamsSyncRepository
-    private var loadTeamJob: Job? = null
+    @Inject
+    open lateinit var dispatcherProvider: DispatcherProvider
     private val _teamFlow = MutableStateFlow<MyTeam?>(null)
     val teamFlow: StateFlow<MyTeam?> = _teamFlow.asStateFlow()
     private val _isMemberFlow = MutableStateFlow(false)
@@ -54,8 +54,7 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
     private fun loadTeamDetails() {
         val shouldQueryTeam = shouldQueryTeamLocally()
         val existingTeam = team
-        loadTeamJob?.cancel()
-        loadTeamJob = lifecycleScope.launch {
+        lifecycleScope.launch(dispatcherProvider.io) {
             val teamResult = if (shouldQueryTeam) {
                 try {
                     teamsRepository.getTeamById(teamId)
@@ -73,11 +72,13 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
 
             val membership = teamsRepository.isMember(user?.id, teamId)
 
-            teamResult?.let {
-                team = it
+            withContext(dispatcherProvider.main) {
+                teamResult?.let {
+                    team = it
+                }
+                _teamFlow.value = teamResult ?: team
+                _isMemberFlow.value = membership
             }
-            _teamFlow.value = teamResult ?: team
-            _isMemberFlow.value = membership
         }
     }
 
@@ -104,5 +105,5 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
         _isMemberFlow.value = false
         super.onDestroy()
     }
-    
+
 }
