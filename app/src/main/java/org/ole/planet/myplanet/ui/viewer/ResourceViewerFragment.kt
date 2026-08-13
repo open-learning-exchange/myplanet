@@ -476,17 +476,20 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
         val file = File(externalFilesDir, "ole/$filePath")
         if (file.exists()) {
+            val ctx = requireContext()
+            val markwon = MarkdownUtils.create(ctx)
+
             val (text, spanned) = withContext(dispatcherProvider.io) {
                 val rawText = file.readText()
                 if (type == ResourceType.MARKDOWN) {
-                    Pair(rawText, MarkdownUtils.parseMarkdown(requireContext(), rawText))
+                    Pair(rawText, markwon.toMarkdown(rawText))
                 } else {
                     Pair(rawText, null)
                 }
             }
 
             if (type == ResourceType.MARKDOWN && spanned != null) {
-                MarkdownUtils.setParsedMarkdown(textContent, spanned)
+                MarkdownUtils.setParsedMarkdown(textContent, markwon, spanned)
             } else {
                 textContent.text = text
             }

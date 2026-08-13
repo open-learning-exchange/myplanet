@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Color
 import android.text.Layout
 import android.text.Spannable
+import android.text.Spanned
 import android.text.TextPaint
 import android.text.method.LinkMovementMethod
 import android.text.style.AlignmentSpan
@@ -77,12 +78,7 @@ object MarkdownUtils {
         textView.movementMethod = CustomLinkMovementMethod()
     }
 
-    fun parseMarkdown(context: Context, markdown: String): android.text.Spanned {
-        return create(context).toMarkdown(markdown)
-    }
-
-    fun setParsedMarkdown(textView: TextView, spanned: android.text.Spanned) {
-        val markwon = create(textView.context)
+    fun setParsedMarkdown(textView: TextView, markwon: Markwon, spanned: Spanned) {
         markwon.setParsedMarkdown(textView, spanned)
         textView.movementMethod = CustomLinkMovementMethod()
     }
