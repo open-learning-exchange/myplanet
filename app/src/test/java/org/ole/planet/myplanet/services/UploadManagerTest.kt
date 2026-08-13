@@ -160,7 +160,7 @@ class UploadManagerTest {
         every { Log.e(any(), any()) } returns 0
         every { Log.e(any(), any(), any()) } returns 0
 
-        photoUploader = PhotoUploader(submissionsRepository, apiInterface, TestDispatcherProvider(testDispatcher), testScope, uploadRepository)
+        photoUploader = PhotoUploader(submissionsRepository, TestDispatcherProvider(testDispatcher), testScope, uploadRepository)
 
         uploadManager = spyk(
             UploadManager(
@@ -179,7 +179,6 @@ class UploadManagerTest {
                 resourcesRepository,
                 teamsRepository,
                 teamsSyncRepository,
-                apiInterface,
                 activitiesRepository,
                 TestDispatcherProvider(testDispatcher),
                 testScope,
@@ -331,7 +330,7 @@ class UploadManagerTest {
         }
 
         coEvery { submissionsRepository.getUnuploadedPhotos() } returns mockPhotosList
-        coEvery { apiInterface.postDoc(any(), any(), any(), mockSerialized) } returns retrofit2.Response.success(mockResponseObject)
+        coEvery { uploadRepository.postUpload(any(), mockSerialized) } returns retrofit2.Response.success(mockResponseObject)
         coEvery { submissionsRepository.getPhotosByIds(arrayOf(photoId)) } returns emptyList()
 
         val listener: OnSuccessListener = mockk(relaxed = true)
