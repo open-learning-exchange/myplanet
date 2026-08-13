@@ -127,11 +127,12 @@ class SurveysViewModel @Inject constructor(
     private fun applyFilterAndSort() {
         filterSortJob?.cancel()
         filterSortJob = viewModelScope.launch {
+            val currentRawSurveys = rawSurveys
             val list = withContext(dispatcherProvider.default) {
                 var filteredList = if (currentSearchQuery.isNotEmpty()) {
-                    filter(currentSearchQuery, rawSurveys)
+                    filter(currentSearchQuery, currentRawSurveys)
                 } else {
-                    rawSurveys
+                    currentRawSurveys
                 }
 
                 when (currentSortOption) {
@@ -141,7 +142,9 @@ class SurveysViewModel @Inject constructor(
                     SortOption.TITLE_DESC -> filteredList.sortedByDescending { it.name?.lowercase(Locale.getDefault()) }
                 }
             }
-            _surveys.value = list
+            if (rawSurveys === currentRawSurveys) {
+                _surveys.value = list
+            }
         }
     }
 

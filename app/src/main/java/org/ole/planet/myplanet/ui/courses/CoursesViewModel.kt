@@ -66,7 +66,9 @@ class CoursesViewModel @Inject constructor(
             val sortedCourses = withContext(dispatcherProvider.default) {
                 sortCourses(currentCourses)
             }
-            _coursesState.value = _coursesState.value.copy(courses = sortedCourses)
+            if (_coursesState.value.courses === currentCourses) {
+                _coursesState.value = _coursesState.value.copy(courses = sortedCourses)
+            }
         }
     }
 
