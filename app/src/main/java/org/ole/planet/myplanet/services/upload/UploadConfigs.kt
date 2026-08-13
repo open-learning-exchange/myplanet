@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 
 @Singleton
 class UploadConfigs @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val voicesRepository: VoicesRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val activitiesRepository: ActivitiesRepository,
@@ -208,7 +209,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "apk_logs",
         modelClassName = "ApkLog",
         fetchPendingItems = { diagnosticsRepository.getPendingApkLogs() },
-        serializer = UploadSerializer.Simple(ApkLog::serialize),
+        serializer = UploadSerializer.Simple { log -> ApkLog.serialize(log, org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName(context)) },
         idExtractor = { it.id },
         markUploaded = { results ->
             // A row is "pending" until it has a _rev; set it here. Rows that no longer exist

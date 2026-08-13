@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.services.upload
 
-import android.content.Context
 import com.google.gson.JsonObject
 import kotlin.reflect.KClass
 

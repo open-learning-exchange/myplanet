@@ -27,7 +27,7 @@ open class ApkLog {
     companion object {
         const val ERROR_TYPE_CRASH = "crash"
 
-        fun serialize(log: ApkLog): JsonObject {
+        fun serialize(log: ApkLog, customDeviceName: String): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("type", log.type)
             `object`.addProperty("error", log.error)
@@ -38,7 +38,7 @@ open class ApkLog {
             `object`.addProperty("createdOn", log.createdOn)
             `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
-            `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(org.ole.planet.myplanet.MainApplication.context))
+            `object`.addProperty("customDeviceName", customDeviceName)
             `object`.addProperty("parentCode", log.parentCode)
             return `object`
         }
