@@ -487,6 +487,74 @@ class ProgressRepositoryImplTest {
         assertNull(result)
     }
 
+
+    @Test
+    fun testFetchCourseData_SubmissionsGrouping() = testScope.runTest {
+        val myCourses = listOf(
+            MyCourse().apply {
+                courseId = "course1"
+                courseTitle = "Course 1"
+            },
+            MyCourse().apply {
+                courseId = "course10"
+                courseTitle = "Course 10"
+            }
+        )
+
+        val submissions = listOf(
+            // Normal parent
+            Submission().apply {
+                id = "sub1"
+                userId = "user1"
+                parentId = "exam1@course1"
+                type = "exam"
+            },
+            // Malformed/legacy parent
+            Submission().apply {
+                id = "sub2"
+                userId = "user1"
+                parentId = "course1_legacy"
+                type = "exam"
+            },
+            // Missing parent
+            Submission().apply {
+                id = "sub3"
+                userId = "user1"
+                parentId = null
+                type = "exam"
+            },
+            // Substring collision
+            Submission().apply {
+                id = "sub4"
+                userId = "user1"
+                parentId = "exam10@course10"
+                type = "exam"
+            }
+        )
+
+        coEvery { mockCoursesRepository.getMyCourses(any()) } returns myCourses
+        coEvery { courseProgressDao.getByUserAndCourseIds(any(), any()) } returns emptyList()
+        coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
+        coEvery { examDao.getByCourseIds(any()) } returns emptyList()
+
+        coEvery { submissionDao.getExamSubmissionsByUser("user1") } returns submissions
+
+        val data = repository.fetchCourseData("user1")
+        advanceUntilIdle()
+
+        assertEquals(2, data.size())
+
+        // Validate course1 parsing correctly processed its sub1 and sub2
+        val obj1 = data[0].asJsonObject
+        assertEquals("course1", obj1.get("courseId").asString)
+        assertEquals(0, obj1.get("mistakes")?.asInt ?: 0)
+
+        // Validate course10 parsing correctly processed sub4
+        val obj10 = data[1].asJsonObject
+        assertEquals("course10", obj10.get("courseId").asString)
+        assertEquals(0, obj10.get("mistakes")?.asInt ?: 0)
+    }
+
     @Test
     fun testFetchCourseData_EmptyCourses() = testScope.runTest {
         coEvery { mockCoursesRepository.getMyCourses("user1") } returns emptyList()
