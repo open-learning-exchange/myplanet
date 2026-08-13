@@ -208,6 +208,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         lifecycleScope.launch {
             userModel = userRepository.getUserModel()
             setupGuestUserRestrictions()
+            checkList()
+            hideButton()
 
             val userId = userModel?.id
             if (userId != null) {
@@ -437,33 +439,37 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
     }
 
-    private fun hideButton(){
+    private fun hideButton() {
         val count = selectedItems?.size ?: 0
+        val isGuest = userModel?.isGuest() == true
         tvDelete?.isEnabled = count != 0
         tvAddToLib.isEnabled = count != 0
-        if(count != 0){
-            if(isMyCourseLib) tvDelete?.visibility = View.VISIBLE
-            else tvAddToLib.visibility = View.VISIBLE
+        if (count != 0) {
+            if (isMyCourseLib) {
+                tvDelete?.visibility = View.VISIBLE
+            } else {
+                tvAddToLib.visibility = if (isGuest) View.GONE else View.VISIBLE
+            }
         } else {
-            if(isMyCourseLib) tvDelete?.visibility = View.GONE
+            if (isMyCourseLib) tvDelete?.visibility = View.GONE
             else tvAddToLib.visibility = View.GONE
         }
     }
 
     private fun checkList(listSize: Int = if (::adapterLibrary.isInitialized) adapterLibrary.currentList.size else 0) {
         val hasAnyLibraryData = allResourceModels.isNotEmpty()
+        val isGuest = userModel?.isGuest() == true
 
         if (!hasAnyLibraryData && listSize == 0) {
             selectAll.visibility = View.GONE
             etSearch.visibility = View.GONE
-            tvAddToLib.visibility = View.GONE
             tvSelected.visibility = View.GONE
             binding.btnCollections.visibility = View.GONE
             filter.visibility = View.GONE
             clearTags.visibility = View.GONE
             tvDelete?.visibility = View.GONE
         } else {
-            selectAll.visibility = View.VISIBLE
+            selectAll.visibility = if (isGuest) View.GONE else View.VISIBLE
             etSearch.visibility = View.VISIBLE
             binding.btnCollections.visibility = View.VISIBLE
             filter.visibility = View.VISIBLE
