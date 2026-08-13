@@ -42,11 +42,8 @@ import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.DashboardProfile
-import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MemberInfo
-import org.ole.planet.myplanet.model.MyHealth
-import org.ole.planet.myplanet.model.MyHealth.MyHealthProfile
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -58,7 +55,6 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.RetryUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
-import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
@@ -80,7 +76,6 @@ class UserRepositoryImpl @Inject constructor(
     private val offlineActivityDao: OfflineActivityDao,
     private val removedLogDao: RemovedLogDao,
     private val achievementDao: AchievementDao,
-    private val healthRepository: HealthRepository,
     private val userDao: UserDao,
     private val realtimeSyncManager: RealtimeSyncManager
 ) : UserRepository, UserSyncRepository {
@@ -180,38 +175,6 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getPendingSyncUsers(limit: Int): List<UserEntity> {
         return userDao.getPendingSyncUsers(limit)
-    }
-
-    override fun parseLeadersJson(jsonString: String): List<UserEntity> {
-        val leadersList = mutableListOf<UserEntity>()
-        try {
-            val jsonObject = org.json.JSONObject(jsonString)
-            val docsArray = jsonObject.getJSONArray("docs")
-            for (i in 0 until docsArray.length()) {
-                val docObject = docsArray.getJSONObject(i)
-                val user = UserEntity()
-                user.name = docObject.getString("name")
-                user.id = if (!docObject.isNull("_id")) {
-                    docObject.getString("_id")
-                } else {
-                    "org.couchdb.user:${user.name}"
-                }
-                user.rolesList = mutableListOf()
-                if (!docObject.isNull("firstName")) {
-                    user.firstName = docObject.getString("firstName")
-                }
-                if (!docObject.isNull("lastName")) {
-                    user.lastName = docObject.getString("lastName")
-                }
-                if (!docObject.isNull("email")) {
-                    user.email = docObject.getString("email")
-                }
-                leadersList.add(user)
-            }
-        } catch (e: org.json.JSONException) {
-            e.printStackTrace()
-        }
-        return leadersList
     }
 
     private fun applyJsonToUser(jsonDoc: JsonObject?, user: UserEntity, settings: SharedPreferences) {
@@ -846,83 +809,6 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getActiveUserIdSuspending(): String {
         return getUserModel()?.id ?: ""
-    }
-
-    override suspend fun getHealthProfile(userId: String): MyHealth? {
-        val userModel = getUserByAnyId(userId)
-        val healthPojo = healthRepository.getByIdOrUserId(userId)
-
-        if (healthPojo != null && !TextUtils.isEmpty(healthPojo.data)) {
-            try {
-                val decrypted = AndroidDecrypter.decrypt(healthPojo.data, userModel?.key, userModel?.iv)
-                return JsonUtils.gson.fromJson(decrypted, MyHealth::class.java)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-        return null
-    }
-
-    override suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>) {
-        val userModel = getUserByAnyId(userId)
-        val healthPojo = healthRepository.getByIdOrUserId(userId) ?: HealthExamination().apply { _id = userId }
-
-        userModel?.apply {
-            firstName = (userData["firstName"] as? String)?.trim()
-            middleName = (userData["middleName"] as? String)?.trim()
-            lastName = (userData["lastName"] as? String)?.trim()
-            email = (userData["email"] as? String)?.trim()
-            phoneNumber = (userData["phoneNumber"] as? String)?.trim()
-            birthPlace = (userData["birthPlace"] as? String)?.trim()
-            userData["dob"]?.let { dobVal ->
-                val dobInput = (dobVal as String).trim()
-                dob = TimeUtils.convertDDMMYYYYToISO(dobInput)
-            }
-            isUpdated = true
-            upsertUser(this)
-        }
-
-        var myHealth: MyHealth? = null
-        if (!TextUtils.isEmpty(healthPojo.data)) {
-            try {
-                val decrypted = AndroidDecrypter.decrypt(healthPojo.data, userModel?.key, userModel?.iv)
-                myHealth = JsonUtils.gson.fromJson(decrypted, MyHealth::class.java)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-
-        if (myHealth == null) {
-            myHealth = MyHealth()
-        }
-        if (TextUtils.isEmpty(myHealth.userKey)) {
-            myHealth.userKey = AndroidDecrypter.generateKey()
-        }
-
-        val profile = myHealth.profile ?: MyHealthProfile().also { myHealth.profile = it }
-
-        profile.emergencyContactName = (userData["emergencyContactName"] as? String)?.trim() ?: ""
-        val newEmergencyContact = (userData["emergencyContact"] as? String)?.trim() ?: ""
-        profile.emergencyContact = if (TextUtils.isEmpty(newEmergencyContact)) profile.emergencyContact else newEmergencyContact
-
-        val newEmergencyContactType = (userData["emergencyContactType"] as? String)?.trim() ?: ""
-        profile.emergencyContactType = if (TextUtils.isEmpty(newEmergencyContactType)) profile.emergencyContactType else newEmergencyContactType
-
-        profile.specialNeeds = (userData["specialNeeds"] as? String)?.trim() ?: ""
-        profile.notes = (userData["notes"] as? String)?.trim() ?: ""
-
-        healthPojo.userId = userModel?._id
-        healthPojo.isUpdated = true
-
-        try {
-            val key = userModel?.key ?: AndroidDecrypter.generateKey().also { newKey -> userModel?.key = newKey }
-            val iv = userModel?.iv ?: AndroidDecrypter.generateIv().also { newIv -> userModel?.iv = newIv }
-            healthPojo.data = AndroidDecrypter.encrypt(JsonUtils.gson.toJson(myHealth), key, iv)
-            userModel?.let { upsertUser(it) }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        healthRepository.upsert(healthPojo)
     }
 
     override suspend fun validateUsername(username: String): String? {

@@ -6,6 +6,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.model.UserEntity
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -25,7 +26,7 @@ class UserRepositoryImplParseLeadersTest {
             mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
             mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
             mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
-            mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true)
+            mockk(relaxed = true), mockk(relaxed = true)
         )
     }
 
@@ -45,7 +46,7 @@ class UserRepositoryImplParseLeadersTest {
             }
         """.trimIndent()
 
-        val result = repository.parseLeadersJson(validJson)
+        val result = UserEntity.parseLeadersJson(validJson)
 
         assertEquals(1, result.size)
         val user = result[0]
@@ -69,7 +70,7 @@ class UserRepositoryImplParseLeadersTest {
             }
         """.trimIndent()
 
-        val result = repository.parseLeadersJson(validJson)
+        val result = UserEntity.parseLeadersJson(validJson)
 
         assertEquals(1, result.size)
         val user = result[0]
@@ -85,7 +86,7 @@ class UserRepositoryImplParseLeadersTest {
     fun `parseLeadersJson handles invalid json gracefully`() {
         val invalidJson = "{ invalid json }"
 
-        val result = repository.parseLeadersJson(invalidJson)
+        val result = UserEntity.parseLeadersJson(invalidJson)
 
         assertEquals(0, result.size)
     }

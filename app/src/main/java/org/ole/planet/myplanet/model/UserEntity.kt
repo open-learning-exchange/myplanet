@@ -187,5 +187,36 @@ open class UserEntity(
     }
 
     companion object {
+        fun parseLeadersJson(jsonString: String): List<UserEntity> {
+            val leadersList = mutableListOf<UserEntity>()
+            try {
+                val jsonObject = org.json.JSONObject(jsonString)
+                val docsArray = jsonObject.getJSONArray("docs")
+                for (i in 0 until docsArray.length()) {
+                    val docObject = docsArray.getJSONObject(i)
+                    val user = UserEntity()
+                    user.name = docObject.getString("name")
+                    user.id = if (!docObject.isNull("_id")) {
+                        docObject.getString("_id")
+                    } else {
+                        "org.couchdb.user:${user.name}"
+                    }
+                    user.rolesList = mutableListOf()
+                    if (!docObject.isNull("firstName")) {
+                        user.firstName = docObject.getString("firstName")
+                    }
+                    if (!docObject.isNull("lastName")) {
+                        user.lastName = docObject.getString("lastName")
+                    }
+                    if (!docObject.isNull("email")) {
+                        user.email = docObject.getString("email")
+                    }
+                    leadersList.add(user)
+                }
+            } catch (e: org.json.JSONException) {
+                e.printStackTrace()
+            }
+            return leadersList
+        }
     }
 }

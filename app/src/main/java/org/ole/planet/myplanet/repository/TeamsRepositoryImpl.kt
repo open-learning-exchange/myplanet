@@ -1032,7 +1032,7 @@ class TeamsRepositoryImpl @Inject constructor(
         val communityLeadersJson = sharedPrefManager.getCommunityLeaders()
 
         if (communityLeadersJson.isNotEmpty()) {
-            val adminUsers = userRepository.parseLeadersJson(communityLeadersJson)
+            val adminUsers = UserEntity.parseLeadersJson(communityLeadersJson)
             val teamUserIds = teamDao.getAllByTeamId(teamId).mapNotNull { it.userId }.toSet()
             val memberNames = members.mapTo(HashSet()) { it.name }
             val validAdmins = adminUsers.filter { admin ->

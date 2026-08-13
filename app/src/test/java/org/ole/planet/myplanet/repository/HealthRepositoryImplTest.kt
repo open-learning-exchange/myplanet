@@ -36,6 +36,7 @@ class HealthRepositoryImplTest {
     private val testScope = TestScope(testDispatcher)
     private val mockApiInterface: ApiInterface = mockk(relaxed = true)
     private val healthExaminationDao: HealthExaminationDao = mockk(relaxed = true)
+    private val userDao: UserDao = mockk(relaxed = true)
     private val lazyUserRepository: dagger.Lazy<UserRepository> = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
 
@@ -47,6 +48,7 @@ class HealthRepositoryImplTest {
             mockApiInterface,
             dispatcherProvider,
             healthExaminationDao,
+            userDao,
             lazyUserRepository
         )
     }

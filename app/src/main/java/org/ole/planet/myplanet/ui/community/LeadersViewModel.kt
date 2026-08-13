@@ -7,13 +7,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 @HiltViewModel
 class LeadersViewModel @Inject constructor(
-    private val sharedPrefManager: SharedPrefManager,
-    private val userRepository: UserRepository
+    private val sharedPrefManager: SharedPrefManager
 ) : ViewModel() {
 
     private val _leaders = MutableStateFlow<List<UserEntity>>(emptyList())
@@ -26,7 +24,7 @@ class LeadersViewModel @Inject constructor(
     private fun loadLeaders() {
         val leadersString = sharedPrefManager.getCommunityLeaders()
         if (leadersString.isNotEmpty()) {
-            _leaders.value = userRepository.parseLeadersJson(leadersString)
+            _leaders.value = UserEntity.parseLeadersJson(leadersString)
         } else {
             _leaders.value = emptyList()
         }

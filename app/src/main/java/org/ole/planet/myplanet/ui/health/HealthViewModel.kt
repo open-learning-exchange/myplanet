@@ -105,7 +105,7 @@ class HealthViewModel @Inject constructor(
             _isLoading.value = true
             coroutineScope {
                 val userModelDeferred = async { userRepository.getUserById(userId) }
-                val decodedHealthDeferred = async { userRepository.getHealthProfile(userId) }
+                val decodedHealthDeferred = async { healthRepository.getHealthProfile(userId) }
 
                 val userModel = userModelDeferred.await()
                 val decodedHealth = decodedHealthDeferred.await()
@@ -127,7 +127,7 @@ class HealthViewModel @Inject constructor(
 
     fun saveHealthData(userId: String, userData: Map<String, Any?>) {
         viewModelScope.launch {
-            userRepository.updateUserHealthProfile(userId, userData)
+            healthRepository.updateUserHealthProfile(userId, userData)
             _isSaved.value = true
         }
     }
