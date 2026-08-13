@@ -84,6 +84,22 @@
                     app:drawableTint="@color/daynight_textColor"
                     app:tint="@color/textColorPrimary"
                     android:minWidth="120dp" />
+                <TextView
+                    android:id="@+id/tv_download"
+                    style="@style/Widget.AppCompat.Button.Borderless.Colored"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_margin="@dimen/padding_small"
+                    android:drawablePadding="4dp"
+                    android:gravity="center"
+                    android:text="@string/download_selected"
+                    android:textColor="@color/daynight_textColor"
+                    android:textSize="@dimen/text_size_mid"
+                    android:visibility="gone"
+                    app:drawableLeftCompat="@drawable/ic_download"
+                    app:drawableTint="@color/daynight_textColor"
+                    android:minWidth="120dp" />
                 <ImageButton
                     android:id="@+id/filter"
                     style="@style/YellowButtons"

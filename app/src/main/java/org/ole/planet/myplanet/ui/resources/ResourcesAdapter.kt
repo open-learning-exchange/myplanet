@@ -204,12 +204,16 @@ class ResourcesAdapter(
         return parts.joinToString(" · ")
     }
 
+    fun isItemOffline(model: ResourceListModel): Boolean {
+        return model.item.isOffline || locallyOfflineIds.contains(model.item.id) || model.isLocallyOffline
+    }
+
     private fun bindSelectionAndDownload(checkbox: CheckBox, ivDownloaded: ImageView, model: ResourceListModel) {
         checkbox.isChecked = selectedItemIds.contains(model.item.id)
         checkbox.visibility = if (isGuest) View.GONE else View.VISIBLE
 
         val isResourceOpened = openedResourceIds.contains(model.item.id) || model.isOpened
-        val isOffline = model.item.isOffline || locallyOfflineIds.contains(model.item.id) || model.isLocallyOffline
+        val isOffline = isItemOffline(model)
 
         ivDownloaded.setImageResource(if (isOffline) R.drawable.ic_check_circle else R.drawable.ic_download)
         ImageViewCompat.setImageTintList(

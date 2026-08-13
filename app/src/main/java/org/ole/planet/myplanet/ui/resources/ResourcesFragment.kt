@@ -72,6 +72,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private var _binding: FragmentMyLibraryBinding? = null
     private val binding get() = _binding!!
     private val tvAddToLib get() = binding.tvAdd
+    private val tvDownload get() = binding.tvDownload
     private val tvSelected get() = binding.tvSelected
     private val etSearch get() = binding.layoutSearch.etSearch
     private val flexBoxTags get() = binding.layoutSearch.flexboxTags
@@ -228,6 +229,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             checkList()
         }
         clearTagsButton()
+        setupDownloadButtonListener()
         setupUI(binding.myLibraryParentLayout, requireActivity())
         additionalSetup()
         setupViewModeToggle()
@@ -437,16 +439,69 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
     }
 
+    private fun setupDownloadButtonListener() {
+        tvDownload.setOnClickListener {
+            downloadSelectedResources()
+        }
+    }
+
+    private fun downloadSelectedResources() {
+        val selected = selectedItems?.filterNotNull() ?: emptyList()
+        if (selected.isEmpty()) return
+
+        val notDownloaded = selected.filter { item ->
+            val model = allResourceModels.find { it.library.resourceId == item.resourceId || it.item.id == item.resourceId }
+            val isOffline = if (::adapterLibrary.isInitialized && model != null) {
+                adapterLibrary.isItemOffline(model)
+            } else {
+                model?.item?.isOffline == true || model?.isLocallyOffline == true
+            }
+            !isOffline
+        }
+
+        val targetList = if (notDownloaded.isNotEmpty()) notDownloaded else selected
+
+        lifecycleScope.launch {
+            val userId = userModel?.id
+            if (!isMyCourseLib && userId != null) {
+                viewModel.addResourcesToUserLibrary(targetList.mapNotNull { it.resourceId }, userId)
+            }
+            if (resourcesRepository.downloadResources(targetList)) {
+                val urls = targetList.mapNotNull { it.resourceRemoteAddress }
+                trackDownloadUrls(urls)
+                showProgressDialog()
+            }
+        }
+    }
+
     private fun hideButton(){
-        val count = selectedItems?.size ?: 0
+        val selected = selectedItems?.filterNotNull() ?: emptyList()
+        val count = selected.size
         tvDelete?.isEnabled = count != 0
         tvAddToLib.isEnabled = count != 0
+        tvDownload.isEnabled = count != 0
         if(count != 0){
-            if(isMyCourseLib) tvDelete?.visibility = View.VISIBLE
-            else tvAddToLib.visibility = View.VISIBLE
+            if(isMyCourseLib) {
+                tvDelete?.visibility = View.VISIBLE
+                tvAddToLib.visibility = View.GONE
+            } else {
+                tvDelete?.visibility = View.GONE
+                tvAddToLib.visibility = View.VISIBLE
+            }
+            val hasNotDownloadedSelected = selected.any { item ->
+                val model = allResourceModels.find { it.library.resourceId == item.resourceId || it.item.id == item.resourceId }
+                val isOffline = if (::adapterLibrary.isInitialized && model != null) {
+                    adapterLibrary.isItemOffline(model)
+                } else {
+                    model?.item?.isOffline == true || model?.isLocallyOffline == true
+                }
+                !isOffline
+            }
+            tvDownload.visibility = if (hasNotDownloadedSelected) View.VISIBLE else View.GONE
         } else {
             if(isMyCourseLib) tvDelete?.visibility = View.GONE
             else tvAddToLib.visibility = View.GONE
+            tvDownload.visibility = View.GONE
         }
     }
 
@@ -457,6 +512,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             selectAll.visibility = View.GONE
             etSearch.visibility = View.GONE
             tvAddToLib.visibility = View.GONE
+            tvDownload.visibility = View.GONE
             tvSelected.visibility = View.GONE
             binding.btnCollections.visibility = View.GONE
             filter.visibility = View.GONE
