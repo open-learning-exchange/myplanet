@@ -779,6 +779,7 @@
     <string name="unable_to_clear_files">غير قادر على مسح الملفات</string>
     <string name="last_synced_never">لم يتم المزامنة أبدا</string>
     <string name="last_synced_colon">آخر مزامنة: </string>
+    <string name="dashboard_sync_status">مزامنة · %1$s</string>
 
     <string name="disclaimer">
     <![CDATA[

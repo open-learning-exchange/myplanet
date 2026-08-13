@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
+import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
@@ -381,6 +382,17 @@ class BellDashboardFragment : BaseDashboardFragment() {
         binding.homeCardMyLife.myLifeImageButton.setOnClickListener { homeItemClickListener?.openCallFragment(LifeFragment()) }
     }
 
+    private fun updateRailSyncStatus() {
+        val railSyncStatus = binding.cardProfileBell.railSyncStatus ?: return
+        val lastSyncMillis = prefData.getLastSync()
+        val timeText = if (lastSyncMillis <= 0L) {
+            getString(R.string.last_synced_never)
+        } else {
+            TimeUtils.getRelativeTime(lastSyncMillis, timeProvider)
+        }
+        railSyncStatus.text = getString(R.string.dashboard_sync_status, timeText)
+    }
+
     private fun openHelperFragment(f: Fragment) {
         val b = Bundle()
         b.putBoolean("isMyCourseLib", true)
@@ -390,6 +402,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     override fun onResume() {
         super.onResume()
+        updateRailSyncStatus()
         user?.let { u ->
             if (u.id?.startsWith("guest") != true && !DashboardActivity.isFromNotificationAction) {
                 checkPendingSurveys()

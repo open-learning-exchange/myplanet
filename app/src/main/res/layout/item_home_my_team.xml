@@ -1,53 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
+    android:layout_width="@dimen/dashboard_chip_width"
     android:layout_height="match_parent"
-    android:gravity="center"
-    android:minWidth="250dp"
-    android:orientation="vertical">
-
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="right"
-        android:gravity="right">
-
-        <ImageView
-            android:id="@+id/img_chat"
-            android:layout_width="@dimen/_24dp"
-            android:layout_height="@dimen/_24dp"
-            android:layout_margin="@dimen/padding_small"
-            android:visibility="gone"
-            app:srcCompat="@drawable/message_alert"
-            app:tint="@color/md_red_500" />
-
-
-        <ImageView
-            android:id="@+id/img_task"
-            android:layout_width="@dimen/_24dp"
-            android:layout_height="@dimen/_24dp"
-            android:layout_margin="@dimen/padding_small"
-            android:visibility="gone"
-            app:srcCompat="@drawable/ic_warn"
-            app:tint="@color/md_red_500" />
-
-    </LinearLayout>
+    android:background="@drawable/bg_dashboard_chip">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_gravity="center"
-        android:gravity="center"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="@dimen/dashboard_chip_padding">
 
+        <ImageView
+            android:layout_width="@dimen/dashboard_chip_icon_size"
+            android:layout_height="@dimen/dashboard_chip_icon_size"
+            app:srcCompat="@drawable/team"
+            app:tint="@color/dashboard_tile_teams"
+            android:contentDescription="@null" />
         <TextView
             android:id="@+id/tv_name"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_gravity="center"
-            android:gravity="center"
-            android:padding="@dimen/padding_normal"
-            android:textColor="@color/daynight_textColor" />
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="4dp"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textColor="@color/dashboard_ink_2"
+            android:textSize="11.5sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/img_chat"
+            android:layout_width="@dimen/dashboard_chip_icon_size"
+            android:layout_height="@dimen/dashboard_chip_icon_size"
+            android:layout_margin="4dp"
+            android:visibility="gone"
+            app:srcCompat="@drawable/message_alert"
+            app:tint="@color/md_red_500" />
+        <ImageView
+            android:id="@+id/img_task"
+            android:layout_width="@dimen/dashboard_chip_icon_size"
+            android:layout_height="@dimen/dashboard_chip_icon_size"
+            android:layout_margin="4dp"
+            android:visibility="gone"
+            app:srcCompat="@drawable/ic_warn"
+            app:tint="@color/md_red_500" />
     </LinearLayout>
 </FrameLayout>
