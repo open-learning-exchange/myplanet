@@ -6,6 +6,10 @@ import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/courses_providers.dart';
 import '../../providers/sync_state.dart';
+import '../../providers/view_mode_providers.dart';
+import '../components/grid_span_calculator.dart';
+import '../components/list_view_mode.dart';
+import '../components/view_mode_toggle.dart';
 import '../dashboard/dashboard_shell.dart';
 import '../router.dart';
 
@@ -35,6 +39,7 @@ class _CoursesScreenState extends ConsumerState<CoursesScreen> {
     final l10n = AppLocalizations.of(context);
     final courses = ref.watch(filteredSortedCoursesProvider);
     final syncState = ref.watch(courseSyncProvider);
+    final viewMode = ref.watch(courseViewModeProvider);
 
     ref.listen<SyncUiState>(courseSyncProvider, (previous, next) {
       final messenger = ScaffoldMessenger.of(context);
@@ -57,6 +62,10 @@ class _CoursesScreenState extends ConsumerState<CoursesScreen> {
       appBar: AppBar(
         title: Text(l10n.courses),
         actions: [
+          ViewModeToggle(
+            mode: viewMode,
+            onChanged: ref.read(courseViewModeProvider.notifier).set,
+          ),
           IconButton(
             tooltip: l10n.myProgress,
             onPressed: () => context.push('${Routes.courses}/progress'),
@@ -102,6 +111,27 @@ class _CoursesScreenState extends ConsumerState<CoursesScreen> {
         data: (items) {
           if (items.isEmpty) {
             return Center(child: Text(l10n.noDataAvailable));
+          }
+          if (viewMode == ListViewMode.grid) {
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                final spanCount = GridSpanCalculator.columnCount(
+                  constraints.maxWidth / MediaQuery.devicePixelRatioOf(context),
+                );
+                return GridView.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: spanCount,
+                    childAspectRatio: 0.85,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  padding: const EdgeInsets.all(8),
+                  itemCount: items.length,
+                  itemBuilder: (context, index) =>
+                      _CourseGridTile(items[index]),
+                );
+              },
+            );
           }
           return ListView.separated(
             itemCount: items.length,
@@ -348,6 +378,70 @@ class _CourseTile extends StatelessWidget {
       trailing: const Icon(Icons.chevron_right),
       onTap: () =>
           context.go('${Routes.courses}/${Uri.encodeComponent(course.id)}'),
+    );
+  }
+}
+
+/// Grid variant of [_CourseTile]. Port of the `GridViewHolder` /
+/// `item_library_grid.xml` layout the Kotlin `CoursesAdapter` inflates in
+/// grid mode — a card with a subject icon placeholder, the title, and the
+/// grade/subject subtitle.
+class _CourseGridTile extends StatelessWidget {
+  const _CourseGridTile(this.course);
+
+  final CourseRow course;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final subtitleParts = [
+      if (course.gradeLevel != null && course.gradeLevel!.isNotEmpty)
+        course.gradeLevel!,
+      if (course.subjectLevel != null && course.subjectLevel!.isNotEmpty)
+        course.subjectLevel!,
+    ];
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () =>
+            context.go('${Routes.courses}/${Uri.encodeComponent(course.id)}'),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Center(
+                  child: Icon(
+                    Icons.school_outlined,
+                    size: 40,
+                    color: theme.colorScheme.primary.withValues(alpha: 0.6),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                course.courseTitle ?? '',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              if (subtitleParts.isNotEmpty)
+                Text(
+                  subtitleParts.join(' · '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

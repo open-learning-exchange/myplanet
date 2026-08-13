@@ -1030,5 +1030,7 @@
   "@resourcesOpenedTimes": {"placeholders": {"count": {"type": "int"}}},
   "serverReachable": "Server reachable",
   "serverUnreachable": "Server unreachable",
-  "serverChecking": "Checking server"
+  "serverChecking": "Checking server",
+  "gridView": "Grid view",
+  "listView": "List view"
 }

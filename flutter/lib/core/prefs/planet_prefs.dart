@@ -55,6 +55,11 @@ class PlanetPrefs {
   static const String _keyReminderTimePrefix = 'reminder_time_';
   static const String _keyLastSync = 'LastSync';
 
+  /// `libraryViewMode` / `courseViewMode` — port of
+  /// `SharedPrefManager.getLibraryViewMode` / `getCourseViewMode`.
+  static const String _keyLibraryViewMode = 'libraryViewMode';
+  static const String _keyCourseViewMode = 'courseViewMode';
+
   /// `OnboardingActivity.DEEP_LINK_SECTION_KEY` / `DEEP_LINK_ID_KEY`. A section
   /// link that arrives before sign-in is stored under these and applied by the
   /// dashboard afterwards, so the link survives the login it triggered.
@@ -234,6 +239,20 @@ class PlanetPrefs {
 
   Future<void> setLastSync(int epochMillis) =>
       _prefs.setInt(_keyLastSync, epochMillis);
+
+  /// Persisted library (resources) view mode. Port of
+  /// `SharedPrefManager.getLibraryViewMode` / `setLibraryViewMode`.
+  String get libraryViewMode => _prefs.getString(_keyLibraryViewMode) ?? 'grid';
+
+  Future<void> setLibraryViewMode(String mode) =>
+      _prefs.setString(_keyLibraryViewMode, mode);
+
+  /// Persisted course view mode. Port of
+  /// `SharedPrefManager.getCourseViewMode` / `setCourseViewMode`.
+  String get courseViewMode => _prefs.getString(_keyCourseViewMode) ?? 'grid';
+
+  Future<void> setCourseViewMode(String mode) =>
+      _prefs.setString(_keyCourseViewMode, mode);
 
   /// Section of a deep link waiting for a session, or `''` when there is none.
   String get pendingDeepLinkSection =>

@@ -100,6 +100,38 @@ void main() {
       expect(find.text('Primary · Mathematics'), findsOneWidget);
     });
 
+    testWidgets('toggles between list and grid view', (tester) async {
+      await tester.pumpWidget(
+        wrapScreen(
+          const CoursesScreen(),
+          overrides: courseOverrides([
+            buildCourseRow(id: 'c1', courseTitle: 'Algebra'),
+            buildCourseRow(id: 'c2', courseTitle: 'Biology'),
+          ]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Default is list mode in tests — tiles are ListTile widgets.
+      expect(find.byType(ListTile), findsNWidgets(2));
+      expect(find.byType(GridTile), findsNothing);
+
+      // Tap the grid-view toggle.
+      await tester.tap(find.byTooltip('Grid view'));
+      await tester.pumpAndSettle();
+
+      // Now the list renders as a GridView with Card-based tiles.
+      expect(find.byType(GridView), findsOneWidget);
+      expect(find.byType(ListTile), findsNothing);
+
+      // Tap the list-view toggle to go back.
+      await tester.tap(find.byTooltip('List view'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ListTile), findsNWidgets(2));
+      expect(find.byType(GridView), findsNothing);
+    });
+
     testWidgets('shows the empty state when nothing is synced', (tester) async {
       await tester.pumpWidget(
         wrapScreen(const CoursesScreen(), overrides: courseOverrides(const [])),

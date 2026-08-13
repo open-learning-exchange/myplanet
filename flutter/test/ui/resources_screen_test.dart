@@ -30,6 +30,41 @@ void main() {
     expect(find.byIcon(Icons.offline_pin_outlined), findsOneWidget);
   });
 
+  testWidgets('toggles between list and grid view', (tester) async {
+    await tester.pumpWidget(
+      wrapScreen(
+        const ResourcesScreen(),
+        overrides: [
+          resourcesStreamProvider.overrideWith(
+            (ref) => Stream.value([
+              buildLibraryRow(id: 'r1', title: 'Algebra', author: 'Ada'),
+              buildLibraryRow(id: 'r2', title: 'Biology', offline: true),
+            ]),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Default is list mode in tests — tiles are ListTile widgets.
+    expect(find.byType(ListTile), findsNWidgets(2));
+
+    // Tap the grid-view toggle.
+    await tester.tap(find.byTooltip('Grid view'));
+    await tester.pumpAndSettle();
+
+    // Now the list renders as a GridView with Card-based tiles.
+    expect(find.byType(GridView), findsOneWidget);
+    expect(find.byType(ListTile), findsNothing);
+
+    // Tap the list-view toggle to go back.
+    await tester.tap(find.byTooltip('List view'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ListTile), findsNWidgets(2));
+    expect(find.byType(GridView), findsNothing);
+  });
+
   testWidgets('shows the empty state when nothing is synced', (tester) async {
     await tester.pumpWidget(
       wrapScreen(

@@ -6,6 +6,10 @@ import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/resources_providers.dart';
 import '../../providers/sync_state.dart';
+import '../../providers/view_mode_providers.dart';
+import '../components/grid_span_calculator.dart';
+import '../components/list_view_mode.dart';
+import '../components/view_mode_toggle.dart';
 import '../dashboard/dashboard_shell.dart';
 import 'resources_filter_sheet.dart';
 
@@ -13,8 +17,9 @@ import 'resources_filter_sheet.dart';
 ///
 /// The Kotlin fragment wires a RecyclerView + adapter + `OnLibraryItemSelected`
 /// callback and refreshes itself from `RealtimeSyncManager.dataUpdateFlow`.
-/// Here the list is a `ListView.builder` fed by a Drift stream, so a sync
-/// writing to `my_library` repaints the list with no callback plumbing.
+/// Here the list is a `ListView.builder` / `GridView.builder` fed by a Drift
+/// stream, so a sync writing to `my_library` repaints the list with no callback
+/// plumbing.
 class ResourcesScreen extends ConsumerWidget {
   const ResourcesScreen({super.key});
 
@@ -24,6 +29,7 @@ class ResourcesScreen extends ConsumerWidget {
     final resources = ref.watch(resourcesStreamProvider);
     final syncState = ref.watch(resourceSyncProvider);
     final filter = ref.watch(resourceFilterProvider);
+    final viewMode = ref.watch(libraryViewModeProvider);
 
     ref.listen<SyncUiState>(resourceSyncProvider, (previous, next) {
       final messenger = ScaffoldMessenger.of(context);
@@ -46,6 +52,10 @@ class ResourcesScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.resources),
         actions: [
+          ViewModeToggle(
+            mode: viewMode,
+            onChanged: ref.read(libraryViewModeProvider.notifier).set,
+          ),
           IconButton(
             tooltip: l10n.filterResources,
             onPressed: () {
@@ -119,6 +129,27 @@ class ResourcesScreen extends ConsumerWidget {
               ),
             );
           }
+          if (viewMode == ListViewMode.grid) {
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                final spanCount = GridSpanCalculator.columnCount(
+                  constraints.maxWidth / MediaQuery.devicePixelRatioOf(context),
+                );
+                return GridView.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: spanCount,
+                    childAspectRatio: 0.85,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  padding: const EdgeInsets.all(8),
+                  itemCount: filteredItems.length,
+                  itemBuilder: (context, index) =>
+                      _ResourceGridTile(filteredItems[index]),
+                );
+              },
+            );
+          }
           return ListView.separated(
             itemCount: filteredItems.length,
             separatorBuilder: (_, _) => const Divider(height: 1),
@@ -182,4 +213,84 @@ class _ResourceTile extends StatelessWidget {
       _ => Icons.article_outlined,
     };
   }
+}
+
+/// Grid variant of [_ResourceTile]. Port of the `GridViewHolder` /
+/// `item_library_grid.xml` layout the Kotlin `ResourcesAdapter` inflates in
+/// grid mode — a card with the media-type icon, title, and a subtitle.
+class _ResourceGridTile extends StatelessWidget {
+  const _ResourceGridTile(this.resource);
+
+  final MyLibraryRow resource;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final subtitleParts = [
+      if (resource.author != null && resource.author!.isNotEmpty)
+        resource.author!,
+      if (resource.year != null && resource.year!.isNotEmpty) resource.year!,
+      ...resource.subject,
+    ];
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.push('/resources/detail/${resource.id}'),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Center(
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Icon(
+                        _iconFor(resource.mediaType),
+                        size: 40,
+                        color: theme.colorScheme.primary.withValues(alpha: 0.6),
+                      ),
+                      if (resource.resourceOffline)
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Icon(
+                            Icons.offline_pin_outlined,
+                            size: 16,
+                            color: theme.colorScheme.tertiary,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                resource.title ?? '',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              if (subtitleParts.isNotEmpty)
+                Text(
+                  subtitleParts.join(' · '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static IconData _iconFor(String? mediaType) =>
+      _ResourceTile._iconFor(mediaType);
 }

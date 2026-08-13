@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/l10n/app_localizations.dart';
 import 'package:myplanet/providers/app_providers.dart';
+import 'package:myplanet/providers/view_mode_providers.dart';
+import 'package:myplanet/ui/components/list_view_mode.dart';
 
 /// Wraps a widget in the localisation delegates and a [ProviderScope], so
 /// screen tests only have to declare the overrides they care about.
@@ -50,6 +52,8 @@ Widget wrapScreen(
         ref.onDispose(database.close);
         return database;
       }),
+      courseViewModeProvider.overrideWith(_TestCourseViewModeNotifier.new),
+      libraryViewModeProvider.overrideWith(_TestLibraryViewModeNotifier.new),
       ...overrides,
     ],
     child: router == null
@@ -137,4 +141,24 @@ CourseStepRow buildStepRow({
     noOfResources: noOfResources,
     stepIndex: stepIndex,
   );
+}
+
+/// View-mode notifiers that default to list without touching prefs, so screen
+/// tests that look for `ListTile`-based list tiles keep working. The real app
+/// defaults to grid; tests that exercise grid mode override these providers.
+/// `set` is overridden too so tapping the toggle doesn't reach `planetPrefs`.
+class _TestCourseViewModeNotifier extends CourseViewModeNotifier {
+  @override
+  ListViewMode build() => ListViewMode.list;
+
+  @override
+  Future<void> set(ListViewMode mode) async => state = mode;
+}
+
+class _TestLibraryViewModeNotifier extends LibraryViewModeNotifier {
+  @override
+  ListViewMode build() => ListViewMode.list;
+
+  @override
+  Future<void> set(ListViewMode mode) async => state = mode;
 }
