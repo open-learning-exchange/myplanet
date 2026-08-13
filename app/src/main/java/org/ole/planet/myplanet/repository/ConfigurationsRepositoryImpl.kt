@@ -5,11 +5,13 @@ import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
 import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.TimeoutCancellationException
@@ -36,6 +38,7 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Sha256Utils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.VersionUtils
 
 class ConfigurationsRepositoryImpl @Inject constructor(
@@ -367,6 +370,26 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
     override fun getPlanetType(): String? {
         return sharedPrefManager.getRawString("planetType")
+    }
+
+    override fun provisionApp(hasWritePermission: Boolean) {
+        if (hasWritePermission && sharedPrefManager.getFirstRun()) {
+            val myDir = File(FileUtils.getOlePath(context))
+            if (myDir.isDirectory) {
+                val children = myDir.list()
+                if (children != null) {
+                    for (i in children.indices) {
+                        File(myDir, children[i]).delete()
+                    }
+                }
+            }
+            sharedPrefManager.setFirstRun(false)
+        }
+        val storedJsonConcatenatedLinks = sharedPrefManager.getConcatenatedLinks()
+        if (storedJsonConcatenatedLinks != null) {
+            val storedConcatenatedLinks: ArrayList<String> = Json.decodeFromString(storedJsonConcatenatedLinks)
+            DownloadUtils.openDownloadService(context, storedConcatenatedLinks, true)
+        }
     }
 
     private fun buildCouchdbUrl(currentUrl: String, pin: String): String {

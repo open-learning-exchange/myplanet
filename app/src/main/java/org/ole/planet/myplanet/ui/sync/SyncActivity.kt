@@ -293,19 +293,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             .show()
     }
 
-    private fun clearInternalStorage() {
-        val myDir = File(FileUtils.getOlePath(this))
-        if (myDir.isDirectory) {
-            val children = myDir.list()
-            if (children != null) {
-                for (i in children.indices) {
-                    File(myDir, children[i]).delete()
-                }
-            }
-        }
-        prefData.setFirstRun(false)
-    }
-
     fun sync(binding: DialogServerUrlBinding) {
         spinner = binding.intervalDropper
         syncSwitch = binding.syncSwitch
@@ -547,7 +534,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                         prefData.setIsAlternativeUrl(false)
                     }
 
-                    downloadAdditionalResources()
+                    configurationsRepository.provisionApp(checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE))
 
                     val betaAutoDownload = prefData.getBetaAutoDownload()
                     if (betaAutoDownload) {
@@ -578,14 +565,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             "ar" -> getString(R.string.arabic)
             "fr" -> getString(R.string.french)
             else -> getString(R.string.english)
-        }
-    }
-
-    private fun downloadAdditionalResources() {
-        val storedJsonConcatenatedLinks = prefData.getConcatenatedLinks()
-        if (storedJsonConcatenatedLinks != null) {
-            val storedConcatenatedLinks: ArrayList<String> = Json.decodeFromString(storedJsonConcatenatedLinks)
-            openDownloadService(context, storedConcatenatedLinks, true)
         }
     }
 
@@ -722,9 +701,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             }
 
             isSync = true
-            if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && prefData.getFirstRun()) {
-                clearInternalStorage()
-            }
 
             lifecycleScope.launch {
                 isServerReachable(processedUrl, "sync")
