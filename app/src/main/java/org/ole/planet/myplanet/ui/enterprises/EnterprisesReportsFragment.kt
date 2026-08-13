@@ -102,7 +102,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                 selectedImageUri = uri
                 dialogImagePreview?.let { preview ->
                     preview.visibility = View.VISIBLE
-                    Glide.with(this).load(uri).into(preview)
+                    Glide.with(requireView()).load(uri).into(preview)
                 }
             }
         }
@@ -230,7 +230,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         val existingImage = MyTeam.getAttachmentFile(requireContext(), currentReport._id, currentReport.imageName)
         if (existingImage != null && existingImage.exists()) {
             dialogAddReportBinding.reportImagePreview.visibility = View.VISIBLE
-            Glide.with(this).load(existingImage).into(dialogAddReportBinding.reportImagePreview)
+            Glide.with(requireView()).load(existingImage).into(dialogAddReportBinding.reportImagePreview)
             dialogAddReportBinding.btnAddReportImage.text = getString(R.string.change_image)
         }
         dialogAddReportBinding.btnAddReportImage.setOnClickListener {

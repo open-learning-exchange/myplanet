@@ -75,6 +75,14 @@ class EnterprisesReportsAdapter(
         }
     }
 
+    override fun onViewRecycled(holder: ReportsViewHolder) {
+        super.onViewRecycled(holder)
+        Glide.with(context).clear(holder.binding.reportImage)
+        holder.binding.reportImage.setOnClickListener(null)
+        holder.binding.edit.setOnClickListener(null)
+        holder.binding.delete.setOnClickListener(null)
+    }
+
     private fun bindReportImage(binding: ReportListItemBinding, report: MyTeam) {
         val imageFile = MyTeam.getAttachmentFile(context, report._id, report.imageName)
         if (imageFile != null && imageFile.exists()) {
