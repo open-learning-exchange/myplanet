@@ -37,12 +37,26 @@ class UserMapper {
       language: Value(JsonUtils.getStringOrNull('language', doc)),
       gender: Value(JsonUtils.getStringOrNull('gender', doc)),
       dob: Value(JsonUtils.getStringOrNull('birthDate', doc)),
-      userImage: Value(JsonUtils.getStringOrNull('userImage', doc)),
+      // Port of `UserEntity.addImageUrl`: a `_users` document stores the
+      // profile photo as a CouchDB attachment under `_attachments`, not as a
+      // top-level `userImage` field (the Kotlin doc never has one). We store
+      // the attachment *name* here and build the full URL at display time via
+      // `UrlUtils.userImageUrl`, so the persisted value carries no server
+      // credentials and survives a server URL change.
+      userImage: Value(_attachmentName(doc)),
       isArchived: Value(JsonUtils.getBool('isArchived', doc)),
     );
   }
 
-  /// Port of `UserEntity.isManager()` — the manager/admin role check the login
+  /// The first `_attachments` key in [doc], or `null` - the slot Kotlin takes
+  /// as the profile image name in `UserEntity.addImageUrl`.
+  static String? _attachmentName(Map<String, dynamic> doc) {
+    final attachments = JsonUtils.getObject('_attachments', doc);
+    if (attachments == null || attachments.isEmpty) return null;
+    return attachments.keys.first;
+  }
+
+  /// Port of `UserEntity.isManager()` - the manager/admin role check the login
   /// screen applies when `isManagerMode` is set.
   static bool isManager(UserRow user) =>
       user.userAdmin ||

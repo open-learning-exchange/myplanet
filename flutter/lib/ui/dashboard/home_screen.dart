@@ -13,6 +13,7 @@ import '../../providers/session_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/sync_state.dart';
 import '../components/guest_dialog.dart';
+import '../components/profile_avatar.dart';
 import '../life/life_features.dart';
 import '../router.dart';
 import 'dashboard_drawer.dart';
@@ -389,7 +390,7 @@ class _ProfileCard extends ConsumerWidget {
           padding: const EdgeInsets.all(8),
           child: Row(
             children: [
-              const CircleAvatar(radius: 24, child: Icon(Icons.person)),
+              ProfileAvatar(user: session),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 33 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 34 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -190,6 +190,23 @@ Known gaps:
   walks on resource-constrained community devices; durable outbox writes remain separate and are
   still drained by `OutboxDrainScope`. This is foreground orchestration, not a claim that the
   missing WorkManager-equivalent scheduling gap is solved.
+
+- **Phase 34** — the profile photo/avatar on the home dashboard profile card and the user
+  profile screen: a faithful port of the Kotlin `UserEntity.addImageUrl` +
+  Glide path. A `_users` document stores the photo as a CouchDB *attachment*
+  (keyed under `_attachments`), not a top-level field, so `UserMapper.fromDoc`
+  now derives `users.userImage` from the first `_attachments` key — persisting
+  only the attachment *name*, never credentials, so the value survives a server
+  URL change. The full URL is rebuilt at display time against the current
+  `serverConfigProvider` via `UrlUtils.userImageUrl`, then fetched as bytes
+  through the authenticated `PlanetApi.getBytes` path (the same one resource
+  downloads use) with the `satellite` Basic-auth header — `Image.network`
+  cannot reach it. A reusable `ProfileAvatar` widget (in `ui/components/`) watches
+  `profileImageProvider` (a `FutureProvider.family<Uint8List?,
+  ProfileImageRequest>`) and renders `Image.memory` on success, falling back to
+  the user's initials while loading, when the attachment is absent, or when the
+  fetch fails — matching Kotlin's `R.drawable.profile` placeholder. Guests and
+  accounts with no photo render synchronously with no network attempt.
 
 - **Phase 33** — the home dashboard's completed-course star row: the profile card renders one star
   per completed course (every step passed, at least one step), a faithful port of
@@ -839,6 +856,6 @@ succeeds, it just doesn't do what the Kotlin did.
 
 ---
 
-**Last updated**: 2026-08-12 (Phase 33 complete)
-**Phase**: 33 of N (27 of 28 UI packages have a screen — see Status for what that does and does
+**Last updated**: 2026-08-12 (Phase 34 complete)
+**Phase**: 34 of N (27 of 28 UI packages have a screen — see Status for what that does and does
 not mean)
