@@ -23,6 +23,7 @@ import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import java.lang.reflect.Field
+import javax.inject.Provider
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -306,9 +307,9 @@ class DownloadServiceTest {
 
         val testScope = CoroutineScope(job + Dispatchers.IO + exceptionHandler)
 
-        val prefsField: Field = DownloadService::class.java.getDeclaredField("preferences")
+        val prefsField: Field = DownloadService::class.java.getDeclaredField("preferencesProvider")
         prefsField.isAccessible = true
-        prefsField.set(service, mockPreferences)
+        prefsField.set(service, Provider { mockPreferences })
 
         val appScopeField: Field = DownloadService::class.java.getDeclaredField("appScope")
         appScopeField.isAccessible = true
