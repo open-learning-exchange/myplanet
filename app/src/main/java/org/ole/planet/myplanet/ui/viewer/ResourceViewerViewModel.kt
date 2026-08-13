@@ -6,7 +6,7 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
@@ -15,18 +15,12 @@ class ResourceViewerViewModel @Inject constructor(
     private val resourcesRepository: ResourcesRepository,
     private val authSessionUpdaterFactory: AuthSessionUpdater.Factory,
     private val serverUrlMapper: ServerUrlMapper,
-    private val sharedPrefManager: SharedPrefManager,
+    private val userRepository: UserRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     suspend fun ensureServerUrlUpdated() {
-        val serverUrl = sharedPrefManager.getServerUrl()
-        val mapping = serverUrlMapper.processUrl(serverUrl)
-        if (mapping.alternativeUrl != null) {
-            serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
-                serverUrlMapper.isUrlDirectlyReachable(url)
-            }
-        }
+        userRepository.ensureServerUrlUpdated(serverUrlMapper)
     }
 
     fun getAuthSessionUpdater(callback: AuthSessionUpdater.AuthCallback): AuthSessionUpdater {
