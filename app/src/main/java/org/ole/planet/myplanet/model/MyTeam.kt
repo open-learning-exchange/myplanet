@@ -173,7 +173,7 @@ open class MyTeam(
                 `object`.addProperty("teamType", team.teamType)
                 `object`.addProperty("sourcePlanet", team.sourcePlanet)
                 `object`.addProperty("docType", team.docType)
-                return JsonParser.parseString(JsonUtils.gson.toJson(`object`)).asJsonObject
+                return JsonUtils.gson.toJsonTree(`object`).asJsonObject
             }
 
             `object`.addProperty("name", team.name)
@@ -217,7 +217,7 @@ open class MyTeam(
                 `object`.addProperty("type", team.teamType)
             }
 
-            return JsonParser.parseString(JsonUtils.gson.toJson(`object`)).asJsonObject
+            return JsonUtils.gson.toJsonTree(`object`).asJsonObject
         }
 
         fun serialize(team: MyTeam, courses: List<MyCourse>, coursesResourcesMap: Map<String, Map<String?, List<MyLibrary>>>): JsonObject {
