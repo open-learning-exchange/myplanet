@@ -38,7 +38,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     private val viewModel: EnterprisesFinancesViewModel by viewModels()
     private var _binding: FragmentFinanceBinding? = null
     private val binding get() = _binding!!
-    private val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    private val dateFormatter = ThreadLocal.withInitial { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
     private lateinit var addTransactionBinding: AddTransactionBinding
     private lateinit var financeAdapter: EnterprisesFinancesAdapter
     var date: Calendar? = null
@@ -181,7 +181,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
 
     private fun Calendar.formatToString(): String {
-        return dateFormatter.format(this.time)
+        return dateFormatter.get()!!.format(this.time)
     }
 
     private fun updateToDateState(enabled: Boolean) {
@@ -193,7 +193,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
     private fun parseDate(dateString: String): Calendar? {
         return try {
-            val date = dateFormatter.parse(dateString)
+            val date = dateFormatter.get()!!.parse(dateString)
             if (date != null) {
                 Calendar.getInstance().apply {
                     time = date
@@ -218,8 +218,8 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
     private fun filterDataByDateRange(fromDate: String, toDate: String) {
         try {
-            val start = dateFormatter.parse(fromDate)?.time ?: throw IllegalArgumentException("Invalid fromDate format")
-            val end = dateFormatter.parse(toDate)?.time ?: throw IllegalArgumentException("Invalid toDate format")
+            val start = dateFormatter.get()!!.parse(fromDate)?.time ?: throw IllegalArgumentException("Invalid fromDate format")
+            val end = dateFormatter.get()!!.parse(toDate)?.time ?: throw IllegalArgumentException("Invalid toDate format")
             currentStartDate = start
             currentEndDate = end
             observeTransactions()

@@ -3,6 +3,9 @@ package org.ole.planet.myplanet.utils
 import android.util.Log
 import androidx.core.net.toUri
 import dagger.hilt.android.EntryPointAccessors
+import java.time.format.DateTimeFormatter
+import java.time.ZoneId
+import java.time.Instant
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -214,12 +217,10 @@ object SyncTimeLogger {
         return String.format(Locale.US, "%3d.%03ds", seconds, millis)
     }
 
-    private val timestampFormat = ThreadLocal.withInitial {
-        SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
-    }
+    private val timestampFormat = DateTimeFormatter.ofPattern("HH:mm:ss.SSS", Locale.US).withZone(ZoneId.systemDefault())
 
     private fun formatTimestamp(timestamp: Long): String {
-        return timestampFormat.get()!!.format(Date(timestamp))
+        return timestampFormat.format(Instant.ofEpochMilli(timestamp))
     }
 
     private fun generateSummary(): String {

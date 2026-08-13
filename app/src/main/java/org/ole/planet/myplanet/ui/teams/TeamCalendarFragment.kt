@@ -23,6 +23,7 @@ import com.applandeo.materialcalendarview.listeners.OnCalendarDayClickListener
 import dagger.hilt.android.AndroidEntryPoint
 import java.net.MalformedURLException
 import java.net.URL
+import java.time.format.DateTimeFormatter
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
@@ -60,8 +61,6 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private val viewModel: TeamCalendarViewModel by viewModels()
     private var cachedCardHeight: Int? = null
     private var lastWidthPixels: Int? = null
-    private var dateFormat: SimpleDateFormat? = null
-    private var lastLocale: Locale? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentEnterpriseCalendarBinding.inflate(inflater, container, false)
@@ -395,17 +394,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         llImage?.removeAllViews()
     }
 
-    private fun getDateFormat(): SimpleDateFormat {
-        val currentLocale = Locale.getDefault()
-        val cached = dateFormat
-        if (cached != null && lastLocale == currentLocale) {
-            return cached
-        }
-        return SimpleDateFormat("EEE, MMM d, yyyy", currentLocale).also {
-            dateFormat = it
-            lastLocale = currentLocale
-        }
-    }
+    private val dateFormatter = DateTimeFormatter.ofPattern("EEE, MMM d, yyyy", Locale.getDefault()).withZone(ZoneId.systemDefault())
 
     private fun getCardViewHeight(context: Context): Int {
         val currentWidth = Resources.getSystem().displayMetrics.widthPixels
@@ -428,8 +417,8 @@ class TeamCalendarFragment : BaseTeamFragment() {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.meetup_dialog, null)
         val recyclerView = dialogView.findViewById<RecyclerView>(R.id.rvMeetups)
         val dialogTitle = dialogView.findViewById< TextView>(R.id.tvTitle)
-        val formatter = getDateFormat()
-        dialogTitle.text = formatter.format(clickedCalendar.time)
+        val formatter = dateFormatter
+        dialogTitle.text = formatter.format(clickedCalendar.toInstant())
         val extraHeight = TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP, 12f, resources.displayMetrics
         ).toInt()

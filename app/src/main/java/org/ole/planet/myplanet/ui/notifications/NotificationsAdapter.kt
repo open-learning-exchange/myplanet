@@ -5,6 +5,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import java.time.format.DateTimeFormatter
+import java.time.ZoneId
+import java.time.Instant
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -33,20 +36,7 @@ class NotificationsAdapter(
     )
 ) {
 
-    private var dateFormat: SimpleDateFormat? = null
-    private var lastLocale: Locale? = null
-
-    private fun getDateFormat(): SimpleDateFormat {
-        val currentLocale = Locale.getDefault()
-        val cached = dateFormat
-        if (cached != null && lastLocale == currentLocale) {
-            return cached
-        }
-        return SimpleDateFormat("MMM d, yyyy", currentLocale).also {
-            dateFormat = it
-            lastLocale = currentLocale
-        }
-    }
+    private val dateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.getDefault()).withZone(ZoneId.systemDefault())
 
     companion object {
         private const val VIEW_TYPE_HEADER = 0
@@ -145,7 +135,7 @@ class NotificationsAdapter(
                 diff < 86_400_000L -> context.getString(R.string.hours_ago, diff / 3_600_000L)
                 diff < 172_800_000L -> context.getString(R.string.yesterday)
                 diff < 604_800_000L -> context.getString(R.string.days_ago, diff / 86_400_000L)
-                else -> getDateFormat().format(Date(createdAt))
+                else -> dateFormatter.format(Instant.ofEpochMilli(createdAt))
             }
         }
     }
