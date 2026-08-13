@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Typeface
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.DatePicker
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -25,8 +26,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.repository.SyncUiState
-import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
 import org.ole.planet.myplanet.model.MyCourse
@@ -34,11 +33,12 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.repository.LifeRepository
+import org.ole.planet.myplanet.repository.SyncUiState
+import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardItem
 import org.ole.planet.myplanet.ui.dashboard.DashboardPluginFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardViewModel
 import org.ole.planet.myplanet.ui.dashboard.ItemType
-import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.health.HealthUsersAdapter
 import org.ole.planet.myplanet.ui.life.LifeFragment
@@ -52,13 +52,21 @@ import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 open class BaseDashboardFragment : DashboardPluginFragment() {
     private val viewModel: DashboardViewModel by viewModels()
     private val newsViewModel: NewsViewModel by viewModels()
     private var fullName: String? = null
-    private var params = LinearLayout.LayoutParams(250, 100)
+    private val params: FlexboxLayout.LayoutParams by lazy {
+        FlexboxLayout.LayoutParams(
+            resources.getDimensionPixelSize(R.dimen.dashboard_chip_width),
+            ViewGroup.LayoutParams.MATCH_PARENT
+        ).apply {
+            marginEnd = resources.getDimensionPixelSize(R.dimen.dashboard_chip_gap)
+        }
+    }
     private var di: DialogUtils.CustomProgressDialog? = null
 
 
@@ -166,11 +174,11 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         val itemLibraryHomeBinding =
             ItemLibraryHomeBinding.inflate(LayoutInflater.from(activity))
         val v = itemLibraryHomeBinding.root
-        v.setBackgroundResource(R.color.card_bg)
         itemLibraryHomeBinding.title.text = message
         itemLibraryHomeBinding.title.setTextColor(
             ContextCompat.getColor(requireContext(), R.color.hint_color)
         )
+        itemLibraryHomeBinding.chipIcon.visibility = View.GONE
         itemLibraryHomeBinding.detail.visibility = View.GONE
         if (onClick != null) {
             v.setOnClickListener { onClick() }
@@ -199,17 +207,10 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
             countView?.visibility = View.VISIBLE
             countView?.text = getString(R.string.number_placeholder, dbMylibrary.size)
         }
-        for ((itemCnt, items) in dbMylibrary.withIndex()) {
+        for (items in dbMylibrary) {
             val itemLibraryHomeBinding =
                 ItemLibraryHomeBinding.inflate(LayoutInflater.from(activity))
             val v = itemLibraryHomeBinding.root
-            setTextColor(itemLibraryHomeBinding.title, itemCnt)
-            val colorResId =
-                if (itemCnt % 2 == 0) R.color.card_bg else R.color.dashboard_item_alternative
-            val color = context?.let { ContextCompat.getColor(it, colorResId) }
-            if (color != null) {
-                v.setBackgroundColor(color)
-            }
 
             itemLibraryHomeBinding.title.text = items.title
             itemLibraryHomeBinding.detail.setOnClickListener {
@@ -238,12 +239,9 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
             }
             return
         }
-        val myCoursesTextViewArray = arrayOfNulls<TextView>(filteredCourses.size)
-        for ((itemCnt, items) in filteredCourses.withIndex()) {
+        for (items in filteredCourses) {
             val dashboardItem = DashboardItem(items.courseId, items.courseTitle, null, ItemType.COURSE)
-            setTextViewProperties(myCoursesTextViewArray, itemCnt, dashboardItem)
-            myCoursesTextViewArray[itemCnt]?.let { setTextColor(it, itemCnt) }
-            flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params)
+            flexboxLayout.addView(createCourseChip(dashboardItem), params)
         }
     }
 
@@ -263,10 +261,9 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
             return
         }
 
-        for ((count, ob) in teams.withIndex()) {
+        for (ob in teams) {
             val v = LayoutInflater.from(activity).inflate(R.layout.item_home_my_team, flexboxLayout, false)
             val name = v.findViewById<TextView>(R.id.tv_name)
-            setBackgroundColor(v, count)
             if (ob.teamType == "sync") {
                 name.setTypeface(null, Typeface.BOLD)
             }
@@ -328,9 +325,9 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
             }
             return
         }
-        for ((itemCnt, items) in visibleItems.withIndex()) {
+        for (items in visibleItems) {
             val dashboardItem = DashboardItem(items._id, items.title, items.imageId, ItemType.LIFE)
-            flexboxLayout.addView(getLayout(itemCnt, dashboardItem, 0), params)
+            flexboxLayout.addView(getLayout(dashboardItem, 0), params)
         }
         updateMyLifeSurveyCount()
     }

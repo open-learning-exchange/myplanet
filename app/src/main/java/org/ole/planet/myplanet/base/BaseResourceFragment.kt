@@ -142,7 +142,7 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-    protected fun showDownloadDialog(dbMyLibrary: List<MyLibrary?>) {
+    protected open fun showDownloadDialog(dbMyLibrary: List<MyLibrary?>) {
         if (!isAdded || dbMyLibrary.isEmpty() || downloadSuggestionDialog?.isShowing == true) return
 
         activity?.let { fragmentActivity ->

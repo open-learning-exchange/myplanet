@@ -5,10 +5,10 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
-import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.utils.ThemeMode
 import javax.inject.Inject
 import javax.inject.Singleton
+import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.utils.ThemeMode
 
 @Singleton
 class ThemeManager @Inject constructor(

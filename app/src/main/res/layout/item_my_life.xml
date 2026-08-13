@@ -1,53 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="wrap_content"
-    android:layout_height="0dp"
-    android:layout_gravity="center"
-    android:layout_weight="1"
-    android:gravity="center"
-    android:minWidth="@dimen/user_image_size"
-    android:orientation="vertical">
+    android:layout_width="@dimen/dashboard_chip_width"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_dashboard_chip">
 
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_gravity="center"
-        android:gravity="center"
-        android:minWidth="@dimen/user_image_size"
         android:orientation="vertical"
-        android:padding="@dimen/padding_small">
-
+        android:padding="@dimen/dashboard_chip_padding">
 
         <ImageView
             android:id="@+id/img"
-            android:layout_width="@dimen/_30dp"
-            android:layout_height="@dimen/_30dp"
-            android:layout_gravity="center"
-            android:padding="@dimen/padding_small"
-            app:tint="@color/daynight_textColor" />
-
-
+            android:layout_width="@dimen/dashboard_chip_icon_size"
+            android:layout_height="@dimen/dashboard_chip_icon_size"
+            app:tint="@color/dashboard_tile_life"
+            android:contentDescription="@null" />
         <TextView
             android:id="@+id/tv_name"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="4dp"
             android:ellipsize="end"
-            android:lines="1"
-            android:padding="@dimen/padding_normal"
-            android:textColor="@color/daynight_textColor" />
+            android:maxLines="2"
+            android:textColor="@color/dashboard_ink_2"
+            android:textSize="11.5sp" />
     </LinearLayout>
 
     <TextView
         android:id="@+id/tv_count"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
-        android:layout_gravity="right"
-        android:layout_margin="@dimen/padding_normal"
-        android:background="@drawable/oval_primary"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:layout_margin="4dp"
+        android:background="@drawable/oval_dashboard_badge"
         android:gravity="center"
-        android:textColor="@color/daynight_textColor"
-        android:textSize="12sp"
+        android:minWidth="@dimen/dashboard_badge_size"
+        android:minHeight="@dimen/dashboard_badge_size"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp"
+        android:paddingTop="2dp"
+        android:paddingBottom="2dp"
+        android:textColor="@color/dashboard_badge_ink"
+        android:textSize="11sp"
+        android:textStyle="bold"
         android:visibility="gone" />
 </FrameLayout>

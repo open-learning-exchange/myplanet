@@ -28,7 +28,6 @@ import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MyLibrary
-import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.StepExam
