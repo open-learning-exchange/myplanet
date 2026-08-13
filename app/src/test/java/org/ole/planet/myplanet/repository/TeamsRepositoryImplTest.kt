@@ -85,6 +85,7 @@ class TeamsRepositoryImplTest {
         val mockUserRepository = mockk<UserRepository>(relaxed = true)
 
         teamsRepository = TeamsRepositoryImpl(
+            mockk<android.content.Context>(relaxed = true),
             activitiesRepository,
             userSessionManager,
             uploadManager,
@@ -94,7 +95,7 @@ class TeamsRepositoryImplTest {
             serverUrlMapper,
             dispatcherProvider,
             mockUserRepository,
-            dagger.Lazy { mockk(relaxed = true) },
+            dagger.Lazy { mockk<ResourcesRepository>(relaxed = true) },
             TestTimeProvider(),
             teamLogDao,
             teamTaskDao,
@@ -279,7 +280,7 @@ class TeamsRepositoryImplTest {
         teamLog._rev = "rev1"
         teamLog._id = "id1"
 
-        val jsonObject = teamsRepository.serializeTeamActivities(teamLog, mockContext)
+        val jsonObject = teamsRepository.serializeTeamActivities(teamLog)
 
         assertEquals("user1", jsonObject.get("user").asString)
         assertEquals("type1", jsonObject.get("type").asString)
@@ -321,7 +322,7 @@ class TeamsRepositoryImplTest {
         teamLog._rev = ""
         teamLog._id = "id1"
 
-        val jsonObject = teamsRepository.serializeTeamActivities(teamLog, mockContext)
+        val jsonObject = teamsRepository.serializeTeamActivities(teamLog)
 
         assertFalse(jsonObject.has("_rev"))
         assertFalse(jsonObject.has("_id"))

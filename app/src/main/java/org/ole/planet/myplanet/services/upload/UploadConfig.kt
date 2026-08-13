@@ -34,16 +34,8 @@ sealed class UploadSerializer<T : Any> {
         val serialize: (T) -> JsonObject
     ) : UploadSerializer<T>()
 
-    data class WithContext<T : Any>(
-        val serialize: (T, Context) -> JsonObject
-    ) : UploadSerializer<T>()
-
     data class Async<T : Any>(
         val serialize: suspend (T) -> JsonObject
-    ) : UploadSerializer<T>()
-
-    data class AsyncContext<T : Any>(
-        val serialize: suspend (T, Context) -> JsonObject
     ) : UploadSerializer<T>()
 }
 

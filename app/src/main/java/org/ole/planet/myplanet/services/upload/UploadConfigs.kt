@@ -95,7 +95,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "team_activities",
         modelClassName = "TeamLog",
         fetchPendingItems = { teamsSyncRepository.get().getPendingTeamLogUploads() },
-        serializer = UploadSerializer.WithContext { log, context -> teamsSyncRepository.get().serializeTeamActivities(log, context) },
+        serializer = UploadSerializer.Simple { log -> teamsSyncRepository.get().serializeTeamActivities(log) },
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
@@ -208,7 +208,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "apk_logs",
         modelClassName = "ApkLog",
         fetchPendingItems = { diagnosticsRepository.getPendingApkLogs() },
-        serializer = UploadSerializer.WithContext(ApkLog::serialize),
+        serializer = UploadSerializer.Simple(ApkLog::serialize),
         idExtractor = { it.id },
         markUploaded = { results ->
             // A row is "pending" until it has a _rev; set it here. Rows that no longer exist
@@ -249,8 +249,8 @@ class UploadConfigs @Inject constructor(
         modelClass = Submission::class,
         endpoint = "submissions",
         fetchPendingItems = { submissionsRepository.getPendingSubmissionsForUpload() },
-        serializer = UploadSerializer.AsyncContext { submission, context ->
-            submissionsRepository.serializeSubmission(submission, context, sharedPrefManager.getPlanetCode(), sharedPrefManager.getParentCode())
+        serializer = UploadSerializer.Async { submission ->
+            submissionsRepository.serializeSubmission(submission, sharedPrefManager.getPlanetCode(), sharedPrefManager.getParentCode())
         },
         idExtractor = { it.id },
         dbIdExtractor = { it._id },

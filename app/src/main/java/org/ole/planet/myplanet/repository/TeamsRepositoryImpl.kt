@@ -59,6 +59,7 @@ import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class TeamsRepositoryImpl @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: Context,
     private val activitiesRepository: ActivitiesRepository,
     private val userSessionManager: UserSessionManager,
     private val uploadManager: UploadManager,
@@ -1200,7 +1201,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun serializeTeamActivities(log: TeamLog, context: Context): JsonObject {
+    override fun serializeTeamActivities(log: TeamLog): JsonObject {
         val ob = JsonObject()
         ob.addProperty("user", log.user)
         ob.addProperty("type", log.type)
