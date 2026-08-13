@@ -55,6 +55,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private var pendingJoinDialog = false
     private var courseDetailContentReady = false
     private var coursesPagerAdapter: CoursesPagerAdapter? = null
+    private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -124,13 +125,14 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 courseId
             )
             binding.viewPager2.adapter = coursesPagerAdapter
-            binding.viewPager2.registerOnPageChangeCallback(object :
-                ViewPager2.OnPageChangeCallback() {
+
+            pageChangeCallback = object : ViewPager2.OnPageChangeCallback() {
                 override fun onPageSelected(position: Int) {
                     super.onPageSelected(position)
                     this@TakeCourseFragment.onPageSelected(position)
                 }
-            })
+            }
+            pageChangeCallback?.let { binding.viewPager2.registerOnPageChangeCallback(it) }
         }
         coursesPagerAdapter?.submitList(steps.mapNotNull { it?.id })
 
@@ -456,6 +458,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     override fun onDestroyView() {
         binding.courseProgress.setOnSeekBarChangeListener(null)
+        pageChangeCallback?.let { binding.viewPager2.unregisterOnPageChangeCallback(it) }
+        pageChangeCallback = null
         lifecycleScope.coroutineContext.cancelChildren()
         joinDialog?.dismiss()
         joinDialog = null
