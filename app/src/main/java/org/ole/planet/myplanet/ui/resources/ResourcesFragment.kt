@@ -498,10 +498,12 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                 !isOffline
             }
             tvDownload.visibility = if (hasNotDownloadedSelected) View.VISIBLE else View.GONE
+            binding.layoutSearch.root.visibility = View.GONE
         } else {
             if(isMyCourseLib) tvDelete?.visibility = View.GONE
             else tvAddToLib.visibility = View.GONE
             tvDownload.visibility = View.GONE
+            binding.layoutSearch.root.visibility = View.VISIBLE
         }
     }
 
@@ -510,7 +512,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
         if (!hasAnyLibraryData && listSize == 0) {
             selectAll.visibility = View.GONE
-            etSearch.visibility = View.GONE
+            binding.layoutSearch.root.visibility = View.GONE
             tvAddToLib.visibility = View.GONE
             tvDownload.visibility = View.GONE
             tvSelected.visibility = View.GONE
@@ -520,10 +522,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             tvDelete?.visibility = View.GONE
         } else {
             selectAll.visibility = View.VISIBLE
-            etSearch.visibility = View.VISIBLE
             binding.btnCollections.visibility = View.VISIBLE
             filter.visibility = View.VISIBLE
             clearTags.visibility = if (hasActiveFilters()) View.VISIBLE else View.GONE
+            hideButton()
         }
     }
 
