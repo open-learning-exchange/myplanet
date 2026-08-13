@@ -134,7 +134,6 @@ class UploadManagerTest {
     private val retryQueue: RetryQueue = mockk(relaxed = true)
     private val personalsRepository: PersonalsRepository = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
-    private val chatRepository: ChatRepository = mockk(relaxed = true)
     private val voicesRepository: VoicesRepository = mockk(relaxed = true)
     private val uploadConfigs: UploadConfigs = mockk(relaxed = true)
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
@@ -173,7 +172,6 @@ class UploadManagerTest {
                 retryQueue,
                 personalsRepository,
                 userRepository,
-                chatRepository,
                 voicesRepository,
                 uploadConfigs,
                 resourcesRepository,
