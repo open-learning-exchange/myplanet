@@ -657,7 +657,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     }
                 }
             }
-        }.launchIn(MainApplication.applicationScope)
+        }.launchIn(lifecycleScope)
     }
 
     fun settingDialog() {
