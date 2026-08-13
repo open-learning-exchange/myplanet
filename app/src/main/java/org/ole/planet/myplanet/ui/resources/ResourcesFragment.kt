@@ -34,6 +34,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
@@ -95,6 +97,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     lateinit var prefManager: SharedPrefManager
 
     private val viewModel: ResourcesViewModel by viewModels()
+    private val adapterMutex = Mutex()
     
     @Inject
     lateinit var realtimeSyncManager: RealtimeSyncManager
@@ -147,15 +150,21 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
 
         val user = userRepository.getUserModel()
-        val factory = adapterFactory ?: DefaultBaseAdapterFactory()
-        adapterLibrary = factory.createResourcesAdapter(
-            context = requireActivity(),
-            isGuest = user?.isGuest() == true,
-            openedResourceIds = emptySet(),
-            currentUserName = user?.name,
-            viewMode = prefManager.getLibraryViewMode(),
-            onEditClick = { model -> openEditResource(model) }
-        )
+        adapterMutex.withLock {
+            if (!::adapterLibrary.isInitialized) {
+                val factory = adapterFactory ?: DefaultBaseAdapterFactory()
+                adapterLibrary = factory.createResourcesAdapter(
+                    context = requireActivity(),
+                    isGuest = user?.isGuest() == true,
+                    openedResourceIds = emptySet(),
+                    currentUserName = user?.name,
+                    viewMode = prefManager.getLibraryViewMode(),
+                    onEditClick = { model -> openEditResource(model) }
+                )
+            } else {
+                adapterLibrary.setViewMode(prefManager.getLibraryViewMode())
+            }
+        }
 
         adapterLibrary.setListener(this)
 

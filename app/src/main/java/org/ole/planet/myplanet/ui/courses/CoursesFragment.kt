@@ -27,6 +27,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.base.DefaultBaseAdapterFactory
@@ -66,6 +68,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     private val refreshJobs = mutableMapOf<String, Job>()
     private var pendingScrollState: Parcelable? = null
     private val viewModel: CoursesViewModel by viewModels()
+    private val adapterMutex = Mutex()
 
     @Inject
     lateinit var userSessionManager: UserSessionManager
@@ -117,13 +120,19 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
             userModel = userSessionManager.getUserModel()
         }
 
-        val factory = adapterFactory ?: DefaultBaseAdapterFactory()
-        adapterCourses = factory.createCoursesAdapter(
-            context = hostActivity,
-            isGuest = userModel?.isGuest() ?: true,
-            isMyCourseLib = isMyCourseLib,
-            viewMode = sharedPrefManager.getCourseViewMode()
-        )
+        adapterMutex.withLock {
+            if (!::adapterCourses.isInitialized) {
+                val factory = adapterFactory ?: DefaultBaseAdapterFactory()
+                adapterCourses = factory.createCoursesAdapter(
+                    context = hostActivity,
+                    isGuest = userModel?.isGuest() ?: true,
+                    isMyCourseLib = isMyCourseLib,
+                    viewMode = sharedPrefManager.getCourseViewMode()
+                )
+            } else {
+                adapterCourses.setViewMode(sharedPrefManager.getCourseViewMode())
+            }
+        }
 
         adapterCourses.setListener(this@CoursesFragment)
         enableSortButtons()
