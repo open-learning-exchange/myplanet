@@ -4,6 +4,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagEntity
@@ -106,6 +107,7 @@ interface ResourcesRepository {
     suspend fun trackResourceOpen(item: MyLibrary)
     suspend fun getOfflineResourceItems(oleDirPath: String, extensions: Set<String>, allKnownExtensions: Set<String>): List<OfflineResourceItem>
     suspend fun deleteOfflineResources(oleDirPath: String, items: List<OfflineResourceItem>)
+    fun observeTableUpdates(tableNames: List<String>): Flow<TableDataUpdate>
 }
 
 sealed class ResourceUrlsResponse {

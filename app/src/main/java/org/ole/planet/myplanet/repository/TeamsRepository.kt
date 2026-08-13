@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.CreateTeamRequest
+import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
@@ -151,4 +152,5 @@ interface TeamsRepository {
 
     suspend fun getLastVisit(userName: String?, teamId: String?): Long?
     fun getTeamNameFromPrefs(): String?
+    fun observeTableUpdates(tableNames: List<String>): Flow<TableDataUpdate>
 }

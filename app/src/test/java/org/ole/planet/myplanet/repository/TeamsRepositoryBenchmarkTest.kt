@@ -77,6 +77,7 @@ class TeamsRepositoryBenchmarkTest {
             courseDao,
             courseStepDao,
             appDatabase,
+            realtimeSyncManager = mockk(relaxed = true)
         )
     }
 

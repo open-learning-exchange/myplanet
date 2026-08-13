@@ -21,6 +21,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.room.AppDatabase
@@ -37,6 +38,8 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamLog
+import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.model.TeamResourceDto
 import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.model.TeamSummary
@@ -75,6 +78,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val courseDao: CourseDao,
     private val courseStepDao: CourseStepDao,
     private val appDatabase: AppDatabase,
+    private val realtimeSyncManager: RealtimeSyncManager
 ) : TeamsRepository, TeamsSyncRepository {
     override fun getTasksFlow(userId: String?): Flow<List<TeamTask>> {
         return teamTaskDao.getOpenTasksForUser(userId).flowOn(dispatcherProvider.default)
@@ -409,6 +413,12 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override fun getTeamNameFromPrefs(): String? {
         return sharedPrefManager.getTeamName()
+    }
+
+    override fun observeTableUpdates(tableNames: List<String>): Flow<TableDataUpdate> {
+        return realtimeSyncManager.dataUpdateFlow.filter { update ->
+            tableNames.contains(update.table)
+        }
     }
 
     override suspend fun getTeamNamesByIds(ids: List<String>): Map<String, String> {

@@ -54,7 +54,8 @@ class ResourcesRepositoryBenchmarkTest {
             teamDao,
             userSessionManager,
             configurationsRepository,
-            dispatcherProvider
+            dispatcherProvider,
+            mockk(relaxed = true)
         )
     }
 
