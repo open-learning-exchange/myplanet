@@ -30,7 +30,16 @@ class HealthExaminationAdapter(
     private var mh: HealthExamination,
     private var userModel: UserEntity?,
     private var userMap: Map<String, UserEntity>
-) : ListAdapter<HealthExamination, HealthExaminationViewHolder>(DIFF_CALLBACK) {
+) : ListAdapter<HealthExaminationAdapter.HealthExaminationItem, HealthExaminationViewHolder>(DIFF_CALLBACK) {
+
+    data class HealthExaminationItem(
+        val examination: HealthExamination,
+        val displayDate: String,
+        val isSelfExamination: Boolean,
+        val conditionsText: String,
+        val encryptedData: JsonObject?
+    )
+
     private val displayNameCache = mutableMapOf<String, String>()
     private val colorGrey50 by lazy { ContextCompat.getColor(context, R.color.md_grey_50) }
     private val colorGreen50 by lazy { ContextCompat.getColor(context, R.color.md_green_50) }
@@ -40,6 +49,50 @@ class HealthExaminationAdapter(
         this.mh = mh
         this.userModel = userModel
         this.userMap = userMap
+    }
+
+    fun submitExaminations(list: List<HealthExamination>) {
+        val items = list.map { item ->
+            val formattedDate = formatDate(item.date, "MMM dd, yyyy")
+            val encrypted = userModel?.let { user -> item.getEncryptedDataAsJson(user) }
+            val createdBy = getString("createdBy", encrypted)
+
+            val (displayDate, isSelfExamination) = if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel?.id)) {
+                val name = displayNameCache.getOrPut(createdBy) {
+                    val model = userMap[createdBy]
+                    model?.getFullName() ?: createdBy.split(colonRegex).dropLastWhile { it.isEmpty() }.toTypedArray().getOrNull(1) ?: createdBy
+                }
+                context.getString(R.string.two_strings, formattedDate, name).trimIndent() to false
+            } else {
+                context.getString(R.string.self_examination, formattedDate) to true
+            }
+
+            var conditionsText = ""
+            try {
+                val conditionsMap = JsonUtils.gson.fromJson(item.conditions, JsonObject::class.java)
+                if (conditionsMap != null) {
+                    val keys = conditionsMap.keySet()
+                    val conditionsBuilder = StringBuilder()
+                    for (key in keys) {
+                        if (conditionsMap[key].asBoolean) {
+                            conditionsBuilder.append("$key, ")
+                        }
+                    }
+                    conditionsText = conditionsBuilder.toString()
+                }
+            } catch (e: Exception) {
+                // Ignore parsing errors and leave empty
+            }
+
+            HealthExaminationItem(
+                examination = item,
+                displayDate = displayDate,
+                isSelfExamination = isSelfExamination,
+                conditionsText = conditionsText,
+                encryptedData = encrypted
+            )
+        }
+        submitList(items)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): HealthExaminationViewHolder {
@@ -52,34 +105,28 @@ class HealthExaminationAdapter(
     override fun onBindViewHolder(holder: HealthExaminationViewHolder, position: Int) {
         val binding = holder.binding
         val item = getItem(position)
-        binding.txtTemp.text = item.let { checkEmpty(it.temperature) }
-        val formattedDate = item.let { formatDate(it.date, "MMM dd, yyyy") }
-        binding.txtDate.text = formattedDate
-        binding.txtDate.tag = formattedDate
-        val encrypted = userModel?.let { it1 -> item.getEncryptedDataAsJson(it1) }
+        val realmExamination = item.examination
 
-        val createdBy = getString("createdBy", encrypted)
-        if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel?.id)) {
-            val name = displayNameCache.getOrPut(createdBy) {
-                val model = userMap[createdBy]
-                model?.getFullName() ?: createdBy.split(colonRegex).dropLastWhile { it.isEmpty() }.toTypedArray().getOrNull(1) ?: createdBy
-            }
-            binding.txtDate.text = context.getString(R.string.two_strings, binding.txtDate.text, name).trimIndent()
+        binding.txtTemp.text = checkEmpty(realmExamination.temperature)
+        binding.txtDate.text = item.displayDate
+        binding.txtDate.tag = formatDate(realmExamination.date, "MMM dd, yyyy")
+
+        if (!item.isSelfExamination) {
             holder.itemView.setBackgroundColor(colorGrey50)
         } else {
-            binding.txtDate.text = context.getString(R.string.self_examination, binding.txtDate.text)
             holder.itemView.setBackgroundColor(colorGreen50)
         }
 
-        binding.txtPulse.text = item.let { checkEmptyInt(it.pulse) }
-        binding.txtBp.text = item.bp
-        binding.txtHearing.text = item.hearing
-        binding.txtHeight.text = item.let { checkEmpty(it.height) }
-        binding.txtWeight.text = item.let { checkEmpty(it.weight) }
-        binding.txtVision.text = item.vision
+        binding.txtPulse.text = checkEmptyInt(realmExamination.pulse)
+        binding.txtBp.text = realmExamination.bp
+        binding.txtHearing.text = realmExamination.hearing
+        binding.txtHeight.text = checkEmpty(realmExamination.height)
+        binding.txtWeight.text = checkEmpty(realmExamination.weight)
+        binding.txtVision.text = realmExamination.vision
+
         holder.itemView.setOnClickListener {
-            if (encrypted != null) {
-                showAlert(binding, position, encrypted)
+            if (item.encryptedData != null) {
+                showAlert(binding, item, item.encryptedData)
             }
         }
     }
@@ -92,41 +139,30 @@ class HealthExaminationAdapter(
         return if (value == 0) "" else value.toString() + ""
     }
 
-    private fun showAlert(binding: RowExaminationBinding, position: Int, encrypted: JsonObject) {
-        val realmExamination = getItem(position)
+    private fun showAlert(binding: RowExaminationBinding, item: HealthExaminationItem, encrypted: JsonObject) {
+        val realmExamination = item.examination
         val alertExaminationBinding = AlertExaminationBinding.inflate(LayoutInflater.from(context))
-        if (realmExamination != null) {
-            alertExaminationBinding.tvVitals.text = context.getString(R.string.vitals_format, checkEmpty(realmExamination.temperature),
-                checkEmptyInt(realmExamination.pulse), realmExamination.bp, checkEmpty(realmExamination.height),
-                checkEmpty(realmExamination.weight), realmExamination.vision, realmExamination.hearing).trimIndent()
-        }
-        showConditions(alertExaminationBinding.tvCondition, realmExamination)
+
+        alertExaminationBinding.tvVitals.text = context.getString(R.string.vitals_format, checkEmpty(realmExamination.temperature),
+            checkEmptyInt(realmExamination.pulse), realmExamination.bp, checkEmpty(realmExamination.height),
+            checkEmpty(realmExamination.weight), realmExamination.vision, realmExamination.hearing).trimIndent()
+
+        alertExaminationBinding.tvCondition.text = item.conditionsText
         showEncryptedData(alertExaminationBinding.tvOtherNotes, encrypted)
+
         val dialog = AlertDialog.Builder(context, R.style.CustomAlertDialog)
             .setTitle(binding.txtDate.tag as? CharSequence ?: binding.txtDate.text)
             .setView(alertExaminationBinding.root)
             .setPositiveButton("OK", null).create()
         dialog.window?.setBackgroundDrawable(colorMultiSelectGrey.toDrawable())
-        if (realmExamination != null) {
-            dialog.setButton(DialogInterface.BUTTON_NEUTRAL, context.getString(R.string.edit)) { _: DialogInterface?, _: Int ->
-                context.startActivity(Intent(context, HealthExaminationActivity::class.java)
-                    .putExtra("id", getItem(position)._id)
-                    .putExtra("userId", mh._id))
-            }
-        }
-        dialog.show()
-    }
 
-    private fun showConditions(tvCondition: TextView, realmExamination: HealthExamination?) {
-        val conditionsMap = JsonUtils.gson.fromJson(realmExamination?.conditions, JsonObject::class.java)
-        val keys = conditionsMap.keySet()
-        val conditions = StringBuilder()
-        for (key in keys) {
-            if (conditionsMap[key].asBoolean) {
-                conditions.append("$key, ")
-            }
+        dialog.setButton(DialogInterface.BUTTON_NEUTRAL, context.getString(R.string.edit)) { _: DialogInterface?, _: Int ->
+            context.startActivity(Intent(context, HealthExaminationActivity::class.java)
+                .putExtra("id", realmExamination._id)
+                .putExtra("userId", mh._id))
         }
-        tvCondition.text = conditions
+
+        dialog.show()
     }
 
     private fun showEncryptedData(tvOtherNotes: TextView, encrypted: JsonObject) {
@@ -141,18 +177,21 @@ class HealthExaminationAdapter(
 
     companion object {
         private val colonRegex by lazy { ":".toRegex() }
-        private val DIFF_CALLBACK = DiffUtils.itemCallback<HealthExamination>(
-            { oldItem, newItem -> oldItem._id == newItem._id },
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<HealthExaminationItem>(
+            { oldItem, newItem -> oldItem.examination._id == newItem.examination._id },
             { oldItem, newItem ->
-                oldItem.temperature == newItem.temperature &&
-                        oldItem.date == newItem.date &&
-                        oldItem.data == newItem.data &&
-                        oldItem.pulse == newItem.pulse &&
-                        oldItem.bp == newItem.bp &&
-                        oldItem.hearing == newItem.hearing &&
-                        oldItem.height == newItem.height &&
-                        oldItem.weight == newItem.weight &&
-                        oldItem.vision == newItem.vision
+                oldItem.displayDate == newItem.displayDate &&
+                oldItem.conditionsText == newItem.conditionsText &&
+                oldItem.isSelfExamination == newItem.isSelfExamination &&
+                oldItem.examination.temperature == newItem.examination.temperature &&
+                oldItem.examination.date == newItem.examination.date &&
+                oldItem.examination.data == newItem.examination.data &&
+                oldItem.examination.pulse == newItem.examination.pulse &&
+                oldItem.examination.bp == newItem.examination.bp &&
+                oldItem.examination.hearing == newItem.examination.hearing &&
+                oldItem.examination.height == newItem.examination.height &&
+                oldItem.examination.weight == newItem.examination.weight &&
+                oldItem.examination.vision == newItem.examination.vision
             }
         )
     }

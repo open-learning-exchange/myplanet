@@ -184,7 +184,7 @@ class MyHealthFragment : Fragment() {
                         isNestedScrollingEnabled = false
                         adapter = healthAdapter
                     }
-                    healthAdapter.submitList(list)
+                    healthAdapter.submitExaminations(list)
                     binding.rvRecords.post {
                         val lastPosition = list.size - 1
                         if (lastPosition >= 0) {
