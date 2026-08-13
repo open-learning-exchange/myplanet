@@ -1180,8 +1180,61 @@ because `createAll` emits bare `CREATE INDEX` and the pre-drop clears any collis
 `schemaVersion` bumps 28 â†’ 29; a migration test asserts both indices exist after an upgrade and
 that the preserved feedback row survives.
 
+### Harvest audit — the 2026-08-13 commit batch
+
+After the indexing harvest, the remaining commits in the `6977707ef..33cedc3c3` range
+were audited. Each was classified as already-harvested, an architectural no-op, or a
+substantial new feature beyond simple harvesting:
+
+**Already harvested (prior sessions or this one).** Four commits had their behavioural
+fix already in the port, with the code itself citing the commit hash:
+
+- `5f3198970` (voices replying) — `VoicesRepository.postReply` keys `replyTo` to
+  `parent.id`, not `_id`, matching the Kotlin's `news.id` switch.
+- `2a49db978` (events detail) — `EventsRepository.toggleAttendance` bails out when
+  `userId` is null/empty, closing the "leave with no user" hole the Kotlin fixed.
+- `48fbf109d` (placeholder wording) — `app_en.arb` carries the "You can add resources" /
+  "You can join courses" / "You can join a team" wording.
+- `0b8f76770` (responsive layout) — `_LastSyncStrip` shows "Last synced: [relative
+  time]" via `lastSyncProvider`, the `updateRailSyncStatus` equivalent.
+
+**Architectural no-ops.** Seven commits fix patterns that the declarative Riverpod
+architecture or the port's scope make moot:
+
+- `425602051` (sync message spacing) — a strings.xml trailing-space fix and a Gradle
+  version bump; `.arb` preserves whitespace natively.
+- `b2733a4e9` (refresh job cancelling) — the Kotlin cancels stale imperative coroutine
+  launches (`refreshJobs`, `selectPatientJob`, `updateTasksJob`). Riverpod
+  `StreamProvider`/`FutureProvider`/`AsyncNotifier` auto-invalidate and cancel the
+  previous computation when a dependency changes, so the race the Kotlin guards against
+  does not arise.
+- `d7fd6d56c` (download dialog handling) — suppresses a download-suggestion dialog in
+  CoursesFragment; the port has no such dialog.
+- `f316a8c69` (resources pending downloading) — optimizes a `SELECT *` to `SELECT id`
+  for pending-download tracking; the port has no `getPendingDownloads` query.
+- `33cedc3c3` (importing) — Kotlin import cleanup; Dart has its own import management
+  (`dart format` / `flutter analyze`).
+- `db96330a2` (download service testing) — Kotlin `DownloadServiceTest` additions only.
+- `5496e1dc1` (merge prepping submodule pinning) — tooling, not the app.
+
+**Substantial new features (not simple harvests).** Four commits are feature additions
+whose Kotlin UI layer (RecyclerView adapters, FlexboxLayout, custom Views) has no direct
+Flutter counterpart and would require design work, not a line-by-line port:
+
+- `c2cf2a788` (grid/list view mode) — adds a `ListViewMode` toggle persisted in prefs
+  and a `MaxWidthFrameLayout` for courses and resources. The port's courses screen uses
+  `ListView` and has no grid mode yet.
+- `818732139` (grid cover imaging) — adds cover-image loading (local file, remote URL
+  with auth, subject icon fallback) to the courses grid adapter. Depends on the grid
+  view above.
+- `437a3d28a` (enterprises finances date picking) — the enterprises feature is not
+  ported.
+- `962e1e736` (health user repositories) — refactors a clinician patient-selection
+  flow the port's health feature (own encrypted records) does not have.
+
+
 ---
 
-**Last updated**: 2026-08-13 (Phase 37 complete)
+**Last updated**: 2026-08-13 (Phase 37 complete, commit-batch audit done)
 **Phase**: 37 of N (27 of 28 UI packages have a screen â€” see Status for what that does and does
 not mean)

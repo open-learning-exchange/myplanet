@@ -26,6 +26,14 @@ git submodule update --init --recursive
 The Dart port runs alongside `app/` (the shipping Kotlin app). Slices land one
 UI package at a time. Conventions worth remembering across slices:
 
+- **Toolchain is not pre-installed in the sandbox.** Flutter 3.44.8 stable
+  (the version pinned in `.github/workflows/flutter.yml`) is cloned on demand:
+  `git clone --depth 1 -b 3.44.8 https://github.com/flutter/flutter.git ~/flutter`,
+  then `export PATH="$HOME/flutter/bin:$PATH"`. `unzip` must be installed
+  (`sudo apt-get install unzip`) before the SDK will extract. Before any
+  analyze/test: `cd flutter && flutter pub get`, `dart run build_runner build`
+  (generated sources are gitignored), `flutter gen-l10n`.
+
 - **DB schema**: drift, `AppDatabase` in `flutter/lib/data/local/app_database.dart`.
   Schema version is `schemaVersion`. **Drop-and-resync** is the migration
   policy: CouchDB cache tables are dropped and refilled by the next sync;
