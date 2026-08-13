@@ -169,9 +169,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         audioRecorder.setCaller(requireActivity(), requireContext())
 
         viewLifecycleOwner.lifecycleScope.launch {
-            externalFilesDir = withContext(dispatcherProvider.io) {
-                requireContext().getExternalFilesDir(null)
-            }
+            externalFilesDir = viewModel.getExternalFilesDir(requireContext())
             resourceId?.let {
                 library = viewModel.getLibraryItemById(it) ?: return@launch
             }
@@ -429,15 +427,9 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val file = File(externalFilesDir, "ole/$filePath")
         if (!file.exists()) return
         isExtractingText = true
-        lifecycleScope.launch(dispatcherProvider.io) {
-            pdfText = try {
-                PDFBoxResourceLoader.init(requireContext().applicationContext)
-                val document = PDDocument.load(file)
-                val text = PDFTextStripper().getText(document).trim()
-                document.close()
-                text
-            } catch (e: Exception) { "" }
-            withContext(dispatcherProvider.main) { isExtractingText = false }
+        viewLifecycleOwner.lifecycleScope.launch {
+            pdfText = viewModel.extractPdfText(requireContext(), file)
+            isExtractingText = false
         }
     }
 
@@ -501,11 +493,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                 streamingHttpDataSourceFactory?.setDefaultRequestProperties(hashMapOf("Cookie" to auth))
             }
             if (isOnline) {
-                withContext(dispatcherProvider.io) {
-                    if (!FileUtils.checkFileExist(requireContext(), url)) {
-                        DownloadUtils.openDownloadService(requireContext(), arrayListOf(url), false)
-                    }
-                }
+                viewModel.downloadResource(requireContext(), url)
             }
         }
     }
