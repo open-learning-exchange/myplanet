@@ -48,7 +48,6 @@ class VoicesRepositoryImplTest {
                 dispatcherProvider,
                 gsonInstance,
                 sharedPrefManager,
-                dagger.Lazy { userRepository },
                 teamNotificationDao,
                 newsDao,
                 myLibraryDao
@@ -244,15 +243,4 @@ class VoicesRepositoryImplTest {
         assertEquals("local-uuid-1234", slot.captured.replyTo)
     }
 
-    @Test
-    fun `getUserById delegates to userRepository`() = testScope.runTest {
-        val testUserId = "test_user_123"
-        val mockUser = mockk<UserEntity>()
-
-        coEvery { userRepository.getUserById(testUserId) } returns mockUser
-
-        val result = repository.getUserById(testUserId)
-
-        assertEquals(mockUser, result)
-    }
 }
