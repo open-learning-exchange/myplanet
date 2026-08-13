@@ -132,7 +132,7 @@ open class News {
     fun calculateSortDate(): Long {
         try {
             if (!viewIn.isNullOrEmpty()) {
-                val ar = JsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
+                val ar = parsedViewIn ?: JsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
                 for (elem in ar) {
                     val obj = elem.asJsonObject
                     if (JsonUtils.getString("section", obj).equals("community", true) && obj.has("sharedDate")) {

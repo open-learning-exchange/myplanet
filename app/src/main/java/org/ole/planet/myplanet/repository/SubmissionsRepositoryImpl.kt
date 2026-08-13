@@ -253,10 +253,14 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                     val choices = answer.valueChoices
                     if (!choices.isNullOrEmpty()) {
                         if (question.type?.startsWith("select") == true && !question.choices.isNullOrEmpty()) {
+                                val choicesArray = try {
+                                    JsonParser.parseString(question.choices).asJsonArray
+                                } catch (_: Exception) {
+                                    null
+                                }
                             formattedAnswer = choices.joinToString(", ") { choiceId ->
                                 try {
-                                    val choicesArray = JsonParser.parseString(question.choices).asJsonArray
-                                    val choiceObject = choicesArray.find {
+                                        val choiceObject = choicesArray?.find {
                                         it.isJsonObject && it.asJsonObject.has("id") && it.asJsonObject.get(
                                             "id"
                                         ).asString == choiceId
@@ -596,6 +600,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             val id = JsonUtils.getString("_id", submission)
             if (id.isBlank()) return@forEach
             val serverStatus = JsonUtils.getString("status", submission)
+            val rev = JsonUtils.getString("_rev", submission)
+            val parentId = JsonUtils.getString("parentId", submission)
             // Drop base64 `_attachments` (e.g. a profile photo) from the embedded user before
             // persisting it as a blob; otherwise a single row can exceed SQLite's ~2MB
             // CursorWindow limit and crash later `SELECT *` reads (SQLiteBlobTooBigException).
@@ -609,8 +615,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 Submission(
                     id = id,
                     _id = id,
-                    _rev = JsonUtils.getString("_rev", submission),
-                    parentId = JsonUtils.getString("parentId", submission),
+                    _rev = rev,
+                    parentId = parentId,
                     type = JsonUtils.getString("type", submission),
                     userId = userId,
                     user = JsonUtils.gson.toJson(userJson),
@@ -618,7 +624,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                     lastUpdateTime = JsonUtils.getLong("lastUpdateTime", submission),
                     grade = JsonUtils.getLong("grade", submission),
                     status = serverStatus,
-                    uploaded = JsonUtils.getString("_rev", submission).isNotEmpty(),
+                    uploaded = rev.isNotEmpty(),
                     sender = JsonUtils.getString("sender", submission),
                     source = JsonUtils.getString("source", submission),
                     parentCode = JsonUtils.getString("parentCode", submission),
@@ -637,8 +643,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 } else {
                     null
                 }
-                val examIdPart = JsonUtils.getString("parentId", submission).split("@").firstOrNull()
-                    ?: JsonUtils.getString("parentId", submission)
+                val examIdPart = parentId.split("@").firstOrNull() ?: parentId
                 answers.add(
                     Answer(
                         id = "$id-$i",
@@ -652,7 +657,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                         valueChoices = valueChoices,
                         mistakes = JsonUtils.getInt("mistakes", answerJson),
                         isPassed = JsonUtils.getBoolean("passed", answerJson),
-                        examId = JsonUtils.getString("parentId", submission),
+                        examId = parentId,
                         questionId = JsonUtils.getString("questionId", answerJson).ifBlank { "$examIdPart-$i" },
                         submissionId = id,
                     )

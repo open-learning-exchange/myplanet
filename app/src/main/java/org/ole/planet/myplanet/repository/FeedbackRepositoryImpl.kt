@@ -82,7 +82,8 @@ class FeedbackRepositoryImpl @Inject constructor(
                 addProperty("time", Date().time.toString())
                 addProperty("user", user ?: "")
             }
-            val msgArray = gson.fromJson(feedback.messages, JsonArray::class.java)
+            val messages = feedback.messages
+            val msgArray = if (messages.isNullOrEmpty()) JsonArray() else gson.fromJson(messages, JsonArray::class.java)
             msgArray.add(obj)
             feedback.setMessages(msgArray)
             feedback.isUploaded = false
@@ -97,14 +98,14 @@ class FeedbackRepositoryImpl @Inject constructor(
     suspend fun insertFromJson(jsonObject: JsonObject) {
         val id = JsonUtils.getString("_id", jsonObject)
         val existing = feedbackDao.findById(id)
-        feedbackDao.upsert(mapToFeedback(jsonObject, existing))
+        feedbackDao.upsert(mapToFeedback(jsonObject, existing, id))
     }
 
     override suspend fun insertFeedbackList(jsonObjects: List<JsonObject>) {
-        val ids = jsonObjects.map { JsonUtils.getString("_id", it) }
-        val existingById = feedbackDao.getByIds(ids).associateBy { it.id }
+        val mappedList = jsonObjects.map { it to JsonUtils.getString("_id", it) }
+        val existingById = feedbackDao.getByIds(mappedList.map { it.second }).associateBy { it.id }
         feedbackDao.upsertAll(
-            jsonObjects.map { mapToFeedback(it, existingById[JsonUtils.getString("_id", it)]) }
+            mappedList.map { (json, id) -> mapToFeedback(json, existingById[id], id) }
         )
     }
 
@@ -112,11 +113,11 @@ class FeedbackRepositoryImpl @Inject constructor(
         return feedbackDao.markUploaded(id) > 0
     }
 
-    private fun mapToFeedback(act: JsonObject, existing: Feedback?): Feedback {
+    private fun mapToFeedback(act: JsonObject, existing: Feedback?, idStr: String): Feedback {
         val hasPendingLocalReply = existing?.isUploaded == false
         return Feedback().apply {
-            id = JsonUtils.getString("_id", act)
-            _id = JsonUtils.getString("_id", act)
+            id = idStr
+            _id = idStr
             title = JsonUtils.getString("title", act)
             source = JsonUtils.getString("source", act)
             status = JsonUtils.getString("status", act)
