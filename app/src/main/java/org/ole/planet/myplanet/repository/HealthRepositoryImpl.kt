@@ -152,13 +152,16 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getPatientsSortedBy(fieldName: String, descending: Boolean): List<UserEntity> {
-        val users = userDao.getAll()
-        return sortPatients(users, fieldName, descending)
+        return when (fieldName) {
+            "joinDate" -> if (descending) userDao.getPatientsSortedByJoinDateDesc() else userDao.getPatientsSortedByJoinDateAsc()
+            "name" -> if (descending) userDao.getPatientsSortedByNameDesc() else userDao.getPatientsSortedByNameAsc()
+            else -> userDao.getAll()
+        }
     }
 
     override suspend fun searchPatients(query: String, sortField: String, descending: Boolean): List<UserEntity> {
         val users = if (query.isBlank()) {
-            userDao.getAll()
+            return getPatientsSortedBy(sortField, descending)
         } else {
             userDao.search(query)
         }
@@ -202,9 +205,7 @@ class HealthRepositoryImpl @Inject constructor(
         val userMap = if (userIds.isEmpty()) {
             emptyMap()
         } else {
-            val userIdSet = userIds.toSet()
-            userDao.getAll()
-                .filter { it.id in userIdSet }
+            userDao.getByIds(userIds)
                 .associateBy { it.id ?: "" }
         }
         return HealthRecord(mh, mm, list, userMap)
