@@ -80,16 +80,15 @@ class ResourcesAdapter(
     fun setViewMode(mode: ListViewMode, onChanged: (() -> Unit)? = null) {
         if (viewMode == mode) return
         viewMode = mode
-        notifyDataSetChanged()
+        notifyItemRangeChanged(0, itemCount)
         onChanged?.invoke()
     }
 
     fun markItemAsOffline(id: String) {
         if (locallyOfflineIds.add(id)) {
-            currentList.forEachIndexed { index, model ->
-                if (model.item.id == id) {
-                    notifyItemChanged(index, PAYLOAD_SELECTION)
-                }
+            val index = currentList.indexOfFirst { it.item.id == id }
+            if (index != -1) {
+                notifyItemChanged(index, PAYLOAD_SELECTION)
             }
         }
     }
@@ -306,10 +305,10 @@ class ResourcesAdapter(
     fun setOpenedResourceIds(newOpenedResourceIds: Set<String>) {
         val oldOpenedResourceIds = this.openedResourceIds
         this.openedResourceIds = newOpenedResourceIds
-        currentList.forEachIndexed { index, model ->
-            val wasOpened = oldOpenedResourceIds.contains(model.item.id)
-            val isOpened = newOpenedResourceIds.contains(model.item.id)
-            if (wasOpened != isOpened) {
+        val changedIds = oldOpenedResourceIds.subtract(newOpenedResourceIds) union newOpenedResourceIds.subtract(oldOpenedResourceIds)
+        changedIds.forEach { id ->
+            val index = currentList.indexOfFirst { it.item.id == id }
+            if (index != -1) {
                 notifyItemChanged(index, PAYLOAD_SELECTION)
             }
         }

@@ -134,7 +134,7 @@ class CoursesAdapter(
     fun setViewMode(mode: ListViewMode, onChanged: (() -> Unit)? = null) {
         if (viewMode == mode) return
         viewMode = mode
-        notifyDataSetChanged()
+        notifyItemRangeChanged(0, itemCount)
         onChanged?.invoke()
     }
 
