@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.content.Context
-import android.media.MediaMetadataRetriever
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,17 +9,13 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.opencsv.CSVParserBuilder
-import com.opencsv.CSVReaderBuilder
 import java.io.File
-import java.io.FileReader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemInlineResourceBinding
 import org.ole.planet.myplanet.model.MyLibrary
@@ -33,6 +28,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 class InlineResourceAdapter(
+    private val previewHelper: ResourcePreviewHelper,
     private val dispatcherProvider: DispatcherProvider,
     private val onResourceClick: (MyLibrary) -> Unit
 ) : ListAdapter<MyLibrary, InlineResourceAdapter.ViewHolder>(
@@ -248,19 +244,7 @@ class InlineResourceAdapter(
         val durationText = if (cachedDuration != null) {
             cachedDuration
         } else {
-            withContext(dispatcherProvider.io) {
-                val retriever = MediaMetadataRetriever()
-                try {
-                    retriever.setDataSource(file.absolutePath)
-                    val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
-                    val totalSeconds = durationMs / 1000
-                    String.format("%d:%02d", totalSeconds / 60, totalSeconds % 60)
-                } catch (e: Exception) {
-                    ""
-                } finally {
-                    retriever.release()
-                }
-            }.also { textCache[cacheKey] = it }
+            previewHelper.getAudioPreview(file).also { textCache[cacheKey] = it }
         }
         holder.binding.tvAudioDuration.text = durationText
     }
@@ -272,24 +256,7 @@ class InlineResourceAdapter(
         val preview = if (cachedPreview != null) {
             cachedPreview
         } else {
-            withContext(dispatcherProvider.io) {
-                try {
-                    val sb = StringBuilder()
-                    CSVReaderBuilder(FileReader(file))
-                        .withCSVParser(CSVParserBuilder().withSeparator(',').withQuoteChar('"').build())
-                        .build().use { reader ->
-                            var count = 0
-                            for (row in reader) {
-                                if (count >= 5) break
-                                sb.appendLine(row.joinToString("  |  "))
-                                count++
-                            }
-                        }
-                    sb.toString().trimEnd().takeIf { it.isNotEmpty() }
-                } catch (e: Exception) {
-                    null
-                }
-            }?.also { textCache[cacheKey] = it }
+            previewHelper.getCsvPreview(file)?.also { textCache[cacheKey] = it }
         }
         if (!preview.isNullOrEmpty()) {
             holder.binding.tvTextPreview.visibility = View.VISIBLE
@@ -304,13 +271,7 @@ class InlineResourceAdapter(
         val text = if (cachedText != null) {
             cachedText
         } else {
-            withContext(dispatcherProvider.io) {
-                try {
-                    file.bufferedReader().useLines { it.take(8).joinToString("\n") }.takeIf { it.isNotEmpty() }
-                } catch (e: Exception) {
-                    null
-                }
-            }?.also { textCache[cacheKey] = it }
+            previewHelper.getTextPreview(file)?.also { textCache[cacheKey] = it }
         }
         if (!text.isNullOrEmpty()) {
             holder.binding.tvTextPreview.visibility = View.VISIBLE

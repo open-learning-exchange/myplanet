@@ -204,6 +204,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
 
         filterController = CourseFilterController(
             rootView = requireView(),
+            coroutineScope = viewLifecycleOwner.lifecycleScope,
             onScrollToTop = { scrollToTop() }
         )
         filterController.setup()

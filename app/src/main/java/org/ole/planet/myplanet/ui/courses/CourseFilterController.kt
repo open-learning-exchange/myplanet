@@ -10,7 +10,6 @@ import android.widget.Spinner
 import android.widget.TextView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,8 +18,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.TagEntity
-import org.ole.planet.myplanet.utils.DefaultDispatcherProvider
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 data class FilterState(
     val searchText: String,
@@ -35,6 +32,7 @@ data class FilterState(
 
 class CourseFilterController(
     private val rootView: View,
+    private val coroutineScope: CoroutineScope,
     private val onScrollToTop: () -> Unit
 ) {
     private val _filterState = MutableStateFlow(FilterState("", "", "", emptyList()))
@@ -52,8 +50,7 @@ class CourseFilterController(
     private var searchTextWatcher: TextWatcher? = null
     private var spinnerListener: AdapterView.OnItemSelectedListener? = null
     private var searchJob: Job? = null
-    private val dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider()
-    private val coroutineScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
+
 
     fun setup() {
         etSearch = rootView.findViewById(R.id.et_search)
@@ -197,7 +194,7 @@ class CourseFilterController(
     }
 
     fun clear() {
-        coroutineScope.cancel()
+        // Scope cancellation is now handled by the owner
     }
 
     fun detach() {
