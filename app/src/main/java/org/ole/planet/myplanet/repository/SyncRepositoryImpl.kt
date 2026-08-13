@@ -179,10 +179,11 @@ class SyncRepositoryImpl @Inject constructor(
                 val responseRows = getJsonArray("rows", response)
                 logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum)", apiDuration, true, responseRows.size())
 
-                if (responseRows.size() == 0) continue
+                val numRows = responseRows.size()
+                if (numRows == 0) continue
 
                 val documentsToProcess = mutableListOf<JsonObject>()
-                for (j in 0 until responseRows.size()) {
+                for (j in 0 until numRows) {
                     val rowObj = responseRows[j].asJsonObject
                     if (rowObj.has("doc")) {
                         val doc = getJsonObject("doc", rowObj)
