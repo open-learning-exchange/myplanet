@@ -1,6 +1,6 @@
 # myPlanet Refactor Tasks — Consolidated & Validated
 
-Extracted from 16 agent task lists (8 agents × 2 prompts), deduplicated, validated against the codebase, and rated 1–100 (evidence quality × impact × risk-adjusted feasibility). Sorted by rating. False-premise tasks (LiveData cleanup, GlobalScope removal, "migrate adapters to ListAdapter" — none of which exist as problems) and vague audit-only tasks were removed.
+Extracted from 16 agent task lists (8 agents × 2 prompts; 163 raw main-round tasks, plus ~26 backlog/stretch items the source lists themselves deferred), deduplicated, validated against the codebase, and rated 1–100 (evidence quality × impact × risk-adjusted feasibility). Sorted by rating. False-premise tasks (LiveData cleanup, GlobalScope removal, "migrate adapters to ListAdapter" — none of which exist as problems) and vague audit-only tasks were removed.
 
 ---
 
@@ -248,7 +248,7 @@ These adapters load images with Glide but never clear requests in `onViewRecycle
 
 **Files:** `ui/courses/CourseFilterController.kt`, `ui/courses/InlineResourceAdapter.kt`, `ui/courses/CoursesFragment.kt` (construction site).
 
-`CourseFilterController` constructs `DefaultDispatcherProvider()` and its own `CoroutineScope(SupervisorJob() + main)` just for a 300 ms debounce — accept the owning fragment's `viewLifecycleOwner.lifecycleScope` (or inject `DispatcherProvider`) so lifecycle cancellation is structural, keeping debounce behavior identical. `InlineResourceAdapter` owns an `adapterScope` and performs four `withContext(io)` blocks of preview IO (PDF render, audio metadata, CSV/text reads) inside an adapter — verify `onDetachedFromRecyclerView` cancels the scope and extract the preview IO into a small injected helper so the adapter stops importing `DispatcherProvider`/`PdfRenderer`/`CSVReader`. *(Merged from four agents' overlapping scope-cleanup tasks.)*
+`CourseFilterController` constructs `DefaultDispatcherProvider()` and its own `CoroutineScope(SupervisorJob() + main)` just for a 300 ms debounce — accept the owning fragment's `viewLifecycleOwner.lifecycleScope` (or inject `DispatcherProvider`) so lifecycle cancellation is structural, keeping debounce behavior identical. `InlineResourceAdapter` owns an `adapterScope` and performs four `withContext(io)` blocks of preview IO (PDF render, audio metadata, CSV/text reads) inside an adapter — verify `onDetachedFromRecyclerView` cancels the scope and extract the preview IO into a small injected helper so the adapter stops importing `DispatcherProvider`/`PdfRenderer`/`CSVReader`. In the same sweep, replace the remaining `DefaultDispatcherProvider()` constructions in `utils/CameraUtils.kt` (~lines 46/99) and `utils/ANRWatchdog.kt` (~line 18) with an injected `DispatcherProvider` — `MainApplication` already injects one at ANRWatchdog's call site. *(Merged from four agents' overlapping scope-cleanup tasks.)*
 
 ---
 
@@ -304,7 +304,7 @@ Two interface-tightening moves on the ~50-method `UserRepository`: (1) `parseLea
 
 **Files:** `repository/TeamsRepositoryImpl.kt`, `CoursesRepositoryImpl.kt`, `ResourcesRepositoryImpl.kt`, `VoicesRepositoryImpl.kt`, `UserRepositoryImpl.kt`, `NotificationsRepositoryImpl.kt`, plus owning-repository interfaces (`ResourcesRepository`, `CoursesRepository`, `ActivitiesRepository`, `EventsRepository`, `TeamsRepository`, `VoicesRepository`).
 
-Umbrella for one-PR-per-domain work: `myLibraryDao` is read/written from five repositories → centralize behind `ResourcesRepository`; `TeamsRepositoryImpl` queries `courseDao`/`courseStepDao` directly → add `CoursesRepository.getCoursesWithStepsByIds`; `removedLogDao`/`searchActivityDao`/`resourceActivityDao` calls in Courses/Resources/User impls → `ActivitiesRepository`; `courseProgressDao` writes in `CoursesRepositoryImpl` → `ProgressRepository`; `UserRepositoryImpl.meetupDao` → `EventsRepository` (and remove its unused `offlineActivityDao`); `NotificationsRepositoryImpl`'s `teamTaskDao`/`teamNotificationDao` and team-name lookups → `TeamsRepository`/`VoicesRepository` (removing the `Lazy<TeamsRepository>` if it becomes unused). Sequence the sub-PRs; don't parallelize edits to the same impl. *(Merged from three agents' boundary rounds.)*
+Umbrella for one-PR-per-domain work: `myLibraryDao` is read/written from five repositories → centralize behind `ResourcesRepository`; `TeamsRepositoryImpl` queries `courseDao`/`courseStepDao` directly → add `CoursesRepository.getCoursesWithStepsByIds`; `removedLogDao`/`searchActivityDao`/`resourceActivityDao` calls in Courses/Resources/User impls → `ActivitiesRepository`; `courseProgressDao` writes in `CoursesRepositoryImpl` → `ProgressRepository`; `UserRepositoryImpl.meetupDao` → `EventsRepository` (and remove its unused `offlineActivityDao`); `NotificationsRepositoryImpl`'s `teamTaskDao`/`teamNotificationDao` and team-name lookups → `TeamsRepository`/`VoicesRepository` (removing the `Lazy<TeamsRepository>` if it becomes unused). Related interface-level peel: `CoursesRepository` re-exports other domains as pure delegates (`getCurrentProgress` → `ProgressRepository`; `isStepCompleted`/`hasUnfinishedSurveys` → `SubmissionsRepository`) — point callers at the owning repository and remove the wrappers, method by method. Sequence the sub-PRs; don't parallelize edits to the same impl. *(Merged from three agents' boundary rounds.)*
 
 ---
 
@@ -360,7 +360,7 @@ The ViewModel holds only deadline UI state while the fragment calls `teamsReposi
 
 **Files:** `base/BaseTeamFragment.kt` (lines ~46, 57, 75–82).
 
-`loadTeamDetails()` wraps two plain suspend DAO-backed reads in `launch(dispatcherProvider.io)` then hops back with `withContext(main)` to set two thread-safe `MutableStateFlow`s — neither hop is needed (Room suspend DAOs run off-main). Remove both, store the load `Job` to prevent double-fetch on rapid re-entry (matching `TeamDetailFragment`'s pattern), and drop the `dispatcherProvider` injection if unused. Worth a slot because this is a base class every team screen inherits and copies.
+`loadTeamDetails()` wraps two plain suspend DAO-backed reads in `launch(dispatcherProvider.io)` then hops back with `withContext(main)` to set two thread-safe `MutableStateFlow`s — neither hop is needed (Room suspend DAOs run off-main). Remove both, store the load `Job` to prevent double-fetch on rapid re-entry (matching `TeamDetailFragment`'s pattern), and drop the `dispatcherProvider` injection if unused. Worth a slot because this is a base class every team screen inherits and copies. Sibling one-liners from the same sweep: `TeamsTasksFragment` (~line 303) passes a redundant `dispatcherProvider.main` to `launch` (it already hops to `io` internally), `TeamsVoicesFragment` (~line 207) does an io-launch + main-bounce for a single `isTeamLeader` call, and `ProcessUserDataActivity` (~line 85) passes a redundant `main` argument to `lifecycleScope.launch`.
 
 ---
 
@@ -456,7 +456,7 @@ Hilt-managed classes bypass DI for JSON config, hurting testability. Constructor
 
 **Files:** `ui/courses/CoursesPagerAdapter.kt`, `ui/teams/TeamPagerAdapter.kt` (separate PRs, same shape).
 
-The only two files still calling `DiffUtil.calculateDiff` directly (on the main thread, in `FragmentStateAdapter` pagers). Either convert to the house `ListAdapter` + `DiffUtils.itemCallback` + `submitList` pattern, or at minimum compute the diff on a background dispatcher and dispatch updates on main. Lists are small — this is a consistency/pattern win more than a measured one.
+The only two files still calling `DiffUtil.calculateDiff` directly (on the main thread, in `FragmentStateAdapter` pagers). Either convert to the house `ListAdapter` + `DiffUtils.itemCallback` + `submitList` pattern, or at minimum compute the diff on a background dispatcher and dispatch updates on main. While there, check `ui/user/UserArrayAdapter.kt`: if it backs a RecyclerView, migrate it to the house pattern; if it backs a ListView/Spinner, leave it and note it. Lists are small — this is a consistency/pattern win more than a measured one.
 
 ---
 
