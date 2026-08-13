@@ -195,12 +195,14 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
                     viewModel.surveyInfos.collect { infos ->
                         surveyInfoMap.clear()
                         surveyInfoMap.putAll(infos)
+                        getAdapter().notifyDataSetChanged()
                     }
                 }
                 launch {
                     viewModel.bindingData.collect { data ->
                         bindingDataMap.clear()
                         bindingDataMap.putAll(data)
+                        getAdapter().notifyDataSetChanged()
                     }
                 }
                 launch {
