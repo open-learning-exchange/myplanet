@@ -89,12 +89,12 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
         return !hasDirectData
     }
 
-    protected fun getEffectiveTeamName(): String {
-        return requireArguments().getString("teamName") ?: team?.name ?: ""
+    protected open fun getEffectiveTeamName(): String {
+        return requireArguments().getString("teamName")?.takeIf { it.isNotBlank() } ?: team?.name ?: ""
     }
 
-    protected fun getEffectiveTeamType(): String {
-        return requireArguments().getString("teamType") ?: team?.type ?: ""
+    protected open fun getEffectiveTeamType(): String {
+        return requireArguments().getString("teamType")?.takeIf { it.isNotBlank() } ?: team?.type ?: ""
     }
 
     protected fun getEffectiveTeamId(): String {

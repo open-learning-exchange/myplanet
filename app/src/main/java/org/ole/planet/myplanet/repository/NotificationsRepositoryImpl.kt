@@ -328,18 +328,38 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     private fun parseNotification(doc: JsonObject): AppNotification? {
         val id = doc.get("_id")?.asString ?: return null
+        val rawType = doc.get("type")?.asString ?: ""
+        val message = doc.get("message")?.asString ?: ""
+        val link = doc.get("link")?.asString
         return AppNotification().apply {
             this.id = id
             userId = doc.get("user")?.asString ?: ""
-            message = doc.get("message")?.asString ?: ""
-            type = doc.get("type")?.asString ?: ""
-            link = doc.get("link")?.asString
+            this.message = message
+            type = rawType
+            relatedId = extractRelatedId(rawType, link, doc)
+            this.link = link
             priority = doc.get("priority")?.asInt ?: 0
             rev = doc.get("_rev")?.asString
             isRead = doc.get("status")?.asString != "unread"
             createdAt = doc.get("time")?.let { Date(it.asLong) } ?: Date()
             isFromServer = true
         }
+    }
+
+    private fun extractRelatedId(rawType: String, link: String?, doc: JsonObject): String? {
+        return when (rawType) {
+            "team" -> doc.get("item")?.asString
+            "replyMessage" -> doc.get("replyTo")?.asString
+            "newTask" -> extractIdFromLink(link)
+            else -> null
+        }
+    }
+
+    private fun extractIdFromLink(link: String?): String? {
+        if (link.isNullOrBlank()) return null
+        val segments = link.trim('/').split('/')
+        val viewIndex = segments.indexOf("view")
+        return if (viewIndex in 0 until segments.lastIndex) segments[viewIndex + 1] else null
     }
 
     override suspend fun insert(doc: JsonObject) {

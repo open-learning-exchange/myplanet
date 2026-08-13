@@ -159,6 +159,113 @@ class NotificationsRepositoryImplTest {
     }
 
     @Test
+    fun `insert keeps raw team type and extracts team id from item for join requests`() = runTest {
+        val jsonObject = JsonObject().apply {
+            addProperty("_id", "notifId1")
+            addProperty("user", "testUser")
+            addProperty("message", "<b>Jane</b> has requested to join <b>\"My Team\"</b> team.")
+            addProperty("type", "team")
+            addProperty("item", "team123")
+            add("linkParams", JsonObject().apply { addProperty("activeTab", "applicantTab") })
+            addProperty("status", "unread")
+        }
+        coEvery { notificationDao.getById("notifId1") } returns null
+        val upsertSlot = slot<AppNotification>()
+        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+
+        repository.insert(jsonObject)
+
+        val saved = upsertSlot.captured
+        assertEquals("team", saved.type)
+        assertEquals("<b>Jane</b> has requested to join <b>\"My Team\"</b> team.", saved.message)
+        assertEquals("team123", saved.relatedId)
+    }
+
+    @Test
+    fun `insert keeps raw team type and extracts team id from item for team updates`() = runTest {
+        val jsonObject = JsonObject().apply {
+            addProperty("_id", "notifId2")
+            addProperty("user", "testUser")
+            addProperty("message", "You have been added to <b>\"My Team\"</b> team.")
+            addProperty("type", "team")
+            addProperty("item", "team456")
+            addProperty("status", "unread")
+        }
+        coEvery { notificationDao.getById("notifId2") } returns null
+        val upsertSlot = slot<AppNotification>()
+        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+
+        repository.insert(jsonObject)
+
+        val saved = upsertSlot.captured
+        assertEquals("team", saved.type)
+        assertEquals("team456", saved.relatedId)
+    }
+
+    @Test
+    fun `insert keeps raw replyMessage type and extracts news id from replyTo`() = runTest {
+        val jsonObject = JsonObject().apply {
+            addProperty("_id", "notifId3")
+            addProperty("user", "testUser")
+            addProperty("message", "<b>Jane</b> replied to your message.")
+            addProperty("type", "replyMessage")
+            addProperty("replyTo", "news789")
+            addProperty("status", "unread")
+        }
+        coEvery { notificationDao.getById("notifId3") } returns null
+        val upsertSlot = slot<AppNotification>()
+        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+
+        repository.insert(jsonObject)
+
+        val saved = upsertSlot.captured
+        assertEquals("replyMessage", saved.type)
+        assertEquals("news789", saved.relatedId)
+    }
+
+    @Test
+    fun `insert keeps raw newTask type and extracts team id from link`() = runTest {
+        val jsonObject = JsonObject().apply {
+            addProperty("_id", "notifId4")
+            addProperty("user", "testUser")
+            addProperty("message", "You were assigned a new task")
+            addProperty("type", "newTask")
+            addProperty("link", "/teams/view/team321")
+            addProperty("status", "unread")
+        }
+        coEvery { notificationDao.getById("notifId4") } returns null
+        val upsertSlot = slot<AppNotification>()
+        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+
+        repository.insert(jsonObject)
+
+        val saved = upsertSlot.captured
+        assertEquals("newTask", saved.type)
+        assertEquals("team321", saved.relatedId)
+    }
+
+    @Test
+    fun `insert leaves unrecognized types unchanged with no relatedId`() = runTest {
+        val jsonObject = JsonObject().apply {
+            addProperty("_id", "notifId5")
+            addProperty("user", "testUser")
+            addProperty("message", "New resource notification")
+            addProperty("type", "newResource")
+            addProperty("link", "/resources")
+            addProperty("status", "unread")
+        }
+        coEvery { notificationDao.getById("notifId5") } returns null
+        val upsertSlot = slot<AppNotification>()
+        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+
+        repository.insert(jsonObject)
+
+        val saved = upsertSlot.captured
+        assertEquals("newResource", saved.type)
+        assertEquals(null, saved.relatedId)
+    }
+
+    @Test
     fun `refresh does nothing`() = runTest {
         repository.refresh()
         // No exceptions, does nothing
