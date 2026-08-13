@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Date
@@ -19,6 +20,7 @@ import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.AndroidDecrypter
+import org.ole.planet.myplanet.di.DefaultGson
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -27,7 +29,8 @@ class HealthRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
     private val dispatcherProvider: DispatcherProvider,
     private val healthExaminationDao: HealthExaminationDao,
-    private val userDao: UserDao
+    private val userDao: UserDao,
+    @DefaultGson private val gson: Gson
 ) : HealthRepository {
     override suspend fun getHealthEntry(userId: String): Pair<UserEntity?, HealthExamination?> {
         val userCopy = userDao.getById(userId)
@@ -91,7 +94,7 @@ class HealthRepositoryImpl @Inject constructor(
             val result = mutableMapOf<String, Boolean>()
             if (examination != null && !examination.conditions.isNullOrEmpty()) {
                 try {
-                    val conditions = JsonUtils.gson.fromJson(examination.conditions, JsonObject::class.java)
+                    val conditions = gson.fromJson(examination.conditions, JsonObject::class.java)
                     for (key in conditions.keySet()) {
                         result[key] = JsonUtils.getBoolean(key, conditions)
                     }
@@ -181,7 +184,7 @@ class HealthRepositoryImpl @Inject constructor(
             null
         } else {
             try {
-                JsonUtils.gson.fromJson(json, MyHealth::class.java)
+                gson.fromJson(json, MyHealth::class.java)
             } catch (e: Exception) {
                 e.printStackTrace()
                 null

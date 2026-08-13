@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import androidx.annotation.VisibleForTesting
+import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
@@ -18,6 +19,7 @@ import org.ole.planet.myplanet.model.ContinueChatRequest
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.di.DefaultGson
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -26,7 +28,8 @@ class ChatRepositoryImpl @Inject constructor(
     private val chatDao: ChatDao,
     private val chatApiService: ChatApiService,
     private val serverUrlMapper: ServerUrlMapper,
-    private val sharedPrefManager: SharedPrefManager
+    private val sharedPrefManager: SharedPrefManager,
+    @DefaultGson private val gson: Gson
 ) : ChatRepository {
 
     @VisibleForTesting
@@ -41,7 +44,7 @@ class ChatRepositoryImpl @Inject constructor(
     ): ChatResult {
         return try {
             val chatData = ChatRequest(data = ContentData(user ?: "", query, aiProvider), save = true)
-            val jsonContent = JsonUtils.gson.toJson(chatData)
+            val jsonContent = gson.toJson(chatData)
             val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
             val response = chatApiService.sendChatRequest(requestBody)
             val responseBody = response.body()
@@ -84,7 +87,7 @@ class ChatRepositoryImpl @Inject constructor(
     ): ChatResult {
         return try {
             val continueChatData = ContinueChatRequest(data = Data(user ?: "", message, aiProvider, id, rev), save = true)
-            val jsonContent = JsonUtils.gson.toJson(continueChatData)
+            val jsonContent = gson.toJson(continueChatData)
             val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
             val response = chatApiService.sendChatRequest(requestBody)
             val responseBody = response.body()
@@ -165,7 +168,7 @@ class ChatRepositoryImpl @Inject constructor(
                 aiProvider = JsonUtils.getString("aiProvider", json)
                 val conversationsArray = JsonUtils.getJsonArray("conversations", json)
                 conversations = conversationsArray.map {
-                    JsonUtils.gson.fromJson(it, Conversation::class.java)
+                    gson.fromJson(it, Conversation::class.java)
                 }
                 lastUsed = Date().time
             }
@@ -198,7 +201,7 @@ class ChatRepositoryImpl @Inject constructor(
                 else {
                     val ids = newsEntries.flatMap { news ->
                         try {
-                            val array = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
+                            val array = gson.fromJson(news.viewIn, JsonArray::class.java)
                             val list = mutableListOf<String>()
                             for (i in 0 until array.size()) {
                                 val elem = array.get(i) as JsonElement
