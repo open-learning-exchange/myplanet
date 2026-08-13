@@ -4,6 +4,7 @@ import android.app.Application
 import android.net.Uri
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
@@ -290,5 +291,25 @@ class UrlUtilsTest {
         val expected = "http://couch.example.com/db"
         val result = UrlUtils.dbUrl(spm)
         assertEquals(expected, result)
+    }
+
+    @Test
+    fun testHeaderCaching() {
+        every { mockSpm.getUrlUser() } returns "user1"
+        every { mockSpm.getUrlPwd() } returns "pass1"
+
+        val header1 = UrlUtils.header
+        val header2 = UrlUtils.header
+
+        assertEquals(header1, header2)
+
+        every { mockSpm.getUrlUser() } returns "user2"
+        every { mockSpm.getUrlPwd() } returns "pass2"
+
+        val header3 = UrlUtils.header
+
+        assertEquals("Basic dXNlcjI6cGFzczI=", header3)
+        verify(exactly = 1) { UrlUtils.basicAuthHeader("user1", "pass1") }
+        verify(exactly = 1) { UrlUtils.basicAuthHeader("user2", "pass2") }
     }
 }
