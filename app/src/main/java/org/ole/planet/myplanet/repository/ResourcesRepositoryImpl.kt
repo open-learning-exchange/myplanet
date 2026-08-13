@@ -537,6 +537,7 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
             }
         }
 
+        val librariesToUpsert = mutableListOf<MyLibrary>()
         documents.forEach { doc ->
             try {
                 val resourceId = JsonUtils.getString("_id", doc)
@@ -551,12 +552,15 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
                 )
                 if (library != null) {
                     existingItems[resourceId] = library
-                    myLibraryDao.upsert(library)
+                    librariesToUpsert.add(library)
                     processedCount++
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
+        if (librariesToUpsert.isNotEmpty()) {
+            myLibraryDao.upsertAll(librariesToUpsert)
         }
         return processedCount
     }
@@ -576,6 +580,7 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
             }
         }
 
+        val librariesToUpsert = mutableListOf<MyLibrary>()
         validDocs.forEach { doc ->
             try {
                 val _id = JsonUtils.getString("_id", doc)
@@ -589,12 +594,15 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
                 )
                 if (library != null) {
                     existingItems[_id] = library
-                    myLibraryDao.upsert(library)
+                    librariesToUpsert.add(library)
                     savedIds.add(_id)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
+        if (librariesToUpsert.isNotEmpty()) {
+            myLibraryDao.upsertAll(librariesToUpsert)
         }
         return savedIds
     }
