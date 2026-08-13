@@ -45,7 +45,10 @@ void main() {
     };
   }
 
-  Map<String, dynamic> row(Map<String, dynamic> doc) => {'id': doc['_id'], 'doc': doc};
+  Map<String, dynamic> row(Map<String, dynamic> doc) => {
+    'id': doc['_id'],
+    'doc': doc,
+  };
 
   void stubCount(int totalRows) {
     when(
@@ -84,13 +87,16 @@ void main() {
       expect(logins.first.loginTime, 1700000000000);
     });
 
-    test('returns SyncComplete with zero when the server has no rows', () async {
-      stubCount(0);
+    test(
+      'returns SyncComplete with zero when the server has no rows',
+      () async {
+        stubCount(0);
 
-      final result = await repository.sync(config: config);
+        final result = await repository.sync(config: config);
 
-      expect((result as SyncComplete).savedCount, 0);
-    });
+        expect((result as SyncComplete).savedCount, 0);
+      },
+    );
 
     test('returns SyncFailed when the count request errors', () async {
       when(
@@ -99,7 +105,8 @@ void main() {
           authHeader: any(named: 'authHeader'),
         ),
       ).thenAnswer(
-        (_) async => const NetworkError<Map<String, dynamic>>(0, 'connection refused'),
+        (_) async =>
+            const NetworkError<Map<String, dynamic>>(0, 'connection refused'),
       );
 
       final result = await repository.sync(config: config);

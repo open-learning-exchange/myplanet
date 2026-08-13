@@ -63,8 +63,10 @@ class ActivitiesRepository {
     final fallbackByKey = (loginTimes.isEmpty || userNames.isEmpty)
         ? <String, OfflineActivityRow>{}
         : {
-            for (final r
-                in await _dao.getByLoginTimesAndUserNames(loginTimes, userNames))
+            for (final r in await _dao.getByLoginTimesAndUserNames(
+              loginTimes,
+              userNames,
+            ))
               '${r.loginTime}_${r.userName}': r,
           };
 

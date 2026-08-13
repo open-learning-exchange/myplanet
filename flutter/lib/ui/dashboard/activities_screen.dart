@@ -30,8 +30,7 @@ class ActivitiesScreen extends ConsumerWidget {
               LinearProgressIndicator(
                 value: syncState.progress.total == 0
                     ? null
-                    : syncState.progress.completed /
-                          syncState.progress.total,
+                    : syncState.progress.completed / syncState.progress.total,
               ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -40,14 +39,16 @@ class ActivitiesScreen extends ConsumerWidget {
                 child: Text(l10n.chartLabel),
               ),
             ),
-            Expanded(child: counts.when(
-              data: (data) => _LoginBarChart(
-                data: data,
-                emptyLabel: l10n.noLoginActivity,
+            Expanded(
+              child: counts.when(
+                data: (data) => _LoginBarChart(
+                  data: data,
+                  emptyLabel: l10n.noLoginActivity,
+                ),
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, _) => Center(child: Text(error.toString())),
               ),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, _) => Center(child: Text(error.toString())),
-            )),
+            ),
           ],
         ),
       ),
@@ -121,17 +122,10 @@ class _LoginBarChartPainter extends CustomPainter {
 
     final maxTick = chartMax >= 4 ? chartMax : 4;
     final tickCount = 4;
-    final tickLabelStyle = TextStyle(
-      color: Colors.grey.shade700,
-      fontSize: 10,
-    );
+    final tickLabelStyle = TextStyle(color: Colors.grey.shade700, fontSize: 10);
     for (var i = 0; i <= tickCount; i++) {
       final y = topPadding + chartHeight - (chartHeight * i / tickCount);
-      canvas.drawLine(
-        Offset(labelWidth, y),
-        Offset(size.width, y),
-        gridPaint,
-      );
+      canvas.drawLine(Offset(labelWidth, y), Offset(size.width, y), gridPaint);
       final tickValue = ((maxTick * i) / tickCount).round();
       final tp = TextPainter(
         text: TextSpan(text: '$tickValue', style: tickLabelStyle),
@@ -183,6 +177,5 @@ class _LoginBarChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _LoginBarChartPainter old) =>
-      old.data != data;
+  bool shouldRepaint(covariant _LoginBarChartPainter old) => old.data != data;
 }

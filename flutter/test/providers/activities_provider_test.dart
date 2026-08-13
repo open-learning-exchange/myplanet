@@ -14,10 +14,7 @@ void main() {
 
     test('returns an empty list when every row lacks a loginTime', () {
       expect(
-        bucketLoginsByMonth([
-          _row(loginTime: null),
-          _row(loginTime: null),
-        ]),
+        bucketLoginsByMonth([_row(loginTime: null), _row(loginTime: null)]),
         isEmpty,
       );
     });
@@ -47,13 +44,10 @@ void main() {
       final newest = DateTime(2024, 6, 15);
       final older = DateTime(2024, 5, 1);
 
-      final counts = bucketLoginsByMonth(
-        [
-          _row(loginTime: newest.millisecondsSinceEpoch),
-          _row(loginTime: older.millisecondsSinceEpoch),
-        ],
-        monthCount: 3,
-      );
+      final counts = bucketLoginsByMonth([
+        _row(loginTime: newest.millisecondsSinceEpoch),
+        _row(loginTime: older.millisecondsSinceEpoch),
+      ], monthCount: 3);
 
       expect(counts, hasLength(3));
       expect(counts.last.month, DateTime(2024, 6));
@@ -69,13 +63,10 @@ void main() {
       final oldest = DateTime(2024, 1, 1);
       final newest = DateTime(2024, 6, 1);
 
-      final counts = bucketLoginsByMonth(
-        [
-          _row(loginTime: newest.millisecondsSinceEpoch),
-          _row(loginTime: oldest.millisecondsSinceEpoch),
-        ],
-        monthCount: 6,
-      );
+      final counts = bucketLoginsByMonth([
+        _row(loginTime: newest.millisecondsSinceEpoch),
+        _row(loginTime: oldest.millisecondsSinceEpoch),
+      ], monthCount: 6);
 
       expect(counts.last.month, DateTime(2024, 6));
       expect(counts.first.month, DateTime(2024, 1));

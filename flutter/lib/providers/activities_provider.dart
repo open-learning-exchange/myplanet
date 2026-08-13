@@ -30,10 +30,7 @@ List<MonthLoginCount> bucketLoginsByMonth(
   int monthCount = 12,
 }) {
   if (rows.isEmpty) return const [];
-  final times = rows
-      .map((r) => r.loginTime ?? 0)
-      .where((t) => t > 0)
-      .toList();
+  final times = rows.map((r) => r.loginTime ?? 0).where((t) => t > 0).toList();
   if (times.isEmpty) return const [];
   final latest = DateTime.fromMillisecondsSinceEpoch(times.reduce(max));
   final newestMonth = DateTime(latest.year, latest.month);
@@ -70,9 +67,7 @@ final monthlyLoginCountsProvider = Provider<AsyncValue<List<MonthLoginCount>>>((
   ref,
 ) {
   final activities = ref.watch(loginActivitiesProvider);
-  return activities.whenData(
-    (rows) => bucketLoginsByMonth(rows),
-  );
+  return activities.whenData((rows) => bucketLoginsByMonth(rows));
 });
 
 /// Drives the `login_activities` pull. Wired as a standalone sync notifier so

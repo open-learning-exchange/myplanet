@@ -2429,22 +2429,21 @@ class OfflineActivityDao extends DatabaseAccessor<AppDatabase>
   /// newest first. Matches `observeByUserNameAndType` in the Kotlin DAO.
   Stream<List<OfflineActivityRow>> watchLoginsByUserName(String userName) =>
       (select(offlineActivities)
-            ..where(
-              (a) => a.userName.equals(userName) & a.type.equals('login'),
-            )
+            ..where((a) => a.userName.equals(userName) & a.type.equals('login'))
             ..orderBy([(a) => OrderingTerm.desc(a.loginTime)]))
           .watch();
 
   /// Total login count for [userName]. Matches `countByUserNameAndType`.
   Future<int> loginCount(String userName) async {
     final count = offlineActivities.id.count();
-    final row = await (selectOnly(offlineActivities)
-          ..addColumns([count])
-          ..where(
-            offlineActivities.userName.equals(userName) &
-                offlineActivities.type.equals('login'),
-          ))
-        .getSingle();
+    final row =
+        await (selectOnly(offlineActivities)
+              ..addColumns([count])
+              ..where(
+                offlineActivities.userName.equals(userName) &
+                    offlineActivities.type.equals('login'),
+              ))
+            .getSingle();
     return row.read(count) ?? 0;
   }
 
@@ -2468,10 +2467,7 @@ class OfflineActivityDao extends DatabaseAccessor<AppDatabase>
     List<String> userNames,
   ) {
     final query = select(offlineActivities)
-      ..where(
-        (a) =>
-            a.loginTime.isIn(loginTimes) & a.userName.isIn(userNames),
-      );
+      ..where((a) => a.loginTime.isIn(loginTimes) & a.userName.isIn(userNames));
     return query.get();
   }
 
