@@ -33,4 +33,7 @@
     <dimen name="item_margin_standard">16dp</dimen>
     <dimen name="image_thumbnail_size_100">100dp</dimen>
     <dimen name="image_thumbnail_size_120">120dp</dimen>
+    <dimen name="profile_image_size">150dp</dimen>
+    <dimen name="profile_name_text_size">18sp</dimen>
+    <dimen name="profile_detail_text_size">16sp</dimen>
 </resources>

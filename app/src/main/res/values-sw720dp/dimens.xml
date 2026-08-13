@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="user_image_size">250dp</dimen>
-    <dimen name="text_size_large">24sp</dimen>
-    <dimen name="text_size_mid">20sp</dimen>
+    <dimen name="profile_image_size">250dp</dimen>
+    <dimen name="profile_name_text_size">24sp</dimen>
+    <dimen name="profile_detail_text_size">20sp</dimen>
 </resources>

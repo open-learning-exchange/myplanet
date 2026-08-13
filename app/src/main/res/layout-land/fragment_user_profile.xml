@@ -31,8 +31,8 @@
 
                 <de.hdodenhof.circleimageview.CircleImageView
                     android:id="@+id/image"
-                    android:layout_width="@dimen/user_image_size"
-                    android:layout_height="@dimen/user_image_size"
+                    android:layout_width="@dimen/profile_image_size"
+                    android:layout_height="@dimen/profile_image_size"
                     android:layout_gravity="center"
                     android:padding="@dimen/padding_small"
                     android:src="@drawable/profile"
@@ -59,7 +59,7 @@
                 android:layout_marginTop="@dimen/padding_small"
                 android:gravity="center"
                 android:textColor="@color/daynight_textColor"
-                android:textSize="@dimen/text_size_large"
+                android:textSize="@dimen/profile_name_text_size"
                 android:textStyle="bold" />
 
             <TextView
@@ -69,7 +69,7 @@
                 android:layout_marginTop="@dimen/_2dp"
                 android:gravity="center"
                 android:textColor="@color/daynight_textColor"
-                android:textSize="@dimen/text_size_mid" />
+                android:textSize="@dimen/profile_detail_text_size" />
 
             <TextView
                 android:id="@+id/txt_email"
@@ -78,7 +78,7 @@
                 android:layout_marginTop="@dimen/_2dp"
                 android:gravity="center"
                 android:textColor="@color/daynight_textColor"
-                android:textSize="@dimen/text_size_mid" />
+                android:textSize="@dimen/profile_detail_text_size" />
 
             <TextView
                 android:id="@+id/txt_dob"
@@ -87,7 +87,7 @@
                 android:layout_marginTop="@dimen/_2dp"
                 android:gravity="center"
                 android:textColor="@color/daynight_textColor"
-                android:textSize="@dimen/text_size_mid" />
+                android:textSize="@dimen/profile_detail_text_size" />
 
             <TextView
                 android:id="@+id/txtLanguage"
@@ -96,7 +96,7 @@
                 android:layout_marginTop="@dimen/_2dp"
                 android:gravity="center"
                 android:textColor="@color/daynight_textColor"
-                android:textSize="@dimen/text_size_mid" />
+                android:textSize="@dimen/profile_detail_text_size" />
 
             <TextView
                 android:id="@+id/txtLevel"
@@ -105,7 +105,7 @@
                 android:layout_marginTop="@dimen/_2dp"
                 android:gravity="center"
                 android:textColor="@color/daynight_textColor"
-                android:textSize="@dimen/text_size_mid" />
+                android:textSize="@dimen/profile_detail_text_size" />
 
             <Button
                 android:id="@+id/btEditProfile"
