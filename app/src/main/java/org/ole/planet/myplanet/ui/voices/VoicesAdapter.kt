@@ -63,8 +63,7 @@ class VoicesAdapter(
     private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit),
     private val labelManager: VoicesLabelManager,
     private val voicesRepository: VoicesRepository,
-    private val userRepository: UserRepository,
-    private val getCommunityLeadersFn: () -> String,
+    private val leadersList: List<UserEntity>,
     private val setRepliedNewsIdFn: (String?) -> Unit
 ) : ListAdapter<News, RecyclerView.ViewHolder>(
     DiffUtils.itemCallback<News>(
@@ -168,10 +167,6 @@ class VoicesAdapter(
     private val userCache = object : LinkedHashMap<String, UserEntity?>(64, 0.75f, true) { override fun removeEldestEntry(e: Map.Entry<String, UserEntity?>) = size > 128 }
     private val fetchingUserIds = mutableSetOf<String>()
     private val replyCountCache = mutableMapOf<String, Int>()
-    private val leadersList: List<UserEntity> by lazy {
-        val raw = getCommunityLeadersFn()
-        userRepository.parseLeadersJson(raw)
-    }
     private var _isTeamLeader: Boolean? = null
 
     init {
