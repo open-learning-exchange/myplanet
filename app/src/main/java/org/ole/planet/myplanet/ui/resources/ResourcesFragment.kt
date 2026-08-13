@@ -153,6 +153,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         adapterLibrary.setListener(this)
 
         checkList(filteredList.size)
+        hideButton()
         showNoData(tvMessage, filteredList.size, "resources")
         changeButtonStatus()
         return adapterLibrary
@@ -197,7 +198,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
         lifecycleScope.launch {
             userModel = userRepository.getUserModel()
-
+            if (::adapterLibrary.isInitialized && _binding != null) {
+                checkList()
+                hideButton()
+            }
             val userId = userModel?.id
             if (userId != null) {
                 viewModel.observeOpenedResourceIds(userId)
@@ -215,6 +219,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             showNoData(tvMessage, adapterLibrary.itemCount, "resources")
             changeButtonStatus()
             checkList()
+            hideButton()
         }
         clearTagsButton()
         setupUI(binding.myLibraryParentLayout, requireActivity())
@@ -319,6 +324,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
 
         checkList(filteredList.size)
+        hideButton()
         showNoData(tvMessage, filteredList.size, "resources")
     }
 
@@ -367,7 +373,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val count = selectedItems?.size ?: 0
         tvDelete?.isEnabled = count != 0
         tvAddToLib.isEnabled = count != 0
-        if(count != 0){
+        if(count != 0 && userModel?.isGuest() != true){
             if(isMyCourseLib) tvDelete?.visibility = View.VISIBLE
             else tvAddToLib.visibility = View.VISIBLE
         } else {
@@ -378,19 +384,18 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private fun checkList(listSize: Int = if (::adapterLibrary.isInitialized) adapterLibrary.getLibraryList().size else 0) {
         val hasAnyLibraryData = allResourceModels.isNotEmpty()
+        val isGuest = userModel?.isGuest() == true
 
         if (!hasAnyLibraryData && listSize == 0) {
             selectAll.visibility = View.GONE
             etSearch.visibility = View.GONE
-            tvAddToLib.visibility = View.GONE
             tvSelected.visibility = View.GONE
             binding.btnCollections.visibility = View.GONE
             filter.visibility = View.GONE
             clearTags.visibility = View.GONE
             tvDelete?.visibility = View.GONE
         } else {
-            selectAll.visibility = if (userModel?.isGuest() == true) View.GONE else View.VISIBLE
-            tvAddToLib.visibility = if (userModel?.isGuest() == true) View.GONE else View.VISIBLE
+            selectAll.visibility = if (isGuest) View.GONE else View.VISIBLE
             etSearch.visibility = View.VISIBLE
             binding.btnCollections.visibility = View.VISIBLE
             filter.visibility = View.VISIBLE
