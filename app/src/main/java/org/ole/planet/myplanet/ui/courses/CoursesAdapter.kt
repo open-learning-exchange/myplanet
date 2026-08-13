@@ -22,7 +22,6 @@ import com.bumptech.glide.signature.ObjectKey
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnCourseItemSelectedListener
-import org.ole.planet.myplanet.callback.OnDiffRefreshListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ItemCourseGridBinding
 import org.ole.planet.myplanet.databinding.ItemCourseListBinding
@@ -75,18 +74,12 @@ class CoursesAdapter(
             }
         }
     )
-), OnDiffRefreshListener {
-    override fun refreshWithDiff() {
-        submitList(currentList.toList())
-    }
-
-    override fun refreshWithDiff(id: String) {
+) {
+    fun notifyItemChangedById(id: String) {
         val index = currentList.indexOfFirst { it.courseId == id }
         if (index != -1) {
             notifyItemChanged(index)
-            return
         }
-        submitList(currentList.toList())
     }
 
     private val selectedItems: MutableList<Course?> = ArrayList()
