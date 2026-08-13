@@ -74,6 +74,7 @@
   "syncFeedbackDescription": "Refresh feedback threads and responses",
   "syncChatDescription": "Refresh AI conversation history",
   "syncHealthDescription": "Refresh encrypted health records",
+  "syncActivitiesDescription": "Refresh login history from the server",
   "homeMyLibrary": "myLibrary",
   "homeMyCourses": "myCourses",
   "homeMyTeams": "myTeams",

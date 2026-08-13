@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 35 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 36 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -430,6 +430,59 @@ analyze`:
   produced `/survey/t/s?` where the same route reached in-app is `/survey/t/s`. Harmless to
   go_router's matching, and exactly the kind of difference that makes two locations look
   unrelated in a log.
+
+## Phase 36 — harvesting `flutter-openhands4`
+
+The `flutter-openhands4` branch forked from `381618dc3` (in this branch's history) and carried six
+commits. Two of them reimplemented work this branch had already done independently — the
+completed-course star row and the login-activity chart, both Phase 33 here — so this was a
+selective harvest rather than a merge. Two things were genuinely new.
+
+**Profile photos.** Taken almost verbatim, because the shape is right and it closes the `user`
+package's largest remaining gap. A `_users` document stores the photo as a CouchDB *attachment*
+under `_attachments`, not as a top-level field, so `UserEntity.addImageUrl` reads the first
+attachment key as the image name; `UserMapper.fromDoc` now derives `users.userImage` from that key
+and ignores any stray top-level `userImage`. Only the attachment *name* is persisted, so the row
+carries no credentials and survives a server URL change. `profileImageProvider` rebuilds the URL
+against the current config and fetches the bytes through the authenticated `PlanetApi.getBytes`
+path — `Image.network` cannot reach a blob behind Basic auth — and `ProfileAvatar` falls back to
+initials while loading, when there is no attachment, and on error, matching Kotlin's
+`R.drawable.profile`. A guest renders synchronously with no network attempt.
+
+One resolution was not mechanical: the openhands branch replaced the home card's avatar outright,
+which would have **dropped the server-reachability ring** ported in Phase 33. The photo belongs
+*inside* the ring — the Kotlin draws both — so `_NetworkRingAvatar` now takes the user and renders
+`ProfileAvatar` within its border.
+
+**The `login_activities` sync-in.** The direction this port lacked: Phase 33 wrote login rows and
+Phase 34 uploaded them, but nothing pulled back the ones other devices had already sent, so a
+member's history was whatever *this* handset happened to observe. `OfflineActivityMapper` and
+`insertLoginActivitiesFromSync` port the Kotlin's two-stage match — by `_id`, falling back to the
+`(loginTime, userName)` pair — so a row this device authored offline and then uploaded is *adopted*
+rather than twinned when its own document comes back. Deliberately no `deleteNotIn`: the table is
+preserved and holds rows the server has never seen, so pruning against a synced id set would delete
+exactly those. The Kotlin does not prune either.
+
+Two details the merge depends on, both easy to get wrong:
+
+- **The companion must carry the local `description` and `userId`.** Neither is on the
+  `login_activities` document, and `insertOnConflictUpdate` writes every column the companion
+  carries — so passing them as absent would blank the `userId` that `offlineVisitCount` (the
+  profile's "Total visits") keys on. Pinned by a test.
+- **The pull needed a caller.** A sync with no caller is the failure this port has shipped three
+  times, so it is registered as a tenth Sync center area rather than left as library code. The
+  sync-center test's hard-coded "All 9 areas" assertion became
+  `DashboardSyncArea.values.length` — a hard-coded count fails on the next area added and says
+  nothing about the summary being correct.
+
+Not harvested: their star row and chart (ours predate them and are wired to the ring and the
+`(n)` login count), and their version bump. Their `analysis_options.yaml` exclude for `build/` and
+the platform directories is taken — analysing generated output is noise.
+
+Recorded from their notes rather than harvested: **`package:intl` exports its own `TextDirection`**
+(`.LTR`/`.RTL`) which shadows `dart:ui`'s (`.ltr`/`.rtl`), so a file combining `DateFormat` with a
+`TextPainter` needs `import 'package:intl/intl.dart' hide TextDirection;`. Their chart is a
+`CustomPainter`; ours is plain widgets, so nothing here trips it today.
 
 ## Harvesting upstream: the 2026-08-12 rebase
 
@@ -975,9 +1028,9 @@ flutter pub get 2>&1 | grep -i discontinued
 `components` and `enterprises` are the two packages with no screen of their own. What remains
 *within* ported packages, as of Phase 35:
 
-- `user` -- profile photo capture and upload (`PhotoUploader`, `updateUserImage`); membership
-  registration landed in Phase 27, and `BecomeMemberActivity`'s debounced username validation is
-  still validate-on-submit here.
+- `user` -- profile photo *upload* (`PhotoUploader`, `updateUserImage`); displaying the photo
+  landed in Phase 36. Membership registration landed in Phase 27, and `BecomeMemberActivity`'s
+  debounced username validation is still validate-on-submit here.
 - `settings` -- the free-up-space button and available-space text inside the storage sheet, which
   need `FreeSpaceWorker`'s delete-and-mark-not-offline pass and a disk-stats plugin.
 - `dashboard` -- the About and Disclaimer destinations, static translated HTML.
@@ -1068,6 +1121,6 @@ succeeds, it just doesn't do what the Kotlin did.
 
 ---
 
-**Last updated**: 2026-08-12 (Phase 35 complete)
-**Phase**: 35 of N (27 of 28 UI packages have a screen — see Status for what that does and does
+**Last updated**: 2026-08-13 (Phase 36 complete)
+**Phase**: 36 of N (27 of 28 UI packages have a screen — see Status for what that does and does
 not mean)

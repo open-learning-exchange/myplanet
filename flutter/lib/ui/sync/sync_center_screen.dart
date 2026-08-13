@@ -217,4 +217,9 @@ class _SyncAreaTile extends StatelessWidget {
     description: l10n.syncHealthDescription,
     icon: Icons.health_and_safety_outlined,
   ),
+  DashboardSyncArea.activities => (
+    label: l10n.myActivities,
+    description: l10n.syncActivitiesDescription,
+    icon: Icons.history_outlined,
+  ),
 };

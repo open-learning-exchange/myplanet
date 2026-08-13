@@ -188,6 +188,7 @@ final teamNotificationDaoProvider = Provider<TeamNotificationDao>(
 
 final activitiesRepositoryProvider = Provider<ActivitiesRepository>(
   (ref) => ActivitiesRepository(
+    ref.watch(planetApiProvider),
     ref.watch(offlineActivityDaoProvider),
     ref.watch(resourceActivityDaoProvider),
     ref.watch(courseActivityDaoProvider),

@@ -15,6 +15,7 @@ import '../../providers/settings_provider.dart';
 import '../../providers/sync_state.dart';
 import '../../repository/notifications_repository.dart';
 import '../components/guest_dialog.dart';
+import '../components/profile_avatar.dart';
 import '../components/relative_time.dart';
 import '../life/life_features.dart';
 import '../router.dart';
@@ -623,7 +624,7 @@ class _ProfileCard extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  const _NetworkRingAvatar(),
+                  _NetworkRingAvatar(user: session),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -660,8 +661,17 @@ class _ProfileCard extends ConsumerWidget {
 
 /// The avatar with `imageView.borderColor` set from the network status, as
 /// `setNetworkIndicatorColor` does.
+/// The avatar with the server-reachability ring around it.
+///
+/// Two ported details meet here: the ring colour is `MainApplication`'s
+/// reachability probe (Phase 33), and the photo inside it is the `_users`
+/// attachment [ProfileAvatar] fetches (harvested from `flutter-openhands4`).
+/// The openhands branch replaced this avatar outright, which would have dropped
+/// the ring; the photo belongs *inside* it, since the Kotlin draws both.
 class _NetworkRingAvatar extends ConsumerWidget {
-  const _NetworkRingAvatar();
+  const _NetworkRingAvatar({required this.user});
+
+  final UserRow user;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -693,7 +703,7 @@ class _NetworkRingAvatar extends ConsumerWidget {
             shape: BoxShape.circle,
             border: Border.all(color: color, width: 3),
           ),
-          child: const CircleAvatar(radius: 24, child: Icon(Icons.person)),
+          child: ProfileAvatar(user: user, radius: 24),
         ),
       ),
     );

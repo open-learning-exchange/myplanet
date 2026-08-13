@@ -110,7 +110,14 @@ void main() {
       lastSync: DateTime.utc(2026, 8, 12).millisecondsSinceEpoch,
     );
 
-    expect(find.text('All 9 areas synced successfully'), findsOneWidget);
+    // Derived from the enum: hard-coding the count made this fail the moment an
+    // area was added, which says nothing about the summary being right.
+    expect(
+      find.text(
+        'All ${DashboardSyncArea.values.length} areas synced successfully',
+      ),
+      findsOneWidget,
+    );
     expect(find.textContaining('Up to date'), findsOneWidget);
     expect(find.byIcon(Icons.check_circle), findsWidgets);
   });

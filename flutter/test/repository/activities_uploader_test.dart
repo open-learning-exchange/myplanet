@@ -29,6 +29,7 @@ void main() {
     registerFallbackValue(<String, dynamic>{});
     outbox = OutboxRepository(database.outboxDao);
     activities = ActivitiesRepository(
+      api,
       database.offlineActivityDao,
       database.resourceActivityDao,
       database.courseActivityDao,

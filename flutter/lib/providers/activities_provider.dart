@@ -1,9 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/config/server_config.dart';
+import '../core/sync/sync_result.dart';
 import '../data/local/app_database.dart';
 import '../repository/activities_repository.dart';
 import 'app_providers.dart';
 import 'session_provider.dart';
+import 'sync_state.dart';
 
 /// Writes the device's activity log and hands it to the outbox.
 ///
@@ -168,3 +171,23 @@ final profileActivityStatsProvider = FutureProvider<ProfileActivityStats>((
     ),
   );
 });
+
+/// Drives the `login_activities` pull.
+///
+/// A sync with no caller is the failure this port has shipped three times (see
+/// the migration doc), so the pull is registered as a Sync center area rather
+/// than left as library code.
+class ActivitiesSyncNotifier extends SyncNotifier {
+  @override
+  Future<SyncResult> runSync(
+    ServerConfig config,
+    void Function(SyncProgress) onProgress,
+  ) => ref
+      .read(activitiesRepositoryProvider)
+      .sync(config: config, onProgress: onProgress);
+}
+
+final activitiesSyncProvider =
+    NotifierProvider<ActivitiesSyncNotifier, SyncUiState>(
+      ActivitiesSyncNotifier.new,
+    );

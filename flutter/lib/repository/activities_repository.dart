@@ -1,6 +1,14 @@
 import 'package:drift/drift.dart';
 
+import '../core/config/server_config.dart';
+import '../core/network/network_result.dart';
+import '../core/sync/adaptive_batch_processor.dart';
+import '../core/sync/sync_result.dart';
+import '../core/utils/json_utils.dart';
+import '../core/utils/url_utils.dart';
+import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
+import '../data/local/offline_activity_mapper.dart';
 
 /// One resource and how many times it was opened — the pair
 /// `getMostOpenedResource` returns.
@@ -16,15 +24,23 @@ class MostOpenedResource {
 /// The device's own activity log: offline sessions (`offline_activity`),
 /// resource opens/downloads and completed syncs (`resource_activity`), and
 /// course visits (`course_activity`). `ActivitiesUploader` carries all four
-/// kinds to the server; nothing syncs them back, so every table here is
-/// preserved across a schema bump (see `AppDatabase.localAuthorityTables`).
+/// kinds to the server. Only `login_activities` comes back ([sync]); the
+/// resource and course activity databases are write-only from this app's side,
+/// so every table here stays preserved across a schema bump (see
+/// `AppDatabase.localAuthorityTables`).
 ///
 /// Not ported: `myplanet_activities` (device/tablet usage telemetry, which
 /// needs a device-info plugin the port does not have) and
 /// `user_challenge_actions` (the challenge feature is unported).
 class ActivitiesRepository {
-  ActivitiesRepository(this._dao, this._resourceDao, this._courseDao);
+  ActivitiesRepository(
+    this._api,
+    this._dao,
+    this._resourceDao,
+    this._courseDao,
+  );
 
+  final PlanetApi _api;
   final OfflineActivityDao _dao;
   final ResourceActivityDao _resourceDao;
   final CourseActivityDao _courseDao;
@@ -252,6 +268,140 @@ class ActivitiesRepository {
 
   Future<int> markCourseUploaded(String localId, String remoteId, String rev) =>
       _courseDao.markUploaded(localId, remoteId, rev);
+
+  /// Pulls the `login_activities` database, the direction this port lacked:
+  /// Phase 33 wrote login rows and Phase 34 uploaded them, but nothing brought
+  /// back the ones other devices had already sent, so a member's history was
+  /// whatever this handset happened to observe. Harvested from
+  /// `flutter-openhands4`.
+  ///
+  /// Deliberately no `deleteNotIn`: this table is preserved and holds rows that
+  /// have never been uploaded, so pruning against a synced id set would delete
+  /// exactly the logins the server has not seen yet. The Kotlin's
+  /// `insertLoginActivitiesFromSync` does not prune either.
+  Future<SyncResult> sync({
+    required ServerConfig config,
+    void Function(SyncProgress)? onProgress,
+  }) async {
+    final dbUrl = UrlUtils.dbUrl(config);
+    final authHeader = UrlUtils.basicAuthHeader('satellite', config.pin);
+
+    final countResult = await _api.getJsonObject(
+      '$dbUrl/login_activities/_all_docs?limit=0',
+      authHeader: authHeader,
+    );
+    if (countResult is! NetworkSuccess<Map<String, dynamic>>) {
+      return SyncFailed(describeNetworkFailure(countResult));
+    }
+    final totalRows = JsonUtils.getInt('total_rows', countResult.data);
+    if (totalRows == 0) {
+      onProgress?.call(const SyncProgress(completed: 0, total: 0));
+      return const SyncComplete(0);
+    }
+
+    final batchSizer = AdaptiveBatchProcessor(initialSize: 200);
+    var skip = 0;
+    var totalSaved = 0;
+
+    while (skip < totalRows) {
+      final size = batchSizer.currentSize;
+      final stopwatch = Stopwatch()..start();
+      final pageResult = await _api.getJsonObject(
+        '$dbUrl/login_activities/_all_docs'
+        '?include_docs=true&limit=$size&skip=$skip',
+        authHeader: authHeader,
+      );
+      stopwatch.stop();
+
+      if (pageResult is! NetworkSuccess<Map<String, dynamic>>) {
+        batchSizer.recordFailure();
+        // Partial syncs are not rolled back, matching `SyncManager`; earlier
+        // pages stay persisted.
+        return SyncFailed(describeNetworkFailure(pageResult));
+      }
+      batchSizer.recordSuccess(stopwatch.elapsedMilliseconds);
+
+      final rows = pageResult.data['rows'];
+      if (rows is! List || rows.isEmpty) break;
+
+      final docs = <Map<String, dynamic>>[
+        for (final row in rows)
+          if (row is Map<String, dynamic>)
+            JsonUtils.getObject('doc', row) ?? const <String, dynamic>{},
+      ];
+      totalSaved += await insertLoginActivitiesFromSync(docs);
+
+      skip += rows.length;
+      onProgress?.call(
+        SyncProgress(
+          completed: skip > totalRows ? totalRows : skip,
+          total: totalRows,
+        ),
+      );
+      if (rows.length < size) break;
+    }
+    return SyncComplete(totalSaved);
+  }
+
+  /// Port of `insertLoginActivitiesFromSync`.
+  ///
+  /// Merges each document by `_id`, falling back to a `(loginTime, userName)`
+  /// pair so a row this device authored offline is adopted rather than
+  /// duplicated. Design documents are skipped, matching the Kotlin's filter.
+  Future<int> insertLoginActivitiesFromSync(
+    List<Map<String, dynamic>> docs,
+  ) async {
+    final documents = docs
+        .where((doc) => !JsonUtils.getString('_id', doc).startsWith('_design'))
+        .toList();
+    if (documents.isEmpty) return 0;
+
+    final ids = documents
+        .map((doc) => JsonUtils.getString('_id', doc))
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    final existingById = {
+      for (final row in await _dao.getByCouchIds(ids)) row.couchId ?? '': row,
+    };
+
+    final loginTimes = documents
+        .map((doc) => JsonUtils.getLong('loginTime', doc))
+        .where((time) => time > 0)
+        .toSet()
+        .toList(growable: false);
+    final userNames = documents
+        .map((doc) => JsonUtils.getString('user', doc))
+        .where((name) => name.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    final fallbackByKey = <String, OfflineActivityRow>{};
+    for (final row in await _dao.getByLoginTimesAndUserNames(
+      loginTimes,
+      userNames,
+    )) {
+      // `putIfAbsent`, as the Kotlin does: with two local rows sharing a
+      // (time, name) pair the first one wins rather than the last.
+      fallbackByKey.putIfAbsent('${row.loginTime}_${row.userName}', () => row);
+    }
+
+    final companions = <OfflineActivitiesCompanion>[];
+    for (final doc in documents) {
+      final docId = JsonUtils.getString('_id', doc);
+      final key =
+          '${JsonUtils.getLong('loginTime', doc)}_'
+          '${JsonUtils.getString('user', doc)}';
+      companions.add(
+        OfflineActivityMapper.fromDoc(
+          doc,
+          existing: existingById[docId],
+          fallback: fallbackByKey[key],
+        ),
+      );
+    }
+    await _dao.upsertAll(companions);
+    return companions.length;
+  }
 
   /// `UserSessionManager`'s test: a `guest`-prefixed id, case-sensitively.
   static bool _isGuest(String? userId) =>

@@ -8,6 +8,7 @@ import '../../providers/activities_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/notifications_provider.dart';
 import '../components/relative_time.dart';
+import '../components/profile_avatar.dart';
 import '../dashboard/dashboard_shell.dart';
 import '../router.dart';
 
@@ -283,16 +284,7 @@ class _ProfileBody extends ConsumerWidget {
           child: Semantics(
             label: l10n.profilePhotoFor(name),
             image: true,
-            child: CircleAvatar(
-              radius: 48,
-              backgroundColor: theme.colorScheme.primaryContainer,
-              child: Text(
-                _initials(user),
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  color: theme.colorScheme.onPrimaryContainer,
-                ),
-              ),
-            ),
+            child: ProfileAvatar(user: user, radius: 48),
           ),
         ),
         const SizedBox(height: 16),
@@ -437,19 +429,4 @@ String _displayName(UserRow user) {
   if (fullName.isNotEmpty) return fullName;
   final username = user.name?.trim();
   return username == null || username.isEmpty ? 'myPlanet learner' : username;
-}
-
-String _initials(UserRow user) {
-  final parts = [user.firstName, user.lastName]
-      .whereType<String>()
-      .map((part) => part.trim())
-      .where((part) => part.isNotEmpty)
-      .toList();
-  if (parts.isNotEmpty) {
-    return parts.map((part) => part.characters.first.toUpperCase()).join();
-  }
-  final username = user.name?.trim();
-  return username == null || username.isEmpty
-      ? 'MP'
-      : username.characters.first.toUpperCase();
 }

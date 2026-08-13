@@ -1,8 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:meta/meta.dart';
 
+import '../core/network/network_result.dart';
+import '../core/utils/url_utils.dart';
 import '../data/local/app_database.dart';
 import '../repository/notifications_repository.dart';
 import 'app_providers.dart';
@@ -255,3 +259,51 @@ String _nameFromParentJson(String? parentJson) {
   } catch (_) {}
   return '';
 }
+
+/// Identifies a CouchDB attachment to fetch as a profile photo. The
+/// [imageName] is the `_attachments` key stored in `users.userImage` by
+/// [UserMapper]; the [userId] is the document id.
+@immutable
+class ProfileImageRequest {
+  const ProfileImageRequest({required this.userId, required this.imageName});
+
+  final String userId;
+  final String imageName;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ProfileImageRequest &&
+      other.userId == userId &&
+      other.imageName == imageName;
+
+  @override
+  int get hashCode => Object.hash(userId, imageName);
+}
+
+/// Port of the Kotlin profile-photo fetch: a `_users` document's attachment
+/// is a CouchDB blob behind Basic auth with the `satellite` account, so it
+/// cannot be loaded with a plain `Image.network`. The attachment *name* is
+/// persisted (no credentials), and the full URL is rebuilt here against the
+/// current [serverConfigProvider], fetched as bytes through [PlanetApi.getBytes]
+/// (the same path resource downloads use), and handed to `Image.memory`.
+///
+/// Returns `null` when there is no attachment, the config is absent, or the
+/// fetch fails - the widget falls back to the user's initials, matching
+/// Kotlin's `R.drawable.profile` placeholder path.
+final profileImageProvider =
+    FutureProvider.family<Uint8List?, ProfileImageRequest>((ref, key) async {
+      if (key.userId.isEmpty || key.imageName.isEmpty) return null;
+      final config = ref.watch(serverConfigProvider);
+      if (config == null) return null;
+      final url = UrlUtils.userImageUrl(config, key.userId, key.imageName);
+      if (url == null) return null;
+      final authHeader = UrlUtils.basicAuthHeader('satellite', config.pin);
+      final result = await ref
+          .watch(planetApiProvider)
+          .getBytes(url, authHeader: authHeader);
+      return switch (result) {
+        NetworkSuccess<List<int>>(:final data) => Uint8List.fromList(data),
+        NetworkError<List<int>>() => null,
+        NetworkException<List<int>>() => null,
+      };
+    });

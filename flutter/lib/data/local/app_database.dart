@@ -2600,6 +2600,49 @@ class OfflineActivityDao extends DatabaseAccessor<AppDatabase>
     return row.read(max);
   }
 
+  /// Port of `getByRemoteIds` — the rows a synced page may already have local
+  /// counterparts for, keyed by the server `_id`. Chunked for the same
+  /// `SQLITE_MAX_VARIABLE_NUMBER` reason as every other `IN` in this file.
+  Future<List<OfflineActivityRow>> getByCouchIds(List<String> couchIds) async {
+    if (couchIds.isEmpty) return const [];
+    final rows = <OfflineActivityRow>[];
+    for (final chunk in _chunked(couchIds, _sqliteVariableChunk)) {
+      rows.addAll(
+        await (select(
+          offlineActivities,
+        )..where((row) => row.couchId.isIn(chunk))).get(),
+      );
+    }
+    return rows;
+  }
+
+  /// Port of `getByLoginTimesAndUserNames`, the fallback match for a row this
+  /// device authored offline and is now seeing come back from the server with
+  /// an `_id` it does not know yet.
+  Future<List<OfflineActivityRow>> getByLoginTimesAndUserNames(
+    List<int> loginTimes,
+    List<String> userNames,
+  ) async {
+    if (loginTimes.isEmpty || userNames.isEmpty) return const [];
+    final rows = <OfflineActivityRow>[];
+    for (final times in _chunked(loginTimes, _sqliteVariableChunk)) {
+      for (final names in _chunked(userNames, _sqliteVariableChunk)) {
+        rows.addAll(
+          await (select(offlineActivities)..where(
+                (row) => row.loginTime.isIn(times) & row.userName.isIn(names),
+              ))
+              .get(),
+        );
+      }
+    }
+    return rows;
+  }
+
+  Future<void> upsertAll(List<OfflineActivitiesCompanion> rows) async {
+    if (rows.isEmpty) return;
+    await batch((b) => b.insertAllOnConflictUpdate(offlineActivities, rows));
+  }
+
   /// The `_id`/`_rev` half of `markActivitiesUploaded`. Returns the number of
   /// rows written so the uploader can tell a vanished row from a stored one.
   Future<int> markUploaded(String localId, String remoteId, String rev) =>

@@ -1,5 +1,7 @@
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/activities_repository.dart';
 
@@ -10,6 +12,7 @@ void main() {
   setUp(() {
     database = AppDatabase.memory();
     repository = ActivitiesRepository(
+      MockPlanetApi(),
       database.offlineActivityDao,
       database.resourceActivityDao,
       database.courseActivityDao,
@@ -318,4 +321,109 @@ void main() {
     expect(await repository.lastVisit('ada'), 1000);
     expect(await repository.lastVisit('nobody'), isNull);
   });
+
+  group('login_activities sync-in', () {
+    Map<String, dynamic> doc({
+      required String id,
+      String rev = '1-a',
+      String user = 'ada',
+      int loginTime = 1000,
+      int logoutTime = 0,
+    }) => {
+      '_id': id,
+      '_rev': rev,
+      'type': 'login',
+      'user': user,
+      'loginTime': loginTime,
+      'logoutTime': logoutTime,
+      'parentCode': 'nation',
+      'createdOn': 'planet-a',
+    };
+
+    test('a document with no local counterpart is inserted', () async {
+      final saved = await repository.insertLoginActivitiesFromSync([
+        doc(id: 'srv-1'),
+      ]);
+
+      expect(saved, 1);
+      final row = (await repository.watchOfflineLogins('ada').first).single;
+      expect(row.id, 'srv-1');
+      expect(row.couchId, 'srv-1');
+      expect(row.rev, '1-a');
+      expect(row.loginTime, 1000);
+    });
+
+    test('design documents are skipped', () async {
+      expect(
+        await repository.insertLoginActivitiesFromSync([
+          doc(id: '_design/activities'),
+        ]),
+        0,
+      );
+      expect(await repository.offlineLoginCount('ada'), 0);
+    });
+
+    test('a re-sync updates in place rather than duplicating', () async {
+      await repository.insertLoginActivitiesFromSync([doc(id: 'srv-1')]);
+      await repository.insertLoginActivitiesFromSync([
+        doc(id: 'srv-1', rev: '2-b', logoutTime: 5000),
+      ]);
+
+      final rows = await repository.watchOfflineLogins('ada').first;
+      expect(rows, hasLength(1));
+      expect(rows.single.rev, '2-b');
+      expect(rows.single.logoutTime, 5000);
+    });
+
+    test('this device\'s own uploaded login is adopted, not twinned', () async {
+      // The (loginTime, userName) fallback: the row was authored here, uploaded,
+      // and is now coming back with an `_id` this row does not carry. Without
+      // the fallback the chart would count the same session twice.
+      await logLogin('local-1', 'ada', loginTime: 1000);
+
+      await repository.insertLoginActivitiesFromSync([doc(id: 'srv-1')]);
+
+      final rows = await repository.watchOfflineLogins('ada').first;
+      expect(rows, hasLength(1));
+      expect(rows.single.id, 'local-1', reason: 'kept the local row key');
+      expect(rows.single.couchId, 'srv-1');
+    });
+
+    test('the merge keeps local columns the document does not carry', () async {
+      // `login_activities` has no `description`/`userId`, and the companion
+      // carries both — so without passing the stored values through, a sync
+      // would blank the `userId` that `offlineVisitCount` keys on.
+      await logLogin('local-1', 'ada', loginTime: 1000);
+
+      await repository.insertLoginActivitiesFromSync([doc(id: 'srv-1')]);
+
+      final row = (await repository.watchOfflineLogins('ada').first).single;
+      expect(row.userId, 'user-ada');
+      expect(row.description, ActivitiesRepository.loginDescription);
+      expect(await repository.offlineVisitCount('user-ada'), 1);
+    });
+
+    test('a synced row is not queued for upload again', () async {
+      await repository.insertLoginActivitiesFromSync([doc(id: 'srv-1')]);
+
+      // `pendingLoginUploads` selects on a null `_rev`; a row that arrived from
+      // the server has one, so it is already delivered.
+      expect(await repository.pendingLoginUploads(), isEmpty);
+    });
+
+    test('another member\'s sessions arrive without touching ours', () async {
+      await logLogin('local-1', 'ada', loginTime: 1000);
+
+      await repository.insertLoginActivitiesFromSync([
+        doc(id: 'srv-2', user: 'grace', loginTime: 2000),
+      ]);
+
+      expect(await repository.offlineLoginCount('ada'), 1);
+      expect(await repository.offlineLoginCount('grace'), 1);
+      // The global last visit is what the profile shows, so it moves.
+      expect(await repository.globalLastVisit(), 2000);
+    });
+  });
 }
+
+class MockPlanetApi extends Mock implements PlanetApi {}

@@ -22,6 +22,7 @@ enum DashboardSyncArea {
   feedback,
   chat,
   health,
+  activities,
 }
 
 enum DashboardSyncStatus { waiting, running, succeeded, failed }
@@ -172,6 +173,8 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
         ref.read(feedbackSyncProvider.notifier).sync(),
       DashboardSyncArea.chat => ref.read(chatSyncProvider.notifier).sync(),
       DashboardSyncArea.health => ref.read(healthSyncProvider.notifier).sync(),
+      DashboardSyncArea.activities =>
+        ref.read(activitiesSyncProvider.notifier).sync(),
     };
 
     final result = switch (area) {
@@ -184,6 +187,7 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
       DashboardSyncArea.feedback => ref.read(feedbackSyncProvider),
       DashboardSyncArea.chat => ref.read(chatSyncProvider),
       DashboardSyncArea.health => ref.read(healthSyncProvider),
+      DashboardSyncArea.activities => ref.read(activitiesSyncProvider),
     };
 
     _replace(
