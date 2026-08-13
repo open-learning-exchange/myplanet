@@ -126,9 +126,6 @@ class TransactionSyncManagerCheckpointTest {
             mockk<HealthRepository>(relaxed = true),
             mockk<ProgressRepository>(relaxed = true),
             mockk<SurveysRepository>(relaxed = true),
-            // syncDb confines its work to dispatcherProvider.io, not this scope; a throwaway
-            // scope is enough and keeps each test isolated (no shared leaked-exception state).
-            CoroutineScope(Dispatchers.Unconfined),
             dispatcherProvider,
             mockk<org.ole.planet.myplanet.services.UserSessionManager>(relaxed = true)
         )
