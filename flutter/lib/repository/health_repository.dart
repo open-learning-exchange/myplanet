@@ -253,6 +253,136 @@ class HealthRepository {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────
+  // Patient management — port of `HealthRepositoryImpl` methods added in
+  // Kotlin 962e1e736. Moves user/patient queries from `UserRepositoryImpl`
+  // so the health screens own their domain.
+  // ─────────────────────────────────────────────────────────────────────
+
+  /// Returns a single patient by its local or CouchDB id.
+  Future<UserRow?> getPatientById(String id) => _userDao.getById(id);
+
+  /// All users sorted by [fieldName] — "joinDate" (int) or "name" (string).
+  Future<List<UserRow>> getPatientsSortedBy(
+    String fieldName, {
+    bool descending = false,
+  }) async {
+    final users = await _userDao.getAllUsers();
+    return _sortUsers(users, fieldName, descending);
+  }
+
+  /// Users whose name/firstName/lastName contains [query], sorted.
+  /// A blank query returns all users (matching Kotlin's `searchUsers`).
+  Future<List<UserRow>> searchPatients(
+    String query, {
+    String sortField = 'joinDate',
+    bool descending = false,
+  }) async {
+    final users = query.isEmpty
+        ? await _userDao.getAllUsers()
+        : await _userDao.search(query);
+    return _sortUsers(users, sortField, descending);
+  }
+
+  static List<UserRow> _sortUsers(
+    List<UserRow> users,
+    String fieldName,
+    bool descending,
+  ) {
+    String lower(String? v) => (v ?? '').toLowerCase();
+    int cmp(UserRow a, UserRow b) {
+      switch (fieldName) {
+        case 'joinDate':
+          return a.joinDate.compareTo(b.joinDate);
+        case 'name':
+          return lower(a.name).compareTo(lower(b.name));
+        case 'firstName':
+          return lower(a.firstName).compareTo(lower(b.firstName));
+        case 'lastName':
+          return lower(a.lastName).compareTo(lower(b.lastName));
+        default:
+          return 0;
+      }
+    }
+
+    final sorted = [...users]..sort(cmp);
+    return descending ? sorted.reversed.toList() : sorted;
+  }
+
+  /// Decrypts a patient's health entry and bundles it with the examination
+  /// history and the users who authored those examinations.
+  ///
+  /// Port of `HealthRepositoryImpl.getPatientHealthRecords` (Kotlin
+  /// 962e1e736), moved here from `UserRepositoryImpl.getHealthRecordsAndAssociatedUsers`.
+  Future<HealthRecord?> getPatientHealthRecords(
+    String userId,
+    UserRow currentUser,
+  ) async {
+    final mh = await _dao.getByIdOrUserId(userId);
+    if (mh == null) return null;
+
+    final json = await _decryptForUser(mh.data, currentUser);
+    MyHealth? mm;
+    if (json != null && json.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(json);
+        mm = decoded is Map<String, dynamic> ? MyHealth.fromJson(decoded) : null;
+      } catch (_) {
+        mm = null;
+      }
+    }
+    if (mm == null) return null;
+
+    final list = await _dao.getByProfileId(mm.userKey ?? '');
+    if (list.isEmpty) {
+      return HealthRecord(
+        healthPojo: mh,
+        healthProfile: mm,
+        examinations: const [],
+        userMap: const {},
+      );
+    }
+
+    // Collect the distinct creator IDs from each examination's encrypted data.
+    final userIds = <String>{};
+    for (final exam in list) {
+      final plain = await _decryptForUser(exam.data, currentUser);
+      if (plain != null && plain.isNotEmpty) {
+        try {
+          final decoded = jsonDecode(plain);
+          if (decoded is Map<String, dynamic>) {
+            final createdBy = decoded['createdBy']?.toString();
+            if (createdBy != null && createdBy.isNotEmpty) {
+              userIds.add(createdBy);
+            }
+          }
+        } catch (_) {}
+      }
+    }
+
+    final userMap = <String, UserRow>{};
+    if (userIds.isNotEmpty) {
+      final all = await _userDao.getAllUsers();
+      for (final u in all) {
+        if (userIds.contains(u.id)) {
+          userMap[u.id] = u;
+        }
+      }
+    }
+
+    return HealthRecord(
+      healthPojo: mh,
+      healthProfile: mm,
+      examinations: list,
+      userMap: userMap,
+    );
+  }
+
+  Future<String?> _decryptForUser(String? encrypted, UserRow user) async {
+    if (encrypted == null || encrypted.isEmpty) return null;
+    return HealthCipher.decrypt(encrypted, user.key, user.iv);
+  }
+
   /// Sync health examinations from CouchDB.
   Future<SyncResult> sync({void Function(SyncProgress)? onProgress}) async {
     if (_config == null) return const SyncFailed('No server config');

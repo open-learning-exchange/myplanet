@@ -528,6 +528,21 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
   /// Returns all users (for sending surveys to selected users).
   Future<List<UserRow>> getAllUsers() => select(users).get();
 
+  /// Port of `UserDao.search` — name/firstName/lastName containment, matching
+  /// the Kotlin `LIKE '%' || :query || '%'` predicate.
+  Future<List<UserRow>> search(String query) {
+    final pattern = '%$query%';
+    return (
+      select(users)
+        ..where(
+          (u) =>
+              u.name.like(pattern) |
+              u.firstName.like(pattern) |
+              u.lastName.like(pattern),
+        )
+    ).get();
+  }
+
   /// Port of `UserRepositoryImpl.ensureUserSecurityKeys`.
   ///
   /// The health screens call this before encrypting. Generating lazily rather

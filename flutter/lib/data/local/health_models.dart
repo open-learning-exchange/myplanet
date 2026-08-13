@@ -1,3 +1,5 @@
+import 'app_database.dart';
+
 /// Port of `model/HealthExamination.kt`.
 ///
 /// HealthExamination stores health examination records for users.
@@ -255,6 +257,25 @@ class MyHealthProfile {
       notes: notes ?? this.notes,
     );
   }
+}
+
+/// Port of `model/HealthRecord.kt`.
+///
+/// Bundles a user's health entry, decrypted profile, examination history, and
+/// the users who created those examinations — the payload the health screen
+/// renders in one pass.
+class HealthRecord {
+  final HealthExaminationRow healthPojo;
+  final MyHealth healthProfile;
+  final List<HealthExaminationRow> examinations;
+  final Map<String, UserRow> userMap;
+
+  HealthRecord({
+    required this.healthPojo,
+    required this.healthProfile,
+    required this.examinations,
+    required this.userMap,
+  });
 }
 
 /// Port of `model/Examination.kt`.

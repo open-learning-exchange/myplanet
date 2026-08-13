@@ -320,3 +320,165 @@ final examinationNotifierProvider = StateNotifierProvider.autoDispose
         onSaved: ref.read(healthQueueProvider).queuePending,
       );
     });
+
+// ─────────────────────────────────────────────────────────────────────
+// Patient management — port of Kotlin `HealthViewModel` (962e1e736).
+// Riverpod replaces the ViewModel's StateFlow fields.
+// ─────────────────────────────────────────────────────────────────────
+
+/// Sort options for the patient list, matching Kotlin's spinner indices.
+enum PatientSort { joinDateDesc, joinDateAsc, nameAsc, nameDesc }
+
+extension PatientSortX on PatientSort {
+  String get fieldName => switch (this) {
+    PatientSort.joinDateDesc || PatientSort.joinDateAsc => 'joinDate',
+    PatientSort.nameAsc || PatientSort.nameDesc => 'name',
+  };
+
+  bool get descending => switch (this) {
+    PatientSort.joinDateDesc || PatientSort.nameDesc => true,
+    PatientSort.joinDateAsc || PatientSort.nameAsc => false,
+  };
+}
+
+/// The logged-in user — health providers check their `rolesList` for
+/// `"health"` to decide whether the patient picker is offered.
+final loggedInUserProvider = FutureProvider<UserRow?>((ref) async {
+  final session = await ref.watch(sessionProvider.future);
+  if (session == null) return null;
+  return ref.watch(userDaoProvider).getById(session.id);
+});
+
+/// Whether the current user has the `"health"` role.
+final isHealthProviderProvider = FutureProvider<bool>((ref) async {
+  final user = await ref.watch(loggedInUserProvider.future);
+  if (user == null) return false;
+  return user.rolesList.contains('health');
+});
+
+/// The patient list with an optional search query and sort order.
+final patientListProvider =
+    StateNotifierProvider.autoDispose<PatientListNotifier, AsyncValue<List<UserRow>>>(
+  PatientListNotifier.new,
+);
+
+class PatientListNotifier
+    extends StateNotifier<AsyncValue<List<UserRow>>> {
+  PatientListNotifier(this._ref) : super(const AsyncValue.loading()) {
+    _load();
+  }
+
+  final Ref _ref;
+
+  Future<void> _load() async {
+    state = const AsyncValue.loading();
+    try {
+      final repo = _ref.read(healthRepositoryProvider);
+      final patients = await repo.getPatientsSortedBy(
+        'joinDate',
+        descending: true,
+      );
+      state = AsyncValue.data(patients);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> sort(PatientSort sort) async {
+    state = const AsyncValue.loading();
+    try {
+      final repo = _ref.read(healthRepositoryProvider);
+      final patients = await repo.getPatientsSortedBy(
+        sort.fieldName,
+        descending: sort.descending,
+      );
+      state = AsyncValue.data(patients);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> search(String query, {PatientSort sort = PatientSort.joinDateDesc}) async {
+    state = const AsyncValue.loading();
+    try {
+      final repo = _ref.read(healthRepositoryProvider);
+      final patients = await repo.searchPatients(
+        query,
+        sortField: sort.fieldName,
+        descending: sort.descending,
+      );
+      state = AsyncValue.data(patients);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> refresh() => _load();
+}
+
+/// The currently selected patient's full health record (profile +
+/// examinations + creator user map). Null until a patient is chosen.
+final patientDetailProvider =
+    StateNotifierProvider.autoDispose<PatientDetailNotifier, PatientDetailState>(
+  PatientDetailNotifier.new,
+);
+
+class PatientDetailNotifier extends StateNotifier<PatientDetailState> {
+  PatientDetailNotifier(this._ref) : super(PatientDetailState.initial()) {
+    _loadInitial();
+  }
+
+  final Ref _ref;
+
+  Future<void> _loadInitial() async {
+    final currentUser = await _ref.read(loggedInUserProvider.future);
+    if (currentUser == null) return;
+    final uid = (currentUser.couchId ?? '').isNotEmpty
+        ? currentUser.couchId!
+        : currentUser.id;
+    final trimmed = uid.trim();
+    if (trimmed.isNotEmpty) {
+      await selectPatient(trimmed);
+    }
+  }
+
+  Future<void> selectPatient(String userId) async {
+    state = state.copyWith(isLoading: true);
+    try {
+      final repo = _ref.read(healthRepositoryProvider);
+      final user = await repo.getPatientById(userId);
+      if (user == null) {
+        state = PatientDetailState.initial();
+        return;
+      }
+      final record = await repo.getPatientHealthRecords(userId, user);
+      state = PatientDetailState(user: user, record: record, isLoading: false);
+    } catch (e) {
+      state = state.copyWith(isLoading: false);
+    }
+  }
+}
+
+/// Port of Kotlin `PatientDetailState`.
+class PatientDetailState {
+  final UserRow? user;
+  final HealthRecord? record;
+  final bool isLoading;
+
+  PatientDetailState({this.user, this.record, this.isLoading = false});
+
+  factory PatientDetailState.initial() =>
+      PatientDetailState(isLoading: false);
+
+  PatientDetailState copyWith({
+    UserRow? user,
+    HealthRecord? record,
+    bool? isLoading,
+  }) {
+    return PatientDetailState(
+      user: user ?? this.user,
+      record: record ?? this.record,
+      isLoading: isLoading ?? this.isLoading,
+    );
+  }
+}

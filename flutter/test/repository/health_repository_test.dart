@@ -1,4 +1,6 @@
-import 'package:drift/drift.dart' hide isNotNull;
+import 'dart:convert';
+
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
@@ -271,6 +273,146 @@ void main() {
 
     expect(result, isA<SyncComplete>());
     expect((result as SyncComplete).savedCount, 2);
+  });
+
+  // ── Patient management — port of Kotlin 962e1e736 ──────────────────────
+
+  group('patient management', () {
+    Future<void> seedUsers() async {
+      await database.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'user-a',
+          couchId: const Value('org.couchdb.user:alice'),
+          name: const Value('alice'),
+          firstName: const Value('Alice'),
+          joinDate: const Value(1000),
+        ),
+      );
+      await database.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'user-b',
+          couchId: const Value('org.couchdb.user:bob'),
+          name: const Value('bob'),
+          firstName: const Value('Bob'),
+          joinDate: const Value(2000),
+        ),
+      );
+      await database.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'user-c',
+          couchId: const Value('org.couchdb.user:carol'),
+          name: const Value('carol'),
+          firstName: const Value('Carol'),
+          joinDate: const Value(3000),
+        ),
+      );
+    }
+
+    test('getPatientById returns user by id', () async {
+      await seedUsers();
+      final repo = createRepository();
+      final user = await repo.getPatientById('user-b');
+      expect(user, isNotNull);
+      expect(user!.name, 'bob');
+    });
+
+    test('getPatientsSortedBy sorts by joinDate descending', () async {
+      await seedUsers();
+      final repo = createRepository();
+      final patients = await repo.getPatientsSortedBy(
+        'joinDate',
+        descending: true,
+      );
+      expect(patients.map((u) => u.name).toList(), ['carol', 'bob', 'alice']);
+    });
+
+    test('getPatientsSortedBy sorts by joinDate ascending', () async {
+      await seedUsers();
+      final repo = createRepository();
+      final patients = await repo.getPatientsSortedBy(
+        'joinDate',
+        descending: false,
+      );
+      expect(patients.map((u) => u.name).toList(), ['alice', 'bob', 'carol']);
+    });
+
+    test('getPatientsSortedBy sorts by name', () async {
+      await seedUsers();
+      final repo = createRepository();
+      final patients = await repo.getPatientsSortedBy(
+        'name',
+        descending: false,
+      );
+      expect(patients.map((u) => u.name).toList(), ['alice', 'bob', 'carol']);
+    });
+
+    test('searchPatients with blank query returns all', () async {
+      await seedUsers();
+      final repo = createRepository();
+      final patients = await repo.searchPatients('');
+      expect(patients.length, 3);
+    });
+
+    test('searchPatients filters by name', () async {
+      await seedUsers();
+      final repo = createRepository();
+      final patients = await repo.searchPatients('bob');
+      expect(patients.length, 1);
+      expect(patients.first.name, 'bob');
+    });
+
+    test('searchPatients filters by firstName', () async {
+      await seedUsers();
+      final repo = createRepository();
+      final patients = await repo.searchPatients('Car');
+      expect(patients.length, 1);
+      expect(patients.first.firstName, 'Carol');
+    });
+
+    test('getPatientHealthRecords returns null when no examination exists',
+        () async {
+      await seedUsers();
+      final repo = createRepository();
+      final user = await repo.getPatientById('user-a');
+      final record = await repo.getPatientHealthRecords('user-a', user!);
+      expect(record, isNull);
+    });
+
+    test('getPatientHealthRecords decrypts and bundles the health record',
+        () async {
+      await seedUsers();
+      final repo = createRepository();
+      // Ensure the user has crypto keys.
+      final user = await database.userDao.ensureSecurityKeys('user-a');
+      // Encrypt a MyHealth JSON payload.
+      final myHealthJson = jsonEncode({
+        'profile': {
+          'emergencyContactName': 'Jane',
+          'emergencyContact': '555-1234',
+        },
+        'userKey': 'user-a',
+        'lastExamination': 0,
+      });
+      final encrypted = await repo.encryptData('user-a', myHealthJson);
+      // Create the primary health examination row carrying the encrypted
+      // profile. Its profileId is set so getByProfileId includes it.
+      await repo.createExamination(
+        userId: 'user-a',
+        profileId: 'user-a',
+        temperature: 36.5,
+        pulse: 70,
+        height: 170,
+        weight: 65,
+        data: encrypted,
+      );
+
+      final record = await repo.getPatientHealthRecords('user-a', user!);
+      expect(record, isNotNull);
+      expect(record!.healthProfile.profile?.emergencyContactName, 'Jane');
+      // The primary examination is included in the bundled history.
+      expect(record.examinations, isNotEmpty);
+      expect(record.healthPojo.temperature, 36.5);
+    });
   });
 }
 

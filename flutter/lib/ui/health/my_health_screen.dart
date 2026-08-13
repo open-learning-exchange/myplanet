@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,8 +20,9 @@ class MyHealthScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final healthData = ref.watch(healthDataProvider);
+    final detail = ref.watch(patientDetailProvider);
     final syncState = ref.watch(healthSyncProvider);
+    final isHealthProvider = ref.watch(isHealthProviderProvider).valueOrNull ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -32,7 +35,7 @@ class MyHealthScreen extends ConsumerWidget {
                 ? null
                 : () async {
                     await ref.read(healthSyncProvider.notifier).sync();
-                    ref.invalidate(healthDataProvider);
+                    ref.invalidate(patientDetailProvider);
                   },
           ),
           IconButton(
@@ -42,21 +45,47 @@ class MyHealthScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: healthData.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('${l10n.error}: $error')),
-        data: (data) {
-          if (data == null) {
-            return Center(child: Text(l10n.healthRecordNotAvailable));
-          }
-          return _HealthContent(data: data);
-        },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push(Routes.addExamination),
-        icon: const Icon(Icons.add),
-        label: Text(l10n.addHealthRecord),
-      ),
+      body: detail.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _buildBody(context, ref, detail, l10n),
+      floatingActionButton: isHealthProvider
+          ? FloatingActionButton.extended(
+              onPressed: () => _showPatientPicker(context, ref),
+              icon: const Icon(Icons.person_search),
+              label: Text(l10n.newPatient),
+            )
+          : FloatingActionButton.extended(
+              onPressed: () => context.push(Routes.addExamination),
+              icon: const Icon(Icons.add),
+              label: Text(l10n.addHealthRecord),
+            ),
+    );
+  }
+
+  Widget _buildBody(
+    BuildContext context,
+    WidgetRef ref,
+    PatientDetailState detail,
+    AppLocalizations l10n,
+  ) {
+    final user = detail.user;
+    final record = detail.record;
+    if (user == null) {
+      return Center(child: Text(l10n.healthRecordNotAvailable));
+    }
+    final data = HealthData(
+      user: user,
+      examination: record?.healthPojo,
+      myHealth: record?.healthProfile,
+      examinations: record?.examinations ?? const [],
+    );
+    return _HealthContent(data: data);
+  }
+
+  void _showPatientPicker(BuildContext context, WidgetRef ref) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => const _PatientPickerDialog(),
     );
   }
 }
@@ -426,5 +455,190 @@ class _ExaminationCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// Patient selection dialog for health providers — port of the
+/// `selectPatient()` / `setTextWatcher()` / `sortList()` flow in Kotlin's
+/// `MyHealthFragment`.
+class _PatientPickerDialog extends ConsumerStatefulWidget {
+  const _PatientPickerDialog();
+
+  @override
+  ConsumerState<_PatientPickerDialog> createState() =>
+      _PatientPickerDialogState();
+}
+
+class _PatientPickerDialogState extends ConsumerState<_PatientPickerDialog> {
+  final _searchController = TextEditingController();
+  PatientSort _sort = PatientSort.joinDateDesc;
+  bool _searching = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Timer? _debounce;
+
+  void _onSearchChanged() {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      final query = _searchController.text;
+      if (query.isEmpty) {
+        ref.read(patientListProvider.notifier).sort(_sort);
+      } else {
+        setState(() => _searching = true);
+        ref.read(patientListProvider.notifier).search(query, sort: _sort).then((_) {
+          if (mounted) setState(() => _searching = false);
+        });
+      }
+    });
+  }
+
+  void _onSortChanged(PatientSort? sort) {
+    if (sort == null) return;
+    setState(() => _sort = sort);
+    if (_searchController.text.isEmpty) {
+      ref.read(patientListProvider.notifier).sort(sort);
+    } else {
+      ref
+          .read(patientListProvider.notifier)
+          .search(_searchController.text, sort: sort);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final patientsAsync = ref.watch(patientListProvider);
+
+    return AlertDialog(
+      title: Text(l10n.selectHealthMember),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: l10n.searchMembers,
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searching
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: Padding(
+                          padding: EdgeInsets.all(12),
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : null,
+              ),
+            ),
+            const SizedBox(height: 8),
+            DropdownButton<PatientSort>(
+              value: _sort,
+              isExpanded: true,
+              items: [
+                DropdownMenuItem(
+                  value: PatientSort.joinDateDesc,
+                  child: Text(l10n.sortJoinDateDesc),
+                ),
+                DropdownMenuItem(
+                  value: PatientSort.joinDateAsc,
+                  child: Text(l10n.sortJoinDateAsc),
+                ),
+                DropdownMenuItem(
+                  value: PatientSort.nameAsc,
+                  child: Text(l10n.sortNameAsc),
+                ),
+                DropdownMenuItem(
+                  value: PatientSort.nameDesc,
+                  child: Text(l10n.sortNameDesc),
+                ),
+              ],
+              onChanged: _onSortChanged,
+            ),
+            const SizedBox(height: 8),
+            Flexible(
+              child: patientsAsync.when(
+                loading: () => const SizedBox(
+                  height: 200,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (e, _) => SizedBox(
+                  height: 200,
+                  child: Center(child: Text('${l10n.error}: $e')),
+                ),
+                data: (patients) {
+                  if (patients.isEmpty) {
+                    return SizedBox(
+                      height: 100,
+                      child: Center(child: Text(l10n.noMembers)),
+                    );
+                  }
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: patients.length,
+                    itemBuilder: (context, index) {
+                      final user = patients[index];
+                      final name = _getDisplayName(user);
+                      return ListTile(
+                        leading: CircleAvatar(child: Text(_getInitials(name))),
+                        title: Text(name),
+                        subtitle: user.email != null ? Text(user.email!) : null,
+                        onTap: () {
+                          final uid = (user.couchId ?? '').isNotEmpty
+                              ? user.couchId!
+                              : user.id;
+                          ref
+                              .read(patientDetailProvider.notifier)
+                              .selectPatient(uid.trim());
+                          Navigator.of(context).pop();
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.dismiss),
+        ),
+      ],
+    );
+  }
+
+  String _getDisplayName(UserRow user) {
+    final parts = [
+      user.firstName?.trim(),
+      user.middleName?.trim(),
+      user.lastName?.trim(),
+    ].where((p) => p != null && p.isNotEmpty).toList();
+    if (parts.isEmpty) return user.name ?? 'Unknown';
+    return parts.join(' ');
+  }
+
+  String _getInitials(String name) {
+    final parts = name.split(' ');
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts[0][0].toUpperCase();
+    return '${parts[0][0]}${parts.last[0]}'.toUpperCase();
   }
 }
