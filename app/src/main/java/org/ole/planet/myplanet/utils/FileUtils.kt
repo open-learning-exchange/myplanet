@@ -44,6 +44,10 @@ object FileUtils {
         return getExternalFilesDir(context)?.let { "$it/ole/" } ?: ""
     }
 
+    fun getLibraryFile(externalFilesDir: File, libraryId: String, address: String): File {
+        return File(externalFilesDir, "ole/$libraryId/$address")
+    }
+
     @Throws(IOException::class)
     fun fullyReadFileToBytes(f: File): ByteArray = f.readBytes()
 

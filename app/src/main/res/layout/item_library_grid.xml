@@ -22,14 +22,15 @@
             android:layout_height="84dp"
             android:background="@drawable/bg_cover_top_rounded">
 
-            <ImageView
+            <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/iv_cover_preview"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:contentDescription="@null"
                 android:importantForAccessibility="no"
                 android:scaleType="centerCrop"
-                android:visibility="gone" />
+                android:visibility="gone"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.MyPlanet.CoverTopRounded" />
 
             <ImageView
                 android:id="@+id/iv_type_icon"

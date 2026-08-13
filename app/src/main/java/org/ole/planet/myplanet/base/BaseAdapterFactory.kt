@@ -4,7 +4,6 @@ import android.content.Context
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.ui.courses.CoursesAdapter
 import org.ole.planet.myplanet.ui.resources.ResourcesAdapter
-import org.ole.planet.myplanet.utils.DefaultDispatcherProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.ListViewMode
 
@@ -15,7 +14,7 @@ interface BaseAdapterFactory {
         openedResourceIds: Set<String>,
         currentUserName: String? = null,
         viewMode: ListViewMode = ListViewMode.GRID,
-        dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider(),
+        dispatcherProvider: DispatcherProvider,
         onEditClick: ((ResourceListModel) -> Unit)? = null
     ): ResourcesAdapter
 

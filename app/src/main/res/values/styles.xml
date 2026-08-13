@@ -9,6 +9,13 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
+    <style name="ShapeAppearance.MyPlanet.CoverTopRounded" parent="ShapeAppearance.Material3.Corner.Medium">
+        <item name="cornerSizeTopLeft">12dp</item>
+        <item name="cornerSizeTopRight">12dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+
     <style name="GuestStyle">
         <item name="colorPrimary">@color/md_red_500</item>
         <item name="colorPrimaryDark">@color/md_red_700</item>

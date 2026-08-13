@@ -1,11 +1,7 @@
 package org.ole.planet.myplanet.ui.resources
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.drawable.GradientDrawable
-import android.graphics.pdf.PdfRenderer
-import android.os.ParcelFileDescriptor
-import android.util.LruCache
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,7 +9,6 @@ import android.widget.CheckBox
 import android.widget.ImageView
 import android.widget.PopupMenu
 import androidx.core.content.ContextCompat
-import androidx.core.graphics.createBitmap
 import androidx.core.widget.ImageViewCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -26,7 +21,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
 import org.ole.planet.myplanet.databinding.ItemLibraryGridBinding
@@ -39,6 +33,7 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LibraryType
 import org.ole.planet.myplanet.utils.LibraryTypeClassifier
 import org.ole.planet.myplanet.utils.ListViewMode
+import org.ole.planet.myplanet.utils.PdfThumbnailLoader
 import org.ole.planet.myplanet.utils.Utilities
 
 class ResourcesAdapter(
@@ -57,14 +52,13 @@ class ResourcesAdapter(
     private val locallyOfflineIds = mutableSetOf<String>()
     private val externalFilesDir: File? by lazy { FileUtils.getExternalFilesDir(context) }
     private var adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
-    private val pdfBitmapCache = object : LruCache<String, Bitmap>((Runtime.getRuntime().maxMemory() / 1024 / 8).toInt()) {
-        override fun sizeOf(key: String, bitmap: Bitmap): Int = bitmap.byteCount / 1024
-    }
 
     companion object {
         const val PAYLOAD_SELECTION = "PAYLOAD_SELECTION"
         private const val VIEW_TYPE_GRID = 0
         private const val VIEW_TYPE_LIST = 1
+        private const val GRID_COVER_WIDTH_DP = 84
+        private const val LIST_COVER_WIDTH_DP = 44
 
         private val ITEM_CALLBACK = DiffUtils.standardItemCallback<ResourceListModel>(
             idSelector = { it.item.id ?: "" },
@@ -195,7 +189,7 @@ class ResourcesAdapter(
     private fun bindGrid(holder: GridViewHolder, model: ResourceListModel) {
         val binding = holder.binding
         val type = LibraryTypeClassifier.classify(model.library)
-        holder.setPreviewJob(bindCover(binding.coverContainer, binding.ivCoverPreview, binding.ivTypeIcon, type, model))
+        holder.setPreviewJob(bindCover(binding.coverContainer, binding.ivCoverPreview, binding.ivTypeIcon, type, model, GRID_COVER_WIDTH_DP))
         binding.title.text = model.item.title
         binding.tvMeta.text = buildMetaLine(model, type)
         bindSelectionAndDownload(binding.checkbox, binding.ivDownloaded, model)
@@ -205,7 +199,7 @@ class ResourcesAdapter(
     private fun bindList(holder: ListViewHolder, model: ResourceListModel) {
         val binding = holder.binding
         val type = LibraryTypeClassifier.classify(model.library)
-        holder.setPreviewJob(bindCover(binding.coverContainer, binding.ivCoverPreview, binding.ivTypeIcon, type, model))
+        holder.setPreviewJob(bindCover(binding.coverContainer, binding.ivCoverPreview, binding.ivTypeIcon, type, model, LIST_COVER_WIDTH_DP))
         binding.title.text = model.item.title
         binding.tvMeta.text = buildMetaLine(model, type)
         bindSelectionAndDownload(binding.checkbox, binding.ivDownloaded, model)
@@ -230,20 +224,22 @@ class ResourcesAdapter(
         ivPreview: ImageView,
         ivTypeIcon: ImageView,
         type: LibraryType,
-        model: ResourceListModel
+        model: ResourceListModel,
+        coverWidthDp: Int
     ): Job? {
         setCoverColor(coverContainer, type)
         ivTypeIcon.setImageResource(typeIconRes(type))
 
         val isOffline = model.item.isOffline || locallyOfflineIds.contains(model.item.id) || model.isLocallyOffline
         val address = model.library.resourceLocalAddress
+        val libraryId = model.library.id
         val dir = externalFilesDir
-        if (!isOffline || address.isNullOrBlank() || dir == null) {
+        if (!isOffline || address.isNullOrBlank() || libraryId.isNullOrBlank() || dir == null) {
             showTypeIconOnly(ivPreview, ivTypeIcon)
             return null
         }
 
-        val file = File(dir, "ole/${model.library.id}/$address")
+        val file = FileUtils.getLibraryFile(dir, libraryId, address)
         val mimeType = Utilities.getMimeType(address)
         return when {
             mimeType?.startsWith("image") == true -> {
@@ -255,7 +251,8 @@ class ResourcesAdapter(
                 null
             }
             mimeType?.contains("pdf") == true -> {
-                adapterScope.launch { showPdfPreview(ivPreview, ivTypeIcon, file) }
+                val targetWidthPx = (coverWidthDp * context.resources.displayMetrics.density).toInt()
+                adapterScope.launch { showPdfPreview(ivPreview, ivTypeIcon, file, targetWidthPx) }
             }
             else -> {
                 showTypeIconOnly(ivPreview, ivTypeIcon)
@@ -302,28 +299,13 @@ class ResourcesAdapter(
             .into(ivPreview)
     }
 
-    private suspend fun showPdfPreview(ivPreview: ImageView, ivTypeIcon: ImageView, file: File) {
+    private suspend fun showPdfPreview(ivPreview: ImageView, ivTypeIcon: ImageView, file: File, targetWidthPx: Int) {
         if (!file.exists()) {
             showTypeIconOnly(ivPreview, ivTypeIcon)
             return
         }
-        val cacheKey = "${file.absolutePath}_${file.lastModified()}_${file.length()}"
-        val bitmap = pdfBitmapCache.get(cacheKey) ?: withContext(dispatcherProvider.io) {
-            try {
-                ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { fd ->
-                    PdfRenderer(fd).use { renderer ->
-                        renderer.openPage(0).use { page ->
-                            val scale = 2
-                            createBitmap(page.width * scale, page.height * scale).also {
-                                page.render(it, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                            }
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                null
-            }
-        }?.also { pdfBitmapCache.put(cacheKey, it) }
+        Glide.with(context).clear(ivPreview)
+        val bitmap = PdfThumbnailLoader.firstPageBitmap(file, dispatcherProvider, targetWidthPx)
 
         if (bitmap != null) {
             ivTypeIcon.visibility = View.GONE
