@@ -1219,22 +1219,26 @@ architecture or the port's scope make moot:
 
 **Substantial new features (not simple harvests).** Four commits are feature additions
 whose Kotlin UI layer (RecyclerView adapters, FlexboxLayout, custom Views) has no direct
-Flutter counterpart and would require design work, not a line-by-line port:
+Flutter counterpart and would require design work, not a line-by-line port. Three of the
+four have since been harvested; one remains deferred:
 
-- `c2cf2a788` (grid/list view mode) — adds a `ListViewMode` toggle persisted in prefs
-  and a `MaxWidthFrameLayout` for courses and resources. The port's courses screen uses
-  `ListView` and has no grid mode yet.
-- `818732139` (grid cover imaging) — adds cover-image loading (local file, remote URL
-  with auth, subject icon fallback) to the courses grid adapter. Depends on the grid
-  view above.
-- `437a3d28a` (enterprises finances date picking) — the enterprises feature is not
-  ported.
-- `962e1e736` (health user repositories) — refactors a clinician patient-selection
-  flow the port's health feature (own encrypted records) does not have.
+- `c2cf2a788` (grid/list view mode) — **harvested** (`ee0bd3063`). Adds a grid/list
+  view-mode toggle persisted in prefs, surfaced on the courses and resources screens.
+- `818732139` (grid cover imaging) — **harvested** (`f0d941999`). Adds cover-image
+  loading (local file, remote URL with auth, subject-color fallback) to the courses
+  grid. Depends on the grid view above.
+- `437a3d28a` (enterprises finances date picking) — **deferred.** The enterprises
+  feature is not ported.
+- `962e1e736` (health user repositories) — **harvested** (`6bb51427a`). Refactors a
+  clinician patient-selection flow: patient queries move from `UserRepository` into
+  `HealthRepository` (`getPatientById`, `getPatientsSortedBy`, `searchPatients`,
+  `getPatientHealthRecords`), a `HealthRecord` model bundles the pojo/profile/
+  examinations/user map, and `MyHealthScreen` gains a patient picker dialog (debounced
+  search, sort by join-date/name, avatar initials) visible to health providers.
 
 
 ---
 
-**Last updated**: 2026-08-13 (Phase 37 complete, commit-batch audit done)
+**Last updated**: 2026-08-13 (Phase 37 complete; grid/list, grid cover, health patient harvest done)
 **Phase**: 37 of N (27 of 28 UI packages have a screen â€” see Status for what that does and does
 not mean)
