@@ -125,4 +125,18 @@ class UploadRepositoryImpl @Inject constructor(
             body
         )
     }
+
+    override suspend fun uploadTeams(teamsToUpload: List<TeamUploadData>): Response<com.google.gson.JsonArray> {
+        val bulkDocs = com.google.gson.JsonArray()
+        teamsToUpload.forEach { teamData ->
+            bulkDocs.add(teamData.serialized)
+        }
+        val payload = JsonObject().apply { add("docs", bulkDocs) }
+        return postUploadArray("${UrlUtils.getUrl()}/teams/_bulk_docs", payload)
+    }
+
+    override suspend fun uploadTeamActivities(activitiesToUpload: com.google.gson.JsonArray): Response<com.google.gson.JsonArray> {
+        val payload = JsonObject().apply { add("docs", activitiesToUpload) }
+        return postUploadArray("${UrlUtils.getUrl()}/team_activities/_bulk_docs", payload)
+    }
 }

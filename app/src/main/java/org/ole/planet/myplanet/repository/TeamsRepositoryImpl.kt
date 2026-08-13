@@ -45,7 +45,6 @@ import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.AndroidDecrypter
@@ -59,7 +58,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 class TeamsRepositoryImpl @Inject constructor(
     private val activitiesRepository: ActivitiesRepository,
     private val userSessionManager: UserSessionManager,
-    private val uploadManager: UploadManager,
+    private val uploadRepository: UploadRepository,
     private val gson: Gson,
     @param:AppPreferences private val preferences: SharedPreferences,
     private val sharedPrefManager: SharedPrefManager,
@@ -965,9 +964,42 @@ class TeamsRepositoryImpl @Inject constructor(
     private suspend fun uploadTeamActivities() {
         try {
             withContext(dispatcherProvider.io) {
-                uploadManager.uploadResource(null)
-                uploadManager.uploadTeams()
-                uploadManager.uploadTeamActivities()
+                val teamsToUpload = getTeamsForUpload()
+                if (teamsToUpload.isNotEmpty()) {
+                    val teamResponse = uploadRepository.uploadTeams(teamsToUpload)
+                    if (teamResponse.isSuccessful && teamResponse.body() != null) {
+                        val body = teamResponse.body()!!
+                        for (i in 0 until body.size()) {
+                            val element = body.get(i).asJsonObject
+                            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("id", element)
+                            val rev = org.ole.planet.myplanet.utils.JsonUtils.getString("rev", element)
+                            if (rev.isNotEmpty()) {
+                                markTeamUploaded(id, rev)
+                            }
+                        }
+                    }
+                }
+
+                val teamLogs = getPendingTeamLogUploads()
+                if (teamLogs.isNotEmpty()) {
+                    val activitiesJson = com.google.gson.JsonArray()
+                    teamLogs.forEach { log ->
+                        val logJson = serializeTeamActivities(log, MainApplication.context)
+                        activitiesJson.add(logJson)
+                    }
+                    val response = uploadRepository.uploadTeamActivities(activitiesJson)
+                    if (response.isSuccessful && response.body() != null) {
+                        val body = response.body()!!
+                        for (i in 0 until body.size()) {
+                            val element = body.get(i).asJsonObject
+                            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("id", element)
+                            val rev = org.ole.planet.myplanet.utils.JsonUtils.getString("rev", element)
+                            if (rev.isNotEmpty()) {
+                                markTeamLogUploaded(id, id, rev)
+                            }
+                        }
+                    }
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()

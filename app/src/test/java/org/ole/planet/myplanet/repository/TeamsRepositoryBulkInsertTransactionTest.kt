@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.UploadManager
+
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -75,7 +75,7 @@ class TeamsRepositoryBulkInsertTransactionTest {
         repository = TeamsRepositoryImpl(
             mockk<ActivitiesRepository>(relaxed = true),
             mockk<UserSessionManager>(relaxed = true),
-            mockk<UploadManager>(relaxed = true),
+            mockk<UploadRepository>(relaxed = true),
             Gson(),
             mockk<SharedPreferences>(relaxed = true),
             mockk<SharedPrefManager>(relaxed = true),
