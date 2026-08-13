@@ -140,27 +140,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             }
         }
 
-        private fun buildApkLog(
-            spm: SharedPrefManager,
-            modelId: String?,
-            time: String,
-            type: String,
-            error: String
-        ): ApkLog {
-            return ApkLog().apply {
-                id = "${UUID.randomUUID()}"
-                parentCode = spm.getParentCode()
-                createdOn = spm.getPlanetCode()
-                modelId?.let { userId = it }
-                this.time = time
-                page = ""
-                version = getVersionName(context)
-                this.type = type
-                if (error.isNotEmpty()) {
-                    this.error = error
-                }
-            }
-        }
+
 
         // A report for a failure that may kill the process (crash/ANR) must be persisted
         // to a plain file before this runs: the Room write below can still be lost
@@ -170,18 +150,8 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 context,
                 CoreDependenciesEntryPoint::class.java
             )
-            val userSessionManager = entryPoint.userSessionManager()
-            val spm = entryPoint.sharedPrefManager()
-            val apkLogDao = entryPoint.apkLogDao()
-            return try {
-                val model = userSessionManager.getUserModel()
-                val log = buildApkLog(spm, model?.id, time, type, error)
-                apkLogDao.insert(log)
-                true
-            } catch (e: Exception) {
-                e.printStackTrace()
-                false
-            }
+            val apkLogRepository = entryPoint.apkLogRepository()
+            return apkLogRepository.saveLogToRoom(type, error, time)
         }
 
         suspend fun saveLogsToRoom(pendingLogs: List<CrashLogStore.PendingLog>): Boolean {
@@ -190,36 +160,8 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 context,
                 CoreDependenciesEntryPoint::class.java
             )
-            val userSessionManager = entryPoint.userSessionManager()
-            val spm = entryPoint.sharedPrefManager()
-            val apkLogDao = entryPoint.apkLogDao()
-            return try {
-                val model = userSessionManager.getUserModel()
-                val versionName = getVersionName(context)
-                val parentCode = spm.getParentCode()
-                val planetCode = spm.getPlanetCode()
-
-                val logsToInsert = pendingLogs.map { pending ->
-                    ApkLog().apply {
-                        id = "${UUID.randomUUID()}"
-                        this.parentCode = parentCode
-                        this.createdOn = planetCode
-                        model?.let { userId = it.id }
-                        this.time = pending.time
-                        page = ""
-                        version = versionName
-                        this.type = pending.type
-                        if (pending.error.isNotEmpty()) {
-                            this.error = pending.error
-                        }
-                    }
-                }
-                apkLogDao.insertAll(logsToInsert)
-                true
-            } catch (e: Exception) {
-                e.printStackTrace()
-                false
-            }
+            val apkLogRepository = entryPoint.apkLogRepository()
+            return apkLogRepository.saveLogsToRoom(pendingLogs)
         }
 
         private fun applyThemeMode(themeMode: String?) {

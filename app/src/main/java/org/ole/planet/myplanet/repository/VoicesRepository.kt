@@ -53,4 +53,6 @@ interface VoicesRepository {
     suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String>
     suspend fun countTeamChats(teamId: String): Long
     suspend fun getTeamChatViewableIds(teamIds: List<String>): List<String>
+    suspend fun getPendingNewsLogUploads(): List<org.ole.planet.myplanet.model.NewsLog>
+    suspend fun markNewsLogUploaded(localId: String, remoteId: String, rev: String): Boolean
 }

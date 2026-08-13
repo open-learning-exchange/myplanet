@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.NewsDao
+import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.News
@@ -35,7 +36,8 @@ class VoicesRepositoryImpl @Inject constructor(
     private val userRepositoryLazy: dagger.Lazy<UserRepository>,
     private val teamNotificationDao: TeamNotificationDao,
     private val newsDao: NewsDao,
-    private val myLibraryDao: MyLibraryDao
+    private val myLibraryDao: MyLibraryDao,
+    private val newsLogDao: NewsLogDao
 ) : VoicesRepository {
     private val concatenatedLinks = ArrayList<String>()
 
@@ -515,5 +517,13 @@ class VoicesRepositoryImpl @Inject constructor(
 
     override suspend fun getTeamChatViewableIds(teamIds: List<String>): List<String> {
         return newsDao.getTeamChatViewableIds(teamIds)
+    }
+
+    override suspend fun getPendingNewsLogUploads(): List<org.ole.planet.myplanet.model.NewsLog> {
+        return newsLogDao.getPendingUploads()
+    }
+
+    override suspend fun markNewsLogUploaded(localId: String, remoteId: String, rev: String): Boolean {
+        return newsLogDao.markUploaded(localId, remoteId, rev) != 0
     }
 }
