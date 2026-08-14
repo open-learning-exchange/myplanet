@@ -314,7 +314,7 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun postReply(message: String, news: News, currentUser: UserEntity, imageList: List<String>?) {
-        val newsId = news._id ?: news.id
+        val newsId = news.id
         val map = HashMap<String?, String>()
         map["message"] = message
         map["viewableBy"] = news.viewableBy ?: ""

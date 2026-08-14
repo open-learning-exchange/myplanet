@@ -11,7 +11,6 @@ import android.os.SystemClock
 import android.util.Log
 import androidx.core.content.edit
 import com.google.gson.JsonArray
-import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Date
@@ -24,13 +23,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
@@ -48,13 +45,11 @@ import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils.getInt
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utils.JsonUtils.getString
-import org.ole.planet.myplanet.utils.JsonUtils.gson
 import org.ole.planet.myplanet.utils.NotificationUtils.cancel
 import org.ole.planet.myplanet.utils.NotificationUtils.create
 import org.ole.planet.myplanet.utils.SyncTimeLogger
