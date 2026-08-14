@@ -45,6 +45,7 @@ class MyHealthFragment : Fragment() {
 
     @Inject
     lateinit var realtimeSyncManager: RealtimeSyncManager
+    @Inject lateinit var dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
     private var _binding: FragmentVitalSignBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
@@ -175,7 +176,7 @@ class MyHealthFragment : Fragment() {
                     binding.tvDataPlaceholder.visibility = View.VISIBLE
 
                     if (!::healthAdapter.isInitialized) {
-                        healthAdapter = HealthExaminationAdapter(requireActivity(), mh, currentUser, userMap)
+                        healthAdapter = HealthExaminationAdapter(requireActivity(), mh, currentUser, userMap, dispatcherProvider)
                     }
                     healthAdapter.updateData(mh, currentUser, userMap, list)
                     binding.rvRecords.apply {

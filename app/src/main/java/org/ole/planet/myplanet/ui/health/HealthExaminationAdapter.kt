@@ -13,7 +13,6 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonObject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertExaminationBinding
@@ -31,16 +30,17 @@ class HealthExaminationAdapter(
     private val context: Context,
     private var mh: HealthExamination,
     private var userModel: UserEntity?,
-    private var userMap: Map<String, UserEntity>
+    private var userMap: Map<String, UserEntity>,
+    private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
 ) : ListAdapter<HealthExaminationAdapter.HealthExaminationItem, HealthExaminationViewHolder>(DIFF_CALLBACK) {
 
     data class HealthExaminationItem(
         val examination: HealthExamination,
-        val displayDate: String,
+        val rawDate: String,
+        val formattedDate: String,
         val isSelfExamination: Boolean,
-        val conditionsText: String,
-        val encryptedData: JsonObject?,
-        val rawDate: String
+        val resolvedName: String,
+        val hasEncryptedData: Boolean
     )
 
         private val colorGrey50 by lazy { ContextCompat.getColor(context, R.color.md_grey_50) }
@@ -56,51 +56,34 @@ class HealthExaminationAdapter(
     }
 
     suspend fun submitExaminations(list: List<HealthExamination>) {
-        val items = withContext(Dispatchers.Default) {
+        val items = withContext(dispatcherProvider.default) {
             val displayNameCache = mutableMapOf<String, String>()
             list.map { item ->
                 val formattedDate = formatDate(item.date, "MMM dd, yyyy")
                 val encrypted = userModel?.let { user -> item.getEncryptedDataAsJson(user) }
                 val createdBy = getString("createdBy", encrypted)
 
-                val (displayDate, isSelfExamination) = if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel?.id)) {
+                val (resolvedName, isSelfExamination) = if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel?.id)) {
                     val name = displayNameCache.getOrPut(createdBy) {
                         val model = userMap[createdBy]
                         model?.getFullName() ?: createdBy.split(colonRegex).dropLastWhile { it.isEmpty() }.toTypedArray().getOrNull(1) ?: createdBy
                     }
-                    context.getString(R.string.two_strings, formattedDate, name).trimIndent() to false
+                    name to false
                 } else {
-                    context.getString(R.string.self_examination, formattedDate) to true
-                }
-
-                var conditionsText = ""
-                try {
-                    val conditionsMap = JsonUtils.gson.fromJson(item.conditions, JsonObject::class.java)
-                    if (conditionsMap != null) {
-                        val keys = conditionsMap.keySet()
-                        val conditionsBuilder = StringBuilder()
-                        for (key in keys) {
-                            if (conditionsMap[key].asBoolean) {
-                                conditionsBuilder.append("$key, ")
-                            }
-                        }
-                        conditionsText = conditionsBuilder.toString()
-                    }
-                } catch (e: Exception) {
-                    // Ignore parsing errors and leave empty
+                    "" to true
                 }
 
                 HealthExaminationItem(
                     examination = item,
-                    displayDate = displayDate,
+                    rawDate = formattedDate,
+                    formattedDate = formattedDate,
                     isSelfExamination = isSelfExamination,
-                    conditionsText = conditionsText,
-                    encryptedData = encrypted,
-                    rawDate = formattedDate
+                    resolvedName = resolvedName,
+                    hasEncryptedData = encrypted != null && encrypted.keySet().isNotEmpty()
                 )
             }
         }
-        withContext(Dispatchers.Main) {
+        withContext(dispatcherProvider.main) {
             submitList(items)
         }
     }
@@ -118,14 +101,14 @@ class HealthExaminationAdapter(
         val realmExamination = item.examination
 
         binding.txtTemp.text = checkEmpty(realmExamination.temperature)
-        binding.txtDate.text = item.displayDate
-        binding.txtDate.tag = item.rawDate
-
         if (!item.isSelfExamination) {
+            binding.txtDate.text = context.getString(R.string.two_strings, item.formattedDate, item.resolvedName).trimIndent()
             holder.itemView.setBackgroundColor(colorGrey50)
         } else {
+            binding.txtDate.text = context.getString(R.string.self_examination, item.formattedDate)
             holder.itemView.setBackgroundColor(colorGreen50)
         }
+        binding.txtDate.tag = item.rawDate
 
         binding.txtPulse.text = checkEmptyInt(realmExamination.pulse)
         binding.txtBp.text = realmExamination.bp
@@ -135,8 +118,9 @@ class HealthExaminationAdapter(
         binding.txtVision.text = realmExamination.vision
 
         holder.itemView.setOnClickListener {
-            if (item.encryptedData != null) {
-                showAlert(binding, item, item.encryptedData)
+            if (item.hasEncryptedData) {
+                val encrypted = userModel?.let { user -> item.examination.getEncryptedDataAsJson(user) } ?: JsonObject()
+                showAlert(binding, item, encrypted)
             }
         }
     }
@@ -157,7 +141,23 @@ class HealthExaminationAdapter(
             checkEmptyInt(realmExamination.pulse), realmExamination.bp, checkEmpty(realmExamination.height),
             checkEmpty(realmExamination.weight), realmExamination.vision, realmExamination.hearing).trimIndent()
 
-        alertExaminationBinding.tvCondition.text = item.conditionsText
+        var conditionsText = ""
+        try {
+            val conditionsMap = JsonUtils.gson.fromJson(realmExamination.conditions, JsonObject::class.java)
+            if (conditionsMap != null) {
+                val keys = conditionsMap.keySet()
+                val conditionsBuilder = StringBuilder()
+                for (key in keys) {
+                    if (conditionsMap[key].asBoolean) {
+                        conditionsBuilder.append("$key, ")
+                    }
+                }
+                conditionsText = conditionsBuilder.toString()
+            }
+        } catch (e: Exception) {
+            // Ignore parsing errors and leave empty
+        }
+        alertExaminationBinding.tvCondition.text = conditionsText
         showEncryptedData(alertExaminationBinding.tvOtherNotes, encrypted)
 
         val dialog = AlertDialog.Builder(context, R.style.CustomAlertDialog)
@@ -190,8 +190,8 @@ class HealthExaminationAdapter(
         private val DIFF_CALLBACK = DiffUtils.itemCallback<HealthExaminationItem>(
             { oldItem, newItem -> oldItem.examination._id == newItem.examination._id },
             { oldItem, newItem ->
-                oldItem.displayDate == newItem.displayDate &&
-                oldItem.conditionsText == newItem.conditionsText &&
+                oldItem.formattedDate == newItem.formattedDate &&
+                oldItem.resolvedName == newItem.resolvedName &&
                 oldItem.isSelfExamination == newItem.isSelfExamination &&
                 oldItem.examination.temperature == newItem.examination.temperature &&
                 oldItem.examination.date == newItem.examination.date &&
