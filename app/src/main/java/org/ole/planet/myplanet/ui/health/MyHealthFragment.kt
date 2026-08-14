@@ -176,15 +176,14 @@ class MyHealthFragment : Fragment() {
 
                     if (!::healthAdapter.isInitialized) {
                         healthAdapter = HealthExaminationAdapter(requireActivity(), mh, currentUser, userMap)
-                    } else {
-                        healthAdapter.updateData(mh, currentUser, userMap)
                     }
+                    healthAdapter.updateData(mh, currentUser, userMap, list)
                     binding.rvRecords.apply {
                         layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
                         isNestedScrollingEnabled = false
                         adapter = healthAdapter
                     }
-                    healthAdapter.submitExaminations(list)
+
                     binding.rvRecords.post {
                         val lastPosition = list.size - 1
                         if (lastPosition >= 0) {
