@@ -17,7 +17,7 @@ class ResourcePreviewHelper(private val dispatcherProvider: DispatcherProvider) 
                 retriever.setDataSource(file.absolutePath)
                 val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
                 val totalSeconds = durationMs / 1000
-                String.format("%d:%02d", totalSeconds / 60, totalSeconds % 60)
+                String.format(java.util.Locale.US, "%d:%02d", totalSeconds / 60, totalSeconds % 60)
             } catch (e: Exception) {
                 ""
             } finally {

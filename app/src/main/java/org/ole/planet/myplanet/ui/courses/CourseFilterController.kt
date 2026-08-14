@@ -10,7 +10,6 @@ import android.widget.Spinner
 import android.widget.TextView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -50,7 +49,6 @@ class CourseFilterController(
     private var searchTextWatcher: TextWatcher? = null
     private var spinnerListener: AdapterView.OnItemSelectedListener? = null
     private var searchJob: Job? = null
-
 
     fun setup() {
         etSearch = rootView.findViewById(R.id.et_search)
@@ -191,10 +189,6 @@ class CourseFilterController(
             separator = ",",
             prefix = tvSelected.context.getString(R.string.selected)
         ) { it.name.orEmpty() }
-    }
-
-    fun clear() {
-        // Scope cancellation is now handled by the owner
     }
 
     fun detach() {
