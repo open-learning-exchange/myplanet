@@ -97,6 +97,7 @@ recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "r
 security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
 slidingpanelayout = { module = "androidx.slidingpanelayout:slidingpanelayout", version.ref = "slidingpanelayout" }
 work-runtime = { module = "androidx.work:work-runtime", version.ref = "workRuntime" }
+work-testing = { module = "androidx.work:work-testing", version.ref = "workRuntime" }
 material-dialogs-commons = { module = "com.afollestad.material-dialogs:commons", version.ref = "materialDialogs" }
 material-calendar-view = { module = "com.applandeo:material-calendar-view", version.ref = "materialCalendarView" }
 glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }

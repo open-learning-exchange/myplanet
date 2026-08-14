@@ -161,6 +161,7 @@ dependencies {
     testImplementation(libs.test.arch)
     testImplementation(libs.test.hilt)
     testImplementation(libs.room.testing)
+    testImplementation(libs.work.testing)
     kspTest(libs.hilt.android.compiler)
     androidTestImplementation(libs.test.junit)
     androidTestImplementation(libs.test.ext)

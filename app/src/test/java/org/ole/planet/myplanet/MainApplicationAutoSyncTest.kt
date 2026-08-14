@@ -1,19 +1,25 @@
 package org.ole.planet.myplanet
 
 import androidx.test.core.app.ApplicationProvider
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.spyk
 import io.mockk.unmockkAll
-import io.mockk.verify
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowApplicationPackageManager
+import org.robolectric.Shadows.shadowOf
 
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class MainApplicationAutoSyncTest {
 
     private lateinit var mainApplication: MainApplication
@@ -21,9 +27,7 @@ class MainApplicationAutoSyncTest {
 
     @Before
     fun setup() {
-        val app = ApplicationProvider.getApplicationContext<MainApplication>()
-        mainApplication = spyk(app, recordPrivateCalls = true)
-
+        mainApplication = ApplicationProvider.getApplicationContext()
         mockSharedPrefManager = mockk(relaxed = true)
         mainApplication.sharedPrefManager = mockSharedPrefManager
     }
@@ -35,29 +39,39 @@ class MainApplicationAutoSyncTest {
 
     @Test
     fun `applyAutoSyncSettings schedules work when auto sync is true`() {
-        // Arrange
-        val interval = 1000
         every { mockSharedPrefManager.getAutoSync() } returns true
-        every { mockSharedPrefManager.getAutoSyncInterval() } returns interval
-        every { mainApplication["scheduleAutoSyncWork"](any<Int>()) } returns Unit
+        every { mockSharedPrefManager.getAutoSyncInterval() } returns 15 * 60
 
-        // Act
         mainApplication.applyAutoSyncSettings()
 
-        // Assert
-        verify { mainApplication["scheduleAutoSyncWork"](interval) }
+        val workManager = WorkManager.getInstance(mainApplication)
+        val workInfos = workManager.getWorkInfosForUniqueWork("autoSyncWork").get()
+
+        assertTrue(workInfos.isNotEmpty())
+        assertEquals(WorkInfo.State.ENQUEUED, workInfos[0].state)
     }
 
     @Test
     fun `applyAutoSyncSettings cancels work when auto sync is false`() {
-        // Arrange
-        every { mockSharedPrefManager.getAutoSync() } returns false
-        every { mainApplication["cancelAutoSyncWork"]() } returns Unit
-
-        // Act
+        // Enqueue some work first to simulate existing work
+        every { mockSharedPrefManager.getAutoSync() } returns true
+        every { mockSharedPrefManager.getAutoSyncInterval() } returns 15 * 60
         mainApplication.applyAutoSyncSettings()
 
-        // Assert
-        verify { mainApplication["cancelAutoSyncWork"]() }
+        // Verify it was enqueued
+        val workManager = WorkManager.getInstance(mainApplication)
+        var workInfos = workManager.getWorkInfosForUniqueWork("autoSyncWork").get()
+        assertTrue(workInfos.isNotEmpty())
+        assertEquals(WorkInfo.State.ENQUEUED, workInfos[0].state)
+
+        // Now change setting and apply again
+        every { mockSharedPrefManager.getAutoSync() } returns false
+        mainApplication.applyAutoSyncSettings()
+
+        // Verify it's cancelled
+        workInfos = workManager.getWorkInfosForUniqueWork("autoSyncWork").get()
+        if (workInfos.isNotEmpty()) {
+            assertEquals(WorkInfo.State.CANCELLED, workInfos[0].state)
+        }
     }
 }
