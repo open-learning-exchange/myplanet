@@ -207,14 +207,14 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             val response = apiInterface.isPlanetAvailable(url)
             val code = response.code()
             if (response.isSuccessful) {
-                val ss = response.body()?.string()
+                val ss = withContext(dispatcherProvider.io) { response.body()?.string() }
                 val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
                 val dbCount = myList?.size ?: 0
                 dbCount >= 8
             } else {
                 code == 401
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }
@@ -223,7 +223,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         return try {
             val response = apiInterface.getChecksum(UrlUtils.getChecksumUrl(sharedPrefManager))
             if (response.isSuccessful) {
-                val checksum = response.body()?.string()
+                val checksum = withContext(dispatcherProvider.io) { response.body()?.string() }
                 if (!checksum.isNullOrEmpty()) {
                     val f = FileUtils.getSDPathFromUrl(context, path)
                     if (f.exists()) {
