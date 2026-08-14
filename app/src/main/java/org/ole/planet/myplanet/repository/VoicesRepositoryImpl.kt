@@ -160,7 +160,11 @@ class VoicesRepositoryImpl @Inject constructor(
                             o.message == n.message &&
                             o.isEdited == n.isEdited &&
                             o.imageUrls?.toList() == n.imageUrls?.toList() &&
-                            o.images == n.images
+                            o.images == n.images &&
+                            o.viewIn == n.viewIn &&
+                            o.viewableBy == n.viewableBy &&
+                            o.viewableId == n.viewableId &&
+                            o.sharedBy == n.sharedBy
                 }
             }
             .map { allNews ->
@@ -182,7 +186,11 @@ class VoicesRepositoryImpl @Inject constructor(
                             o.isEdited == n.isEdited &&
                             o.imageUrls?.toList() == n.imageUrls?.toList() &&
                             o.images == n.images &&
-                            o.labels?.toSet() == n.labels?.toSet()
+                            o.labels?.toSet() == n.labels?.toSet() &&
+                            o.viewIn == n.viewIn &&
+                            o.viewableBy == n.viewableBy &&
+                            o.viewableId == n.viewableId &&
+                            o.sharedBy == n.sharedBy
                 }
             }
             .flowOn(dispatcherProvider.default)
@@ -249,13 +257,19 @@ class VoicesRepositoryImpl @Inject constructor(
         } else {
             val filtered = JsonArray().apply {
                 ar.forEach { elem ->
-                    if (elem.isJsonObject && !elem.asJsonObject.has("sharedDate")) {
+                    if (elem.isJsonObject && !elem.asJsonObject.has("sharedDate") && elem.asJsonObject.get("section")?.asString != "community") {
                         add(elem)
                     }
                 }
             }
-            news.viewIn = gson.toJson(filtered)
-            newsDao.upsert(news)
+            if (filtered.size() == 0) {
+                val idsToDelete = collectNewsAndReplies(newsId)
+                newsDao.deleteByIds(idsToDelete)
+            } else {
+                news.viewIn = gson.toJson(filtered)
+                news.sharedBy = ""
+                newsDao.upsert(news)
+            }
         }
     }
 

@@ -255,4 +255,61 @@ class VoicesRepositoryImplTest {
 
         assertEquals(mockUser, result)
     }
+
+    @Test
+    fun `deletePost from community unshares shared enterprise post without deleting row`() = testScope.runTest {
+        val repoWithRealGson = newRepository(Gson())
+        val sharedNews = News().apply {
+            id = "shared_news_123"
+            sharedBy = "user_1"
+            viewIn = "[{\"_id\":\"team_123\",\"section\":\"teams\",\"name\":\"Enterprise A\"},{\"section\":\"community\",\"_id\":\"planet@parent\",\"sharedDate\":123456789}]"
+        }
+        coEvery { newsDao.getById("shared_news_123") } returns sharedNews
+
+        repoWithRealGson.deletePost("shared_news_123", "")
+
+        val slot = slot<News>()
+        coVerify(exactly = 1) { newsDao.upsert(capture(slot)) }
+        coVerify(exactly = 0) { newsDao.deleteByIds(any()) }
+
+        val updatedNews = slot.captured
+        assertEquals("", updatedNews.sharedBy)
+        assertEquals("[{\"_id\":\"team_123\",\"section\":\"teams\",\"name\":\"Enterprise A\"}]", updatedNews.viewIn)
+    }
+
+    @Test
+    fun `deletePost from team deletes post and replies completely`() = testScope.runTest {
+        val repoWithRealGson = newRepository(Gson())
+        val teamNews = News().apply {
+            id = "team_news_123"
+            viewIn = "[{\"_id\":\"team_123\",\"section\":\"teams\",\"name\":\"Enterprise A\"},{\"section\":\"community\",\"_id\":\"planet@parent\",\"sharedDate\":123456789}]"
+        }
+        coEvery { newsDao.getById("team_news_123") } returns teamNews
+        coEvery { newsDao.getDirectReplies("team_news_123") } returns emptyList()
+
+        repoWithRealGson.deletePost("team_news_123", "Enterprise A")
+
+        val idsSlot = slot<List<String>>()
+        coVerify(exactly = 1) { newsDao.deleteByIds(capture(idsSlot)) }
+        assertEquals(listOf("team_news_123"), idsSlot.captured)
+        coVerify(exactly = 0) { newsDao.upsert(any()) }
+    }
+
+    @Test
+    fun `deletePost from community deletes direct community post`() = testScope.runTest {
+        val repoWithRealGson = newRepository(Gson())
+        val communityNews = News().apply {
+            id = "comm_news_123"
+            viewIn = "[{\"_id\":\"planet@parent\",\"section\":\"community\",\"name\":\"\"}]"
+        }
+        coEvery { newsDao.getById("comm_news_123") } returns communityNews
+        coEvery { newsDao.getDirectReplies("comm_news_123") } returns emptyList()
+
+        repoWithRealGson.deletePost("comm_news_123", "")
+
+        val idsSlot = slot<List<String>>()
+        coVerify(exactly = 1) { newsDao.deleteByIds(capture(idsSlot)) }
+        assertEquals(listOf("comm_news_123"), idsSlot.captured)
+        coVerify(exactly = 0) { newsDao.upsert(any()) }
+    }
 }
