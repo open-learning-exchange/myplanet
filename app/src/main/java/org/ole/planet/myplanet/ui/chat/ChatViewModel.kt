@@ -8,17 +8,16 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.combine
 import org.ole.planet.myplanet.model.AiProvider
-import org.ole.planet.myplanet.repository.ChatResult
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.ChatShareTargets
@@ -27,6 +26,7 @@ import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.repository.ChatResult
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
@@ -35,7 +35,6 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.RetryUtils
 import org.ole.planet.myplanet.utils.Utilities
-
 
 data class ChatUiState(
     val selectedChatHistory: List<Conversation>? = null,
@@ -46,7 +45,6 @@ data class ChatUiState(
     val aiProvidersLoading: Boolean = false,
     val aiProvidersError: Boolean = false
 )
-
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
@@ -62,22 +60,18 @@ class ChatViewModel @Inject constructor(
         val normalizedQueries: List<String?>,
         val normalizedResponses: List<String?>
     )
-
     companion object {
         const val PAGE_SIZE = 20
         private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
     }
-
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal var allConversations: List<Conversation> = emptyList()
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal var loadedCount = 0
     private var allChats: List<ChatHistory> = emptyList()
     private var precomputedChats: List<PrecomputedChat> = emptyList()
-
     private val _refreshChatSignal = MutableSharedFlow<Unit>()
     val refreshChatSignal: SharedFlow<Unit> = _refreshChatSignal.asSharedFlow()
-
     init {
         viewModelScope.launch {
             realtimeSyncManager.dataUpdateFlow
@@ -89,52 +83,37 @@ class ChatViewModel @Inject constructor(
                 }
         }
     }
-
     private var loadDataJob: kotlinx.coroutines.Job? = null
     private var searchJob: kotlinx.coroutines.Job? = null
-
     sealed class ShareChatResult {
         object AlreadyShared : ShareChatResult()
         data class Shared(val news: News, val chatId: String) : ShareChatResult()
     }
-
     private val _shareResult = MutableSharedFlow<ShareChatResult>()
     val shareResult: SharedFlow<ShareChatResult> = _shareResult.asSharedFlow()
-
     private val _screenData = MutableStateFlow<ChatHistoryScreenData?>(null)
     val screenData: StateFlow<ChatHistoryScreenData?> = _screenData.asStateFlow()
-
     private val _filteredChats = MutableStateFlow<List<ChatHistory>>(emptyList())
     val filteredChats: StateFlow<List<ChatHistory>> = _filteredChats.asStateFlow()
-
     private var cachedUser: UserEntity? = null
     private var cachedShareTargets: ChatShareTargets? = null
-
     private val _selectedChatHistory = MutableStateFlow<List<Conversation>?>(null)
     val selectedChatHistory: StateFlow<List<Conversation>?> = _selectedChatHistory.asStateFlow()
-
     private val _selectedId = MutableStateFlow("")
     val selectedId: StateFlow<String> = _selectedId.asStateFlow()
-
     private val _selectedRev = MutableStateFlow("")
     val selectedRev: StateFlow<String> = _selectedRev.asStateFlow()
-
     private val _selectedAiProvider = MutableStateFlow<String?>(null)
     val selectedAiProvider: StateFlow<String?> = _selectedAiProvider.asStateFlow()
-
     private val _aiProviders = MutableStateFlow<Map<String, Boolean>?>(null)
     val aiProviders: StateFlow<Map<String, Boolean>?> = _aiProviders.asStateFlow()
-
     private val _aiProvidersLoading = MutableStateFlow(false)
     val aiProvidersLoading: StateFlow<Boolean> = _aiProvidersLoading.asStateFlow()
-
     private val _aiProvidersError = MutableStateFlow(false)
     val aiProvidersError: StateFlow<Boolean> = _aiProvidersError.asStateFlow()
-
     private val aiProvidersFlow = combine(_aiProviders, _aiProvidersLoading, _aiProvidersError) { providers, loading, error ->
         Triple(providers, loading, error)
     }
-
     val chatUiState: StateFlow<ChatUiState> = combine(
         _selectedChatHistory,
         _selectedAiProvider,
@@ -152,7 +131,6 @@ class ChatViewModel @Inject constructor(
             aiProvidersError = aiState.third
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ChatUiState())
-
     fun loadChatHistoryScreenData(
         userId: String?,
         parentCode: String?,
@@ -165,28 +143,23 @@ class ChatViewModel @Inject constructor(
                 val newsMessages = voicesRepository.getPlanetNewsMessages(currentUser?.planetCode)
                 val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
                 val targets = cachedShareTargets ?: loadShareTargets(parentCode, communityName, currentUser?._id).also { cachedShareTargets = it }
-
                 withContext(dispatcherProvider.default) {
                     allChats = sortChats(chatHistory)
                     precomputedChats = buildPrecomputedChats(allChats)
                 }
-
                 ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets, chatRepository.extractSharedViewInIds(newsMessages))
             }
-
             result?.let { data ->
                 _screenData.value = data
                 _filteredChats.value = allChats
             }
         }
     }
-
     private fun sortChats(chats: List<ChatHistory>): List<ChatHistory> {
         return chats.sortedByDescending { chat ->
             maxOf(chat.createdDate?.toLongOrNull() ?: 0L, chat.updatedDate?.toLongOrNull() ?: 0L)
         }
     }
-
     private fun buildPrecomputedChats(chats: List<ChatHistory>): List<PrecomputedChat> {
         return chats.map { chat ->
             val title = if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
@@ -196,12 +169,9 @@ class ChatViewModel @Inject constructor(
             }
             val queries = chat.conversations?.map { it?.query?.let { q -> Utilities.normalizeText(q) } } ?: emptyList()
             val responses = chat.conversations?.map { it?.response?.let { r -> Utilities.normalizeText(r) } } ?: emptyList()
-
             PrecomputedChat(chat, title, queries, responses)
         }
     }
-
-
     fun searchChats(query: String, isFullSearch: Boolean, isQuestion: Boolean) {
         if (query.isBlank()) {
             _filteredChats.value = allChats
@@ -217,7 +187,6 @@ class ChatViewModel @Inject constructor(
             _filteredChats.value = results
         }
     }
-
     private suspend fun fullConvoSearch(s: String, isQuestion: Boolean): List<ChatHistory> = withContext(dispatcherProvider.default) {
         var conversation: String?
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
@@ -227,7 +196,6 @@ class ChatViewModel @Inject constructor(
         val inTitleContainsQuery = mutableListOf<ChatHistory>()
         val startsWithQuery = mutableListOf<ChatHistory>()
         val containsQuery = mutableListOf<ChatHistory>()
-
         for (pChat in precomputedChats) {
             val conversations = pChat.chat.conversations
             if (!conversations.isNullOrEmpty()) {
@@ -250,7 +218,6 @@ class ChatViewModel @Inject constructor(
         }
         inTitleStartQuery + inTitleContainsQuery + startsWithQuery + containsQuery
     }
-
     private suspend fun searchByTitle(s: String): List<ChatHistory> = withContext(dispatcherProvider.default) {
         var title: String?
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
@@ -258,7 +225,6 @@ class ChatViewModel @Inject constructor(
         val normalizedQuery = Utilities.normalizeText(s)
         val startsWithQuery = mutableListOf<ChatHistory>()
         val containsQuery = mutableListOf<ChatHistory>()
-
         for (pChat in precomputedChats) {
             title = pChat.normalizedTitle
             if (title == null) continue
@@ -270,14 +236,12 @@ class ChatViewModel @Inject constructor(
         }
         startsWithQuery + containsQuery
     }
-
     private suspend fun loadCurrentUser(userId: String?): UserEntity? {
         if (userId.isNullOrEmpty()) {
             return null
         }
         return userRepository.getUserById(userId)
     }
-
     private suspend fun loadShareTargets(parentCode: String?, communityName: String?, userId: String?): ChatShareTargets {
         val teams = teamsRepository.getTeamSummaries(userId)
         val enterprises = teamsRepository.getShareableEnterpriseSummaries(userId)
@@ -316,13 +280,11 @@ class ChatViewModel @Inject constructor(
         loadedCount = minOf(PAGE_SIZE, parsedConversations.size)
         return buildInitialPage()
     }
-
     fun processChatHistory(conversations: List<Conversation>): List<ChatMessage> {
         allConversations = conversations
         loadedCount = minOf(PAGE_SIZE, conversations.size)
         return buildInitialPage()
     }
-
     private fun buildInitialPage(): List<ChatMessage> {
         val total = allConversations.size
         val startIndex = maxOf(0, total - loadedCount)
@@ -331,7 +293,6 @@ class ChatViewModel @Inject constructor(
         messages.addAll(buildMessagesSlice(startIndex, total))
         return messages
     }
-
     private fun buildMessagesSlice(startIndex: Int, endIndex: Int): List<ChatMessage> {
         val messages = mutableListOf<ChatMessage>()
         for (i in startIndex until endIndex) {
@@ -341,7 +302,6 @@ class ChatViewModel @Inject constructor(
         }
         return messages
     }
-
     fun loadMoreConversations(): Pair<List<ChatMessage>, Boolean> {
         val total = allConversations.size
         val prevStartIndex = maxOf(0, total - loadedCount)
@@ -350,51 +310,40 @@ class ChatViewModel @Inject constructor(
         val newMessages = buildMessagesSlice(newStartIndex, prevStartIndex)
         return Pair(newMessages, newStartIndex > 0)
     }
-
     fun clearPaginationState() {
         allConversations = emptyList()
         loadedCount = 0
     }
-
     fun setSelectedChatHistory(conversations: List<Conversation>) {
         _selectedChatHistory.value = conversations
     }
-
     fun setSelectedId(id: String) {
         _selectedId.value = id
     }
-
     fun setSelectedRev(rev: String) {
         _selectedRev.value = rev
     }
-
     fun setSelectedAiProvider(aiProvider: String?) {
         _selectedAiProvider.value = aiProvider
     }
-
     fun setAiProviders(providers: Map<String, Boolean>?) {
         _aiProviders.value = providers
     }
-
     fun setAiProvidersLoading(isLoading: Boolean) {
         _aiProvidersLoading.value = isLoading
     }
-
     fun setAiProvidersError(hasError: Boolean) {
         _aiProvidersError.value = hasError
     }
-
     fun clearChatState() {
         _selectedChatHistory.value = null
         _selectedId.value = ""
         _selectedRev.value = ""
         _selectedAiProvider.value = null
     }
-
     fun shouldFetchAiProviders(): Boolean {
         return _aiProviders.value == null && !_aiProvidersLoading.value
     }
-
     fun shareChatToVoices(chatId: String, viewInId: String, payload: HashMap<String?, String>) {
         viewModelScope.launch {
             if (voicesRepository.isAlreadyShared(chatId, viewInId)) {
@@ -408,19 +357,15 @@ class ChatViewModel @Inject constructor(
     suspend fun fetchAiProviders(serverUrl: String): Map<String, Boolean>? {
         return chatRepository.fetchAiProviders(serverUrl)
     }
-
     suspend fun getLatestRev(id: String): String? {
         return chatRepository.getLatestRev(id)
     }
-
     suspend fun sendNewChatRequest(query: String, userName: String?, aiProvider: AiProvider): ChatResult {
         return chatRepository.sendNewChatRequest(query, userName, aiProvider)
     }
-
     suspend fun sendContinueChatRequest(query: String, userName: String?, aiProvider: AiProvider, id: String, rev: String): ChatResult {
         return chatRepository.sendContinueChatRequest(query, userName, aiProvider, id, rev)
     }
-
     suspend fun getUserById(userId: String): UserEntity? {
         return userRepository.getUserById(userId)
     }

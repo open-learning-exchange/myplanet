@@ -33,8 +33,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isPrimaryServerReachable
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -707,6 +705,13 @@ class ChatDetailFragment : Fragment() {
         clearAlternativeUrlIfPrimaryRestored()
         loadingJob?.cancel()
         speechRecognizer?.destroy()
+
+        lastChatHistory = null
+        lastAiProvider = null
+        lastAiProvidersLoading = null
+        lastAiProvidersError = null
+        lastAiProviders = null
+
         _binding = null
         super.onDestroyView()
     }
