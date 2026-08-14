@@ -92,7 +92,7 @@ class ResourcesAdapter(
             changed = true
         }
         if (changed) {
-            notifyDataSetChanged()
+            notifyItemRangeChanged(0, itemCount)
         }
         onChanged?.invoke()
     }
