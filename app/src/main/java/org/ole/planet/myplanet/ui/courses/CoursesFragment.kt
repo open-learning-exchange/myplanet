@@ -22,11 +22,11 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.base.DefaultBaseAdapterFactory
@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.Tag
 import org.ole.planet.myplanet.model.TagEntity
@@ -51,7 +52,6 @@ import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.ListViewMode
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
-import kotlin.time.Duration.Companion.milliseconds
 
 @AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedListener, OnTagClickListener, RealtimeSyncMixin {
@@ -63,6 +63,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     var userModel: UserEntity? = null
     private lateinit var confirmation: AlertDialog
     private var selectionJob: Job? = null
+    private val refreshJobs = mutableMapOf<String, Job>()
     private var pendingScrollState: Parcelable? = null
     private val viewModel: CoursesViewModel by viewModels()
 
@@ -595,10 +596,15 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
 
     override fun onRatingChanged(type: String, id: String) {
         if (type == "course" && ::adapterCourses.isInitialized) {
-            viewLifecycleOwner.lifecycleScope.launch {
+            refreshJobs[id]?.cancel()
+            refreshJobs[id] = viewLifecycleOwner.lifecycleScope.launch {
                 viewModel.refreshCourseRatings(model?.id)
                 adapterCourses.refreshWithDiff(id)
             }
         }
+    }
+
+    override fun showDownloadDialog(dbMyLibrary: List<MyLibrary?>) {
+        // Do not show download suggestion dialog in Courses and My Course (Fix #15435)
     }
 }

@@ -7,12 +7,18 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
+import android.widget.ImageView
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.load.model.GlideUrl
+import com.bumptech.glide.load.model.LazyHeaders
+import com.bumptech.glide.signature.ObjectKey
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnCourseItemSelectedListener
@@ -21,12 +27,14 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ItemCourseGridBinding
 import org.ole.planet.myplanet.databinding.ItemCourseListBinding
 import org.ole.planet.myplanet.model.Course
+import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.utils.CourseSubject
 import org.ole.planet.myplanet.utils.CourseSubjectClassifier
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getInt
 import org.ole.planet.myplanet.utils.ListViewMode
 import org.ole.planet.myplanet.utils.SelectionUtils
+import org.ole.planet.myplanet.utils.UrlUtils
 
 class CoursesAdapter(
     private val context: Context,
@@ -44,7 +52,9 @@ class CoursesAdapter(
                 it.subjectLevel,
                 it.createdDate,
                 it.isMyCourse,
-                it.numberOfSteps
+                it.numberOfSteps,
+                it.coverFileName,
+                it.courseRev
             )
         },
         payloadSelector = { old, new ->
@@ -243,6 +253,39 @@ class CoursesAdapter(
         }
     }
 
+    private fun bindCover(
+        course: Course,
+        subject: CourseSubject,
+        coverContainer: View,
+        ivCover: ImageView,
+        ivSubjectIcon: ImageView
+    ) {
+        setCoverColor(coverContainer, subject)
+        val coverFile = MyCourse.getCoverImageFile(context, course.courseId, course.coverFileName)
+        val model: Any? = if (coverFile?.exists() == true) {
+            coverFile
+        } else {
+            UrlUtils.getCourseImageUrl(course.courseId, course.coverFileName)?.let { url ->
+                GlideUrl(url, LazyHeaders.Builder().addHeader("Authorization", UrlUtils.header).build())
+            }
+        }
+        if (model == null) {
+            ivCover.visibility = View.GONE
+            ivSubjectIcon.visibility = View.VISIBLE
+            ivSubjectIcon.setImageResource(subjectIconRes(subject))
+            return
+        }
+        ivSubjectIcon.visibility = View.GONE
+        ivCover.visibility = View.VISIBLE
+        Glide.with(context)
+            .load(model)
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .signature(ObjectKey(course.courseRev.orEmpty()))
+            .centerCrop()
+            .error(R.drawable.ole_logo)
+            .into(ivCover)
+    }
+
     private fun buildMetaLine(course: Course): String {
         val parts = mutableListOf<String>()
         parts.add(context.getString(R.string.course_steps_count, course.numberOfSteps))
@@ -332,8 +375,7 @@ class CoursesAdapter(
 
         fun bind(course: Course) {
             val subject = CourseSubjectClassifier.classify(course.subjectLevel)
-            setCoverColor(binding.coverContainer, subject)
-            binding.ivSubjectIcon.setImageResource(subjectIconRes(subject))
+            bindCover(course, subject, binding.coverContainer, binding.ivCover, binding.ivSubjectIcon)
             binding.tvSubjectLabel.text = context.getString(subjectLabelRes(subject))
             binding.title.text = course.courseTitle
             binding.tvMeta.text = buildMetaLine(course)
@@ -381,8 +423,7 @@ class CoursesAdapter(
 
         fun bind(course: Course) {
             val subject = CourseSubjectClassifier.classify(course.subjectLevel)
-            setCoverColor(binding.coverContainer, subject)
-            binding.ivSubjectIcon.setImageResource(subjectIconRes(subject))
+            bindCover(course, subject, binding.coverContainer, binding.ivCover, binding.ivSubjectIcon)
             binding.title.text = course.courseTitle
             binding.tvMeta.text = buildMetaLine(course)
             updateVisibilityForMyCourse(course, binding.isMyCourse, binding.checkbox)

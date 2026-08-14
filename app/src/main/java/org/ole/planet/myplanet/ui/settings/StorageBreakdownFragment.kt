@@ -30,8 +30,8 @@ import org.ole.planet.myplanet.services.FreeSpaceWorker
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class StorageBreakdownFragment : BottomSheetDialogFragment() {

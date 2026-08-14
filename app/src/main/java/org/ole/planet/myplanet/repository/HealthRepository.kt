@@ -2,9 +2,9 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import org.ole.planet.myplanet.model.HealthExamination
+import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.model.HealthRecord
 
 interface HealthRepository {
     suspend fun getHealthEntry(userId: String): Pair<UserEntity?, HealthExamination?>

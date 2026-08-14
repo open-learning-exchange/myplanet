@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.repository
 
-import javax.inject.Inject
 import android.util.Log
 import java.util.concurrent.atomic.AtomicBoolean
+import javax.inject.Inject
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.ole.planet.myplanet.data.room.dao.RetryDao

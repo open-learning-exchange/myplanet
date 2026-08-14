@@ -4,7 +4,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
 
-@Entity(tableName = "submit_photos")
+@Entity(tableName = "submit_photos", indices = [androidx.room.Index("uploaded")])
 open class SubmitPhotos {
     @PrimaryKey
     @JvmField
