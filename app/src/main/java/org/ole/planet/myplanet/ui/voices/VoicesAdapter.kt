@@ -306,7 +306,7 @@ class VoicesAdapter(
                         configureEditDeleteButtons(holder, news)
                     }
                     PAYLOAD_EDIT_ACTION -> {
-                        val sharedTeamName = news.parsedSharedTeamName ?: ""
+                        val sharedTeamName = news.parsedSharedTeamName ?: JsonUtils.extractSharedTeamName(news)
                         setMessageAndDate(holder, news, sharedTeamName)
                         configureEditDeleteButtons(holder, news)
                         showReplyButton(holder, news, position)
@@ -325,7 +325,7 @@ class VoicesAdapter(
             val news = getNews(holder, position)
 
             run {
-                val sharedTeamName = news.parsedSharedTeamName ?: ""
+                val sharedTeamName = news.parsedSharedTeamName ?: JsonUtils.extractSharedTeamName(news)
                 resetViews(holder)
                 updateReplyCount(holder, news, position)
                 val userModel = configureUser(holder, news)
@@ -605,45 +605,40 @@ class VoicesAdapter(
 
     private fun preParseNews(news: News?) {
         news?.let {
-            try {
-                if ((it.parsedViewIn == null || it.rawViewIn != it.viewIn) && !TextUtils.isEmpty(it.viewIn)) {
-                    val parsed = parseViewIn(it.viewIn)
-                    if (parsed != null) {
-                        it.parsedViewIn = parsed
-                        it.rawViewIn = it.viewIn
-                    }
+            if ((it.parsedViewIn == null || it.rawViewIn != it.viewIn) && !TextUtils.isEmpty(it.viewIn)) {
+                val parsed = parseViewIn(it.viewIn)
+                if (parsed != null) {
+                    it.parsedViewIn = parsed
+                    it.rawViewIn = it.viewIn
                 }
-                if ((it.parsedConversations == null || it.rawConversations != it.conversations) && !it.conversations.isNullOrEmpty()) {
-                    val parsed = parseConversations(it.conversations)
-                    if (parsed != null) {
-                        it.parsedConversations = parsed
-                        it.rawConversations = it.conversations
-                    }
-                }
-
-                val currentImageUrls = it.imageUrls?.toList()
-                if (it.rawImageUrls != currentImageUrls) {
-                    if (!currentImageUrls.isNullOrEmpty()) {
-                        val parsed = parseImageUrls(currentImageUrls)
-                        if (parsed != null) {
-                            it.parsedImageUrls = parsed
-                            it.rawImageUrls = currentImageUrls
-                        }
-                    } else {
-                        it.parsedImageUrls = null
-                        it.rawImageUrls = null
-                    }
-                }
-                if (it.rawImages != it.images) {
-                    it.parsedImagesArray = it.imagesArray
-                    it.rawImages = it.images
-                }
-
-                it.parsedSharedTeamName = JsonUtils.extractSharedTeamName(it)
-            } catch (e: IllegalStateException) {
-                // If Realm manages the object, and we are on a different thread, mutating @Ignore fields might throw.
-                e.printStackTrace()
             }
+            if ((it.parsedConversations == null || it.rawConversations != it.conversations) && !it.conversations.isNullOrEmpty()) {
+                val parsed = parseConversations(it.conversations)
+                if (parsed != null) {
+                    it.parsedConversations = parsed
+                    it.rawConversations = it.conversations
+                }
+            }
+
+            val currentImageUrls = it.imageUrls?.toList()
+            if (it.rawImageUrls != currentImageUrls) {
+                if (!currentImageUrls.isNullOrEmpty()) {
+                    val parsed = parseImageUrls(currentImageUrls)
+                    if (parsed != null) {
+                        it.parsedImageUrls = parsed
+                        it.rawImageUrls = currentImageUrls
+                    }
+                } else {
+                    it.parsedImageUrls = null
+                    it.rawImageUrls = null
+                }
+            }
+            if (it.rawImages != it.images) {
+                it.parsedImagesArray = it.imagesArray
+                it.rawImages = it.images
+            }
+
+            it.parsedSharedTeamName = JsonUtils.extractSharedTeamName(it)
         }
     }
 
