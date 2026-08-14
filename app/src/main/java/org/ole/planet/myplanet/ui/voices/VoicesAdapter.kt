@@ -605,40 +605,45 @@ class VoicesAdapter(
 
     private fun preParseNews(news: News?) {
         news?.let {
-            if ((it.parsedViewIn == null || it.rawViewIn != it.viewIn) && !TextUtils.isEmpty(it.viewIn)) {
-                val parsed = parseViewIn(it.viewIn)
-                if (parsed != null) {
-                    it.parsedViewIn = parsed
-                    it.rawViewIn = it.viewIn
-                }
-            }
-            if ((it.parsedConversations == null || it.rawConversations != it.conversations) && !it.conversations.isNullOrEmpty()) {
-                val parsed = parseConversations(it.conversations)
-                if (parsed != null) {
-                    it.parsedConversations = parsed
-                    it.rawConversations = it.conversations
-                }
-            }
-
-            val currentImageUrls = it.imageUrls?.toList()
-            if (it.rawImageUrls != currentImageUrls) {
-                if (!currentImageUrls.isNullOrEmpty()) {
-                    val parsed = parseImageUrls(currentImageUrls)
+            try {
+                if ((it.parsedViewIn == null || it.rawViewIn != it.viewIn) && !TextUtils.isEmpty(it.viewIn)) {
+                    val parsed = parseViewIn(it.viewIn)
                     if (parsed != null) {
-                        it.parsedImageUrls = parsed
-                        it.rawImageUrls = currentImageUrls
+                        it.parsedViewIn = parsed
+                        it.rawViewIn = it.viewIn
                     }
-                } else {
-                    it.parsedImageUrls = null
-                    it.rawImageUrls = null
                 }
-            }
-            if (it.rawImages != it.images) {
-                it.parsedImagesArray = it.imagesArray
-                it.rawImages = it.images
-            }
+                if ((it.parsedConversations == null || it.rawConversations != it.conversations) && !it.conversations.isNullOrEmpty()) {
+                    val parsed = parseConversations(it.conversations)
+                    if (parsed != null) {
+                        it.parsedConversations = parsed
+                        it.rawConversations = it.conversations
+                    }
+                }
 
-            it.parsedSharedTeamName = JsonUtils.extractSharedTeamName(it)
+                val currentImageUrls = it.imageUrls?.toList()
+                if (it.rawImageUrls != currentImageUrls) {
+                    if (!currentImageUrls.isNullOrEmpty()) {
+                        val parsed = parseImageUrls(currentImageUrls)
+                        if (parsed != null) {
+                            it.parsedImageUrls = parsed
+                            it.rawImageUrls = currentImageUrls
+                        }
+                    } else {
+                        it.parsedImageUrls = null
+                        it.rawImageUrls = null
+                    }
+                }
+                if (it.parsedImagesArray == null || it.rawImages != it.images) {
+                    it.parsedImagesArray = it.imagesArray
+                    it.rawImages = it.images
+                }
+
+                it.parsedSharedTeamName = JsonUtils.extractSharedTeamName(it)
+            } catch (e: Exception) {
+                // Catch any parsing exceptions so one bad row doesn't break submitList
+                e.printStackTrace()
+            }
         }
     }
 
