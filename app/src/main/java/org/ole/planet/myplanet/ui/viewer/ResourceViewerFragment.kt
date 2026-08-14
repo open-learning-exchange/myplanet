@@ -7,6 +7,7 @@ import android.content.IntentFilter
 import android.content.res.Configuration
 import android.graphics.pdf.PdfRenderer
 import android.media.AudioManager
+import android.os.Build
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.text.TextUtils
@@ -20,6 +21,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.registerReceiver
@@ -61,7 +63,10 @@ import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
 import org.ole.planet.myplanet.databinding.FragmentResourceViewerBinding
 import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.repository.RatingsRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.AudioRecorder
+import org.ole.planet.myplanet.ui.ratings.RatingsFragment
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
@@ -104,6 +109,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private val viewModel: ResourceViewerViewModel by viewModels()
 
     @Inject lateinit var dispatcherProvider: DispatcherProvider
+    @Inject lateinit var ratingsRepository: RatingsRepository
+    @Inject lateinit var userRepository: UserRepository
     @Inject lateinit var ttsManager: TTSManager
     private var authSessionUpdater: AuthSessionUpdater? = null
 
@@ -336,11 +343,36 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                 when (playbackState) {
                     Player.STATE_BUFFERING -> showVideoLoading(getString(R.string.video_loading_buffering))
                     Player.STATE_READY -> hideVideoLoading()
+                    Player.STATE_ENDED -> {
+                        val rid = library?.resourceId ?: return
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            showResourceRatingDialogIfNeverRated(rid)
+                        }
+                    }
                     else -> {}
                 }
             }
         })
         return player
+    }
+
+    private suspend fun showResourceRatingDialogIfNeverRated(resourceId: String) {
+        val userId = userRepository.getUserModel()?.id
+        val hasRated = if (!userId.isNullOrEmpty()) {
+            try {
+                val summary = ratingsRepository.getRatingSummary("resource", resourceId, userId)
+                summary.userRating != null || summary.existingRating != null
+            } catch (e: Exception) {
+                false
+            }
+        } else {
+            false
+        }
+
+        if (!hasRated && isAdded) {
+            val ratingDialog = RatingsFragment.newInstance("resource", resourceId, library.title)
+            ratingDialog.show(parentFragmentManager, RatingsFragment.TAG)
+        }
     }
 
     private fun setupAudioViewer() {
@@ -358,6 +390,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         Glide.with(this).load(bgRes).into(backgroundImage)
 
         initializeAudioPlayer(playerView)
+
     }
 
     @OptIn(UnstableApi::class)
@@ -485,6 +518,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.S)
+    @OptIn(UnstableApi::class)
     override fun setAuthSession(responseHeader: Map<String, List<String>>) {
         val cookieHeader = responseHeader["Set-Cookie"]?.get(0)
         val headerAuth = cookieHeader?.split(";") ?: run {
