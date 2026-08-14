@@ -43,14 +43,13 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     private val viewModel: EnterprisesFinancesViewModel by viewModels()
     private var _binding: FragmentFinanceBinding? = null
     private val binding get() = _binding!!
-    private var _headerBinding: HeaderFinanceBinding? = null
-    private val headerBinding get() = _headerBinding!!
     private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.getDefault()).withZone(ZoneId.systemDefault())
     private lateinit var addTransactionBinding: DialogAddTransactionBinding
     private lateinit var financeAdapter: EnterprisesFinancesAdapter
+    private lateinit var headerAdapter: FinanceHeaderAdapter
+    private val headerState = HeaderState()
     var date: Calendar? = null
     private var transactions: List<Transaction> = emptyList()
-    private var isAsc = false
     private var currentStartDate: Long? = null
     private var currentEndDate: Long? = null
     private lateinit var pickImageLauncher: ActivityResultLauncher<String>
@@ -72,7 +71,6 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentFinanceBinding.inflate(inflater, container, false)
-        _headerBinding = HeaderFinanceBinding.inflate(inflater, binding.rvFinance, false)
         pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
             if (uri != null) {
                 selectedImageUri = uri
@@ -83,38 +81,49 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             }
         }
         date = Calendar.getInstance()
-        updateToDateState(false)
-        headerBinding.tvFromDateCalendar.setOnClickListener {
+        return binding.root
+    }
+
+    private fun bindHeader(hBinding: HeaderFinanceBinding) {
+        hBinding.tvFromDateCalendar.setText(headerState.fromDate)
+        hBinding.etToDate.setText(headerState.toDate)
+        hBinding.etToDate.isEnabled = headerState.isToDateEnabled
+        hBinding.tvToDateCalendarIcon.isEnabled = headerState.isToDateEnabled
+        hBinding.etToDate.alpha = if (headerState.isToDateEnabled) 1.0f else 0.5f
+        hBinding.tvToDateCalendarIcon.alpha = if (headerState.isToDateEnabled) 1.0f else 0.5f
+
+        hBinding.imgDate.rotation = if (headerState.isAsc) 180f else 0f
+
+        hBinding.tvDebit.text = getString(R.string.number_placeholder, headerState.debit)
+        hBinding.tvCredit.text = getString(R.string.number_placeholder, headerState.credit)
+        hBinding.tvBalance.text = getString(R.string.number_placeholder, headerState.total)
+        hBinding.balanceCaution.visibility = if (headerState.isCautionVisible) View.VISIBLE else View.GONE
+
+        hBinding.tvFromDateCalendar.setOnClickListener {
             showDatePickerDialog(isFromDate = true)
         }
-
-        headerBinding.tvFromDateCalendarIcon.setOnClickListener {
+        hBinding.tvFromDateCalendarIcon.setOnClickListener {
             showDatePickerDialog(isFromDate = true)
         }
-
-        headerBinding.etToDate.setOnClickListener {
-            if (headerBinding.tvFromDateCalendar.text.toString().isNotEmpty()) {
+        hBinding.etToDate.setOnClickListener {
+            if (headerState.fromDate.isNotEmpty()) {
                 showDatePickerDialog(isFromDate = false)
             }
         }
-
-        headerBinding.tvToDateCalendarIcon.setOnClickListener {
-            if (headerBinding.tvFromDateCalendar.text.toString().isNotEmpty()) {
+        hBinding.tvToDateCalendarIcon.setOnClickListener {
+            if (headerState.fromDate.isNotEmpty()) {
                 showDatePickerDialog(isFromDate = false)
             }
         }
-
-        headerBinding.llDate.setOnClickListener {
-            headerBinding.imgDate.rotation += 180
-            val newSort = !isAsc
-            isAsc = newSort
-            observeTransactions(sortAscending = newSort)
+        hBinding.llDate.setOnClickListener {
+            headerState.isAsc = !headerState.isAsc
+            headerAdapter.notifyItemChanged(0)
+            observeTransactions(sortAscending = headerState.isAsc)
         }
-        headerBinding.btnReset.setOnClickListener {
+        hBinding.btnReset.setOnClickListener {
             resetFilterAndSort()
             observeTransactions()
         }
-        return binding.root
     }
 
     private fun showDatePickerDialog(isFromDate: Boolean) {
@@ -128,14 +137,14 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         val maxDay = Calendar.getInstance()
 
         val initialDate = if (isFromDate) {
-            val fromDateText = headerBinding.tvFromDateCalendar.text.toString()
+            val fromDateText = headerState.fromDate
             if (fromDateText.isNotEmpty()) parseDate(fromDateText) ?: now else now
         } else {
-            val toDateText = headerBinding.etToDate.text.toString()
+            val toDateText = headerState.toDate
             if (toDateText.isNotEmpty()) {
                 parseDate(toDateText) ?: now
             } else {
-                val fromDateText = headerBinding.tvFromDateCalendar.text.toString()
+                val fromDateText = headerState.fromDate
                 if (fromDateText.isNotEmpty()) parseDate(fromDateText) ?: now else now
             }
         }
@@ -149,20 +158,21 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
                 val formattedDate = selectedDate.formatToString()
 
                 if (isFromDate) {
-                    headerBinding.tvFromDateCalendar.setText(formattedDate)
-                    val toDateText = headerBinding.etToDate.text.toString()
+                    headerState.fromDate = formattedDate
+                    val toDateText = headerState.toDate
                     if (toDateText.isNotEmpty()) {
                         val fromDateMillis = selectedDate.timeInMillis
                         val toDateMillis = parseDate(toDateText)?.timeInMillis
                         if (toDateMillis != null && toDateMillis < fromDateMillis) {
-                            headerBinding.etToDate.setText("")
+                            headerState.toDate = ""
                         }
                     }
-                    updateToDateState(true)
+                    headerState.isToDateEnabled = true
                 } else {
-                    headerBinding.etToDate.setText(formattedDate)
+                    headerState.toDate = formattedDate
                 }
 
+                headerAdapter.notifyItemChanged(0)
                 filterIfBothDatesSelected()
             },
             initialDate[Calendar.YEAR],
@@ -173,7 +183,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         datePickerDialog.datePicker.maxDate = maxDay.timeInMillis
 
         if (!isFromDate) {
-            val fromDateText = headerBinding.tvFromDateCalendar.text.toString()
+            val fromDateText = headerState.fromDate
             if (fromDateText.isNotEmpty()) {
                 val fromDate = parseDate(fromDateText)
                 if (fromDate != null) {
@@ -188,13 +198,6 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         return dateFormatter.format(this.toInstant())
     }
 
-    private fun updateToDateState(enabled: Boolean) {
-        headerBinding.etToDate.isEnabled = enabled
-        headerBinding.tvToDateCalendarIcon.isEnabled = enabled
-        headerBinding.etToDate.alpha = if (enabled) 1.0f else 0.5f
-        headerBinding.tvToDateCalendarIcon.alpha = if (enabled) 1.0f else 0.5f
-    }
-
     private fun parseDate(dateString: String): Calendar? {
         return try {
             val localDate = LocalDate.parse(dateString, dateFormatter)
@@ -207,8 +210,8 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     }
 
     private fun filterIfBothDatesSelected() {
-        val fromDate = headerBinding.tvFromDateCalendar.text.toString()
-        val toDate = headerBinding.etToDate.text.toString()
+        val fromDate = headerState.fromDate
+        val toDate = headerState.toDate
         if (fromDate.isNotEmpty() && toDate.isNotEmpty()) {
             filterDataByDateRange(fromDate, toDate)
         }
@@ -233,7 +236,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         super.onViewCreated(view, savedInstanceState)
         binding.addTransaction.setOnClickListener { addTransaction() }
         financeAdapter = EnterprisesFinancesAdapter(requireActivity())
-        val headerAdapter = FinanceHeaderAdapter(headerBinding)
+        headerAdapter = FinanceHeaderAdapter { hBinding -> bindHeader(hBinding) }
         binding.rvFinance.layoutManager = LinearLayoutManager(activity)
         binding.rvFinance.adapter = ConcatAdapter(headerAdapter, financeAdapter)
 
@@ -267,10 +270,11 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             }
         }
         val total = credit - debit
-        headerBinding.tvDebit.text = getString(R.string.number_placeholder, debit)
-        headerBinding.tvCredit.text = getString(R.string.number_placeholder, credit)
-        headerBinding.tvBalance.text = getString(R.string.number_placeholder, total)
-        headerBinding.balanceCaution.visibility = if (total < 0) View.VISIBLE else View.GONE
+        headerState.debit = debit
+        headerState.credit = credit
+        headerState.total = total
+        headerState.isCautionVisible = total < 0
+        headerAdapter.notifyItemChanged(0)
     }
 
     private fun addTransaction() {
@@ -339,7 +343,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         financeAdapter.submitList(results)
         calculateTotal(results)
 
-        if (results.isNotEmpty() || headerBinding.tvFromDateCalendar.text?.isNotEmpty() == true || headerBinding.etToDate.text?.isNotEmpty() == true) {
+        if (results.isNotEmpty() || headerState.fromDate.isNotEmpty() || headerState.toDate.isNotEmpty()) {
             binding.tvNodata.visibility = View.GONE
             binding.rvFinance.visibility = View.VISIBLE
         } else {
@@ -349,15 +353,15 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     }
 
     private fun resetFilterAndSort() {
-        _headerBinding?.let { header ->
-            header.tvFromDateCalendar.setText("")
-            header.etToDate.setText("")
-            updateToDateState(false)
-            header.imgDate.rotation = 0f
-        }
+        headerState.fromDate = ""
+        headerState.toDate = ""
+        headerState.isToDateEnabled = false
+        headerState.isAsc = false
         currentStartDate = null
         currentEndDate = null
-        isAsc = false
+        if (::headerAdapter.isInitialized) {
+            headerAdapter.notifyItemChanged(0)
+        }
     }
 
     override fun onResume() {
@@ -373,13 +377,12 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     override fun onDestroyView() {
         resetFilterAndSort()
         transactions = emptyList()
-        _headerBinding = null
         _binding = null
         super.onDestroyView()
     }
 
     private fun observeTransactions(
-        sortAscending: Boolean = isAsc,
+        sortAscending: Boolean = headerState.isAsc,
         startDate: Long? = currentStartDate,
         endDate: Long? = currentEndDate,
     ) {
@@ -391,16 +394,30 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         )
     }
 
+    private data class HeaderState(
+        var fromDate: String = "",
+        var toDate: String = "",
+        var isToDateEnabled: Boolean = false,
+        var isAsc: Boolean = false,
+        var debit: Int = 0,
+        var credit: Int = 0,
+        var total: Int = 0,
+        var isCautionVisible: Boolean = false,
+    )
+
     private class FinanceHeaderAdapter(
-        private val headerBinding: HeaderFinanceBinding
+        private val onBindHeader: (HeaderFinanceBinding) -> Unit
     ) : RecyclerView.Adapter<FinanceHeaderAdapter.HeaderViewHolder>() {
         class HeaderViewHolder(val binding: HeaderFinanceBinding) : RecyclerView.ViewHolder(binding.root)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): HeaderViewHolder {
-            return HeaderViewHolder(headerBinding)
+            val binding = HeaderFinanceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            return HeaderViewHolder(binding)
         }
 
-        override fun onBindViewHolder(holder: HeaderViewHolder, position: Int) {}
+        override fun onBindViewHolder(holder: HeaderViewHolder, position: Int) {
+            onBindHeader(holder.binding)
+        }
 
         override fun getItemCount(): Int = 1
     }
