@@ -1,8 +1,11 @@
 package org.ole.planet.myplanet
 
 import androidx.test.core.app.ApplicationProvider
+import androidx.work.Configuration
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import androidx.work.testing.SynchronousExecutor
+import androidx.work.testing.WorkManagerTestInitHelper
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
@@ -15,11 +18,9 @@ import org.junit.runner.RunWith
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import org.robolectric.shadows.ShadowApplicationPackageManager
-import org.robolectric.Shadows.shadowOf
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
+@Config(sdk = [34]) // WorkManager testing often requires newer SDKs for accurate background simulation in Robolectric
 class MainApplicationAutoSyncTest {
 
     private lateinit var mainApplication: MainApplication
@@ -30,6 +31,11 @@ class MainApplicationAutoSyncTest {
         mainApplication = ApplicationProvider.getApplicationContext()
         mockSharedPrefManager = mockk(relaxed = true)
         mainApplication.sharedPrefManager = mockSharedPrefManager
+
+        val config = Configuration.Builder()
+            .setExecutor(SynchronousExecutor())
+            .build()
+        WorkManagerTestInitHelper.initializeTestWorkManager(mainApplication, config)
     }
 
     @After
@@ -38,9 +44,9 @@ class MainApplicationAutoSyncTest {
     }
 
     @Test
-    fun `applyAutoSyncSettings schedules work when auto sync is true`() {
+    fun `applyAutoSyncSettings schedules work when auto sync is true and interval is valid`() {
         every { mockSharedPrefManager.getAutoSync() } returns true
-        every { mockSharedPrefManager.getAutoSyncInterval() } returns 15 * 60
+        every { mockSharedPrefManager.getAutoSyncInterval() } returns 15 * 60 // 15 mins
 
         mainApplication.applyAutoSyncSettings()
 
@@ -58,7 +64,6 @@ class MainApplicationAutoSyncTest {
         every { mockSharedPrefManager.getAutoSyncInterval() } returns 15 * 60
         mainApplication.applyAutoSyncSettings()
 
-        // Verify it was enqueued
         val workManager = WorkManager.getInstance(mainApplication)
         var workInfos = workManager.getWorkInfosForUniqueWork("autoSyncWork").get()
         assertTrue(workInfos.isNotEmpty())
@@ -70,8 +75,7 @@ class MainApplicationAutoSyncTest {
 
         // Verify it's cancelled
         workInfos = workManager.getWorkInfosForUniqueWork("autoSyncWork").get()
-        if (workInfos.isNotEmpty()) {
-            assertEquals(WorkInfo.State.CANCELLED, workInfos[0].state)
-        }
+        assertTrue(workInfos.isNotEmpty())
+        assertEquals(WorkInfo.State.CANCELLED, workInfos[0].state)
     }
 }
