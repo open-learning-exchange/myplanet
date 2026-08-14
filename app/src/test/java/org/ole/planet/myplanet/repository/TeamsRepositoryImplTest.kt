@@ -37,7 +37,7 @@ import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.repository.UploadRepository
+import org.ole.planet.myplanet.repository.TeamsUploadRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -50,7 +50,7 @@ class TeamsRepositoryImplTest {
     private lateinit var teamsRepository: TeamsRepositoryImpl
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
-    private val uploadRepository: UploadRepository = mockk(relaxed = true)
+    private val teamsUploadRepository: TeamsUploadRepository = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
     private val preferences: SharedPreferences = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
@@ -87,7 +87,7 @@ class TeamsRepositoryImplTest {
         teamsRepository = TeamsRepositoryImpl(
             activitiesRepository,
             userSessionManager,
-            uploadRepository,
+            teamsUploadRepository,
             gson,
             preferences,
             sharedPrefManager,
@@ -145,17 +145,17 @@ class TeamsRepositoryImplTest {
         io.mockk.mockkObject(org.ole.planet.myplanet.MainApplication.Companion)
         coEvery { org.ole.planet.myplanet.MainApplication.Companion.isServerReachable(any()) } returns true
 
-
-        coEvery { uploadRepository.uploadTeams(any()) } returns mockk(relaxed = true)
-        coEvery { uploadRepository.uploadTeamActivities(any()) } returns mockk(relaxed = true)
+        coEvery { teamsUploadRepository.uploadResource(any()) } returns Unit
+        coEvery { teamsUploadRepository.uploadTeams() } returns Unit
+        coEvery { teamsUploadRepository.uploadTeamActivities() } returns Unit
 
         teamsRepository.syncTeamActivities()
 
         advanceUntilIdle()
 
-
-        coVerify(exactly = 0) { uploadRepository.uploadTeams(any()) }
-        coVerify(exactly = 0) { uploadRepository.uploadTeamActivities(any()) }
+        coVerify { teamsUploadRepository.uploadResource(null) }
+        coVerify { teamsUploadRepository.uploadTeams() }
+        coVerify { teamsUploadRepository.uploadTeamActivities() }
 
         io.mockk.unmockkObject(org.ole.planet.myplanet.MainApplication.Companion)
     }

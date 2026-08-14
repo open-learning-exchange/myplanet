@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.TeamUploadData
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
+import org.ole.planet.myplanet.repository.TeamsUploadRepository
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
@@ -79,7 +80,8 @@ class UploadManager @Inject constructor(
     @ApplicationScope private val scope: CoroutineScope,
     private val photoUploader: PhotoUploader,
     private val achievementUploader: AchievementUploader,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    private val teamsUploadRepository: TeamsUploadRepository
 ) : FileUploader(uploadRepository, scope) {
 
     private suspend fun uploadNewsActivities() {
@@ -177,54 +179,7 @@ class UploadManager @Inject constructor(
         }
     }
     suspend fun uploadResource(listener: OnSuccessListener?) {
-        try {
-            val user = userRepository.getUserModel()
-            val result = uploadCoordinator.uploadRoom(uploadConfigs.getResourcesConfig(user))
-
-            when (result) {
-                is UploadResult.Success -> {
-                    listener?.let { l ->
-                        val libraryIds = result.items.map { it.localId }
-                        if (libraryIds.isNotEmpty()) {
-                            val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds)
-                            val libMap = libraries.associateBy { it.id }
-
-                            result.items.forEach { item ->
-                                libMap[item.localId]?.let { library ->
-                                    uploadAttachment(item.remoteId, item.remoteRev, library, l)
-                                }
-                            }
-                        }
-                    }
-                    notifyListener(listener, "Uploaded ${result.items.size} resources successfully")
-                }
-                is UploadResult.PartialSuccess -> {
-                    listener?.let { l ->
-                        val libraryIds = result.succeeded.map { it.localId }
-                        if (libraryIds.isNotEmpty()) {
-                            val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds)
-                            val libMap = libraries.associateBy { it.id }
-
-                            result.succeeded.forEach { item ->
-                                libMap[item.localId]?.let { library ->
-                                    uploadAttachment(item.remoteId, item.remoteRev, library, l)
-                                }
-                            }
-                        }
-                    }
-                    notifyListener(listener, "Partial success: ${result.succeeded.size} succeeded, ${result.failed.size} failed")
-                }
-                is UploadResult.Failure -> {
-                    notifyListener(listener, "Upload failed: ${result.errors.size} errors")
-                }
-                is UploadResult.Empty -> {
-                    notifyListener(listener, "No resources to upload")
-                }
-            }
-        } catch (e: Exception) {
-            Log.e("UploadManager", "Resource upload failed", e)
-            notifyListener(listener, "Resource upload failed: ${e.message}")
-        }
+        teamsUploadRepository.uploadResource(listener)
     }
 
     suspend fun uploadTeamTask() {
@@ -261,124 +216,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeams() {
-        val teamsToUpload = teamsSyncRepository.get().getTeamsForUpload()
-
-        withContext(dispatcherProvider.io) {
-            teamsToUpload.processInBatches { batch ->
-                val deletedIds = mutableListOf<String>()
-                val uploadedTeams = mutableMapOf<String, String>()
-
-                val bulkDocs = com.google.gson.JsonArray()
-                val teamMap = mutableMapOf<String, org.ole.planet.myplanet.repository.TeamUploadData>()
-
-                batch.forEach { teamData ->
-                    teamData.teamId?.let { id ->
-                        teamMap[id] = teamData
-                    }
-                    bulkDocs.add(teamData.serialized)
-                }
-
-                if (bulkDocs.size() == 0) return@processInBatches
-
-                val payload = com.google.gson.JsonObject()
-                payload.add("docs", bulkDocs)
-
-                try {
-                    val response = uploadRepository.postUploadArray(
-                        "${UrlUtils.getUrl()}/teams/_bulk_docs", payload
-                    )
-
-                    val responseBody = response.body()
-
-                    if (response.isSuccessful && responseBody != null) {
-                        for (i in 0 until responseBody.size()) {
-                            val element = responseBody.get(i).asJsonObject
-                            val id = getString("id", element)
-                            val teamData = teamMap[id] ?: continue
-
-                            if (element.has("error")) {
-                                // 200 bulk response code prevents retry here, as per doc errors aren't retried
-                                queueTeamRetry(teamData, response.code(), if (teamData.isDeletePending) "PUT" else "POST", id)
-                            } else {
-                                var rev = getString("rev", element)
-                                if (teamData.isDeletePending) {
-                                    deletedIds.add(id)
-                                } else {
-                                    if (!teamData.imageName.isNullOrEmpty() && rev.isNotEmpty()) {
-                                        rev = uploadTeamImageAttachment(id, rev, teamData.imageName)
-                                    }
-                                    uploadedTeams[id] = rev
-                                }
-                            }
-                        }
-                    } else {
-                        // Entire bulk failed, queue all
-                        batch.forEach { teamData ->
-                            queueTeamRetry(teamData, response.code(), if (teamData.isDeletePending) "PUT" else "POST", teamData.teamId)
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Exception in UploadManager bulk upload", e)
-                    batch.forEach { teamData ->
-                        queueTeamRetry(teamData, null, if (teamData.isDeletePending) "PUT" else "POST", teamData.teamId, e)
-                    }
-                }
-
-                if (deletedIds.isNotEmpty()) {
-                    teamsSyncRepository.get().deleteLocalTeamRecords(deletedIds)
-                }
-                if (uploadedTeams.isNotEmpty()) {
-                    teamsSyncRepository.get().markTeamsUploaded(uploadedTeams)
-                }
-            }
-        }
-    }
-
-    private suspend fun queueTeamRetry(
-        teamData: TeamUploadData,
-        httpCode: Int?,
-        httpMethod: String,
-        dbId: String?,
-        exception: Exception? = null
-    ) {
-        val retryable = exception != null || (httpCode != null && httpCode >= 500)
-        if (!retryable) return
-        retryQueue.queueFailedOperation(
-            uploadType = "MyTeam",
-            error = UploadError(
-                itemId = teamData.teamId ?: "",
-                exception = exception ?: Exception("Upload failed: HTTP $httpCode"),
-                retryable = true,
-                httpCode = httpCode
-            ),
-            payload = teamData.serialized,
-            endpoint = "teams",
-            httpMethod = httpMethod,
-            dbId = dbId,
-            modelClassName = "MyTeam"
-        )
-    }
-
-    private suspend fun uploadTeamImageAttachment(teamId: String, rev: String, imageName: String): String {
-        val imageFile = MyTeam
-            .getAttachmentFile(context, teamId, imageName) ?: return rev
-        if (!imageFile.exists()) return rev
-        return try {
-            val mimeType = FileUtils.getMimeType(imageName) ?: "image/*"
-            val body = imageFile.readBytes().toRequestBody(mimeType.toMediaTypeOrNull())
-            val encodedName = Uri.encode(imageName)
-            val url = "${UrlUtils.getUrl()}/teams/$teamId/$encodedName"
-            val response = apiInterface.uploadResource(FileUploader.getHeaderMap(mimeType, rev), url, body)
-            val newRev = response.body()?.get("rev")?.asString
-            if (!newRev.isNullOrEmpty()) {
-                newRev
-            } else {
-                rev
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to upload team image attachment", e)
-            rev
-        }
+        teamsUploadRepository.uploadTeams()
     }
 
     suspend fun uploadUserActivities(listener: OnSuccessListener) {
@@ -405,7 +243,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeamActivities() {
-        uploadCoordinator.uploadRoom(uploadConfigs.TeamActivities)
+        teamsUploadRepository.uploadTeamActivities()
     }
 
     suspend fun uploadRating() {
