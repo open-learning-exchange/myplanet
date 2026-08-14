@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
@@ -45,7 +46,8 @@ class MyHealthFragment : Fragment() {
 
     @Inject
     lateinit var realtimeSyncManager: RealtimeSyncManager
-    @Inject lateinit var dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
     private var _binding: FragmentVitalSignBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding

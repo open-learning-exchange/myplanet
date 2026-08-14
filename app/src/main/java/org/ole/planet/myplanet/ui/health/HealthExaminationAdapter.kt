@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities
 
 class HealthExaminationAdapter(
@@ -31,19 +32,18 @@ class HealthExaminationAdapter(
     private var mh: HealthExamination,
     private var userModel: UserEntity?,
     private var userMap: Map<String, UserEntity>,
-    private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider
 ) : ListAdapter<HealthExaminationAdapter.HealthExaminationItem, HealthExaminationViewHolder>(DIFF_CALLBACK) {
 
     data class HealthExaminationItem(
         val examination: HealthExamination,
-        val rawDate: String,
         val formattedDate: String,
         val isSelfExamination: Boolean,
         val resolvedName: String,
         val hasEncryptedData: Boolean
     )
 
-        private val colorGrey50 by lazy { ContextCompat.getColor(context, R.color.md_grey_50) }
+    private val colorGrey50 by lazy { ContextCompat.getColor(context, R.color.md_grey_50) }
     private val colorGreen50 by lazy { ContextCompat.getColor(context, R.color.md_green_50) }
     private val colorMultiSelectGrey by lazy { ContextCompat.getColor(context, R.color.multi_select_grey) }
 
@@ -75,11 +75,10 @@ class HealthExaminationAdapter(
 
                 HealthExaminationItem(
                     examination = item,
-                    rawDate = formattedDate,
                     formattedDate = formattedDate,
                     isSelfExamination = isSelfExamination,
                     resolvedName = resolvedName,
-                    hasEncryptedData = encrypted != null && encrypted.keySet().isNotEmpty()
+                    hasEncryptedData = encrypted != null
                 )
             }
         }
@@ -108,7 +107,7 @@ class HealthExaminationAdapter(
             binding.txtDate.text = context.getString(R.string.self_examination, item.formattedDate)
             holder.itemView.setBackgroundColor(colorGreen50)
         }
-        binding.txtDate.tag = item.rawDate
+        binding.txtDate.tag = item.formattedDate
 
         binding.txtPulse.text = checkEmptyInt(realmExamination.pulse)
         binding.txtBp.text = realmExamination.bp
