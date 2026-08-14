@@ -103,7 +103,11 @@ class CoursesRepositoryImpl @Inject constructor(
     override suspend fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>> {
         return courseDao.observeAll().map { courses ->
             mapCourses(courses).filter { it.userId?.contains(userId) == true }
-        }.distinctUntilChanged().flowOn(dispatcherProvider.default)
+        }.distinctUntilChanged { old, new ->
+            old.size == new.size && old.zip(new).all { (a, b) ->
+                a.id == b.id && a.courseTitle == b.courseTitle && a.userId == b.userId && a.courseSteps?.size == b.courseSteps?.size
+            }
+        }.flowOn(dispatcherProvider.default)
     }
 
     override suspend fun getCourseById(courseId: String): MyCourse? {
