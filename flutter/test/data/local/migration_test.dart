@@ -360,6 +360,40 @@ void main() {
     expect(await database.chatDao.getPending(), isEmpty);
   });
 
+  test('a users row keeps its data and gains the v30 upload columns', () async {
+    // `users` is preserved (the health key cannot be re-synced), so adding
+    // `isUpdated`/`age`/`birthPlace` needs a hand-written `ALTER TABLE` step.
+    // A row already on the server must not become pending just because the
+    // dirty-flag column appeared.
+    await database.userDao.upsert(
+      UsersCompanion.insert(
+        id: 'user-1',
+        name: const Value('ada'),
+        rolesList: const Value(['learner']),
+        userAdmin: const Value(false),
+        joinDate: const Value(123),
+        couchId: const Value('org.couchdb.user:ada'),
+        rev: const Value('2-abc'),
+      ),
+    );
+    // Strip the v30 columns to simulate an install upgrading from v29.
+    await database.customStatement('ALTER TABLE users DROP COLUMN is_updated');
+    await database.customStatement('ALTER TABLE users DROP COLUMN age');
+    await database.customStatement('ALTER TABLE users DROP COLUMN birth_place');
+
+    await runUpgrade(from: 29);
+
+    final survivor = await database.userDao.getById('user-1');
+    expect(survivor?.name, 'ada');
+    expect(survivor?.couchId, 'org.couchdb.user:ada');
+    expect(survivor?.rev, '2-abc');
+    expect(survivor?.isUpdated, isFalse);
+    expect(survivor?.age, equals(null));
+    expect(survivor?.birthPlace, equals(null));
+    // A synced row is not pending — only local edits set the flag.
+    expect(await database.userDao.pendingSyncUsers(), isEmpty);
+  });
+
   test('an offline login record survives a schema upgrade', () async {
     // `ActivitiesUploader` carries these to `login_activities`, but nothing
     // syncs that database back in, so an uploaded row still exists only here —

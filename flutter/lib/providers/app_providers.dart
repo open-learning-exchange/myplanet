@@ -39,6 +39,7 @@ import '../repository/voices_repository.dart';
 import '../repository/voices_uploader.dart';
 import '../repository/submissions_repository.dart';
 import '../repository/submissions_uploader.dart';
+import '../repository/user_uploader.dart';
 import '../repository/submissions_exporter.dart';
 import '../repository/surveys_repository.dart';
 import '../repository/teams_repository.dart';
@@ -230,6 +231,14 @@ final chatUploaderProvider = Provider<ChatUploader>(
   ),
 );
 
+final userUploaderProvider = Provider<UserUploader>(
+  (ref) => UserUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(userDaoProvider),
+    ref.watch(outboxRepositoryProvider),
+  ),
+);
+
 final feedbackDaoProvider = Provider<FeedbackDao>(
   (ref) => ref.watch(appDatabaseProvider).feedbackDao,
 );
@@ -404,6 +413,7 @@ final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
           .watch(courseProgressUploaderProvider)
           .handler,
       ChatUploader.type: ref.watch(chatUploaderProvider).handler,
+      UserUploader.type: ref.watch(userUploaderProvider).handler,
       ...ref.watch(activitiesUploaderProvider).handlers,
       PublicSurveyUploader.type: ref
           .watch(publicSurveyUploaderProvider)

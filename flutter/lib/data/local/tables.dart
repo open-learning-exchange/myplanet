@@ -35,6 +35,8 @@ class Users extends Table {
   TextColumn get language => text().nullable()();
   TextColumn get gender => text().nullable()();
   TextColumn get dob => text().nullable()();
+  TextColumn get age => text().nullable()();
+  TextColumn get birthPlace => text().nullable()();
   TextColumn get userImage => text().nullable()();
 
   /// Only ever set for guest users, which have an empty `_id` and are compared
@@ -42,6 +44,15 @@ class Users extends Table {
   TextColumn get password => text().nullable()();
 
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
+
+  /// Port of `UserEntity.isUpdated` — the dirty flag the user-document upload
+  /// path reads. Set `true` by every local profile edit or photo change, then
+  /// cleared by [UserDao.markUploaded] once the `_users` PUT succeeds.
+  ///
+  /// Matches Kotlin's `getPendingSyncUsers` predicate (`_id.isNullOrBlank() ||
+  /// isUpdated`): a freshly created local account with no CouchDB id is
+  /// pending too, so the uploader sends it even before the first edit.
+  BoolColumn get isUpdated => boolean().withDefault(const Constant(false))();
 
   /// AES key and IV for the user's health records, porting `UserEntity.key`
   /// and `UserEntity.iv`.

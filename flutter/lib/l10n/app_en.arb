@@ -198,6 +198,9 @@
     }
   },
   "editProfile": "Edit profile",
+  "changePhoto": "Change profile photo",
+  "photoUpdated": "Profile photo updated",
+  "photoUpdateFailed": "Could not save the photo",
   "firstName": "First name",
   "middleName": "Middle name",
   "lastName": "Last name",

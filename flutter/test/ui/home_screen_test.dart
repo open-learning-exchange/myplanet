@@ -26,6 +26,7 @@ UserRow _user(String id, {String? planetCode}) => UserRow(
   lastName: 'Lovelace',
   planetCode: planetCode,
   isArchived: false,
+isUpdated: false,
 );
 
 TeamRow _team(String id, String name) => TeamRow(

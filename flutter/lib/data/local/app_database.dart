@@ -95,7 +95,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 29;
+  int get schemaVersion => 30;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -228,6 +228,16 @@ class AppDatabase extends _$AppDatabase {
           "UPDATE chat_history SET is_uploaded = 1 "
           "WHERE _rev IS NOT NULL AND _rev != ''",
         );
+      }
+
+      // `users` is preserved, so `createAll` does not alter it. v30 adds the
+      // `isUpdated` dirty flag and the `age`/`birthPlace` profile fields that
+      // `UserEntity.serialize` writes. `isUpdated` defaults to false: a row
+      // already on the server is not pending just because the column appeared.
+      if (from < 30) {
+        await _addColumnIfMissing(m, users, users.isUpdated);
+        await _addColumnIfMissing(m, users, users.age);
+        await _addColumnIfMissing(m, users, users.birthPlace);
       }
     },
   );
@@ -593,6 +603,37 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
         derivedKey: Value(derivedKey),
         salt: Value(salt),
         iterations: Value(iterations),
+      ),
+    );
+  }
+
+  /// Port of `UserRepositoryImpl.getPendingSyncUsers` — accounts whose local
+  /// edits have not reached the server. Matches the Kotlin predicate: a row is
+  /// pending when it has no CouchDB id yet (a freshly created local account) or
+  /// its `isUpdated` flag is set.
+  Future<List<UserRow>> pendingSyncUsers() =>
+      (select(users)
+            ..where(
+              (u) =>
+                  u.couchId.isNull() |
+                  u.couchId.equals('') |
+                  u.isUpdated.equals(true),
+            ))
+          .get();
+
+  /// Port of `UserRepositoryImpl.markUserUploaded` / `markUserRevUpdated` —
+  /// records the server-assigned id/rev and clears the dirty flag so the row
+  /// drops out of [pendingSyncUsers] until the next local edit.
+  Future<void> markUploaded(
+    String userId, {
+    String? couchId,
+    String? rev,
+  }) async {
+    await (update(users)..where((u) => u.id.equals(userId))).write(
+      UsersCompanion(
+        couchId: couchId == null ? const Value.absent() : Value(couchId),
+        rev: rev == null ? const Value.absent() : Value(rev),
+        isUpdated: const Value(false),
       ),
     );
   }

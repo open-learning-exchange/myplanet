@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
@@ -284,7 +285,8 @@ class _ProfileBody extends ConsumerWidget {
           child: Semantics(
             label: l10n.profilePhotoFor(name),
             image: true,
-            child: ProfileAvatar(user: user, radius: 48),
+            button: true,
+            child: _EditableProfilePhoto(user: user, radius: 48),
           ),
         ),
         const SizedBox(height: 16),
@@ -372,6 +374,71 @@ class _ProfileBody extends ConsumerWidget {
       const SizedBox(height: 8),
       _DetailCard(details: rows),
     ];
+  }
+}
+
+/// The profile avatar with a tappable edit affordance, porting the photo-pick
+/// half of `UserProfileFragment`'s `pickUserImage` flow.
+///
+/// `image_picker` reads the picked file into the app cache and returns a path
+/// we hand to `SessionNotifier.setUserImage`, which stores it on the user row
+/// and flags it for upload. The Kotlin crops the image first; the picker's
+/// `maxWidth`/`maxHeight` resize on the device, which is the same effective
+/// outcome without a separate crop dependency.
+class _EditableProfilePhoto extends ConsumerWidget {
+  const _EditableProfilePhoto({required this.user, required this.radius});
+
+  final UserRow user;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return GestureDetector(
+      onTap: () => _pickPhoto(context, ref),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          ProfileAvatar(user: user, radius: radius),
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: CircleAvatar(
+              radius: radius * 0.36,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              child: Icon(
+                Icons.camera_alt,
+                size: radius * 0.4,
+                color: Theme.of(context).colorScheme.onPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickPhoto(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 85,
+    );
+    if (picked == null || !context.mounted) return;
+    try {
+      await ref.read(sessionProvider.notifier).setUserImage(picked.path);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.photoUpdated)));
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.photoUpdateFailed)));
+    }
   }
 }
 

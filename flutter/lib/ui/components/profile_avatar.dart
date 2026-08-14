@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -32,6 +34,14 @@ class ProfileAvatar extends ConsumerWidget {
     if (imageName.isEmpty) {
       return _InitialsAvatar(user: user, radius: radius);
     }
+    // A locally-picked photo is stored as a filesystem path (see
+    // `SessionNotifier.setUserImage`), not a CouchDB attachment name. Showing
+    // it straight from disk avoids a pointless network round-trip and renders
+    // immediately — the upload is async and the attachment name only replaces
+    // the path once the PUT succeeds.
+    if (_isLocalPath(imageName)) {
+      return _LocalFileAvatar(path: imageName, user: user, radius: radius);
+    }
     final image = ref.watch(
       profileImageProvider(
         ProfileImageRequest(userId: user.id, imageName: imageName),
@@ -47,6 +57,44 @@ class ProfileAvatar extends ConsumerWidget {
         loading: () => _InitialsAvatar(user: user, radius: radius),
         error: (_, _) => _InitialsAvatar(user: user, radius: radius),
       ),
+    );
+  }
+}
+
+/// Whether [value] is a filesystem path rather than a CouchDB attachment name.
+///
+/// `image_picker` always returns an absolute path (`/` on every platform) or
+/// a `file://` uri, and the upload slice only stores what the picker returned.
+/// A bare attachment name from a prior sync is neither, so it falls through to
+/// the network fetch.
+bool _isLocalPath(String value) =>
+    value.startsWith('/') || value.startsWith('file://');
+
+class _LocalFileAvatar extends StatelessWidget {
+  const _LocalFileAvatar({
+    required this.path,
+    required this.user,
+    required this.radius,
+  });
+
+  final String path;
+  final UserRow user;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final file = File(path);
+    return FutureBuilder<bool>(
+      future: file.exists(),
+      builder: (context, snapshot) {
+        final exists = snapshot.data ?? false;
+        if (!exists) return _InitialsAvatar(user: user, radius: radius);
+        return CircleAvatar(
+          radius: radius,
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          child: ClipOval(child: Image.file(file, fit: BoxFit.cover)),
+        );
+      },
     );
   }
 }

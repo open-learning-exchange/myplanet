@@ -73,9 +73,10 @@ class SessionNotifier extends AsyncNotifier<UserRow?> {
   /// Offline-first profile update, porting the local half of
   /// `UserProfileViewModel.updateUserProfile`.
   ///
-  /// The updated row is committed before it is published to the UI. A later
-  /// profile-upload slice can sync the same cached row without making editing
-  /// depend on connectivity.
+  /// The updated row is committed before it is published to the UI, and
+  /// `isUpdated` is set so [UserUploader.queuePending] picks it up on the next
+  /// drain. A later profile-upload slice can sync the same cached row without
+  /// making editing depend on connectivity.
   Future<void> updateProfile({
     required String firstName,
     required String middleName,
@@ -103,9 +104,42 @@ class SessionNotifier extends AsyncNotifier<UserRow?> {
     );
     // Every column, not `nullToAbsent`: clearing a field (blanking a phone
     // number, say) has to null the column, and an absent value would leave the
-    // old text in place.
-    await ref.read(userDaoProvider).upsert(updated.toCompanion(false));
+    // old text in place. `isUpdated` flags the row for the user-document upload.
+    await ref.read(userDaoProvider).upsert(
+      updated.copyWith(isUpdated: true).toCompanion(false),
+    );
     state = AsyncData(updated);
+    await _queueUserUpload();
+  }
+
+  /// Port of the photo half of `UserProfileViewModel.updateUserProfile` /
+  /// `UserRepositoryImpl.updateUserImage` — stores the picked image path and
+  /// flags the row for upload, exactly as a profile-field edit does.
+  Future<void> setUserImage(String path) async {
+    final current = state.valueOrNull;
+    if (current == null) return;
+    final updated = current.copyWith(userImage: Value(path));
+    await ref.read(userDaoProvider).upsert(
+      updated.copyWith(isUpdated: true).toCompanion(false),
+    );
+    state = AsyncData(updated);
+    await _queueUserUpload();
+  }
+
+  /// Enqueues the just-edited user document for upload.
+  ///
+  /// Best-effort, like the other write sites: a queue failure must not undo
+  /// the edit. The drain on app resume is the reliable fallback — the row is
+  /// dirty, so the next drain picks it up even if this enqueue throws.
+  Future<void> _queueUserUpload() async {
+    final config = ref.read(serverConfigProvider);
+    if (config == null) return;
+    try {
+      await ref.read(userUploaderProvider).queuePending(config: config);
+    } catch (_) {
+      // Deliberately ignored — the dirty flag survives, so the next drain
+      // retry carries the edit.
+    }
   }
 }
 
