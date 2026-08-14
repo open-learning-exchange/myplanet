@@ -3,11 +3,9 @@ package org.ole.planet.myplanet.utils
 import android.util.Log
 import androidx.core.net.toUri
 import dagger.hilt.android.EntryPointAccessors
-import java.time.format.DateTimeFormatter
-import java.time.ZoneId
 import java.time.Instant
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
