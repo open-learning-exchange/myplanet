@@ -8,7 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.appcompat.app.AlertDialog
-import androidx.lifecycle.lifecycleScope
+import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -16,23 +16,20 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentStorageCategoryDetailBinding
 import org.ole.planet.myplanet.databinding.ItemDownloadedResourceBinding
 import org.ole.planet.myplanet.model.OfflineResourceItem
-import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
     private var _binding: FragmentStorageCategoryDetailBinding? = null
     private val binding get() = _binding!!
 
-    @Inject
-    lateinit var resourcesRepository: ResourcesRepository
+    private val viewModel: StorageCategoryDetailViewModel by viewModels()
     private var categoryLabel: String = ""
     private var extensions: Set<String> = emptySet()
     private var allKnownExtensions: Set<String> = emptySet()
@@ -133,23 +130,27 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         binding.selectAllRow.visibility = View.GONE
         binding.selectAllDivider.visibility = View.GONE
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val olePath = FileUtils.getOlePath(requireContext())
-            val loaded = resourcesRepository.getOfflineResourceItems(olePath, extensions, allKnownExtensions)
-            binding.progressBar.visibility = View.GONE
+        val olePath = FileUtils.getOlePath(requireContext())
+        viewModel.loadResources(olePath, extensions, allKnownExtensions)
 
-            if (loaded.isEmpty()) {
-                binding.emptyText.visibility = View.VISIBLE
-                return@launch
+        collectLatestWhenStarted(viewModel.items) { loaded ->
+            if (loaded != null) {
+                binding.progressBar.visibility = View.GONE
+
+                if (loaded.isEmpty()) {
+                    binding.emptyText.visibility = View.VISIBLE
+                    return@collectLatestWhenStarted
+                }
+
+                items = loaded
+                adapter.submitList(items)
+
+                binding.resourceList.visibility = View.VISIBLE
+                binding.actionButtons.visibility = View.VISIBLE
+                binding.selectAllRow.visibility = View.VISIBLE
+                binding.selectAllDivider.visibility = View.VISIBLE
+                updateSelectionState()
             }
-
-            items = loaded
-            adapter.submitList(items)
-
-            binding.resourceList.visibility = View.VISIBLE
-            binding.actionButtons.visibility = View.VISIBLE
-            binding.selectAllRow.visibility = View.VISIBLE
-            binding.selectAllDivider.visibility = View.VISIBLE
         }
     }
 
@@ -183,10 +184,8 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         binding.deleteSelectedButton.isEnabled = false
         binding.deleteAllButton.isEnabled = false
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val olePath = FileUtils.getOlePath(requireContext())
-            resourcesRepository.deleteOfflineResources(olePath, toDelete)
-
+        val olePath = FileUtils.getOlePath(requireContext())
+        viewModel.deleteResources(olePath, toDelete) {
             parentFragmentManager.setFragmentResult(RESULT_KEY, Bundle())
             dismiss()
         }

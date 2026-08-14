@@ -6,23 +6,22 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
 import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
-import javax.inject.Inject
 import kotlin.collections.ArrayList
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.databinding.FragmentCollectionsBinding
 import org.ole.planet.myplanet.model.TagData
 import org.ole.planet.myplanet.model.TagEntity
-import org.ole.planet.myplanet.repository.TagsRepository
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.KeyboardUtils
 import org.ole.planet.myplanet.utils.textChanges
 
@@ -30,11 +29,9 @@ import org.ole.planet.myplanet.utils.textChanges
 class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton.OnCheckedChangeListener {
     private var _binding: FragmentCollectionsBinding? = null
     private val binding get() = _binding!!
-    @Inject
-    lateinit var tagsRepository: TagsRepository
+    private val viewModel: CollectionsViewModel by viewModels()
     private lateinit var list: List<TagEntity>
     private lateinit var childMap: HashMap<String, List<TagEntity>>
-    private var filteredList: ArrayList<TagEntity> = ArrayList()
     private lateinit var adapter: ResourcesTagsAdapter
     private var dbType: String? = null
     private var listener: OnTagClickListener? = null
@@ -87,16 +84,24 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
     }
 
     private fun setListAdapter() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val tagsWithChildren = tagsRepository.getTagsWithChildren(dbType)
-            list = tagsWithChildren.keys.toList()
-            selectedItemsList = ArrayList(recentList)
-            childMap = tagsWithChildren.entries.filter { it.value.isNotEmpty() }.associate { (it.key.id ?: "") to it.value }.toMap(HashMap())
-            adapter = ResourcesTagsAdapter(this@CollectionsFragment)
-            binding.listTags.adapter = adapter
-            currentTagDataList = buildTagDataList(list).toMutableList()
-            adapter.submitList(currentTagDataList)
-            binding.btnOk.visibility = View.VISIBLE
+        viewModel.loadTags(dbType)
+        collectLatestWhenStarted(viewModel.tagsWithChildren) { tagsWithChildren ->
+            if (tagsWithChildren != null) {
+                list = tagsWithChildren.keys.toList()
+                selectedItemsList = ArrayList(recentList)
+                childMap = HashMap(tagsWithChildren.entries.filter { it.value.isNotEmpty() }.associate { (it.key.id ?: "") to it.value })
+
+                if (!::adapter.isInitialized) {
+                    adapter = ResourcesTagsAdapter(this@CollectionsFragment)
+                }
+                if (binding.listTags.adapter == null) {
+                    binding.listTags.adapter = adapter
+                }
+
+                currentTagDataList = buildTagDataList(list).toMutableList()
+                adapter.submitList(currentTagDataList)
+                binding.btnOk.visibility = View.VISIBLE
+            }
         }
     }
 
