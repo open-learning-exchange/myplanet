@@ -27,7 +27,7 @@ class ChatRepositoryImpl @Inject constructor(
     private val chatApiService: ChatApiService,
     private val serverUrlMapper: ServerUrlMapper,
     private val sharedPrefManager: SharedPrefManager
-) : ChatRepository {
+) : ChatRepository, ChatSyncRepository {
 
     @VisibleForTesting
     internal var reachabilityCheck: suspend (String) -> Boolean = { url ->

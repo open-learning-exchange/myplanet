@@ -78,7 +78,17 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindChatSyncRepository(impl: ChatRepositoryImpl): org.ole.planet.myplanet.repository.ChatSyncRepository
+
+
+    @Binds
+    @Singleton
     abstract fun bindCommunityRepository(impl: CommunityRepositoryImpl): CommunityRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCommunitySyncRepository(impl: CommunityRepositoryImpl): org.ole.planet.myplanet.repository.CommunitySyncRepository
+
 
     @Binds
     @Singleton
@@ -94,7 +104,17 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindEventsSyncRepository(impl: EventsRepositoryImpl): org.ole.planet.myplanet.repository.EventsSyncRepository
+
+
+    @Binds
+    @Singleton
     abstract fun bindFeedbackRepository(impl: FeedbackRepositoryImpl): FeedbackRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindFeedbackSyncRepository(impl: FeedbackRepositoryImpl): org.ole.planet.myplanet.repository.FeedbackSyncRepository
+
 
     @Binds
     @Singleton

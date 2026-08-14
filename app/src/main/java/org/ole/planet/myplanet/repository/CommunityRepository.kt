@@ -8,5 +8,5 @@ interface CommunityRepository {
     suspend fun replaceAll(rows: JsonArray)
     suspend fun getAllSorted(): List<Community>
     suspend fun syncCommunityDocs(): Boolean
-    suspend fun insertMeetupsFromSync(docs: List<JsonObject>)
+
 }

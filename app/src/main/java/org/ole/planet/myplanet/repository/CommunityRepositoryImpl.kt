@@ -14,7 +14,7 @@ class CommunityRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
     private val communityDao: CommunityDao,
     private val meetupDao: MeetupDao
-) : CommunityRepository {
+) : CommunityRepository, CommunitySyncRepository {
 
     override suspend fun replaceAll(rows: JsonArray) {
         val communities = mutableListOf<Community>()
