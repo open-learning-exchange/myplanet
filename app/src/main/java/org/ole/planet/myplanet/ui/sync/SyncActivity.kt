@@ -770,20 +770,20 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     override fun onError(msg: String, blockSync: Boolean) {
         lifecycleScope.launch {
-            Utilities.toast(this@SyncActivity, msg)
-            if (msg.startsWith("Config")) {
-                settingDialog()
-            }
-            if (customProgressDialog.isShowing()) {
-                customProgressDialog.dismiss()
-            }
-            if (!blockSync) {
-                continueSyncProcess()
-            } else {
+            if (blockSync) {
+                Utilities.toast(this@SyncActivity, msg)
+                if (msg.startsWith("Config")) {
+                    settingDialog()
+                }
+                if (customProgressDialog.isShowing()) {
+                    customProgressDialog.dismiss()
+                }
                 if (::syncIconDrawable.isInitialized) {
                     syncIconDrawable.stop()
                     syncIconDrawable.selectDrawable(0)
                 }
+            } else {
+                continueSyncProcess()
             }
         }
     }
