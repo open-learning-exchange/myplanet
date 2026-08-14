@@ -61,8 +61,6 @@ import org.ole.planet.myplanet.utils.DialogUtils.showAlert
 import org.ole.planet.myplanet.utils.DialogUtils.showSnack
 import org.ole.planet.myplanet.utils.DialogUtils.showWifiSettingDialog
 import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
-import org.ole.planet.myplanet.utils.DownloadUtils.openDownloadService
-import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName
@@ -534,7 +532,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                         prefData.setIsAlternativeUrl(false)
                     }
 
-                    configurationsRepository.provisionApp(checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE))
+                    configurationsRepository.startQueuedDownloads()
 
                     val betaAutoDownload = prefData.getBetaAutoDownload()
                     if (betaAutoDownload) {
@@ -703,6 +701,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             isSync = true
 
             lifecycleScope.launch {
+                configurationsRepository.clearFirstRunStorage(checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE))
                 isServerReachable(processedUrl, "sync")
             }
         }

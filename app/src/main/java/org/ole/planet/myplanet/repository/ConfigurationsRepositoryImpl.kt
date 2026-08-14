@@ -372,23 +372,32 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         return sharedPrefManager.getRawString("planetType")
     }
 
-    override fun provisionApp(hasWritePermission: Boolean) {
-        if (hasWritePermission && sharedPrefManager.getFirstRun()) {
-            val myDir = File(FileUtils.getOlePath(context))
-            if (myDir.isDirectory) {
-                val children = myDir.list()
-                if (children != null) {
-                    for (i in children.indices) {
-                        File(myDir, children[i]).delete()
+    override suspend fun clearFirstRunStorage(hasWritePermission: Boolean) {
+        withContext(dispatcherProvider.io) {
+            if (hasWritePermission && sharedPrefManager.getFirstRun()) {
+                val myDir = File(FileUtils.getOlePath(context))
+                if (myDir.isDirectory) {
+                    val children = myDir.list()
+                    if (children != null) {
+                        for (i in children.indices) {
+                            File(myDir, children[i]).delete()
+                        }
                     }
                 }
+                sharedPrefManager.setFirstRun(false)
             }
-            sharedPrefManager.setFirstRun(false)
         }
-        val storedJsonConcatenatedLinks = sharedPrefManager.getConcatenatedLinks()
-        if (storedJsonConcatenatedLinks != null) {
-            val storedConcatenatedLinks: ArrayList<String> = Json.decodeFromString(storedJsonConcatenatedLinks)
-            DownloadUtils.openDownloadService(context, storedConcatenatedLinks, true)
+    }
+
+    override suspend fun startQueuedDownloads() {
+        withContext(dispatcherProvider.io) {
+            val storedJsonConcatenatedLinks = sharedPrefManager.getConcatenatedLinks()
+            if (storedJsonConcatenatedLinks != null) {
+                val storedConcatenatedLinks: ArrayList<String> = Json.decodeFromString(storedJsonConcatenatedLinks)
+                withContext(dispatcherProvider.main) {
+                    DownloadUtils.openDownloadService(context, storedConcatenatedLinks, true)
+                }
+            }
         }
     }
 
