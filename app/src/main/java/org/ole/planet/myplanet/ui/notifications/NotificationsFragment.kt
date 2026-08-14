@@ -125,10 +125,14 @@ class NotificationsFragment : Fragment() {
 
     private fun handleNotificationClick(notification: Notification) {
         when (notification.type) {
-            "join_request" -> openTeam(notification.relatedId, JoinRequestsPage)
+            "join_request" -> resolveAndOpenTeam(notification.relatedId, JoinRequestsPage) { relatedId ->
+                viewModel.getJoinRequestTeamId(relatedId)
+            }
             "team_join" -> openTeam(notification.relatedId, navigateToPage = null)
             "chat" -> openTeam(notification.relatedId, ChatPage)
-            "task" -> openTeam(notification.relatedId, TasksPage)
+            "task" -> resolveAndOpenTeam(notification.relatedId, TasksPage) { relatedId ->
+                viewModel.getTaskDetails(relatedId)?.teamId
+            }
             "voice_reply" -> notification.relatedId?.let { newsId ->
                 startActivity(Intent(requireContext(), ReplyActivity::class.java).putExtra("id", newsId))
             }
@@ -138,6 +142,19 @@ class NotificationsFragment : Fragment() {
 
         if (!notification.isRead) {
             viewModel.markAsRead(notification.id)
+        }
+    }
+
+    /**
+     * [relatedId] is either a task/join-request id (resolved to a team id via [resolve]) or
+     * already a team id (server-synced notifications carry the team id directly). When [resolve]
+     * can't match it to a known task/join-request, [relatedId] is used as-is.
+     */
+    private fun resolveAndOpenTeam(relatedId: String?, navigateToPage: TeamPageConfig?, resolve: suspend (String) -> String?) {
+        if (relatedId.isNullOrEmpty()) return
+        viewLifecycleOwner.lifecycleScope.launch {
+            val teamId = resolve(relatedId) ?: relatedId
+            openTeam(teamId, navigateToPage)
         }
     }
 

@@ -145,7 +145,8 @@ class NotificationsRepositoryImpl @Inject constructor(
                 priority = it.priority,
                 isFromServer = it.isFromServer,
                 rev = it.rev,
-                needsSync = it.needsSync
+                needsSync = it.needsSync,
+                subType = it.subType
             )
         }
     }
@@ -336,6 +337,7 @@ class NotificationsRepositoryImpl @Inject constructor(
             userId = doc.get("user")?.asString ?: ""
             this.message = message
             type = rawType
+            subType = extractTeamSubtype(rawType, doc)
             relatedId = extractRelatedId(rawType, link, doc)
             this.link = link
             priority = doc.get("priority")?.asInt ?: 0
@@ -344,6 +346,18 @@ class NotificationsRepositoryImpl @Inject constructor(
             createdAt = doc.get("time")?.let { Date(it.asLong) } ?: Date()
             isFromServer = true
         }
+    }
+
+    /**
+     * Raw type "team" covers join requests, team-membership changes, and chat posts alike, and the
+     * server renders `message` in the recipient's locale, so it can't be classified reliably by
+     * sniffing English/Spanish phrases. `linkParams.activeTab == "applicantTab"` is a locale-independent
+     * signal the server sends specifically for join-request notifications; use it when present.
+     */
+    private fun extractTeamSubtype(rawType: String, doc: JsonObject): String? {
+        if (rawType != "team") return null
+        val activeTab = doc.getAsJsonObject("linkParams")?.get("activeTab")?.asString
+        return if (activeTab == "applicantTab") "join_request" else null
     }
 
     private fun extractRelatedId(rawType: String, link: String?, doc: JsonObject): String? {

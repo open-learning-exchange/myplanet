@@ -167,6 +167,16 @@ class NotificationsViewModelTest {
     }
 
     @Test
+    fun testResolveTypeClassifiesRawTeamTypeAsJoinRequestViaSubTypeRegardlessOfMessageLanguage() = runTest(testDispatcher) {
+        // Arabic/Nepali/etc. server messages aren't matched by the English/Spanish phrase list, so
+        // classification must rely on the structural subType (derived from linkParams) instead.
+        val payload = notification(id = "1", type = "team", isRead = false, message = "غير معروف", subType = "join_request")
+        loadNotifications(payload)
+
+        assertEquals("join_request", item("1").notification.type)
+    }
+
+    @Test
     fun testResolveTypeClassifiesRawTeamTypeAsChatForPostedMessage() = runTest(testDispatcher) {
         val payload = notification(id = "1", type = "team", isRead = false, message = "Bhushan Nim has posted a message on \"test GT\" team.")
         loadNotifications(payload)
@@ -222,7 +232,7 @@ class NotificationsViewModelTest {
         private val unreadTask = notification(id = "1", type = "task", isRead = false)
         private val readResource = notification(id = "2", type = "resource", isRead = true)
 
-        private fun notification(id: String, type: String, isRead: Boolean, message: String = "message $id") = NotificationPayload(
+        private fun notification(id: String, type: String, isRead: Boolean, message: String = "message $id", subType: String? = null) = NotificationPayload(
             id = id,
             userId = USER_ID,
             message = message,
@@ -235,7 +245,8 @@ class NotificationsViewModelTest {
             priority = 0,
             isFromServer = false,
             rev = null,
-            needsSync = false
+            needsSync = false,
+            subType = subType
         )
     }
 }
