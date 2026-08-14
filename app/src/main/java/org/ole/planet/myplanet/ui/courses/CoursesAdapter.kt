@@ -131,20 +131,23 @@ class CoursesAdapter(
         }
     }
 
-    fun setViewMode(mode: ListViewMode, isGuest: Boolean, onChanged: (() -> Unit)? = null) {
+    fun setViewMode(mode: ListViewMode, onChanged: (() -> Unit)? = null) {
         var changed = false
         if (viewMode != mode) {
             viewMode = mode
-            changed = true
-        }
-        if (this.isGuest != isGuest) {
-            this.isGuest = isGuest
             changed = true
         }
         if (changed) {
             notifyItemRangeChanged(0, itemCount)
         }
         onChanged?.invoke()
+    }
+
+    fun updateIdentity(isGuest: Boolean) {
+        if (this.isGuest != isGuest) {
+            this.isGuest = isGuest
+            notifyItemRangeChanged(0, itemCount)
+        }
     }
 
     fun removeCourses(courseIds: List<String>, onComplete: (() -> Unit)? = null) {

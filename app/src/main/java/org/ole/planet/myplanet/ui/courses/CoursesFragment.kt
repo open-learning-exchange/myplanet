@@ -66,8 +66,6 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     private val refreshJobs = mutableMapOf<String, Job>()
     private var pendingScrollState: Parcelable? = null
     private val viewModel: CoursesViewModel by viewModels()
-
-
     @Inject
     lateinit var userSessionManager: UserSessionManager
 
@@ -129,7 +127,8 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
                 viewMode = sharedPrefManager.getCourseViewMode()
             )
         } else {
-            adapterCourses.setViewMode(sharedPrefManager.getCourseViewMode(), userModel?.isGuest() ?: true)
+            adapterCourses.setViewMode(sharedPrefManager.getCourseViewMode())
+            adapterCourses.updateIdentity(userModel?.isGuest() ?: true)
         }
 
         adapterCourses.setListener(this@CoursesFragment)
@@ -355,10 +354,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         sharedPrefManager.setCourseViewMode(mode)
         updateToggleUi(mode)
         if (::adapterCourses.isInitialized) {
-            viewLifecycleOwner.lifecycleScope.launch {
-                val user = userSessionManager.getUserModel()
-                adapterCourses.setViewMode(mode, user?.isGuest() ?: true)
-            }
+            adapterCourses.setViewMode(mode)
         }
     }
 

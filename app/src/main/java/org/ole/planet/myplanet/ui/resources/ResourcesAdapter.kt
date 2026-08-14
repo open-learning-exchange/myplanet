@@ -77,12 +77,20 @@ class ResourcesAdapter(
         }
     }
 
-    fun setViewMode(mode: ListViewMode, isGuest: Boolean, currentUserName: String?, onChanged: (() -> Unit)? = null) {
+    fun setViewMode(mode: ListViewMode, onChanged: (() -> Unit)? = null) {
         var changed = false
         if (viewMode != mode) {
             viewMode = mode
             changed = true
         }
+        if (changed) {
+            notifyItemRangeChanged(0, itemCount)
+        }
+        onChanged?.invoke()
+    }
+
+    fun updateIdentity(isGuest: Boolean, currentUserName: String?) {
+        var changed = false
         if (this.isGuest != isGuest) {
             this.isGuest = isGuest
             changed = true
@@ -94,7 +102,6 @@ class ResourcesAdapter(
         if (changed) {
             notifyItemRangeChanged(0, itemCount)
         }
-        onChanged?.invoke()
     }
 
     fun markItemAsOffline(id: String) {

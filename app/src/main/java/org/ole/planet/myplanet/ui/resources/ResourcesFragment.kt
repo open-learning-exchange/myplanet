@@ -95,8 +95,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     lateinit var prefManager: SharedPrefManager
 
     private val viewModel: ResourcesViewModel by viewModels()
-    
-
     @Inject
     lateinit var realtimeSyncManager: RealtimeSyncManager
 
@@ -161,7 +159,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                 onEditClick = { model -> openEditResource(model) }
             )
         } else {
-            adapterLibrary.setViewMode(prefManager.getLibraryViewMode(), user?.isGuest() == true, user?.name)
+            adapterLibrary.setViewMode(prefManager.getLibraryViewMode())
+            adapterLibrary.updateIdentity(user?.isGuest() == true, user?.name)
         }
 
         adapterLibrary.setListener(this)
@@ -264,10 +263,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         prefManager.setLibraryViewMode(mode)
         updateToggleUi(mode)
         if (::adapterLibrary.isInitialized) {
-            viewLifecycleOwner.lifecycleScope.launch {
-                val user = userRepository.getUserModel()
-                adapterLibrary.setViewMode(mode, user?.isGuest() == true, user?.name)
-            }
+            adapterLibrary.setViewMode(mode)
         }
     }
 
