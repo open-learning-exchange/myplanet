@@ -175,8 +175,9 @@ class UserRepositoryImpl @Inject constructor(
         return sortUsers(getAllUsers(), fieldName, descending)
     }
 
-    override suspend fun searchUsers(query: String): List<UserEntity> {
-        return userDao.search(query)
+    override suspend fun searchUsers(query: String, sortField: String, descending: Boolean): List<UserEntity> {
+        val users = userDao.search(query)
+        return sortUsers(users, sortField, descending)
     }
 
     override suspend fun saveUser(user: UserEntity) {

@@ -51,13 +51,13 @@ class SubmissionsRepositoryImplTest {
     private val answerDao: AnswerDao = mockk(relaxed = true)
     private val examDao: ExamDao = mockk(relaxed = true)
     private val questionDao: QuestionDao = mockk(relaxed = true)
-    private val userRepositoryLazy: dagger.Lazy<UserRepository> = mockk(relaxed = true)
+    private val lazyUserRepository: dagger.Lazy<UserRepository> = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
     private lateinit var repository: SubmissionsRepositoryImpl
 
     @Before
     fun setUp() {
-        every { userRepositoryLazy.get() } returns userRepository
+        every { lazyUserRepository.get() } returns userRepository
         val teamsRepo = mockk<TeamsRepository>(relaxed = true)
         teamsRepositoryProvider = mockk(relaxed = true)
         every { teamsRepositoryProvider.get() } returns teamsRepo
@@ -76,7 +76,7 @@ class SubmissionsRepositoryImplTest {
             answerDao,
             examDao,
             questionDao,
-            userRepositoryLazy
+            lazyUserRepository
         ), recordPrivateCalls = true)
     }
 

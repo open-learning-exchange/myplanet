@@ -32,7 +32,7 @@ interface UserRepository {
     suspend fun getAllUsers(): List<UserEntity>
     suspend fun getUsersSortedBy(fieldName: String, descending: Boolean): List<UserEntity>
     suspend fun getPendingSyncUsers(limit: Int): List<UserEntity>
-    suspend fun searchUsers(query: String): List<UserEntity>
+    suspend fun searchUsers(query: String, sortField: String, descending: Boolean): List<UserEntity>
     suspend fun saveUser(user: UserEntity)
     fun parseLeadersJson(jsonString: String): List<UserEntity>
     suspend fun ensureUserSecurityKeys(userId: String): UserEntity?
