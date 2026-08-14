@@ -16,6 +16,8 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.DownloadUtils
+import org.ole.planet.myplanet.utils.FileUtils
 
 @HiltViewModel
 class ResourceViewerViewModel @Inject constructor(
@@ -54,18 +56,17 @@ class ResourceViewerViewModel @Inject constructor(
     }
 
     suspend fun downloadResource(url: String) = withContext(dispatcherProvider.io) {
-        if (!org.ole.planet.myplanet.utils.FileUtils.checkFileExist(context, url)) {
-            org.ole.planet.myplanet.utils.DownloadUtils.openDownloadService(context, arrayListOf(url), false)
+        if (!FileUtils.checkFileExist(context, url)) {
+            DownloadUtils.openDownloadService(context, arrayListOf(url), false)
         }
     }
 
     suspend fun extractPdfText(file: File): String = withContext(dispatcherProvider.io) {
         try {
             PDFBoxResourceLoader.init(context)
-            val document = PDDocument.load(file)
-            val text = PDFTextStripper().getText(document).trim()
-            document.close()
-            text
+            PDDocument.load(file).use {
+                PDFTextStripper().getText(it).trim()
+            }
         } catch (e: Exception) { "" }
     }
 }

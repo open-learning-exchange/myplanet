@@ -98,7 +98,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private lateinit var audioRecorder: AudioRecorder
     private lateinit var library: MyLibrary
     private var pdfText: String = ""
-    private var isExtractingText = false
     private var externalFilesDir: File? = null
 
     private val viewModel: ResourceViewerViewModel by viewModels()
@@ -426,10 +425,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private fun extractPdfText() {
         val file = File(externalFilesDir, "ole/$filePath")
         if (!file.exists()) return
-        isExtractingText = true
         viewLifecycleOwner.lifecycleScope.launch {
             pdfText = viewModel.extractPdfText(file)
-            isExtractingText = false
         }
     }
 
