@@ -11,7 +11,7 @@ import org.ole.planet.myplanet.utils.NetworkUtils
  * [org.ole.planet.myplanet.data.room.dao.ApkLogDao] and uploaded through the Room upload path
  * (`UploadConfigs.CrashLog`). A row with a null `_rev` is considered pending upload.
  */
-@Entity(tableName = "apk_log")
+@Entity(tableName = "apk_log", indices = [androidx.room.Index("_rev")])
 open class ApkLog {
     @PrimaryKey
     var id: String = ""

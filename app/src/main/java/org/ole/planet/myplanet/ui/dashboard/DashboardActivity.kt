@@ -22,6 +22,7 @@ import android.widget.ImageButton
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
+import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
@@ -265,6 +266,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         binding.root.viewTreeObserver.addOnGlobalLayoutListener(onGlobalLayoutListener)
         binding.appBarBell.ivSetting.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
+        }
+        binding.dashboardSyncNow.setOnClickListener {
+            logSyncInSharedPrefs()
         }
     }
 
@@ -577,13 +581,17 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun updateLastSyncStatus() {
+        val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        binding.dashboardSyncBanner.visibility = if (isLandscape) View.GONE else View.VISIBLE
+        if (isLandscape) return
+
         val lastSyncMillis = prefData.getLastSync()
-        val statusText = if (lastSyncMillis <= 0L) {
-            getString(R.string.last_synced_colon) + getString(R.string.last_synced_never)
+        val timeText = if (lastSyncMillis <= 0L) {
+            getString(R.string.last_synced_never)
         } else {
-            getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSyncMillis, timeProvider)
+            TimeUtils.getRelativeTime(lastSyncMillis, timeProvider)
         }
-        binding.dashboardLastSyncStatus.text = statusText
+        binding.dashboardLastSyncStatus.text = getString(R.string.dashboard_sync_status, timeText)
     }
 
     private fun onRealmDataChange() {
@@ -710,10 +718,30 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val offlineVisits = user?.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0
             if (user?.id?.startsWith("guest") == true) {
                 when {
-                    offlineVisits >= 3 -> showGuestDialog()
-                    offlineVisits == 2 -> showVisitLimitWarning()
+                    offlineVisits >= 4 -> showGuestDialog()
+                    offlineVisits == 2 -> showBanner(R.string.guest_visit_limit_warning)
+                    offlineVisits == 3 -> showBanner(R.string.last_login_message)
                 }
             }
+        }
+    }
+
+    private fun showBanner(@StringRes messageRes: Int) {
+        val container = binding.bannerContainer
+        container.removeAllViews()
+
+        // Inflate the banner layout
+        val inflatedView = LayoutInflater.from(this)
+            .inflate(R.layout.banner_offline_visit_warning, container, true)
+
+        // Set the message
+        val messageView = inflatedView.findViewById<TextView>(R.id.banner_message)
+        messageView.text = getString(messageRes)
+
+        // Close button wiring
+        val closeButton = inflatedView.findViewById<ImageButton>(R.id.banner_close)
+        closeButton.setOnClickListener {
+            binding.bannerContainer.removeAllViews()
         }
     }
 
@@ -743,20 +771,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 dialog.dismiss()
                 logout()
             }
-    }
-
-    private fun showVisitLimitWarning() {
-        // Clear any existing banner first
-        binding.bannerContainer.removeAllViews()
-
-        // Inflate the banner layout
-        val bannerView = LayoutInflater.from(this).inflate(R.layout.banner_offline_visit_warning, binding.bannerContainer, true)
-
-        // Set up close button
-        val closeButton = bannerView.findViewById<ImageButton>(R.id.banner_close)
-        closeButton.setOnClickListener {
-            binding.bannerContainer.removeAllViews()
-        }
     }
 
     private fun topBarVisible(){

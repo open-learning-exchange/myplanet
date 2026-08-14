@@ -73,6 +73,7 @@ class SyncManagerTest {
             teamsSyncRepository,
             coursesRepository,
             eventsRepository,
+            mockk(),
             mockk()
         )
     }

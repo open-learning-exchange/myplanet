@@ -314,7 +314,7 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun postReply(message: String, news: News, currentUser: UserEntity, imageList: List<String>?) {
-        val newsId = news._id ?: news.id
+        val newsId = news.id
         val map = HashMap<String?, String>()
         map["message"] = message
         map["viewableBy"] = news.viewableBy ?: ""
@@ -390,11 +390,6 @@ class VoicesRepositoryImpl @Inject constructor(
         val existing = newsDao.getByUnderscoreIds(underscoreIds).associateBy { it._id }
         val newsList = docs.map { buildNewsFromJson(it, existing) }
         newsDao.upsertAll(newsList)
-        saveConcatenatedLinksToPrefs()
-    }
-
-    override suspend fun insertNewsFromJson(doc: JsonObject) {
-        newsDao.upsert(buildNewsFromJson(doc))
         saveConcatenatedLinksToPrefs()
     }
 

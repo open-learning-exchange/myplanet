@@ -6,14 +6,11 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.core.text.HtmlCompat
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import com.google.gson.JsonArray
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -30,6 +27,7 @@ import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class DictionaryActivity : BaseActivity() {
@@ -88,15 +86,9 @@ class DictionaryActivity : BaseActivity() {
     }
 
     override fun registerReceiver() {
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                broadcastService.events.collect { intent ->
-                    if (isActive) {
-                        when (intent.action) {
-                            "message_progress" -> receiver.onReceive(this@DictionaryActivity, intent)
-                        }
-                    }
-                }
+        collectWhenStarted(broadcastService.events) { intent ->
+            when (intent.action) {
+                "message_progress" -> receiver.onReceive(this@DictionaryActivity, intent)
             }
         }
     }

@@ -5,21 +5,17 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.GridLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMembersBinding
-import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class LeadersFragment : Fragment() {
     private var binding: FragmentMembersBinding? = null
-    @Inject
-    lateinit var sharedPrefManager: SharedPrefManager
-    @Inject
-    lateinit var userRepository: UserRepository
+    private val viewModel: LeadersViewModel by viewModels()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val b = FragmentMembersBinding.inflate(inflater, container, false)
@@ -29,15 +25,17 @@ class LeadersFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val leaders = sharedPrefManager.getCommunityLeaders()
-        if (leaders.isEmpty()) {
-            binding?.tvNodata?.let { it.text = getString(R.string.no_data_available) }
-        } else {
-            val leadersList = userRepository.parseLeadersJson(leaders)
-            binding?.rvMember?.layoutManager = GridLayoutManager(activity, 2)
-            val adapter = CommunityLeadersAdapter(requireActivity())
-            binding?.rvMember?.adapter = adapter
-            adapter.submitList(leadersList)
+        binding?.rvMember?.layoutManager = GridLayoutManager(activity, 2)
+        val adapter = CommunityLeadersAdapter(requireActivity())
+        binding?.rvMember?.adapter = adapter
+
+        collectWhenStarted(viewModel.leaders) { leadersList ->
+            if (leadersList.isEmpty()) {
+                binding?.tvNodata?.let { it.text = getString(R.string.no_data_available) }
+            } else {
+                binding?.tvNodata?.let { it.text = "" }
+                adapter.submitList(leadersList)
+            }
         }
     }
 

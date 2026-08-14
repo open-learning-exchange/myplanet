@@ -1,0 +1,90 @@
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/dashboard_page_bg"
+    tools:context="org.ole.planet.myplanet.ui.dashboard.DashboardFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
+
+        <include
+            android:id="@+id/cardProfileBell"
+            layout="@layout/card_profile_bell"
+            android:layout_width="@dimen/dashboard_rail_width"
+            android:layout_height="match_parent" />
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:padding="@dimen/dashboard_page_padding">
+
+            <include
+                android:id="@+id/homeCardLibrary"
+                layout="@layout/home_card_library"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginBottom="@dimen/dashboard_tile_gap"
+                android:layout_weight="1" />
+            <include
+                android:id="@+id/homeCardCourses"
+                layout="@layout/home_card_courses"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginBottom="@dimen/dashboard_tile_gap"
+                android:layout_weight="1" />
+            <include
+                android:id="@+id/homeCardTeams"
+                layout="@layout/home_card_teams"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginBottom="@dimen/dashboard_tile_gap"
+                android:layout_weight="1" />
+            <include
+                android:id="@+id/homeCardMyLife"
+                layout="@layout/home_card_mylife"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_my_activity"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/padding_large"
+        android:contentDescription="@string/my_activity"
+        android:src="@drawable/ic_activity"
+        app:backgroundTint="@color/dashboard_accent_blue"
+        app:tint="@color/md_white_1000" />
+    <LinearLayout
+        android:id="@+id/ll_prompt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/md_amber_100"
+        android:orientation="horizontal"
+        android:padding="@dimen/padding_normal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:padding="@dimen/padding_normal"
+            android:text="@string/update_profile_alert"
+            android:textColor="@color/md_black_1000" />
+        <ImageView
+            android:id="@+id/ic_close"
+            android:layout_width="@dimen/_30dp"
+            android:layout_height="@dimen/_30dp"
+            android:src="@drawable/close_x"
+            app:tint="@color/md_black_1000"
+            android:contentDescription="@string/close" />
+    </LinearLayout>
+</FrameLayout>
