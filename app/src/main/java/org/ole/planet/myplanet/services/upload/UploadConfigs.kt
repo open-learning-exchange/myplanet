@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.services.upload
 
 import dagger.Lazy
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.repository.DiagnosticsRepository
@@ -19,6 +21,7 @@ import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.SubmitPhotos
 import org.ole.planet.myplanet.model.TeamLog
+import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
@@ -35,7 +38,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 
 @Singleton
 class UploadConfigs @Inject constructor(
-    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
+    @ApplicationContext private val context: Context,
     private val voicesRepository: VoicesRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val activitiesRepository: ActivitiesRepository,
@@ -209,7 +212,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "apk_logs",
         modelClassName = "ApkLog",
         fetchPendingItems = { diagnosticsRepository.getPendingApkLogs() },
-        serializer = UploadSerializer.Simple { log -> ApkLog.serialize(log, org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName(context)) },
+        serializer = UploadSerializer.Simple { log -> ApkLog.serialize(log, NetworkUtils.getCustomDeviceName(context)) },
         idExtractor = { it.id },
         markUploaded = { results ->
             // A row is "pending" until it has a _rev; set it here. Rows that no longer exist
