@@ -54,6 +54,7 @@ import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class TeamsRepositoryImpl @Inject constructor(
@@ -798,10 +799,10 @@ class TeamsRepositoryImpl @Inject constructor(
             val totalExpenses = report.wages + report.otherExpenses
             val profitLoss = totalIncome - totalExpenses
             val endingBalance = profitLoss + report.beginningBalance
-            csvBuilder.append(org.ole.planet.myplanet.utils.TimeUtils.formatDateForCsv(report.startDate)).append(", ")
-                .append(org.ole.planet.myplanet.utils.TimeUtils.formatDateForCsv(report.endDate)).append(", ")
-                .append(org.ole.planet.myplanet.utils.TimeUtils.formatDateForCsv(report.createdDate)).append(", ")
-                .append(org.ole.planet.myplanet.utils.TimeUtils.formatDateForCsv(report.updatedDate)).append(", ")
+            csvBuilder.append(TimeUtils.formatDateForCsv(report.startDate)).append(", ")
+                .append(TimeUtils.formatDateForCsv(report.endDate)).append(", ")
+                .append(TimeUtils.formatDateForCsv(report.createdDate)).append(", ")
+                .append(TimeUtils.formatDateForCsv(report.updatedDate)).append(", ")
                 .append(report.beginningBalance).append(", ")
                 .append(report.sales).append(", ")
                 .append(report.otherIncome).append(", ")
