@@ -33,17 +33,17 @@
             android:layout_width="44dp"
             android:layout_height="44dp"
             android:layout_marginStart="4dp"
-            android:background="@drawable/bg_rounded_thumbnail"
-            android:clipToOutline="true">
+            android:background="@drawable/bg_rounded_thumbnail">
 
-            <ImageView
+            <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/iv_cover_preview"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:contentDescription="@null"
                 android:importantForAccessibility="no"
                 android:scaleType="centerCrop"
-                android:visibility="gone" />
+                android:visibility="gone"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.MyPlanet.CoverRounded" />
 
             <ImageView
                 android:id="@+id/iv_type_icon"

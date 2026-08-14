@@ -251,6 +251,7 @@ class ResourcesAdapter(
                 null
             }
             mimeType?.contains("pdf") == true -> {
+                showTypeIconOnly(ivPreview, ivTypeIcon)
                 val targetWidthPx = (coverWidthDp * context.resources.displayMetrics.density).toInt()
                 adapterScope.launch { showPdfPreview(ivPreview, ivTypeIcon, file, targetWidthPx) }
             }

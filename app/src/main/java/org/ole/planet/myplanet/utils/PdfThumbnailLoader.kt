@@ -42,4 +42,8 @@ object PdfThumbnailLoader {
             }
         }?.also { cache.put(cacheKey, it) }
     }
+
+    fun evictAll() {
+        cache.evictAll()
+    }
 }
