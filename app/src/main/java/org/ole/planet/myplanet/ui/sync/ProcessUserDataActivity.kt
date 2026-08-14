@@ -213,7 +213,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         collectWhenStarted(flow.takeWhile { value ->
             if (value is SyncUiState.Success) {
                 safelyDismissDialog()
-                Toast.makeText(this@ProcessUserDataActivity, getString(R.string.upload_complete), Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@ProcessUserDataActivity, getString(R.string.planet_is_up_to_date), Toast.LENGTH_SHORT).show()
                 false
             } else if (value is SyncUiState.Error) {
                 safelyDismissDialog()
