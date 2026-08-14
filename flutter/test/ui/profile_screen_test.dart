@@ -35,7 +35,7 @@ void main() {
       phoneNumber: '+1 555 0100',
       language: 'English',
       isArchived: false,
-    isUpdated: false,
+      isUpdated: false,
     );
 
     await tester.pumpWidget(
@@ -83,7 +83,7 @@ void main() {
         firstName: 'Ada',
         email: 'old@example.org',
         isArchived: false,
-      isUpdated: false,
+        isUpdated: false,
       ),
     );
     await tester.pumpWidget(
@@ -133,7 +133,7 @@ void main() {
       email: 'ada@example.org',
       phoneNumber: '+1 555 0100',
       isArchived: false,
-    isUpdated: false,
+      isUpdated: false,
     );
 
     await tester.pumpWidget(
@@ -216,7 +216,7 @@ UserRow _user() => UserRow(
   joinDate: 0,
   firstName: 'Ada',
   isArchived: false,
-isUpdated: false,
+  isUpdated: false,
 );
 
 class _TestSessionNotifier extends SessionNotifier {

@@ -29,7 +29,7 @@ void main() {
     userAdmin: false,
     joinDate: 0,
     isArchived: false,
-  isUpdated: false,
+    isUpdated: false,
   );
 
   GoRouter buildRouter() => GoRouter(

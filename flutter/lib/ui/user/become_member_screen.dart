@@ -218,7 +218,7 @@ class _BecomeMemberScreenState extends ConsumerState<BecomeMemberScreen> {
       planetCode: serverConfig?.code,
       parentCode: serverConfig?.parentCode,
       isArchived: false,
-    isUpdated: false,
+      isUpdated: false,
     );
 
     await db.into(db.users).insertOnConflictUpdate(user);

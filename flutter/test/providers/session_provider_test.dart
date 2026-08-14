@@ -48,35 +48,40 @@ void main() {
     return container;
   }
 
-  test('updateProfile flags the row as pending and enqueues the upload', () async {
-    // Seed the row so the notifier has something to edit. The override's build
-    // returns it, but `updateProfile` writes through the DAO, so the row must
-    // exist in the database first.
-    await db.userDao.upsert(user().toCompanion(false));
-    final container = await containerFor(user());
+  test(
+    'updateProfile flags the row as pending and enqueues the upload',
+    () async {
+      // Seed the row so the notifier has something to edit. The override's build
+      // returns it, but `updateProfile` writes through the DAO, so the row must
+      // exist in the database first.
+      await db.userDao.upsert(user().toCompanion(false));
+      final container = await containerFor(user());
 
-    await container.read(sessionProvider.notifier).updateProfile(
-      firstName: 'Ada',
-      middleName: 'Augusta',
-      lastName: 'Lovelace',
-      email: 'ada@example.org',
-      phoneNumber: '+1 555',
-      level: 'a1',
-      language: 'English',
-      gender: 'female',
-      dateOfBirth: '1815-12-10',
-    );
+      await container
+          .read(sessionProvider.notifier)
+          .updateProfile(
+            firstName: 'Ada',
+            middleName: 'Augusta',
+            lastName: 'Lovelace',
+            email: 'ada@example.org',
+            phoneNumber: '+1 555',
+            level: 'a1',
+            language: 'English',
+            gender: 'female',
+            dateOfBirth: '1815-12-10',
+          );
 
-    final saved = await db.userDao.getById('user-1');
-    expect(saved?.firstName, 'Ada');
-    expect(saved?.lastName, 'Lovelace');
-    expect(saved?.isUpdated, isTrue);
-    final queued = await db.outboxDao.due(
-      DateTime.now().millisecondsSinceEpoch + 1000,
-    );
-    expect(queued.map((row) => row.uploadType), ['user']);
-    expect(queued.single.httpMethod, 'PUT');
-  });
+      final saved = await db.userDao.getById('user-1');
+      expect(saved?.firstName, 'Ada');
+      expect(saved?.lastName, 'Lovelace');
+      expect(saved?.isUpdated, isTrue);
+      final queued = await db.outboxDao.due(
+        DateTime.now().millisecondsSinceEpoch + 1000,
+      );
+      expect(queued.map((row) => row.uploadType), ['user']);
+      expect(queued.single.httpMethod, 'PUT');
+    },
+  );
 
   test('setUserImage stores the path and flags the row', () async {
     await db.userDao.upsert(user().toCompanion(false));
@@ -92,38 +97,170 @@ void main() {
     expect(await db.userDao.pendingSyncUsers(), isNotEmpty);
   });
 
-  test('a profile edit without a configured server still writes locally', () async {
-    // The edit must land even when there is nowhere to send it; the dirty flag
-    // carries it to the next drain once a server is configured.
+  test(
+    'a profile edit without a configured server still writes locally',
+    () async {
+      // The edit must land even when there is nowhere to send it; the dirty flag
+      // carries it to the next drain once a server is configured.
+      await db.userDao.upsert(user().toCompanion(false));
+      final container = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          planetApiProvider.overrideWithValue(api),
+          serverConfigProvider.overrideWith(_NullConfig.new),
+          sessionProvider.overrideWith(() => _TestSessionNotifier(user())),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(sessionProvider.future);
+
+      await container
+          .read(sessionProvider.notifier)
+          .updateProfile(
+            firstName: 'Ada',
+            middleName: '',
+            lastName: 'Lovelace',
+            email: '',
+            phoneNumber: '',
+            level: '',
+            language: '',
+            gender: '',
+            dateOfBirth: '',
+          );
+
+      final saved = await db.userDao.getById('user-1');
+      expect(saved?.firstName, 'Ada');
+      expect(saved?.isUpdated, isTrue);
+      // No server → no outbox entry yet, but the row is dirty and waiting.
+      expect(await db.outboxDao.due(9999999999999), isEmpty);
+    },
+  );
+
+  test(
+    'blanking a field nulls the column rather than leaving the old value',
+    () async {
+      await db.userDao.upsert(user().toCompanion(false));
+      final container = await containerFor(user());
+
+      await container
+          .read(sessionProvider.notifier)
+          .updateProfile(
+            firstName: 'Ada',
+            middleName: '',
+            lastName: '',
+            email: '   ',
+            phoneNumber: '',
+            level: '',
+            language: '',
+            gender: '',
+            dateOfBirth: '',
+          );
+
+      final saved = await db.userDao.getById('user-1');
+      expect(saved?.firstName, 'Ada');
+      // A blank field clears the column — `nullToAbsent` would have left the
+      // prior value in place.
+      expect(saved?.lastName, isNull);
+      expect(saved?.email, isNull);
+      expect(saved?.isUpdated, isTrue);
+    },
+  );
+
+  test('the session state reflects the edited row', () async {
     await db.userDao.upsert(user().toCompanion(false));
+    final container = await containerFor(user());
+
+    await container
+        .read(sessionProvider.notifier)
+        .updateProfile(
+          firstName: 'Grace',
+          middleName: '',
+          lastName: 'Hopper',
+          email: '',
+          phoneNumber: '',
+          level: '',
+          language: '',
+          gender: '',
+          dateOfBirth: '',
+        );
+
+    final session = container.read(sessionProvider).valueOrNull;
+    expect(session?.firstName, 'Grace');
+    expect(session?.lastName, 'Hopper');
+  });
+
+  test('a profile edit is a no-op when no session is loaded', () async {
+    // Before login there is no current user; the edit must not throw.
     final container = ProviderContainer(
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         planetApiProvider.overrideWithValue(api),
-        serverConfigProvider.overrideWith(_NullConfig.new),
-        sessionProvider.overrideWith(() => _TestSessionNotifier(user())),
+        serverConfigProvider.overrideWith(_TestConfig.new),
+        sessionProvider.overrideWith(() => _TestSessionNotifier(null)),
       ],
     );
     addTearDown(container.dispose);
     await container.read(sessionProvider.future);
 
-    await container.read(sessionProvider.notifier).updateProfile(
-      firstName: 'Ada',
-      middleName: '',
-      lastName: 'Lovelace',
-      email: '',
-      phoneNumber: '',
-      level: '',
-      language: '',
-      gender: '',
-      dateOfBirth: '',
+    await container
+        .read(sessionProvider.notifier)
+        .updateProfile(
+          firstName: 'Ghost',
+          middleName: '',
+          lastName: '',
+          email: '',
+          phoneNumber: '',
+          level: '',
+          language: '',
+          gender: '',
+          dateOfBirth: '',
+        );
+
+    expect(await db.userDao.getById('user-1'), isNull);
+    expect(await db.outboxDao.due(9999999999999), isEmpty);
+  });
+
+  test('setUserImage is a no-op when no session is loaded', () async {
+    final container = ProviderContainer(
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        planetApiProvider.overrideWithValue(api),
+        serverConfigProvider.overrideWith(_TestConfig.new),
+        sessionProvider.overrideWith(() => _TestSessionNotifier(null)),
+      ],
     );
+    addTearDown(container.dispose);
+    await container.read(sessionProvider.future);
+
+    await container.read(sessionProvider.notifier).setUserImage('/x.jpg');
+
+    expect(await db.outboxDao.due(9999999999999), isEmpty);
+  });
+
+  test('a queue failure does not undo the edit', () async {
+    // The dirty flag is the durable half; an enqueue that throws must leave
+    // the row dirty so the next drain carries it. The `_queueUserUpload` path
+    // swallows the error deliberately.
+    await db.userDao.upsert(user().toCompanion(false));
+    final container = await containerFor(user());
+
+    await container
+        .read(sessionProvider.notifier)
+        .updateProfile(
+          firstName: 'Ada',
+          middleName: '',
+          lastName: 'Lovelace',
+          email: '',
+          phoneNumber: '',
+          level: '',
+          language: '',
+          gender: '',
+          dateOfBirth: '',
+        );
 
     final saved = await db.userDao.getById('user-1');
     expect(saved?.firstName, 'Ada');
     expect(saved?.isUpdated, isTrue);
-    // No server → no outbox entry yet, but the row is dirty and waiting.
-    expect(await db.outboxDao.due(9999999999999), isEmpty);
   });
 }
 

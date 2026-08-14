@@ -23,7 +23,7 @@ void main() {
     planetCode: 'planet-a',
     parentCode: 'nation',
     isArchived: false,
-  isUpdated: false,
+    isUpdated: false,
   );
 
   /// `sessionProvider` is an `AsyncNotifier`, so a synchronous `read` sees

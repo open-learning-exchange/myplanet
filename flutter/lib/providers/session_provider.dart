@@ -105,9 +105,9 @@ class SessionNotifier extends AsyncNotifier<UserRow?> {
     // Every column, not `nullToAbsent`: clearing a field (blanking a phone
     // number, say) has to null the column, and an absent value would leave the
     // old text in place. `isUpdated` flags the row for the user-document upload.
-    await ref.read(userDaoProvider).upsert(
-      updated.copyWith(isUpdated: true).toCompanion(false),
-    );
+    await ref
+        .read(userDaoProvider)
+        .upsert(updated.copyWith(isUpdated: true).toCompanion(false));
     state = AsyncData(updated);
     await _queueUserUpload();
   }
@@ -119,9 +119,9 @@ class SessionNotifier extends AsyncNotifier<UserRow?> {
     final current = state.valueOrNull;
     if (current == null) return;
     final updated = current.copyWith(userImage: Value(path));
-    await ref.read(userDaoProvider).upsert(
-      updated.copyWith(isUpdated: true).toCompanion(false),
-    );
+    await ref
+        .read(userDaoProvider)
+        .upsert(updated.copyWith(isUpdated: true).toCompanion(false));
     state = AsyncData(updated);
     await _queueUserUpload();
   }

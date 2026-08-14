@@ -612,13 +612,12 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
   /// pending when it has no CouchDB id yet (a freshly created local account) or
   /// its `isUpdated` flag is set.
   Future<List<UserRow>> pendingSyncUsers() =>
-      (select(users)
-            ..where(
-              (u) =>
-                  u.couchId.isNull() |
-                  u.couchId.equals('') |
-                  u.isUpdated.equals(true),
-            ))
+      (select(users)..where(
+            (u) =>
+                u.couchId.isNull() |
+                u.couchId.equals('') |
+                u.isUpdated.equals(true),
+          ))
           .get();
 
   /// Port of `UserRepositoryImpl.markUserUploaded` / `markUserRevUpdated` —
