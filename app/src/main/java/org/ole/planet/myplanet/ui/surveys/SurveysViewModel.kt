@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities
 
 private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
@@ -29,7 +30,7 @@ class SurveysViewModel @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val userRepository: UserRepository,
     private val userSessionManager: UserSessionManager,
-    private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     enum class SortOption {
