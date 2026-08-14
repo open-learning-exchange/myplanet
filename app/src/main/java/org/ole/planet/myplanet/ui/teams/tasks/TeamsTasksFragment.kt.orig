@@ -39,7 +39,6 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.teams.TeamViewModel
 import org.ole.planet.myplanet.ui.user.UserArrayAdapter
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -49,8 +48,6 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
     private var datePicker: TextView? = null
     private var currentTab = R.id.btn_all
     private var refreshJob: Job? = null
-    @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
 
     private data class TaskSnapshot(
         val id: String?,
