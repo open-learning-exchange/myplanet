@@ -121,7 +121,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     var serverAddressAdapter: ServerAddressAdapter? = null
     var serverListAddresses: List<ServerAddress> = emptyList()
     private var isProgressDialogShowing = false
-    private var pendingVersionMessage: String? = null
     @Inject
     lateinit var configurationsRepository: ConfigurationsRepository
 
@@ -469,7 +468,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     private suspend fun onSyncFailed(msg: String?) {
-        pendingVersionMessage = null
         withContext(dispatcherProvider.main) {
             if (isProgressDialogShowing) {
                 customProgressDialog.dismiss()
@@ -538,12 +536,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                         }
                     }
 
-                    val messageToToast = pendingVersionMessage
-                    pendingVersionMessage = null
-                    if (!messageToToast.isNullOrEmpty()) {
-                        Utilities.toast(activityContext, messageToToast)
-                    }
-
+                    Utilities.toast(activityContext, getString(R.string.upload_complete))
                     showSnack(activityContext.findViewById(android.R.id.content), getString(R.string.sync_completed))
 
                     if (prefData.isAlternativeUrl()) {
@@ -779,7 +772,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     override fun onError(msg: String, blockSync: Boolean) {
         lifecycleScope.launch {
             if (blockSync) {
-                pendingVersionMessage = null
                 Utilities.toast(this@SyncActivity, msg)
                 if (msg.startsWith("Config")) {
                     settingDialog()
@@ -792,7 +784,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     syncIconDrawable.selectDrawable(0)
                 }
             } else {
-                pendingVersionMessage = msg
                 continueSyncProcess()
             }
         }

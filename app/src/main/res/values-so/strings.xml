@@ -720,6 +720,7 @@
     <string name="invalid_url">URL-ka ma jiro</string>
     <string name="please_enter_valid_url_to_continue">Fadlan geli URL-ka sax ah si aad uga sii wadato.</string>
     <string name="uploading_data_to_server_please_wait">Qiimeynta data-ka ee serverka, fadlan sug.....</string>
+    <string name="upload_complete">dhamaystirka upload-ka</string>
     <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">Xaqiij marka hore cinwaankaga serverka ah, waxaana aan la xiriirnay seriver Geed ah.</string>
     <string name="device_couldn_t_reach_local_server">qalabku ma uusan gaari karin server-ka. hubi inaad ku xiran tahay shabakadda Wi-Fi-ga saxda ah ee server-ka maxalliga ah (bulshada).</string>
     <string name="device_couldn_t_reach_nation_server">qalabku ma uusan gaari karin server-ka. hubi inaad ku xiran tahay internetka oo dib isku day.</string>
