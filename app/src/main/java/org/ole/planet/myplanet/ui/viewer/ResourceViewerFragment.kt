@@ -169,7 +169,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         audioRecorder.setCaller(requireActivity(), requireContext())
 
         viewLifecycleOwner.lifecycleScope.launch {
-            externalFilesDir = viewModel.getExternalFilesDir(requireContext())
+            externalFilesDir = viewModel.getExternalFilesDir()
             resourceId?.let {
                 library = viewModel.getLibraryItemById(it) ?: return@launch
             }
@@ -428,7 +428,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         if (!file.exists()) return
         isExtractingText = true
         viewLifecycleOwner.lifecycleScope.launch {
-            pdfText = viewModel.extractPdfText(requireContext(), file)
+            pdfText = viewModel.extractPdfText(file)
             isExtractingText = false
         }
     }
@@ -493,7 +493,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                 streamingHttpDataSourceFactory?.setDefaultRequestProperties(hashMapOf("Cookie" to auth))
             }
             if (isOnline) {
-                viewModel.downloadResource(requireContext(), url)
+                viewModel.downloadResource(url)
             }
         }
     }
