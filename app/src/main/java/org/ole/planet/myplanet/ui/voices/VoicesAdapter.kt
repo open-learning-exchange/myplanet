@@ -275,14 +275,10 @@ class VoicesAdapter(
                 when (payload) {
                     PAYLOAD_TEAM_LEADER_CHANGED -> {
                         configureEditDeleteButtons(holder, news)
-                        val canManageLabels = canAddLabel(news)
-                        labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
-                        labelManager.showChips(holder.binding, news, canManageLabels)
+                        updateLabels(holder, news)
                     }
                     PAYLOAD_LABELS_CHANGED -> {
-                        val canManageLabels = canAddLabel(news)
-                        labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
-                        labelManager.showChips(holder.binding, news, canManageLabels)
+                        updateLabels(holder, news)
                     }
                     PAYLOAD_IMAGES_CHANGED -> {
                         loadImage(holder.binding, news)
@@ -293,18 +289,14 @@ class VoicesAdapter(
                         showShareButton(holder, news)
                         showReplyButton(holder, news, position)
                         updateReplyCount(holder, news, position)
-                        val canManageLabels = canAddLabel(news)
-                        labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
-                        labelManager.showChips(holder.binding, news, canManageLabels)
+                        updateLabels(holder, news)
                         val currentLeader = getCurrentLeader(userModel, news)
                         setMemberClickListeners(holder, userModel, currentLeader)
                     }
                     PAYLOAD_NON_TEAM_MEMBER_CHANGED -> {
                         showReplyButton(holder, news, position)
                         showShareButton(holder, news)
-                        val canManageLabels = canAddLabel(news)
-                        labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
-                        labelManager.showChips(holder.binding, news, canManageLabels)
+                        updateLabels(holder, news)
                     }
                     PAYLOAD_REPLY_COUNT -> updateReplyCount(holder, news, position)
                     PAYLOAD_USER_FETCHED -> {
@@ -318,9 +310,7 @@ class VoicesAdapter(
                         setMessageAndDate(holder, news, sharedTeamName)
                         configureEditDeleteButtons(holder, news)
                         showReplyButton(holder, news, position)
-                        if (news.chat) {
-                            handleChat(holder, news)
-                        }
+                        handleChat(holder, news)
                     }
                 }
             }
@@ -344,9 +334,7 @@ class VoicesAdapter(
                 configureEditDeleteButtons(holder, news)
                 loadImage(holder.binding, news)
                 showReplyButton(holder, news, position)
-                val canManageLabels = canAddLabel(news)
-                labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
-                news.let { labelManager.showChips(holder.binding, it, canManageLabels) }
+                updateLabels(holder, news)
                 handleChat(holder, news)
                 val currentLeader = getCurrentLeader(userModel, news)
                 setMemberClickListeners(holder, userModel, currentLeader)
@@ -566,6 +554,12 @@ class VoicesAdapter(
             }
         }
         return null
+    }
+
+    private fun updateLabels(holder: VoicesViewHolder, news: News?) {
+        val canManageLabels = canAddLabel(news)
+        labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
+        news?.let { labelManager.showChips(holder.binding, it, canManageLabels) }
     }
 
     fun updateParentNews(news: News?) {
@@ -875,7 +869,8 @@ class VoicesAdapter(
             }
         }
 
-        news?.parsedImagesArray?.let { imagesArray ->
+        val imagesToLoad = news?.parsedImagesArray ?: news?.imagesArray
+        imagesToLoad?.let { imagesArray ->
             if (imagesArray.size() > 0) {
                 if (imagesArray.size() == 1) {
                     val ob = imagesArray[0]?.asJsonObject
