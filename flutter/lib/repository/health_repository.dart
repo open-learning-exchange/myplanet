@@ -326,7 +326,9 @@ class HealthRepository {
     if (json != null && json.isNotEmpty) {
       try {
         final decoded = jsonDecode(json);
-        mm = decoded is Map<String, dynamic> ? MyHealth.fromJson(decoded) : null;
+        mm = decoded is Map<String, dynamic>
+            ? MyHealth.fromJson(decoded)
+            : null;
       } catch (_) {
         mm = null;
       }

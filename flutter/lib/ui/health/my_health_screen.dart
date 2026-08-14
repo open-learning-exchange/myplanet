@@ -22,7 +22,8 @@ class MyHealthScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final detail = ref.watch(patientDetailProvider);
     final syncState = ref.watch(healthSyncProvider);
-    final isHealthProvider = ref.watch(isHealthProviderProvider).valueOrNull ?? false;
+    final isHealthProvider =
+        ref.watch(isHealthProviderProvider).valueOrNull ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -498,7 +499,9 @@ class _PatientPickerDialogState extends ConsumerState<_PatientPickerDialog> {
         ref.read(patientListProvider.notifier).sort(_sort);
       } else {
         setState(() => _searching = true);
-        ref.read(patientListProvider.notifier).search(query, sort: _sort).then((_) {
+        ref.read(patientListProvider.notifier).search(query, sort: _sort).then((
+          _,
+        ) {
           if (mounted) setState(() => _searching = false);
         });
       }

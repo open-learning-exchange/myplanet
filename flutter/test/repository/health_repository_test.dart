@@ -369,50 +369,54 @@ void main() {
       expect(patients.first.firstName, 'Carol');
     });
 
-    test('getPatientHealthRecords returns null when no examination exists',
-        () async {
-      await seedUsers();
-      final repo = createRepository();
-      final user = await repo.getPatientById('user-a');
-      final record = await repo.getPatientHealthRecords('user-a', user!);
-      expect(record, isNull);
-    });
+    test(
+      'getPatientHealthRecords returns null when no examination exists',
+      () async {
+        await seedUsers();
+        final repo = createRepository();
+        final user = await repo.getPatientById('user-a');
+        final record = await repo.getPatientHealthRecords('user-a', user!);
+        expect(record, isNull);
+      },
+    );
 
-    test('getPatientHealthRecords decrypts and bundles the health record',
-        () async {
-      await seedUsers();
-      final repo = createRepository();
-      // Ensure the user has crypto keys.
-      final user = await database.userDao.ensureSecurityKeys('user-a');
-      // Encrypt a MyHealth JSON payload.
-      final myHealthJson = jsonEncode({
-        'profile': {
-          'emergencyContactName': 'Jane',
-          'emergencyContact': '555-1234',
-        },
-        'userKey': 'user-a',
-        'lastExamination': 0,
-      });
-      final encrypted = await repo.encryptData('user-a', myHealthJson);
-      // Create the primary health examination row carrying the encrypted
-      // profile. Its profileId is set so getByProfileId includes it.
-      await repo.createExamination(
-        userId: 'user-a',
-        profileId: 'user-a',
-        temperature: 36.5,
-        pulse: 70,
-        height: 170,
-        weight: 65,
-        data: encrypted,
-      );
+    test(
+      'getPatientHealthRecords decrypts and bundles the health record',
+      () async {
+        await seedUsers();
+        final repo = createRepository();
+        // Ensure the user has crypto keys.
+        final user = await database.userDao.ensureSecurityKeys('user-a');
+        // Encrypt a MyHealth JSON payload.
+        final myHealthJson = jsonEncode({
+          'profile': {
+            'emergencyContactName': 'Jane',
+            'emergencyContact': '555-1234',
+          },
+          'userKey': 'user-a',
+          'lastExamination': 0,
+        });
+        final encrypted = await repo.encryptData('user-a', myHealthJson);
+        // Create the primary health examination row carrying the encrypted
+        // profile. Its profileId is set so getByProfileId includes it.
+        await repo.createExamination(
+          userId: 'user-a',
+          profileId: 'user-a',
+          temperature: 36.5,
+          pulse: 70,
+          height: 170,
+          weight: 65,
+          data: encrypted,
+        );
 
-      final record = await repo.getPatientHealthRecords('user-a', user!);
-      expect(record, isNotNull);
-      expect(record!.healthProfile.profile?.emergencyContactName, 'Jane');
-      // The primary examination is included in the bundled history.
-      expect(record.examinations, isNotEmpty);
-      expect(record.healthPojo.temperature, 36.5);
-    });
+        final record = await repo.getPatientHealthRecords('user-a', user!);
+        expect(record, isNotNull);
+        expect(record!.healthProfile.profile?.emergencyContactName, 'Jane');
+        // The primary examination is included in the bundled history.
+        expect(record.examinations, isNotEmpty);
+        expect(record.healthPojo.temperature, 36.5);
+      },
+    );
   });
 }
 

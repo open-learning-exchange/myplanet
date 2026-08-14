@@ -358,12 +358,12 @@ final isHealthProviderProvider = FutureProvider<bool>((ref) async {
 
 /// The patient list with an optional search query and sort order.
 final patientListProvider =
-    StateNotifierProvider.autoDispose<PatientListNotifier, AsyncValue<List<UserRow>>>(
-  PatientListNotifier.new,
-);
+    StateNotifierProvider.autoDispose<
+      PatientListNotifier,
+      AsyncValue<List<UserRow>>
+    >(PatientListNotifier.new);
 
-class PatientListNotifier
-    extends StateNotifier<AsyncValue<List<UserRow>>> {
+class PatientListNotifier extends StateNotifier<AsyncValue<List<UserRow>>> {
   PatientListNotifier(this._ref) : super(const AsyncValue.loading()) {
     _load();
   }
@@ -398,7 +398,10 @@ class PatientListNotifier
     }
   }
 
-  Future<void> search(String query, {PatientSort sort = PatientSort.joinDateDesc}) async {
+  Future<void> search(
+    String query, {
+    PatientSort sort = PatientSort.joinDateDesc,
+  }) async {
     state = const AsyncValue.loading();
     try {
       final repo = _ref.read(healthRepositoryProvider);
@@ -419,9 +422,10 @@ class PatientListNotifier
 /// The currently selected patient's full health record (profile +
 /// examinations + creator user map). Null until a patient is chosen.
 final patientDetailProvider =
-    StateNotifierProvider.autoDispose<PatientDetailNotifier, PatientDetailState>(
-  PatientDetailNotifier.new,
-);
+    StateNotifierProvider.autoDispose<
+      PatientDetailNotifier,
+      PatientDetailState
+    >(PatientDetailNotifier.new);
 
 class PatientDetailNotifier extends StateNotifier<PatientDetailState> {
   PatientDetailNotifier(this._ref) : super(PatientDetailState.initial()) {
@@ -467,8 +471,7 @@ class PatientDetailState {
 
   PatientDetailState({this.user, this.record, this.isLoading = false});
 
-  factory PatientDetailState.initial() =>
-      PatientDetailState(isLoading: false);
+  factory PatientDetailState.initial() => PatientDetailState(isLoading: false);
 
   PatientDetailState copyWith({
     UserRow? user,

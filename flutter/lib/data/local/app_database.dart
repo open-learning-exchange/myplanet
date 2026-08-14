@@ -532,15 +532,13 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
   /// the Kotlin `LIKE '%' || :query || '%'` predicate.
   Future<List<UserRow>> search(String query) {
     final pattern = '%$query%';
-    return (
-      select(users)
-        ..where(
+    return (select(users)..where(
           (u) =>
               u.name.like(pattern) |
               u.firstName.like(pattern) |
               u.lastName.like(pattern),
-        )
-    ).get();
+        ))
+        .get();
   }
 
   /// Port of `UserRepositoryImpl.ensureUserSecurityKeys`.
