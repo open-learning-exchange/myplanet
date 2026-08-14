@@ -180,7 +180,7 @@ class VoicesRepositoryImpl @Inject constructor(
                 }.map { news ->
                     news.sortDate = news.calculateSortDate()
                     news
-                }
+                }.sortedByDescending { it.sortDate }
             }.flowOn(dispatcherProvider.default)
     }
 
@@ -277,8 +277,13 @@ class VoicesRepositoryImpl @Inject constructor(
         } else {
             val filtered = JsonArray().apply {
                 ar.forEach { elem ->
-                    if (elem.isJsonObject && !elem.asJsonObject.has("sharedDate") && elem.asJsonObject.get("section")?.asString != "community") {
-                        add(elem)
+                    if (elem.isJsonObject) {
+                        val obj = elem.asJsonObject
+                        val isCommunity = JsonUtils.getString("section", obj).equals("community", ignoreCase = true)
+                        val hasSharedDate = obj.has("sharedDate")
+                        if (!isCommunity && !hasSharedDate) {
+                            add(elem)
+                        }
                     }
                 }
             }

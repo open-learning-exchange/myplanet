@@ -174,20 +174,20 @@ class VoicesFragment : BaseVoicesFragment() {
     override fun setData(list: List<News?>?) {
         if (!isAdded || list == null) return
 
+        val sortedList = sortNews(list)
         if (binding.rvNews.adapter == null) {
             changeLayoutManager(resources.configuration.orientation, binding.rvNews)
-            downloadResourcesForNews(list)
-            val sortedList = sortNews(list)
+            downloadResourcesForNews(sortedList)
             setupVoicesAdapter(sortedList.filterNotNull())
         } else {
-            (binding.rvNews.adapter as? VoicesAdapter)?.submitList(list.filterNotNull()) {
+            (binding.rvNews.adapter as? VoicesAdapter)?.submitList(sortedList.filterNotNull()) {
                 if (shouldScrollToTopNextUpdate) {
                     scrollToTop()
                     shouldScrollToTopNextUpdate = false
                 }
             }
         }
-        showNoData(binding.tvMessage, list.filterNotNull().size, currentEmptyStateSource)
+        showNoData(binding.tvMessage, sortedList.filterNotNull().size, currentEmptyStateSource)
     }
 
     private fun downloadResourcesForNews(list: List<News?>) {
