@@ -62,7 +62,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         val v = inflater.inflate(getLayout(), container, false)
         recyclerView = v.findViewById(R.id.recycler)
         recyclerView.layoutManager = LinearLayoutManager(activity)
-        recyclerView.setHasFixedSize(true)
         if (isMyCourseLib) {
             tvDelete = v.findViewById(R.id.tv_delete)
             initDeleteButton()
@@ -80,7 +79,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         viewLifecycleOwner.lifecycleScope.launch {
             model = userRepository.getUserModel()
             val adapter = getAdapter()
-            if (recyclerView.adapter != adapter) {
+            if (recyclerView.adapter !== adapter) {
                 recyclerView.adapter = adapter
             }
             if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
@@ -111,10 +110,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     override fun onRatingChanged() {
         viewLifecycleOwner.lifecycleScope.launch {
             val adapter = getAdapter()
-            if (recyclerView.adapter != adapter) {
+            if (recyclerView.adapter !== adapter) {
                 recyclerView.adapter = adapter
-            } else {
-                recyclerView.adapter?.notifyDataSetChanged()
             }
         }
     }
@@ -199,10 +196,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     protected open suspend fun postAddRefresh() {
         val newAdapter = getAdapter()
-        if (recyclerView.adapter != newAdapter) {
+        if (recyclerView.adapter !== newAdapter) {
             recyclerView.adapter = newAdapter
-        } else {
-            recyclerView.adapter?.notifyDataSetChanged()
         }
         showNoData(tvMessage, newAdapter.itemCount, "")
     }

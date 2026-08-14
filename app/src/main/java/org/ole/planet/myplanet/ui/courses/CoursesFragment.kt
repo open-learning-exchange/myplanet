@@ -142,6 +142,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        recyclerView.setHasFixedSize(true)
         setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
         additionalSetup()
         setupMyProgressButton()
