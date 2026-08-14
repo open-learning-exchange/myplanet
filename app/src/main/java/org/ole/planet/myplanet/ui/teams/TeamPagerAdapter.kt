@@ -31,6 +31,7 @@ class TeamPagerAdapter(
 ) : FragmentStateAdapter(parentFragment) {
     private val itemIds = mutableMapOf<String, Long>()
     private var nextId = 1L
+    private var currentPages = initialPages.toList()
 
     private val differ = AsyncListDiffer(this, object : DiffUtil.ItemCallback<TeamPageConfig>() {
         override fun areItemsTheSame(oldItem: TeamPageConfig, newItem: TeamPageConfig): Boolean {
@@ -51,13 +52,20 @@ class TeamPagerAdapter(
         differ.submitList(initialPages.toList())
     }
 
-    fun updatePages(newPages: List<TeamPageConfig>) {
+    fun updatePages(newPages: List<TeamPageConfig>, commitCallback: Runnable? = null) {
+        if (newPages == currentPages) {
+            commitCallback?.run()
+            return
+        }
+
         newPages.forEach { page ->
             if (!itemIds.containsKey(page.id)) {
                 itemIds[page.id] = nextId++
             }
         }
-        differ.submitList(newPages.toList())
+
+        currentPages = newPages.toList()
+        differ.submitList(newPages.toList(), commitCallback)
     }
 
     override fun getItemCount(): Int = differ.currentList.size

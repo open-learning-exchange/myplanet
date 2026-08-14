@@ -132,16 +132,16 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 }
             })
         }
-        coursesPagerAdapter?.submitList(steps.mapNotNull { it?.id })
-
-        binding.viewPager2.isUserInputEnabled = false
-        binding.viewPager2.setCurrentItem(position, false)
-        updateStepDisplay(position)
-        if (position == 0) {
-            binding.previousStep.visibility = View.GONE
+        coursesPagerAdapter?.submitList(steps.mapNotNull { it?.id }) {
+            binding.viewPager2.isUserInputEnabled = false
+            binding.viewPager2.setCurrentItem(position, false)
+            updateStepDisplay(position)
+            if (position == 0) {
+                binding.previousStep.visibility = View.GONE
+            }
+            setCourseData()
+            checkSurveyCompletion()
         }
-        setCourseData()
-        checkSurveyCompletion()
     }
 
     override fun onResume() {

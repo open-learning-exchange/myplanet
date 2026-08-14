@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
 
 class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : FragmentStateAdapter(fm) {
+    private var currentSteps = listOf<String>()
     private val itemIds = mutableMapOf<String, Long>()
     private var nextId = 1L
 
@@ -25,14 +26,20 @@ class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : Fragmen
         private const val COURSE_DETAIL_ID = 0L
     }
 
-    fun submitList(newSteps: List<String>) {
+    fun submitList(newSteps: List<String>, commitCallback: Runnable? = null) {
+        if (newSteps == currentSteps) {
+            commitCallback?.run()
+            return
+        }
+
         newSteps.forEach { stepId ->
             if (!itemIds.containsKey(stepId)) {
                 itemIds[stepId] = nextId++
             }
         }
 
-        differ.submitList(listOf(null) + newSteps)
+        currentSteps = newSteps.toList()
+        differ.submitList(listOf(null) + newSteps, commitCallback)
     }
 
     override fun createFragment(position: Int): Fragment {
