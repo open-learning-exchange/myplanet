@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.model.ContinueChatRequest
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.News
-import org.ole.planet.myplanet.di.DefaultGson
+import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -29,7 +29,7 @@ class ChatRepositoryImpl @Inject constructor(
     private val chatApiService: ChatApiService,
     private val serverUrlMapper: ServerUrlMapper,
     private val sharedPrefManager: SharedPrefManager,
-    @DefaultGson private val gson: Gson
+    @PlainGson private val gson: Gson
 ) : ChatRepository {
 
     @VisibleForTesting

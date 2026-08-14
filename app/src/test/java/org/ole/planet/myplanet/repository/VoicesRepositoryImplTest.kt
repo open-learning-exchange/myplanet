@@ -47,6 +47,7 @@ class VoicesRepositoryImplTest {
             VoicesRepositoryImpl(
                 dispatcherProvider,
                 gsonInstance,
+                Gson(),
                 sharedPrefManager,
                 dagger.Lazy { userRepository },
                 teamNotificationDao,

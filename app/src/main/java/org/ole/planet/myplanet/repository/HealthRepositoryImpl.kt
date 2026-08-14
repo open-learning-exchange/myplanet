@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.AndroidDecrypter
-import org.ole.planet.myplanet.di.DefaultGson
+import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -30,7 +30,7 @@ class HealthRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val healthExaminationDao: HealthExaminationDao,
     private val userDao: UserDao,
-    @DefaultGson private val gson: Gson
+    @PlainGson private val gson: Gson
 ) : HealthRepository {
     override suspend fun getHealthEntry(userId: String): Pair<UserEntity?, HealthExamination?> {
         val userCopy = userDao.getById(userId)

@@ -21,8 +21,8 @@ import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.TeamNotification
+import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.di.DefaultGson
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
@@ -31,7 +31,8 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 class VoicesRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
-    @DefaultGson private val gson: Gson,
+    private val gson: Gson,
+    @PlainGson private val plainGson: Gson,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepositoryLazy: dagger.Lazy<UserRepository>,
     private val teamNotificationDao: TeamNotificationDao,
@@ -335,7 +336,7 @@ class VoicesRepositoryImpl @Inject constructor(
         if (imagesToRemove.isNotEmpty()) {
             val updatedUrls = urls.filter { imageUrlJson ->
                 try {
-                    val imgObject = gson.fromJson(imageUrlJson, JsonObject::class.java)
+                    val imgObject = plainGson.fromJson(imageUrlJson, JsonObject::class.java)
                     val path = JsonUtils.getString("imageUrl", imgObject)
                     !imagesToRemove.contains(path)
                 } catch (_: Exception) {
@@ -411,7 +412,7 @@ class VoicesRepositoryImpl @Inject constructor(
         news.replyTo = JsonUtils.getString("replyTo", doc)
         news.parentCode = JsonUtils.getString("parentCode", doc)
         val user = JsonUtils.getJsonObject("user", doc)
-        news.user = gson.toJson(JsonUtils.getJsonObject("user", doc))
+        news.user = plainGson.toJson(JsonUtils.getJsonObject("user", doc))
         news.userId = JsonUtils.getString("_id", user)
         news.userName = JsonUtils.getString("name", user)
         news.time = JsonUtils.getLong("time", doc)
@@ -426,9 +427,9 @@ class VoicesRepositoryImpl @Inject constructor(
                 concatenatedLinks.add(concatenatedLink)
             }
         }
-        news.images = gson.toJson(images)
+        news.images = plainGson.toJson(images)
         val labels = JsonUtils.getJsonArray("labels", doc)
-        news.viewIn = gson.toJson(JsonUtils.getJsonArray("viewIn", doc))
+        news.viewIn = plainGson.toJson(JsonUtils.getJsonArray("viewIn", doc))
         news.setLabels(labels)
         news.chat = JsonUtils.getBoolean("chat", doc)
 
@@ -438,7 +439,7 @@ class VoicesRepositoryImpl @Inject constructor(
         news.newsUser = JsonUtils.getString("user", newsObj)
         news.aiProvider = JsonUtils.getString("aiProvider", newsObj)
         news.newsTitle = JsonUtils.getString("title", newsObj)
-        news.conversations = gson.toJson(JsonUtils.getJsonArray("conversations", newsObj))
+        news.conversations = plainGson.toJson(JsonUtils.getJsonArray("conversations", newsObj))
         news.newsCreatedDate = JsonUtils.getLong("createdDate", newsObj)
         news.newsUpdatedDate = JsonUtils.getLong("updatedDate", newsObj)
         news.sharedBy = JsonUtils.getString("sharedBy", newsObj)
@@ -463,14 +464,14 @@ class VoicesRepositoryImpl @Inject constructor(
         `object`.addProperty("parentCode", news.parentCode)
         `object`.add("images", news.imagesArray)
         `object`.add("labels", news.labelsArray)
-        `object`.add("user", gson.fromJson(news.user, JsonObject::class.java))
+        `object`.add("user", plainGson.fromJson(news.user, JsonObject::class.java))
         val newsObject = JsonObject()
         newsObject.addProperty("_id", news.newsId)
         newsObject.addProperty("_rev", news.newsRev)
         newsObject.addProperty("user", news.newsUser)
         newsObject.addProperty("aiProvider", news.aiProvider)
         newsObject.addProperty("title", news.newsTitle)
-        newsObject.add("conversations", gson.fromJson(news.conversations, JsonArray::class.java))
+        newsObject.add("conversations", plainGson.fromJson(news.conversations, JsonArray::class.java))
         newsObject.addProperty("createdDate", news.newsCreatedDate)
         newsObject.addProperty("updatedDate", news.newsUpdatedDate)
         newsObject.addProperty("sharedBy", news.sharedBy)
@@ -484,7 +485,7 @@ class VoicesRepositoryImpl @Inject constructor(
             `object`.addProperty("viewableBy", news.viewableBy)
         }
         if (!TextUtils.isEmpty(news.viewIn)) {
-            val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
+            val ar = plainGson.fromJson(news.viewIn, JsonArray::class.java)
             if (ar.size() > 0) `object`.add("viewIn", ar)
         }
     }
@@ -492,7 +493,7 @@ class VoicesRepositoryImpl @Inject constructor(
     private fun saveConcatenatedLinksToPrefs() {
         val existingJsonLinks = sharedPrefManager.getConcatenatedLinks()
         val existingConcatenatedLinks = if (existingJsonLinks != null) {
-            LinkedHashSet(gson.fromJson(existingJsonLinks, Array<String>::class.java).toList())
+            LinkedHashSet(plainGson.fromJson(existingJsonLinks, Array<String>::class.java).toList())
         } else {
             LinkedHashSet()
         }
@@ -501,7 +502,7 @@ class VoicesRepositoryImpl @Inject constructor(
             linksToProcess = concatenatedLinks.toList()
         }
         existingConcatenatedLinks.addAll(linksToProcess)
-        val jsonConcatenatedLinks = gson.toJson(existingConcatenatedLinks)
+        val jsonConcatenatedLinks = plainGson.toJson(existingConcatenatedLinks)
         sharedPrefManager.setConcatenatedLinks(jsonConcatenatedLinks)
     }
 

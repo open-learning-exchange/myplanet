@@ -43,7 +43,7 @@ annotation class StandardRetrofit
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
-annotation class DefaultGson
+annotation class PlainGson
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -63,8 +63,8 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    @DefaultGson
-    fun provideDefaultGson(): Gson {
+    @PlainGson
+    fun providePlainGson(): Gson {
         return Gson()
     }
 

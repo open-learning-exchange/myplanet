@@ -34,7 +34,7 @@ import org.ole.planet.myplanet.model.SubmissionItem
 import org.ole.planet.myplanet.model.SubmitPhotos
 import org.ole.planet.myplanet.model.TeamReference
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.di.DefaultGson
+import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.ExamAnswerUtils
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -51,7 +51,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     private val examDao: ExamDao,
     private val questionDao: QuestionDao,
     private val userDao: UserDao,
-    @DefaultGson private val gson: Gson
+    @PlainGson private val gson: Gson
 ) : SubmissionsRepository {
 
     override suspend fun generateSubmissionPdf(submissionId: String): File? {

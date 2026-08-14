@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.di.DefaultGson
+import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.Constants
@@ -49,7 +49,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     private val serverUrlMapper: ServerUrlMapper,
     private val dispatcherProvider: DispatcherProvider,
     private val timeProvider: TimeProvider,
-    @DefaultGson private val gson: Gson
+    @PlainGson private val gson: Gson
 ) : ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
