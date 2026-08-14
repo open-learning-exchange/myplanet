@@ -216,7 +216,7 @@ class CoursesRepositoryImpl @Inject constructor(
                     course.id.takeIf { it.isNotBlank() }?.let { idsToDelete.add(it) }
                     course._id?.takeIf { it.isNotBlank() }?.let { idsToDelete.add(it) }
                 }
-                removedLogDao.deleteByTypeUserAndDocsTransaction("courses", userId, idsToDelete.toList())
+                removedLogDao.deleteByTypeUserAndDocsChunked("courses", userId, idsToDelete.toList())
             }
 
             realtimeSyncManager.notifyTableUpdated(TableDataUpdate("courses", 0, courses.size))
@@ -339,7 +339,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 course.id.takeIf { it.isNotBlank() }?.let { idsToDelete.add(it) }
                 course._id?.takeIf { it.isNotBlank() }?.let { idsToDelete.add(it) }
             }
-            removedLogDao.deleteByTypeUserAndDocsTransaction("courses", userId, idsToDelete.toList())
+            removedLogDao.deleteByTypeUserAndDocsChunked("courses", userId, idsToDelete.toList())
             realtimeSyncManager.notifyTableUpdated(TableDataUpdate("courses", 0, 1))
         }
     }

@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import org.ole.planet.myplanet.model.RemovedLog
 
 @Dao
@@ -14,9 +15,9 @@ interface RemovedLogDao {
     @Query("DELETE FROM removed_log WHERE type = :type AND userId = :userId AND docId IN (:docIds)")
     suspend fun deleteByTypeUserAndDocs(type: String, userId: String?, docIds: List<String>)
 
-    @androidx.room.Transaction
-    suspend fun deleteByTypeUserAndDocsTransaction(type: String, userId: String?, docIds: List<String>) {
-        docIds.chunked(999).forEach { chunk ->
+    @Transaction
+    suspend fun deleteByTypeUserAndDocsChunked(type: String, userId: String?, docIds: List<String>) {
+        docIds.chunked(900).forEach { chunk ->
             deleteByTypeUserAndDocs(type, userId, chunk)
         }
     }
