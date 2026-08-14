@@ -45,13 +45,12 @@ class TakeCourseViewModel @Inject constructor(
         hasOfferedJoinDialog = true
     }
 
-
     suspend fun logCourseVisit(courseId: String, courseTitle: String, userName: String) {
         coursesRepository.logCourseVisit(courseId, courseTitle, userName)
     }
 
-    suspend fun getCurrentProgress(steps: List<CourseStep?>, userId: String?, courseId: String?): Int {
-        return courseId?.let { coursesRepository.getCurrentProgress(steps, userId, it) } ?: 0
+    suspend fun getCurrentProgress(steps: List<CourseStep?>?, userId: String?, courseId: String?): Int {
+        return coursesRepository.getCurrentProgress(steps, userId, courseId)
     }
 
     suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData {
@@ -59,7 +58,7 @@ class TakeCourseViewModel @Inject constructor(
     }
 
     suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean {
-        return stepId?.let { coursesRepository.isStepCompleted(it, userId) } ?: false
+        return coursesRepository.isStepCompleted(stepId, userId)
     }
 
     suspend fun getCourseById(courseId: String): MyCourse? {
