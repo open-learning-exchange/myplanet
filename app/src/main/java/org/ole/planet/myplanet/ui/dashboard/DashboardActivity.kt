@@ -267,6 +267,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         binding.appBarBell.ivSetting.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
+        binding.dashboardSyncNow.setOnClickListener {
+            logSyncInSharedPrefs()
+        }
     }
 
     private fun updateAppTitle() {
@@ -578,13 +581,17 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun updateLastSyncStatus() {
+        val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        binding.dashboardSyncBanner.visibility = if (isLandscape) View.GONE else View.VISIBLE
+        if (isLandscape) return
+
         val lastSyncMillis = prefData.getLastSync()
-        val statusText = if (lastSyncMillis <= 0L) {
-            getString(R.string.last_synced_colon) + getString(R.string.last_synced_never)
+        val timeText = if (lastSyncMillis <= 0L) {
+            getString(R.string.last_synced_never)
         } else {
-            getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSyncMillis, timeProvider)
+            TimeUtils.getRelativeTime(lastSyncMillis, timeProvider)
         }
-        binding.dashboardLastSyncStatus.text = statusText
+        binding.dashboardLastSyncStatus.text = getString(R.string.dashboard_sync_status, timeText)
     }
 
     private fun onRealmDataChange() {

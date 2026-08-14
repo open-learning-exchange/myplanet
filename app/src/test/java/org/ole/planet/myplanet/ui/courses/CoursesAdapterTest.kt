@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.courses
 import android.app.Application
 import android.content.Context
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.JsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -31,8 +30,7 @@ class CoursesAdapterTest {
     @Before
     fun setUp() {
         MockitoAnnotations.initMocks(this)
-        val map = HashMap<String?, JsonObject>()
-        adapter = CoursesAdapter(mockContext, map, false, false)
+        adapter = CoursesAdapter(mockContext, false, false)
         adapter.registerAdapterDataObserver(mockObserver)
     }
 

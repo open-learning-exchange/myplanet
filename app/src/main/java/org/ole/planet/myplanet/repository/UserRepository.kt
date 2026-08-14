@@ -2,15 +2,14 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.DashboardProfile
-import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MemberInfo
 import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
-import kotlinx.coroutines.flow.Flow
 
 interface UserRepository {
     val achievementUpdates: Flow<Unit>
@@ -73,11 +72,6 @@ interface UserRepository {
 
     suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String>
 
-    suspend fun searchUsers(query: String, sortField: String, descending: Boolean): List<UserEntity>
-    suspend fun getHealthRecordsAndAssociatedUsers(
-        userId: String,
-        currentUser: UserEntity
-    ): HealthRecord?
     suspend fun getUserModel(): UserEntity?
     suspend fun getUserProfile(): UserEntity?
     suspend fun getUserImageUrl(): String?

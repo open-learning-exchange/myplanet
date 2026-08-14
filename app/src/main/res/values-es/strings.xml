@@ -779,6 +779,7 @@
     <string name="unable_to_clear_files">No se pueden eliminar los archivos</string>
     <string name="last_synced_never">nunca sincronizado</string>
     <string name="last_synced_colon">"última sincronización: "</string>
+    <string name="dashboard_sync_status">Sincronización · %1$s</string>
 
     <string name="disclaimer">
     <![CDATA[
@@ -944,9 +945,9 @@
     <string name="virtual_assistant_currently_not_available">asistente virtual actualmente no disponible</string>
     <string name="no_courses">no hay cursos disponibles</string>
     <string name="no_resources">no hay recursos disponibles</string>
-    <string name="no_resources_added_yet">Aún no has agregado ningún recurso</string>
-    <string name="no_courses_joined_yet">Aún no te has unido a ningún curso</string>
-    <string name="no_teams_joined_yet">Aún no te has unido a ningún equipo</string>
+    <string name="no_resources_added_yet">Puedes agregar recursos</string>
+    <string name="no_courses_joined_yet">Puedes unirte a cursos</string>
+    <string name="no_teams_joined_yet">Puedes unirte a un equipo</string>
     <string name="no_finance_record">registro financiero no disponible</string>
     <string name="no_team_courses">cursos de equipo no disponibles</string>
     <string name="no_team_resources">recursos de equipo no disponibles</string>
@@ -1354,11 +1355,28 @@
     <string name="failed_to_update_resource">Error al actualizar el recurso</string>
     <string name="join_team_first">Únete a un equipo para compartir este chat</string>
     <string name="join_enterprise_first">Únete a una empresa para compartir este chat</string>
-
     <string name="open_link_with">Abrir enlace con</string>
     <string name="just_once">Solo una vez</string>
     <string name="always">Siempre</string>
     <string name="survey_load_failed">No se pudo cargar la encuesta. Inténtalo de nuevo.</string>
     <string name="survey_submitted">Encuesta enviada. ¡Gracias!</string>
     <string name="survey_submit_failed">No se pudo enviar la encuesta. Inténtalo de nuevo.</string>
+    <string name="item_count_pill">%d elementos</string>
+    <string name="view_grid">Vista de cuadrícula</string>
+    <string name="view_list">Vista de lista</string>
+    <string name="steps_done_of_total">%1$d de %2$d completados</string>
+    <string name="course_steps_count">%d pasos</string>
+    <string name="subject_label_mathematics">Matemáticas</string>
+    <string name="subject_label_literacy">Alfabetización</string>
+    <string name="subject_label_health">Salud</string>
+    <string name="subject_label_social_studies">Estudios Sociales</string>
+    <string name="subject_label_technology">Tecnología</string>
+    <string name="filter_all">Todos</string>
+    <string name="filter_books">Libros</string>
+    <string name="filter_videos">Videos</string>
+    <string name="filter_audio">Audio</string>
+    <string name="filter_pdfs">PDFs</string>
+    <string name="downloaded">Descargado</string>
+    <string name="not_downloaded">No descargado</string>
+
 </resources>

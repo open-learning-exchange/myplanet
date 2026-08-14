@@ -33,6 +33,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@color/colorPrimary"
+                android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:padding="@dimen/padding_normal">
 
@@ -51,6 +52,8 @@
                     android:textSize="@dimen/text_size_large"
                     android:textStyle="bold"
                     android:minWidth="150dp" />
+                <include
+                    layout="@layout/view_grid_list_toggle" />
                 <TextView
                     android:id="@+id/tv_add"
                     style="@style/Widget.AppCompat.Button.Borderless.Colored"
@@ -116,11 +119,13 @@
                 android:maxWidth="0dp" />
             <include
                 android:id="@+id/layout_search"
-                layout="@layout/layout_search"
+                layout="@layout/layout_search_pill"
+                android:layout_margin="10.5dp"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1" />
         </LinearLayout>
+
 
         <FrameLayout
             android:layout_width="match_parent"
@@ -128,10 +133,17 @@
             android:layout_weight="1"
             android:background="@color/secondary_bg">
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recycler"
+            <org.ole.planet.myplanet.ui.components.MaxWidthFrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="match_parent"
+                android:layout_gravity="center_horizontal">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recycler"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+            </org.ole.planet.myplanet.ui.components.MaxWidthFrameLayout>
+
             <LinearLayout
                 android:id="@+id/tv_message"
                 android:layout_width="wrap_content"
