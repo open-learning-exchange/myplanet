@@ -29,17 +29,15 @@ class EnterprisesReportsAdapter(
 
     override fun onBindViewHolder(holder: ReportsViewHolder, position: Int, payloads: MutableList<Any>) {
         if (payloads.isNotEmpty()) {
+            var handled = false
             payloads.forEach { payload ->
                 if (payload == PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED) {
-                    val binding = holder.binding
-                    if (nonTeamMember) {
-                        binding.edit.visibility = View.GONE
-                        binding.delete.visibility = View.GONE
-                    } else {
-                        binding.edit.visibility = View.VISIBLE
-                        binding.delete.visibility = View.VISIBLE
-                    }
+                    setNonTeamMemberVisibility(holder.binding)
+                    handled = true
                 }
+            }
+            if (!handled) {
+                super.onBindViewHolder(holder, position, payloads)
             }
         } else {
             super.onBindViewHolder(holder, position, payloads)
@@ -48,13 +46,7 @@ class EnterprisesReportsAdapter(
 
     override fun onBindViewHolder(holder: ReportsViewHolder, position: Int) {
         val binding = holder.binding
-        if (nonTeamMember) {
-            binding.edit.visibility = View.GONE
-            binding.delete.visibility = View.GONE
-        } else {
-            binding.edit.visibility = View.VISIBLE
-            binding.delete.visibility = View.VISIBLE
-        }
+        setNonTeamMemberVisibility(binding)
         val report = getItem(position)
         binding.tvReportTitle.text = context.getString(R.string.team_financial_report, teamName)
         report?.let {
@@ -116,6 +108,16 @@ class EnterprisesReportsAdapter(
         if (this.nonTeamMember == nonTeamMember) return
         this.nonTeamMember = nonTeamMember
         notifyItemRangeChanged(0, itemCount, PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED)
+    }
+
+    private fun setNonTeamMemberVisibility(binding: ReportListItemBinding) {
+        if (nonTeamMember) {
+            binding.edit.visibility = View.GONE
+            binding.delete.visibility = View.GONE
+        } else {
+            binding.edit.visibility = View.VISIBLE
+            binding.delete.visibility = View.VISIBLE
+        }
     }
 
     class ReportsViewHolder(val binding: ReportListItemBinding) : RecyclerView.ViewHolder(binding.root)

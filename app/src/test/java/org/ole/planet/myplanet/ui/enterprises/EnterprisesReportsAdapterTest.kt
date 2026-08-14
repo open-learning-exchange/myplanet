@@ -62,11 +62,32 @@ class EnterprisesReportsAdapterTest {
 
             adapter.setNonTeamMember(true)
 
+            // Explicitly test the partial payload logic independently
             val payloads = mutableListOf<Any>(PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED)
             adapter.onBindViewHolder(viewHolder, 0, payloads)
 
             assertEquals(View.GONE, viewHolder.binding.edit.visibility)
             assertEquals(View.GONE, viewHolder.binding.delete.visibility)
+        }
+    }
+
+    @Test
+    fun testOnBindViewHolder_withUnknownPayload_fallsBackToFullBind() {
+        val team1 = MyTeam().apply { _id = "team1" }
+        val list = listOf(team1)
+
+        adapter.submitList(list) {
+            val binding = ReportListItemBinding.inflate(LayoutInflater.from(context))
+            val viewHolder = EnterprisesReportsAdapter.ReportsViewHolder(binding)
+
+            val payloads = mutableListOf<Any>("UNKNOWN_PAYLOAD")
+
+            viewHolder.binding.tvReportTitle.text = ""
+
+            // Should fallback to full bind and set the title
+            adapter.onBindViewHolder(viewHolder, 0, payloads)
+
+            assertEquals(context.getString(org.ole.planet.myplanet.R.string.team_financial_report, "Test Team"), viewHolder.binding.tvReportTitle.text.toString())
         }
     }
 }

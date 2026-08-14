@@ -70,6 +70,7 @@ class MembersAdapter(
         payloads: MutableList<Any>
     ) {
         if (payloads.isNotEmpty()) {
+            var handled = false
             payloads.forEach { payload ->
                 when (payload) {
                     is Bundle -> {
@@ -79,12 +80,17 @@ class MembersAdapter(
                             if (isLeader) {
                                 holder.binding.tvIsLeader.text = context.getString(R.string.team_leader)
                             }
+                            handled = true
                         }
                     }
                     PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED -> {
                         checkUserAndShowOverflowMenu(holder.binding, position)
+                        handled = true
                     }
                 }
+            }
+            if (!handled) {
+                super.onBindViewHolder(holder, position, payloads)
             }
         } else {
             super.onBindViewHolder(holder, position, payloads)
