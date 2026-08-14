@@ -536,7 +536,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                         }
                     }
 
-                    Utilities.toast(activityContext, getString(R.string.upload_complete))
+                    Utilities.toast(activityContext, getString(R.string.planet_is_up_to_date))
                     showSnack(activityContext.findViewById(android.R.id.content), getString(R.string.sync_completed))
 
                     if (prefData.isAlternativeUrl()) {
