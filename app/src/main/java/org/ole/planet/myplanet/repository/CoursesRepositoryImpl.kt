@@ -105,7 +105,7 @@ class CoursesRepositoryImpl @Inject constructor(
             mapCourses(courses).filter { it.userId?.contains(userId) == true }
         }.distinctUntilChanged { old, new ->
             old.size == new.size && old.zip(new).all { (a, b) ->
-                a.id == b.id && a.courseTitle == b.courseTitle && a.userId == b.userId && a.courseSteps?.size == b.courseSteps?.size
+                a.id == b.id && a.courseRev == b.courseRev && a.userId == b.userId
             }
         }.flowOn(dispatcherProvider.default)
     }
