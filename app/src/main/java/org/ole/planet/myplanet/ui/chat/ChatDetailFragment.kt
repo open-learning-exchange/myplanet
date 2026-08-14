@@ -33,6 +33,8 @@ import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isPrimaryServerReachable
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -65,6 +67,14 @@ class ChatDetailFragment : Fragment() {
     private var aiName: String = ""
     private var aiModel: String = ""
     var user: UserEntity? = null
+
+    private var lastChatHistory: List<Conversation>? = null
+    private var lastAiProvider: String? = null
+    private var lastAiProvidersLoading: Boolean? = null
+    private var lastAiProvidersError: Boolean? = null
+    private var lastAiProviders: Map<String, Boolean>? = null
+
+
     private var isUserLoaded = false
     private var isAiUnavailable = false
     private var newsId: String? = null
@@ -127,9 +137,8 @@ class ChatDetailFragment : Fragment() {
         setupMessageInputListeners()
         if (newsId != null) {
             loadNewsConversations(newsId, newsRev, newsConversations)
-        } else {
-            observeUiState()
         }
+        observeUiState()
         view.post { clearChatDetail() }
         if (hasCourseContext) {
             binding.courseContextBanner.visibility = View.VISIBLE
@@ -351,12 +360,6 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun observeUiState() {
-        var lastChatHistory: List<Conversation>? = null
-        var lastAiProvider: String? = null
-        var lastAiProvidersLoading: Boolean? = null
-        var lastAiProvidersError: Boolean? = null
-        var lastAiProviders: Map<String, Boolean>? = null
-
         collectWhenStarted(sharedViewModel.chatUiState) { state ->
             // aiProviders
             if (state.aiProviders != lastAiProviders) {
@@ -394,33 +397,39 @@ class ChatDetailFragment : Fragment() {
                 }
             }
 
-            // selectedChatHistory
-            if (state.selectedChatHistory != lastChatHistory) {
-                lastChatHistory = state.selectedChatHistory
-                mAdapter.clearData()
-                sharedViewModel.clearPaginationState()
-                binding.editGchatMessage.text.clear()
-                binding.textGchatIndicator.visibility = View.GONE
-                if (!state.selectedChatHistory.isNullOrEmpty()) {
-                    val messages = sharedViewModel.processChatHistory(state.selectedChatHistory)
-                    mAdapter.submitList(messages) {
-                        binding.recyclerGchat.post {
-                            binding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
+            if (newsId == null) {
+                // selectedChatHistory
+                if (state.selectedChatHistory != lastChatHistory) {
+                    lastChatHistory = state.selectedChatHistory
+                    mAdapter.clearData()
+                    sharedViewModel.clearPaginationState()
+                    binding.editGchatMessage.text.clear()
+                    binding.textGchatIndicator.visibility = View.GONE
+                    if (!state.selectedChatHistory.isNullOrEmpty()) {
+                        val messages = sharedViewModel.processChatHistory(state.selectedChatHistory)
+                        mAdapter.submitList(messages) {
+                            binding.recyclerGchat.post {
+                                binding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
+                            }
                         }
                     }
                 }
-            }
 
-            // selectedAiProvider
-            if (state.selectedAiProvider != lastAiProvider) {
-                lastAiProvider = state.selectedAiProvider
-                aiName = state.selectedAiProvider ?: aiName
-                updateSelectedAiProvider(state.selectedAiProvider)
-            }
+                // selectedAiProvider
+                if (state.selectedAiProvider != lastAiProvider) {
+                    lastAiProvider = state.selectedAiProvider
+                    aiName = state.selectedAiProvider ?: aiName
+                    updateSelectedAiProvider(state.selectedAiProvider)
+                }
 
-            // selectedId and selectedRev
-            _id = state.selectedId
-            _rev = state.selectedRev
+                // selectedId and selectedRev
+                if (state.selectedId != _id) {
+                    _id = state.selectedId
+                }
+                if (state.selectedRev != _rev) {
+                    _rev = state.selectedRev
+                }
+            }
         }
     }
 

@@ -131,24 +131,25 @@ class ChatViewModel @Inject constructor(
     private val _aiProvidersError = MutableStateFlow(false)
     val aiProvidersError: StateFlow<Boolean> = _aiProvidersError.asStateFlow()
 
+    private val aiProvidersFlow = combine(_aiProviders, _aiProvidersLoading, _aiProvidersError) { providers, loading, error ->
+        Triple(providers, loading, error)
+    }
+
     val chatUiState: StateFlow<ChatUiState> = combine(
         _selectedChatHistory,
         _selectedAiProvider,
         _selectedId,
         _selectedRev,
-        _aiProviders,
-        _aiProvidersLoading,
-        _aiProvidersError
-    ) { args: Array<Any?> ->
-        @Suppress("UNCHECKED_CAST")
+        aiProvidersFlow
+    ) { history, aiProvider, id, rev, aiState ->
         ChatUiState(
-            selectedChatHistory = args[0] as List<Conversation>?,
-            selectedAiProvider = args[1] as String?,
-            selectedId = args[2] as String,
-            selectedRev = args[3] as String,
-            aiProviders = args[4] as Map<String, Boolean>?,
-            aiProvidersLoading = args[5] as Boolean,
-            aiProvidersError = args[6] as Boolean
+            selectedChatHistory = history,
+            selectedAiProvider = aiProvider,
+            selectedId = id,
+            selectedRev = rev,
+            aiProviders = aiState.first,
+            aiProvidersLoading = aiState.second,
+            aiProvidersError = aiState.third
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ChatUiState())
 
