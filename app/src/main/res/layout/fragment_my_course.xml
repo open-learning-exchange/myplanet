@@ -138,6 +138,7 @@
                 android:maxWidth="0dp"
                 android:checked="false" />
             <include
+                android:id="@+id/layout_search"
                 layout="@layout/layout_search_pill"
                 android:layout_width="0dp"
                 android:layout_margin="10.5dp"
@@ -146,6 +147,7 @@
         </LinearLayout>
 
         <HorizontalScrollView
+            android:id="@+id/scroll_chip_filter"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@color/secondary_bg"
