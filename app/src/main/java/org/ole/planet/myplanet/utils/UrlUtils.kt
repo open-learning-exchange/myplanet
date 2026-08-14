@@ -12,9 +12,10 @@ object UrlUtils {
     @Volatile
     private var spmInstance: SharedPrefManager? = null
 
-    private var cachedUser: String? = null
-    private var cachedPwd: String? = null
-    private var cachedHeader: String? = null
+    private data class HeaderCache(val user: String, val pwd: String, val header: String)
+
+    @Volatile
+    private var headerCache: HeaderCache? = null
 
     fun init(sharedPrefManager: SharedPrefManager) {
         spmInstance = sharedPrefManager
@@ -28,9 +29,7 @@ object UrlUtils {
     @VisibleForTesting
     internal fun resetForTesting() {
         spmInstance = null
-        cachedUser = null
-        cachedPwd = null
-        cachedHeader = null
+        headerCache = null
     }
 
     val header: String
@@ -39,14 +38,13 @@ object UrlUtils {
             val user = spm.getUrlUser()
             val pwd = spm.getUrlPwd()
 
-            if (cachedUser == user && cachedPwd == pwd && cachedHeader != null) {
-                return cachedHeader!!
+            val currentCache = headerCache
+            if (currentCache != null && currentCache.user == user && currentCache.pwd == pwd) {
+                return currentCache.header
             }
 
             val newHeader = basicAuthHeader(user, pwd)
-            cachedUser = user
-            cachedPwd = pwd
-            cachedHeader = newHeader
+            headerCache = HeaderCache(user, pwd, newHeader)
             return newHeader
         }
 
