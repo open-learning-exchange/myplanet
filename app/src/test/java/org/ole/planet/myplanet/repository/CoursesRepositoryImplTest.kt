@@ -291,6 +291,8 @@ class CoursesRepositoryImplTest {
             add(com.google.gson.JsonObject().apply { addProperty("_id", "resource2") })
         }
 
+        // Use reflection to enqueue items into the private pendingCourseResources list
+        // This isolates the test without expanding the public API of the repository.
         val queueMethod = CoursesRepositoryImpl::class.java.getDeclaredMethod(
             "queueCourseResources",
             String::class.java,

@@ -805,9 +805,12 @@ class CoursesRepositoryImpl @Inject constructor(
             pendingCourseResources.clear()
         }
 
-        val resourceIds = batch.mapNotNull { JsonUtils.getString("_id", it.doc) }.filter { it.isNotBlank() }
+        val resourceIds = batch.map { JsonUtils.getString("_id", it.doc) }.filter { it.isNotBlank() }
         val existingMap = if (resourceIds.isNotEmpty()) {
-            myLibraryDao.getByIds(resourceIds.distinct()).associateBy { it.id }
+            resourceIds.distinct()
+                .chunked(300)
+                .flatMap { myLibraryDao.getByIds(it) }
+                .associateBy { it.id }
         } else {
             emptyMap()
         }
