@@ -152,4 +152,71 @@ void main() {
       );
     });
   });
+
+  group('credentialFreeDbUrl', () {
+    test('strips the satellite:PIN userinfo before the host', () {
+      // This is the security-critical contract: anything persisted to the
+      // outbox (which survives schema upgrades on disk) must not carry the
+      // server PIN. The credential-free URL is what the uploader persists.
+      expect(
+        UrlUtils.credentialFreeDbUrl(config),
+        'https://planet.example.org/db',
+      );
+    });
+
+    test('leaves a URL with no userinfo unchanged', () {
+      const safe = ServerConfig(
+        serverUrl: 'https://planet.example.org',
+        pin: '1234',
+        couchDbUrl: 'https://planet.example.org:443',
+      );
+      expect(
+        UrlUtils.credentialFreeDbUrl(safe),
+        'https://planet.example.org/db',
+      );
+    });
+
+    test('preserves a non-default port and path', () {
+      const portConfig = ServerConfig(
+        serverUrl: 'https://planet.example.org:6984',
+        pin: '4321',
+        couchDbUrl: 'https://admin:4321@planet.example.org:6984',
+      );
+      expect(
+        UrlUtils.credentialFreeDbUrl(portConfig),
+        'https://planet.example.org:6984/db',
+      );
+    });
+
+    test('falls back to the raw dbUrl when the URL cannot be parsed', () {
+      const broken = ServerConfig(
+        serverUrl: 'not a url',
+        pin: '1234',
+        couchDbUrl: 'not a url',
+      );
+      // No host to strip userinfo from — returns the input verbatim rather
+      // than throwing, so a malformed config never blocks the upload path.
+      expect(UrlUtils.credentialFreeDbUrl(broken), UrlUtils.dbUrl(broken));
+    });
+
+    test('differs from dbUrl whenever credentials are present', () {
+      // The invariant the uploader relies on: the persisted endpoint is never
+      // the credential-bearing one.
+      expect(
+        UrlUtils.credentialFreeDbUrl(config),
+        isNot(UrlUtils.dbUrl(config)),
+      );
+    });
+
+    test('matches dbUrl when there are no credentials to strip', () {
+      const bare = ServerConfig(
+        serverUrl: 'https://planet.example.org',
+        pin: '1234',
+        couchDbUrl: 'https://planet.example.org',
+      );
+      // No userinfo to strip, so the two are identical (same input → same
+      // output; no Uri normalisation discrepancy when there is no port).
+      expect(UrlUtils.credentialFreeDbUrl(bare), UrlUtils.dbUrl(bare));
+    });
+  });
 }
