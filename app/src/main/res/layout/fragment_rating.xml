@@ -90,7 +90,6 @@
             android:paddingStart="@dimen/padding_normal"
             android:paddingEnd="@dimen/padding_normal"
             android:text="@string/button_cancel" />
-
         <ProgressBar
             android:id="@+id/submit_progress"
             style="?android:attr/progressBarStyleSmall"
@@ -99,7 +98,6 @@
             android:layout_gravity="center_vertical"
             android:layout_marginEnd="@dimen/padding_normal"
             android:visibility="gone" />
-
         <Button
             android:id="@+id/btn_submit"
             style="@style/YellowButtons"
