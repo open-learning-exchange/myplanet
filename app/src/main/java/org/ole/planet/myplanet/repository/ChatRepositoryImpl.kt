@@ -11,6 +11,7 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.data.room.dao.ChatDao
+import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatRequest
@@ -19,7 +20,6 @@ import org.ole.planet.myplanet.model.ContinueChatRequest
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.News
-import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.JsonUtils

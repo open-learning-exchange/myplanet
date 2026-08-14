@@ -2,9 +2,9 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.text.TextUtils
+import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.google.gson.Gson
 import com.google.gson.JsonParser
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.UserDao
+import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
@@ -34,7 +35,6 @@ import org.ole.planet.myplanet.model.SubmissionItem
 import org.ole.planet.myplanet.model.SubmitPhotos
 import org.ole.planet.myplanet.model.TeamReference
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.ExamAnswerUtils
 import org.ole.planet.myplanet.utils.JsonUtils

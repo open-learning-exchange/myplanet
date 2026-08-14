@@ -25,8 +25,8 @@ import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.di.PlainGson
+import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.Constants

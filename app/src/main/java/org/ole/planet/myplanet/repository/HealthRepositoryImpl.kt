@@ -14,13 +14,13 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
 import org.ole.planet.myplanet.data.room.dao.UserDao
+import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.HealthExamination.Companion.serialize
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.AndroidDecrypter
-import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
