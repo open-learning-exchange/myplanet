@@ -34,7 +34,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.base.DefaultBaseAdapterFactory
@@ -812,14 +811,19 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
         if (userId != null && itemsToDelete.isNotEmpty()) {
             viewLifecycleOwner.lifecycleScope.launch {
-                viewModel.removeResourcesFromShelf(itemsToDelete, userId).onSuccess {
-                    _binding ?: return@onSuccess
-                    Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
-                    refreshResourcesData()
-                    selectedItems?.clear()
-                    changeButtonStatus()
-                    hideButton()
-                }
+                viewModel.removeResourcesFromShelf(itemsToDelete, userId)
+                    .onSuccess {
+                        _binding ?: return@onSuccess
+                        Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+                        refreshResourcesData()
+                        selectedItems?.clear()
+                        changeButtonStatus()
+                        hideButton()
+                    }
+                    .onFailure {
+                        _binding ?: return@onFailure
+                        Utilities.toast(activity, getString(R.string.error, it.message))
+                    }
             }
         }
     }
