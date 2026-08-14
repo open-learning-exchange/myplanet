@@ -305,10 +305,10 @@ class ResourcesAdapter(
     fun setOpenedResourceIds(newOpenedResourceIds: Set<String>) {
         val oldOpenedResourceIds = this.openedResourceIds
         this.openedResourceIds = newOpenedResourceIds
-        val changedIds = oldOpenedResourceIds.subtract(newOpenedResourceIds) union newOpenedResourceIds.subtract(oldOpenedResourceIds)
-        changedIds.forEach { id ->
-            val index = currentList.indexOfFirst { it.item.id == id }
-            if (index != -1) {
+        currentList.forEachIndexed { index, model ->
+            val wasOpened = oldOpenedResourceIds.contains(model.item.id)
+            val isOpened = newOpenedResourceIds.contains(model.item.id)
+            if (wasOpened != isOpened) {
                 notifyItemChanged(index, PAYLOAD_SELECTION)
             }
         }
