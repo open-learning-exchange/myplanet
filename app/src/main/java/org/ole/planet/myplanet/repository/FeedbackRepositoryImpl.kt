@@ -12,6 +12,9 @@ import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.JsonUtils
 
+import javax.inject.Singleton
+
+@Singleton
 class FeedbackRepositoryImpl @Inject constructor(
     private val feedbackDao: FeedbackDao,
     private val gson: Gson

@@ -8,8 +8,10 @@ import javax.inject.Singleton
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ActivitiesRepositoryImpl
 import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.repository.ChatSyncRepository
 import org.ole.planet.myplanet.repository.ChatRepositoryImpl
 import org.ole.planet.myplanet.repository.CommunityRepository
+import org.ole.planet.myplanet.repository.CommunitySyncRepository
 import org.ole.planet.myplanet.repository.CommunityRepositoryImpl
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepositoryImpl
@@ -18,8 +20,10 @@ import org.ole.planet.myplanet.repository.CoursesRepositoryImpl
 import org.ole.planet.myplanet.repository.DownloadRepository
 import org.ole.planet.myplanet.repository.DownloadRepositoryImpl
 import org.ole.planet.myplanet.repository.EventsRepository
+import org.ole.planet.myplanet.repository.EventsSyncRepository
 import org.ole.planet.myplanet.repository.EventsRepositoryImpl
 import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.FeedbackSyncRepository
 import org.ole.planet.myplanet.repository.FeedbackRepositoryImpl
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.HealthRepositoryImpl
@@ -78,8 +82,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindChatSyncRepository(impl: ChatRepositoryImpl): org.ole.planet.myplanet.repository.ChatSyncRepository
-
+    abstract fun bindChatSyncRepository(impl: ChatRepositoryImpl): ChatSyncRepository
 
     @Binds
     @Singleton
@@ -87,8 +90,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindCommunitySyncRepository(impl: CommunityRepositoryImpl): org.ole.planet.myplanet.repository.CommunitySyncRepository
-
+    abstract fun bindCommunitySyncRepository(impl: CommunityRepositoryImpl): CommunitySyncRepository
 
     @Binds
     @Singleton
@@ -104,8 +106,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindEventsSyncRepository(impl: EventsRepositoryImpl): org.ole.planet.myplanet.repository.EventsSyncRepository
-
+    abstract fun bindEventsSyncRepository(impl: EventsRepositoryImpl): EventsSyncRepository
 
     @Binds
     @Singleton
@@ -113,8 +114,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindFeedbackSyncRepository(impl: FeedbackRepositoryImpl): org.ole.planet.myplanet.repository.FeedbackSyncRepository
-
+    abstract fun bindFeedbackSyncRepository(impl: FeedbackRepositoryImpl): FeedbackSyncRepository
 
     @Binds
     @Singleton

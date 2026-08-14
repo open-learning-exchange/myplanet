@@ -11,6 +11,9 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 
+import javax.inject.Singleton
+
+@Singleton
 class EventsRepositoryImpl @Inject constructor(
     private val timeProvider: TimeProvider,
     private val meetupDao: MeetupDao,

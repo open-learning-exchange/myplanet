@@ -10,6 +10,9 @@ import org.ole.planet.myplanet.model.Community
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.utils.JsonUtils
 
+import javax.inject.Singleton
+
+@Singleton
 class CommunityRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
     private val communityDao: CommunityDao,

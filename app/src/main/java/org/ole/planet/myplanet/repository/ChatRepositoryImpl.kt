@@ -22,6 +22,9 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.JsonUtils
 
+import javax.inject.Singleton
+
+@Singleton
 class ChatRepositoryImpl @Inject constructor(
     private val chatDao: ChatDao,
     private val chatApiService: ChatApiService,
