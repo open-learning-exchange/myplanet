@@ -151,17 +151,17 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getPatientsSortedBy(fieldName: String, descending: Boolean): List<UserEntity> {
-        val users = userRepositoryLazy.get().getAllUsers()
-        return sortPatients(users, fieldName, descending)
+        return userRepositoryLazy.get().getUsersSortedBy(fieldName, descending)
     }
 
     override suspend fun searchPatients(query: String, sortField: String, descending: Boolean): List<UserEntity> {
         val users = if (query.isBlank()) {
-            userRepositoryLazy.get().getAllUsers()
+            userRepositoryLazy.get().getUsersSortedBy(sortField, descending)
         } else {
-            userRepositoryLazy.get().searchUsers(query)
+            val searchedUsers = userRepositoryLazy.get().searchUsers(query)
+            sortPatients(searchedUsers, sortField, descending)
         }
-        return sortPatients(users, sortField, descending)
+        return users
     }
 
     private fun sortPatients(users: List<UserEntity>, fieldName: String, descending: Boolean): List<UserEntity> {
@@ -201,9 +201,7 @@ class HealthRepositoryImpl @Inject constructor(
         val userMap = if (userIds.isEmpty()) {
             emptyMap()
         } else {
-            val userIdSet = userIds.toSet()
-            userRepositoryLazy.get().getAllUsers()
-                .filter { it.id in userIdSet }
+            userRepositoryLazy.get().getUsersByIds(userIds)
                 .associateBy { it.id ?: "" }
         }
         return HealthRecord(mh, mm, list, userMap)

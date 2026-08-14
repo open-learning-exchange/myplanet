@@ -107,10 +107,12 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getUsersByIds(userIds: List<String>): List<UserEntity> {
         if (userIds.isEmpty()) return emptyList()
-        val userIdSet = userIds.toSet()
-        return userDao.getAll()
-            .filter { it.id in userIdSet || it._id in userIdSet }
-            .map { it }
+        val userIdList = userIds.distinct()
+        val result = mutableListOf<UserEntity>()
+        userIdList.chunked(400).forEach { chunk ->
+            result.addAll(userDao.getUsersByAnyIds(chunk))
+        }
+        return result.distinctBy { it.id }
     }
 
     override suspend fun getUserByAnyId(id: String): UserEntity? {
