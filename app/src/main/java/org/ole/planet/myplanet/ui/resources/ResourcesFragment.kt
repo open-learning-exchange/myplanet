@@ -34,8 +34,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
@@ -97,8 +95,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     lateinit var prefManager: SharedPrefManager
 
     private val viewModel: ResourcesViewModel by viewModels()
-    private val adapterMutex = Mutex()
     
+
     @Inject
     lateinit var realtimeSyncManager: RealtimeSyncManager
 
@@ -150,20 +148,20 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
 
         val user = userRepository.getUserModel()
-        adapterMutex.withLock {
-            if (!::adapterLibrary.isInitialized) {
-                val factory = adapterFactory ?: DefaultBaseAdapterFactory()
-                adapterLibrary = factory.createResourcesAdapter(
-                    context = requireActivity(),
-                    isGuest = user?.isGuest() == true,
-                    openedResourceIds = emptySet(),
-                    currentUserName = user?.name,
-                    viewMode = prefManager.getLibraryViewMode(),
-                    onEditClick = { model -> openEditResource(model) }
-                )
-            } else {
-                adapterLibrary.setViewMode(prefManager.getLibraryViewMode())
-            }
+        // The adapter caches the Context (Activity) which outlives onCreateView,
+        // but Fragments and their host Activities are re-created together so this is safe from leaks.
+        if (!::adapterLibrary.isInitialized) {
+            val factory = adapterFactory ?: DefaultBaseAdapterFactory()
+            adapterLibrary = factory.createResourcesAdapter(
+                context = requireActivity(),
+                isGuest = user?.isGuest() == true,
+                openedResourceIds = emptySet(),
+                currentUserName = user?.name,
+                viewMode = prefManager.getLibraryViewMode(),
+                onEditClick = { model -> openEditResource(model) }
+            )
+        } else {
+            adapterLibrary.setViewMode(prefManager.getLibraryViewMode(), user?.isGuest() == true, user?.name)
         }
 
         adapterLibrary.setListener(this)
@@ -266,7 +264,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         prefManager.setLibraryViewMode(mode)
         updateToggleUi(mode)
         if (::adapterLibrary.isInitialized) {
-            adapterLibrary.setViewMode(mode)
+            viewLifecycleOwner.lifecycleScope.launch {
+                val user = userRepository.getUserModel()
+                adapterLibrary.setViewMode(mode, user?.isGuest() == true, user?.name)
+            }
         }
     }
 

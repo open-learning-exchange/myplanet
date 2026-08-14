@@ -27,9 +27,9 @@ import org.ole.planet.myplanet.utils.ListViewMode
 
 class ResourcesAdapter(
     private val context: Context,
-    private val isGuest: Boolean,
+    private var isGuest: Boolean,
     private var openedResourceIds: Set<String>,
-    private val currentUserName: String? = null,
+    private var currentUserName: String? = null,
     private var viewMode: ListViewMode = ListViewMode.GRID,
     private val onEditClick: ((ResourceListModel) -> Unit)? = null
 ) : ListAdapter<ResourceListModel, RecyclerView.ViewHolder>(ITEM_CALLBACK) {
@@ -77,10 +77,23 @@ class ResourcesAdapter(
         }
     }
 
-    fun setViewMode(mode: ListViewMode, onChanged: (() -> Unit)? = null) {
-        if (viewMode == mode) return
-        viewMode = mode
-        notifyDataSetChanged()
+    fun setViewMode(mode: ListViewMode, isGuest: Boolean, currentUserName: String?, onChanged: (() -> Unit)? = null) {
+        var changed = false
+        if (viewMode != mode) {
+            viewMode = mode
+            changed = true
+        }
+        if (this.isGuest != isGuest) {
+            this.isGuest = isGuest
+            changed = true
+        }
+        if (this.currentUserName != currentUserName) {
+            this.currentUserName = currentUserName
+            changed = true
+        }
+        if (changed) {
+            notifyDataSetChanged()
+        }
         onChanged?.invoke()
     }
 

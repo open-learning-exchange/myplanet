@@ -38,7 +38,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 class CoursesAdapter(
     private val context: Context,
-    private val isGuest: Boolean,
+    private var isGuest: Boolean,
     var isMyCourseLib: Boolean = false,
     private var viewMode: ListViewMode = ListViewMode.GRID
 ) : ListAdapter<Course, RecyclerView.ViewHolder>(
@@ -131,10 +131,19 @@ class CoursesAdapter(
         }
     }
 
-    fun setViewMode(mode: ListViewMode, onChanged: (() -> Unit)? = null) {
-        if (viewMode == mode) return
-        viewMode = mode
-        notifyDataSetChanged()
+    fun setViewMode(mode: ListViewMode, isGuest: Boolean, onChanged: (() -> Unit)? = null) {
+        var changed = false
+        if (viewMode != mode) {
+            viewMode = mode
+            changed = true
+        }
+        if (this.isGuest != isGuest) {
+            this.isGuest = isGuest
+            changed = true
+        }
+        if (changed) {
+            notifyDataSetChanged()
+        }
         onChanged?.invoke()
     }
 

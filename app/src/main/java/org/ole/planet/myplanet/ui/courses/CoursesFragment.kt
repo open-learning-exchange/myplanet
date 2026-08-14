@@ -27,8 +27,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.base.DefaultBaseAdapterFactory
@@ -68,7 +66,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     private val refreshJobs = mutableMapOf<String, Job>()
     private var pendingScrollState: Parcelable? = null
     private val viewModel: CoursesViewModel by viewModels()
-    private val adapterMutex = Mutex()
+
 
     @Inject
     lateinit var userSessionManager: UserSessionManager
@@ -120,18 +118,18 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
             userModel = userSessionManager.getUserModel()
         }
 
-        adapterMutex.withLock {
-            if (!::adapterCourses.isInitialized) {
-                val factory = adapterFactory ?: DefaultBaseAdapterFactory()
-                adapterCourses = factory.createCoursesAdapter(
-                    context = hostActivity,
-                    isGuest = userModel?.isGuest() ?: true,
-                    isMyCourseLib = isMyCourseLib,
-                    viewMode = sharedPrefManager.getCourseViewMode()
-                )
-            } else {
-                adapterCourses.setViewMode(sharedPrefManager.getCourseViewMode())
-            }
+        // The adapter caches the Context (Activity) which outlives onCreateView,
+        // but Fragments and their host Activities are re-created together so this is safe from leaks.
+        if (!::adapterCourses.isInitialized) {
+            val factory = adapterFactory ?: DefaultBaseAdapterFactory()
+            adapterCourses = factory.createCoursesAdapter(
+                context = hostActivity,
+                isGuest = userModel?.isGuest() ?: true,
+                isMyCourseLib = isMyCourseLib,
+                viewMode = sharedPrefManager.getCourseViewMode()
+            )
+        } else {
+            adapterCourses.setViewMode(sharedPrefManager.getCourseViewMode(), userModel?.isGuest() ?: true)
         }
 
         adapterCourses.setListener(this@CoursesFragment)
@@ -357,7 +355,10 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         sharedPrefManager.setCourseViewMode(mode)
         updateToggleUi(mode)
         if (::adapterCourses.isInitialized) {
-            adapterCourses.setViewMode(mode)
+            viewLifecycleOwner.lifecycleScope.launch {
+                val user = userSessionManager.getUserModel()
+                adapterCourses.setViewMode(mode, user?.isGuest() ?: true)
+            }
         }
     }
 
