@@ -143,8 +143,15 @@ class VoicesRepositoryImpl @Inject constructor(
         return try {
             val array = gson.fromJson(viewIn, JsonArray::class.java)
             array?.any { element ->
-                element != null && element.isJsonObject &&
-                    JsonUtils.getString("_id", element.asJsonObject).equals(userIdentifier, ignoreCase = true)
+                if (element == null || !element.isJsonObject) return@any false
+                val obj = element.asJsonObject
+                val section = JsonUtils.getString("section", obj)
+                if (section.equals("community", ignoreCase = true)) {
+                    val id = JsonUtils.getString("_id", obj)
+                    id.isEmpty() || id == "@" || userIdentifier.isEmpty() || userIdentifier == "@" || id.equals(userIdentifier, ignoreCase = true)
+                } else {
+                    false
+                }
             } == true
         } catch (throwable: Throwable) {
             false
@@ -200,22 +207,35 @@ class VoicesRepositoryImpl @Inject constructor(
         return try {
             val news = newsDao.getById(newsId)
             if (news != null) {
-                val array = gson.fromJson(news.viewIn, JsonArray::class.java)
-                if (array != null && array.size() > 0) {
+                val array = try {
+                    gson.fromJson(news.viewIn, JsonArray::class.java)
+                } catch (e: Exception) {
+                    null
+                } ?: JsonArray()
+
+                if (array.size() > 0) {
                     val firstElement = array.get(0)
                     if (firstElement.isJsonObject) {
                         val obj = firstElement.asJsonObject
-                        if (!obj.has("name")) {
+                        if (!obj.has("name") && teamName.isNotEmpty()) {
                             obj.addProperty("name", teamName)
                         }
                     }
                 }
 
+                val effectivePlanetCode = planetCode.ifEmpty { sharedPrefManager.getPlanetCode() }
+                val effectiveParentCode = parentCode.ifEmpty { sharedPrefManager.getParentCode() }
+                val communityId = if (effectivePlanetCode.isNotEmpty() || effectiveParentCode.isNotEmpty()) {
+                    "$effectivePlanetCode@$effectiveParentCode"
+                } else {
+                    ""
+                }
+
                 val ob = JsonObject()
                 ob.addProperty("section", "community")
-                ob.addProperty("_id", "$planetCode@$parentCode")
+                ob.addProperty("_id", communityId)
                 ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
-                array?.add(ob)
+                array.add(ob)
 
                 news.sharedBy = userId
                 news.viewIn = gson.toJson(array)

@@ -125,11 +125,11 @@ class VoicesRepositoryImplTest {
         }
         val news2 = News().apply {
             viewableBy = "other"
-            viewIn = "[{\"_id\":\"user1\"}]"
+            viewIn = "[{\"_id\":\"user1\",\"section\":\"community\"}]"
         }
         val news3 = News().apply {
             viewableBy = "other"
-            viewIn = "[{\"_id\":\"user2\"}]"
+            viewIn = "[{\"_id\":\"user2\",\"section\":\"community\"}]"
         }
         coEvery { newsDao.getTopLevelMessages() } returns listOf(news1, news2, news3)
 
@@ -137,7 +137,7 @@ class VoicesRepositoryImplTest {
 
         assertEquals(2, result.size)
         assertEquals("community", result[0].viewableBy)
-        assertEquals("[{\"_id\":\"user1\"}]", result[1].viewIn)
+        assertEquals("[{\"_id\":\"user1\",\"section\":\"community\"}]", result[1].viewIn)
     }
 
     @Test
