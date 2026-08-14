@@ -944,35 +944,23 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun cleanupDuplicateUsers() {
-        val allUsers = userDao.getAll()
-        val seenUsers = HashMap<String?, org.ole.planet.myplanet.model.UserEntity>()
-        val duplicates = HashMap<String?, MutableList<org.ole.planet.myplanet.model.UserEntity>>()
+        val duplicateUsers = userDao.getDuplicateUsers()
+        val usersByName = duplicateUsers.groupBy { it.name }
 
-        for (user in allUsers) {
-            val name = user.name
-            val duplicateList = duplicates[name]
-            if (duplicateList != null) {
-                duplicateList.add(user)
-            } else {
-                val existing = seenUsers.put(name, user)
-                if (existing != null) {
-                    duplicates[name] = mutableListOf(existing, user)
+        usersByName.forEach { (_, users) ->
+            if (users.size > 1) {
+                val sortedUsers = users.sortedWith { user1, user2 ->
+                    when {
+                        user1._id?.startsWith("org.couchdb.user:") == true &&
+                            user2._id?.startsWith("guest_") == true -> -1
+                        user1._id?.startsWith("guest_") == true &&
+                            user2._id?.startsWith("org.couchdb.user:") == true -> 1
+                        else -> 0
+                    }
                 }
-            }
-        }
 
-        duplicates.forEach { (_, users) ->
-            val sortedUsers = users.sortedWith { user1, user2 ->
-                when {
-                    user1._id?.startsWith("org.couchdb.user:") == true &&
-                        user2._id?.startsWith("guest_") == true -> -1
-                    user1._id?.startsWith("guest_") == true &&
-                        user2._id?.startsWith("org.couchdb.user:") == true -> 1
-                    else -> 0
-                }
+                userDao.deleteByIds(sortedUsers.drop(1).map { it.id })
             }
-
-            userDao.deleteByIds(sortedUsers.drop(1).map { it.id })
         }
     }
 
