@@ -1149,16 +1149,6 @@ class UserRepositoryImpl @Inject constructor(
         achievementDao.markUploaded(id, rev)
     }
 
-    override suspend fun ensureServerUrlUpdated(serverUrlMapper: org.ole.planet.myplanet.services.sync.ServerUrlMapper) {
-        val serverUrl = sharedPrefManager.getServerUrl()
-        val mapping = serverUrlMapper.processUrl(serverUrl)
-        if (mapping.alternativeUrl != null) {
-            serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
-                serverUrlMapper.isUrlDirectlyReachable(url)
-            }
-        }
-    }
-
     override suspend fun bulkInsertAchievementsFromSync(jsonArray: JsonArray) {
         val achievements = ArrayList<Achievement>(jsonArray.size())
         for (j in jsonArray) {

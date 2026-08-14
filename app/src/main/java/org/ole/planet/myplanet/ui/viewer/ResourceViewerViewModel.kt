@@ -5,22 +5,20 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
 import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class ResourceViewerViewModel @Inject constructor(
     private val resourcesRepository: ResourcesRepository,
     private val authSessionUpdaterFactory: AuthSessionUpdater.Factory,
-    private val serverUrlMapper: ServerUrlMapper,
-    private val userRepository: UserRepository,
+    private val configurationsRepository: ConfigurationsRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     suspend fun ensureServerUrlUpdated() {
-        userRepository.ensureServerUrlUpdated(serverUrlMapper)
+        configurationsRepository.ensureServerUrlUpdated()
     }
 
     fun getAuthSessionUpdater(callback: AuthSessionUpdater.AuthCallback): AuthSessionUpdater {
