@@ -56,7 +56,12 @@ class ResourcesAdapter(
                     it.item.timesRated,
                     it.isOpened,
                     it.isLocallyOffline,
-                    it.tags
+                    it.tags,
+                    it.library.language,
+                    it.library.addedBy,
+                    it.library.resourceLocalAddress,
+                    it.library.resourceRemoteAddress,
+                    it.library.mediaType
                 )
             },
             payloadSelector = { oldItem, newItem ->
