@@ -1,39 +1,40 @@
 package org.ole.planet.myplanet.ui.teams.tasks
 
-import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.mockk
 import java.util.Calendar
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.junit.Rule
-import org.mockito.Mockito.mock
+import org.ole.planet.myplanet.model.TeamTask
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.utils.DefaultDispatcherProvider
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.test.setMain
-
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestCoroutineScheduler
-import org.junit.After
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
+import kotlinx.coroutines.launch
 
 @ExperimentalCoroutinesApi
 class TeamsTasksViewModelTest {
 
-    @get:Rule
-    val instantTaskExecutorRule = InstantTaskExecutorRule()
+    private val testDispatcher = UnconfinedTestDispatcher()
+    private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
+
+    private val mockTeamsRepository = mockk<TeamsRepository>(relaxed = true)
+    private val mockUserRepository = mockk<UserRepository>(relaxed = true)
 
     private lateinit var viewModel: TeamsTasksViewModel
-    private val mockTeamsRepository = mock(TeamsRepository::class.java)
-    private val mockUserRepository = mock(UserRepository::class.java)
-    private val dispatcherProvider = mock(org.ole.planet.myplanet.utils.DispatcherProvider::class.java)
-
-    private val testDispatcher = kotlinx.coroutines.Dispatchers.Unconfined
 
     @Before
     fun setUp() {
@@ -54,7 +55,6 @@ class TeamsTasksViewModelTest {
         val formattedDate = viewModel.getFormattedDeadlineDate()
         val formattedTime = viewModel.getFormattedDeadlineWithTime()
 
-        // The fallback uses current time
         val deadlineMillis = viewModel.getDeadlineMillis()
         val afterMillis = Calendar.getInstance().timeInMillis
         assertTrue(deadlineMillis in beforeMillis..afterMillis)
@@ -65,7 +65,7 @@ class TeamsTasksViewModelTest {
 
     @Test
     fun `setDeadlineDate correctly updates the calendar year, month, and day`() {
-        viewModel.setDeadlineDate(2025, 5, 15) // Month is 0-indexed, so 5 is June
+        viewModel.setDeadlineDate(2025, 5, 15)
 
         val deadline = viewModel.deadline.value
         assertNotNull(deadline)
@@ -118,5 +118,104 @@ class TeamsTasksViewModelTest {
         val deadline = viewModel.deadline.value
         assertNotNull(deadline)
         assertEquals(millis, deadline?.timeInMillis)
+    }
+
+    @Test
+    fun `createOrUpdateTask creates task when teamTask is null`() = runTest(testDispatcher) {
+        val title = "New Task"
+        val desc = "Task Description"
+        val teamId = "team123"
+        val assigneeId = "user1"
+        viewModel.setDeadline(1000L)
+
+        val events = mutableListOf<TaskActionEvent>()
+        val job = backgroundScope.launch(testDispatcher) { viewModel.taskActionEvents.collect { events.add(it) } }
+
+        viewModel.createOrUpdateTask(title, desc, null, teamId, assigneeId)
+
+        coVerify { mockTeamsRepository.createTask(title, desc, viewModel.getDeadlineMillis(), teamId, assigneeId) }
+        val event = events.lastOrNull()
+        assertTrue(event is TaskActionEvent.TaskCreatedOrUpdated && event.isCreated && event.assigneeId == assigneeId)
+        job.cancel()
+    }
+
+    @Test
+    fun `createOrUpdateTask updates task when teamTask is not null`() = runTest(testDispatcher) {
+        val title = "Updated Task"
+        val desc = "Updated Description"
+        val teamId = "team123"
+        val assigneeId = "user2"
+        val mockTeamTask = TeamTask().apply { id = "task1" }
+        viewModel.setDeadline(2000L)
+
+        val events = mutableListOf<TaskActionEvent>()
+        val job = backgroundScope.launch(testDispatcher) { viewModel.taskActionEvents.collect { events.add(it) } }
+
+        viewModel.createOrUpdateTask(title, desc, mockTeamTask, teamId, assigneeId)
+
+        coVerify { mockTeamsRepository.updateTask("task1", title, desc, viewModel.getDeadlineMillis(), assigneeId) }
+        val event = events.lastOrNull()
+        assertTrue(event is TaskActionEvent.TaskCreatedOrUpdated && !event.isCreated && event.assigneeId == assigneeId)
+        job.cancel()
+    }
+
+    @Test
+    fun `deleteTask calls repository and emits event`() = runTest(testDispatcher) {
+        val events = mutableListOf<TaskActionEvent>()
+        val job = backgroundScope.launch(testDispatcher) { viewModel.taskActionEvents.collect { events.add(it) } }
+
+        viewModel.deleteTask("task1")
+
+        coVerify { mockTeamsRepository.deleteTask("task1") }
+        val event = events.lastOrNull()
+        assertTrue(event is TaskActionEvent.TaskDeleted)
+        job.cancel()
+    }
+
+    @Test
+    fun `setTaskCompletion calls repository`() = runTest(testDispatcher) {
+        viewModel.setTaskCompletion("task1", true)
+
+        coVerify { mockTeamsRepository.setTaskCompletion("task1", true) }
+    }
+
+    @Test
+    fun `getJoinedMembers returns list from repository`() = runTest(testDispatcher) {
+        val mockList = listOf(mockk<UserEntity>())
+        coEvery { mockTeamsRepository.getJoinedMembers("team1") } returns mockList
+
+        val result = viewModel.getJoinedMembers("team1")
+
+        assertEquals(mockList, result)
+        coVerify { mockTeamsRepository.getJoinedMembers("team1") }
+    }
+
+    @Test
+    fun `assignTask calls repository and emits event`() = runTest(testDispatcher) {
+        val mockUser = UserEntity().apply {
+            id = "user1"
+            name = "John Doe"
+        }
+
+        val events = mutableListOf<TaskActionEvent>()
+        val job = backgroundScope.launch(testDispatcher) { viewModel.taskActionEvents.collect { events.add(it) } }
+
+        viewModel.assignTask("task1", mockUser)
+
+        coVerify { mockTeamsRepository.assignTask("task1", "user1") }
+        val event = events.lastOrNull()
+        assertTrue(event is TaskActionEvent.TaskAssigned && event.userName == "John Doe")
+        job.cancel()
+    }
+
+    @Test
+    fun `getAssignee returns user from userRepository`() = runTest(testDispatcher) {
+        val mockUser = mockk<UserEntity>()
+        coEvery { mockUserRepository.getUserById("user1") } returns mockUser
+
+        val result = viewModel.getAssignee("user1")
+
+        assertEquals(mockUser, result)
+        coVerify { mockUserRepository.getUserById("user1") }
     }
 }

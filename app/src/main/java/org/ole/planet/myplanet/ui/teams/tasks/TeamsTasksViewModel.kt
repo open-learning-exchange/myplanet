@@ -39,7 +39,7 @@ class TeamsTasksViewModel @Inject constructor(
     private val _deadline = MutableStateFlow<Calendar?>(null)
     val deadline: StateFlow<Calendar?> = _deadline.asStateFlow()
 
-    private val _taskActionEvents = MutableSharedFlow<TaskActionEvent>()
+    private val _taskActionEvents = MutableSharedFlow<TaskActionEvent>(extraBufferCapacity = 1)
     val taskActionEvents: SharedFlow<TaskActionEvent> = _taskActionEvents.asSharedFlow()
 
 

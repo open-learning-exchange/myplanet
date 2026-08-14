@@ -39,7 +39,6 @@ import org.ole.planet.myplanet.ui.teams.TeamViewModel
 import org.ole.planet.myplanet.ui.user.UserArrayAdapter
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.Utilities
-import org.ole.planet.myplanet.ui.teams.tasks.TaskActionEvent
 
 @AndroidEntryPoint
 class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
@@ -253,7 +252,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                     }
                 }
                 launch {
-                    teamsTasksViewModel.taskActionEvents.collectLatest { event ->
+                    teamsTasksViewModel.taskActionEvents.collect { event ->
                         when (event) {
                             is TaskActionEvent.TaskCreatedOrUpdated -> {
                                 val shouldStayOnMyTasks = currentTab == R.id.btn_my && event.assigneeId == user?.id
