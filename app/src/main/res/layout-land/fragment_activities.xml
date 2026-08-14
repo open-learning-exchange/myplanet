@@ -26,14 +26,12 @@
             android:textColor="@color/daynight_textColor"
             android:textSize="18sp"
             android:textStyle="bold" />
-
         <com.github.mikephil.charting.charts.BarChart
             android:id="@+id/chart"
             android:layout_width="match_parent"
             android:layout_height="220dp"
             android:layout_marginTop="@dimen/padding_small"
             android:layout_marginBottom="@dimen/padding_small" />
-
         <TextView
             android:id="@+id/emptyState"
             android:layout_width="wrap_content"
