@@ -9,6 +9,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import androidx.appcompat.R as AppCompatR
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.ui.enterprises.EnterprisesReportsAdapter.Companion.PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED
@@ -22,7 +24,7 @@ class EnterprisesReportsAdapterTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
-        context.setTheme(androidx.appcompat.R.style.Theme_AppCompat)
+        context.setTheme(AppCompatR.style.Theme_AppCompat)
         adapter = EnterprisesReportsAdapter(context, "Test Team", {}, {})
     }
 
@@ -87,7 +89,7 @@ class EnterprisesReportsAdapterTest {
             // Should fallback to full bind and set the title
             adapter.onBindViewHolder(viewHolder, 0, payloads)
 
-            assertEquals(context.getString(org.ole.planet.myplanet.R.string.team_financial_report, "Test Team"), viewHolder.binding.tvReportTitle.text.toString())
+            assertEquals(context.getString(R.string.team_financial_report, "Test Team"), viewHolder.binding.tvReportTitle.text.toString())
         }
     }
 }

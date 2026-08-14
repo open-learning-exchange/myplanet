@@ -29,14 +29,15 @@ class EnterprisesReportsAdapter(
 
     override fun onBindViewHolder(holder: ReportsViewHolder, position: Int, payloads: MutableList<Any>) {
         if (payloads.isNotEmpty()) {
-            var handled = false
+            var unhandled = false
             payloads.forEach { payload ->
                 if (payload == PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED) {
                     setNonTeamMemberVisibility(holder.binding)
-                    handled = true
+                } else {
+                    unhandled = true
                 }
             }
-            if (!handled) {
+            if (unhandled) {
                 super.onBindViewHolder(holder, position, payloads)
             }
         } else {
