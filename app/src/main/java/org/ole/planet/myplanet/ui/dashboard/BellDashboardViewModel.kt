@@ -6,7 +6,12 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.model.CourseCompletion
@@ -43,8 +48,8 @@ class BellDashboardViewModel @Inject constructor(
     val completedCourses: StateFlow<List<CourseCompletion>> = _completedCourses.asStateFlow()
 
 
-    private val _surveyPrompt = MutableStateFlow<SurveyPrompt?>(null)
-    val surveyPrompt: StateFlow<SurveyPrompt?> = _surveyPrompt.asStateFlow()
+    private val _surveyPrompt = kotlinx.coroutines.flow.MutableSharedFlow<SurveyPrompt>(replay = 0)
+    val surveyPrompt: kotlinx.coroutines.flow.SharedFlow<SurveyPrompt> = _surveyPrompt.asSharedFlow()
 
     init {
         viewModelScope.launch {
@@ -78,7 +83,7 @@ class BellDashboardViewModel @Inject constructor(
 
             if (pendingSurveys.isNotEmpty()) {
                 val surveyTitles = submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
-                _surveyPrompt.value = SurveyPrompt(pendingSurveys, surveyTitles, isReminder = true)
+                _surveyPrompt.emit(SurveyPrompt(pendingSurveys, surveyTitles, isReminder = true))
             }
         }
     }
@@ -93,14 +98,11 @@ class BellDashboardViewModel @Inject constructor(
                 val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
                 if (surveysRepository.isReminderScheduled(surveyIds)) return@launch
                 val surveyTitles = submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
-                _surveyPrompt.value = SurveyPrompt(pendingSurveys, surveyTitles, isReminder = false)
+                _surveyPrompt.emit(SurveyPrompt(pendingSurveys, surveyTitles, isReminder = false))
             }
         }
     }
 
-    fun clearSurveyPrompt() {
-        _surveyPrompt.value = null
-    }
 
     suspend fun markSurveyDialogShown() {
         surveysRepository.setLastSurveyDialogShown(timeProvider.now())

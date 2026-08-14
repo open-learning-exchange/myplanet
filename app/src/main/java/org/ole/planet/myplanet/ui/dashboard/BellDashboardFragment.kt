@@ -200,8 +200,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun observeSurveyReminders() {
         collectWhenStarted(viewModel.surveyPrompt) { prompt ->
-            if (prompt != null) {
-                val pendingSurveys = prompt.pendingSurveys
+            val pendingSurveys = prompt.pendingSurveys
                 val surveyTitles = prompt.surveyTitles
                 val title = if (prompt.isReminder) {
                     getString(
@@ -217,8 +216,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
                     )
                 }
                 showSurveyListDialog(pendingSurveys, title, surveyTitles, dismissOnNeutral = prompt.isReminder)
-                viewModel.clearSurveyPrompt()
-            }
         }
     }
 
