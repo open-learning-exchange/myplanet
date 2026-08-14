@@ -40,7 +40,6 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
-
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/bt_profile_pic"
                     android:layout_width="wrap_content"
@@ -61,7 +60,6 @@
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/profile_name_text_size"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/txtGender"
                 android:layout_width="wrap_content"
@@ -70,7 +68,6 @@
                 android:gravity="center"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/profile_detail_text_size" />
-
             <TextView
                 android:id="@+id/txt_email"
                 android:layout_width="wrap_content"
@@ -79,7 +76,6 @@
                 android:gravity="center"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/profile_detail_text_size" />
-
             <TextView
                 android:id="@+id/txt_dob"
                 android:layout_width="wrap_content"
@@ -88,7 +84,6 @@
                 android:gravity="center"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/profile_detail_text_size" />
-
             <TextView
                 android:id="@+id/txtLanguage"
                 android:layout_width="wrap_content"
@@ -97,7 +92,6 @@
                 android:gravity="center"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/profile_detail_text_size" />
-
             <TextView
                 android:id="@+id/txtLevel"
                 android:layout_width="wrap_content"
@@ -106,7 +100,6 @@
                 android:gravity="center"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/profile_detail_text_size" />
-
             <Button
                 android:id="@+id/btEditProfile"
                 style="@style/primaryButton"
