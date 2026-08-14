@@ -56,6 +56,7 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
+@javax.inject.Singleton
 class TeamsRepositoryImpl @Inject constructor(
     private val activitiesRepository: ActivitiesRepository,
     private val userSessionManager: UserSessionManager,
