@@ -40,9 +40,9 @@ import org.ole.planet.myplanet.services.UserSessionManager.Companion.KEY_RESOURC
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.viewer.WebViewActivity
 import org.ole.planet.myplanet.utils.CourseRatingUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.ResourceOpener
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -94,8 +94,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
     private suspend fun startDownload(urls: ArrayList<String>) {
         if (isAdded) {
+            val ctx = requireContext()
             withContext(dispatcherProvider.io) {
-                DownloadUtils.openPriorityDownloadService(requireContext(), urls)
+                DownloadUtils.openPriorityDownloadService(ctx, urls)
             }
         }
     }
@@ -118,12 +119,13 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 pendingAutoOpenLibrary = null
 
                 viewLifecycleOwner.lifecycleScope.launch {
+                    val ctx = context ?: return@launch
                     val isDownloaded = withContext(dispatcherProvider.io) {
                         if (library.mediaType == "HTML") {
-                            val directory = File(context?.getExternalFilesDir(null), "ole/${library.resourceId}")
+                            val directory = File(ctx.getExternalFilesDir(null), "ole/${library.resourceId}")
                             File(directory, "index.html").exists()
                         } else {
-                            library.isResourceOffline() || FileUtils.checkFileExist(requireContext(), UrlUtils.getUrl(library))
+                            library.isResourceOffline() || FileUtils.checkFileExist(ctx, UrlUtils.getUrl(library))
                         }
                     }
 
