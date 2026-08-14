@@ -26,7 +26,7 @@ import java.util.Locale
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
-import org.ole.planet.myplanet.databinding.AddTransactionBinding
+import org.ole.planet.myplanet.databinding.DialogAddTransactionBinding
 import org.ole.planet.myplanet.databinding.FragmentFinanceBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.Transaction
@@ -41,7 +41,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     private var _binding: FragmentFinanceBinding? = null
     private val binding get() = _binding!!
     private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.getDefault()).withZone(ZoneId.systemDefault())
-    private lateinit var addTransactionBinding: AddTransactionBinding
+    private lateinit var addTransactionBinding: DialogAddTransactionBinding
     private lateinit var financeAdapter: EnterprisesFinancesAdapter
     var date: Calendar? = null
     private var transactions: List<Transaction> = emptyList()
@@ -318,7 +318,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     }
 
     private fun setUpAlertUi(): View {
-        addTransactionBinding = AddTransactionBinding.inflate(LayoutInflater.from(activity))
+        addTransactionBinding = DialogAddTransactionBinding.inflate(LayoutInflater.from(activity))
         selectedImageUri = null
         dialogImagePreview = addTransactionBinding.imagePreview
         addTransactionBinding.btnAddImage.setOnClickListener {

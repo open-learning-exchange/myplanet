@@ -6,273 +6,267 @@
     android:layout_height="match_parent"
     tools:context=".ui.enterprises.FinanceFragment">
 
-    <androidx.core.widget.NestedScrollView
+    <LinearLayout
+        android:id="@+id/data_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fillViewport="true">
+        android:orientation="vertical">
 
         <LinearLayout
-            android:id="@+id/data_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="horizontal"
+            android:layout_marginTop="@dimen/_10dp"
+            android:paddingLeft="@dimen/padding_normal"
+            android:paddingRight="@dimen/padding_normal">
 
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:id="@+id/llFromDate"
                 android:orientation="horizontal"
-                android:layout_marginTop="@dimen/_10dp"
-                android:paddingLeft="@dimen/padding_normal"
-                android:paddingRight="@dimen/padding_normal">
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_vertical">
 
-                <LinearLayout
-                    android:id="@+id/llFromDate"
-                    android:orientation="horizontal"
+                <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:gravity="center_vertical">
+                    android:hint="@string/from_date"
+                    android:textColorHint="@color/hint_color">
 
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:layout_width="0dp"
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/tvFromDateCalendar"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:hint="From Date"
-                        android:textColorHint="@color/hint_color">
+                        android:focusable="false"
+                        android:inputType="none"
+                        android:padding="@dimen/padding_normal"
+                        android:textColor="@color/daynight_textColor"
+                        android:textSize="16sp" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/tvFromDateCalendar"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:focusable="false"
-                            android:inputType="none"
-                            android:padding="@dimen/padding_normal"
-                            android:textColor="@color/daynight_textColor"
-                            android:textSize="16sp" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <ImageView
-                        android:id="@+id/tvFromDateCalendarIcon"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:src="@drawable/ic_date"
-                        app:tint="@color/daynight_textColor"
-                        android:contentDescription="Select From Date"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:padding="@dimen/padding_small" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/llToDate"
-                    android:orientation="horizontal"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center_vertical">
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:hint="To Date"
-                        android:textColorHint="@color/hint_color">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etToDate"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:focusable="false"
-                            android:inputType="none"
-                            android:padding="@dimen/padding_normal"
-                            android:textColor="@color/daynight_textColor"
-                            android:textSize="16sp" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <ImageView
-                        android:id="@+id/tvToDateCalendarIcon"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:src="@drawable/ic_date"
-                        app:tint="@color/daynight_textColor"
-                        android:contentDescription="Select To Date"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:padding="@dimen/padding_small" />
-                </LinearLayout>
-
-                <Button
-                    android:id="@+id/btn_reset"
+                <ImageView
+                    android:id="@+id/tvFromDateCalendarIcon"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:layout_marginStart="16dp"
-                    android:background="@color/mainColor"
-                    android:layout_gravity="left"
-                    android:padding="@dimen/padding_normal"
-                    android:text="@string/date_reset"
-                    android:textColor="@android:color/white"
-                    android:textSize="@dimen/text_size_mid"
-                    android:theme="@style/GuestStyle" />
+                    android:src="@drawable/ic_date"
+                    app:tint="@color/daynight_textColor"
+                    android:contentDescription="@string/select_from_date"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="@dimen/padding_small" />
             </LinearLayout>
 
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:id="@+id/llToDate"
                 android:orientation="horizontal"
-                android:paddingLeft="@dimen/padding_normal"
-                android:paddingRight="@dimen/padding_normal">
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_vertical">
 
-                <TextView
-                    android:id="@+id/balance_caution"
+                <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:padding="@dimen/padding_large"
-                    android:text="@string/negative_balance"
-                    android:textColor="@color/md_red_A700"
-                    android:textSize="@dimen/text_size_mid" />
-            </LinearLayout>
+                    android:hint="@string/to_date"
+                    android:textColorHint="@color/hint_color">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:paddingLeft="@dimen/padding_normal"
-                android:paddingRight="@dimen/padding_normal">
-
-                <LinearLayout
-                    android:id="@+id/ll_date"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1">
-
-                    <TextView
-                        android:id="@+id/date"
-                        android:layout_width="0dp"
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etToDate"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:padding="@dimen/padding_small"
-                        android:text="@string/date"
+                        android:focusable="false"
+                        android:inputType="none"
+                        android:padding="@dimen/padding_normal"
                         android:textColor="@color/daynight_textColor"
-                        android:textSize="@dimen/text_size_mid"
-                        android:textStyle="bold" />
-                    <ImageView
-                        android:id="@+id/img_date"
-                        android:layout_width="@dimen/icon_size_mid"
-                        android:layout_height="@dimen/icon_size_mid"
-                        android:layout_gravity="center"
-                        app:srcCompat="@drawable/ic_down" />
-                </LinearLayout>
+                        android:textSize="16sp" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-                <TextView
-                    android:id="@+id/note"
-                    android:layout_width="0dp"
+                <ImageView
+                    android:id="@+id/tvToDateCalendarIcon"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="2"
-                    android:padding="@dimen/padding_small"
-                    android:text="@string/note"
-                    android:textColor="@color/daynight_textColor"
-                    android:textSize="@dimen/text_size_mid"
-                    android:textStyle="bold" />
-                <TextView
-                    android:id="@+id/credit"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:padding="@dimen/padding_small"
-                    android:text="@string/credit"
-                    android:textColor="@color/daynight_textColor"
-                    android:textSize="@dimen/text_size_mid"
-                    android:textStyle="bold" />
-                <TextView
-                    android:id="@+id/debit"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:padding="@dimen/padding_small"
-                    android:text="@string/debit"
-                    android:textColor="@color/daynight_textColor"
-                    android:textSize="@dimen/text_size_mid"
-                    android:textStyle="bold" />
-                <TextView
-                    android:id="@+id/balance"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:padding="@dimen/padding_small"
-                    android:text="@string/balance"
-                    android:textColor="@color/daynight_textColor"
-                    android:textSize="@dimen/text_size_mid"
-                    android:textStyle="bold"
-                    android:visibility="visible" />
+                    android:src="@drawable/ic_date"
+                    app:tint="@color/daynight_textColor"
+                    android:contentDescription="@string/select_to_date"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="@dimen/padding_small" />
             </LinearLayout>
 
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="@color/md_blue_grey_700" />
-            <LinearLayout
-                android:layout_width="match_parent"
+            <Button
+                android:id="@+id/btn_reset"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@color/cardview_dark_background"
-                android:padding="@dimen/padding_normal">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:textSize="@dimen/text_size_mid" />
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="2"
-                    android:padding="@dimen/padding_small"
-                    android:text="@string/total"
-                    android:textColor="@color/bg_white"
-                    android:textSize="@dimen/text_size_mid" />
-                <TextView
-                    android:id="@+id/tv_credit"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:padding="@dimen/padding_small"
-                    android:text="@string/credit"
-                    android:textColor="@color/bg_white"
-                    android:textSize="@dimen/text_size_mid" />
-                <TextView
-                    android:id="@+id/tv_debit"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:padding="@dimen/padding_small"
-                    android:text="@string/debit"
-                    android:textColor="@color/bg_white"
-                    android:textSize="@dimen/text_size_mid" />
-                <TextView
-                    android:id="@+id/tv_balance"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:padding="@dimen/padding_small"
-                    android:text="@string/balance"
-                    android:textColor="@color/bg_white"
-                    android:textSize="@dimen/text_size_mid"
-                    android:visibility="visible" />
-            </LinearLayout>
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rv_finance"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false"
-                android:padding="@dimen/padding_normal" />
+                android:layout_marginTop="10dp"
+                android:layout_marginStart="16dp"
+                android:background="@color/mainColor"
+                android:layout_gravity="left"
+                android:padding="@dimen/padding_normal"
+                android:text="@string/date_reset"
+                android:textColor="@android:color/white"
+                android:textSize="@dimen/text_size_mid"
+                android:theme="@style/GuestStyle" />
         </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingLeft="@dimen/padding_normal"
+            android:paddingRight="@dimen/padding_normal">
+
+            <TextView
+                android:id="@+id/balance_caution"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="@dimen/padding_large"
+                android:text="@string/negative_balance"
+                android:textColor="@color/md_red_A700"
+                android:textSize="@dimen/text_size_mid" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingLeft="@dimen/padding_normal"
+            android:paddingRight="@dimen/padding_normal">
+
+            <LinearLayout
+                android:id="@+id/ll_date"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <TextView
+                    android:id="@+id/date"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:padding="@dimen/padding_small"
+                    android:text="@string/date"
+                    android:textColor="@color/daynight_textColor"
+                    android:textSize="@dimen/text_size_mid"
+                    android:textStyle="bold" />
+                <ImageView
+                    android:id="@+id/img_date"
+                    android:layout_width="@dimen/icon_size_mid"
+                    android:layout_height="@dimen/icon_size_mid"
+                    android:layout_gravity="center"
+                    app:srcCompat="@drawable/ic_down" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/note"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:padding="@dimen/padding_small"
+                android:text="@string/note"
+                android:textColor="@color/daynight_textColor"
+                android:textSize="@dimen/text_size_mid"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/credit"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="@dimen/padding_small"
+                android:text="@string/credit"
+                android:textColor="@color/daynight_textColor"
+                android:textSize="@dimen/text_size_mid"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/debit"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="@dimen/padding_small"
+                android:text="@string/debit"
+                android:textColor="@color/daynight_textColor"
+                android:textSize="@dimen/text_size_mid"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/balance"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:padding="@dimen/padding_small"
+                android:text="@string/balance"
+                android:textColor="@color/daynight_textColor"
+                android:textSize="@dimen/text_size_mid"
+                android:textStyle="bold"
+                android:visibility="visible" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/md_blue_grey_700" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/cardview_dark_background"
+            android:padding="@dimen/padding_normal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="@dimen/text_size_mid" />
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:padding="@dimen/padding_small"
+                android:text="@string/total"
+                android:textColor="@color/bg_white"
+                android:textSize="@dimen/text_size_mid" />
+            <TextView
+                android:id="@+id/tv_credit"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="@dimen/padding_small"
+                android:text="@string/credit"
+                android:textColor="@color/bg_white"
+                android:textSize="@dimen/text_size_mid" />
+            <TextView
+                android:id="@+id/tv_debit"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="@dimen/padding_small"
+                android:text="@string/debit"
+                android:textColor="@color/bg_white"
+                android:textSize="@dimen/text_size_mid" />
+            <TextView
+                android:id="@+id/tv_balance"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:padding="@dimen/padding_small"
+                android:text="@string/balance"
+                android:textColor="@color/bg_white"
+                android:textSize="@dimen/text_size_mid"
+                android:visibility="visible" />
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_finance"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:padding="@dimen/padding_normal" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/tv_nodata"
