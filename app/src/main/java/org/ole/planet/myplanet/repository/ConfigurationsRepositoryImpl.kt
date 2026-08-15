@@ -11,7 +11,6 @@ import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.util.concurrent.ConcurrentHashMap
-import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.TimeoutCancellationException
@@ -20,6 +19,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.Json
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.data.api.ApiClient
@@ -38,7 +38,6 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Sha256Utils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.VersionUtils
 
 class ConfigurationsRepositoryImpl @Inject constructor(
@@ -372,31 +371,25 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         return sharedPrefManager.getRawString("planetType")
     }
 
-    override suspend fun clearFirstRunStorage(hasWritePermission: Boolean) {
+    override suspend fun clearFirstRunStorageAndSetFlag(hasWritePermission: Boolean) {
         withContext(dispatcherProvider.io) {
             if (hasWritePermission && sharedPrefManager.getFirstRun()) {
                 val myDir = File(FileUtils.getOlePath(context))
                 if (myDir.isDirectory) {
-                    val children = myDir.list()
-                    if (children != null) {
-                        for (i in children.indices) {
-                            File(myDir, children[i]).delete()
-                        }
-                    }
+                    myDir.listFiles()?.forEach { it.deleteRecursively() }
                 }
                 sharedPrefManager.setFirstRun(false)
             }
         }
     }
 
-    override suspend fun startQueuedDownloads() {
-        withContext(dispatcherProvider.io) {
+    override suspend fun getQueuedDownloads(): ArrayList<String>? {
+        return withContext(dispatcherProvider.io) {
             val storedJsonConcatenatedLinks = sharedPrefManager.getConcatenatedLinks()
             if (storedJsonConcatenatedLinks != null) {
-                val storedConcatenatedLinks: ArrayList<String> = Json.decodeFromString(storedJsonConcatenatedLinks)
-                withContext(dispatcherProvider.main) {
-                    DownloadUtils.openDownloadService(context, storedConcatenatedLinks, true)
-                }
+                Json.decodeFromString(storedJsonConcatenatedLinks)
+            } else {
+                null
             }
         }
     }

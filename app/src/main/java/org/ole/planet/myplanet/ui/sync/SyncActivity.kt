@@ -29,7 +29,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
 import dagger.hilt.android.AndroidEntryPoint
-import java.io.File
 import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.delay
@@ -37,7 +36,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
@@ -61,6 +59,8 @@ import org.ole.planet.myplanet.utils.DialogUtils.showAlert
 import org.ole.planet.myplanet.utils.DialogUtils.showSnack
 import org.ole.planet.myplanet.utils.DialogUtils.showWifiSettingDialog
 import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
+import org.ole.planet.myplanet.utils.DownloadUtils.openDownloadService
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName
@@ -532,7 +532,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                         prefData.setIsAlternativeUrl(false)
                     }
 
-                    configurationsRepository.startQueuedDownloads()
+                    val links = configurationsRepository.getQueuedDownloads()
+                    if (!links.isNullOrEmpty()) {
+                        openDownloadService(context, links, true)
+                    }
 
                     val betaAutoDownload = prefData.getBetaAutoDownload()
                     if (betaAutoDownload) {
@@ -701,7 +704,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             isSync = true
 
             lifecycleScope.launch {
-                configurationsRepository.clearFirstRunStorage(checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE))
+                configurationsRepository.clearFirstRunStorageAndSetFlag(checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE))
                 isServerReachable(processedUrl, "sync")
             }
         }

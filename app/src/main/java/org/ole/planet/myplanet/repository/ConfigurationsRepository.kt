@@ -13,8 +13,8 @@ interface ConfigurationsRepository {
     suspend fun getMinApk(url: String, pin: String): ConfigurationResult
     fun getPlanetType(): String?
     suspend fun ensureServerUrlUpdated()
-    suspend fun clearFirstRunStorage(hasWritePermission: Boolean)
-    suspend fun startQueuedDownloads()
+    suspend fun clearFirstRunStorageAndSetFlag(hasWritePermission: Boolean)
+    suspend fun getQueuedDownloads(): ArrayList<String>?
 
     interface CheckVersionCallback {
         fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean)
