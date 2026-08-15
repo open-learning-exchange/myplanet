@@ -205,7 +205,11 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
 
         val currentAdapter = binding.viewPager2.adapter as? TeamPagerAdapter
         if (currentAdapter != null) {
-            currentAdapter.updatePages(pageConfigs)
+            currentAdapter.updatePages(pageConfigs) {
+                binding.viewPager2.post {
+                    selectPage(restorePageId, false)
+                }
+            }
         } else {
             binding.viewPager2.adapter = TeamPagerAdapter(
                 this, pageConfigs, team?._id, this, this
@@ -239,10 +243,10 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                     }
                 }
             )
-        }
 
-        binding.viewPager2.post {
-            selectPage(restorePageId, false)
+            binding.viewPager2.post {
+                selectPage(restorePageId, false)
+            }
         }
     }
 
