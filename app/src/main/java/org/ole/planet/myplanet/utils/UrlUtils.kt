@@ -4,7 +4,6 @@ import android.util.Base64
 import android.util.Log
 import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
-import java.security.MessageDigest
 import java.net.URLEncoder
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -13,7 +12,7 @@ object UrlUtils {
     @Volatile
     private var spmInstance: SharedPrefManager? = null
 
-    private data class HeaderCache(val userHash: Int, val pwdHash: String, val header: String)
+    private data class HeaderCache(val user: String, val pwdHash: Int, val header: String)
 
     @Volatile
     private var headerCache: HeaderCache? = null
@@ -33,28 +32,20 @@ object UrlUtils {
         headerCache = null
     }
 
-    private fun sha256(input: String): String {
-        val bytes = input.toByteArray()
-        val md = MessageDigest.getInstance("SHA-256")
-        val digest = md.digest(bytes)
-        return digest.joinToString("") { "%02x".format(it) }
-    }
-
     val header: String
         get() {
             val spm = spm()
             val user = spm.getUrlUser()
             val pwd = spm.getUrlPwd()
 
-            val uHash = user.hashCode()
-            val pHash = sha256(pwd)
+            val pHash = pwd.hashCode()
             val currentCache = headerCache
-            if (currentCache != null && currentCache.userHash == uHash && currentCache.pwdHash == pHash) {
+            if (currentCache != null && currentCache.user == user && currentCache.pwdHash == pHash) {
                 return currentCache.header
             }
 
             val newHeader = basicAuthHeader(user, pwd)
-            headerCache = HeaderCache(uHash, pHash, newHeader)
+            headerCache = HeaderCache(user, pHash, newHeader)
             return newHeader
         }
 
