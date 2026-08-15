@@ -4,10 +4,10 @@ import android.app.Application
 import android.net.Uri
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
