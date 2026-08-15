@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import java.util.UUID
 import javax.inject.Inject
+import javax.inject.Singleton
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
@@ -11,7 +12,6 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 
-import javax.inject.Singleton
 
 @Singleton
 class EventsRepositoryImpl @Inject constructor(

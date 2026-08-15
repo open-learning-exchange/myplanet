@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import javax.inject.Inject
+import javax.inject.Singleton
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CommunityDao
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
@@ -10,7 +11,6 @@ import org.ole.planet.myplanet.model.Community
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.utils.JsonUtils
 
-import javax.inject.Singleton
 
 @Singleton
 class CommunityRepositoryImpl @Inject constructor(

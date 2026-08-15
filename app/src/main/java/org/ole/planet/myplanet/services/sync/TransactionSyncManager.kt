@@ -29,10 +29,10 @@ import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.ChatRepository
-import org.ole.planet.myplanet.repository.CommunityRepository
+import org.ole.planet.myplanet.repository.ChatSyncRepository
+import org.ole.planet.myplanet.repository.CommunitySyncRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.FeedbackSyncRepository
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
@@ -62,8 +62,8 @@ class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
     @param:ApplicationContext private val context: Context,
     private val voicesRepository: VoicesRepository,
-    private val chatRepository: org.ole.planet.myplanet.repository.ChatSyncRepository,
-    private val feedbackRepository: org.ole.planet.myplanet.repository.FeedbackSyncRepository,
+    private val chatRepository: ChatSyncRepository,
+    private val feedbackRepository: FeedbackSyncRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
     private val userSyncRepository: UserSyncRepository,
@@ -75,7 +75,7 @@ class TransactionSyncManager @Inject constructor(
     private val ratingsRepository: RatingsRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val coursesRepository: CoursesRepository,
-    private val communityRepository: org.ole.planet.myplanet.repository.CommunitySyncRepository,
+    private val communityRepository: CommunitySyncRepository,
     private val healthRepository: HealthRepository,
     private val progressRepository: ProgressRepository,
     private val surveysRepository: SurveysRepository,
