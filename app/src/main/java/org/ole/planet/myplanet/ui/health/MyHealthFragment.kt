@@ -276,7 +276,7 @@ class MyHealthFragment : Fragment() {
         alertHealthListBinding?.let { binding ->
             binding.list.layoutManager = LinearLayoutManager(requireContext())
             binding.list.adapter = adapter
-            setTextWatcher(binding.etSearch, binding.btnAddMember, binding.list)
+            observeSearchInput(binding.etSearch)
             sortList(binding.spnSort, binding.list)
             dialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                 .setTitle(getString(R.string.select_health_member)).setView(binding.root)
@@ -306,10 +306,10 @@ class MyHealthFragment : Fragment() {
     }
 
     @OptIn(FlowPreview::class)
-    private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, rv: RecyclerView) {
+    private fun observeSearchInput(etSearch: EditText) {
         searchJob?.cancel()
         searchJob = collectWhenStarted(
-            etSearch.textChanges()
+            etSearch.textChanges().debounce(300)
         ) { editable ->
             viewModel.searchPatients(editable?.toString() ?: "", "joinDate", true)
         }
