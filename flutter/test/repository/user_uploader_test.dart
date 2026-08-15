@@ -467,6 +467,206 @@ void main() {
 
     expect(result, isA<NetworkError<Map<String, dynamic>>>());
   });
+
+  test('the endpoint encodes a name containing a special character', () {
+    final endpoint = UserUploader.endpointFor(config, 'user@name');
+    expect(endpoint, contains('org.couchdb.user:user%40name'));
+  });
+
+  test('the endpoint encodes a name containing a slash', () {
+    final endpoint = UserUploader.endpointFor(config, 'a/b');
+    expect(endpoint, contains('org.couchdb.user:a%2Fb'));
+  });
+
+  test('queuePending returns zero when there are no users', () async {
+    expect(await uploader.queuePending(config: config), 0);
+  });
+
+  test('queuePending returns zero when all users are synced', () async {
+    await database.userDao.upsert(
+      UsersCompanion.insert(
+        id: 'synced-1',
+        couchId: const Value('org.couchdb.user:synced'),
+        rev: const Value('1-a'),
+        name: const Value('synced'),
+        rolesList: const Value(['learner']),
+        userAdmin: const Value(false),
+        joinDate: const Value(0),
+        isUpdated: const Value(false),
+      ),
+    );
+
+    expect(await uploader.queuePending(config: config), 0);
+  });
+
+  test('a queued payload includes the user roles', () async {
+    await seedEditedUser();
+    await uploader.queuePending(config: config);
+    final entry = await database.outboxDao.findOpen(
+      UserUploader.type,
+      'user-1',
+    );
+
+    final doc = jsonDecode(entry!.payload) as Map<String, dynamic>;
+    expect(doc['roles'], ['learner']);
+  });
+
+  test('a queued payload includes the user type field', () async {
+    await seedEditedUser();
+    await uploader.queuePending(config: config);
+    final entry = await database.outboxDao.findOpen(
+      UserUploader.type,
+      'user-1',
+    );
+
+    final doc = jsonDecode(entry!.payload) as Map<String, dynamic>;
+    expect(doc['type'], 'user');
+  });
+
+  test(
+    'a queued payload for an existing user does not carry the couchId as _id',
+    () async {
+      await seedEditedUser();
+      await uploader.queuePending(config: config);
+      final entry = await database.outboxDao.findOpen(
+        UserUploader.type,
+        'user-1',
+      );
+
+      final doc = jsonDecode(entry!.payload) as Map<String, dynamic>;
+      // The _id is assigned by CouchDB; the payload carries the fields, not the id.
+      expect(doc.containsKey('_id'), isFalse);
+    },
+  );
+
+  test('a queued payload for a new user omits the couchId', () async {
+    await seedNewUser();
+    await uploader.queuePending(config: config);
+    final entry = await database.outboxDao.findOpen(
+      UserUploader.type,
+      'user-2',
+    );
+
+    final doc = jsonDecode(entry!.payload) as Map<String, dynamic>;
+    expect(doc.containsKey('_id'), isFalse);
+  });
+
+  test('a queued payload for a new user omits derived_key', () async {
+    await seedNewUser();
+    await uploader.queuePending(config: config);
+    final entry = await database.outboxDao.findOpen(
+      UserUploader.type,
+      'user-2',
+    );
+
+    final doc = jsonDecode(entry!.payload) as Map<String, dynamic>;
+    expect(doc.containsKey('derived_key'), isFalse);
+  });
+
+  test('a queued payload for an existing user includes derived_key', () async {
+    await seedEditedUser();
+    await uploader.queuePending(config: config);
+    final entry = await database.outboxDao.findOpen(
+      UserUploader.type,
+      'user-1',
+    );
+
+    final doc = jsonDecode(entry!.payload) as Map<String, dynamic>;
+    expect(doc.containsKey('derived_key'), isTrue);
+  });
+
+  test('a queued payload uses PUT as the HTTP method', () async {
+    await seedEditedUser();
+    await uploader.queuePending(config: config);
+    final due = await database.outboxDao.due(
+      DateTime.now().millisecondsSinceEpoch + 1000,
+    );
+
+    expect(due.single.httpMethod, 'PUT');
+  });
+
+  test('a queued payload carries the user id as itemId', () async {
+    await seedEditedUser();
+    await uploader.queuePending(config: config);
+    final due = await database.outboxDao.due(
+      DateTime.now().millisecondsSinceEpoch + 1000,
+    );
+
+    expect(due.single.itemId, 'user-1');
+  });
+
+  test('a successful update clears pendingSyncUsers', () async {
+    await seedEditedUser();
+    when(
+      () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer(
+      (_) async => NetworkSuccess<Map<String, dynamic>>({'_rev': '9-latest'}),
+    );
+    when(
+      () =>
+          api.putJsonObject(any(), any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer(
+      (_) async => NetworkSuccess<Map<String, dynamic>>({
+        'id': 'org.couchdb.user:ada',
+        'rev': '10-new',
+      }),
+    );
+
+    await uploader.handler(rowFor('user-1'), {'name': 'ada'}, 'auth');
+
+    expect(await database.userDao.pendingSyncUsers(), isEmpty);
+  });
+
+  test(
+    'a 404 on GET followed by a PUT failure leaves the row pending',
+    () async {
+      await seedEditedUser();
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer(
+        (_) async => const NetworkError<Map<String, dynamic>>(404, 'nf'),
+      );
+      when(
+        () => api.putJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer(
+        (_) async => const NetworkError<Map<String, dynamic>>(500, 'boom'),
+      );
+
+      final result = await uploader.handler(rowFor('user-1'), {
+        'name': 'ada',
+      }, 'auth');
+
+      expect(result, isA<NetworkError<Map<String, dynamic>>>());
+      expect((await database.userDao.getById('user-1'))?.isUpdated, isTrue);
+    },
+  );
+
+  test('a PUT that returns an id but no rev still clears the flag', () async {
+    await seedNewUser();
+    when(
+      () =>
+          api.putJsonObject(any(), any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer(
+      (_) async => NetworkSuccess<Map<String, dynamic>>({
+        'id': 'org.couchdb.user:newbie',
+        'ok': true,
+      }),
+    );
+
+    final result = await uploader.handler(rowFor('user-2'), {
+      'name': 'newbie',
+    }, 'auth');
+
+    expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
+    final user = await database.userDao.getById('user-2');
+    expect(user?.couchId, 'org.couchdb.user:newbie');
+    // markUploaded clears the flag even when rev is absent.
+    expect(user?.isUpdated, isFalse);
+  });
 }
 
 class MockPlanetApi extends Mock implements PlanetApi {}

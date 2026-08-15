@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -53,6 +55,7 @@ void main() {
     db = AppDatabase.memory();
     api = MockPlanetApi();
     repository = UserRepository(api, db.userDao);
+    registerFallbackValue(<String, dynamic>{});
   });
 
   tearDown(() => db.close());
@@ -362,6 +365,506 @@ void main() {
       expect(await repository.hasAnyUser(), isTrue);
       final saved = await repository.getSavedUsers();
       expect(saved.map((u) => u.name), ['ada']);
+    });
+
+    test('hasAnyUser returns false on an empty database', () async {
+      expect(await repository.hasAnyUser(), isFalse);
+    });
+
+    test('getSavedUsers returns an empty list on an empty database', () async {
+      expect(await repository.getSavedUsers(), isEmpty);
+    });
+
+    test('getSavedUsers excludes all archived users', () async {
+      await db.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'a1',
+          name: const Value('archived1'),
+          isArchived: const Value(true),
+        ),
+      );
+      await db.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'a2',
+          name: const Value('archived2'),
+          isArchived: const Value(true),
+        ),
+      );
+
+      expect(await repository.getSavedUsers(), isEmpty);
+    });
+
+    test('getSavedUsers includes multiple non-archived users', () async {
+      await db.userDao.upsert(
+        UsersCompanion.insert(id: 'u1', name: const Value('ada')),
+      );
+      await db.userDao.upsert(
+        UsersCompanion.insert(id: 'u2', name: const Value('bob')),
+      );
+
+      final saved = await repository.getSavedUsers();
+      expect(saved.length, 2);
+      expect(saved.map((u) => u.name).toSet(), {'ada', 'bob'});
+    });
+  });
+
+  group('uploadNewUser', () {
+    Future<void> seedLocalUser({String id = '12345'}) => db.userDao.upsert(
+      UsersCompanion.insert(
+        id: id,
+        name: const Value('newmember'),
+        password: const Value('secret'),
+      ),
+    );
+
+    test(
+      'PUTs the user doc and stores the server-assigned id and rev',
+      () async {
+        await seedLocalUser();
+
+        when(() => api.putJsonObject(any(), any())).thenAnswer(
+          (_) async => NetworkSuccess({
+            'id': 'org.couchdb.user:newmember',
+            'rev': '1-abc',
+            'ok': true,
+          }),
+        );
+        when(
+          () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+        ).thenAnswer(
+          (_) async => NetworkSuccess({
+            '_id': 'org.couchdb.user:newmember',
+            '_rev': '1-abc',
+            'name': 'newmember',
+            'derived_key': 'abc',
+            'salt': 'def',
+            'password_scheme': 'pbkdf2',
+            'iterations': '10',
+          }),
+        );
+
+        final result = await repository.uploadNewUser(
+          localId: '12345',
+          config: config,
+          username: 'newmember',
+          password: 'secret',
+        );
+
+        expect(result, isTrue);
+        final saved = await db.userDao.getById('12345');
+        expect(saved?.couchId, 'org.couchdb.user:newmember');
+        expect(saved?.rev, '1-abc');
+        expect(saved?.derivedKey, 'abc');
+        expect(saved?.salt, 'def');
+        expect(saved?.passwordScheme, 'pbkdf2');
+        expect(saved?.iterations, '10');
+      },
+    );
+
+    test('returns false when the PUT fails', () async {
+      await seedLocalUser();
+
+      when(
+        () => api.putJsonObject(any(), any()),
+      ).thenAnswer((_) async => NetworkError(409, 'conflict'));
+
+      final result = await repository.uploadNewUser(
+        localId: '12345',
+        config: config,
+        username: 'newmember',
+        password: 'secret',
+      );
+
+      expect(result, isFalse);
+      // The local row is untouched — no couchId assigned.
+      final saved = await db.userDao.getById('12345');
+      expect(saved?.couchId, isNull);
+    });
+
+    test('returns false when the PUT succeeds but yields no id', () async {
+      await seedLocalUser();
+
+      when(
+        () => api.putJsonObject(any(), any()),
+      ).thenAnswer((_) async => NetworkSuccess({'ok': true}));
+
+      final result = await repository.uploadNewUser(
+        localId: '12345',
+        config: config,
+        username: 'newmember',
+        password: 'secret',
+      );
+
+      expect(result, isFalse);
+    });
+
+    test('returns true even when the security-data fetch fails', () async {
+      // The user was created on the server; the security-data GET is a
+      // best-effort follow-up. A failure there must not undo the success.
+      await seedLocalUser();
+
+      when(() => api.putJsonObject(any(), any())).thenAnswer(
+        (_) async => NetworkSuccess({
+          'id': 'org.couchdb.user:newmember',
+          'rev': '1-abc',
+          'ok': true,
+        }),
+      );
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer((_) async => NetworkError(401, 'unauthorized'));
+
+      final result = await repository.uploadNewUser(
+        localId: '12345',
+        config: config,
+        username: 'newmember',
+        password: 'secret',
+      );
+
+      expect(result, isTrue);
+      final saved = await db.userDao.getById('12345');
+      expect(saved?.couchId, 'org.couchdb.user:newmember');
+      expect(saved?.rev, '1-abc');
+      // Security fields stay null — login will fall back to a server fetch.
+      expect(saved?.derivedKey, isNull);
+      expect(saved?.salt, isNull);
+    });
+
+    test('returns false on a transport failure during the PUT', () async {
+      await seedLocalUser();
+
+      when(() => api.putJsonObject(any(), any())).thenAnswer(
+        (_) async => NetworkException(Exception('connection refused')),
+      );
+
+      final result = await repository.uploadNewUser(
+        localId: '12345',
+        config: config,
+        username: 'newmember',
+        password: 'secret',
+      );
+
+      expect(result, isFalse);
+    });
+
+    test('sends the user doc to the CouchDB _users endpoint', () async {
+      await seedLocalUser();
+
+      when(() => api.putJsonObject(any(), any())).thenAnswer(
+        (_) async => NetworkSuccess({
+          'id': 'org.couchdb.user:newmember',
+          'rev': '1-abc',
+          'ok': true,
+        }),
+      );
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer((_) async => NetworkSuccess({}));
+
+      await repository.uploadNewUser(
+        localId: '12345',
+        config: config,
+        username: 'newmember',
+        password: 'secret',
+      );
+
+      final captured = verify(
+        () => api.putJsonObject(captureAny(), captureAny()),
+      ).captured;
+      final url = captured[0] as String;
+      expect(url, contains('/_users/org.couchdb.user:newmember'));
+    });
+
+    test('fetches the created doc with the user own credentials', () async {
+      await seedLocalUser();
+
+      when(() => api.putJsonObject(any(), any())).thenAnswer(
+        (_) async => NetworkSuccess({
+          'id': 'org.couchdb.user:newmember',
+          'rev': '1-abc',
+          'ok': true,
+        }),
+      );
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer((_) async => NetworkSuccess({}));
+
+      await repository.uploadNewUser(
+        localId: '12345',
+        config: config,
+        username: 'newmember',
+        password: 'secret',
+      );
+
+      final authHeader =
+          verify(
+                () => api.getJsonObject(
+                  any(),
+                  authHeader: captureAny(named: 'authHeader'),
+                ),
+              ).captured.single
+              as String;
+      // The follow-up GET uses the new member's own credentials, not the
+      // satellite account, so they can read back their own security data.
+      expect(authHeader, contains('Basic'));
+    });
+
+    test('encodes a username containing a space in the PUT URL', () async {
+      await seedLocalUser();
+
+      when(() => api.putJsonObject(any(), any())).thenAnswer(
+        (_) async => NetworkSuccess({
+          'id': 'org.couchdb.user:new%20member',
+          'rev': '1-abc',
+          'ok': true,
+        }),
+      );
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer((_) async => NetworkSuccess({}));
+
+      await repository.uploadNewUser(
+        localId: '12345',
+        config: config,
+        username: 'new member',
+        password: 'secret',
+      );
+
+      final url =
+          verify(() => api.putJsonObject(captureAny(), any())).captured.single
+              as String;
+      expect(url, contains('new%20member'));
+    });
+
+    test('stores the security fields when the fetch returns them', () async {
+      await seedLocalUser();
+
+      when(() => api.putJsonObject(any(), any())).thenAnswer(
+        (_) async => NetworkSuccess({
+          'id': 'org.couchdb.user:newuser',
+          'rev': '2-def',
+          'ok': true,
+        }),
+      );
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer(
+        (_) async => NetworkSuccess({
+          'derived_key': 'abc123',
+          'salt': 's4lt',
+          'password_scheme': 'pbkdf2',
+          'iterations': '10000',
+        }),
+      );
+
+      await repository.uploadNewUser(
+        localId: '12345',
+        config: config,
+        username: 'newuser',
+        password: 'secret',
+      );
+
+      final user = await db.userDao.getById('12345');
+      expect(user?.couchId, 'org.couchdb.user:newuser');
+      expect(user?.rev, '2-def');
+      expect(user?.derivedKey, 'abc123');
+      expect(user?.salt, 's4lt');
+      expect(user?.passwordScheme, 'pbkdf2');
+      expect(user?.iterations, '10000');
+    });
+
+    test(
+      'does not store security fields when the fetch returns an empty doc',
+      () async {
+        await seedLocalUser();
+
+        when(() => api.putJsonObject(any(), any())).thenAnswer(
+          (_) async => NetworkSuccess({
+            'id': 'org.couchdb.user:newuser',
+            'rev': '1-abc',
+            'ok': true,
+          }),
+        );
+        when(
+          () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+        ).thenAnswer((_) async => NetworkSuccess({}));
+
+        await repository.uploadNewUser(
+          localId: '12345',
+          config: config,
+          username: 'newuser',
+          password: 'secret',
+        );
+
+        final user = await db.userDao.getById('12345');
+        expect(user?.couchId, 'org.couchdb.user:newuser');
+        expect(user?.derivedKey, isNull);
+        expect(user?.salt, isNull);
+      },
+    );
+
+    test('uses the username and password for the fetch auth header', () async {
+      await seedLocalUser();
+
+      when(() => api.putJsonObject(any(), any())).thenAnswer(
+        (_) async => NetworkSuccess({
+          'id': 'org.couchdb.user:newuser',
+          'rev': '1-abc',
+          'ok': true,
+        }),
+      );
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer((_) async => NetworkSuccess({}));
+
+      await repository.uploadNewUser(
+        localId: '12345',
+        config: config,
+        username: 'newuser',
+        password: 'secret',
+      );
+
+      final header =
+          verify(
+                () => api.getJsonObject(
+                  any(),
+                  authHeader: captureAny(named: 'authHeader'),
+                ),
+              ).captured.single
+              as String;
+      // Basic auth header is base64('newuser:secret').
+      expect(header, startsWith('Basic '));
+      final decoded = String.fromCharCodes(base64Decode(header.substring(6)));
+      expect(decoded, 'newuser:secret');
+    });
+
+    test('fetches the doc from the _users database by server id', () async {
+      await seedLocalUser();
+
+      when(() => api.putJsonObject(any(), any())).thenAnswer(
+        (_) async => NetworkSuccess({
+          'id': 'org.couchdb.user:newuser',
+          'rev': '1-abc',
+          'ok': true,
+        }),
+      );
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer((_) async => NetworkSuccess({}));
+
+      await repository.uploadNewUser(
+        localId: '12345',
+        config: config,
+        username: 'newuser',
+        password: 'secret',
+      );
+
+      final fetchUrl =
+          verify(
+                () => api.getJsonObject(
+                  captureAny(),
+                  authHeader: any(named: 'authHeader'),
+                ),
+              ).captured.single
+              as String;
+      expect(fetchUrl, contains('/_users/org.couchdb.user:newuser'));
+    });
+
+    test('returns true when both PUT and fetch succeed', () async {
+      await seedLocalUser();
+
+      when(() => api.putJsonObject(any(), any())).thenAnswer(
+        (_) async => NetworkSuccess({
+          'id': 'org.couchdb.user:newuser',
+          'rev': '1-abc',
+          'ok': true,
+        }),
+      );
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer((_) async => NetworkSuccess({}));
+
+      final result = await repository.uploadNewUser(
+        localId: '12345',
+        config: config,
+        username: 'newuser',
+        password: 'secret',
+      );
+
+      expect(result, isTrue);
+    });
+
+    test('returns true even when the fetch throws an exception', () async {
+      await seedLocalUser();
+
+      when(() => api.putJsonObject(any(), any())).thenAnswer(
+        (_) async => NetworkSuccess({
+          'id': 'org.couchdb.user:newuser',
+          'rev': '1-abc',
+          'ok': true,
+        }),
+      );
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer((_) async => NetworkException(Exception('network')));
+
+      final result = await repository.uploadNewUser(
+        localId: '12345',
+        config: config,
+        username: 'newuser',
+        password: 'secret',
+      );
+
+      expect(result, isTrue);
+      // The local row still has the server id/rev from the PUT.
+      final user = await db.userDao.getById('12345');
+      expect(user?.couchId, 'org.couchdb.user:newuser');
+    });
+
+    test(
+      'stores the server-assigned id and rev after a successful PUT',
+      () async {
+        await seedLocalUser();
+
+        when(() => api.putJsonObject(any(), any())).thenAnswer(
+          (_) async => NetworkSuccess({
+            'id': 'org.couchdb.user:newuser',
+            'rev': '1-abc',
+            'ok': true,
+          }),
+        );
+        when(
+          () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+        ).thenAnswer((_) async => NetworkSuccess({}));
+
+        await repository.uploadNewUser(
+          localId: '12345',
+          config: config,
+          username: 'newuser',
+          password: 'secret',
+        );
+
+        final user = await db.userDao.getById('12345');
+        expect(user?.couchId, 'org.couchdb.user:newuser');
+        expect(user?.rev, '1-abc');
+      },
+    );
+
+    test('returns false when the server returns an empty id', () async {
+      await seedLocalUser();
+
+      when(() => api.putJsonObject(any(), any())).thenAnswer(
+        (_) async => NetworkSuccess({'id': '', 'rev': '1', 'ok': true}),
+      );
+
+      final result = await repository.uploadNewUser(
+        localId: '12345',
+        config: config,
+        username: 'newuser',
+        password: 'secret',
+      );
+
+      expect(result, isFalse);
     });
   });
 }

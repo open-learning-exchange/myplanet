@@ -16,6 +16,7 @@ void main() {
     String id = 'user-1',
     String? couchId,
     bool isUpdated = false,
+    bool isArchived = false,
   }) => db.userDao.upsert(
     UsersCompanion.insert(
       id: id,
@@ -25,6 +26,7 @@ void main() {
       userAdmin: const Value(false),
       joinDate: const Value(0),
       isUpdated: Value(isUpdated),
+      isArchived: Value(isArchived),
     ),
   );
 
@@ -135,6 +137,262 @@ void main() {
       final saved = await db.userDao.getById('user-1');
       expect(saved?.couchId, 'org.couchdb.user:ada');
       expect(await db.userDao.count(), 1);
+    });
+  });
+
+  group('UserDao.getByName', () {
+    test('returns the matching user', () async {
+      await seedUser(id: 'u1', couchId: 'org.couchdb.user:ada');
+
+      final found = await db.userDao.getByName('ada');
+      expect(found?.id, 'u1');
+    });
+
+    test('returns null when no user has that name', () async {
+      expect(await db.userDao.getByName('nobody'), isNull);
+    });
+
+    test('returns only the first when two users share a name', () async {
+      // The Kotlin getSingleOrNull would throw on two rows; the port limits
+      // to one instead, so login never crashes on a duplicate name.
+      await seedUser(id: 'u1', couchId: 'org.couchdb.user:ada');
+      await seedUser(id: 'u2', couchId: 'org.couchdb.user:ada2');
+
+      final found = await db.userDao.getByName('ada');
+      expect(found, isNotNull);
+      expect({'u1', 'u2'}, contains(found?.id));
+    });
+  });
+
+  group('UserDao.getById', () {
+    test('returns the matching user', () async {
+      await seedUser(id: 'u1');
+
+      expect((await db.userDao.getById('u1'))?.name, 'ada');
+    });
+
+    test('returns null for an unknown id', () async {
+      expect(await db.userDao.getById('nope'), isNull);
+    });
+  });
+
+  group('UserDao.getSavedUsers', () {
+    test('excludes archived accounts', () async {
+      await seedUser(id: 'u1');
+      await seedUser(id: 'u2', isArchived: true);
+
+      final saved = await db.userDao.getSavedUsers();
+      expect(saved.map((u) => u.id), ['u1']);
+    });
+
+    test('returns all non-archived accounts in insertion order', () async {
+      await seedUser(id: 'u1');
+      await seedUser(id: 'u2');
+      await seedUser(id: 'u3', isArchived: true);
+
+      final saved = await db.userDao.getSavedUsers();
+      expect(saved.map((u) => u.id), ['u1', 'u2']);
+    });
+  });
+
+  group('UserDao.getAllUsers', () {
+    test('includes archived accounts, unlike getSavedUsers', () async {
+      await seedUser(id: 'u1');
+      await seedUser(id: 'u2', isArchived: true);
+
+      final all = await db.userDao.getAllUsers();
+      expect(all.map((u) => u.id).toSet(), {'u1', 'u2'});
+    });
+  });
+
+  group('UserDao.search', () {
+    test('matches on the username', () async {
+      await seedUser(id: 'u1');
+
+      final results = await db.userDao.search('ada');
+      expect(results.map((u) => u.id), ['u1']);
+    });
+
+    test('matches on the first name', () async {
+      await db.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'u1',
+          name: const Value('ada'),
+          firstName: const Value('Augusta'),
+          rolesList: const Value([]),
+          userAdmin: const Value(false),
+          joinDate: const Value(0),
+        ),
+      );
+
+      expect((await db.userDao.search('gust')).map((u) => u.id), ['u1']);
+    });
+
+    test('matches on the last name', () async {
+      await db.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'u1',
+          name: const Value('ada'),
+          lastName: const Value('Lovelace'),
+          rolesList: const Value([]),
+          userAdmin: const Value(false),
+          joinDate: const Value(0),
+        ),
+      );
+
+      expect((await db.userDao.search('love')).map((u) => u.id), ['u1']);
+    });
+
+    test('returns an empty list when nothing matches', () async {
+      await seedUser(id: 'u1');
+
+      expect(await db.userDao.search('xyz'), isEmpty);
+    });
+
+    test('matches case-insensitively', () async {
+      await db.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'u1',
+          name: const Value('Ada'),
+          rolesList: const Value([]),
+          userAdmin: const Value(false),
+          joinDate: const Value(0),
+        ),
+      );
+
+      expect((await db.userDao.search('aDA')).map((u) => u.id), ['u1']);
+    });
+  });
+
+  group('UserDao.ensureSecurityKeys', () {
+    test('generates a key and iv when neither is present', () async {
+      await seedUser(id: 'u1');
+
+      final result = await db.userDao.ensureSecurityKeys(
+        'u1',
+        createKey: () => 'test-key',
+        createIv: () => 'test-iv',
+      );
+
+      expect(result?.key, 'test-key');
+      expect(result?.iv, 'test-iv');
+      // Persisted to the row.
+      final saved = await db.userDao.getById('u1');
+      expect(saved?.key, 'test-key');
+      expect(saved?.iv, 'test-iv');
+    });
+
+    test('returns the existing keys without regenerating', () async {
+      await db.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'u1',
+          name: const Value('ada'),
+          key: const Value('old-key'),
+          iv: const Value('old-iv'),
+          rolesList: const Value([]),
+          userAdmin: const Value(false),
+          joinDate: const Value(0),
+        ),
+      );
+
+      final result = await db.userDao.ensureSecurityKeys(
+        'u1',
+        createKey: () => 'should-not-be-used',
+        createIv: () => 'should-not-be-used',
+      );
+
+      expect(result?.key, 'old-key');
+      expect(result?.iv, 'old-iv');
+    });
+
+    test('returns null for an unknown user', () async {
+      expect(
+        await db.userDao.ensureSecurityKeys(
+          'nope',
+          createKey: () => 'k',
+          createIv: () => 'i',
+        ),
+        isNull,
+      );
+    });
+
+    test('fills in only the missing key when the iv already exists', () async {
+      await db.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'u1',
+          name: const Value('ada'),
+          iv: const Value('old-iv'),
+          rolesList: const Value([]),
+          userAdmin: const Value(false),
+          joinDate: const Value(0),
+        ),
+      );
+
+      final result = await db.userDao.ensureSecurityKeys(
+        'u1',
+        createKey: () => 'new-key',
+        createIv: () => 'should-not-be-used',
+      );
+
+      expect(result?.key, 'new-key');
+      expect(result?.iv, 'old-iv');
+    });
+  });
+
+  group('UserDao.updateUserSecurityData', () {
+    test('writes all the PBKDF2 fields', () async {
+      await seedUser(id: 'u1');
+
+      await db.userDao.updateUserSecurityData(
+        localId: 'u1',
+        couchId: 'org.couchdb.user:ada',
+        rev: '1-abc',
+        passwordScheme: 'pbkdf2',
+        derivedKey: 'key123',
+        salt: 'salt456',
+        iterations: '10',
+      );
+
+      final saved = await db.userDao.getById('u1');
+      expect(saved?.couchId, 'org.couchdb.user:ada');
+      expect(saved?.rev, '1-abc');
+      expect(saved?.passwordScheme, 'pbkdf2');
+      expect(saved?.derivedKey, 'key123');
+      expect(saved?.salt, 'salt456');
+      expect(saved?.iterations, '10');
+    });
+
+    test('preserves null fields as null', () async {
+      await seedUser(id: 'u1');
+
+      await db.userDao.updateUserSecurityData(
+        localId: 'u1',
+        couchId: 'org.couchdb.user:ada',
+        rev: '1-abc',
+        passwordScheme: null,
+        derivedKey: null,
+        salt: null,
+        iterations: null,
+      );
+
+      final saved = await db.userDao.getById('u1');
+      expect(saved?.couchId, 'org.couchdb.user:ada');
+      expect(saved?.derivedKey, isNull);
+      expect(saved?.salt, isNull);
+    });
+  });
+
+  group('UserDao.count', () {
+    test('counts zero on an empty table', () async {
+      expect(await db.userDao.count(), 0);
+    });
+
+    test('counts every row including archived', () async {
+      await seedUser(id: 'u1');
+      await seedUser(id: 'u2');
+      await seedUser(id: 'u3', isArchived: true);
+
+      expect(await db.userDao.count(), 3);
     });
   });
 }

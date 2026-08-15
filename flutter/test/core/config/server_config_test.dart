@@ -84,4 +84,164 @@ void main() {
       expect(updated, isNot(equals(config)));
     });
   });
+
+  group('copyWith — each field', () {
+    const base = ServerConfig(
+      serverUrl: 'https://a.example.org',
+      pin: '1111',
+      couchDbUrl: 'https://satellite:1111@a.example.org:443',
+      alternativeUrl: 'https://b.example.org',
+      isAlternativeUrl: false,
+      code: 'gt',
+      id: 'config-1',
+      parentCode: 'nation',
+    );
+
+    test('serverUrl', () {
+      final updated = base.copyWith(serverUrl: 'https://c.example.org');
+      expect(updated.serverUrl, 'https://c.example.org');
+      expect(updated.pin, base.pin);
+    });
+
+    test('pin', () {
+      final updated = base.copyWith(pin: '2222');
+      expect(updated.pin, '2222');
+      expect(updated.serverUrl, base.serverUrl);
+    });
+
+    test('couchDbUrl', () {
+      final updated = base.copyWith(
+        couchDbUrl: 'https://satellite:9999@x.org:443',
+      );
+      expect(updated.couchDbUrl, 'https://satellite:9999@x.org:443');
+    });
+
+    test('alternativeUrl', () {
+      final updated = base.copyWith(
+        alternativeUrl: 'https://mirror.example.org',
+      );
+      expect(updated.alternativeUrl, 'https://mirror.example.org');
+    });
+
+    test('isAlternativeUrl', () {
+      final updated = base.copyWith(isAlternativeUrl: true);
+      expect(updated.isAlternativeUrl, isTrue);
+      expect(base.isAlternativeUrl, isFalse);
+    });
+
+    test('code', () {
+      final updated = base.copyWith(code: 'us');
+      expect(updated.code, 'us');
+    });
+
+    test('id', () {
+      final updated = base.copyWith(id: 'config-2');
+      expect(updated.id, 'config-2');
+    });
+
+    test('parentCode', () {
+      final updated = base.copyWith(parentCode: 'earth');
+      expect(updated.parentCode, 'earth');
+    });
+  });
+
+  group('equality', () {
+    const a = ServerConfig(
+      serverUrl: 'https://a.example.org',
+      pin: '1111',
+      couchDbUrl: 'https://satellite:1111@a.example.org:443',
+      alternativeUrl: 'https://b.example.org',
+      isAlternativeUrl: true,
+      code: 'gt',
+      id: 'config-1',
+      parentCode: 'nation',
+    );
+
+    test('is equal when all fields match', () {
+      expect(a, equals(a.copyWith()));
+    });
+
+    test('differs when serverUrl differs', () {
+      expect(a, isNot(equals(a.copyWith(serverUrl: 'https://other'))));
+    });
+
+    test('differs when pin differs', () {
+      expect(a, isNot(equals(a.copyWith(pin: '9999'))));
+    });
+
+    test('differs when couchDbUrl differs', () {
+      expect(a, isNot(equals(a.copyWith(couchDbUrl: 'other'))));
+    });
+
+    test('differs when alternativeUrl differs', () {
+      expect(a, isNot(equals(a.copyWith(alternativeUrl: 'https://other'))));
+    });
+
+    test('differs when isAlternativeUrl differs', () {
+      expect(a, isNot(equals(a.copyWith(isAlternativeUrl: false))));
+    });
+
+    test('differs when code differs', () {
+      expect(a, isNot(equals(a.copyWith(code: 'other'))));
+    });
+
+    test('differs when id differs', () {
+      expect(a, isNot(equals(a.copyWith(id: 'other'))));
+    });
+
+    test('differs when parentCode differs', () {
+      expect(a, isNot(equals(a.copyWith(parentCode: 'other'))));
+    });
+
+    test('is not equal to a non-ServerConfig object', () {
+      expect(a, isNot(equals('not a config')));
+    });
+  });
+
+  group('defaults', () {
+    test('alternativeUrl defaults to null', () {
+      const config = ServerConfig(
+        serverUrl: 'https://a.example.org',
+        pin: '1111',
+        couchDbUrl: 'https://satellite:1111@a.example.org:443',
+      );
+      expect(config.alternativeUrl, isNull);
+    });
+
+    test('isAlternativeUrl defaults to false', () {
+      const config = ServerConfig(
+        serverUrl: 'https://a.example.org',
+        pin: '1111',
+        couchDbUrl: 'https://satellite:1111@a.example.org:443',
+      );
+      expect(config.isAlternativeUrl, isFalse);
+    });
+
+    test('code defaults to an empty string', () {
+      const config = ServerConfig(
+        serverUrl: 'https://a.example.org',
+        pin: '1111',
+        couchDbUrl: 'https://satellite:1111@a.example.org:443',
+      );
+      expect(config.code, isEmpty);
+    });
+
+    test('id defaults to an empty string', () {
+      const config = ServerConfig(
+        serverUrl: 'https://a.example.org',
+        pin: '1111',
+        couchDbUrl: 'https://satellite:1111@a.example.org:443',
+      );
+      expect(config.id, isEmpty);
+    });
+
+    test('parentCode defaults to an empty string', () {
+      const config = ServerConfig(
+        serverUrl: 'https://a.example.org',
+        pin: '1111',
+        couchDbUrl: 'https://satellite:1111@a.example.org:443',
+      );
+      expect(config.parentCode, isEmpty);
+    });
+  });
 }
