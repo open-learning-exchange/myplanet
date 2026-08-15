@@ -309,7 +309,7 @@ class MyHealthFragment : Fragment() {
     private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, rv: RecyclerView) {
         searchJob?.cancel()
         searchJob = collectWhenStarted(
-            etSearch.textChanges().debounce(300)
+            etSearch.textChanges()
         ) { editable ->
             viewModel.searchPatients(editable?.toString() ?: "", "joinDate", true)
         }
