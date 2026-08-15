@@ -18,6 +18,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.model.AiProvider
+import org.ole.planet.myplanet.repository.ChatResult
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.News
@@ -364,6 +366,110 @@ class ChatViewModelTest {
 
         coVerify(exactly = 1) { voicesRepository.isAlreadyShared(chatId, viewInId) }
         coVerify(exactly = 1) { voicesRepository.createNews(payload, any(), null) }
+
+        job.cancel()
+    }
+
+
+    @Test
+    fun `viewModel fetchAiProviders proxies to chatRepository`() = runTest {
+        val serverUrl = "https://example.com"
+        val expectedProviders = mapOf("provider1" to true, "provider2" to false)
+        coEvery { chatRepository.fetchAiProviders(serverUrl) } returns expectedProviders
+
+        val result = viewModel.fetchAiProviders(serverUrl)
+        assertEquals(expectedProviders, result)
+        coVerify(exactly = 1) { chatRepository.fetchAiProviders(serverUrl) }
+    }
+
+    @Test
+    fun `viewModel getLatestRev proxies to chatRepository`() = runTest {
+        val id = "chat123"
+        val expectedRev = "1-abc"
+        coEvery { chatRepository.getLatestRev(id) } returns expectedRev
+
+        val result = viewModel.getLatestRev(id)
+        assertEquals(expectedRev, result)
+        coVerify(exactly = 1) { chatRepository.getLatestRev(id) }
+    }
+
+    @Test
+    fun `viewModel sendNewChatRequest proxies to chatRepository`() = runTest {
+        val query = "hello"
+        val userName = "User"
+        val aiProvider = AiProvider("model1", "provider1")
+        val expectedResult = ChatResult.Success("response", "chat123", "1-abc")
+        coEvery { chatRepository.sendNewChatRequest(query, userName, aiProvider) } returns expectedResult
+
+        val result = viewModel.sendNewChatRequest(query, userName, aiProvider)
+        assertEquals(expectedResult, result)
+        coVerify(exactly = 1) { chatRepository.sendNewChatRequest(query, userName, aiProvider) }
+    }
+
+    @Test
+    fun `viewModel sendContinueChatRequest proxies to chatRepository`() = runTest {
+        val query = "hello again"
+        val userName = "User"
+        val aiProvider = AiProvider("model1", "provider1")
+        val id = "chat123"
+        val rev = "1-abc"
+        val expectedResult = ChatResult.Success("response", id, "2-def")
+        coEvery { chatRepository.sendContinueChatRequest(query, userName, aiProvider, id, rev) } returns expectedResult
+
+        val result = viewModel.sendContinueChatRequest(query, userName, aiProvider, id, rev)
+        assertEquals(expectedResult, result)
+        coVerify(exactly = 1) { chatRepository.sendContinueChatRequest(query, userName, aiProvider, id, rev) }
+    }
+
+    @Test
+    fun `viewModel getUserById proxies to userRepository`() = runTest {
+        val userId = "user123"
+        val expectedUser = UserEntity(_id = userId, name = "Test User")
+        coEvery { userRepository.getUserById(userId) } returns expectedUser
+
+        val result = viewModel.getUserById(userId)
+        assertEquals(expectedUser, result)
+        coVerify(exactly = 1) { userRepository.getUserById(userId) }
+    }
+
+    @Test
+    fun `viewModel chatUiState correctly combines state flows`() = runTest {
+        val job = launch(testDispatcher) {
+            viewModel.chatUiState.collect {}
+        }
+
+        testScheduler.advanceUntilIdle()
+
+        // Initial state
+        var currentState = viewModel.chatUiState.value
+        assertEquals(null, currentState.selectedChatHistory)
+        assertEquals(null, currentState.selectedAiProvider)
+        assertEquals("", currentState.selectedId)
+        assertEquals("", currentState.selectedRev)
+        assertEquals(null, currentState.aiProviders)
+        assertEquals(false, currentState.aiProvidersLoading)
+        assertEquals(false, currentState.aiProvidersError)
+
+        // Update states
+        val history = listOf(Conversation().apply { query = "q"; response = "r" })
+        viewModel.setSelectedChatHistory(history)
+        viewModel.setSelectedAiProvider("OpenAI")
+        viewModel.setSelectedId("chat123")
+        viewModel.setSelectedRev("1-abc")
+        viewModel.setAiProviders(mapOf("OpenAI" to true))
+        viewModel.setAiProvidersLoading(true)
+        viewModel.setAiProvidersError(true)
+
+        testScheduler.advanceUntilIdle()
+
+        currentState = viewModel.chatUiState.value
+        assertEquals(history, currentState.selectedChatHistory)
+        assertEquals("OpenAI", currentState.selectedAiProvider)
+        assertEquals("chat123", currentState.selectedId)
+        assertEquals("1-abc", currentState.selectedRev)
+        assertEquals(mapOf("OpenAI" to true), currentState.aiProviders)
+        assertEquals(true, currentState.aiProvidersLoading)
+        assertEquals(true, currentState.aiProvidersError)
 
         job.cancel()
     }
