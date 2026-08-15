@@ -18,6 +18,7 @@ import java.util.LinkedHashSet
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -56,7 +57,7 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
-@javax.inject.Singleton
+@Singleton
 class TeamsRepositoryImpl @Inject constructor(
     private val activitiesRepository: ActivitiesRepository,
     private val userSessionManager: UserSessionManager,
