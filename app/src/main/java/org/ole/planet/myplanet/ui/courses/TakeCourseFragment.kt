@@ -26,8 +26,10 @@ import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.ui.ratings.RatingsFragment
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
@@ -42,6 +44,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var coursesRepository: CoursesRepository
+    @Inject
+    lateinit var ratingsRepository: RatingsRepository
     private val viewModel: TakeCourseViewModel by viewModels()
     private var courseId: String? = null
     private var userModel: UserEntity? = null
@@ -140,8 +144,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 binding.previousStep.visibility = View.GONE
             }
             setCourseData()
-            checkSurveyCompletion()
+
         }
+
     }
 
     override fun onResume() {
@@ -380,8 +385,50 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 }
             }
 
-            R.id.finish_step -> checkSurveyCompletion()
+            R.id.finish_step -> onFinishStep()
             R.id.btn_remove -> addRemoveCourse()
+        }
+    }
+
+    private suspend fun showCourseRatingDialogAndFinish() {
+        val cId = courseId ?: currentCourse?.courseId
+        val title = currentCourse?.courseTitle ?: ""
+        val userId = userModel?.id
+        val hasRated = if (!cId.isNullOrEmpty() && !userId.isNullOrEmpty()) {
+            try {
+                val summary = ratingsRepository.getRatingSummary("course", cId, userId)
+                summary.userRating != null || summary.existingRating != null
+            } catch (e: Exception) {
+                false
+            }
+        } else {
+            false
+        }
+
+        if (!cId.isNullOrEmpty() && !hasRated && isAdded) {
+            val ratingDialog = RatingsFragment.newInstance("course", cId, title)
+            ratingDialog.setOnDismissListener {
+                if (isAdded) {
+                    FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
+                }
+            }
+            ratingDialog.show(parentFragmentManager, RatingsFragment.TAG)
+        } else if (isAdded) {
+            FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
+        }
+    }
+
+    private fun onFinishStep() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val hasUnfinishedSurvey = courseId?.let {
+                coursesRepository.hasUnfinishedSurveys(it, userModel?.id)
+            } ?: false
+
+            if (hasUnfinishedSurvey && courseId == MANDATORY_SURVEY_COURSE_ID) {
+                Toast.makeText(context, getString(R.string.please_complete_survey), Toast.LENGTH_SHORT).show()
+            } else {
+                showCourseRatingDialogAndFinish()
+            }
         }
     }
 
@@ -426,23 +473,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         }
     }
 
-    private fun checkSurveyCompletion() = viewLifecycleOwner.lifecycleScope.launch {
-        val hasUnfinishedSurvey = courseId?.let {
-            coursesRepository.hasUnfinishedSurveys(it, userModel?.id)
-        } ?: false
-
-        if (hasUnfinishedSurvey && courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
-            binding.finishStep.setOnClickListener {
-                Toast.makeText(context, getString(R.string.please_complete_survey), Toast.LENGTH_SHORT).show()
-            }
-        } else {
-            binding.finishStep.isEnabled = true
-            binding.finishStep.setOnClickListener {
-                FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
-            }
-        }
-    }
-
     private fun setNavigationButtons(){
         if(position >= steps.size){
             binding.nextStep.visibility = View.GONE
@@ -468,6 +498,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private val isValidClickLeft: Boolean get() = binding.viewPager2.adapter != null && binding.viewPager2.currentItem > 0
 
     companion object {
+        // Special course with mandatory completion survey (e.g. MyPlanet Onboarding course)
+        private const val MANDATORY_SURVEY_COURSE_ID = "4e6b78800b6ad18b4e8b0e1e38a98cac"
         private const val JOIN_DIALOG_FALLBACK_MS = 5000L
 
         fun newInstance(b: Bundle?): TakeCourseFragment {
