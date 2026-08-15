@@ -1,31 +1,28 @@
 package org.ole.planet.myplanet.ui.teams.tasks
 
 import androidx.lifecycle.ViewModel
-
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.TeamTask
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.Calendar
 import java.util.Date
 import javax.inject.Inject
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.utils.TimeUtils
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.model.TeamTask
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.DispatcherProvider
-
+import org.ole.planet.myplanet.utils.TimeUtils
 
 sealed class TaskActionEvent {
     data class TaskCreatedOrUpdated(val isCreated: Boolean, val assigneeId: String?) : TaskActionEvent()
-    object TaskDeleted : TaskActionEvent()
+    data object TaskDeleted : TaskActionEvent()
     data class TaskAssigned(val userName: String) : TaskActionEvent()
 }
 
@@ -39,9 +36,8 @@ class TeamsTasksViewModel @Inject constructor(
     private val _deadline = MutableStateFlow<Calendar?>(null)
     val deadline: StateFlow<Calendar?> = _deadline.asStateFlow()
 
-    private val _taskActionEvents = MutableSharedFlow<TaskActionEvent>(extraBufferCapacity = 1)
-    val taskActionEvents: SharedFlow<TaskActionEvent> = _taskActionEvents.asSharedFlow()
-
+    private val _taskActionEvents = Channel<TaskActionEvent>(Channel.BUFFERED)
+    val taskActionEvents: Flow<TaskActionEvent> = _taskActionEvents.receiveAsFlow()
 
     fun setDeadlineDate(year: Int, monthOfYear: Int, dayOfMonth: Int) {
         val newDeadline = Calendar.getInstance()
@@ -87,29 +83,29 @@ class TeamsTasksViewModel @Inject constructor(
     }
 
     fun createOrUpdateTask(task: String, desc: String, teamTask: TeamTask?, teamId: String, assigneeId: String?) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             val deadlineMillis = getDeadlineMillis()
             if (teamTask == null) {
                 teamsRepository.createTask(task, desc, deadlineMillis, teamId, assigneeId)
-                _taskActionEvents.emit(TaskActionEvent.TaskCreatedOrUpdated(true, assigneeId))
+                _taskActionEvents.send(TaskActionEvent.TaskCreatedOrUpdated(true, assigneeId))
             } else {
                 teamTask.id?.let {
                     teamsRepository.updateTask(it, task, desc, deadlineMillis, assigneeId)
-                    _taskActionEvents.emit(TaskActionEvent.TaskCreatedOrUpdated(false, assigneeId))
+                    _taskActionEvents.send(TaskActionEvent.TaskCreatedOrUpdated(false, assigneeId))
                 }
             }
         }
     }
 
     fun deleteTask(taskId: String) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             teamsRepository.deleteTask(taskId)
-            _taskActionEvents.emit(TaskActionEvent.TaskDeleted)
+            _taskActionEvents.send(TaskActionEvent.TaskDeleted)
         }
     }
 
     fun setTaskCompletion(taskId: String, completed: Boolean) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             teamsRepository.setTaskCompletion(taskId, completed)
         }
     }
@@ -119,9 +115,9 @@ class TeamsTasksViewModel @Inject constructor(
     }
 
     fun assignTask(taskId: String, user: UserEntity) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             teamsRepository.assignTask(taskId, user.id)
-            _taskActionEvents.emit(TaskActionEvent.TaskAssigned(user.name ?: ""))
+            _taskActionEvents.send(TaskActionEvent.TaskAssigned(user.name ?: ""))
         }
     }
 
@@ -130,6 +126,6 @@ class TeamsTasksViewModel @Inject constructor(
     }
 
     suspend fun fetchAssigneeNames(assigneesToFetch: List<String>): Map<String, String> {
-        return assigneesToFetch.mapNotNull { id -> userRepository.getUserById(id)?.name?.let { name -> id to name } }.toMap()
+        return userRepository.getUsersByIds(assigneesToFetch).mapNotNull { user -> user.name?.let { user.id to it } }.toMap()
     }
 }

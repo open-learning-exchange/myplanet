@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 
 @ExperimentalCoroutinesApi
 class TeamsTasksViewModelTest {
@@ -132,6 +133,7 @@ class TeamsTasksViewModelTest {
         val job = backgroundScope.launch(testDispatcher) { viewModel.taskActionEvents.collect { events.add(it) } }
 
         viewModel.createOrUpdateTask(title, desc, null, teamId, assigneeId)
+        yield()
 
         coVerify { mockTeamsRepository.createTask(title, desc, viewModel.getDeadlineMillis(), teamId, assigneeId) }
         val event = events.lastOrNull()
@@ -145,13 +147,16 @@ class TeamsTasksViewModelTest {
         val desc = "Updated Description"
         val teamId = "team123"
         val assigneeId = "user2"
-        val mockTeamTask = TeamTask().apply { id = "task1" }
+        val mockTeamTask = TeamTask()
+        mockTeamTask.id = "task1"
+        mockTeamTask._id = "task1"
         viewModel.setDeadline(2000L)
 
         val events = mutableListOf<TaskActionEvent>()
         val job = backgroundScope.launch(testDispatcher) { viewModel.taskActionEvents.collect { events.add(it) } }
 
         viewModel.createOrUpdateTask(title, desc, mockTeamTask, teamId, assigneeId)
+        yield()
 
         coVerify { mockTeamsRepository.updateTask("task1", title, desc, viewModel.getDeadlineMillis(), assigneeId) }
         val event = events.lastOrNull()
@@ -165,6 +170,7 @@ class TeamsTasksViewModelTest {
         val job = backgroundScope.launch(testDispatcher) { viewModel.taskActionEvents.collect { events.add(it) } }
 
         viewModel.deleteTask("task1")
+        yield()
 
         coVerify { mockTeamsRepository.deleteTask("task1") }
         val event = events.lastOrNull()
@@ -175,6 +181,7 @@ class TeamsTasksViewModelTest {
     @Test
     fun `setTaskCompletion calls repository`() = runTest(testDispatcher) {
         viewModel.setTaskCompletion("task1", true)
+        yield()
 
         coVerify { mockTeamsRepository.setTaskCompletion("task1", true) }
     }
@@ -192,15 +199,15 @@ class TeamsTasksViewModelTest {
 
     @Test
     fun `assignTask calls repository and emits event`() = runTest(testDispatcher) {
-        val mockUser = UserEntity().apply {
-            id = "user1"
-            name = "John Doe"
-        }
+        val mockUser = UserEntity()
+        mockUser.id = "user1"
+        mockUser.name = "John Doe"
 
         val events = mutableListOf<TaskActionEvent>()
         val job = backgroundScope.launch(testDispatcher) { viewModel.taskActionEvents.collect { events.add(it) } }
 
         viewModel.assignTask("task1", mockUser)
+        yield()
 
         coVerify { mockTeamsRepository.assignTask("task1", "user1") }
         val event = events.lastOrNull()
@@ -217,5 +224,24 @@ class TeamsTasksViewModelTest {
 
         assertEquals(mockUser, result)
         coVerify { mockUserRepository.getUserById("user1") }
+    }
+
+    @Test
+    fun `fetchAssigneeNames uses batch api`() = runTest(testDispatcher) {
+        val mockUser1 = UserEntity().apply {
+            id = "1"
+            name = "Name1"
+        }
+        val mockUser2 = UserEntity().apply {
+            id = "2"
+            name = "Name2"
+        }
+
+        coEvery { mockUserRepository.getUsersByIds(listOf("1", "2")) } returns listOf(mockUser1, mockUser2)
+
+        val result = viewModel.fetchAssigneeNames(listOf("1", "2"))
+
+        assertEquals(mapOf("1" to "Name1", "2" to "Name2"), result)
+        coVerify { mockUserRepository.getUsersByIds(listOf("1", "2")) }
     }
 }
