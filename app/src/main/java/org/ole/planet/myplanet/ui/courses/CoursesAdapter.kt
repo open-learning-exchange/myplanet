@@ -240,11 +240,9 @@ class CoursesAdapter(
         when (holder) {
             is GridViewHolder -> {
                 Glide.with(context).clear(holder.binding.ivCover)
-                holder.itemView.setOnClickListener(null)
             }
             is ListViewHolder -> {
                 Glide.with(context).clear(holder.binding.ivCover)
-                holder.itemView.setOnClickListener(null)
             }
         }
     }
