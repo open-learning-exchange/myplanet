@@ -33,6 +33,9 @@ import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResourcesUpdateListener {
+    @javax.inject.Inject
+    lateinit var uploadManager: org.ole.planet.myplanet.services.UploadManager
+
     private var _binding: FragmentTeamResourceBinding? = null
     private val binding get() = _binding!!
     private lateinit var adapterLibrary: TeamResourcesAdapter
@@ -121,6 +124,9 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
                         teamsRepository.addResourceLinks(teamId, selectedResources, user?.id)
                         showLibraryList()
                         teamsSyncRepository.syncTeamActivities()
+                        uploadManager.uploadResource(null)
+                        uploadManager.uploadTeams()
+                        uploadManager.uploadTeamActivities()
                     }
                 }
                 .setNeutralButton(R.string.create_new_resource) { _: DialogInterface?, _: Int ->
@@ -189,6 +195,9 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
             }.onSuccess {
                 adapterLibrary.removeResourceAt(position)
                 teamsSyncRepository.syncTeamActivities()
+                        uploadManager.uploadResource(null)
+                        uploadManager.uploadTeams()
+                        uploadManager.uploadTeamActivities()
             }.onFailure {
                 onResourceUpdateFailed(R.string.failed_to_remove_resource)
             }

@@ -45,6 +45,9 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpdateListener {
+    @javax.inject.Inject
+    lateinit var uploadManager: org.ole.planet.myplanet.services.UploadManager
+
 
     @Inject
     lateinit var userSessionManager: UserSessionManager
@@ -277,6 +280,9 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                     binding.btnLeave.text = getString(R.string.requested)
                     binding.btnLeave.isEnabled = false
                     teamsSyncRepository.syncTeamActivities()
+                        uploadManager.uploadResource(null)
+                        uploadManager.uploadTeams()
+                        uploadManager.uploadTeamActivities()
                 }
             }
         }

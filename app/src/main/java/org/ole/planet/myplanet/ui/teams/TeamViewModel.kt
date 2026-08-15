@@ -29,6 +29,7 @@ sealed class TeamActionResult {
 
 @HiltViewModel
 class TeamViewModel @Inject constructor(
+    private val uploadManager: org.ole.planet.myplanet.services.UploadManager,
     private val teamsRepository: TeamsRepository,
     private val teamsSyncRepository: TeamsSyncRepository,
     private val dispatcherProvider: DispatcherProvider,
@@ -128,6 +129,9 @@ class TeamViewModel @Inject constructor(
         viewModelScope.launch {
             teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
             teamsSyncRepository.syncTeamActivities()
+                uploadManager.uploadResource(null)
+                uploadManager.uploadTeams()
+                uploadManager.uploadTeamActivities()
             loadTeams(currentFromDashboard, currentType, currentUserId)
         }
     }
@@ -139,6 +143,9 @@ class TeamViewModel @Inject constructor(
         }
         viewModelScope.launch {
             teamsSyncRepository.syncTeamActivities()
+                uploadManager.uploadResource(null)
+                uploadManager.uploadTeams()
+                uploadManager.uploadTeamActivities()
         }
     }
 

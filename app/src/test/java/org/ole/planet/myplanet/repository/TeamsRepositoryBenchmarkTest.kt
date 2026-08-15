@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.repository.TeamsUploadRepository
+import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -32,7 +32,6 @@ class TeamsRepositoryBenchmarkTest {
     private lateinit var teamsRepository: TeamsRepositoryImpl
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
-    private val teamsUploadRepository: TeamsUploadRepository = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
     private val preferences: SharedPreferences = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
@@ -61,8 +60,7 @@ class TeamsRepositoryBenchmarkTest {
         teamsRepository = TeamsRepositoryImpl(
             activitiesRepository,
             userSessionManager,
-            teamsUploadRepository,
-            gson,
+                        gson,
             preferences,
             sharedPrefManager,
             serverUrlMapper,

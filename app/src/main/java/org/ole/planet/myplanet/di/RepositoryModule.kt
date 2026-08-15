@@ -159,10 +159,6 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindUploadRepository(impl: UploadRepositoryImpl): UploadRepository
-    @Binds
-    @Singleton
-    abstract fun bindTeamsUploadRepository(impl: org.ole.planet.myplanet.repository.TeamsUploadRepositoryImpl): org.ole.planet.myplanet.repository.TeamsUploadRepository
-
 
     @Binds
     @Singleton

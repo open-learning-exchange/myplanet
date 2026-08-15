@@ -23,6 +23,7 @@ data class RequestsUiState(
 
 @HiltViewModel
 class RequestsViewModel @Inject constructor(
+    private val uploadManager: org.ole.planet.myplanet.services.UploadManager,
     private val teamsRepository: TeamsRepository,
     private val teamsSyncRepository: TeamsSyncRepository,
     private val userSessionManager: UserSessionManager
@@ -58,7 +59,10 @@ class RequestsViewModel @Inject constructor(
             val result = teamsRepository.respondToMemberRequest(teamId, userId, isAccepted)
             if (result.isSuccess) {
                 _successAction.emit(Unit)
-                launch { teamsSyncRepository.syncTeamActivities() }
+                launch { teamsSyncRepository.syncTeamActivities()
+                uploadManager.uploadResource(null)
+                uploadManager.uploadTeams()
+                uploadManager.uploadTeamActivities() }
             } else {
                 _uiState.value = originalState
             }

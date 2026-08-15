@@ -30,13 +30,14 @@ class TeamViewModelTest {
     private val teamsRepository = mockk<TeamsRepository>()
     private val teamsSyncRepository = mockk<TeamsSyncRepository>()
     private val realtimeSyncManager: RealtimeSyncManager = mockk(relaxed = true)
+    private val uploadManager: org.ole.planet.myplanet.services.UploadManager = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private val testDispatcherProvider = TestDispatcherProvider(testDispatcher)
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        viewModel = TeamViewModel(teamsRepository, teamsSyncRepository, testDispatcherProvider, realtimeSyncManager)
+        viewModel = TeamViewModel(uploadManager, teamsRepository, teamsSyncRepository, testDispatcherProvider, realtimeSyncManager)
     }
 
     @After

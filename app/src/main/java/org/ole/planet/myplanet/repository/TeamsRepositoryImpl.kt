@@ -45,7 +45,6 @@ import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.repository.TeamsUploadRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.AndroidDecrypter
@@ -59,7 +58,6 @@ import org.ole.planet.myplanet.utils.UrlUtils
 class TeamsRepositoryImpl @Inject constructor(
     private val activitiesRepository: ActivitiesRepository,
     private val userSessionManager: UserSessionManager,
-    private val teamsUploadRepository: TeamsUploadRepository,
     private val gson: Gson,
     @param:AppPreferences private val preferences: SharedPreferences,
     private val sharedPrefManager: SharedPrefManager,
@@ -959,20 +957,8 @@ class TeamsRepositoryImpl @Inject constructor(
             }
         }
 
-        uploadTeamActivities()
     }
 
-    private suspend fun uploadTeamActivities() {
-        try {
-            withContext(dispatcherProvider.io) {
-                teamsUploadRepository.uploadResource(null)
-                teamsUploadRepository.uploadTeams()
-                teamsUploadRepository.uploadTeamActivities()
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
 
     private suspend fun getResourceIds(teamId: String): List<String> {
         return teamDao.getAll().filter {

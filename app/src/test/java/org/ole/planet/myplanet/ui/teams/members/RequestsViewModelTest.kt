@@ -26,6 +26,7 @@ class RequestsViewModelTest {
     private lateinit var teamsSyncRepository: TeamsSyncRepository
     private lateinit var userSessionManager: UserSessionManager
         private lateinit var viewModel: RequestsViewModel
+    private val uploadManager: org.ole.planet.myplanet.services.UploadManager = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
@@ -34,7 +35,7 @@ class RequestsViewModelTest {
         teamsRepository = mockk()
         teamsSyncRepository = mockk()
         userSessionManager = mockk()
-                viewModel = RequestsViewModel(teamsRepository, teamsSyncRepository, userSessionManager)
+                viewModel = RequestsViewModel(uploadManager, teamsRepository, teamsSyncRepository, userSessionManager)
     }
 
     @After
