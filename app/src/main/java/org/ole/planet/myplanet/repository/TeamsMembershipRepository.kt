@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.JoinedMemberData
 
 interface TeamsMembershipRepository {
     suspend fun isMember(userId: String?, teamId: String): Boolean

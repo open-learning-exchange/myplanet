@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCombinedMembersBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.JoinedMemberData
+import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.services.UserSessionManager
 
 @AndroidEntryPoint
