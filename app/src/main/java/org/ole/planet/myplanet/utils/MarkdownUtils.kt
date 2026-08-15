@@ -74,8 +74,7 @@ object MarkdownUtils {
 
     fun setMarkdownText(textView: TextView, markdown: String) {
         val markwon = create(textView.context)
-        markwon.setMarkdown(textView, markdown)
-        textView.movementMethod = CustomLinkMovementMethod()
+        setParsedMarkdown(textView, markwon, markwon.toMarkdown(markdown))
     }
 
     fun setParsedMarkdown(textView: TextView, markwon: Markwon, spanned: Spanned) {
