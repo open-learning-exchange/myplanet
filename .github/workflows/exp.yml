@@ -25,6 +25,22 @@ jobs:
           gradle-version: wrapper
       - run: ./gradlew testDefaultDebugUnitTest --configuration-cache-problems=warn --stacktrace --parallel --max-workers=4
 
+  d-shard2:
+    name: exp D 2 shards (this PR's topology)
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: gradle/actions/setup-gradle@v6.3.0
+        with:
+          gradle-version: wrapper
+      - run: ./gradlew testDefaultDebugUnitTest -PtestShardTotal=2 -PtestShardIndex=$(( ${{ matrix.shard }} - 1 )) --configuration-cache-problems=warn --stacktrace --parallel --max-workers=4
+
   b-cache-write:
     name: exp B gradle build cache writable from branch
     runs-on: ubuntu-24.04
