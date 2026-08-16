@@ -50,10 +50,12 @@ jobs:
           # .gradle/configuration-cache is excluded: Gradle serializes
           # configuration-time state there, including env-var credentials read
           # by settings.gradle, and Actions cache entries are readable from
-          # every branch of the repo.
+          # every branch of the repo. NOTE the positive pattern must be
+          # .gradle/* (enumerating children) — a bare .gradle directory entry
+          # is archived recursively and the negation never matches anything.
           path: |
             app/build
-            .gradle
+            .gradle/*
             !.gradle/configuration-cache
           key: build-dir-test-${{ matrix.build }}-shard${{ matrix.shard }}-${{ github.sha }}
           # fall back to this shard's earlier runs, then any unsharded entry so

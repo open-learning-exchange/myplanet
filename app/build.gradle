@@ -165,6 +165,20 @@ android {
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
     }
 }
+// BuildConfig.VERSION_CODE/VERSION_NAME are unused at runtime (VersionUtils
+// reads PackageManager), but as inlined constants they invalidate every
+// Kotlin/KSP compile task on each version bump — which is every automerge
+// merge. Pin them so bump-only commits stay cacheable; the real version still
+// reaches the manifest from defaultConfig, whose version lines must keep
+// their exact shape for version.sh and the release workflow's greps.
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.buildConfigFields.put('VERSION_CODE',
+            new com.android.build.api.variant.BuildConfigField('int', '1', 'pinned; real version lives in the manifest'))
+        variant.buildConfigFields.put('VERSION_NAME',
+            new com.android.build.api.variant.BuildConfigField('String', '"pinned"', 'pinned; real version lives in the manifest'))
+    }
+}
 dependencies {
     testImplementation(libs.test.junit)
     testImplementation(libs.test.mockk)

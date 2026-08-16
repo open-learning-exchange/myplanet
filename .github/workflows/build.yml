@@ -37,10 +37,11 @@ jobs:
       - name: restore project build dir
         uses: actions/cache@v4
         with:
-          # see test.yml: configuration-cache dir can embed env-var credentials
+          # see test.yml: configuration-cache dir can embed env-var credentials,
+          # and the positive pattern must be .gradle/* for the negation to work
           path: |
             app/build
-            .gradle
+            .gradle/*
             !.gradle/configuration-cache
           key: build-dir-build-${{ matrix.build }}-${{ github.sha }}
           restore-keys: |
