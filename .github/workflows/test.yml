@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   test:
-    name: myPlanet test (${{ matrix.build }}, shard ${{ matrix.shard }}/2)
+    name: myPlanet test (${{ matrix.build }}, shard ${{ matrix.shard }}/${{ strategy.job-total }})
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -90,8 +90,14 @@ jobs:
           # this branch, shards were equal-or-faster in every cache regime
           # (warm source change ~3:03-3:37 vs ~3:57-4:14 unsharded; cold ~4:53
           # vs ~6:25; no-change ties at ~0:45). The trade is a second runner
-          # per push. Drop the shard matrix entry to fall back to one job.
-          ./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=2 -PtestShardIndex=$((SHARD - 1)) --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
+          # per push.
+          #
+          # The shard total is strategy.job-total (the matrix job count), so
+          # shrinking `shard:` to [1] falls back to one full-suite job with no
+          # other edit — a literal total here would silently skip the dropped
+          # shard's tests. ⚠️ job-total counts ALL matrix dimensions: if a
+          # second build flavor is ever added, split the shard count out first.
+          ./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=${{ strategy.job-total }} -PtestShardIndex=$((SHARD - 1)) --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
 
       - name: summarise slowest tests
         if: always()
@@ -107,7 +113,7 @@ jobs:
           # --warn-over: ~120% of half the suite's ~657s summed across forks
           # (2026-08); bump as the suite grows
           python3 .github/scripts/test_timing_summary.py "$RESULTS" \
-            --shard "${{ matrix.shard }}/2" --warn-over 400 | tee -a "$GITHUB_STEP_SUMMARY"
+            --shard "${{ matrix.shard }}/${{ strategy.job-total }}" --warn-over 400 | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: upload test reports
         if: failure()
