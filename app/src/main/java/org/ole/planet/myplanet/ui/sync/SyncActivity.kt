@@ -35,6 +35,8 @@ import javax.inject.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.takeWhile
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -642,22 +644,26 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
         prefData.setLoggedIn(true)
         openDashboard()
-        isNetworkConnectedFlow.onEach { isConnected ->
+
+        val syncRepo = syncRepository
+        val transactionManager = transactionSyncManager
+        val serverUrl = prefData.getServerUrl()
+
+        org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
-                val serverUrl = prefData.getServerUrl()
                 if (serverUrl.isNotEmpty()) {
                     MainApplication.applicationScope.launch {
                         val canReachServer = MainApplication.isServerReachable(serverUrl)
                         if (canReachServer) {
-                            withContext(dispatcherProvider.main) {
-                                startUpload("login")
-                            }
-                            transactionSyncManager.syncDb("login_activities")
+                            syncRepo.uploadLoginData().takeWhile { value ->
+                                value !is org.ole.planet.myplanet.repository.SyncUiState.Success && value !is org.ole.planet.myplanet.repository.SyncUiState.Error
+                            }.collect()
+                            transactionManager.syncDb("login_activities")
                         }
                     }
                 }
             }
-        }.launchIn(lifecycleScope)
+        }.launchIn(MainApplication.applicationScope)
     }
 
     fun settingDialog() {
