@@ -7,9 +7,10 @@ Reads the JUnit XML that Gradle writes to app/build/test-results/<task>/ and
 prints a markdown report of the slowest test classes and individual tests, so
 CI shows where the test wall time actually goes.
 
---shard labels the report with which CI shard produced it. --warn-over prints
-a loud warning when the shard's summed test time exceeds the given seconds,
-so drifting shard balance (the hash split is static) gets noticed.
+--shard labels the report with which CI shard produced it, for the optional
+sharded run (-PtestShardTotal/-PtestShardIndex). --warn-over prints a loud
+warning when the summed test time exceeds the given seconds, so a suite that
+has grown past what one CI job should carry gets noticed.
 """
 import argparse
 import glob
@@ -60,10 +61,12 @@ def main() -> int:
     print(f"{len(cases)} tests in {len(classes)} classes, {total:.1f}s of test time summed across forks.")
     print()
     if args.warn_over is not None and total > args.warn_over:
-        print(f"> ⚠️ **Shard imbalance**: this shard's {total:.0f}s exceeds the {args.warn_over:.0f}s "
-              f"threshold — the hash-based split has drifted. Consider rebalancing "
-              f"(split slow classes, or adjust the shard hash in app/build.gradle) "
-              f"and updating --warn-over in test.yml.")
+        subject = f"shard {args.shard}" if args.shard else "the suite"
+        print(f"> ⚠️ **Slow tests**: {subject} summed {total:.0f}s, over the "
+              f"{args.warn_over:.0f}s threshold. Speed up the slowest classes below "
+              f"(Robolectric classes dominate), or split the run across shards "
+              f"(-PtestShardTotal/-PtestShardIndex, see test.yml) — then update "
+              f"--warn-over in test.yml.")
         print()
     print(f"### {TOP_N} slowest test classes")
     print()

@@ -380,9 +380,10 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 **Test Workflow** (`.github/workflows/test.yml`)
 - Triggers: every push (all branches) + manual dispatch; `permissions: contents: read`
 - Runs `./gradlew testDefaultDebugUnitTest` — **fails the build on any unit-test failure**
-- Split into **2 parallel shard jobs** (`-PtestShardTotal=2 -PtestShardIndex=0|1`); the shard filter lives in `app/build.gradle` `testOptions` and assigns each top-level test class to a shard by hashing its class-file path (inner classes follow their outer class)
+- **One job, not sharded.** `app/build.gradle` `testOptions` does accept `-PtestShardTotal=N -PtestShardIndex=I` (each top-level test class is hashed by class-file path into a shard; inner classes follow their outer class; an out-of-range index aborts at configuration time), but CI doesn't use it: measured warm, the full suite executes in ~1m50s of a ~4m job, so two shards each re-pay runner + Gradle + compile overhead to save ~20s of wall clock on twice the runners. Reach for it only when test execution itself dominates the job
 - `default` flavor only (the `lite` flavor's unit tests are not run in CI)
-- Both `test.yml` and `build.yml` cache `app/build` + `.gradle` per job (`actions/cache`, keyed on the SHA and falling back to the newest earlier run) and pass `cache-read-only: false` to `setup-gradle`; without those, branch runs recompile the whole Kotlin source set every push. Compilation, not test execution, is the bulk of a job — measured on this branch: 6m25s unsharded cold, 4m53s unsharded with the build dir cached, 5m12s sharded cold, ~3m sharded with both
+- Both `test.yml` and `build.yml` cache `app/build` + `.gradle` per job (`actions/cache`, keyed on the SHA and falling back to the newest earlier run) and pass `cache-read-only: false` to `setup-gradle` — without the latter, `setup-gradle` keeps the Gradle home (and its local build cache) read-only off master, so no branch run could seed it and every push started cold. Measured on one branch: 6m25s cold → ~4m for a push that touches one source file → ~45s for a push that touches no Gradle inputs (workflow/doc-only), where every task, including the test task, is `FROM-CACHE`
+- `GRADLE_BUILD_CACHE_URL/USER/PASS` are currently **empty secrets**, so `settings.gradle` disables the remote cache and `GRADLE_BUILD_CACHE_PUSH` is inert; all cache hits today come from the Actions-cached Gradle home
 - No instrumented (`androidTest`) execution in CI
 
 **Release Workflow** (`.github/workflows/release.yml`)
