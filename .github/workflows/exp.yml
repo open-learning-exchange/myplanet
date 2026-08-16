@@ -86,3 +86,43 @@ jobs:
           restore-keys: exp3-
       - run: rm -rf app/build/test-results app/build/reports/tests
       - run: ./gradlew testDefaultDebugUnitTest --configuration-cache --configuration-cache-problems=warn --warning-mode all --parallel --max-workers=4
+
+  exp4:
+    # Soundness: does the build-cache key for testDefaultDebugUnitTest depend on
+    # the shard filter? Run shard 1, then shard 2 in the SAME Gradle home. If
+    # shard 2 comes FROM-CACHE with shard 1's class set, a writable build cache
+    # makes sharding skip tests instead of running them.
+    name: exp4 shard cache key soundness
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: gradle/actions/setup-gradle@v6.3.0
+        with:
+          gradle-version: wrapper
+          cache-read-only: true
+      - name: shard 1 then shard 2, same gradle home
+        shell: bash
+        run: |
+          set -o pipefail
+          R=app/build/test-results/testDefaultDebugUnitTest
+          ./gradlew testDefaultDebugUnitTest --warning-mode all --parallel --max-workers=4 | tee /tmp/base.log
+          ls "$R" | grep '^TEST-' | sort > /tmp/base.txt
+          rm -rf app/build/test-results app/build/reports/tests
+          ./gradlew testDefaultDebugUnitTest -PtestShardTotal=2 -PtestShardIndex=0 --warning-mode all --parallel --max-workers=4 | tee /tmp/s1.log
+          ls "$R" | grep '^TEST-' | sort > /tmp/s1.txt
+          rm -rf app/build/test-results app/build/reports/tests
+          ./gradlew testDefaultDebugUnitTest -PtestShardTotal=2 -PtestShardIndex=1 --warning-mode all --parallel --max-workers=4 | tee /tmp/s2.log
+          ls "$R" | grep '^TEST-' | sort > /tmp/s2.txt
+          echo "--- baseline classes: $(wc -l < /tmp/base.txt)"
+          echo "--- shard1 classes: $(wc -l < /tmp/s1.txt)  shard2 classes: $(wc -l < /tmp/s2.txt)"
+          echo "--- overlap shard1/shard2: $(comm -12 /tmp/s1.txt /tmp/s2.txt | wc -l)"
+          echo "--- union vs baseline missing: $(cat /tmp/s1.txt /tmp/s2.txt | sort -u | comm -23 /tmp/base.txt - | wc -l)"
+          echo "--- test task lines:"; grep -E ':app:testDefaultDebugUnitTest( |$)' /tmp/base.log /tmp/s1.log /tmp/s2.log || true
+          echo "--- invalid shard config must fail:"
+          if ./gradlew testDefaultDebugUnitTest -PtestShardTotal=2 -PtestShardIndex=2 > /tmp/bad.log 2>&1; then
+            echo "FAIL: invalid config succeeded"; exit 1
+          else
+            grep -c 'Invalid test shard config' /tmp/bad.log && echo "OK: aborted at configuration time"
+          fi
