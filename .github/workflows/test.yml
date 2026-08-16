@@ -36,6 +36,23 @@ jobs:
         uses: gradle/actions/setup-gradle@v6.3.0
         with:
           gradle-version: wrapper
+          # setup-gradle keeps the Gradle home cache read-only off master, so
+          # branch runs could never seed it and every push started cold
+          cache-read-only: false
+
+      # Carry the project build dir between runs so Kotlin compiles
+      # incrementally instead of from scratch. Restore falls back through this
+      # job's earlier runs on this branch, then master's (Actions cache scoping
+      # gives every branch read access to master's entries).
+      - name: restore project build dir
+        uses: actions/cache@v4
+        with:
+          path: |
+            app/build
+            .gradle
+          key: build-dir-test-${{ matrix.build }}-shard${{ matrix.shard }}-${{ github.sha }}
+          restore-keys: |
+            build-dir-test-${{ matrix.build }}-shard${{ matrix.shard }}-
 
       - name: run unit tests
         shell: bash
@@ -47,7 +64,9 @@ jobs:
           # the automerge queue prepares commits on arbitrary contributor
           # branches, and master reruns the identical tree afterwards — the
           # master run only gets cache hits if the branch run was allowed to
-          # seed the cache.
+          # seed the cache. Inert until GRADLE_BUILD_CACHE_URL is set: the
+          # secret is currently empty, so settings.gradle disables the remote
+          # cache and only the Actions-cached Gradle home is in play.
           GRADLE_BUILD_CACHE_PUSH: 'true'
         run: |
           FLAVOR=${{ matrix.build }}

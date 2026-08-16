@@ -382,6 +382,7 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 - Runs `./gradlew testDefaultDebugUnitTest` — **fails the build on any unit-test failure**
 - Split into **2 parallel shard jobs** (`-PtestShardTotal=2 -PtestShardIndex=0|1`); the shard filter lives in `app/build.gradle` `testOptions` and assigns each top-level test class to a shard by hashing its class-file path (inner classes follow their outer class)
 - `default` flavor only (the `lite` flavor's unit tests are not run in CI)
+- Both `test.yml` and `build.yml` cache `app/build` + `.gradle` per job (`actions/cache`, keyed on the SHA and falling back to the newest earlier run) and pass `cache-read-only: false` to `setup-gradle`; without those, branch runs recompile the whole Kotlin source set every push. Compilation, not test execution, is the bulk of a job — measured on this branch: 6m25s unsharded cold, 4m53s unsharded with the build dir cached, 5m12s sharded cold, ~3m sharded with both
 - No instrumented (`androidTest`) execution in CI
 
 **Release Workflow** (`.github/workflows/release.yml`)

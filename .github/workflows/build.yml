@@ -29,6 +29,20 @@ jobs:
         uses: gradle/actions/setup-gradle@v6.3.0
         with:
           gradle-version: wrapper
+          # see test.yml: off master this cache is read-only by default, so no
+          # branch run could ever seed it
+          cache-read-only: false
+
+      # see test.yml: keeps Kotlin compilation incremental across runs
+      - name: restore project build dir
+        uses: actions/cache@v4
+        with:
+          path: |
+            app/build
+            .gradle
+          key: build-dir-build-${{ matrix.build }}-${{ github.sha }}
+          restore-keys: |
+            build-dir-build-${{ matrix.build }}-
 
       - name: build debug as test
         env:
