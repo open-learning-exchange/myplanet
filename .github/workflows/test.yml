@@ -72,6 +72,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-reports-${{ matrix.build }}-shard-${{ matrix.shard }}
+          # v4 artifacts are immutable per run; without overwrite a job re-run
+          # 409s trying to upload the same artifact name again
+          overwrite: true
           path: |
             app/build/reports/tests/
             app/build/test-results/
