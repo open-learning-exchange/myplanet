@@ -9,6 +9,12 @@ on:
 permissions:
   contents: read
 
+# Supersede stale runs on the same branch, but never cancel master runs:
+# the automerge drain waits on them between merges.
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   test:
     name: myPlanet test (${{ matrix.build }}, shard ${{ matrix.shard }}/2)
@@ -35,7 +41,12 @@ jobs:
           GRADLE_BUILD_CACHE_URL: ${{ secrets.GRADLE_BUILD_CACHE_URL }}
           GRADLE_BUILD_CACHE_USER: ${{ secrets.GRADLE_BUILD_CACHE_USER }}
           GRADLE_BUILD_CACHE_PASS: ${{ secrets.GRADLE_BUILD_CACHE_PASS }}
-          GRADLE_BUILD_CACHE_PUSH: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/claude/') || startsWith(github.ref, 'refs/heads/jules/') || startsWith(github.ref, 'refs/heads/codex/') || startsWith(github.ref, 'refs/heads/copilot/') }}
+          # Push from every in-repo branch (fork PRs never see these secrets):
+          # the automerge queue prepares commits on arbitrary contributor
+          # branches, and master reruns the identical tree afterwards — the
+          # master run only gets cache hits if the branch run was allowed to
+          # seed the cache.
+          GRADLE_BUILD_CACHE_PUSH: 'true'
         run: |
           FLAVOR=${{ matrix.build }}
           SHARD=${{ matrix.shard }}
@@ -52,7 +63,9 @@ jobs:
             exit 0
           fi
           # tee so the breakdown is in the job log too, not only the run summary page
-          python3 .github/scripts/test_timing_summary.py "$RESULTS" | tee -a "$GITHUB_STEP_SUMMARY"
+          # --warn-over: ~64% of the full suite's 657s (2026-08); bump as the suite grows
+          python3 .github/scripts/test_timing_summary.py "$RESULTS" \
+            --shard "${{ matrix.shard }}/2" --warn-over 420 | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: upload test reports
         if: failure()
