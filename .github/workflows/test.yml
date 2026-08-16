@@ -54,6 +54,13 @@ jobs:
           restore-keys: |
             build-dir-test-${{ matrix.build }}-shard${{ matrix.shard }}-
 
+      # The restored build dir includes the previous run's test results; drop
+      # them so the summary (if: always) and failure artifacts can only ever
+      # contain results produced by THIS run.
+      - name: drop stale test results from restored build dir
+        shell: bash
+        run: rm -rf app/build/test-results app/build/reports/tests
+
       - name: run unit tests
         shell: bash
         env:
