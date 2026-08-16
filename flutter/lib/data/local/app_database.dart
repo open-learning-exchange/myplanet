@@ -1227,10 +1227,19 @@ class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
     return query.watchSingle().map((row) => row.read(count) ?? 0);
   }
 
-  Future<int> setStatus(String id, String status) =>
-      (update(outboxEntries)..where((row) => row.id.equals(id))).write(
-        OutboxEntriesCompanion(status: Value(status)),
-      );
+  /// Atomically claims a pending row. Two isolates may both have selected the
+  /// same due row, but only one conditional update can win.
+  Future<bool> claim(String id, int now) async =>
+      await (update(outboxEntries)..where(
+            (row) => row.id.equals(id) & row.status.equals(statusPending),
+          ))
+          .write(
+            OutboxEntriesCompanion(
+              status: const Value(statusInProgress),
+              lastAttemptAt: Value(now),
+            ),
+          ) ==
+      1;
 
   /// Deletes only while the row is still claimed by a drain.
   ///
@@ -1267,9 +1276,12 @@ class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
   /// Kotlin calls this `recoverStuckOperations` and runs it at startup for the
   /// same reason: without it a killed drain leaves the operation permanently
   /// invisible to [due].
-  Future<int> recoverStuck() =>
-      (update(outboxEntries)
-            ..where((row) => row.status.equals(statusInProgress)))
+  Future<int> recoverStuck(int claimedBefore) =>
+      (update(outboxEntries)..where(
+            (row) =>
+                row.status.equals(statusInProgress) &
+                row.lastAttemptAt.isSmallerThanValue(claimedBefore),
+          ))
           .write(const OutboxEntriesCompanion(status: Value(statusPending)));
 
   /// Drops rows that are finished with — completed, or given up on.

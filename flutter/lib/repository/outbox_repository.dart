@@ -29,6 +29,11 @@ class OutboxRepository {
   /// `RetryOperation.DEFAULT_MAX_ATTEMPTS`.
   static const int defaultMaxAttempts = 5;
 
+  /// A worker gets ten minutes on Android. Twice that window avoids stealing
+  /// a live claim when a foreground drain overlaps a headless isolate, while
+  /// still recovering promptly after a killed process.
+  static const Duration stuckClaimTimeout = Duration(minutes: 20);
+
   final OutboxDao _dao;
   final DateTime Function() _now;
   final String Function() _createId;
@@ -131,8 +136,8 @@ class OutboxRepository {
   Future<bool> cancel(String uploadType, String itemId) async =>
       await _dao.deletePending(uploadType, itemId) > 0;
 
-  Future<void> markInProgress(String id) =>
-      _dao.setStatus(id, OutboxDao.statusInProgress);
+  Future<bool> markInProgress(String id) =>
+      _dao.claim(id, _now().millisecondsSinceEpoch);
 
   /// Drops the row outright rather than marking it `completed`.
   ///
@@ -181,7 +186,9 @@ class OutboxRepository {
   }
 
   /// Port of `recoverStuckOperations`, for the startup path.
-  Future<int> recoverStuck() => _dao.recoverStuck();
+  Future<int> recoverStuck() => _dao.recoverStuck(
+    _now().subtract(stuckClaimTimeout).millisecondsSinceEpoch,
+  );
 
   Future<int> cleanup() => _dao.cleanup();
 }

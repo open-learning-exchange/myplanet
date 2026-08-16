@@ -36,16 +36,10 @@ typedef OutboxHandler =
 
 /// Replaces `services/retry/RetryQueueWorker.kt`.
 ///
-/// The Kotlin worker is a `CoroutineWorker` that `WorkManager` wakes on a
-/// periodic schedule with a network constraint. Flutter has no equivalent that
-/// runs while the app is closed, so the trigger changes rather than the queue:
-/// [drain] is called on app resume and after a successful sync, and the queue
-/// itself — being a SQLite table — carries pending work across process death
-/// exactly as before.
-///
-/// The honest gap this leaves is documented in
-/// `docs/kotlin-to-flutter-migration.md`: a write made offline is sent the next
-/// time the app is opened with connectivity, not while it is closed.
+/// The queue remains SQLite-backed and therefore survives process death.
+/// [drain] has two triggers: app startup/resume for low latency and the
+/// constraint-aware headless job in `background_entrypoint.dart` for delivery
+/// while the UI process is closed.
 class OutboxDrainer {
   OutboxDrainer(this._api, this._outbox, {Map<String, OutboxHandler>? handlers})
     : _handlers = handlers ?? const {};
@@ -95,12 +89,18 @@ class OutboxDrainer {
   Future<List<OutboxOutcome>> _drain({String? authHeader}) async {
     final outcomes = <OutboxOutcome>[];
     for (final row in await _outbox.due()) {
-      outcomes.add(await _send(row, authHeader: authHeader));
+      final outcome = await _send(row, authHeader: authHeader);
+      if (outcome != null) outcomes.add(outcome);
     }
     return outcomes;
   }
 
-  Future<OutboxOutcome> _send(OutboxRow row, {String? authHeader}) async {
+  Future<OutboxOutcome?> _send(OutboxRow row, {String? authHeader}) async {
+    // The UI and WorkManager use separate Dart isolates and therefore have
+    // separate in-memory single-flight guards. The status-scoped SQL update is
+    // the cross-isolate lock: a losing drainer skips the row before sending.
+    if (!await _outbox.markInProgress(row.id)) return null;
+
     Map<String, dynamic> payload;
     try {
       final decoded = jsonDecode(row.payload);
@@ -116,8 +116,6 @@ class OutboxDrainer {
       );
       return OutboxOutcome.abandoned;
     }
-
-    await _outbox.markInProgress(row.id);
 
     final handler = _handlers[row.uploadType];
     final NetworkResult<Map<String, dynamic>> result;

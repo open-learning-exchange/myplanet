@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -44,6 +46,10 @@ class PlanetPrefs {
   static const String _keyCommunityName = 'communityName';
   static const String _keyPlanetType = 'planetType';
   static const String _keyLastSurveyDialog = 'lastSurveyDialogShown';
+  static const String _keyAutoSync = 'autoSync';
+  static const String _keyAutoSyncInterval = 'autoSyncInterval';
+  static const String _keyLastSync = 'lastSync';
+  static const String _keyBackgroundRun = 'backgroundRun';
 
   static const String _secureKeyServerPin = 'serverPin';
   static const String _secureKeyCouchDbUrl = 'couchdbURL';
@@ -195,4 +201,60 @@ class PlanetPrefs {
 
   Future<void> setLastSurveyDialogShown(int epochMillis) =>
       _prefs.setInt(_keyLastSurveyDialog, epochMillis);
+
+  /// Whether Android should wake the app to synchronize while it is closed.
+  bool get autoSyncEnabled => _prefs.getBool(_keyAutoSync) ?? true;
+
+  Future<void> setAutoSyncEnabled(bool value) =>
+      _prefs.setBool(_keyAutoSync, value);
+
+  /// Requested automatic-sync cadence. Android WorkManager enforces a
+  /// 15-minute floor; older Kotlin preferences below that are clamped by the
+  /// scheduler rather than silently discarded.
+  Duration get autoSyncInterval =>
+      Duration(seconds: _prefs.getInt(_keyAutoSyncInterval) ?? 60 * 60);
+
+  Future<void> setAutoSyncInterval(Duration value) =>
+      _prefs.setInt(_keyAutoSyncInterval, value.inSeconds);
+
+  DateTime? get lastSync {
+    final millis = _prefs.getInt(_keyLastSync);
+    return millis == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(millis, isUtc: true);
+  }
+
+  Future<void> setLastSync(DateTime value) =>
+      _prefs.setInt(_keyLastSync, value.millisecondsSinceEpoch);
+
+  /// Last headless-run diagnostic. It intentionally contains no URLs,
+  /// credentials, payloads, or exception text; only stable step names are
+  /// persisted so support can distinguish scheduling from domain failures.
+  Map<String, dynamic>? get lastBackgroundRun {
+    final encoded = _prefs.getString(_keyBackgroundRun);
+    if (encoded == null) return null;
+    try {
+      final decoded = jsonDecode(encoded);
+      return decoded is Map<String, dynamic> ? decoded : null;
+    } on FormatException {
+      return null;
+    }
+  }
+
+  Future<void> recordBackgroundRun({
+    required String taskName,
+    required DateTime attemptedAt,
+    required String status,
+    required List<String> failedSteps,
+    String? skipReason,
+  }) => _prefs.setString(
+    _keyBackgroundRun,
+    jsonEncode({
+      'taskName': taskName,
+      'attemptedAt': attemptedAt.toUtc().toIso8601String(),
+      'status': status,
+      'failedSteps': failedSteps,
+      'skipReason': ?skipReason,
+    }),
+  );
 }

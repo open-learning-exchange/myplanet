@@ -22,6 +22,8 @@ class SettingsScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final selectedTheme = ref.watch(themeModeProvider);
     final server = ref.watch(serverConfigProvider);
+    final background = ref.watch(backgroundSettingsProvider);
+    final backgroundRun = ref.watch(planetPrefsProvider).lastBackgroundRun;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settings)),
@@ -69,6 +71,81 @@ class SettingsScreen extends ConsumerWidget {
               subtitle: Text(server.code),
             ),
           const Divider(),
+          _SectionHeader(title: l10n.backgroundSync),
+          SwitchListTile(
+            value: background.enabled,
+            onChanged: (enabled) async {
+              try {
+                await ref
+                    .read(backgroundSettingsProvider.notifier)
+                    .setEnabled(enabled);
+              } catch (_) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(l10n.backgroundScheduleFailed)),
+                  );
+                }
+              }
+            },
+            secondary: const Icon(Icons.sync_outlined),
+            title: Text(l10n.backgroundSync),
+            subtitle: Text(l10n.backgroundSyncDescription),
+          ),
+          ListTile(
+            enabled: background.enabled,
+            leading: const Icon(Icons.schedule_outlined),
+            title: Text(l10n.syncFrequency),
+            trailing: DropdownButton<Duration>(
+              value: _supportedInterval(background.interval),
+              onChanged: background.enabled
+                  ? (interval) async {
+                      if (interval != null) {
+                        try {
+                          await ref
+                              .read(backgroundSettingsProvider.notifier)
+                              .setInterval(interval);
+                        } catch (_) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(l10n.backgroundScheduleFailed),
+                              ),
+                            );
+                          }
+                        }
+                      }
+                    }
+                  : null,
+              items: [
+                DropdownMenuItem(
+                  value: const Duration(minutes: 15),
+                  child: Text(l10n.every15Minutes),
+                ),
+                DropdownMenuItem(
+                  value: const Duration(minutes: 30),
+                  child: Text(l10n.every30Minutes),
+                ),
+                DropdownMenuItem(
+                  value: const Duration(hours: 1),
+                  child: Text(l10n.everyHour),
+                ),
+                DropdownMenuItem(
+                  value: const Duration(hours: 6),
+                  child: Text(l10n.every6Hours),
+                ),
+              ],
+            ),
+          ),
+          ListTile(
+            leading: Icon(
+              _backgroundRunIcon(backgroundRun),
+              color: _backgroundRunColor(context, backgroundRun),
+            ),
+            title: Text(l10n.lastBackgroundRun),
+            subtitle: Text(_backgroundRunSummary(context, l10n, backgroundRun)),
+            isThreeLine: backgroundRun != null,
+          ),
+          const Divider(),
           _SectionHeader(title: l10n.learningTools),
           ListTile(
             leading: const Icon(Icons.menu_book_outlined),
@@ -108,6 +185,55 @@ class SettingsScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+Duration _supportedInterval(Duration interval) {
+  const supported = [
+    Duration(minutes: 15),
+    Duration(minutes: 30),
+    Duration(hours: 1),
+    Duration(hours: 6),
+  ];
+  return supported.contains(interval) ? interval : const Duration(hours: 1);
+}
+
+IconData _backgroundRunIcon(Map<String, dynamic>? run) =>
+    switch (run?['status']) {
+      'succeeded' => Icons.check_circle_outline,
+      'retryRequested' => Icons.error_outline,
+      'skipped' => Icons.pause_circle_outline,
+      _ => Icons.history,
+    };
+
+Color? _backgroundRunColor(BuildContext context, Map<String, dynamic>? run) =>
+    switch (run?['status']) {
+      'succeeded' => Colors.green,
+      'retryRequested' => Theme.of(context).colorScheme.error,
+      _ => null,
+    };
+
+String _backgroundRunSummary(
+  BuildContext context,
+  AppLocalizations l10n,
+  Map<String, dynamic>? run,
+) {
+  if (run == null) return l10n.backgroundNeverRun;
+  final status = switch (run['status']) {
+    'succeeded' => l10n.backgroundSucceeded,
+    'retryRequested' => l10n.backgroundRetryRequested,
+    'skipped' => l10n.backgroundSkipped,
+    _ => l10n.backgroundUnknown,
+  };
+  final attempted = DateTime.tryParse('${run['attemptedAt'] ?? ''}')?.toLocal();
+  final timestamp = attempted == null
+      ? ''
+      : ' • ${MaterialLocalizations.of(context).formatShortDate(attempted)} '
+            '${TimeOfDay.fromDateTime(attempted).format(context)}';
+  final failures = run['failedSteps'];
+  final failedText = failures is List && failures.isNotEmpty
+      ? '\n${l10n.backgroundFailedSteps(failures.join(', '))}'
+      : '';
+  return '$status$timestamp$failedText';
 }
 
 class _SectionHeader extends StatelessWidget {

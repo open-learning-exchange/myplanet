@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 28 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 30 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -17,9 +17,9 @@ working. Counted honestly:
   the shape Kotlin has.
 
 Known gaps:
-- Background work with no user present (`AutoSyncWorker`'s timed sync,
-  `TaskNotificationWorker`'s deadline notifications, `DownloadWorker`'s background queue) needs
-  OS scheduling and is not ported.
+- Background auto-sync and outbox delivery now use constraint-aware Android WorkManager jobs and
+  survive process death. `TaskNotificationWorker`'s deadline notifications and
+  `DownloadWorker`'s background queue still need task-specific ports on top of that scheduler.
 - Team attachments are unported. Personal-note attachments are: the note POSTs, then the file
   PUTs as a CouchDB attachment, best-effort and in that order, as Kotlin does.
 - Public surveys reach `PublicSurveyScreen` only through a deep link whose URI carries an
@@ -166,6 +166,28 @@ Known gaps:
   both `''` and `'pending'` submission statuses as pending, because this port's survey
   get-or-create writes `''` where the Kotlin writes `'pending'` — reconciling the write side is
   open.
+- **Phase 30** — OS-scheduled background execution: the Flutter `workmanager` plugin registers
+  unique, updateable periodic jobs with connected-network and battery-not-low constraints. A
+  headless callback rebuilds the Riverpod graph, hydrates encrypted server credentials, recovers
+  and drains the durable outbox, and pulls resources, courses, teams, meetups, surveys, voices,
+  feedback, chat, submissions, and health. Persisted enablement, interval, and last-success time
+  preserve Kotlin's defaults; the interval is clamped to Android WorkManager's 15-minute floor,
+  failed table pulls request an OS retry, and every headless graph is disposed so Drift closes.
+  Registration is deliberately not an app-launch gate: plugin or OS failures are reported and
+  retried at the next cold start. Outbox claims carry a 20-minute lease, so startup recovery cannot
+  steal a live foreground/background send and double-post it. Pulls run sequentially rather than
+  making ten Drift writers contend at once; each table is failure-isolated, later tables still run,
+  and the last-success timestamp advances only when the outbox and every pull succeed. Clock
+  corrections into the past also force a sync instead of suppressing work behind a future timestamp.
+  Every recognized headless run persists a credential-free diagnostic containing its task, UTC
+  attempt time, terminal status, stable failed-step names, and (for a skip) the reason. This makes
+  "WorkManager never woke" distinguishable from "resources failed but later tables refreshed"
+  without storing endpoints, payloads, exception text, or credentials; failure to write the
+  diagnostic never turns successful domain work into a retry.
+  Settings exposes the persisted enable switch, 15/30-minute and 1/6-hour cadence choices, and the
+  sanitized last-run result. A change updates unique WorkManager registration immediately; if the OS
+  rejects that update, the preference remains durable, the user sees a warning, and cold-start
+  registration tries it again rather than rolling their choice back.
 
 - **Phase 27** — chat upload, member registration against `_users`, and the resource detail
   screen with its filter sheet. Three fixes were needed around it:
@@ -383,12 +405,14 @@ server on plain HTTP (`http://<ip>:5000`):
 
 Ordered by risk, highest first.
 
-1. **`WorkManager` → no equivalent. Resolved for write-back; still open for the rest.**
+1. **`WorkManager` → plugin-backed Android scheduling. Auto-sync resolved; specialized jobs remain.**
    `AutoSyncWorker`, `TaskNotificationWorker`, `NetworkMonitorWorker`, `RetryQueueWorker`,
    `DownloadWorker`, `FreeSpaceWorker`, `ServerReachabilityWorker` and `HeavyTableSyncWorker` rely
    on guaranteed, constraint-aware, OS-scheduled execution that survives process death. Flutter
    has no first-party answer; `workmanager` / `flutter_background_service` are thin
-   platform-channel wrappers whose Android side would remain Kotlin.
+   platform-channel wrappers whose Android side remains native. Phase 30 deliberately adopts
+   `workmanager`: it is a narrow platform boundary rather than reimplementing scheduling in app
+   lifecycle callbacks.
 
    The unblocking observation is that `RetryQueue` and `RetryQueueWorker` do two separable jobs.
    The queue is a SQLite table -- it is what actually survives process death -- and the worker only
@@ -398,17 +422,17 @@ Ordered by risk, highest first.
    `UploadCoordinator`), `OutboxDrainer` replaces the worker, and `OutboxDrainScope` triggers it
    at startup and on every app resume.
 
-   **The residual gap is scheduling, not durability**: a write made offline is sent the next time
-   the app is opened with connectivity, not while it is closed. For an app users open regularly
-   that is a latency cost rather than a correctness one, and it is bounded -- the operation sits in
-   SQLite until it succeeds or exhausts its attempts.
+   Phase 30 closes the scheduling gap for the outbox and table pulls: Android can now wake a
+   headless Flutter isolate when the network is connected and the battery is not low. App-resume
+   draining remains as a low-latency second trigger. A status-scoped SQLite update is the
+   cross-isolate claim, while each drainer also has an in-isolate single-flight guard, so the two
+   triggers cannot double-post the same operation.
 
    This unblocks the *append* write-backs (`submissions`, `voices`, personal notes) that the
    shelf's derived-payload trick could not cover, because an append lost to a dead network is not
    recoverable by recomputation. `PersonalsUploader` is the first one built on it. What is still
-   unresolved is periodic background work with no user present -- `AutoSyncWorker`'s timed sync and
-   `TaskNotificationWorker`'s deadline notifications genuinely need OS scheduling, and those are
-   the cases that may still argue for a permanent Kotlin platform layer.
+   unresolved is the task-specific behavior above the scheduler -- deadline notification display
+   and queued bulk downloads -- rather than the ability to run with no user present.
 2. **`TeamsRepositoryImpl` (~1785 lines).** The largest file in the codebase, spanning team
    creation, tasks, membership roles and reactive queries. Should be split by responsibility
    *during* the port, not carried over whole.
@@ -780,6 +804,6 @@ succeeds, it just doesn't do what the Kotlin did.
 
 ---
 
-**Last updated**: 2026-08-12 (Phase 29 complete)
+**Last updated**: 2026-08-16 (Phase 30 complete)
 **Phase**: 27 of N (27 of 28 UI packages have a screen — see Status for what that does and does
 not mean)

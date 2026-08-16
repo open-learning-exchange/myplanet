@@ -1,16 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+import 'core/background/background_scheduler.dart';
+import 'core/background/background_work_coordinator.dart';
 import 'core/prefs/planet_prefs.dart';
 import 'providers/app_providers.dart';
 
 /// Entry point, replacing `MainApplication.kt` and the launcher Activity.
 ///
-/// Only the bootstrap lives here. Theme, locale and routing belong to
-/// `app.dart`, and the background work `MainApplication` schedules through
-/// WorkManager has no equivalent yet — see
-/// `docs/kotlin-to-flutter-migration.md`.
+/// Only bootstrap lives here. Theme, locale and routing belong to `app.dart`.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -19,10 +20,32 @@ Future<void> main() async {
   // SharedPrefManager before anything else.
   final prefs = await PlanetPrefs.load();
 
+  // Scheduling is best-effort infrastructure, not an app-launch gate. A
+  // plugin/OS registration failure must not leave the user staring at a blank
+  // screen; WorkManager will be retried on the next cold start.
+  unawaited(_startBackgroundWork(prefs));
+
   runApp(
     ProviderScope(
       overrides: [planetPrefsProvider.overrideWithValue(prefs)],
       child: const MyPlanetApp(),
     ),
   );
+}
+
+Future<void> _startBackgroundWork(PlanetPrefs prefs) async {
+  try {
+    await BackgroundWorkCoordinator(
+      const WorkmanagerScheduler(),
+      prefs,
+    ).start();
+  } catch (error, stack) {
+    FlutterError.reportError(
+      FlutterErrorDetails(
+        exception: error,
+        stack: stack,
+        library: 'background scheduling',
+      ),
+    );
+  }
 }

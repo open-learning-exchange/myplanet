@@ -37,6 +37,10 @@ dependencies:
 
   # Preferences — replaces SharedPrefManager.
   shared_preferences: ^2.3.3
+  # Constraint-aware, process-death-safe background execution. Replaces the
+  # Android app's direct WorkManager registrations while keeping scheduling
+  # behind a Dart abstraction that is unit-testable.
+  workmanager: ^0.10.7
   # Encrypted credential storage — replaces SecurePrefs (Tink-backed EncryptedSharedPreferences).
   flutter_secure_storage: ^9.2.2
 
