@@ -37,9 +37,11 @@ jobs:
       - name: restore project build dir
         uses: actions/cache@v4
         with:
+          # see test.yml: configuration-cache dir can embed env-var credentials
           path: |
             app/build
             .gradle
+            !.gradle/configuration-cache
           key: build-dir-build-${{ matrix.build }}-${{ github.sha }}
           restore-keys: |
             build-dir-build-${{ matrix.build }}-

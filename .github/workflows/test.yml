@@ -46,9 +46,14 @@ jobs:
       - name: restore project build dir
         uses: actions/cache@v4
         with:
+          # .gradle/configuration-cache is excluded: Gradle serializes
+          # configuration-time state there, including env-var credentials read
+          # by settings.gradle, and Actions cache entries are readable from
+          # every branch of the repo.
           path: |
             app/build
             .gradle
+            !.gradle/configuration-cache
           key: build-dir-test-${{ matrix.build }}-${{ github.sha }}
           restore-keys: |
             build-dir-test-${{ matrix.build }}-
