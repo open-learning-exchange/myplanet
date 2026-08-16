@@ -589,3 +589,4 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         stopListenNetworkState()
     }
 }
+// CI timing experiment marker: E1
