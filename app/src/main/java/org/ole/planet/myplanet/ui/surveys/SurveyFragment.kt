@@ -148,26 +148,14 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
                 when (i) {
                     0 -> viewModel.sort(SurveysViewModel.SortOption.DATE_DESC)
                     1 -> viewModel.sort(SurveysViewModel.SortOption.DATE_ASC)
-                    2 -> {
-                        viewModel.toggleTitleSort()
-                    }
+                    2 -> viewModel.sort(SurveysViewModel.SortOption.TITLE_ASC)
+                    3 -> viewModel.sort(SurveysViewModel.SortOption.TITLE_DESC)
                 }
                 recyclerView.scrollToPosition(0)
             }
 
             override fun onNothingSelected(adapterView: AdapterView<*>?) {}
         }
-
-        binding.spnSort.onSameItemSelected(object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
-                if (i == 2) {
-                    viewModel.toggleTitleSort()
-                }
-                recyclerView.scrollToPosition(0)
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        })
 
         binding.rbAdoptSurvey.setOnClickListener {
             viewModel.loadSurveys(isTeam, teamId, true)

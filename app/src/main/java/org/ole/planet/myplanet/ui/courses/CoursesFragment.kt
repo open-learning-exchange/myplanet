@@ -159,6 +159,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
                 showNoData(tvMessage, adapterCourses.itemCount, "courses")
             }
             selectionController.clearAll(null)
+            checkList()
         }
 
         collectLatestWhenStarted(viewModel.coursesState) { state ->
