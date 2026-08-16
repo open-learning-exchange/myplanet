@@ -19,12 +19,13 @@ concurrency:
 
 jobs:
   test:
-    name: myPlanet test (${{ matrix.build }})
+    name: myPlanet test (${{ matrix.build }}, shard ${{ matrix.shard }}/2)
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         build: [default]
+        shard: [1, 2]
     steps:
       - name: checkout repository code
         uses: actions/checkout@v7
@@ -54,8 +55,11 @@ jobs:
             app/build
             .gradle
             !.gradle/configuration-cache
-          key: build-dir-test-${{ matrix.build }}-${{ github.sha }}
+          key: build-dir-test-${{ matrix.build }}-shard${{ matrix.shard }}-${{ github.sha }}
+          # fall back to this shard's earlier runs, then any unsharded entry so
+          # the first sharded run starts from a warm compile
           restore-keys: |
+            build-dir-test-${{ matrix.build }}-shard${{ matrix.shard }}-
             build-dir-test-${{ matrix.build }}-
 
       # The restored build dir includes the previous run's test results; drop
@@ -81,12 +85,13 @@ jobs:
           GRADLE_BUILD_CACHE_PUSH: 'true'
         run: |
           FLAVOR=${{ matrix.build }}
-          # Deliberately one job, not sharded: measured on this branch, the full
-          # suite executes in ~1m50s of a ~4m job, and two shards each pay the
-          # whole runner + Gradle + compile overhead again to save ~20s of wall
-          # clock on two runners. app/build.gradle still accepts
-          # -PtestShardTotal/-PtestShardIndex if the suite outgrows one job.
-          ./gradlew test${FLAVOR^}DebugUnitTest --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
+          SHARD=${{ matrix.shard }}
+          # Two shards, prioritizing wall clock over runner-minutes: measured on
+          # this branch, shards were equal-or-faster in every cache regime
+          # (warm source change ~3:03-3:37 vs ~3:57-4:14 unsharded; cold ~4:53
+          # vs ~6:25; no-change ties at ~0:45). The trade is a second runner
+          # per push. Drop the shard matrix entry to fall back to one job.
+          ./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=2 -PtestShardIndex=$((SHARD - 1)) --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
 
       - name: summarise slowest tests
         if: always()
@@ -99,16 +104,16 @@ jobs:
             exit 0
           fi
           # tee so the breakdown is in the job log too, not only the run summary page
-          # --warn-over: ~120% of the full suite's 657s summed across forks
+          # --warn-over: ~120% of half the suite's ~657s summed across forks
           # (2026-08); bump as the suite grows
           python3 .github/scripts/test_timing_summary.py "$RESULTS" \
-            --warn-over 800 | tee -a "$GITHUB_STEP_SUMMARY"
+            --shard "${{ matrix.shard }}/2" --warn-over 400 | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: upload test reports
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-reports-${{ matrix.build }}
+          name: test-reports-${{ matrix.build }}-shard-${{ matrix.shard }}
           # v4 artifacts are immutable per run; without overwrite a job re-run
           # 409s trying to upload the same artifact name again
           overwrite: true
