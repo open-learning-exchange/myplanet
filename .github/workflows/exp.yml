@@ -1,0 +1,88 @@
+name: exp
+
+# TEMPORARY: CI timing measurement, removed before merge.
+# Arms (all with the build-dir cache this PR adds, so all measure the WARM case):
+#   exp1  one job, whole suite
+#   exp2  two shards, as test.yml ships it
+#   exp3  one job, whole suite, Gradle configuration cache enabled
+
+on:
+  push:
+    branches:
+      - 'claude/github-workflow-test-perf-l991vz'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: exp-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  exp1:
+    name: exp1 one job
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: gradle/actions/setup-gradle@v6.3.0
+        with:
+          gradle-version: wrapper
+          cache-read-only: false
+      - uses: actions/cache@v4
+        with:
+          path: |
+            app/build
+            .gradle
+          key: exp1-${{ github.sha }}
+          restore-keys: exp1-
+      - run: rm -rf app/build/test-results app/build/reports/tests
+      - run: ./gradlew testDefaultDebugUnitTest --configuration-cache-problems=warn --warning-mode all --parallel --max-workers=4
+
+  exp2:
+    name: exp2 shard ${{ matrix.shard }}/2
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: gradle/actions/setup-gradle@v6.3.0
+        with:
+          gradle-version: wrapper
+          cache-read-only: false
+      - uses: actions/cache@v4
+        with:
+          path: |
+            app/build
+            .gradle
+          key: exp2-shard${{ matrix.shard }}-${{ github.sha }}
+          restore-keys: exp2-shard${{ matrix.shard }}-
+      - run: rm -rf app/build/test-results app/build/reports/tests
+      - run: ./gradlew testDefaultDebugUnitTest -PtestShardTotal=2 -PtestShardIndex=$(( ${{ matrix.shard }} - 1 )) --configuration-cache-problems=warn --warning-mode all --parallel --max-workers=4
+
+  exp3:
+    name: exp3 one job + configuration cache
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: gradle/actions/setup-gradle@v6.3.0
+        with:
+          gradle-version: wrapper
+          cache-read-only: false
+      - uses: actions/cache@v4
+        with:
+          path: |
+            app/build
+            .gradle
+          key: exp3-${{ github.sha }}
+          restore-keys: exp3-
+      - run: rm -rf app/build/test-results app/build/reports/tests
+      - run: ./gradlew testDefaultDebugUnitTest --configuration-cache --configuration-cache-problems=warn --warning-mode all --parallel --max-workers=4
