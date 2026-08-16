@@ -9,10 +9,12 @@ on:
 permissions:
   contents: read
 
-# Supersede stale runs on the same branch, but never cancel master runs:
-# the automerge drain waits on them between merges.
+# Supersede stale runs on the same branch. Master runs are never grouped at
+# all: GitHub keeps at most one PENDING run per group and silently cancels a
+# superseded pending run even with cancel-in-progress false, and the automerge
+# drain treats a cancelled master run as red and aborts.
 concurrency:
-  group: test-${{ github.ref }}
+  group: test-${{ github.ref }}-${{ github.ref == 'refs/heads/master' && github.run_id || 'branch' }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:
