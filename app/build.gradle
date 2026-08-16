@@ -25,6 +25,9 @@ android {
                 test.maxHeapSize = "1536m"
                 def shardTotal = (project.findProperty('testShardTotal') ?: '1').toInteger()
                 def shardIndex = (project.findProperty('testShardIndex') ?: '0').toInteger()
+                if (shardTotal < 1 || shardIndex < 0 || shardIndex >= shardTotal) {
+                    throw new GradleException("Invalid test shard config: testShardIndex=$shardIndex must be in [0, testShardTotal=$shardTotal); a bad index would silently deselect every test")
+                }
                 if (shardTotal > 1) {
                     test.include { element ->
                         if (element.directory) return true
