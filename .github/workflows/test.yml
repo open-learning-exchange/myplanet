@@ -11,13 +11,13 @@ permissions:
 
 jobs:
   test:
-    name: myPlanet test (${{ matrix.build }}, shard ${{ matrix.shard }}/2)
+    name: myPlanet test (${{ matrix.build }}, shard ${{ matrix.shard }}/4)
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         build: [default]
-        shard: [1, 2]
+        shard: [1, 2, 3, 4]
     steps:
       - name: checkout repository code
         uses: actions/checkout@v7
@@ -39,7 +39,7 @@ jobs:
         run: |
           FLAVOR=${{ matrix.build }}
           SHARD=${{ matrix.shard }}
-          ./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=2 -PtestShardIndex=$((SHARD - 1)) --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
+          ./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=4 -PtestShardIndex=$((SHARD - 1)) --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
 
       - name: summarise slowest tests
         if: always()
