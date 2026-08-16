@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/outbox_repository.dart';
@@ -204,6 +205,11 @@ void main() {
       await repository.markInProgress(id);
       expect(await repository.due(), isEmpty, reason: 'claimed by a drain');
 
+      clock = clock.add(OutboxRepository.stuckClaimTimeout);
+      await repository.recoverStuck();
+      expect(await repository.due(), isEmpty, reason: 'boundary is still live');
+
+      clock = clock.add(const Duration(milliseconds: 1));
       await repository.recoverStuck();
       expect(
         await repository.due(),
@@ -212,6 +218,55 @@ void main() {
       );
     },
   );
+
+  test('only one drainer can claim a pending operation', () async {
+    final id = await repository.enqueue(
+      uploadType: 'submission',
+      itemId: 'claim-once',
+      payload: const {'answer': 42},
+      endpoint: 'https://planet.test/db/submissions',
+    );
+
+    expect(await repository.markInProgress(id), isTrue);
+    expect(await repository.markInProgress(id), isFalse);
+  });
+
+  test('recovery does not steal a live claim from another isolate', () async {
+    final id = await repository.enqueue(
+      uploadType: 'submission',
+      itemId: 'still-sending',
+      payload: const {'answer': 42},
+      endpoint: 'https://planet.test/db/submissions',
+    );
+    await repository.markInProgress(id);
+
+    clock = clock.add(const Duration(minutes: 19));
+    expect(await repository.recoverStuck(), 0);
+    expect(
+      (await database.outboxDao.getById(id))?.status,
+      OutboxDao.statusInProgress,
+    );
+  });
+
+  test('recovery repairs a legacy claim with a zero lease timestamp', () async {
+    final id = await repository.enqueue(
+      uploadType: 'submission',
+      itemId: 'legacy-claim',
+      payload: const {'answer': 42},
+      endpoint: 'https://planet.test/db/submissions',
+    );
+    await database.outboxDao.patch(
+      id,
+      const OutboxEntriesCompanion(
+        status: Value(OutboxDao.statusInProgress),
+        lastAttemptAt: Value(0),
+      ),
+    );
+
+    clock = clock.add(OutboxRepository.stuckClaimTimeout);
+    expect(await repository.recoverStuck(), 1);
+    expect(await repository.due(), hasLength(1));
+  });
 
   test('a completed item can be queued again', () async {
     final first = await repository.enqueue(

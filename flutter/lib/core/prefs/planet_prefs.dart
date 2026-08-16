@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -47,6 +49,9 @@ class PlanetPrefs {
   static const String _keyCommunityName = 'communityName';
   static const String _keyPlanetType = 'planetType';
   static const String _keyLastSurveyDialog = 'lastSurveyDialogShown';
+  static const String _keyAutoSync = 'autoSync';
+  static const String _keyAutoSyncInterval = 'autoSyncInterval';
+  static const String _keyBackgroundRun = 'backgroundRun';
 
   /// Prefix of the per-reminder keys, matching the Kotlin's
   /// `reminder_time_<surveyIds>` in its `survey_reminders` preferences file.
@@ -321,4 +326,50 @@ class PlanetPrefs {
     }
     return due;
   }
+
+  /// Whether Android should wake the app to synchronize while it is closed.
+  bool get autoSyncEnabled => _prefs.getBool(_keyAutoSync) ?? true;
+
+  Future<void> setAutoSyncEnabled(bool value) =>
+      _prefs.setBool(_keyAutoSync, value);
+
+  /// Requested automatic-sync cadence. Android WorkManager enforces a
+  /// 15-minute floor; older Kotlin preferences below that are clamped by the
+  /// scheduler rather than silently discarded.
+  Duration get autoSyncInterval =>
+      Duration(seconds: _prefs.getInt(_keyAutoSyncInterval) ?? 60 * 60);
+
+  Future<void> setAutoSyncInterval(Duration value) =>
+      _prefs.setInt(_keyAutoSyncInterval, value.inSeconds);
+
+  /// Last headless-run diagnostic. It intentionally contains no URLs,
+  /// credentials, payloads, or exception text; only stable step names are
+  /// persisted so support can distinguish scheduling from domain failures.
+  Map<String, dynamic>? get lastBackgroundRun {
+    final encoded = _prefs.getString(_keyBackgroundRun);
+    if (encoded == null) return null;
+    try {
+      final decoded = jsonDecode(encoded);
+      return decoded is Map<String, dynamic> ? decoded : null;
+    } on FormatException {
+      return null;
+    }
+  }
+
+  Future<void> recordBackgroundRun({
+    required String taskName,
+    required DateTime attemptedAt,
+    required String status,
+    required List<String> failedSteps,
+    String? skipReason,
+  }) => _prefs.setString(
+    _keyBackgroundRun,
+    jsonEncode({
+      'taskName': taskName,
+      'attemptedAt': attemptedAt.toUtc().toIso8601String(),
+      'status': status,
+      'failedSteps': failedSteps,
+      'skipReason': ?skipReason,
+    }),
+  );
 }

@@ -148,4 +148,56 @@ void main() {
     expect(prefs.languageCode, null);
     expect(sharedPreferences.containsKey('language'), isFalse);
   });
+
+  test(
+    'background work preferences default to Kotlin policy and persist',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = PlanetPrefs(
+        await SharedPreferences.getInstance(),
+        secureStorage: _MockSecureStorage(),
+      );
+
+      expect(prefs.autoSyncEnabled, isTrue);
+      expect(prefs.autoSyncInterval, const Duration(hours: 1));
+
+      await prefs.setAutoSyncEnabled(false);
+      await prefs.setAutoSyncInterval(const Duration(minutes: 30));
+
+      expect(prefs.autoSyncEnabled, isFalse);
+      expect(prefs.autoSyncInterval, const Duration(minutes: 30));
+    },
+  );
+
+  test('background diagnostics persist only stable fields', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = PlanetPrefs(
+      await SharedPreferences.getInstance(),
+      secureStorage: _MockSecureStorage(),
+    );
+
+    await prefs.recordBackgroundRun(
+      taskName: 'myplanet.autoSync',
+      attemptedAt: DateTime.utc(2026, 8, 16, 13, 45),
+      status: 'retryRequested',
+      failedSteps: const ['resources', 'outboxDrain'],
+    );
+
+    expect(prefs.lastBackgroundRun, {
+      'taskName': 'myplanet.autoSync',
+      'attemptedAt': '2026-08-16T13:45:00.000Z',
+      'status': 'retryRequested',
+      'failedSteps': ['resources', 'outboxDrain'],
+    });
+  });
+
+  test('malformed background diagnostics fail closed', () async {
+    SharedPreferences.setMockInitialValues({'backgroundRun': 'not-json'});
+    final prefs = PlanetPrefs(
+      await SharedPreferences.getInstance(),
+      secureStorage: _MockSecureStorage(),
+    );
+
+    expect(prefs.lastBackgroundRun, isNull);
+  });
 }

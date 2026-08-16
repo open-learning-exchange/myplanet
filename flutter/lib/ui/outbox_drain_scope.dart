@@ -8,19 +8,12 @@ import '../repository/public_survey_uploader.dart';
 /// Replaces the `WorkManager` registration `MainApplication.kt` performs for
 /// `RetryQueueWorker`.
 ///
-/// WorkManager can wake a process that is not running; Flutter has no
-/// first-party equivalent, so the trigger moves into the app's own lifecycle.
-/// Wrapping the router in this widget drains the outbox:
+/// The OS-scheduled trigger lives in `background_entrypoint.dart`; this scope
+/// remains the low-latency foreground trigger. Wrapping the router drains:
 ///
 /// - once at startup, after clearing rows stranded `in_progress` by a kill
 ///   mid-drain (`recoverStuckOperations`), and
-/// - on every resume, which is the closest honest analogue to the periodic
-///   worker.
-///
-/// What this does **not** do is send while the app is closed. That is the real
-/// residual gap, and it is survivable rather than silent: the queue is a SQLite
-/// table, so a write made offline persists across process death and goes out on
-/// the next launch. `docs/kotlin-to-flutter-migration.md` records it.
+/// - on every resume, without waiting for Android's next periodic window.
 class OutboxDrainScope extends ConsumerStatefulWidget {
   const OutboxDrainScope({required this.child, super.key});
 

@@ -41,8 +41,9 @@ Room→Drift, Retrofit→Dio, strings.xml→.arb), and the open problems. The `W
 resolved for write-back: `RetryQueue`'s durability was always the SQLite table rather than the
 worker, so the queue ported directly and only the drain trigger needed replacing (`outbox` table
 + `OutboxDrainer`, drained on app resume). What remains open is background work with no user
-present — `AutoSyncWorker`'s timed sync and `TaskNotificationWorker`'s deadline notifications
-genuinely need OS scheduling.
+present — `AutoSyncWorker`'s timed sync landed in Phase 38 through the `workmanager` plugin behind
+a testable Dart seam, though that plugin's own Android side is Kotlin.
+`TaskNotificationWorker`'s deadline notifications and `DownloadWorker`'s queue remain open.
 
 ### Documentation Map
 

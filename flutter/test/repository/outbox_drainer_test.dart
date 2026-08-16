@@ -252,6 +252,14 @@ void main() {
     final subject = drainer();
 
     expect(await subject.drain(), isEmpty, reason: 'claimed, so not due');
+    clock = clock.add(OutboxRepository.stuckClaimTimeout);
+    await subject.recoverStuck();
+    expect(
+      await subject.drain(),
+      isEmpty,
+      reason: 'a claim exactly at the lease boundary is still live',
+    );
+    clock = clock.add(const Duration(milliseconds: 1));
     await subject.recoverStuck();
     expect(await subject.drain(), [OutboxOutcome.completed]);
   });

@@ -10,8 +10,8 @@ import 'ratings_repository.dart';
 /// Durable write-back for the `ratings` database.
 ///
 /// Kotlin uploads ratings from `AutoSyncWorker` through `UploadManager.uploadRating`.
-/// There is no background scheduling here yet, so the outbox carries it instead:
-/// queued on write, drained on app resume.
+/// The outbox carries it instead: queued on write, then drained on app resume
+/// or by the constraint-aware background job.
 ///
 /// Without this the port saved ratings locally but they never left the device —
 /// `RatingsRepository.pendingUploads()` existed but nothing called it.

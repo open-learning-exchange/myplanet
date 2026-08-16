@@ -11,8 +11,8 @@ import 'outbox_repository.dart';
 /// Durable write-back for the `feedback` database.
 ///
 /// Kotlin uploads feedback from `AutoSyncWorker` through
-/// `UploadManager.uploadFeedback`. There is no background scheduling here yet,
-/// so the outbox carries it instead: queued on write, drained on app resume.
+/// `UploadManager.uploadFeedback`. The outbox carries it here: queued on write,
+/// then drained on app resume or by the constraint-aware background job.
 /// Without this the port filed feedback that never left the device —
 /// `getPendingFeedback` existed but nothing called it.
 class FeedbackUploader {

@@ -10,8 +10,8 @@ import 'outbox_repository.dart';
 /// Durable write-back for the `health` database.
 ///
 /// Kotlin uploads examinations from `UploadManager.uploadExamResult` via
-/// `AutoSyncWorker`. There is no background scheduling here yet, so the outbox
-/// carries it instead: queued on write, drained on app resume.
+/// `AutoSyncWorker`. The outbox carries it here: queued on write, then drained
+/// on app resume or by the constraint-aware background job.
 ///
 /// Without this the port recorded examinations that never left the device —
 /// `getUpdated()`, `markUploaded()` and `serialize()` all existed and none of

@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 37 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 38 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -17,9 +17,9 @@ working. Counted honestly:
   the shape Kotlin has.
 
 Known gaps:
-- Background work with no user present (`AutoSyncWorker`'s timed sync,
-  `TaskNotificationWorker`'s deadline notifications, `DownloadWorker`'s background queue) needs
-  OS scheduling and is not ported.
+- `TaskNotificationWorker`'s deadline notifications and `DownloadWorker`'s background queue are
+  still unported. Timed background *sync* landed in Phase 38 â€” see below â€” so the WorkManager
+  gap is now partial rather than total.
 - Team attachments are unported. Personal-note attachments are: the note POSTs, then the file
   PUTs as a CouchDB attachment, best-effort and in that order, as Kotlin does.
 - Universal links are Android-only. The `myplanet://` scheme is registered on iOS, but the
@@ -483,6 +483,53 @@ Recorded from their notes rather than harvested: **`package:intl` exports its ow
 (`.LTR`/`.RTL`) which shadows `dart:ui`'s (`.ltr`/`.rtl`), so a file combining `DateFormat` with a
 `TextPainter` needs `import 'package:intl/intl.dart' hide TextDirection;`. Their chart is a
 `CustomPainter`; ours is plain widgets, so nothing here trips it today.
+
+## Phase 38 â€” background sync, harvested from a branch that could not be merged
+
+`codex/increase-line-count-by-threefold` is **not** a descendant of this branch. It forks from an
+older lineage that never received Phases 34â€“36: no `deep_link.dart`, no
+`activities_uploader.dart`, no `public_survey_uploader.dart`, no `user_uploader.dart`, no
+`profile_avatar.dart`. Merging it would have deleted roughly 18,000 lines of work. One commit on
+it, `8f6e031ba`, is worth having on its own and was cherry-picked; the rest was left alone.
+
+**What it adds.** The item this document has called the highest-risk gap since Phase 1: timed
+execution with no user present. `workmanager` sits behind `BackgroundScheduler`, an abstract
+interface, so scheduling *policy* â€” should this run, is the interval due, which steps failed â€” is
+ordinary unit-tested Dart in `BackgroundTaskRunner`, while the plugin call is a four-line adapter.
+`background_entrypoint.dart` is the headless isolate, settings gains an auto-sync toggle and an
+interval control, and `main.dart` applies the schedule at startup.
+
+This does **not** make the port Kotlin-free, and the claim that the gap could close that way should
+be retired: `workmanager`'s Android side is itself Kotlin, wrapping the same `WorkManager` the
+Kotlin app registers directly. What changed is that the Kotlin is now a maintained third-party
+plugin rather than app code.
+
+**Two changes the two-isolate world made necessary**, both in the outbox and both correct:
+
+- `OutboxDao.claim` replaces the unconditional `setStatus`. The UI isolate and the WorkManager
+  isolate have separate in-memory single-flight guards, so the guard that matters is a conditional
+  SQL update: both may select the same due row, only one `status = pending` update wins, and the
+  loser skips the row instead of double-posting it.
+- `recoverStuck` takes a cutoff. Recovering *every* `in_progress` row at startup was right with one
+  isolate; with two it would steal a row the background isolate has in flight.
+
+**Three resolutions where the old lineage disagreed with this branch:**
+
+- **`lastSync` stays epoch millis.** The commit redefines it as `DateTime?`. Ours matches
+  `SharedPrefManager.LAST_SYNC` and is read by `LastSyncNotifier` and the dashboard's last-sync
+  strip, so the runner's `DateTime` API is bridged in `background_entrypoint.dart` instead â€”
+  neither side changes, and the adapter is four lines with a comment saying why.
+- **`OutboxDrainer.drain` keeps the `onlyTypes` filter** from Phase 35 (the public-survey
+  respondent who has no credential) *and* takes the commit's nullable-outcome claim logic. The
+  conflict presented them as alternatives; they are orthogonal.
+- The prefs test keeps this branch's `lastSync` coverage and adopts the commit's background
+  preference and diagnostics tests, with the `DateTime` assertions rewritten for the int API.
+
+Also fixed here: 16 raw CP1252 `0x97` bytes in this document, left by the Phase 37 docs commits,
+which made it invalid UTF-8 and broke any tool that reads it as such.
+
+Still unported from `WorkManager`: `TaskNotificationWorker`'s deadline notifications and
+`DownloadWorker`'s background queue.
 
 ## Harvesting upstream: the 2026-08-12 rebase
 
@@ -1180,7 +1227,7 @@ because `createAll` emits bare `CREATE INDEX` and the pre-drop clears any collis
 `schemaVersion` bumps 28 â†’ 29; a migration test asserts both indices exist after an upgrade and
 that the preserved feedback row survives.
 
-### Harvest audit — the 2026-08-13 commit batch
+### Harvest audit â€” the 2026-08-13 commit batch
 
 After the indexing harvest, the remaining commits in the `6977707ef..33cedc3c3` range
 were audited. Each was classified as already-harvested, an architectural no-op, or a
@@ -1189,47 +1236,47 @@ substantial new feature beyond simple harvesting:
 **Already harvested (prior sessions or this one).** Four commits had their behavioural
 fix already in the port, with the code itself citing the commit hash:
 
-- `5f3198970` (voices replying) — `VoicesRepository.postReply` keys `replyTo` to
+- `5f3198970` (voices replying) â€” `VoicesRepository.postReply` keys `replyTo` to
   `parent.id`, not `_id`, matching the Kotlin's `news.id` switch.
-- `2a49db978` (events detail) — `EventsRepository.toggleAttendance` bails out when
+- `2a49db978` (events detail) â€” `EventsRepository.toggleAttendance` bails out when
   `userId` is null/empty, closing the "leave with no user" hole the Kotlin fixed.
-- `48fbf109d` (placeholder wording) — `app_en.arb` carries the "You can add resources" /
+- `48fbf109d` (placeholder wording) â€” `app_en.arb` carries the "You can add resources" /
   "You can join courses" / "You can join a team" wording.
-- `0b8f76770` (responsive layout) — `_LastSyncStrip` shows "Last synced: [relative
+- `0b8f76770` (responsive layout) â€” `_LastSyncStrip` shows "Last synced: [relative
   time]" via `lastSyncProvider`, the `updateRailSyncStatus` equivalent.
 
 **Architectural no-ops.** Seven commits fix patterns that the declarative Riverpod
 architecture or the port's scope make moot:
 
-- `425602051` (sync message spacing) — a strings.xml trailing-space fix and a Gradle
+- `425602051` (sync message spacing) â€” a strings.xml trailing-space fix and a Gradle
   version bump; `.arb` preserves whitespace natively.
-- `b2733a4e9` (refresh job cancelling) — the Kotlin cancels stale imperative coroutine
+- `b2733a4e9` (refresh job cancelling) â€” the Kotlin cancels stale imperative coroutine
   launches (`refreshJobs`, `selectPatientJob`, `updateTasksJob`). Riverpod
   `StreamProvider`/`FutureProvider`/`AsyncNotifier` auto-invalidate and cancel the
   previous computation when a dependency changes, so the race the Kotlin guards against
   does not arise.
-- `d7fd6d56c` (download dialog handling) — suppresses a download-suggestion dialog in
+- `d7fd6d56c` (download dialog handling) â€” suppresses a download-suggestion dialog in
   CoursesFragment; the port has no such dialog.
-- `f316a8c69` (resources pending downloading) — optimizes a `SELECT *` to `SELECT id`
+- `f316a8c69` (resources pending downloading) â€” optimizes a `SELECT *` to `SELECT id`
   for pending-download tracking; the port has no `getPendingDownloads` query.
-- `33cedc3c3` (importing) — Kotlin import cleanup; Dart has its own import management
+- `33cedc3c3` (importing) â€” Kotlin import cleanup; Dart has its own import management
   (`dart format` / `flutter analyze`).
-- `db96330a2` (download service testing) — Kotlin `DownloadServiceTest` additions only.
-- `5496e1dc1` (merge prepping submodule pinning) — tooling, not the app.
+- `db96330a2` (download service testing) â€” Kotlin `DownloadServiceTest` additions only.
+- `5496e1dc1` (merge prepping submodule pinning) â€” tooling, not the app.
 
 **Substantial new features (not simple harvests).** Four commits are feature additions
 whose Kotlin UI layer (RecyclerView adapters, FlexboxLayout, custom Views) has no direct
 Flutter counterpart and would require design work, not a line-by-line port. Three of the
 four have since been harvested; one remains deferred:
 
-- `c2cf2a788` (grid/list view mode) — **harvested** (`ee0bd3063`). Adds a grid/list
+- `c2cf2a788` (grid/list view mode) â€” **harvested** (`ee0bd3063`). Adds a grid/list
   view-mode toggle persisted in prefs, surfaced on the courses and resources screens.
-- `818732139` (grid cover imaging) — **harvested** (`f0d941999`). Adds cover-image
+- `818732139` (grid cover imaging) â€” **harvested** (`f0d941999`). Adds cover-image
   loading (local file, remote URL with auth, subject-color fallback) to the courses
   grid. Depends on the grid view above.
-- `437a3d28a` (enterprises finances date picking) — **deferred.** The enterprises
+- `437a3d28a` (enterprises finances date picking) â€” **deferred.** The enterprises
   feature is not ported.
-- `962e1e736` (health user repositories) — **harvested** (`6bb51427a`). Refactors a
+- `962e1e736` (health user repositories) â€” **harvested** (`6bb51427a`). Refactors a
   clinician patient-selection flow: patient queries move from `UserRepository` into
   `HealthRepository` (`getPatientById`, `getPatientsSortedBy`, `searchPatients`,
   `getPatientHealthRecords`), a `HealthRecord` model bundles the pojo/profile/
@@ -1239,6 +1286,6 @@ four have since been harvested; one remains deferred:
 
 ---
 
-**Last updated**: 2026-08-13 (Phase 37 complete; grid/list, grid cover, health patient harvest done)
-**Phase**: 37 of N (27 of 28 UI packages have a screen â€” see Status for what that does and does
+**Last updated**: 2026-08-16 (Phase 38 complete)
+**Phase**: 38 of N (27 of 28 UI packages have a screen â€” see Status for what that does and does
 not mean)

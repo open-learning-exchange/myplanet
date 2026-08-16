@@ -39,6 +39,26 @@
   "sync": "Sync",
   "cancel": "Cancel",
   "settings": "Settings",
+  "backgroundSync": "Background sync",
+  "backgroundSyncDescription": "Send pending changes and refresh learning data while the app is closed",
+  "syncFrequency": "Sync frequency",
+  "every15Minutes": "Every 15 minutes",
+  "every30Minutes": "Every 30 minutes",
+  "everyHour": "Every hour",
+  "every6Hours": "Every 6 hours",
+  "lastBackgroundRun": "Last background run",
+  "backgroundNeverRun": "No background run has been recorded yet",
+  "backgroundSucceeded": "Completed successfully",
+  "backgroundRetryRequested": "Incomplete — Android will retry",
+  "backgroundSkipped": "Skipped",
+  "backgroundUnknown": "Unknown result",
+  "backgroundScheduleFailed": "The preference was saved, but Android could not update the schedule. It will be retried when the app restarts.",
+  "backgroundFailedSteps": "Needs retry: {steps}",
+  "@backgroundFailedSteps": {
+    "placeholders": {
+      "steps": {"type": "String"}
+    }
+  },
   "logOut": "Log out",
   "noDataAvailable": "No data available",
   "ok": "OK",
