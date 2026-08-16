@@ -218,19 +218,8 @@ verify_version_only_diff() {
     log "  bump is version-only ($from -> $to)"
 }
 
-# gh pr merge, retrying only GitHub's spurious head race.
-#
-# --match-head-commit pins the merge to the commit CI just proved green.
-# GitHub sometimes rejects that pin with "Head branch was modified" while the
-# head is in fact untouched -- it is still reindexing the PR after our push.
-# So re-read the head: still $2 means the refusal was noise and the same merge
-# is safe to repeat; a head that really moved is a caller problem, not a retry.
-#
-# Deliberately not retried: "Base branch was modified". That one is real -- the
-# version bump was computed against a base that has since moved, so the merge
-# has to be prepared again rather than repeated.
-#
-# Leaves the last gh output in $merge_out for the caller to classify.
+# Retries only a head-modified refusal that left the head at $2 -- GitHub
+# reindexing, not a real push. Last gh output stays in $merge_out.
 merge_with_retry() {
     local pr=$1 head_sha=$2 delay live
     shift 2
@@ -459,17 +448,13 @@ while :; do
                 log "  and the drain must know the merge landed to bump the next version."
                 ;;
             *"Head branch was modified"*)
-                reason="**stopped**: #$NUMBER's head kept moving under the merge"
-                log "  GitHub refused the merge because #$NUMBER's head no longer matches the"
-                log "  commit that passed CI. Either something pushed to the branch, or the"
-                log "  retries ran out while GitHub was still reindexing it. Re-run the drain:"
-                log "  it re-prepares the PR and merges whatever is green then."
+                reason="**stopped**: #$NUMBER's head no longer matches what CI passed"
+                log "  re-run the drain to prepare #$NUMBER on its new head."
                 ;;
             *"Base branch was modified"*)
                 reason="**stopped**: \`$BASE\` moved between the check and the merge"
-                log "  $BASE moved after the pre-merge check, so the bump on this branch was"
-                log "  computed against a base that no longer exists. Re-run the drain to"
-                log "  prepare #$NUMBER again on top of the new $BASE."
+                log "  the bump was computed against an older $BASE."
+                log "  re-run the drain to prepare #$NUMBER on top of the new $BASE."
                 ;;
             *"is not mergeable"*|*"required status check"*)
                 reason="**stopped**: base requires checks the prepared commit has not passed"
