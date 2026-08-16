@@ -380,6 +380,7 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 **Test Workflow** (`.github/workflows/test.yml`)
 - Triggers: every push (all branches) + manual dispatch; `permissions: contents: read`
 - Runs `./gradlew testDefaultDebugUnitTest` — **fails the build on any unit-test failure**
+- Split into **2 parallel shard jobs** (`-PtestShardTotal=2 -PtestShardIndex=0|1`); the shard filter lives in `app/build.gradle` `testOptions` and assigns each top-level test class to a shard by hashing its class-file path (inner classes follow their outer class)
 - `default` flavor only (the `lite` flavor's unit tests are not run in CI)
 - No instrumented (`androidTest`) execution in CI
 

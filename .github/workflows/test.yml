@@ -11,12 +11,13 @@ permissions:
 
 jobs:
   test:
-    name: myPlanet test
+    name: myPlanet test (${{ matrix.build }}, shard ${{ matrix.shard }}/2)
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         build: [default]
+        shard: [1, 2]
     steps:
       - name: checkout repository code
         uses: actions/checkout@v7
@@ -37,7 +38,8 @@ jobs:
           GRADLE_BUILD_CACHE_PUSH: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/claude/') || startsWith(github.ref, 'refs/heads/jules/') || startsWith(github.ref, 'refs/heads/codex/') || startsWith(github.ref, 'refs/heads/copilot/') }}
         run: |
           FLAVOR=${{ matrix.build }}
-          ./gradlew test${FLAVOR^}DebugUnitTest --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
+          SHARD=${{ matrix.shard }}
+          ./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=2 -PtestShardIndex=$((SHARD - 1)) --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
 
       - name: summarise slowest tests
         if: always()
@@ -56,7 +58,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-reports-${{ matrix.build }}
+          name: test-reports-${{ matrix.build }}-shard-${{ matrix.shard }}
           path: |
             app/build/reports/tests/
             app/build/test-results/

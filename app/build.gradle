@@ -23,6 +23,20 @@ android {
                 test.maxParallelForks = requested ? requested.toInteger()
                     : Math.min(Runtime.runtime.availableProcessors(), 4)
                 test.maxHeapSize = "1536m"
+                def shardTotal = (project.findProperty('testShardTotal') ?: '1').toInteger()
+                def shardIndex = (project.findProperty('testShardIndex') ?: '0').toInteger()
+                if (shardTotal > 1) {
+                    test.include { element ->
+                        if (element.directory) return true
+                        def path = element.relativePath.pathString
+                        if (!path.endsWith('.class')) return true
+                        // hash the top-level class so inner classes (Foo$Bar) stay in Foo's shard
+                        def topLevel = path.substring(0, path.length() - 6)
+                        def dollar = topLevel.indexOf('$')
+                        if (dollar >= 0) topLevel = topLevel.substring(0, dollar)
+                        return (topLevel.hashCode() & Integer.MAX_VALUE) % shardTotal == shardIndex
+                    }
+                }
             }
         }
     }
