@@ -10,39 +10,14 @@ permissions:
   contents: read
 
 jobs:
-  compile:
-    name: myPlanet test compile
-    runs-on: ubuntu-24.04
-    steps:
-      - name: checkout repository code
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 1
-
-      - name: setup gradle
-        uses: gradle/actions/setup-gradle@v6.3.0
-        with:
-          gradle-version: wrapper
-
-      - name: compile unit tests
-        shell: bash
-        env:
-          GRADLE_BUILD_CACHE_URL: ${{ secrets.GRADLE_BUILD_CACHE_URL }}
-          GRADLE_BUILD_CACHE_USER: ${{ secrets.GRADLE_BUILD_CACHE_USER }}
-          GRADLE_BUILD_CACHE_PASS: ${{ secrets.GRADLE_BUILD_CACHE_PASS }}
-          GRADLE_BUILD_CACHE_PUSH: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/claude/') || startsWith(github.ref, 'refs/heads/jules/') || startsWith(github.ref, 'refs/heads/codex/') || startsWith(github.ref, 'refs/heads/copilot/') }}
-        run: |
-          ./gradlew compileDefaultDebugUnitTestKotlin --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
-
   test:
-    needs: compile
-    name: myPlanet test (${{ matrix.build }}, shard ${{ matrix.shard }}/4)
+    name: myPlanet test (${{ matrix.build }}, shard ${{ matrix.shard }}/2)
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         build: [default]
-        shard: [1, 2, 3, 4]
+        shard: [1, 2]
     steps:
       - name: checkout repository code
         uses: actions/checkout@v7
@@ -64,7 +39,7 @@ jobs:
         run: |
           FLAVOR=${{ matrix.build }}
           SHARD=${{ matrix.shard }}
-          ./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=4 -PtestShardIndex=$((SHARD - 1)) --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
+          ./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=2 -PtestShardIndex=$((SHARD - 1)) --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
 
       - name: summarise slowest tests
         if: always()
