@@ -1,0 +1,61 @@
+name: myPlanet exp
+
+# TEMPORARY: CI topology measurement for PR #15716. Removed before merge.
+# Three arms run the same unsharded unit-test command so their wall times are
+# directly comparable; only their caching setup differs.
+
+on:
+  push:
+    branches:
+      - claude/github-workflow-test-perf-l991vz
+
+permissions:
+  contents: read
+
+jobs:
+  a-control:
+    name: exp A control (gradle-home cache read-only, as today)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: gradle/actions/setup-gradle@v6.3.0
+        with:
+          gradle-version: wrapper
+      - run: ./gradlew testDefaultDebugUnitTest --configuration-cache-problems=warn --stacktrace --parallel --max-workers=4
+
+  b-cache-write:
+    name: exp B gradle build cache writable from branch
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: gradle/actions/setup-gradle@v6.3.0
+        with:
+          gradle-version: wrapper
+          cache-read-only: false
+      - run: ./gradlew testDefaultDebugUnitTest --configuration-cache-problems=warn --stacktrace --parallel --max-workers=4
+
+  c-incremental:
+    name: exp C build cache writable + project build dir cached (incremental)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - uses: gradle/actions/setup-gradle@v6.3.0
+        with:
+          gradle-version: wrapper
+          cache-read-only: false
+      - name: restore project build dir
+        uses: actions/cache@v4
+        with:
+          path: |
+            app/build
+            .gradle
+          key: exp-c-projectdir-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            exp-c-projectdir-${{ github.ref_name }}-
+      - run: ./gradlew testDefaultDebugUnitTest --configuration-cache-problems=warn --stacktrace --parallel --max-workers=4
