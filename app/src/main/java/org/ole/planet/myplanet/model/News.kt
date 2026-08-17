@@ -75,6 +75,12 @@ open class News {
     var rawConversations: String? = null
     @Ignore
     var rawImageUrls: List<String>? = null
+    @Ignore
+    var rawImages: String? = null
+    @Ignore
+    var parsedImagesArray: JsonArray? = null
+    @Ignore
+    var parsedSharedTeamName: String? = null
 
     @get:Ignore
     val imagesArray: JsonArray

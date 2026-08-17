@@ -5,6 +5,7 @@ import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.util.Date
@@ -19,7 +20,6 @@ import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
@@ -48,7 +48,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     private val answerDao: AnswerDao,
     private val examDao: ExamDao,
     private val questionDao: QuestionDao,
-    private val userDao: UserDao
+    // Lazy wrapper is required here to prevent a Dagger cyclic dependency,
+    // as UserRepositoryImpl also depends on HealthRepository which creates a cycle
+    // (and we follow this pattern consistently).
+    private val userRepository: Lazy<UserRepository>
 ) : SubmissionsRepository {
 
     override suspend fun generateSubmissionPdf(submissionId: String): File? {
@@ -207,8 +210,25 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         } else {
             examId
         }
-        userIds.forEach { userId ->
-            getOrCreateSubmission(userId, parentId)
+
+        userIds.chunked(500).forEach { chunk ->
+            val existingSubmissions = submissionDao.getPendingByUsersAndParent(chunk, parentId)
+            val existingUserIds = existingSubmissions.mapNotNull { it.userId }.toSet()
+            val newSubmissions = chunk.filter { it !in existingUserIds }.map { userId ->
+                Submission().apply {
+                    id = UUID.randomUUID().toString()
+                    this.userId = userId
+                    this.parentId = parentId
+                    status = "pending"
+                    type = "survey"
+                    startTime = Date().time
+                    lastUpdateTime = startTime
+                    answers = mutableListOf()
+                }
+            }
+            if (newSubmissions.isNotEmpty()) {
+                submissionDao.upsertAll(newSubmissions)
+            }
         }
     }
 
@@ -238,7 +258,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         val examId = submission.parentId?.substringBefore('@')
         val exam = examId?.let { getExamById(it) }
 
-        val user = submission.userId?.let { userDao.getById(it) }
+        val user = submission.userId?.let { userRepository.get().getUserById(it) }
 
         val questions = examId?.let { questionDao.getByExamId(it).map { question -> question } } ?: emptyList()
 
@@ -682,7 +702,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     )
 
     private suspend fun getPayloadData(submission: Submission): PayloadData {
-        val user = submission.userId?.let { userDao.getById(it) }
+        val user = submission.userId?.let { userRepository.get().getUserById(it) }
         val examId = submission.examIdFromParentId()
         val exam = examId?.let { examDao.getById(it) }
         val questions = exam?.id?.let { questionDao.getByExamId(it).map { question -> question } } ?: emptyList()

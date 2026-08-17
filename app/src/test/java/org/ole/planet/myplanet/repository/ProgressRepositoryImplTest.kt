@@ -487,6 +487,93 @@ class ProgressRepositoryImplTest {
         assertNull(result)
     }
 
+
+    @Test
+    fun testFetchCourseData_SubmissionsGrouping() = testScope.runTest {
+        val myCourses = listOf(
+            MyCourse().apply {
+                courseId = "course1"
+                courseTitle = "Course 1"
+            },
+            MyCourse().apply {
+                courseId = "course10"
+                courseTitle = "Course 10"
+            }
+        )
+
+        val exams = listOf(
+            StepExam().apply { id = "exam1"; courseId = "course1" },
+            StepExam().apply { id = "exam10"; courseId = "course10" }
+        )
+
+        val questions = listOf(
+            ExamQuestion().apply { id = "q1"; examId = "exam1" },
+            ExamQuestion().apply { id = "q10"; examId = "exam10" }
+        )
+
+        val submissions = listOf(
+            // Normal parent (course1) -> sub1 (5 mistakes)
+            Submission().apply {
+                id = "sub1"
+                userId = "user1"
+                parentId = "exam1@course1"
+                type = "exam"
+            },
+            // Malformed/legacy parent (course1) -> sub2 (10 mistakes)
+            Submission().apply {
+                id = "sub2"
+                userId = "user1"
+                parentId = "course1_legacy"
+                type = "exam"
+            },
+            // Missing parent -> sub3
+            Submission().apply {
+                id = "sub3"
+                userId = "user1"
+                parentId = null
+                type = "exam"
+            },
+            // Substring collision (course10, which contains "course1") -> sub4 (20 mistakes)
+            Submission().apply {
+                id = "sub4"
+                userId = "user1"
+                parentId = "exam10@course10"
+                type = "exam"
+            }
+        )
+
+        val answers = listOf(
+            Answer().apply { id = "a1"; submissionId = "sub1"; questionId = "q1"; mistakes = 5 },
+            Answer().apply { id = "a2"; submissionId = "sub2"; questionId = "q1"; mistakes = 10 },
+            Answer().apply { id = "a4"; submissionId = "sub4"; questionId = "q10"; mistakes = 20 }
+        )
+
+        coEvery { mockCoursesRepository.getMyCourses(any()) } returns myCourses
+        coEvery { courseProgressDao.getByUserAndCourseIds(any(), any()) } returns emptyList()
+        coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
+        coEvery { examDao.getByCourseIds(listOf("course1", "course10")) } returns exams
+        coEvery { submissionDao.getExamSubmissionsByUser("user1") } returns submissions
+        coEvery { answerDao.getBySubmissionIds(any()) } returns answers
+        coEvery { questionDao.getByIds(any()) } returns questions
+
+        val data = repository.fetchCourseData("user1")
+        advanceUntilIdle()
+
+        assertEquals(2, data.size())
+
+        // Under correct grouping, course1 gets sub1 (5) + sub2 (10) = 15 mistakes.
+        // If substring collision fails, course1 might incorrectly absorb sub4 (+20) -> 35.
+        val obj1 = data[0].asJsonObject
+        assertEquals("course1", obj1.get("courseId").asString)
+        assertEquals(15, obj1.get("mistakes")?.asInt ?: 0)
+
+        // Under correct grouping, course10 gets sub4 = 20 mistakes.
+        // If substring collision fails, course10 might lose sub4 -> 0 mistakes.
+        val obj10 = data[1].asJsonObject
+        assertEquals("course10", obj10.get("courseId").asString)
+        assertEquals(20, obj10.get("mistakes")?.asInt ?: 0)
+    }
+
     @Test
     fun testFetchCourseData_EmptyCourses() = testScope.runTest {
         coEvery { mockCoursesRepository.getMyCourses("user1") } returns emptyList()
