@@ -33,7 +33,7 @@ class Converters {
     @TypeConverter
     fun toStringList(value: String?): List<String>? {
         if (value.isNullOrBlank()) return null
-        return JsonUtils.gson.fromJson(value, object : TypeToken<List<String>>() {}.type)
+        return JsonUtils.gson.fromJson(value, stringListType)
     }
 
     @TypeConverter
@@ -44,7 +44,7 @@ class Converters {
     @TypeConverter
     fun toConversationList(value: String?): List<Conversation>? {
         if (value.isNullOrBlank()) return null
-        return JsonUtils.gson.fromJson(value, object : TypeToken<List<Conversation>>() {}.type)
+        return JsonUtils.gson.fromJson(value, conversationListType)
     }
 
     @TypeConverter
@@ -55,6 +55,12 @@ class Converters {
     @TypeConverter
     fun toAttachmentList(value: String?): List<Attachment>? {
         if (value.isNullOrBlank()) return null
-        return JsonUtils.gson.fromJson(value, object : TypeToken<List<Attachment>>() {}.type)
+        return JsonUtils.gson.fromJson(value, attachmentListType)
+    }
+
+    companion object {
+        private val stringListType = object : TypeToken<List<String>>() {}.type
+        private val conversationListType = object : TypeToken<List<Conversation>>() {}.type
+        private val attachmentListType = object : TypeToken<List<Attachment>>() {}.type
     }
 }

@@ -7,7 +7,6 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import java.io.File
 import org.ole.planet.myplanet.utils.FileUtils.getOlePath
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -173,7 +172,10 @@ open class MyTeam(
                 `object`.addProperty("teamType", team.teamType)
                 `object`.addProperty("sourcePlanet", team.sourcePlanet)
                 `object`.addProperty("docType", team.docType)
-                return JsonParser.parseString(JsonUtils.gson.toJson(`object`)).asJsonObject
+
+                val keysToRemove = `object`.keySet().filter { `object`.get(it).isJsonNull }
+                keysToRemove.forEach { `object`.remove(it) }
+                return `object`
             }
 
             `object`.addProperty("name", team.name)
@@ -217,7 +219,9 @@ open class MyTeam(
                 `object`.addProperty("type", team.teamType)
             }
 
-            return JsonParser.parseString(JsonUtils.gson.toJson(`object`)).asJsonObject
+            val keysToRemove = `object`.keySet().filter { `object`.get(it).isJsonNull }
+            keysToRemove.forEach { `object`.remove(it) }
+            return `object`
         }
 
         fun serialize(team: MyTeam, courses: List<MyCourse>, coursesResourcesMap: Map<String, Map<String?, List<MyLibrary>>>): JsonObject {
