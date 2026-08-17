@@ -9,10 +9,6 @@ on:
 permissions:
   contents: read
 
-# Supersede stale runs on the same branch. Master runs are never grouped at
-# all: GitHub keeps at most one PENDING run per group and silently cancels a
-# superseded pending run even with cancel-in-progress false, and the automerge
-# drain treats a cancelled master run as red and aborts.
 concurrency:
   group: test-${{ github.ref }}-${{ github.ref == 'refs/heads/master' && github.run_id || 'branch' }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
@@ -36,37 +32,20 @@ jobs:
         uses: gradle/actions/setup-gradle@v6.3.0
         with:
           gradle-version: wrapper
-          # setup-gradle keeps the Gradle home cache read-only off master, so
-          # branch runs could never seed it and every push started cold
           cache-read-only: false
 
-      # Carry the project build dir between runs so Kotlin compiles
-      # incrementally instead of from scratch. Restore falls back through this
-      # job's earlier runs on this branch, then master's (Actions cache scoping
-      # gives every branch read access to master's entries).
       - name: restore project build dir
         uses: actions/cache@v4
         with:
-          # .gradle/configuration-cache is excluded: Gradle serializes
-          # configuration-time state there, including env-var credentials read
-          # by settings.gradle, and Actions cache entries are readable from
-          # every branch of the repo. NOTE the positive pattern must be
-          # .gradle/* (enumerating children) — a bare .gradle directory entry
-          # is archived recursively and the negation never matches anything.
           path: |
             app/build
             .gradle/*
             !.gradle/configuration-cache
           key: build-dir-test-${{ matrix.build }}-shard${{ matrix.shard }}-${{ github.sha }}
-          # fall back to this shard's earlier runs, then any unsharded entry so
-          # the first sharded run starts from a warm compile
           restore-keys: |
             build-dir-test-${{ matrix.build }}-shard${{ matrix.shard }}-
             build-dir-test-${{ matrix.build }}-
 
-      # The restored build dir includes the previous run's test results; drop
-      # them so the summary (if: always) and failure artifacts can only ever
-      # contain results produced by THIS run.
       - name: drop stale test results from restored build dir
         shell: bash
         run: rm -rf app/build/test-results app/build/reports/tests
@@ -77,28 +56,10 @@ jobs:
           GRADLE_BUILD_CACHE_URL: ${{ secrets.GRADLE_BUILD_CACHE_URL }}
           GRADLE_BUILD_CACHE_USER: ${{ secrets.GRADLE_BUILD_CACHE_USER }}
           GRADLE_BUILD_CACHE_PASS: ${{ secrets.GRADLE_BUILD_CACHE_PASS }}
-          # Push from every in-repo branch (fork PRs never see these secrets):
-          # the automerge queue prepares commits on arbitrary contributor
-          # branches, and master reruns the identical tree afterwards — the
-          # master run only gets cache hits if the branch run was allowed to
-          # seed the cache. Inert until GRADLE_BUILD_CACHE_URL is set: the
-          # secret is currently empty, so settings.gradle disables the remote
-          # cache and only the Actions-cached Gradle home is in play.
           GRADLE_BUILD_CACHE_PUSH: 'true'
         run: |
           FLAVOR=${{ matrix.build }}
           SHARD=${{ matrix.shard }}
-          # Two shards, prioritizing wall clock over runner-minutes: measured on
-          # this branch, shards were equal-or-faster in every cache regime
-          # (warm source change ~3:03-3:37 vs ~3:57-4:14 unsharded; cold ~4:53
-          # vs ~6:25; no-change ties at ~0:45). The trade is a second runner
-          # per push.
-          #
-          # The shard total is strategy.job-total (the matrix job count), so
-          # shrinking `shard:` to [1] falls back to one full-suite job with no
-          # other edit — a literal total here would silently skip the dropped
-          # shard's tests. ⚠️ job-total counts ALL matrix dimensions: if a
-          # second build flavor is ever added, split the shard count out first.
           ./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=${{ strategy.job-total }} -PtestShardIndex=$((SHARD - 1)) --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
 
       - name: summarise slowest tests
@@ -111,9 +72,6 @@ jobs:
             echo "No test results found in $RESULTS" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          # tee so the breakdown is in the job log too, not only the run summary page
-          # --warn-over: ~120% of half the suite's ~657s summed across forks
-          # (2026-08); bump as the suite grows
           python3 .github/scripts/test_timing_summary.py "$RESULTS" \
             --shard "${{ matrix.shard }}/${{ strategy.job-total }}" --warn-over 400 | tee -a "$GITHUB_STEP_SUMMARY"
 
@@ -122,8 +80,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-reports-${{ matrix.build }}-shard-${{ matrix.shard }}
-          # v4 artifacts are immutable per run; without overwrite a job re-run
-          # 409s trying to upload the same artifact name again
           overwrite: true
           path: |
             app/build/reports/tests/
