@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """Summarise Gradle unit-test timings as a GitHub Actions step summary.
 
-Usage: test_timing_summary.py <test-results-dir>
+Usage: test_timing_summary.py <test-results-dir> [--shard N/M] [--warn-over SECONDS]
 
 Reads the JUnit XML that Gradle writes to app/build/test-results/<task>/ and
 prints a markdown report of the slowest test classes and individual tests, so
 CI shows where the test wall time actually goes.
+
+--shard labels the report with which CI shard produced it, for the optional
+sharded run (-PtestShardTotal/-PtestShardIndex). --warn-over prints a loud
+warning when the summed test time exceeds the given seconds, so a suite that
+has grown past what one CI job should carry gets noticed.
 """
+import argparse
 import glob
 import os
 import sys
@@ -16,11 +22,14 @@ TOP_N = 15
 
 
 def main() -> int:
-    if len(sys.argv) != 2:
-        print(f"usage: {os.path.basename(sys.argv[0])} <test-results-dir>", file=sys.stderr)
-        return 2
+    parser = argparse.ArgumentParser()
+    parser.add_argument("results_dir")
+    parser.add_argument("--shard", default=None, help="shard label, e.g. 1/2")
+    parser.add_argument("--warn-over", type=float, default=None,
+                        help="warn when summed test seconds exceed this")
+    args = parser.parse_args()
 
-    results_dir = sys.argv[1]
+    results_dir = args.results_dir
     files = glob.glob(os.path.join(results_dir, "*.xml"))
     if not files:
         print(f"No test result XML found in `{results_dir}`.")
@@ -46,10 +55,19 @@ def main() -> int:
     classes.sort(reverse=True)
     cases.sort(reverse=True)
 
-    print("## Unit test timing")
+    shard_suffix = f" (shard {args.shard})" if args.shard else ""
+    print(f"## Unit test timing{shard_suffix}")
     print()
     print(f"{len(cases)} tests in {len(classes)} classes, {total:.1f}s of test time summed across forks.")
     print()
+    if args.warn_over is not None and total > args.warn_over:
+        subject = f"shard {args.shard}" if args.shard else "the suite"
+        print(f"> ⚠️ **Slow tests**: {subject} summed {total:.0f}s, over the "
+              f"{args.warn_over:.0f}s threshold. Speed up the slowest classes below "
+              f"(Robolectric classes dominate), or split the run across shards "
+              f"(-PtestShardTotal/-PtestShardIndex, see test.yml) — then update "
+              f"--warn-over in test.yml.")
+        print()
     print(f"### {TOP_N} slowest test classes")
     print()
     print("| Class | Seconds | % of total |")
