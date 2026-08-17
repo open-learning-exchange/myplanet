@@ -33,7 +33,6 @@ android {
                         if (element.directory) return true
                         def path = element.relativePath.pathString
                         if (!path.endsWith('.class')) return true
-                        // hash the top-level class so inner classes (Foo$Bar) stay in Foo's shard
                         def topLevel = path.substring(0, path.length() - 6)
                         def dollar = topLevel.indexOf('$')
                         if (dollar >= 0) topLevel = topLevel.substring(0, dollar)
@@ -165,12 +164,6 @@ android {
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
     }
 }
-// BuildConfig.VERSION_CODE/VERSION_NAME are unused at runtime (VersionUtils
-// reads PackageManager), but as inlined constants they invalidate every
-// Kotlin/KSP compile task on each version bump — which is every automerge
-// merge. Pin them so bump-only commits stay cacheable; the real version still
-// reaches the manifest from defaultConfig, whose version lines must keep
-// their exact shape for version.sh and the release workflow's greps.
 androidComponents {
     onVariants(selector().all()) { variant ->
         variant.buildConfigFields.put('VERSION_CODE',
