@@ -9,10 +9,6 @@ import androidx.core.graphics.createBitmap
 import java.io.File
 import kotlinx.coroutines.withContext
 
-/**
- * Renders the first page of a PDF as a bitmap sized for a thumbnail, sharing one memory cache
- * across every adapter that shows PDF cover previews.
- */
 object PdfThumbnailLoader {
     private val cache = object : LruCache<String, Bitmap>((Runtime.getRuntime().maxMemory() / 1024 / 16).toInt()) {
         override fun sizeOf(key: String, bitmap: Bitmap): Int = bitmap.byteCount / 1024
