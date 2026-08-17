@@ -1,12 +1,20 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Toolbar -->
 
-    <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
-        <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+    <style name="ShapeAppearance.MyPlanet.CoverTopRounded" parent="ShapeAppearance.Material3.Corner.Medium">
+        <item name="cornerSizeTopLeft">12dp</item>
+        <item name="cornerSizeTopRight">12dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+
+    <style name="ShapeAppearance.MyPlanet.CoverRounded" parent="ShapeAppearance.Material3.Corner.Medium">
+        <item name="cornerSize">8dp</item>
     </style>
 
     <style name="GuestStyle">
@@ -40,11 +48,9 @@
     </style>
 
     <style name="CustomTheme" parent="MaterialDrawerTheme.TranslucentStatus">
-        <!-- ...and here we setting appcompat’s color theme attrs -->
         <item name="colorPrimary">#F1433C</item>
         <item name="colorPrimaryDark">#D03033</item>
         <item name="colorAccent">#02A8F3</item>
-        <!-- MaterialDrawer specific values -->
         <item name="material_drawer_background">@color/material_drawer_dark_background</item>
         <item name="material_drawer_primary_text">@color/material_drawer_dark_primary_text</item>
         <item name="material_drawer_secondary_text">@color/material_drawer_dark_secondary_text
@@ -56,8 +62,6 @@
         <item name="material_drawer_header_selection_text">
             @color/material_drawer_dark_primary_text
         </item>
-
-        <!-- CAB :D -->
         <item name="windowActionModeOverlay">false</item>
     </style>
 
@@ -68,13 +72,11 @@
         <item name="android:textSize">@dimen/text_size_mid</item>
     </style>
 
-    <!--    Button Themes   -->
     <style name="RejectButton" parent="Theme.AppCompat">
         <item name="colorButtonNormal">@color/colorAccent</item>
         <item name="colorControlHighlight">@color/colorAccent</item>
     </style>
 
-    <!--  Button that uses accent color, primarily as the most important button on the screen  -->
     <style name="FocusButton" parent="Theme.AppCompat">
         <item name="colorButtonNormal">@color/colorAccent</item>
         <item name="colorControlHighlight">@color/colorAccent</item>
