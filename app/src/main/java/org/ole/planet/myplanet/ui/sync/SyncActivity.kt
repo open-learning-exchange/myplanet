@@ -536,7 +536,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                         }
                     }
 
-                    Utilities.toast(activityContext, getString(R.string.planet_is_up_to_date))
                     showSnack(activityContext.findViewById(android.R.id.content), getString(R.string.sync_completed))
 
                     if (prefData.isAlternativeUrl()) {
@@ -773,18 +772,20 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         lifecycleScope.launch {
             if (blockSync) {
                 Utilities.toast(this@SyncActivity, msg)
-                if (msg.startsWith("Config")) {
-                    settingDialog()
-                }
-                if (customProgressDialog.isShowing()) {
-                    customProgressDialog.dismiss()
-                }
+            }
+            if (msg.startsWith("Config")) {
+                settingDialog()
+            }
+            if (customProgressDialog.isShowing()) {
+                customProgressDialog.dismiss()
+            }
+            if (!blockSync) {
+                continueSyncProcess()
+            } else {
                 if (::syncIconDrawable.isInitialized) {
                     syncIconDrawable.stop()
                     syncIconDrawable.selectDrawable(0)
                 }
-            } else {
-                continueSyncProcess()
             }
         }
     }
