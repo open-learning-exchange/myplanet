@@ -71,7 +71,6 @@ class UploadManager @Inject constructor(
     private val voicesRepository: VoicesRepository,
     private val uploadConfigs: UploadConfigs,
     private val resourcesRepository: ResourcesRepository,
-    private val teamsRepository: Lazy<TeamsRepository>,
     private val teamsSyncRepository: Lazy<TeamsSyncRepository>,
     private val apiInterface: ApiInterface,
     private val activitiesRepository: ActivitiesRepository,
