@@ -10,6 +10,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -239,6 +240,23 @@ class CoursesRepositoryImplTest {
 
         val resultUser3 = repository.getMyCourses("user3")
         assertTrue(resultUser3.isEmpty())
+    }
+
+    @Test
+    fun `getMyCoursesFlow suppresses redundant emissions`() = runTest {
+        val course = MyCourse(id = "1", userId = listOf("user1"))
+        // Create an identical copy simulating Room's recreation on query
+        val identicalCourse = MyCourse(id = "1", userId = listOf("user1"))
+
+        coEvery { courseDao.observeAll() } returns flowOf(listOf(course), listOf(identicalCourse))
+        coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
+
+        val emissions = repository.getMyCoursesFlow("user1").toList()
+
+        // DAO emitted twice, but lists are logically identical, so downstream should receive only 1 emission
+        assertEquals(1, emissions.size)
+        assertEquals(1, emissions[0].size)
+        assertEquals("1", emissions[0][0].id)
     }
 
     @Test
