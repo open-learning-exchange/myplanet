@@ -17,6 +17,18 @@ class FeedbackRepositoryImpl @Inject constructor(
     private val gson: Gson
 ) : FeedbackRepository {
 
+    override suspend fun createAndSaveFeedback(
+        user: String?,
+        urgent: String,
+        type: String,
+        message: String,
+        item: String?,
+        state: String?,
+    ) {
+        val feedback = createFeedback(user, urgent, type, message, item, state)
+        saveFeedback(feedback)
+    }
+
     override fun createFeedback(
         user: String?,
         urgent: String,
