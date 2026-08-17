@@ -6,6 +6,7 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.HashMap
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +17,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.Tag
+import org.ole.planet.myplanet.model.CourseProgressState
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
@@ -24,7 +26,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 data class CoursesUiState(
     val courses: List<Course> = emptyList(),
     val map: HashMap<String?, JsonObject> = HashMap(),
-    val progressMap: HashMap<String?, JsonObject>? = null,
+    val progressMap: Map<String, CourseProgressState>? = null,
     val tagsMap: Map<String, List<Tag>> = emptyMap()
 )
 
@@ -42,19 +44,33 @@ class CoursesViewModel @Inject constructor(
     private var isTitleAscending = false
     private var isDateAscending = true
     private var activeSort: SortType? = null
+    private var sortJob: Job? = null
 
     enum class SortType { TITLE, DATE }
 
     fun toggleTitleSort() {
         isTitleAscending = !isTitleAscending
         activeSort = SortType.TITLE
-        _coursesState.value = _coursesState.value.copy(courses = sortCourses(_coursesState.value.courses))
+        applySort()
     }
 
     fun toggleDateSort() {
         isDateAscending = !isDateAscending
         activeSort = SortType.DATE
-        _coursesState.value = _coursesState.value.copy(courses = sortCourses(_coursesState.value.courses))
+        applySort()
+    }
+
+    private fun applySort() {
+        sortJob?.cancel()
+        sortJob = viewModelScope.launch {
+            val currentCourses = _coursesState.value.courses
+            val sortedCourses = withContext(dispatcherProvider.default) {
+                sortCourses(currentCourses)
+            }
+            if (_coursesState.value.courses === currentCourses) {
+                _coursesState.value = _coursesState.value.copy(courses = sortedCourses)
+            }
+        }
     }
 
     private fun sortCourses(courses: List<Course>): List<Course> {
@@ -79,7 +95,7 @@ class CoursesViewModel @Inject constructor(
         validCourses: List<MyCourse>,
         myCourses: List<MyCourse>,
         map: HashMap<String?, JsonObject>,
-        progressMap: HashMap<String?, JsonObject>?,
+        progressMap: Map<String, CourseProgressState>?,
         tagsMap: Map<String, List<Tag>>
     ): CoursesUiState {
         val sortedCourseList = if (isMyCourseLib) {
@@ -173,8 +189,8 @@ class CoursesViewModel @Inject constructor(
                             ?: course.id.takeIf { !it.isNullOrBlank() }
                             ?: course._id
                         val p = progressMap[courseKey] ?: progressMap[course.courseId] ?: progressMap[course.id]
-                        val current = p?.get("current")?.asInt ?: 0
-                        val max = p?.get("max")?.asInt?.takeIf { it > 0 } ?: course.getNumberOfSteps()
+                        val current = p?.current ?: 0
+                        val max = p?.max?.takeIf { it > 0 } ?: course.getNumberOfSteps()
                         when (progressFilter) {
                             "Not Started" -> current == 0
                             "In Progress" -> current > 0 && (max == 0 || current < max)
