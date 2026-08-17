@@ -74,8 +74,20 @@ class TeamViewModel @Inject constructor(
                         teamsRepository.getMyTeamDetailsFlow(userId)
                             .flowOn(dispatcherProvider.io)
                             .collectLatest { list ->
-                            applyFilters(list, currentSearchQuery)
+                                if (list.isEmpty()) {
+                                    val allTeams = withContext(dispatcherProvider.io) {
+                                        teamsRepository.getTeamDetails(userId)
+                                    }
+                                    applyFilters(allTeams, currentSearchQuery)
+                                } else {
+                                    applyFilters(list, currentSearchQuery)
+                                }
+                            }
+                    } else {
+                        val teamList = withContext(dispatcherProvider.io) {
+                            teamsRepository.getTeamDetails(null)
                         }
+                        applyFilters(teamList, currentSearchQuery)
                     }
                 }
                 type == "enterprise" -> {
