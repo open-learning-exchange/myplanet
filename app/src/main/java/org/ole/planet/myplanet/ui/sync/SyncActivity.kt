@@ -121,6 +121,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     var serverAddressAdapter: ServerAddressAdapter? = null
     var serverListAddresses: List<ServerAddress> = emptyList()
     private var isProgressDialogShowing = false
+    private var lastSyncStatus: SyncManager.SyncStatus? = null
     @Inject
     lateinit var configurationsRepository: ConfigurationsRepository
 
@@ -149,6 +150,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         super.onCreate(savedInstanceState)
         initSyncConfigurationCoordinator()
         collectWhenStarted(syncManager.syncStatus) { status ->
+            if (status == lastSyncStatus) return@collectWhenStarted
+            lastSyncStatus = status
             when (status) {
                 is SyncManager.SyncStatus.Idle -> {
                     // Do nothing

@@ -27,6 +27,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import javax.inject.Inject
+import javax.inject.Provider
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -76,7 +77,8 @@ class DownloadService : Service() {
 
     @Inject
     @DownloadPreferences
-    lateinit var preferences: SharedPreferences
+    lateinit var preferencesProvider: Provider<SharedPreferences>
+    private val preferences: SharedPreferences by lazy { preferencesProvider.get() }
 
     @Inject
     @ApplicationScope
