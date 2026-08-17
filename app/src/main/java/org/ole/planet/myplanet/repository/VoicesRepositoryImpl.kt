@@ -32,7 +32,6 @@ class VoicesRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val gson: Gson,
     private val sharedPrefManager: SharedPrefManager,
-    private val userRepositoryLazy: dagger.Lazy<UserRepository>,
     private val teamNotificationDao: TeamNotificationDao,
     private val newsDao: NewsDao,
     private val myLibraryDao: MyLibraryDao
@@ -72,14 +71,6 @@ class VoicesRepositoryImpl @Inject constructor(
         if (toUpdate.isNotEmpty()) {
             newsDao.upsertAll(toUpdate)
         }
-    }
-
-    override suspend fun getUserById(userId: String): UserEntity? {
-        return userRepositoryLazy.get().getUserById(userId)
-    }
-
-    override suspend fun getLibraryResource(resourceId: String): MyLibrary? {
-        return myLibraryDao.getByUnderscoreId(resourceId)
     }
 
     override suspend fun getNewsWithReplies(newsId: String): Pair<News?, List<News>> {
