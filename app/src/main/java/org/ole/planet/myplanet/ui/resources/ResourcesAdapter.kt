@@ -213,12 +213,6 @@ class ResourcesAdapter(
         }
     }
 
-    /**
-     * Shows a real preview of the downloaded resource file (image / video frame / PDF first
-     * page) in [ivPreview] when one can be produced; otherwise falls back to the existing
-     * colored [coverContainer] background + [ivTypeIcon]. Returns the [Job] backing an async
-     * (PDF) render so the caller can cancel it if the holder is rebound/recycled first.
-     */
     private fun bindCover(
         coverContainer: View,
         ivPreview: ImageView,
