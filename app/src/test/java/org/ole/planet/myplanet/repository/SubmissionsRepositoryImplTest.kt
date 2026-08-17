@@ -51,11 +51,13 @@ class SubmissionsRepositoryImplTest {
     private val answerDao: AnswerDao = mockk(relaxed = true)
     private val examDao: ExamDao = mockk(relaxed = true)
     private val questionDao: QuestionDao = mockk(relaxed = true)
-    private val userDao: UserDao = mockk(relaxed = true)
+    private val lazyUserRepository: dagger.Lazy<UserRepository> = mockk(relaxed = true)
+    private val userRepository: UserRepository = mockk(relaxed = true)
     private lateinit var repository: SubmissionsRepositoryImpl
 
     @Before
     fun setUp() {
+        every { lazyUserRepository.get() } returns userRepository
         val teamsRepo = mockk<TeamsRepository>(relaxed = true)
         teamsRepositoryProvider = mockk(relaxed = true)
         every { teamsRepositoryProvider.get() } returns teamsRepo
@@ -74,7 +76,7 @@ class SubmissionsRepositoryImplTest {
             answerDao,
             examDao,
             questionDao,
-            userDao
+            lazyUserRepository
         ), recordPrivateCalls = true)
     }
 
@@ -229,17 +231,70 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `createBulkSurveySubmissions calls getOrCreateSubmission for all users`() = runTest {
+    fun `createBulkSurveySubmissions with empty list does not query or insert`() = runTest {
         val examId = "examId"
-        val userIds = listOf("user1", "user2")
         coEvery { examDao.getById(examId) } returns StepExam(id = examId, courseId = "courseId")
 
-        coEvery { repository.getOrCreateSubmission(any(), any()) } returns mockk()
+        repository.createBulkSurveySubmissions(examId, emptyList())
+
+        coVerify(exactly = 0) { submissionDao.getPendingByUsersAndParent(any(), any()) }
+        coVerify(exactly = 0) { submissionDao.upsertAll(any()) }
+    }
+
+    @Test
+    fun `createBulkSurveySubmissions with all new users bulk inserts all`() = runTest {
+        val examId = "examId"
+        val userIds = listOf("user1", "user2")
+        val parentId = "examId@courseId"
+        coEvery { examDao.getById(examId) } returns StepExam(id = examId, courseId = "courseId")
+        coEvery { submissionDao.getPendingByUsersAndParent(userIds, parentId) } returns emptyList()
 
         repository.createBulkSurveySubmissions(examId, userIds)
 
-        coVerify(exactly = 1) { repository.getOrCreateSubmission("user1", "examId@courseId") }
-        coVerify(exactly = 1) { repository.getOrCreateSubmission("user2", "examId@courseId") }
+        coVerify(exactly = 1) { submissionDao.getPendingByUsersAndParent(userIds, parentId) }
+        coVerify(exactly = 1) {
+            submissionDao.upsertAll(match {
+                it.size == 2 &&
+                it.map { sub -> sub.userId }.containsAll(userIds) &&
+                it.all { sub -> sub.parentId == parentId && sub.status == "pending" && sub.type == "survey" }
+            })
+        }
+    }
+
+    @Test
+    fun `createBulkSurveySubmissions with mixed users only inserts new users`() = runTest {
+        val examId = "examId"
+        val userIds = listOf("user1", "user2", "user3")
+        val parentId = "examId@courseId"
+        coEvery { examDao.getById(examId) } returns StepExam(id = examId, courseId = "courseId")
+        val existingSubmission = Submission().apply { userId = "user2"; this.parentId = parentId; status = "pending" }
+        coEvery { submissionDao.getPendingByUsersAndParent(userIds, parentId) } returns listOf(existingSubmission)
+
+        repository.createBulkSurveySubmissions(examId, userIds)
+
+        coVerify(exactly = 1) { submissionDao.getPendingByUsersAndParent(userIds, parentId) }
+        coVerify(exactly = 1) {
+            submissionDao.upsertAll(match {
+                it.size == 2 &&
+                it.map { sub -> sub.userId }.containsAll(listOf("user1", "user3"))
+            })
+        }
+    }
+
+    @Test
+    fun `createBulkSurveySubmissions with all existing users does not insert`() = runTest {
+        val examId = "examId"
+        val userIds = listOf("user1", "user2")
+        val parentId = "examId@courseId"
+        coEvery { examDao.getById(examId) } returns StepExam(id = examId, courseId = "courseId")
+        val existing1 = Submission().apply { userId = "user1"; this.parentId = parentId; status = "pending" }
+        val existing2 = Submission().apply { userId = "user2"; this.parentId = parentId; status = "pending" }
+        coEvery { submissionDao.getPendingByUsersAndParent(userIds, parentId) } returns listOf(existing1, existing2)
+
+        repository.createBulkSurveySubmissions(examId, userIds)
+
+        coVerify(exactly = 1) { submissionDao.getPendingByUsersAndParent(userIds, parentId) }
+        coVerify(exactly = 0) { submissionDao.upsertAll(any()) }
     }
 
     @Test
@@ -418,7 +473,7 @@ class SubmissionsRepositoryImplTest {
         // blob, whose _attachments were stripped for storage safety.
         val freshUser = mockk<UserEntity>()
         every { freshUser.serialize() } returns JsonObject().apply { addProperty("_id", "fresh_user") }
-        coEvery { userDao.getById("u1") } returns freshUser
+        coEvery { userRepository.getUserById("u1") } returns freshUser
 
         val submission = Submission().apply {
             id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
@@ -437,7 +492,7 @@ class SubmissionsRepositoryImplTest {
         every { NetworkUtils.getDeviceName() } returns "device"
         every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
 
-        coEvery { userDao.getById(any()) } returns null
+        coEvery { userRepository.getUserById(any()) } returns null
 
         val submission = Submission().apply {
             id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"

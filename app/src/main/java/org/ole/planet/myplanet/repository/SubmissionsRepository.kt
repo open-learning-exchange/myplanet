@@ -62,4 +62,6 @@ interface SubmissionsRepository {
     suspend fun generateMultipleSubmissionsPdf(submissionIds: List<String>, examTitle: String): File?
     suspend fun getPendingExamResults(): List<Submission>
     suspend fun getPendingSubmissionsForUpload(): List<Submission>
+    suspend fun getPendingSubmitPhotosUploads(): List<SubmitPhotos>
+    suspend fun markSubmitPhotosUploaded(localId: String, remoteId: String, rev: String): Boolean
 }
