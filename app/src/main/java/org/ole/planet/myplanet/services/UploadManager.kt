@@ -65,7 +65,6 @@ class UploadManager @Inject constructor(
     private val uploadCoordinator: UploadCoordinator,
     private val uploadRepository: UploadRepository,
     private val retryQueue: RetryQueue,
-    private val personalsRepository: PersonalsRepository,
     private val userRepository: UserRepository,
     private val chatRepository: ChatRepository,
     private val voicesRepository: VoicesRepository,
