@@ -48,7 +48,7 @@ class TakeCourseViewModelTest {
         coEvery { coursesRepository.getCourseById(courseId) } returns course
         coEvery { coursesRepository.getCourseSteps(courseId) } returns steps
         coEvery { progressRepository.getCourseProgress(listOf(courseId), user?.id) } returns
-            hashMapOf<String?, JsonObject>(courseId to JsonObject().apply { addProperty("current", currentProgress) })
+            hashMapOf(courseId to org.ole.planet.myplanet.model.CourseProgressState(current = currentProgress, max = steps.size))
     }
 
     @Before
@@ -118,7 +118,7 @@ class TakeCourseViewModelTest {
             MyCourse().apply { courseId = otherCourseId }
         coEvery { coursesRepository.getCourseSteps(otherCourseId) } returns emptyList()
         coEvery { progressRepository.getCourseProgress(listOf(otherCourseId), any()) } returns
-            hashMapOf<String?, JsonObject>()
+            hashMapOf()
 
         viewModel.loadCourse(courseId)
         advanceUntilIdle()
