@@ -113,6 +113,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     @Inject lateinit var userRepository: UserRepository
     @Inject lateinit var ttsManager: TTSManager
     private var authSessionUpdater: AuthSessionUpdater? = null
+
     private var hasPromptedThisSession: Boolean = false
 
     private val audioRecordListener = object : OnAudioRecordListener {
