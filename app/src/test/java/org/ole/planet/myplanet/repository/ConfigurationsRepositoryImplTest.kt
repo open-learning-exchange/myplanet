@@ -8,7 +8,9 @@ import com.google.gson.JsonPrimitive
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.runs
 import io.mockk.verify
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -21,6 +23,7 @@ import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -600,5 +603,52 @@ class ConfigurationsRepositoryImplTest {
         assertTrue(result is ConfigurationsRepository.ConfigurationResult.Failure)
 
         io.mockk.unmockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
+    }
+
+    @Test
+    fun `clearFirstRunStorageAndSetFlag sets firstRun to false when conditions are met`() = runTest(testDispatcher) {
+        every { sharedPrefManager.getFirstRun() } returns true
+        every { sharedPrefManager.setFirstRun(false) } just runs
+
+        io.mockk.mockkObject(FileUtils)
+        val mockFile = mockk<java.io.File>(relaxed = true)
+        every { FileUtils.getOlePath(context) } returns "mock_path"
+        every { mockFile.isDirectory } returns true
+        every { mockFile.listFiles() } returns arrayOf()
+
+        // We will not mock File constructor as it causes StackOverflow.
+        // Instead, we just let it use the real File for the dummy path,
+        // since we just want to verify setFirstRun is called.
+        // File("mock_path").isDirectory will just return false on most systems,
+        // which skips the listFiles block. We mainly care about setFirstRun.
+
+        repository.clearFirstRunStorageAndSetFlag(true)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        verify { sharedPrefManager.setFirstRun(false) }
+
+        io.mockk.unmockkObject(FileUtils)
+    }
+
+    @Test
+    fun `getQueuedDownloads returns null when prefs is null`() = runTest(testDispatcher) {
+        every { sharedPrefManager.getConcatenatedLinks() } returns null
+
+        val result = repository.getQueuedDownloads()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `getQueuedDownloads returns decoded list when prefs has valid JSON`() = runTest(testDispatcher) {
+        every { sharedPrefManager.getConcatenatedLinks() } returns "[\"link1\", \"link2\"]"
+
+        val result = repository.getQueuedDownloads()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(2, result?.size)
+        assertEquals("link1", result?.get(0))
+        assertEquals("link2", result?.get(1))
     }
 }
