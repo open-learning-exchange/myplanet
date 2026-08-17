@@ -210,8 +210,25 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         } else {
             examId
         }
-        userIds.forEach { userId ->
-            getOrCreateSubmission(userId, parentId)
+
+        userIds.chunked(500).forEach { chunk ->
+            val existingSubmissions = submissionDao.getPendingByUsersAndParent(chunk, parentId)
+            val existingUserIds = existingSubmissions.mapNotNull { it.userId }.toSet()
+            val newSubmissions = chunk.filter { it !in existingUserIds }.map { userId ->
+                Submission().apply {
+                    id = UUID.randomUUID().toString()
+                    this.userId = userId
+                    this.parentId = parentId
+                    status = "pending"
+                    type = "survey"
+                    startTime = Date().time
+                    lastUpdateTime = startTime
+                    answers = mutableListOf()
+                }
+            }
+            if (newSubmissions.isNotEmpty()) {
+                submissionDao.upsertAll(newSubmissions)
+            }
         }
     }
 

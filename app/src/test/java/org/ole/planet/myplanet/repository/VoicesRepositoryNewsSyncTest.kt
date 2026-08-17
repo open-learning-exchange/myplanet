@@ -75,7 +75,6 @@ class VoicesRepositoryNewsSyncTest {
             mockk<DispatcherProvider>(relaxed = true),
             Gson(),
             sharedPrefManager,
-            mockk<dagger.Lazy<UserRepository>>(relaxed = true),
             mockk<TeamNotificationDao>(relaxed = true),
             newsDao,
             mockk<MyLibraryDao>(relaxed = true),

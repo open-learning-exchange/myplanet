@@ -48,7 +48,6 @@ class VoicesRepositoryImplTest {
                 dispatcherProvider,
                 gsonInstance,
                 sharedPrefManager,
-                dagger.Lazy { userRepository },
                 teamNotificationDao,
                 newsDao,
                 myLibraryDao
@@ -183,12 +182,7 @@ class VoicesRepositoryImplTest {
 
     @Test
     fun `deleteNews recursively deletes replies`() = testScope.runTest {
-        val reply1 = News().apply { id = "reply1_id" }
-        val reply2 = News().apply { id = "reply2_id" }
-
-        coEvery { newsDao.getDirectReplies("newsId") } returns listOf(reply1)
-        coEvery { newsDao.getDirectReplies("reply1_id") } returns listOf(reply2)
-        coEvery { newsDao.getDirectReplies("reply2_id") } returns emptyList()
+        coEvery { newsDao.getNewsAndRepliesIds("newsId") } returns listOf("newsId", "reply1_id", "reply2_id")
 
         repository.deleteNews("newsId")
 
@@ -244,15 +238,4 @@ class VoicesRepositoryImplTest {
         assertEquals("local-uuid-1234", slot.captured.replyTo)
     }
 
-    @Test
-    fun `getUserById delegates to userRepository`() = testScope.runTest {
-        val testUserId = "test_user_123"
-        val mockUser = mockk<UserEntity>()
-
-        coEvery { userRepository.getUserById(testUserId) } returns mockUser
-
-        val result = repository.getUserById(testUserId)
-
-        assertEquals(mockUser, result)
-    }
 }
