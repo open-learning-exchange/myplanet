@@ -32,7 +32,22 @@ class RatingsRepository {
     String type,
     String itemId,
     String? userId,
-  ) => _dao.watchForItem(type, itemId).map((rows) {
+  ) => _dao.watchForItem(type, itemId).map((rows) => _summarize(rows, userId));
+
+  /// One-shot port of `RatingsRepositoryImpl.getRatingSummary` — the
+  /// completion-rating flow (`TakeCourseFragment.showCourseRatingDialogAndFinish`)
+  /// needs a single answer, not a stream, to decide whether to show the
+  /// dialog. Shares the aggregation with [watchSummary] so the two agree.
+  Future<RatingSummary> summary(
+    String type,
+    String itemId,
+    String? userId,
+  ) async {
+    final rows = await _dao.forItem(type, itemId);
+    return _summarize(rows, userId);
+  }
+
+  RatingSummary _summarize(List<RatingRow> rows, String? userId) {
     RatingRow? user;
     if (userId != null) {
       for (final row in rows) {
@@ -52,7 +67,7 @@ class RatingsRepository {
       userRating: user?.rate,
       userComment: user?.comment,
     );
-  });
+  }
 
   Future<void> submit({
     required String type,

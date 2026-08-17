@@ -84,4 +84,50 @@ void main() {
     expect(await repository.markUploaded(pending.single.id), 1);
     expect(await repository.pendingUploads(), isEmpty);
   });
+
+  test(
+    'summary() one-shot agrees with watchSummary and reports no user row',
+    () async {
+      // Two ratings, neither from user-1.
+      await repository.submit(
+        type: 'course',
+        itemId: 'course-1',
+        title: 'Course',
+        userId: 'user-2',
+        rate: 4,
+      );
+      await repository.submit(
+        type: 'course',
+        itemId: 'course-1',
+        title: 'Course',
+        userId: 'user-3',
+        rate: 2,
+      );
+
+      final oneShot = await repository.summary('course', 'course-1', 'user-1');
+      final streamed = await repository
+          .watchSummary('course', 'course-1', 'user-1')
+          .first;
+
+      expect(oneShot.total, 2);
+      expect(oneShot.average, 3);
+      expect(oneShot.userRating, isNull, reason: 'user-1 has not rated');
+      // The one-shot and stream must agree.
+      expect(oneShot.total, streamed.total);
+      expect(oneShot.average, streamed.average);
+      expect(oneShot.userRating, streamed.userRating);
+
+      // Once user-1 rates, the one-shot picks up their row.
+      await repository.submit(
+        type: 'course',
+        itemId: 'course-1',
+        title: 'Course',
+        userId: 'user-1',
+        rate: 5,
+      );
+      final after = await repository.summary('course', 'course-1', 'user-1');
+      expect(after.userRating, 5);
+      expect(after.total, 3);
+    },
+  );
 }

@@ -1286,6 +1286,166 @@ four have since been harvested; one remains deferred:
 
 ---
 
-**Last updated**: 2026-08-16 (Phase 38 complete)
+## Harvest audit — the 2026-08-14/15/16 commit batch
+
+The 31 commits after `33cedc3c3` (up to `c18d15808`) were audited. One was
+harvested; three were already-correct (the port's design sidesteps the bug),
+fourteen were architectural/perf/UI no-ops, and three landed on unported
+features (deferred):
+
+**Harvested.**
+
+- `c5141b658` (courses: smoother completion rating) — **harvested.** On course
+  finish the Kotlin now checks `ratingsRepository.getRatingSummary("course",
+  cId, userId)` and, if `userRating` is null, shows the rating dialog before
+  popping; an already-rated course pops immediately. The port had only the
+  reactive `watchSummary` (`Stream`), so a one-shot `RatingsRepository.summary`
+  Future was added (reusing `watchSummary`'s aggregation, backed by a new
+  `RatingDao.forItem` Future), and `take_course_screen.dart`'s finish handler
+  now mirrors the Kotlin: unrated → `RatingDialog` then pop, rated → pop. Three
+  widget tests cover the unrated/rated/dismissed paths; a repository test
+  locks in the `summary()` one-shot. The mandatory-survey-toast half of the
+  Kotlin commit is **deferred** (see below).
+
+**Already correct (the port's design sidesteps the bug).**
+
+- `c6c4030dc` (survey submission syncing) fixed two `SubmissionDao` gaps: (1)
+  `countPendingOfflineSubmissions`/`getPendingSubmissions` now match `_id IS
+  NULL` as well as `_id = ''`; (2) `updateStatus`/`updateStatusAndLastUpdate`
+  now set `isUpdated = 1` so a status change re-queues the row for upload. The
+  port's `pendingUploads(userId)` keys pending-ness on `isUpdated` alone (no
+  `_id`/`couchId` predicate), so null-`_id` rows are already included, and
+  every submission status write in the port (`markComplete`, exam/survey
+  creation) already sets `isUpdated: true` — there is no
+  `updateStatus`-without-`isUpdated` path. Both halves are no-ops.
+- `e8b66b82d` (progress repository data fetching) replaced a
+  `submission.parentId.contains(courseId)` substring match with an exact
+  `parentId.split("@")[1]` set lookup, fixing mis-attribution when one courseId
+  is a substring of another. The port's `ProgressRepository` already routes
+  `parentId` through `_examIdFromParent` (`split("@")[0]` → examId → step →
+  courseId), an exact path that never substring-matched. No-op.
+- `602c178ad` (regex normalizing) extracted `Utilities.normalizeText` (NFD +
+  strip diacritics + lowercase). The port's `core/utils/text_utils.dart`
+  `normalizeText` (`removeDiacritics(value).toLowerCase()`, explicitly a port
+  of `Utilities.normalizeText`) already feeds `titleNormal`/`courseTitleNormal`
+  in both mappers. No-op.
+
+**Architectural no-ops.**
+
+- `02368af6b` (view pager listening) — leaks-fix: stores the `ViewPager2`
+  page-change callback and unregisters it in `onDestroyView`. Flutter's
+  `PageView`/`onPageChanged` has no manual register/unregister and no leak.
+- `b35ba5555` (transaction checkpoint applying) — `SharedPreferences.commit()`
+  → `apply()` (sync → async) for the sync-checkpoint `putInt`. The port keeps
+  no persisted sync checkpoint — each `syncCourses`/`sync*` walk starts `skip`
+  at 0 in memory — so there is nothing to make async. (Cross-run
+  checkpoint/resume is itself not yet ported.)
+- `9bd6a8ed0` (status dashboard collecting) — dedupes consecutive equal
+  `SyncStatus` emissions before notifying. Riverpod providers already emit
+  only on distinct state by default; the port's dashboard sync state is a
+  `StateController`/notifier whose value comparison absorbs the duplicate.
+- `1b2eb4346` (network utils flowing) — `SharingStarted.WhileSubscribed()` →
+  `WhileSubscribed(5_000)`. The port reads connectivity from
+  `connectivity_plus`'s stream directly (no `stateIn` replay subject), so the
+  keepalive gap does not arise.
+- `84e6c147b` (base container dispatcher providing) — makes `startDownload`
+  `suspend` and dispatches `DownloadUtils.openPriorityDownloadService` to IO.
+  Dart's download start is already an async event-loop call (no blocking
+  main-thread disk/IO); the dispatcher concept does not map.
+- `a08fc5662` (notification repository destination view modelling) — two
+  parts: (1) `getEffectiveTeamName`/`getEffectiveTeamType` now treat a
+  blank-string nav arg as absent (`.takeIf { isNotBlank() }`). The port reads
+  `teamName` from the watched `TeamRow`, not a blank-string nav arg, so the
+  edge case does not arise. (2) Adds `subType` to `AppNotification` for
+  destination-view routing — see **deferred** below.
+- `d5f9998e1` (database service module removal) — deletes the vestigial
+  `DatabaseService`/`DatabaseModule` and updates docs. The port has no
+  `DatabaseService` equivalent (drift `AppDatabase` is used directly).
+  Doc-only for the port.
+- `a3b76af54` (voices payload diffing), `c18d15808` (enterprises reports
+  payload diffing) — RecyclerView `onBindViewHolder` payload-bundle
+  diffing; Flutter's widget `diff`/rebuild has no payload-bundle concept.
+- `9699e019c` (content item callback diffing) — DiffUtil `contentSelector`;
+  same as above.
+- `32cab5381`, `c03eb31e2` (workflow test sharding / automerge retrying) —
+  CI tooling, not the app.
+- `db96330a2`, `33cedc3c3`-style import/version bumps — already covered in
+  the prior batch.
+
+**Performance/no-op refactors (same behaviour, faster or cleaner).**
+
+- `70f98be88` (upload shelf api interface) — drops an unused `apiInterface`
+  ctor param in favour of a member. DI tidy; the port's shelf uploader takes
+  its api via the repository. No-op.
+- `178ff70d6` (courses repository flowing) — adds `.distinctUntilChanged` +
+  `.flowOn(default)` to a courses `Flow`. Riverpod `StreamProvider` already
+  re-emits on distinct stream values; the port's `courseProvider` is a
+  `StreamProvider`. Perf, not behaviour.
+- `8e0a813fa` (submissions dao bulk inserting) — replaces a per-user
+  `getOrCreateSubmission` loop with a batched `getPendingByUsersAndParent`
+  (`chunked(500)`) lookup. Same result, fewer round-trips. The port's
+  equivalent survey-distribution path is already batched.
+- `c390e1343` (courses repository batch querying) — batches existing-course
+  lookups (`chunked(300)`) during sync instead of per-row. The port's
+  courses sync already preserves shelf membership with one per-page read.
+- `d4ae46fad` (voices reply bulk querying) — replaces a recursive
+  reply-id walk with a single recursive-CTE query. Same thread set; the
+  port collects replies via its own query.
+- `4bdbe5867` (converters type token caching) — caches Gson `TypeToken`s
+  to avoid per-call allocation. The port uses drift columns / `jsonDecode`
+  directly, so there is no `TypeToken` reuse to do.
+- `a8c444f4c` (time logger date formatting) — `SimpleDateFormat` →
+  `DateTimeFormatter` (thread-safe) on a perf-log line. Internal refactor.
+- `1c631e749` (teams repository dao querying) — adds `getByIds`/
+  `getResourceIdsByTeamId` (with a lenient `docType IS NULL OR '' OR
+  'resourceLink'/'link'` match) and `.distinctUntilChanged()`. The port's
+  `watchResourceLinks` already filters `docType = 'resourceLink'` on a
+  fresh schema (no legacy null/`link` rows to be lenient about); the
+  `distinctUntilChanged` is Riverpod's default.
+- `03ebe3aa1` (resource viewer view modelling) — moves
+  `getExternalFilesDir` into a ViewModel and drops a redundant
+  `isExtractingText` flag. Internal refactor of the viewer's text
+  extraction; the port's viewer reads the file inline.
+- `d25620b0d` (thumbnail preview loading) — evicts a `PdfThumbnailLoader`
+  cache on `onTrimMemory`. The port has no PDF-thumbnail image cache to
+  evict (PDFs render through the shared viewer).
+- `c9ee679eb` (guest all selecting) — `lifecycleScope` →
+  `viewLifecycleOwner.lifecycleScope` and null-guards `checkList` against a
+  destroyed view. Dart has no fragment-vs-view lifecycle scope split; the
+  port's guest-selection guard is its widget-tree nullability.
+
+**Minor UI (cosmetic or styling-only; the port carries its own layout).**
+
+- `73d04bc51` (courses empty state controling) — hides the search/chip/
+  view-toggle controls when the courses list is empty. The port's empty
+  state renders its own affordances; tracked as a minor UI nuance, not
+  harvested this pass.
+- `658f49b00` (survey title ordering) — adds explicit title-asc/desc sort
+  options. The port's `SurveysScreen` already exposes both
+  `SurveySort.titleAscending` and `titleDescending`. Already present.
+- `0b4f3c14a` (user profile landscaping) — dimension rename +
+  layout sizing. Cosmetic.
+- `295d07f5c` (activities chart landscaping) — makes `computeMonthlyCounts`
+  test-visible and calls `setFitBars` (an MPAndroidChart styling API). The
+  port's activities chart uses a different chart library.
+- `e8b69b591` (list filter icon spacing) — pure layout padding/dimensions.
+
+**Deferred (lands on unported features).**
+
+- `c5141b658`'s mandatory-survey toast — the Kotlin, on finish, also shows a
+  toast if the course has an attached mandatory survey the user has not yet
+  submitted. The port's `Surveys` table has no `courseId`, so
+  course-attached surveys are not modeled; the toast is not portable to the
+  current schema.
+- `a08fc5662`'s `subType` on `AppNotification` — enables notification
+  destination-view routing the port does not yet have (the port's
+  notification `onTap` only marks-as-read; there is no navigation to a team/
+  course/resource destination). The field would land with that routing.
+- `437a3d28a` (enterprises finances date picking) — carried over from the
+  prior batch; enterprises is not ported.
+
+---
+
+**Last updated**: 2026-08-17 (Phase 38 complete; `c5141b658` harvest)
 **Phase**: 38 of N (27 of 28 UI packages have a screen — see Status for what that does and does
 not mean)

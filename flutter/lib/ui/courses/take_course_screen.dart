@@ -8,6 +8,7 @@ import '../../providers/activities_provider.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/courses_providers.dart';
 import '../../providers/session_provider.dart';
+import '../ratings/rating_dialog.dart';
 
 /// Mints a local key for a new `course_progress` row. Mirrors
 /// `RatingsRepository`'s `_defaultId` — the row's identity is reused on
@@ -155,7 +156,7 @@ class _CourseContent extends ConsumerWidget {
           onNext: currentStep < steps.length - 1
               ? () => goToStep(currentStep + 1)
               : null,
-          onFinish: () => context.pop(),
+          onFinish: () => _onFinish(context, ref),
           onToggleMembership: () => _toggleMembership(context, ref, isMyCourse),
         ),
       ],
@@ -184,6 +185,40 @@ class _CourseContent extends ConsumerWidget {
           .read(courseProgressUploaderProvider)
           .queuePending(config: config);
     }
+  }
+
+  /// Port of `TakeCourseFragment.onFinishStep` /
+  /// `showCourseRatingDialogAndFinish`. Finishing a course pops the screen,
+  /// but first — if the user has not rated this course yet — offers the
+  /// rating dialog, exactly as the Kotlin does on its finish step. The dialog
+  /// dismiss (submit or cancel) pops the course, matching the Kotlin's
+  /// `setOnDismissListener`.
+  ///
+  /// The Kotlin also gates one specific course (the MyPlanet Onboarding course)
+  /// behind an unfinished-survey toast before reaching here. That half is
+  /// not ported: course-attached surveys are not modelled yet (the `Surveys`
+  /// table carries no `courseId`, and the exam mapper drops `type != 'exam'`
+  /// docs), so `hasUnfinishedSurveys` has nothing to query. See the migration
+  /// doc's spec-debt note for commit `c5141b658`.
+  Future<void> _onFinish(BuildContext context, WidgetRef ref) async {
+    final userId = this.userId;
+    final summary = await ref
+        .read(ratingsRepositoryProvider)
+        .summary('course', course.id, userId);
+    if (!context.mounted) return;
+
+    final hasRated = summary.userRating != null;
+    if (!hasRated) {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => RatingDialog(
+          target: (type: 'course', itemId: course.id),
+          title: course.courseTitle ?? '',
+        ),
+      );
+      if (!context.mounted) return;
+    }
+    context.pop();
   }
 
   Future<void> _toggleMembership(

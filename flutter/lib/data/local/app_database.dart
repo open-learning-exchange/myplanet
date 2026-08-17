@@ -1293,6 +1293,13 @@ class RatingDao extends DatabaseAccessor<AppDatabase> with _$RatingDaoMixin {
     ratings,
   )..where((row) => row.type.equals(type) & row.item.equals(itemId))).watch();
 
+  /// One-shot read of the same rows [watchForItem] streams, for the
+  /// completion-rating check (`RatingsRepository.summary`) that needs a single
+  /// answer rather than a subscription.
+  Future<List<RatingRow>> forItem(String type, String itemId) => (select(
+    ratings,
+  )..where((row) => row.type.equals(type) & row.item.equals(itemId))).get();
+
   Future<RatingRow?> findUserRating(
     String type,
     String itemId,
