@@ -163,7 +163,6 @@ class UploadManagerTest {
         uploadManager = spyk(
             UploadManager(
                 context,
-                submissionsRepository,
                 sharedPrefManager,
                 gson,
                 uploadCoordinator,

@@ -59,7 +59,6 @@ private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
 @Singleton
 class UploadManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val submissionsRepository: SubmissionsRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val gson: Gson,
     private val uploadCoordinator: UploadCoordinator,
