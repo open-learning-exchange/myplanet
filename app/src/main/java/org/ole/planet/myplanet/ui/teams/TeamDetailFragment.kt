@@ -161,7 +161,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
     }
 
     private fun renderPlaceholder() {
-        binding.title.text = directTeamName ?: getString(R.string.loading_teams)
+        binding.title.text = directTeamName?.takeIf { it.isNotBlank() } ?: getString(R.string.loading_teams)
         binding.subtitle.text = directTeamType ?: ""
         binding.btnAddDoc.isEnabled = false
         binding.btnLeave.isEnabled = false
