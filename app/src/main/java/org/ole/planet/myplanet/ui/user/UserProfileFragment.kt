@@ -87,7 +87,7 @@ class UserProfileFragment : Fragment() {
                 val uri = result.data?.data ?: return@registerForActivityResult
                 photoURI  = uri
                 startIntent(photoURI)
-                val imageSize = resources.getDimensionPixelSize(R.dimen.user_image_size)
+                val imageSize = resources.getDimensionPixelSize(R.dimen.profile_image_size)
                 ImageUtils.loadProfileImage(uri.toString(), binding.image, imageSize)
             }
         }
@@ -216,7 +216,7 @@ class UserProfileFragment : Fragment() {
 
         if (!isAdded) return
 
-        val imageSize = resources.getDimensionPixelSize(R.dimen.user_image_size)
+        val imageSize = resources.getDimensionPixelSize(R.dimen.profile_image_size)
         Glide.with(this)
             .load(profileImageUrl)
             .diskCacheStrategy(DiskCacheStrategy.ALL)
