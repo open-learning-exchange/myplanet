@@ -30,11 +30,11 @@ import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
+import org.ole.planet.myplanet.repository.SyncRepository
+import org.ole.planet.myplanet.repository.SyncUiState
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.repository.SyncRepository
-import org.ole.planet.myplanet.repository.SyncUiState
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
