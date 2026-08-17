@@ -47,7 +47,7 @@ class TeamCalendarViewModel @Inject constructor(
         meetupId: String, title: String, description: String,
         startDate: Long, endDate: Long, startTime: String,
         endTime: String, meetupLocation: String, meetupLink: String,
-        recurring: String
+        recurring: String, recurringNumber: Int = 10
     ): Boolean {
         return eventsRepository.updateMeetup(
             meetupId = meetupId,
@@ -59,7 +59,24 @@ class TeamCalendarViewModel @Inject constructor(
             endTime = endTime,
             meetupLocation = meetupLocation,
             meetupLink = meetupLink,
-            recurring = recurring
+            recurring = recurring,
+            recurringNumber = recurringNumber
         )
+    }
+
+    suspend fun deleteMeetup(meetupId: String, teamId: String): Boolean {
+        val success = eventsRepository.deleteMeetup(meetupId)
+        if (success && teamId.isNotEmpty()) {
+            fetchMeetups(teamId)
+        }
+        return success
+    }
+
+    suspend fun excludeDateFromMeetup(meetupId: String, dateString: String, teamId: String): Boolean {
+        val success = eventsRepository.excludeDateFromMeetup(meetupId, dateString)
+        if (success && teamId.isNotEmpty()) {
+            fetchMeetups(teamId)
+        }
+        return success
     }
 }

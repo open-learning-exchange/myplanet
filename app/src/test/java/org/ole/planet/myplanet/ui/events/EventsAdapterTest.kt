@@ -14,6 +14,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLooper
 
+import org.ole.planet.myplanet.R
+
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.P], application = Application::class)
 class EventsAdapterTest {
@@ -22,13 +24,16 @@ class EventsAdapterTest {
     private lateinit var adapter: EventsAdapter
 
     private var clickedMeetup: Meetup? = null
+    private var deletedMeetup: Meetup? = null
 
     @Before
     fun setup() {
         context = ApplicationProvider.getApplicationContext()
-        adapter = EventsAdapter { meetup ->
-            clickedMeetup = meetup
-        }
+        context.setTheme(R.style.AppTheme)
+        adapter = EventsAdapter(
+            onMeetupClick = { meetup -> clickedMeetup = meetup },
+            onDeleteClick = { meetup -> deletedMeetup = meetup }
+        )
     }
 
     @Test
@@ -94,8 +99,11 @@ class EventsAdapterTest {
         assertEquals("New Location", holder.binding.tvLocation.text.toString())
         assertEquals("Old Desc", holder.binding.tvDescription.text.toString())
 
-        holder.binding.root.performClick()
+        holder.binding.root.callOnClick()
         assertEquals("New Title", clickedMeetup?.title)
         assertEquals("New Location", clickedMeetup?.meetupLocation)
+
+        holder.binding.btnDelete.callOnClick()
+        assertEquals("New Title", deletedMeetup?.title)
     }
 }
