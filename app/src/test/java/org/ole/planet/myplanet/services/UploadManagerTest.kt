@@ -137,7 +137,6 @@ class UploadManagerTest {
     private val voicesRepository: VoicesRepository = mockk(relaxed = true)
     private val uploadConfigs: UploadConfigs = mockk(relaxed = true)
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
-    private val teamsRepository: Lazy<TeamsRepository> = mockk(relaxed = true)
     private val teamsSyncRepository: Lazy<TeamsSyncRepository> = mockk(relaxed = true)
     private val apiInterface: ApiInterface = mockk(relaxed = true)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
@@ -175,7 +174,6 @@ class UploadManagerTest {
                 voicesRepository,
                 uploadConfigs,
                 resourcesRepository,
-                teamsRepository,
                 teamsSyncRepository,
                 apiInterface,
                 activitiesRepository,

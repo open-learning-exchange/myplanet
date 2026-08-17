@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.ratings
 
+import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -28,10 +29,20 @@ class RatingsFragment : DialogFragment() {
     var type: String? = ""
     var title: String? = ""
     private var ratingListener: OnRatingChangeListener? = null
+    private var dismissListener: (() -> Unit)? = null
     private var isUserReady = false
     private var currentSubmitState: RatingsViewModel.SubmitState = RatingsViewModel.SubmitState.Idle
     fun setListener(listener: OnRatingChangeListener?) {
         this.ratingListener = listener
+    }
+
+    fun setOnDismissListener(listener: (() -> Unit)?) {
+        this.dismissListener = listener
+    }
+
+    override fun onDismiss(dialog: DialogInterface) {
+        super.onDismiss(dialog)
+        dismissListener?.invoke()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -169,6 +180,8 @@ class RatingsFragment : DialogFragment() {
     }
 
     companion object {
+        const val TAG = "RatingsFragment"
+
         fun newInstance(type: String?, id: String?, title: String?): RatingsFragment {
             val fragment = RatingsFragment()
             val b = Bundle()
