@@ -364,13 +364,19 @@ class BellDashboardFragment : BaseDashboardFragment() {
             }
             homeItemClickListener?.openMyFragment(fragment)
         }
-        binding.homeCardLibrary.myLibraryImageButton.setOnClickListener {
+        val openLibraryAction = {
             if (user?.id?.startsWith("guest") == true) {
                 guestDialog(requireContext())
             } else {
-                homeItemClickListener?.openMyFragment(ResourcesFragment())
+                if (userLibrary.isNotEmpty()) {
+                    homeItemClickListener?.openMyFragment(ResourcesFragment())
+                } else {
+                    homeItemClickListener?.openCallFragment(ResourcesFragment())
+                }
             }
         }
+        binding.homeCardLibrary.llHomeLibrary.setOnClickListener { openLibraryAction() }
+        binding.homeCardLibrary.myLibraryImageButton.setOnClickListener { openLibraryAction() }
         binding.homeCardCourses.myCoursesImageButton.setOnClickListener {
             if (user?.id?.startsWith("guest") == true) {
                 guestDialog(requireContext())

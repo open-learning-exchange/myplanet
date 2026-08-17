@@ -58,6 +58,7 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 open class BaseDashboardFragment : DashboardPluginFragment() {
     private val viewModel: DashboardViewModel by viewModels()
     private val newsViewModel: NewsViewModel by viewModels()
+    protected var userLibrary: List<MyLibrary> = emptyList()
     private var fullName: String? = null
     private val params: FlexboxLayout.LayoutParams by lazy {
         FlexboxLayout.LayoutParams(
@@ -187,6 +188,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     }
 
     private fun renderMyLibrary(dbMylibrary: List<MyLibrary>) {
+        userLibrary = dbMylibrary
         val flexboxLayout = view?.findViewById<FlexboxLayout>(R.id.flexboxLayout)
         flexboxLayout?.removeAllViews()
         flexboxLayout?.flexDirection = FlexDirection.ROW
@@ -198,7 +200,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
                     if (model?.id?.startsWith("guest") == true) {
                         DialogUtils.guestDialog(requireContext())
                     } else {
-                        homeItemClickListener?.openMyFragment(ResourcesFragment())
+                        homeItemClickListener?.openCallFragment(ResourcesFragment())
                     }
                 }
             }

@@ -90,7 +90,7 @@ class ResourcesViewModelTest {
     }
 
     @Test
-    fun `getLibraryListModels when user has joined resources returns user resources`() = runTest {
+    fun `getLibraryListModels maps enriched libraries to ResourceListModels`() = runTest {
         val mockLibrary = MyLibrary().apply {
             id = "lib1"
             title = "Library 1"
@@ -102,7 +102,7 @@ class ResourcesViewModelTest {
             name = "Tag 1"
         }
         val mockResourceItem = mockk<org.ole.planet.myplanet.model.ResourceItem>(relaxed = true)
-        coEvery { resourcesRepository.getResourceListModels(true, "modelId") } returns listOf(
+        coEvery { resourcesRepository.getResourceListModels(any(), any()) } returns listOf(
             org.ole.planet.myplanet.model.ResourceListModel(mockLibrary, mockResourceItem, mockRating, listOf(org.ole.planet.myplanet.model.TagItem(mockTag.id, mockTag.name)))
         )
 
@@ -110,48 +110,5 @@ class ResourcesViewModelTest {
 
         assertEquals(1, result.size)
         assertEquals("lib1", result[0].library.id)
-    }
-
-    @Test
-    fun `getLibraryListModels when user has not joined any resource falls back to existing resources`() = runTest {
-        val fallbackLibrary = MyLibrary().apply {
-            id = "libFallback"
-            title = "Fallback Library"
-            resourceOffline = false
-        }
-        val mockRating = mockk<JsonObject>(relaxed = true)
-        val mockTag = TagEntity().apply {
-            id = "tag2"
-            name = "Tag 2"
-        }
-        val mockResourceItem = mockk<org.ole.planet.myplanet.model.ResourceItem>(relaxed = true)
-        coEvery { resourcesRepository.getResourceListModels(true, "modelId") } returns emptyList()
-        coEvery { resourcesRepository.getResourceListModels(false, "modelId") } returns listOf(
-            org.ole.planet.myplanet.model.ResourceListModel(fallbackLibrary, mockResourceItem, mockRating, listOf(org.ole.planet.myplanet.model.TagItem(mockTag.id, mockTag.name)))
-        )
-
-        val result = viewModel.getLibraryListModels(true, "modelId")
-
-        assertEquals(1, result.size)
-        assertEquals("libFallback", result[0].library.id)
-    }
-
-    @Test
-    fun `getLibraryListModels when isMyCourseLib is false returns all existing resources`() = runTest {
-        val allLibrary = MyLibrary().apply {
-            id = "libAll"
-            title = "All Library"
-            resourceOffline = false
-        }
-        val mockRating = mockk<JsonObject>(relaxed = true)
-        val mockResourceItem = mockk<org.ole.planet.myplanet.model.ResourceItem>(relaxed = true)
-        coEvery { resourcesRepository.getResourceListModels(false, "modelId") } returns listOf(
-            org.ole.planet.myplanet.model.ResourceListModel(allLibrary, mockResourceItem, mockRating, emptyList())
-        )
-
-        val result = viewModel.getLibraryListModels(false, "modelId")
-
-        assertEquals(1, result.size)
-        assertEquals("libAll", result[0].library.id)
     }
 }
