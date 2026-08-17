@@ -150,8 +150,8 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 context,
                 CoreDependenciesEntryPoint::class.java
             )
-            val apkLogRepository = entryPoint.apkLogRepository()
-            return apkLogRepository.saveLogToRoom(type, error, time)
+            val diagnosticsRepository = entryPoint.diagnosticsRepository()
+            return diagnosticsRepository.saveLogToRoom(type, error, time)
         }
 
         suspend fun saveLogsToRoom(pendingLogs: List<CrashLogStore.PendingLog>): Boolean {
@@ -160,8 +160,8 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 context,
                 CoreDependenciesEntryPoint::class.java
             )
-            val apkLogRepository = entryPoint.apkLogRepository()
-            return apkLogRepository.saveLogsToRoom(pendingLogs)
+            val diagnosticsRepository = entryPoint.diagnosticsRepository()
+            return diagnosticsRepository.saveLogsToRoom(pendingLogs)
         }
 
         private fun applyThemeMode(themeMode: String?) {

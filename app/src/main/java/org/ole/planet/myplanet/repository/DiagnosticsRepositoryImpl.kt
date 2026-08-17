@@ -11,12 +11,12 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.CrashLogStore
 import org.ole.planet.myplanet.utils.VersionUtils
 
-class ApkLogRepositoryImpl @Inject constructor(
+class DiagnosticsRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val apkLogDao: ApkLogDao,
     private val sharedPrefManager: SharedPrefManager,
     private val userSessionManager: UserSessionManager
-) : ApkLogRepository {
+) : DiagnosticsRepository {
 
     override suspend fun getPendingApkLogs(): List<ApkLog> {
         return apkLogDao.getPending()

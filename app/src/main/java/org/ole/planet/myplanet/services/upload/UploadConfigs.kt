@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.services.upload
 import dagger.Lazy
 import javax.inject.Inject
 import javax.inject.Singleton
-import org.ole.planet.myplanet.repository.ApkLogRepository
+import org.ole.planet.myplanet.repository.DiagnosticsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.CourseActivity
@@ -46,7 +46,7 @@ class UploadConfigs @Inject constructor(
     private val ratingsRepository: RatingsRepository,
     private val eventsRepository: EventsRepository,
     private val resourcesRepository: ResourcesRepository,
-    private val apkLogRepository: ApkLogRepository,
+    private val diagnosticsRepository: DiagnosticsRepository,
     private val progressRepository: ProgressRepository
 ) {
     val NewsActivities = RoomUploadConfig(
@@ -207,13 +207,13 @@ class UploadConfigs @Inject constructor(
     val CrashLog = RoomUploadConfig(
         endpoint = "apk_logs",
         modelClassName = "ApkLog",
-        fetchPendingItems = { apkLogRepository.getPendingApkLogs() },
+        fetchPendingItems = { diagnosticsRepository.getPendingApkLogs() },
         serializer = UploadSerializer.WithContext(ApkLog::serialize),
         idExtractor = { it.id },
         markUploaded = { results ->
             // A row is "pending" until it has a _rev; set it here. Rows that no longer exist
             // (0 updated) are reported back as local failures.
-            results.filter { result -> !apkLogRepository.markApkLogUploaded(result.localId, result.remoteRev) }
+            results.filter { result -> !diagnosticsRepository.markApkLogUploaded(result.localId, result.remoteRev) }
         }
     )
 

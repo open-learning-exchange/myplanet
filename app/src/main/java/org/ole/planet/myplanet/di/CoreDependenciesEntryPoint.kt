@@ -4,7 +4,7 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
-import org.ole.planet.myplanet.repository.ApkLogRepository
+import org.ole.planet.myplanet.repository.DiagnosticsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -20,7 +20,7 @@ interface CoreDependenciesEntryPoint {
     fun userSessionManager(): UserSessionManager
     fun serverUrlMapper(): ServerUrlMapper
     fun dispatcherProvider(): DispatcherProvider
-    fun apkLogRepository(): ApkLogRepository
+    fun diagnosticsRepository(): DiagnosticsRepository
     fun timeProvider(): TimeProvider
     fun resourcesRepository(): ResourcesRepository
 }

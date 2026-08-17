@@ -8,7 +8,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.ole.planet.myplanet.repository.ApkLogRepository
+import org.ole.planet.myplanet.repository.DiagnosticsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.model.CourseActivity
@@ -34,7 +34,7 @@ class UploadConfigsTest {
         ratingsRepository = mockk(relaxed = true),
         eventsRepository = mockk(relaxed = true),
         resourcesRepository = mockk(relaxed = true),
-        apkLogRepository = mockk<ApkLogRepository>(relaxed = true),
+        diagnosticsRepository = mockk<DiagnosticsRepository>(relaxed = true),
         progressRepository = mockk<ProgressRepository>(relaxed = true)
     )
 
