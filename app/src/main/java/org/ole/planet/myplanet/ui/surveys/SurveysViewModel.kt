@@ -19,7 +19,6 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.Utilities
 
-private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
 
 @HiltViewModel
 class SurveysViewModel @Inject constructor(

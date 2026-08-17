@@ -60,18 +60,29 @@ class TTSManager @Inject constructor(
     companion object {
         private const val UTTERANCE_ID = "tts_utterance"
 
+        private val CODE_BLOCK_REGEX = Regex("```[\\s\\S]*?```")
+        private val INLINE_CODE_REGEX = Regex("`[^`]*`")
+        private val HEADER_REGEX = Regex("^#{1,6}\\s+", RegexOption.MULTILINE)
+        private val LINK_REGEX = Regex("!?\\[([^]]*)]\\([^)]*\\)")
+        private val BOLD_ITALIC_REGEX = Regex("[*_]{1,3}([^*_]+)[*_]{1,3}")
+        private val LIST_ITEM_REGEX = Regex("^[-*+]\\s+", RegexOption.MULTILINE)
+        private val NUMBERED_LIST_REGEX = Regex("^\\d+\\.\\s+", RegexOption.MULTILINE)
+        private val BLOCKQUOTE_REGEX = Regex("^>+\\s?", RegexOption.MULTILINE)
+        private val HORIZONTAL_RULE_REGEX = Regex("[-]{3,}|[*]{3,}|[_]{3,}")
+        private val TABLE_PIPE_REGEX = Regex("\\|")
+
         fun stripMarkdown(text: String): String {
             return text
-                .replace(Regex("```[\\s\\S]*?```"), "")
-                .replace(Regex("`[^`]*`"), "")
-                .replace(Regex("^#{1,6}\\s+", RegexOption.MULTILINE), "")
-                .replace(Regex("!?\\[([^]]*)]\\([^)]*\\)"), "$1")
-                .replace(Regex("[*_]{1,3}([^*_]+)[*_]{1,3}"), "$1")
-                .replace(Regex("^[-*+]\\s+", RegexOption.MULTILINE), "")
-                .replace(Regex("^\\d+\\.\\s+", RegexOption.MULTILINE), "")
-                .replace(Regex("^>+\\s?", RegexOption.MULTILINE), "")
-                .replace(Regex("[-]{3,}|[*]{3,}|[_]{3,}"), "")
-                .replace(Regex("\\|"), " ")
+                .replace(CODE_BLOCK_REGEX, "")
+                .replace(INLINE_CODE_REGEX, "")
+                .replace(HEADER_REGEX, "")
+                .replace(LINK_REGEX, "$1")
+                .replace(BOLD_ITALIC_REGEX, "$1")
+                .replace(LIST_ITEM_REGEX, "")
+                .replace(NUMBERED_LIST_REGEX, "")
+                .replace(BLOCKQUOTE_REGEX, "")
+                .replace(HORIZONTAL_RULE_REGEX, "")
+                .replace(TABLE_PIPE_REGEX, " ")
                 .trim()
         }
 

@@ -65,9 +65,23 @@ class ProgressRepositoryImpl @Inject constructor(
             examDao.getByCourseIds(courseIds).map { it }
         }
         val examsByCourseId = allExams.groupBy { it.courseId }
+        val courseIdsSet = courseIds.toHashSet()
         val submissionsByCourseId = submissionDao.getExamSubmissionsByUser(userId)
             .map { it }
-            .groupBy { submission -> courseIds.firstOrNull { courseId -> submission.parentId?.contains(courseId) == true } }
+            .groupBy { submission ->
+                val parentId = submission.parentId
+                if (parentId != null) {
+                    val parts = parentId.split("@")
+                    // If exactly 2 parts, try fast-path lookup. Multiple '@' fall back to legacy substring check.
+                    if (parts.size == 2 && courseIdsSet.contains(parts[1])) {
+                        parts[1]
+                    } else {
+                        courseIds.firstOrNull { parentId.contains(it) }
+                    }
+                } else {
+                    null
+                }
+            }
 
         mycourses.forEach { course ->
             val obj = JsonObject()
