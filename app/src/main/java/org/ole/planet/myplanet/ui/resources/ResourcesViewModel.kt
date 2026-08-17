@@ -59,7 +59,17 @@ class ResourcesViewModel @Inject constructor(
     }
 
     suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> = withContext(dispatcherProvider.io) {
-        applyCurrentSort(resourcesRepository.getResourceListModels(isMyCourseLib, modelId))
+        val list = if (isMyCourseLib) {
+            val myList = resourcesRepository.getResourceListModels(true, modelId)
+            if (myList.isEmpty()) {
+                resourcesRepository.getResourceListModels(false, modelId)
+            } else {
+                myList
+            }
+        } else {
+            resourcesRepository.getResourceListModels(false, modelId)
+        }
+        applyCurrentSort(list)
     }
 
     suspend fun toggleSortOrder(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.io) {
