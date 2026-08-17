@@ -114,16 +114,15 @@ class ResourcesAdapter(
     fun setViewMode(mode: ListViewMode, onChanged: (() -> Unit)? = null) {
         if (viewMode == mode) return
         viewMode = mode
-        notifyDataSetChanged()
+        notifyItemRangeChanged(0, itemCount)
         onChanged?.invoke()
     }
 
     fun markItemAsOffline(id: String) {
         if (locallyOfflineIds.add(id)) {
-            currentList.forEachIndexed { index, model ->
-                if (model.item.id == id) {
-                    notifyItemChanged(index, PAYLOAD_SELECTION)
-                }
+            val index = currentList.indexOfFirst { it.item.id == id }
+            if (index != -1) {
+                notifyItemChanged(index, PAYLOAD_SELECTION)
             }
         }
     }
