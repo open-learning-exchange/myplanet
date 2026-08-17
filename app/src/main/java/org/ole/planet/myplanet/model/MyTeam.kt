@@ -173,7 +173,6 @@ open class MyTeam(
                 `object`.addProperty("sourcePlanet", team.sourcePlanet)
                 `object`.addProperty("docType", team.docType)
 
-                // Explicitly strip JsonNull values to maintain legacy serialization behavior
                 val keysToRemove = `object`.keySet().filter { `object`.get(it).isJsonNull }
                 keysToRemove.forEach { `object`.remove(it) }
                 return `object`
@@ -220,7 +219,6 @@ open class MyTeam(
                 `object`.addProperty("type", team.teamType)
             }
 
-            // Explicitly strip JsonNull values to maintain legacy serialization behavior
             val keysToRemove = `object`.keySet().filter { `object`.get(it).isJsonNull }
             keysToRemove.forEach { `object`.remove(it) }
             return `object`
