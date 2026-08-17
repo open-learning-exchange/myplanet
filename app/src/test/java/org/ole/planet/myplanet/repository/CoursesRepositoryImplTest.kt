@@ -303,6 +303,34 @@ class CoursesRepositoryImplTest {
     }
 
     @Test
+    fun `flushPendingCourseResources batches existing DAO queries`() = runTest {
+        val jsonArray = com.google.gson.JsonArray().apply {
+            add(com.google.gson.JsonObject().apply { addProperty("_id", "resource1") })
+            add(com.google.gson.JsonObject().apply { addProperty("_id", "resource2") })
+        }
+
+        // Use reflection to enqueue items into the private pendingCourseResources list
+        // This isolates the test without expanding the public API of the repository.
+        val queueMethod = CoursesRepositoryImpl::class.java.getDeclaredMethod(
+            "queueCourseResources",
+            String::class.java,
+            String::class.java,
+            com.google.gson.JsonArray::class.java
+        )
+        queueMethod.isAccessible = true
+        queueMethod.invoke(repository, "courseId", "stepId", jsonArray)
+
+        val existingResource = org.ole.planet.myplanet.model.MyLibrary().apply { id = "resource1" }
+        coEvery { myLibraryDao.getByIds(listOf("resource1", "resource2")) } returns listOf(existingResource)
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+
+        repository.flushPendingCourseResources()
+
+        coVerify(exactly = 1) { myLibraryDao.getByIds(listOf("resource1", "resource2")) }
+        coVerify(exactly = 1) { myLibraryDao.upsertAll(any()) }
+    }
+
+    @Test
     fun getCourseDetailModel_whenCourseExists_returnsAggregatedData() = runTest {
         val course = MyCourse().apply { courseId = "course_id" }
         val step = org.ole.planet.myplanet.model.CourseStep().apply { id = "step_1"; stepTitle = "Title" }
