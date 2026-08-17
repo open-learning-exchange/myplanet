@@ -4,7 +4,6 @@ import android.util.Base64
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Calendar
-import java.util.HashMap
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
@@ -805,9 +804,20 @@ class CoursesRepositoryImpl @Inject constructor(
             batch = ArrayList(pendingCourseResources)
             pendingCourseResources.clear()
         }
+
+        val resourceIds = batch.map { JsonUtils.getString("_id", it.doc) }.filter { it.isNotBlank() }
+        val existingMap = if (resourceIds.isNotEmpty()) {
+            resourceIds.distinct()
+                .chunked(300)
+                .flatMap { myLibraryDao.getByIds(it) }
+                .associateBy { it.id }
+        } else {
+            emptyMap()
+        }
+
         val libraries = batch.mapNotNull { pending ->
             val resourceId = JsonUtils.getString("_id", pending.doc)
-            val existing = myLibraryDao.getById(resourceId)
+            val existing = existingMap[resourceId]
             MyLibrary.insertMyLibrary(
                 MyLibrary.Companion.InsertParams(
                     doc = pending.doc,

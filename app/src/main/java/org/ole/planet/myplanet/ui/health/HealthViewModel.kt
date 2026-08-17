@@ -4,18 +4,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.MyHealth
-import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.repository.HealthRepository
-import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.HealthRecord
-import android.text.TextUtils
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import org.ole.planet.myplanet.model.MyHealth
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.HealthRepository
+import org.ole.planet.myplanet.repository.UserRepository
 
 @HiltViewModel
 class HealthViewModel @Inject constructor(

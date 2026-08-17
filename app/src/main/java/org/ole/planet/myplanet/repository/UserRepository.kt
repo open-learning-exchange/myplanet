@@ -2,15 +2,14 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.DashboardProfile
-import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MemberInfo
 import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
-import kotlinx.coroutines.flow.Flow
 
 interface UserRepository {
     val achievementUpdates: Flow<Unit>
