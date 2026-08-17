@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.CourseProgress
+import org.ole.planet.myplanet.model.CourseProgressState
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -30,7 +31,7 @@ class ProgressRepositoryImpl @Inject constructor(
     private val answerDao: AnswerDao,
     private val questionDao: QuestionDao
 ) : ProgressRepository {
-    override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): HashMap<String?, JsonObject> {
+    override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): Map<String, CourseProgressState> {
         val allSteps = if (courseIds.isEmpty()) {
             emptyList()
         } else {
@@ -41,14 +42,14 @@ class ProgressRepositoryImpl @Inject constructor(
         val stepsByCourseId = allSteps.groupBy { it.courseId }
         val progressesByCourseId = allProgresses.groupBy { it.courseId }
 
-        val map = HashMap<String?, JsonObject>()
+        val map = HashMap<String, CourseProgressState>()
         for (courseId in courseIds) {
-            val progressObject = JsonObject()
             val steps = stepsByCourseId[courseId] ?: emptyList()
             val progresses = progressesByCourseId[courseId] ?: emptyList()
-            progressObject.addProperty("max", steps.size)
-            progressObject.addProperty("current", calculateCurrentProgress(steps, progresses))
-            map[courseId] = progressObject
+            map[courseId] = CourseProgressState(
+                max = steps.size,
+                current = calculateCurrentProgress(steps, progresses)
+            )
         }
         return map
     }
@@ -65,15 +66,38 @@ class ProgressRepositoryImpl @Inject constructor(
             examDao.getByCourseIds(courseIds).map { it }
         }
         val examsByCourseId = allExams.groupBy { it.courseId }
+        val courseIdsSet = courseIds.toHashSet()
         val submissionsByCourseId = submissionDao.getExamSubmissionsByUser(userId)
             .map { it }
-            .groupBy { submission -> courseIds.firstOrNull { courseId -> submission.parentId?.contains(courseId) == true } }
+            .groupBy { submission ->
+                val parentId = submission.parentId
+                if (parentId != null) {
+                    val parts = parentId.split("@")
+                    // If exactly 2 parts, try fast-path lookup. Multiple '@' fall back to legacy substring check.
+                    if (parts.size == 2 && courseIdsSet.contains(parts[1])) {
+                        parts[1]
+                    } else {
+                        courseIds.firstOrNull { parentId.contains(it) }
+                    }
+                } else {
+                    null
+                }
+            }
 
         mycourses.forEach { course ->
             val obj = JsonObject()
             obj.addProperty("courseName", course.courseTitle)
             obj.addProperty("courseId", course.courseId)
-            obj.add("progress", courseProgress[course.courseId])
+
+            val progressState = courseProgress[course.courseId]
+            if (progressState != null) {
+                val progressObj = JsonObject()
+                progressObj.addProperty("max", progressState.max)
+                progressObj.addProperty("current", progressState.current)
+                obj.add("progress", progressObj)
+            } else {
+                obj.add("progress", null)
+            }
 
             val submissions = submissionsByCourseId[course.courseId].orEmpty()
 
@@ -287,5 +311,13 @@ class ProgressRepositoryImpl @Inject constructor(
             }
         }
         return null
+    }
+
+    override suspend fun getPendingCourseProgressUploads(): List<CourseProgress> {
+        return courseProgressDao.getPendingUploads()
+    }
+
+    override suspend fun markCourseProgressUploaded(localId: String, remoteId: String, rev: String): Boolean {
+        return courseProgressDao.markUploaded(localId, remoteId, rev) != 0
     }
 }
