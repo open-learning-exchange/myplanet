@@ -397,7 +397,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         Glide.with(this).load(bgRes).into(backgroundImage)
 
         initializeAudioPlayer(playerView)
-
     }
 
     @OptIn(UnstableApi::class)
