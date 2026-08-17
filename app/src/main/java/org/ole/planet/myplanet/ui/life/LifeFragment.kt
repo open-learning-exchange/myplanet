@@ -26,6 +26,7 @@ class LifeFragment : BaseRecyclerFragment<MyLife?>(), OnStartDragListener {
     private var itemTouchHelper: ItemTouchHelper? = null
     private val viewModel: LifeViewModel by viewModels()
     private var _binding: FragmentLifeBinding? = null
+    private var isObserverAttached = false
     private val binding get() = checkNotNull(_binding)
     override fun getLayout(): Int = R.layout.fragment_life
 
@@ -42,32 +43,37 @@ class LifeFragment : BaseRecyclerFragment<MyLife?>(), OnStartDragListener {
     }
 
     override suspend fun getAdapter(): ListAdapter<*, *> {
-        lifeAdapter = LifeAdapter(requireContext(), this,
-            visibilityCallback = { myLife, isVisible ->
-                val id = myLife._id.takeIf { it.isNotBlank() }
-                    ?: myLife.imageId?.takeIf { it.isNotBlank() }
-                    ?: myLife.title
-                if (!id.isNullOrEmpty()) {
-                    viewModel.updateVisibility(isVisible, id)
-                    if (!isVisible) {
-                        Utilities.toast(requireContext(), myLife.title + context?.getString(R.string.is_now_hidden))
-                    } else {
-                        Utilities.toast(requireContext(), myLife.title + " " + context?.getString(R.string.is_now_shown))
+        if (!::lifeAdapter.isInitialized) {
+            lifeAdapter = LifeAdapter(requireContext(), this,
+                visibilityCallback = { myLife, isVisible ->
+                    val id = myLife._id.takeIf { it.isNotBlank() }
+                        ?: myLife.imageId?.takeIf { it.isNotBlank() }
+                        ?: myLife.title
+                    if (!id.isNullOrEmpty()) {
+                        viewModel.updateVisibility(isVisible, id)
+                        if (!isVisible) {
+                            Utilities.toast(requireContext(), myLife.title + context?.getString(R.string.is_now_hidden))
+                        } else {
+                            Utilities.toast(requireContext(), myLife.title + " " + context?.getString(R.string.is_now_shown))
+                        }
                     }
+                },
+                reorderCallback = { list ->
+                    viewModel.updateMyLifeListOrder(list)
                 }
-            },
-            reorderCallback = { list ->
-                viewModel.updateMyLifeListOrder(list)
-            }
-        )
-        val callback: ItemTouchHelper.Callback = ItemReorderHelper(lifeAdapter)
-        itemTouchHelper = ItemTouchHelper(callback)
+            )
+            val callback: ItemTouchHelper.Callback = ItemReorderHelper(lifeAdapter)
+            itemTouchHelper = ItemTouchHelper(callback)
+        }
         itemTouchHelper?.attachToRecyclerView(recyclerView)
 
-        collectWhenStarted(viewModel.myLifeList) { list ->
-            lifeAdapter.submitList(list)
+        if (!isObserverAttached) {
+            collectWhenStarted(viewModel.myLifeList) { list ->
+                lifeAdapter.submitList(list)
+            }
+            viewModel.loadMyLifeList()
+            isObserverAttached = true
         }
-        viewModel.loadMyLifeList()
 
         return lifeAdapter
     }
@@ -81,6 +87,7 @@ class LifeFragment : BaseRecyclerFragment<MyLife?>(), OnStartDragListener {
     }
 
     override fun onDestroyView() {
+        isObserverAttached = false
         _binding = null
         super.onDestroyView()
     }
