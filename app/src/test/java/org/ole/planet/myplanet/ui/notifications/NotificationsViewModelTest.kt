@@ -150,6 +150,69 @@ class NotificationsViewModelTest {
         assertFalse(header("resource").isExpanded)
     }
 
+    @Test
+    fun testResolveTypeClassifiesRawTeamTypeAsJoinRequest() = runTest(testDispatcher) {
+        val payload = notification(id = "1", type = "team", isRead = false, message = "<b>Jane</b> has requested to join <b>\"My Team\"</b> team.")
+        loadNotifications(payload)
+
+        assertEquals("join_request", item("1").notification.type)
+    }
+
+    @Test
+    fun testResolveTypeClassifiesRawTeamTypeInSpanishAsJoinRequest() = runTest(testDispatcher) {
+        val payload = notification(id = "1", type = "team", isRead = false, message = "test22012601 ha solicitado unirse a \"test GT\" team.")
+        loadNotifications(payload)
+
+        assertEquals("join_request", item("1").notification.type)
+    }
+
+    @Test
+    fun testResolveTypeClassifiesRawTeamTypeAsJoinRequestViaSubTypeRegardlessOfMessageLanguage() = runTest(testDispatcher) {
+        // Arabic/Nepali/etc. server messages aren't matched by the English/Spanish phrase list, so
+        // classification must rely on the structural subType (derived from linkParams) instead.
+        val payload = notification(id = "1", type = "team", isRead = false, message = "غير معروف", subType = "join_request")
+        loadNotifications(payload)
+
+        assertEquals("join_request", item("1").notification.type)
+    }
+
+    @Test
+    fun testResolveTypeClassifiesRawTeamTypeAsChatForPostedMessage() = runTest(testDispatcher) {
+        val payload = notification(id = "1", type = "team", isRead = false, message = "Bhushan Nim has posted a message on \"test GT\" team.")
+        loadNotifications(payload)
+
+        assertEquals("chat", item("1").notification.type)
+    }
+
+    @Test
+    fun testResolveTypeClassifiesUnmatchedRawTeamTypeAsTeamJoin() = runTest(testDispatcher) {
+        val payload = notification(id = "1", type = "team", isRead = false, message = "Has sido eliminado de \"test GT\" team.")
+        loadNotifications(payload)
+
+        assertEquals("team_join", item("1").notification.type)
+    }
+
+    @Test
+    fun testResolveTypeClassifiesRawNewTaskTypeAsTask() = runTest(testDispatcher) {
+        val payload = notification(id = "1", type = "newTask", isRead = false, message = "You were assigned a new task")
+        loadNotifications(payload)
+
+        assertEquals("task", item("1").notification.type)
+    }
+
+    @Test
+    fun testResolveTypeClassifiesRawNewResourceTypeAsResource() = runTest(testDispatcher) {
+        val payload = notification(id = "1", type = "newResource", isRead = false, message = "Hay nuevos recursos en la biblioteca. ¡Haz clic para verlos!")
+        loadNotifications(payload)
+
+        assertEquals("resource", item("1").notification.type)
+    }
+
+    private fun item(id: String): NotificationListItem.Item =
+        viewModel.groupedItems.value
+            .filterIsInstance<NotificationListItem.Item>()
+            .first { it.notification.id == id }
+
     private fun TestScope.loadNotifications(vararg payloads: NotificationPayload) {
         coEvery { repository.getNotifications(USER_ID, FILTER_ALL, false) } returns payloads.toList()
         backgroundScope.launch { viewModel.groupedItems.collect {} }
@@ -169,10 +232,10 @@ class NotificationsViewModelTest {
         private val unreadTask = notification(id = "1", type = "task", isRead = false)
         private val readResource = notification(id = "2", type = "resource", isRead = true)
 
-        private fun notification(id: String, type: String, isRead: Boolean) = NotificationPayload(
+        private fun notification(id: String, type: String, isRead: Boolean, message: String = "message $id", subType: String? = null) = NotificationPayload(
             id = id,
             userId = USER_ID,
-            message = "message $id",
+            message = message,
             isRead = isRead,
             createdAt = 0L,
             type = type,
@@ -182,7 +245,8 @@ class NotificationsViewModelTest {
             priority = 0,
             isFromServer = false,
             rev = null,
-            needsSync = false
+            needsSync = false,
+            subType = subType
         )
     }
 }
