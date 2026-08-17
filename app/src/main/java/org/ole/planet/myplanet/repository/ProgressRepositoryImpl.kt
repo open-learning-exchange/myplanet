@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.CourseProgress
+import org.ole.planet.myplanet.model.CourseProgressState
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -30,7 +31,7 @@ class ProgressRepositoryImpl @Inject constructor(
     private val answerDao: AnswerDao,
     private val questionDao: QuestionDao
 ) : ProgressRepository {
-    override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): HashMap<String?, JsonObject> {
+    override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): Map<String, CourseProgressState> {
         val allSteps = if (courseIds.isEmpty()) {
             emptyList()
         } else {
@@ -41,14 +42,14 @@ class ProgressRepositoryImpl @Inject constructor(
         val stepsByCourseId = allSteps.groupBy { it.courseId }
         val progressesByCourseId = allProgresses.groupBy { it.courseId }
 
-        val map = HashMap<String?, JsonObject>()
+        val map = HashMap<String, CourseProgressState>()
         for (courseId in courseIds) {
-            val progressObject = JsonObject()
             val steps = stepsByCourseId[courseId] ?: emptyList()
             val progresses = progressesByCourseId[courseId] ?: emptyList()
-            progressObject.addProperty("max", steps.size)
-            progressObject.addProperty("current", calculateCurrentProgress(steps, progresses))
-            map[courseId] = progressObject
+            map[courseId] = CourseProgressState(
+                max = steps.size,
+                current = calculateCurrentProgress(steps, progresses)
+            )
         }
         return map
     }
@@ -87,7 +88,16 @@ class ProgressRepositoryImpl @Inject constructor(
             val obj = JsonObject()
             obj.addProperty("courseName", course.courseTitle)
             obj.addProperty("courseId", course.courseId)
-            obj.add("progress", courseProgress[course.courseId])
+
+            val progressState = courseProgress[course.courseId]
+            if (progressState != null) {
+                val progressObj = JsonObject()
+                progressObj.addProperty("max", progressState.max)
+                progressObj.addProperty("current", progressState.current)
+                obj.add("progress", progressObj)
+            } else {
+                obj.add("progress", null)
+            }
 
             val submissions = submissionsByCourseId[course.courseId].orEmpty()
 
