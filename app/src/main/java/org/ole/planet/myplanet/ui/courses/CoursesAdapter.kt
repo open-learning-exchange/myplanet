@@ -21,6 +21,7 @@ import com.bumptech.glide.load.model.LazyHeaders
 import com.bumptech.glide.signature.ObjectKey
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.model.CourseProgressState
 import org.ole.planet.myplanet.callback.OnCourseItemSelectedListener
 import org.ole.planet.myplanet.callback.OnDiffRefreshListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -31,7 +32,6 @@ import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.utils.CourseSubject
 import org.ole.planet.myplanet.utils.CourseSubjectClassifier
 import org.ole.planet.myplanet.utils.DiffUtils
-import org.ole.planet.myplanet.utils.JsonUtils.getInt
 import org.ole.planet.myplanet.utils.ListViewMode
 import org.ole.planet.myplanet.utils.SelectionUtils
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -92,7 +92,7 @@ class CoursesAdapter(
     private val selectedItems: MutableList<Course?> = ArrayList()
     private var listener: OnCourseItemSelectedListener? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
-    private var progressMap: HashMap<String?, JsonObject>? = null
+    private var progressMap: Map<String, CourseProgressState>? = null
 
     companion object {
         const val PAYLOAD_PROGRESS = "payload_progress"
@@ -145,7 +145,7 @@ class CoursesAdapter(
         }
     }
 
-    fun setProgressMap(progressMap: HashMap<String?, JsonObject>?) {
+    fun setProgressMap(progressMap: Map<String, CourseProgressState>?) {
         val oldMap = this.progressMap
         if (oldMap == progressMap) return
         this.progressMap = progressMap
@@ -330,8 +330,8 @@ class CoursesAdapter(
 
     private fun progressState(course: Course): Triple<Int, Int, Boolean> {
         val progress = progressMap?.get(course.courseId)
-        val current = getInt("current", progress)
-        val max = getInt("max", progress).takeIf { it > 0 } ?: course.numberOfSteps
+        val current = progress?.current ?: 0
+        val max = progress?.max?.takeIf { it > 0 } ?: course.numberOfSteps
         val hasProgress = progress != null && course.isMyCourse
         return Triple(current, max, hasProgress)
     }
@@ -360,7 +360,7 @@ class CoursesAdapter(
                         val course = getItem(position)
                         val progress = progressMap?.get(course.courseId)
                         if (progress != null) {
-                            val current = getInt("current", progress)
+                            val current = progress.current
                             if (fromUser && i <= current + 1) {
                                 openCourse(course, seekBar.progress)
                             }
