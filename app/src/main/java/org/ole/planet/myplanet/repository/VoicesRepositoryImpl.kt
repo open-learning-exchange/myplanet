@@ -275,11 +275,7 @@ class VoicesRepositoryImpl @Inject constructor(
 
     // Gathers a post and all of its (recursive) replies for deletion.
     private suspend fun collectNewsAndReplies(newsId: String): List<String> {
-        val ids = mutableListOf(newsId)
-        newsDao.getDirectReplies(newsId).forEach { reply ->
-            ids.addAll(collectNewsAndReplies(reply.id))
-        }
-        return ids
+        return newsDao.getNewsAndRepliesIds(newsId)
     }
 
     override suspend fun addLabel(newsId: String, label: String) {
