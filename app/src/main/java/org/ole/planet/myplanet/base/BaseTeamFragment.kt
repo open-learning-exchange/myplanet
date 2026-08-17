@@ -14,7 +14,6 @@ import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @AndroidEntryPoint
 abstract class BaseTeamFragment : BaseVoicesFragment() {
@@ -31,8 +30,6 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
     lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var teamsSyncRepository: TeamsSyncRepository
-    @Inject
-    open lateinit var dispatcherProvider: DispatcherProvider
     private val _teamFlow = MutableStateFlow<MyTeam?>(null)
     val teamFlow: StateFlow<MyTeam?> = _teamFlow.asStateFlow()
     private val _isMemberFlow = MutableStateFlow(false)
