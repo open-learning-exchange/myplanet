@@ -18,6 +18,7 @@ import kotlinx.coroutines.sync.withPermit
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
+import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
@@ -27,6 +28,7 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.OfflineActivity
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.ResourceActivity
+import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.UserChallengeActions
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -46,7 +48,8 @@ class ActivitiesRepositoryImpl @Inject constructor(
     private val courseActivityDao: CourseActivityDao,
     private val resourceActivityDao: ResourceActivityDao,
     private val offlineActivityDao: OfflineActivityDao,
-    private val removedLogDao: RemovedLogDao
+    private val removedLogDao: RemovedLogDao,
+    private val searchActivityDao: SearchActivityDao
 ) : ActivitiesRepository {
     override suspend fun getOfflineVisitCount(userId: String): Int {
         return offlineActivityDao.countByUserIdAndType(userId, UserSessionManager.KEY_LOGIN)
@@ -375,6 +378,27 @@ class ActivitiesRepositoryImpl @Inject constructor(
     override suspend fun markCourseActivityUploaded(localId: String, remoteId: String, rev: String): Boolean {
         return courseActivityDao.markUploaded(localId, remoteId, rev) != 0
     }
+
+    override suspend fun getPendingSearchActivityUploads(): List<SearchActivity> {
+        return searchActivityDao.getPendingUploads()
+    }
+
+    override suspend fun markSearchActivityUploaded(localId: String, remoteId: String, rev: String): Boolean {
+        return searchActivityDao.markUploaded(localId, remoteId, rev) != 0
+    }
+
+    override suspend fun getPendingResourceActivityUploads(): List<ResourceActivity> {
+        return resourceActivityDao.getPendingUploads()
+    }
+
+    override suspend fun getPendingResourceActivitySyncUploads(): List<ResourceActivity> {
+        return resourceActivityDao.getPendingSyncUploads()
+    }
+
+    override suspend fun markResourceActivityUploaded(localId: String, remoteId: String, rev: String): Boolean {
+        return resourceActivityDao.markUploaded(localId, remoteId, rev) != 0
+    }
+
 
     override suspend fun uploadMyPlanetActivities(userModel: UserEntity) {
         apiInterface.postDoc(
