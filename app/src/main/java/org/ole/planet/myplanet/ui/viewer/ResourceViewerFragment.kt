@@ -114,8 +114,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     @Inject lateinit var ttsManager: TTSManager
     private var authSessionUpdater: AuthSessionUpdater? = null
 
-    private var hasPromptedThisSession: Boolean = false
-
     private val audioRecordListener = object : OnAudioRecordListener {
         override fun onRecordStarted() {
             Utilities.toast(requireContext(), getString(R.string.recording_started))
@@ -349,9 +347,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                         if (!::library.isInitialized) return
                         val rid = library.resourceId ?: return
                         viewLifecycleOwner.lifecycleScope.launch {
-                            if (!hasPromptedThisSession) {
-                                showResourceRatingDialogIfNeverRated(rid)
-                            }
+                            showResourceRatingDialogIfNeverRated(rid)
                         }
                     }
                     else -> {}
@@ -363,6 +359,13 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
     private suspend fun showResourceRatingDialogIfNeverRated(resourceId: String) {
         if (!::library.isInitialized) return
+        val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val promptKey = "$KEY_PROMPTED_PREFIX$resourceId"
+
+        if (prefs.getBoolean(promptKey, false)) {
+            return
+        }
+
         val userId = userRepository.getUserModel()?.id
         val hasRated = if (!userId.isNullOrEmpty()) {
             try {
@@ -376,9 +379,9 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         }
 
         if (!hasRated && isAdded) {
+            prefs.edit().putBoolean(promptKey, true).apply()
             val ratingDialog = RatingsFragment.newInstance("resource", resourceId, library.title)
             ratingDialog.show(parentFragmentManager, RatingsFragment.TAG)
-            hasPromptedThisSession = true
         }
     }
 
@@ -637,6 +640,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         private const val ARG_IS_ONLINE = "isOnline"
         private const val ARG_IS_FULL_PATH = "isFullPath"
         private const val ARG_AUTH = "auth"
+        private const val PREFS_NAME = "rating_prompt_prefs"
+        private const val KEY_PROMPTED_PREFIX = "prompted_"
 
         fun newInstance(resourceId: String?, filePath: String?, title: String?, type: ResourceType, isOnline: Boolean = false, auth: String = "", isFullPath: Boolean = false): ResourceViewerFragment {
             return ResourceViewerFragment().apply {
