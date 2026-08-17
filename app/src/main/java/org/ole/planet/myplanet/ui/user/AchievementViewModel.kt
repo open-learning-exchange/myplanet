@@ -1,13 +1,22 @@
 package org.ole.planet.myplanet.ui.user
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.shareIn
+import org.ole.planet.myplanet.repository.UserRepository
 
 @HiltViewModel
 class AchievementViewModel @Inject constructor(
-    private val realtimeSyncManager: RealtimeSyncManager
+    private val userRepository: UserRepository
 ) : ViewModel() {
-    val dataUpdateFlow = realtimeSyncManager.dataUpdateFlow
+    val achievementUpdates: SharedFlow<Unit> = userRepository.achievementUpdates
+        .shareIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            replay = 0
+        )
 }

@@ -19,7 +19,6 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
@@ -37,7 +36,6 @@ class SyncManagerTest {
 
     private lateinit var syncManager: SyncManager
     private val context: Context = mockk(relaxed = true)
-    private val databaseService: DatabaseService = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val apiInterface: ApiInterface = mockk(relaxed = true)
     private val transactionSyncManager: TransactionSyncManager = mockk(relaxed = true)
@@ -73,6 +71,7 @@ class SyncManagerTest {
             teamsSyncRepository,
             coursesRepository,
             eventsRepository,
+            mockk(),
             mockk()
         )
     }

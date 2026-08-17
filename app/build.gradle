@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.application)
-    alias(libs.plugins.legacy.kapt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.dagger.hilt.android)
 }
@@ -11,14 +10,36 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6267
-        versionName = "0.62.67"
+        versionCode = 6481
+        versionName = "0.64.81"
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
     testOptions {
         unitTests {
             includeAndroidResources = true
+            all { test ->
+                def requested = project.findProperty('testMaxParallelForks') as String
+                test.maxParallelForks = requested ? requested.toInteger()
+                    : Math.min(Runtime.runtime.availableProcessors(), 4)
+                test.maxHeapSize = "1536m"
+                def shardTotal = (project.findProperty('testShardTotal') ?: '1').toInteger()
+                def shardIndex = (project.findProperty('testShardIndex') ?: '0').toInteger()
+                if (shardTotal < 1 || shardIndex < 0 || shardIndex >= shardTotal) {
+                    throw new GradleException("Invalid test shard config: testShardIndex=$shardIndex must be in [0, testShardTotal=$shardTotal); a bad index would silently deselect every test")
+                }
+                if (shardTotal > 1) {
+                    test.include { element ->
+                        if (element.directory) return true
+                        def path = element.relativePath.pathString
+                        if (!path.endsWith('.class')) return true
+                        def topLevel = path.substring(0, path.length() - 6)
+                        def dollar = topLevel.indexOf('$')
+                        if (dollar >= 0) topLevel = topLevel.substring(0, dollar)
+                        return (topLevel.hashCode() & Integer.MAX_VALUE) % shardTotal == shardIndex
+                    }
+                }
+            }
         }
     }
     configurations.configureEach {
@@ -45,7 +66,6 @@ android {
         create("lite") {
             dimension "mode"
             buildConfigField "boolean", "LITE", "true"
-            // Use versionNameSuffix and resValue to avoid editing build.gradle and versions.xml in CI
             versionNameSuffix "-lite"
             resValue "string", "app_version", "${defaultConfig.versionName}-lite"
         }
@@ -78,7 +98,6 @@ android {
     buildFeatures {
         viewBinding = true
         buildConfig = true
-        dataBinding = true
         resValues = true
     }
     bundle {
@@ -145,8 +164,13 @@ android {
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
     }
 }
-kapt {
-    correctErrorTypes = true
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.buildConfigFields.put('VERSION_CODE',
+            new com.android.build.api.variant.BuildConfigField('int', '1', 'pinned; real version lives in the manifest'))
+        variant.buildConfigFields.put('VERSION_NAME',
+            new com.android.build.api.variant.BuildConfigField('String', '"pinned"', 'pinned; real version lives in the manifest'))
+    }
 }
 dependencies {
     testImplementation(libs.test.junit)
@@ -181,6 +205,7 @@ dependencies {
     implementation(libs.cardview)
     implementation(libs.constraintlayout)
     implementation(libs.core.ktx)
+    implementation(libs.lifecycle.process)
     implementation(libs.hilt.work)
     ksp(libs.hilt.compiler)
     implementation(libs.media3.exoplayer)

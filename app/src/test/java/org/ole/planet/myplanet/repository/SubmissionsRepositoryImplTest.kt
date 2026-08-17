@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -132,6 +133,56 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
+    fun `getSubmissionsFlow does not suppress when size changes`() = runTest {
+        val subList = listOf(Submission(id = "1", lastUpdateTime = 100L))
+        val subListDiffSize = listOf(Submission(id = "1", lastUpdateTime = 100L), Submission(id = "2", lastUpdateTime = 100L))
+
+        val flowEmitter = kotlinx.coroutines.flow.MutableSharedFlow<List<Submission>>(replay = 1)
+        every { submissionDao.observeByUserId("user_123") } returns flowEmitter
+
+        var emissions = 0
+        val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
+            repository.getSubmissionsFlow("user_123").collect {
+                emissions++
+            }
+        }
+
+        flowEmitter.emit(subList)
+        assertEquals(1, emissions)
+
+        // Different size list should not be suppressed
+        flowEmitter.emit(subListDiffSize)
+        assertEquals(2, emissions)
+
+        job.cancel()
+    }
+
+    @Test
+    fun `getSubmissionsFlow does not suppress when lastUpdateTime changes`() = runTest {
+        val subList = listOf(Submission(id = "1", lastUpdateTime = 100L))
+        val subListDiffTime = listOf(Submission(id = "1", lastUpdateTime = 101L))
+
+        val flowEmitter = kotlinx.coroutines.flow.MutableSharedFlow<List<Submission>>(replay = 1)
+        every { submissionDao.observeByUserId("user_123") } returns flowEmitter
+
+        var emissions = 0
+        val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
+            repository.getSubmissionsFlow("user_123").collect {
+                emissions++
+            }
+        }
+
+        flowEmitter.emit(subList)
+        assertEquals(1, emissions)
+
+        // Same size but different lastUpdateTime should not be suppressed
+        flowEmitter.emit(subListDiffTime)
+        assertEquals(2, emissions)
+
+        job.cancel()
+    }
+
+    @Test
     fun `getPendingSurveys returns empty list when userId is null`() = runTest {
         val result = repository.getPendingSurveys(null)
         assertTrue(result.isEmpty())
@@ -178,17 +229,70 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `createBulkSurveySubmissions calls getOrCreateSubmission for all users`() = runTest {
+    fun `createBulkSurveySubmissions with empty list does not query or insert`() = runTest {
         val examId = "examId"
-        val userIds = listOf("user1", "user2")
         coEvery { examDao.getById(examId) } returns StepExam(id = examId, courseId = "courseId")
 
-        coEvery { repository.getOrCreateSubmission(any(), any()) } returns mockk()
+        repository.createBulkSurveySubmissions(examId, emptyList())
+
+        coVerify(exactly = 0) { submissionDao.getPendingByUsersAndParent(any(), any()) }
+        coVerify(exactly = 0) { submissionDao.upsertAll(any()) }
+    }
+
+    @Test
+    fun `createBulkSurveySubmissions with all new users bulk inserts all`() = runTest {
+        val examId = "examId"
+        val userIds = listOf("user1", "user2")
+        val parentId = "examId@courseId"
+        coEvery { examDao.getById(examId) } returns StepExam(id = examId, courseId = "courseId")
+        coEvery { submissionDao.getPendingByUsersAndParent(userIds, parentId) } returns emptyList()
 
         repository.createBulkSurveySubmissions(examId, userIds)
 
-        coVerify(exactly = 1) { repository.getOrCreateSubmission("user1", "examId@courseId") }
-        coVerify(exactly = 1) { repository.getOrCreateSubmission("user2", "examId@courseId") }
+        coVerify(exactly = 1) { submissionDao.getPendingByUsersAndParent(userIds, parentId) }
+        coVerify(exactly = 1) {
+            submissionDao.upsertAll(match {
+                it.size == 2 &&
+                it.map { sub -> sub.userId }.containsAll(userIds) &&
+                it.all { sub -> sub.parentId == parentId && sub.status == "pending" && sub.type == "survey" }
+            })
+        }
+    }
+
+    @Test
+    fun `createBulkSurveySubmissions with mixed users only inserts new users`() = runTest {
+        val examId = "examId"
+        val userIds = listOf("user1", "user2", "user3")
+        val parentId = "examId@courseId"
+        coEvery { examDao.getById(examId) } returns StepExam(id = examId, courseId = "courseId")
+        val existingSubmission = Submission().apply { userId = "user2"; this.parentId = parentId; status = "pending" }
+        coEvery { submissionDao.getPendingByUsersAndParent(userIds, parentId) } returns listOf(existingSubmission)
+
+        repository.createBulkSurveySubmissions(examId, userIds)
+
+        coVerify(exactly = 1) { submissionDao.getPendingByUsersAndParent(userIds, parentId) }
+        coVerify(exactly = 1) {
+            submissionDao.upsertAll(match {
+                it.size == 2 &&
+                it.map { sub -> sub.userId }.containsAll(listOf("user1", "user3"))
+            })
+        }
+    }
+
+    @Test
+    fun `createBulkSurveySubmissions with all existing users does not insert`() = runTest {
+        val examId = "examId"
+        val userIds = listOf("user1", "user2")
+        val parentId = "examId@courseId"
+        coEvery { examDao.getById(examId) } returns StepExam(id = examId, courseId = "courseId")
+        val existing1 = Submission().apply { userId = "user1"; this.parentId = parentId; status = "pending" }
+        val existing2 = Submission().apply { userId = "user2"; this.parentId = parentId; status = "pending" }
+        coEvery { submissionDao.getPendingByUsersAndParent(userIds, parentId) } returns listOf(existing1, existing2)
+
+        repository.createBulkSurveySubmissions(examId, userIds)
+
+        coVerify(exactly = 1) { submissionDao.getPendingByUsersAndParent(userIds, parentId) }
+        coVerify(exactly = 0) { submissionDao.upsertAll(any()) }
     }
 
     @Test
@@ -405,5 +509,59 @@ class SubmissionsRepositoryImplTest {
         repository.markSubmissionComplete("test_id", payload)
 
         coVerify { submissionDao.markComplete("test_id", payload.toString()) }
+    }
+
+    @Test
+    fun `getNormalizedSubmitterName returns name when valid json is provided`() {
+        val submission = Submission().apply {
+            user = "{\"name\": \"John Doe\", \"other\": \"value\"}"
+        }
+        val result = repository.getNormalizedSubmitterName(submission)
+        assertEquals("John Doe", result)
+    }
+
+    @Test
+    fun `getNormalizedSubmitterName returns null when name is blank`() {
+        val submission = Submission().apply {
+            user = "{\"name\": \"   \", \"other\": \"value\"}"
+        }
+        val result = repository.getNormalizedSubmitterName(submission)
+        assertNull(result)
+    }
+
+    @Test
+    fun `getNormalizedSubmitterName returns null when name key is missing`() {
+        val submission = Submission().apply {
+            user = "{\"other\": \"value\"}"
+        }
+        val result = repository.getNormalizedSubmitterName(submission)
+        assertNull(result)
+    }
+
+    @Test
+    fun `getNormalizedSubmitterName returns null when user is malformed json`() {
+        val submission = Submission().apply {
+            user = "invalid json"
+        }
+        val result = repository.getNormalizedSubmitterName(submission)
+        assertNull(result)
+    }
+
+    @Test
+    fun `getNormalizedSubmitterName returns null when user is null`() {
+        val submission = Submission().apply {
+            user = null
+        }
+        val result = repository.getNormalizedSubmitterName(submission)
+        assertNull(result)
+    }
+
+    @Test
+    fun `getNormalizedSubmitterName returns null when user is blank`() {
+        val submission = Submission().apply {
+            user = "   "
+        }
+        val result = repository.getNormalizedSubmitterName(submission)
+        assertNull(result)
     }
 }

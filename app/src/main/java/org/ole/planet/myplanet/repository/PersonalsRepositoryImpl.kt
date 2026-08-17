@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
@@ -10,12 +11,14 @@ import kotlinx.coroutines.flow.flowOf
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.model.Personal
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class PersonalsRepositoryImpl @Inject constructor(
     private val personalDao: PersonalDao,
     private val apiInterface: ApiInterface,
+    private val uploadRepository: UploadRepository,
     @ApplicationContext private val context: Context
 ) : PersonalsRepository {
 
@@ -97,5 +100,46 @@ class PersonalsRepositoryImpl @Inject constructor(
             return Pair(id, rev)
         }
         return null
+    }
+
+    override suspend fun uploadPersonal(personal: Personal): String {
+        if (personal.isUploaded) {
+            return "Resource already uploaded"
+        }
+
+        try {
+            val result = uploadPersonalDocument(personal)
+            if (result != null) {
+                val (id, rev) = result
+
+                val path = personal.path
+                if (path != null) {
+                    val file = File(path)
+                    val name = FileUtils.getFileNameFromUrl(path)
+
+                    try {
+                        val response = uploadRepository.uploadAttachment(
+                            file = file,
+                            destinationFormat = "%s/resources/%s/%s",
+                            id = id,
+                            rev = rev,
+                            name = name
+                        )
+                        // Note: ignoring specific response success check to match old behavior
+                        // which relied on callback but didn't block returning success
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        // Attachment upload failed but document succeeded
+                    }
+                }
+
+                return "Personal resource uploaded successfully"
+            } else {
+                return "Failed to upload personal resource: No response"
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return "Unable to upload resource: ${e.message}"
+        }
     }
 }

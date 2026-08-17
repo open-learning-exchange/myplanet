@@ -9,28 +9,19 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.MyLibrary
-import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
+import org.ole.planet.myplanet.repository.RetryQueueDetails
+import org.ole.planet.myplanet.repository.RetryRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
-
-data class RetryQueueDetails(
-    val pendingCount: Long = 0,
-    val pendingOps: List<RetryOperation> = emptyList(),
-    val isProcessing: Boolean = false
-)
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val configurationsRepository: ConfigurationsRepository,
     private val sharedPrefManager: SharedPrefManager,
-    private val retryQueue: RetryQueue,
+    private val retryRepository: RetryRepository,
     private val resourcesRepository: ResourcesRepository,
-    private val resourceDownloadCoordinator: ResourceDownloadCoordinator,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
@@ -48,7 +39,7 @@ class SettingsViewModel @Inject constructor(
 
 
     fun isCurrentlyProcessing(): Boolean {
-        return retryQueue.isCurrentlyProcessing()
+        return retryRepository.isCurrentlyProcessing()
     }
     fun clearAllData() {
         viewModelScope.launch(dispatcherProvider.io) {
@@ -60,21 +51,15 @@ class SettingsViewModel @Inject constructor(
 
     fun clearRetryQueue() {
         viewModelScope.launch {
-            val cleared = retryQueue.safeClearQueue()
+            val cleared = retryRepository.safeClearQueue()
             _clearRetryQueueEvent.send(cleared)
         }
     }
 
-    private suspend fun getRetryQueueSnapshot(): RetryQueueDetails {
-        val pendingCount = retryQueue.getPendingCount()
-        val pendingOps = retryQueue.getPendingOperations()
-        val isProcessing = retryQueue.isCurrentlyProcessing()
-        return RetryQueueDetails(pendingCount, pendingOps, isProcessing)
-    }
 
     fun fetchRetryQueueDetails() {
         viewModelScope.launch {
-            _retryQueueDetailsEvent.send(getRetryQueueSnapshot())
+            _retryQueueDetailsEvent.send(retryRepository.getRetryQueueSnapshot())
         }
     }
 
@@ -82,8 +67,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             var files = libraryList
             try {
-                files = libraryList ?: resourcesRepository.getAllLibrariesToSync()
-                resourceDownloadCoordinator.startBackgroundDownload(downloadAllFiles(files))
+                files = resourcesRepository.downloadFiles(libraryList)
             } finally {
                 _downloadCompleteEvent.send(files ?: emptyList())
             }

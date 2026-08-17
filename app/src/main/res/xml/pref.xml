@@ -1,9 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <Preference
-        android:key="dark_mode"
-        android:title="@string/dark_mode" />
     <Preference
         android:key="text_size"
         android:title="@string/text_size" />
@@ -14,9 +10,6 @@
         android:key="storage_breakdown"
         android:title="@string/storage_breakdown"
         android:summary="@string/storage_breakdown_summary" />
-    <Preference
-        android:key="freeup_space"
-        android:title="@string/freeup_space" />
     <PreferenceCategory
         android:dependency="auto_sync_with_server"
         android:title="@string/auto_sync">

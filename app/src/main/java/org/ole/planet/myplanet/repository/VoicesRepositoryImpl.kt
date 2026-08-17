@@ -32,7 +32,6 @@ class VoicesRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val gson: Gson,
     private val sharedPrefManager: SharedPrefManager,
-    private val userRepositoryLazy: dagger.Lazy<UserRepository>,
     private val teamNotificationDao: TeamNotificationDao,
     private val newsDao: NewsDao,
     private val myLibraryDao: MyLibraryDao
@@ -72,14 +71,6 @@ class VoicesRepositoryImpl @Inject constructor(
         if (toUpdate.isNotEmpty()) {
             newsDao.upsertAll(toUpdate)
         }
-    }
-
-    override suspend fun getUserById(userId: String): UserEntity? {
-        return userRepositoryLazy.get().getUserById(userId)
-    }
-
-    override suspend fun getLibraryResource(resourceId: String): MyLibrary? {
-        return myLibraryDao.getByUnderscoreId(resourceId)
     }
 
     override suspend fun getNewsWithReplies(newsId: String): Pair<News?, List<News>> {
@@ -158,7 +149,9 @@ class VoicesRepositoryImpl @Inject constructor(
                     o.id == n.id && o.time == n.time &&
                             o.labels?.toSet() == n.labels?.toSet() &&
                             o.message == n.message &&
-                            o.isEdited == n.isEdited
+                            o.isEdited == n.isEdited &&
+                            o.imageUrls?.toList() == n.imageUrls?.toList() &&
+                            o.images == n.images
                 }
             }
             .map { allNews ->
@@ -174,7 +167,14 @@ class VoicesRepositoryImpl @Inject constructor(
     override suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<News>> {
         return newsDao.getTopLevelByTeamFlow(teamId, teamIdPattern(teamId))
             .distinctUntilChanged { old, new ->
-                old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.time == n.time }
+                old.size == new.size && old.zip(new).all { (o, n) ->
+                    o.id == n.id && o.time == n.time &&
+                            o.message == n.message &&
+                            o.isEdited == n.isEdited &&
+                            o.imageUrls?.toList() == n.imageUrls?.toList() &&
+                            o.images == n.images &&
+                            o.labels?.toSet() == n.labels?.toSet()
+                }
             }
             .flowOn(dispatcherProvider.default)
     }
@@ -266,11 +266,7 @@ class VoicesRepositoryImpl @Inject constructor(
 
     // Gathers a post and all of its (recursive) replies for deletion.
     private suspend fun collectNewsAndReplies(newsId: String): List<String> {
-        val ids = mutableListOf(newsId)
-        newsDao.getDirectReplies(newsId).forEach { reply ->
-            ids.addAll(collectNewsAndReplies(reply.id))
-        }
-        return ids
+        return newsDao.getNewsAndRepliesIds(newsId)
     }
 
     override suspend fun addLabel(newsId: String, label: String) {
@@ -305,7 +301,7 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun postReply(message: String, news: News, currentUser: UserEntity, imageList: List<String>?) {
-        val newsId = news._id ?: news.id
+        val newsId = news.id
         val map = HashMap<String?, String>()
         map["message"] = message
         map["viewableBy"] = news.viewableBy ?: ""
@@ -318,9 +314,9 @@ class VoicesRepositoryImpl @Inject constructor(
         newsDao.upsert(reply)
     }
 
-    override suspend fun editPost(newsId: String, message: String, imagesToRemove: Set<String>, newImages: List<String>?) {
-        if (message.isEmpty()) return
-        val news = newsDao.getById(newsId) ?: return
+    override suspend fun editPost(newsId: String, message: String, imagesToRemove: Set<String>, newImages: List<String>?): News? {
+        if (message.isEmpty()) return null
+        val news = newsDao.getById(newsId) ?: return null
         val urls = (news.imageUrls ?: emptyList()).toMutableList()
         if (imagesToRemove.isNotEmpty()) {
             val updatedUrls = urls.filter { imageUrlJson ->
@@ -339,6 +335,7 @@ class VoicesRepositoryImpl @Inject constructor(
         news.imageUrls = urls
         news.updateMessage(message)
         newsDao.upsert(news)
+        return newsDao.getById(newsId)
     }
 
     private fun isCommunitySection(news: News): Boolean {
@@ -380,11 +377,6 @@ class VoicesRepositoryImpl @Inject constructor(
         val existing = newsDao.getByUnderscoreIds(underscoreIds).associateBy { it._id }
         val newsList = docs.map { buildNewsFromJson(it, existing) }
         newsDao.upsertAll(newsList)
-        saveConcatenatedLinksToPrefs()
-    }
-
-    override suspend fun insertNewsFromJson(doc: JsonObject) {
-        newsDao.upsert(buildNewsFromJson(doc))
         saveConcatenatedLinksToPrefs()
     }
 

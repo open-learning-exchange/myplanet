@@ -7,11 +7,11 @@ import com.google.gson.JsonObject
 import org.ole.planet.myplanet.utils.NetworkUtils
 
 /**
- * Room entity for crash/ANR/error logs, replacing the former Realm APK log model. Logs are written via
+ * Room entity for crash/ANR/error logs, replacing the former APK log model. Logs are written via
  * [org.ole.planet.myplanet.data.room.dao.ApkLogDao] and uploaded through the Room upload path
  * (`UploadConfigs.CrashLog`). A row with a null `_rev` is considered pending upload.
  */
-@Entity(tableName = "apk_log")
+@Entity(tableName = "apk_log", indices = [androidx.room.Index("_rev")])
 open class ApkLog {
     @PrimaryKey
     var id: String = ""

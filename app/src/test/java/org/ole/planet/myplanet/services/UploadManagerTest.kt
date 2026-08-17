@@ -28,7 +28,6 @@ import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MyLibrary
-import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.StepExam
@@ -38,6 +37,7 @@ import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.TeamUploadData
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadRepository
@@ -56,6 +56,74 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UploadManagerTest {
+
+    @Test
+    fun `uploadTeams handles bulk success`() = testScope.runTest {
+
+        val mockTeam1 = TeamUploadData("team1", JsonObject(), false, null)
+        val mockTeam2 = TeamUploadData("team2", JsonObject(), false, null)
+        val mockTeam3 = TeamUploadData("team3", JsonObject(), true, null)
+        val mockRepo = io.mockk.mockk<TeamsSyncRepository>(relaxed = true)
+        every { teamsSyncRepository.get() } returns mockRepo
+        coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam1, mockTeam2, mockTeam3)
+
+        val bulkResponse = com.google.gson.JsonArray().apply {
+            add(JsonObject().apply { addProperty("id", "team1"); addProperty("rev", "rev1") })
+            add(JsonObject().apply { addProperty("id", "team2"); addProperty("error", "conflict") })
+            add(JsonObject().apply { addProperty("id", "team3"); addProperty("rev", "rev3") })
+        }
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns retrofit2.Response.success(bulkResponse)
+
+        coEvery { retryQueue.queueFailedOperation(any(), any(), any(), any(), any(), any(), any()) } returns Unit
+        coEvery { mockRepo.markTeamsUploaded(any()) } returns Unit
+        coEvery { mockRepo.deleteLocalTeamRecords(any()) } returns Unit
+
+        uploadManager.uploadTeams()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { uploadRepository.postUploadArray("http://mock.url/teams/_bulk_docs", any()) }
+        coVerify(exactly = 1) { mockRepo.markTeamsUploaded(mapOf("team1" to "rev1")) }
+        coVerify(exactly = 1) { mockRepo.deleteLocalTeamRecords(listOf("team3")) }
+        coVerify(exactly = 0) { retryQueue.queueFailedOperation(uploadType = "MyTeam", error = any(), payload = any(), endpoint = "teams", httpMethod = "POST", dbId = "team2", modelClassName = "MyTeam") }
+    }
+
+    @Test
+    fun `uploadTeams handles bulk network failure`() = testScope.runTest {
+        val mockRepo = io.mockk.mockk<TeamsSyncRepository>(relaxed = true)
+        every { teamsSyncRepository.get() } returns mockRepo
+
+        val mockTeam = TeamUploadData("team1", JsonObject(), false, null)
+        coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam)
+
+        val errorBody = okhttp3.ResponseBody.create(null, "Error")
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns retrofit2.Response.error(500, errorBody)
+        coEvery { retryQueue.queueFailedOperation(any(), any(), any(), any(), any(), any(), any()) } returns Unit
+
+        uploadManager.uploadTeams()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { uploadRepository.postUploadArray("http://mock.url/teams/_bulk_docs", any()) }
+        coVerify(exactly = 1) { retryQueue.queueFailedOperation(uploadType = "MyTeam", error = any(), payload = any(), endpoint = "teams", httpMethod = "POST", dbId = "team1", modelClassName = "MyTeam") }
+    }
+
+    @Test
+    fun `uploadTeams handles bulk exception`() = testScope.runTest {
+        val mockRepo = io.mockk.mockk<TeamsSyncRepository>(relaxed = true)
+        every { teamsSyncRepository.get() } returns mockRepo
+
+        val mockTeam = TeamUploadData("team1", JsonObject(), false, null)
+        coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam)
+
+        coEvery { uploadRepository.postUploadArray(any(), any()) } throws java.io.IOException("Network down")
+        coEvery { retryQueue.queueFailedOperation(any(), any(), any(), any(), any(), any(), any()) } returns Unit
+
+        uploadManager.uploadTeams()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { uploadRepository.postUploadArray("http://mock.url/teams/_bulk_docs", any()) }
+        coVerify(exactly = 1) { retryQueue.queueFailedOperation(uploadType = "MyTeam", error = any(), payload = any(), endpoint = "teams", httpMethod = "POST", dbId = "team1", modelClassName = "MyTeam") }
+    }
+
     private lateinit var uploadManager: UploadManager
     private val context: Context = mockk(relaxed = true)
     private val submissionsRepository: SubmissionsRepository = mockk(relaxed = true)
@@ -297,43 +365,4 @@ class UploadManagerTest {
         coVerify { listener.onSuccess("Resource upload failed: $errorMessage") }
     }
 
-    @Test
-    fun `uploadMyPersonal delegates to personalsRepository and calls uploadAttachment`() = testScope.runTest {
-        val mockPersonal = mockk<Personal>(relaxed = true)
-        every { mockPersonal.isUploaded } returns false
-        every { mockPersonal.path } returns null
-
-        coEvery { personalsRepository.uploadPersonalDocument(mockPersonal) } returns Pair("remote-id", "remote-rev")
-
-        val result = uploadManager.uploadMyPersonal(mockPersonal)
-        advanceUntilIdle()
-
-        coVerify { personalsRepository.uploadPersonalDocument(mockPersonal) }
-        assert(result == "Personal resource uploaded successfully")
-    }
-
-    @Test
-    fun `uploadMyPersonal returns failure message when response is null`() = testScope.runTest {
-        val mockPersonal = mockk<Personal>(relaxed = true)
-        every { mockPersonal.isUploaded } returns false
-
-        coEvery { personalsRepository.uploadPersonalDocument(mockPersonal) } returns null
-
-        val result = uploadManager.uploadMyPersonal(mockPersonal)
-        advanceUntilIdle()
-
-        coVerify { personalsRepository.uploadPersonalDocument(mockPersonal) }
-        assert(result == "Failed to upload personal resource: No response")
-    }
-
-    @Test
-    fun `uploadMyPersonal returns already uploaded message`() = testScope.runTest {
-        val mockPersonal = mockk<Personal>(relaxed = true)
-        every { mockPersonal.isUploaded } returns true
-
-        val result = uploadManager.uploadMyPersonal(mockPersonal)
-        advanceUntilIdle()
-
-        assert(result == "Resource already uploaded")
-    }
 }

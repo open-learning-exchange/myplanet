@@ -15,6 +15,7 @@ import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
 import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.HealthExamination.Companion.serialize
+import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.AndroidDecrypter
@@ -134,4 +135,78 @@ class HealthRepositoryImpl @Inject constructor(
         return uploadedHealths
     }
 
+    override suspend fun getByIdOrUserId(id: String): HealthExamination? {
+        return healthExaminationDao.getByIdOrUserId(id)
+    }
+
+    override suspend fun getByProfileId(profileId: String): List<HealthExamination> {
+        return healthExaminationDao.getByProfileId(profileId)
+    }
+
+    override suspend fun upsert(examination: HealthExamination) {
+        healthExaminationDao.upsert(examination)
+    }
+
+    override suspend fun getPatientById(id: String): UserEntity? {
+        return userDao.getById(id)
+    }
+
+    override suspend fun getPatientsSortedBy(fieldName: String, descending: Boolean): List<UserEntity> {
+        val users = userDao.getAll()
+        return sortPatients(users, fieldName, descending)
+    }
+
+    override suspend fun searchPatients(query: String, sortField: String, descending: Boolean): List<UserEntity> {
+        val users = if (query.isBlank()) {
+            userDao.getAll()
+        } else {
+            userDao.search(query)
+        }
+        return sortPatients(users, sortField, descending)
+    }
+
+    private fun sortPatients(users: List<UserEntity>, fieldName: String, descending: Boolean): List<UserEntity> {
+        fun value(value: String?) = value.orEmpty().lowercase()
+        return when (fieldName) {
+            "joinDate" -> if (descending) users.sortedByDescending { it.joinDate } else users.sortedBy { it.joinDate }
+            "name" -> if (descending) users.sortedByDescending { value(it.name) } else users.sortedBy { value(it.name) }
+            else -> users
+        }
+    }
+
+    override suspend fun getPatientHealthRecords(userId: String, currentUser: UserEntity): HealthRecord? {
+        val mh = getByIdOrUserId(userId) ?: return null
+        val json = AndroidDecrypter.decrypt(mh.data, currentUser.key, currentUser.iv)
+        val mm = if (json.isNullOrEmpty()) {
+            null
+        } else {
+            try {
+                JsonUtils.gson.fromJson(json, MyHealth::class.java)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        } ?: return null
+
+        val list = getByProfileId(mm.userKey ?: "")
+        if (list.isEmpty()) {
+            return HealthRecord(mh, mm, emptyList(), emptyMap())
+        }
+
+        val userIds = list.mapNotNull {
+            it.getEncryptedDataAsJson(currentUser).let { jsonData ->
+                jsonData.get("createdBy")?.asString
+            }
+        }.distinct()
+
+        val userMap = if (userIds.isEmpty()) {
+            emptyMap()
+        } else {
+            val userIdSet = userIds.toSet()
+            userDao.getAll()
+                .filter { it.id in userIdSet }
+                .associateBy { it.id ?: "" }
+        }
+        return HealthRecord(mh, mm, list, userMap)
+    }
 }

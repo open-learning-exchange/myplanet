@@ -14,9 +14,7 @@ import android.widget.RadioButton
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.applandeo.materialcalendarview.CalendarDay
@@ -25,9 +23,9 @@ import com.applandeo.materialcalendarview.listeners.OnCalendarDayClickListener
 import dagger.hilt.android.AndroidEntryPoint
 import java.net.MalformedURLException
 import java.net.URL
-import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Locale
 import kotlinx.coroutines.launch
@@ -41,6 +39,7 @@ import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.ui.events.EventsAdapter
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class TeamCalendarFragment : BaseTeamFragment() {
@@ -61,8 +60,6 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private val viewModel: TeamCalendarViewModel by viewModels()
     private var cachedCardHeight: Int? = null
     private var lastWidthPixels: Int? = null
-    private var dateFormat: SimpleDateFormat? = null
-    private var lastLocale: Locale? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentEnterpriseCalendarBinding.inflate(inflater, container, false)
@@ -222,50 +219,42 @@ class TeamCalendarFragment : BaseTeamFragment() {
         calendar = binding.calendarView
         calendarEventsMap = mutableMapOf()
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    viewModel.meetups.collect { meetups ->
-                        val newDates = meetups.flatMap { it.getAllEventDates() }.toMutableList()
+        collectWhenStarted(viewModel.meetups) { meetups ->
+            val newDates = meetups.flatMap { it.getAllEventDates() }.toMutableList()
 
-                        if (isAdded && activity != null) {
-                            eventDates.clear()
-                            eventDates.addAll(newDates)
-                            val calendarDays = newDates.map { CalendarDay(it).apply {
-                                imageResource = R.drawable.ic_calendar
-                            } }
-                            binding.calendarView.setCalendarDays(calendarDays)
-                            binding.calendarView.selectedDates = ArrayList(newDates)
-                        }
+            if (isAdded && activity != null) {
+                eventDates.clear()
+                eventDates.addAll(newDates)
+                val calendarDays = newDates.map { CalendarDay(it).apply {
+                    imageResource = R.drawable.ic_calendar
+                } }
+                binding.calendarView.setCalendarDays(calendarDays)
+                binding.calendarView.selectedDates = ArrayList(newDates)
+            }
 
-                        if (::clickedCalendar.isInitialized && meetupDialog?.isShowing == true) {
-                            val clickedDateInMillis = clickedCalendar.timeInMillis
-                            val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
-                                .atZone(ZoneId.systemDefault())
-                                .toLocalDate()
+            if (::clickedCalendar.isInitialized && meetupDialog?.isShowing == true) {
+                val clickedDateInMillis = clickedCalendar.timeInMillis
+                val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
 
-                            val filteredMeetups = meetups.filter { meetup ->
-                                meetup.occursOnDate(clickedDate)
-                            }
-
-                            if (filteredMeetups.isEmpty()) {
-                                meetupDialog?.dismiss()
-                            } else {
-                                meetupAdapter?.submitList(filteredMeetups)
-                            }
-                        }
-                    }
+                val filteredMeetups = meetups.filter { meetup ->
+                    meetup.occursOnDate(clickedDate)
                 }
-                launch {
-                    viewModel.createMeetupResult.collect { success ->
-                        if (success) {
-                            Utilities.toast(activity, getString(R.string.meetup_added))
-                            addMeetupDialog?.dismiss()
-                        } else {
-                            Utilities.toast(activity, getString(R.string.meetup_not_added))
-                        }
-                    }
+
+                if (filteredMeetups.isEmpty()) {
+                    meetupDialog?.dismiss()
+                } else {
+                    meetupAdapter?.submitList(filteredMeetups)
                 }
+            }
+        }
+        collectWhenStarted(viewModel.createMeetupResult) { success ->
+            if (success) {
+                Utilities.toast(activity, getString(R.string.meetup_added))
+                addMeetupDialog?.dismiss()
+            } else {
+                Utilities.toast(activity, getString(R.string.meetup_not_added))
             }
         }
 
@@ -502,14 +491,17 @@ class TeamCalendarFragment : BaseTeamFragment() {
         llImage?.removeAllViews()
     }
 
-    private fun getDateFormat(): SimpleDateFormat {
+    private var dateFormatter: DateTimeFormatter? = null
+    private var lastLocale: Locale? = null
+
+    private fun getDateFormatter(): DateTimeFormatter {
         val currentLocale = Locale.getDefault()
-        val cached = dateFormat
+        val cached = dateFormatter
         if (cached != null && lastLocale == currentLocale) {
             return cached
         }
-        return SimpleDateFormat("EEE, MMM d, yyyy", currentLocale).also {
-            dateFormat = it
+        return DateTimeFormatter.ofPattern("EEE, MMM d, yyyy", currentLocale).withZone(ZoneId.systemDefault()).also {
+            dateFormatter = it
             lastLocale = currentLocale
         }
     }
@@ -535,8 +527,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.meetup_dialog, null)
         val recyclerView = dialogView.findViewById<RecyclerView>(R.id.rvMeetups)
         val dialogTitle = dialogView.findViewById< TextView>(R.id.tvTitle)
-        val formatter = getDateFormat()
-        dialogTitle.text = formatter.format(clickedCalendar.time)
+        dialogTitle.text = getDateFormatter().format(clickedCalendar.toInstant())
         val extraHeight = TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP, 12f, resources.displayMetrics
         ).toInt()

@@ -168,6 +168,7 @@
     <string name="cannot_remove_user">لم يتمكن من إزالة المستخدم</string>
     <string name="no_members_task">لا يوجد أعضاء فريق لتكليف المهام</string>
     <string name="no_member_selected">لم يتم اختيار أي عضو. يرجى المحاولة مرة أخرى</string>
+    <string name="last_login_message">هذا هو تسجيل دخولك الأخير قبل أن تصبح عضواً</string>
 
     <string-array name="level">
         <item>مبتدئ</item>
@@ -357,7 +358,8 @@
     <string-array name="sort_by_date">
         <item>ترتيب حسب التاريخ - تنازليًا</item>
         <item>ترتيب حسب التاريخ - تصاعديًا</item>
-        <item>ترتيب حسب العنوان</item>
+        <item>ترتيب حسب العنوان - تصاعديًا</item>
+        <item>ترتيب حسب العنوان - تنازليًا</item>
     </string-array>
 
     <string-array name="sort_member">
@@ -778,6 +780,7 @@
     <string name="unable_to_clear_files">غير قادر على مسح الملفات</string>
     <string name="last_synced_never">لم يتم المزامنة أبدا</string>
     <string name="last_synced_colon">آخر مزامنة: </string>
+    <string name="dashboard_sync_status">مزامنة · %1$s</string>
 
     <string name="disclaimer">
     <![CDATA[
@@ -947,6 +950,9 @@
     <string name="virtual_assistant_currently_not_available">المساعد الافتراضي غير متاح حالياً</string>
     <string name="no_courses">لا تتوفر دورات</string>
     <string name="no_resources">لا تتوفر موارد</string>
+    <string name="no_resources_added_yet">يمكنك إضافة موارد</string>
+    <string name="no_courses_joined_yet">يمكنك الانضمام إلى الدورات</string>
+    <string name="no_teams_joined_yet">يمكنك الانضمام إلى فريق</string>
     <string name="no_finance_record">لا يتوفر سجل مالي</string>
     <string name="no_team_courses">لا تتوفر دورات الفريق</string>
     <string name="no_team_resources">لا تتوفر موارد الفريق</string>
@@ -1300,6 +1306,8 @@
     <string name="storage_unknown_resource">مورد غير معروف</string>
     <string name="file_count_one">ملف واحد</string>
     <string name="file_count_many">%1$d ملفات</string>
+    <string name="storage_deleting_progress">جارٍ حذف الملفات... تم حذف %1$d (%2$s)</string>
+    <string name="storage_freed_summary">تم تحرير %1$s (%2$d ملفات)</string>
     <string name="skip">تخطي</string>
     <string name="add_meetup">إضافة لقاء</string>
     <string name="download_report">تحميل التقرير</string>
@@ -1361,11 +1369,28 @@
     <string name="failed_to_update_resource">فشل تحديث المورد</string>
     <string name="join_team_first">يرجى الانضمام إلى فريق لمشاركة هذه المحادثة</string>
     <string name="join_enterprise_first">يرجى الانضمام إلى مؤسسة لمشاركة هذه المحادثة</string>
-
     <string name="open_link_with">فتح الرابط باستخدام</string>
     <string name="just_once">مرة واحدة فقط</string>
     <string name="always">دائمًا</string>
-    <string name="survey_load_failed">تعذر تحميل الاستبيان. حاول مرة أخرى.</string>
-    <string name="survey_submitted">تم إرسال الاستبيان. شكرًا لك!</string>
-    <string name="survey_submit_failed">تعذر إرسال الاستبيان. حاول مرة أخرى.</string>
+    <string name="survey_load_failed">تعذر تحميل الاستبانة. حاول مرة أخرى.</string>
+    <string name="survey_submitted">تم إرسال الاستبانة. شكرًا لك!</string>
+    <string name="survey_submit_failed">تعذر إرسال الاستبانة. حاول مرة أخرى.</string>
+    <string name="item_count_pill">%d عناصر</string>
+    <string name="view_grid">عرض شبكي</string>
+    <string name="view_list">عرض قائمة</string>
+    <string name="steps_done_of_total">%1$d من %2$d مكتملة</string>
+    <string name="course_steps_count">%d خطوات</string>
+    <string name="subject_label_mathematics">الرياضيات</string>
+    <string name="subject_label_literacy">القراءة والكتابة</string>
+    <string name="subject_label_health">الصحة</string>
+    <string name="subject_label_social_studies">الدراسات الاجتماعية</string>
+    <string name="subject_label_technology">التكنولوجيا</string>
+    <string name="filter_all">الكل</string>
+    <string name="filter_books">كتب</string>
+    <string name="filter_videos">مقاطع فيديو</string>
+    <string name="filter_audio">صوتيات</string>
+    <string name="filter_pdfs">ملفات PDF</string>
+    <string name="downloaded">تم التنزيل</string>
+    <string name="not_downloaded">لم يتم التنزيل</string>
+
 </resources>

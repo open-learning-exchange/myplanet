@@ -10,14 +10,13 @@ import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
 import org.ole.planet.myplanet.model.MyTeam
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ImageViewerUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class EnterprisesReportsAdapter(
     private val context: Context,
-    private val prefData: SharedPrefManager,
+    private val teamName: String?,
     private val onEdit: (MyTeam) -> Unit,
     private val onDelete: (MyTeam) -> Unit
 ) : ListAdapter<MyTeam, EnterprisesReportsAdapter.ReportsViewHolder>(diffCallback) {
@@ -28,17 +27,29 @@ class EnterprisesReportsAdapter(
         return ReportsViewHolder(binding)
     }
 
+    override fun onBindViewHolder(holder: ReportsViewHolder, position: Int, payloads: MutableList<Any>) {
+        if (payloads.isNotEmpty()) {
+            var unhandled = false
+            payloads.forEach { payload ->
+                if (payload == PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED) {
+                    setNonTeamMemberVisibility(holder.binding)
+                } else {
+                    unhandled = true
+                }
+            }
+            if (unhandled) {
+                super.onBindViewHolder(holder, position, payloads)
+            }
+        } else {
+            super.onBindViewHolder(holder, position, payloads)
+        }
+    }
+
     override fun onBindViewHolder(holder: ReportsViewHolder, position: Int) {
         val binding = holder.binding
-        if (nonTeamMember) {
-            binding.edit.visibility = View.GONE
-            binding.delete.visibility = View.GONE
-        } else {
-            binding.edit.visibility = View.VISIBLE
-            binding.delete.visibility = View.VISIBLE
-        }
+        setNonTeamMemberVisibility(binding)
         val report = getItem(position)
-        binding.tvReportTitle.text = context.getString(R.string.team_financial_report, prefData.getTeamName())
+        binding.tvReportTitle.text = context.getString(R.string.team_financial_report, teamName)
         report?.let {
             with(binding) {
                 val totalIncome = report.sales + report.otherIncome
@@ -95,15 +106,40 @@ class EnterprisesReportsAdapter(
     }
 
     fun setNonTeamMember(nonTeamMember: Boolean) {
+        if (this.nonTeamMember == nonTeamMember) return
         this.nonTeamMember = nonTeamMember
+        notifyItemRangeChanged(0, itemCount, PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED)
+    }
+
+    private fun setNonTeamMemberVisibility(binding: ReportListItemBinding) {
+        if (nonTeamMember) {
+            binding.edit.visibility = View.GONE
+            binding.delete.visibility = View.GONE
+        } else {
+            binding.edit.visibility = View.VISIBLE
+            binding.delete.visibility = View.VISIBLE
+        }
     }
 
     class ReportsViewHolder(val binding: ReportListItemBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
+        const val PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED = "PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED"
         val diffCallback = DiffUtils.itemCallback<MyTeam>(
             areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
-            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+            areContentsTheSame = { oldItem, newItem ->
+                oldItem.startDate == newItem.startDate &&
+                    oldItem.endDate == newItem.endDate &&
+                    oldItem.beginningBalance == newItem.beginningBalance &&
+                    oldItem.sales == newItem.sales &&
+                    oldItem.otherIncome == newItem.otherIncome &&
+                    oldItem.wages == newItem.wages &&
+                    oldItem.otherExpenses == newItem.otherExpenses &&
+                    oldItem.description == newItem.description &&
+                    oldItem.createdDate == newItem.createdDate &&
+                    oldItem.updatedDate == newItem.updatedDate &&
+                    oldItem.imageName == newItem.imageName
+            }
         )
     }
 }

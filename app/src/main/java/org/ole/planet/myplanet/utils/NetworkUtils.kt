@@ -25,8 +25,9 @@ import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 object NetworkUtils {
-    private val coreEntryPoint: CoreDependenciesEntryPoint get() =
+    private val coreEntryPoint: CoreDependenciesEntryPoint by lazy {
         EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
+    }
 
     // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
     private val sharedPrefManager: SharedPrefManager by lazy {
@@ -49,7 +50,7 @@ object NetworkUtils {
     val isNetworkConnectedFlow: StateFlow<Boolean> by lazy {
         _currentNetwork
             .map { it.isConnected() }
-            .stateIn(scope = coroutineScope, started = SharingStarted.WhileSubscribed(), initialValue = _currentNetwork.value.isConnected())
+            .stateIn(scope = coroutineScope, started = SharingStarted.WhileSubscribed(5_000), initialValue = _currentNetwork.value.isConnected())
     }
 
     val isNetworkConnected: Boolean

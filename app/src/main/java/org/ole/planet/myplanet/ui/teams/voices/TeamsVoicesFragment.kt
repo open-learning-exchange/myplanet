@@ -27,7 +27,6 @@ import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.ui.voices.VoicesAdapterHelper
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
@@ -41,8 +40,6 @@ class TeamsVoicesFragment : BaseTeamFragment() {
 
     @Inject
     lateinit var voicesRepository: VoicesRepository
-    @Inject
-    override lateinit var dispatcherProvider: DispatcherProvider
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentDiscussionListBinding.inflate(inflater, container, false)
@@ -88,7 +85,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
             }
         }
 
-        if (shouldQueryTeamFromRealm()) {
+        if (shouldQueryTeamLocally()) {
             viewModel.loadTeam(teamId)
             collectWhenStarted(viewModel.teamPolicy) { result ->
                 result?.let { (teamResult, policy) ->
@@ -196,7 +193,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                 removeLabelFn = { newsId, label -> viewModel.removeLabel(newsId, label) }
             )
             val effectiveTeamName = getEffectiveTeamName()
-            val adapterNews = activity?.let {
+            adapterNews = activity?.let {
                 VoicesAdapter(
                     context = it,
                     currentUser = user,

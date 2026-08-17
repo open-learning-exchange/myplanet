@@ -99,7 +99,7 @@ class AchievementFragment : BaseContainerFragment() {
         super.onViewCreated(view, savedInstanceState)
         setupRealtimeSync()
         viewLifecycleOwner.lifecycleScope.launch {
-            user = profileDbHandler.getUserModel()
+            user = userRepository.getUserModel()
             setupUserData()
             achievementData = loadAchievementDataAsync()
             updateAchievementUI()
@@ -116,10 +116,8 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun setupRealtimeSync() {
-        collectWhenStarted(viewModel.dataUpdateFlow) { update ->
-            if (update.table == "achievements" && update.shouldRefreshUI) {
-                refreshAchievementData()
-            }
+        collectWhenStarted(viewModel.achievementUpdates) {
+            refreshAchievementData()
         }
     }
 

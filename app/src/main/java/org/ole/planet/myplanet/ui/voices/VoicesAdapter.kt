@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
 import android.content.DialogInterface
-import android.graphics.Color
 import android.os.Build
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -83,10 +82,33 @@ class VoicesAdapter(
                 oldItem.id == newItem.id && oldItem.time == newItem.time &&
                         oldItem.isEdited == newItem.isEdited && oldItem.message == newItem.message &&
                         oldItem.userName == newItem.userName && oldItem.userId == newItem.userId &&
-                        oldItem.sharedBy == newItem.sharedBy && oldItem.labels?.toList() == newItem.labels?.toList()
+                        oldItem.sharedBy == newItem.sharedBy && oldItem.labels?.toList() == newItem.labels?.toList() &&
+                        oldItem.avatar == newItem.avatar && oldItem.imageUrls?.toList() == newItem.imageUrls?.toList() &&
+                        oldItem.images == newItem.images && oldItem.replyTo == newItem.replyTo
             } catch (e: Exception) {
                 false
             }
+        },
+        getChangePayload = { oldItem, newItem ->
+            val payloads = mutableListOf<String>()
+
+            if (oldItem.labels?.toList() != newItem.labels?.toList()) {
+                payloads.add(PAYLOAD_LABELS_CHANGED)
+            }
+            if (oldItem.imageUrls?.toList() != newItem.imageUrls?.toList() || oldItem.images != newItem.images || oldItem.parsedImageUrls != newItem.parsedImageUrls) {
+                payloads.add(PAYLOAD_IMAGES_CHANGED)
+            }
+            if (oldItem.userId != newItem.userId || oldItem.userName != newItem.userName || oldItem.avatar != newItem.avatar) {
+                payloads.add(PAYLOAD_USER_FETCHED)
+            }
+            if (oldItem.message != newItem.message || oldItem.isEdited != newItem.isEdited || oldItem.time != newItem.time || oldItem.sharedBy != newItem.sharedBy || oldItem.replyTo != newItem.replyTo) {
+                payloads.add(PAYLOAD_EDIT_ACTION)
+            }
+
+            // Every field checked in areContentsTheSame is covered by the buckets above.
+            // If payloads is empty here, it means a future field was added to areContentsTheSame
+            // without a corresponding bucket. We MUST return null to trigger a full rebind to prevent stale UI.
+            if (payloads.isNotEmpty()) payloads else null
         }
     )
 ) {
@@ -97,6 +119,8 @@ class VoicesAdapter(
         const val PAYLOAD_REPLY_COUNT = "PAYLOAD_REPLY_COUNT"
         const val PAYLOAD_USER_FETCHED = "PAYLOAD_USER_FETCHED"
         const val PAYLOAD_EDIT_ACTION = "PAYLOAD_EDIT_ACTION"
+        const val PAYLOAD_LABELS_CHANGED = "PAYLOAD_LABELS_CHANGED"
+        const val PAYLOAD_IMAGES_CHANGED = "PAYLOAD_IMAGES_CHANGED"
     }
 
     private data class RowState(
@@ -119,10 +143,7 @@ class VoicesAdapter(
         )
     }
 
-    private var originalList: List<News> = emptyList()
-
-    override fun submitList(list: List<News>?) {
-        originalList = list ?: emptyList()
+    private fun prepareSubmitList(list: List<News>?): List<News> {
         val finalList = mutableListOf<News>()
         parentNews?.let {
             preParseNews(it)
@@ -132,21 +153,26 @@ class VoicesAdapter(
             it.forEach { item -> preParseNews(item) }
             finalList.addAll(it)
         }
-        super.submitList(finalList)
+        return finalList
+    }
+
+    override fun submitList(list: List<News>?) {
+        super.submitList(prepareSubmitList(list))
     }
 
     override fun submitList(list: List<News>?, commitCallback: Runnable?) {
-        originalList = list ?: emptyList()
-        val finalList = mutableListOf<News>()
-        parentNews?.let {
-            preParseNews(it)
-            finalList.add(it)
+        super.submitList(prepareSubmitList(list), commitCallback)
+    }
+
+    override fun onCurrentListChanged(previousList: List<News>, currentList: List<News>) {
+        super.onCurrentListChanged(previousList, currentList)
+        userIdPositions.clear()
+        currentList.forEachIndexed { index, news ->
+            val uId = news.userId
+            if (!uId.isNullOrEmpty()) {
+                userIdPositions.getOrPut(uId) { mutableListOf() }.add(index)
+            }
         }
-        list?.let {
-            it.forEach { item -> preParseNews(item) }
-            finalList.addAll(it)
-        }
-        super.submitList(finalList, commitCallback)
     }
 
     private val externalFilesDir = FileUtils.getExternalFilesDir(context)
@@ -158,6 +184,7 @@ class VoicesAdapter(
     private val userCache = object : LinkedHashMap<String, UserEntity?>(64, 0.75f, true) { override fun removeEldestEntry(e: Map.Entry<String, UserEntity?>) = size > 128 }
     private val fetchingUserIds = mutableSetOf<String>()
     private val replyCountCache = mutableMapOf<String, Int>()
+    private val userIdPositions = mutableMapOf<String, MutableList<Int>>()
     private val leadersList: List<UserEntity> by lazy {
         val raw = getCommunityLeadersFn()
         userRepository.parseLeadersJson(raw)
@@ -233,7 +260,6 @@ class VoicesAdapter(
 
 
     @SuppressLint("SetTextI18n")
-    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
         if (payloads.isEmpty()) {
             super.onBindViewHolder(holder, position, payloads)
@@ -243,13 +269,19 @@ class VoicesAdapter(
         if (holder is VoicesViewHolder) {
             val news = getNews(holder, position)
 
-            for (payload in payloads) {
+            val flattenedPayloads = payloads.flatMap { if (it is List<*>) it.filterNotNull() else listOf(it) }
+
+            for (payload in flattenedPayloads) {
                 when (payload) {
                     PAYLOAD_TEAM_LEADER_CHANGED -> {
                         configureEditDeleteButtons(holder, news)
-                        val canManageLabels = canAddLabel(news)
-                        labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
-                        labelManager.showChips(holder.binding, news, canManageLabels)
+                        updateLabels(holder, news)
+                    }
+                    PAYLOAD_LABELS_CHANGED -> {
+                        updateLabels(holder, news)
+                    }
+                    PAYLOAD_IMAGES_CHANGED -> {
+                        loadImage(holder.binding, news)
                     }
                     PAYLOAD_CURRENT_USER_CHANGED -> {
                         val userModel = configureUser(holder, news)
@@ -257,28 +289,28 @@ class VoicesAdapter(
                         showShareButton(holder, news)
                         showReplyButton(holder, news, position)
                         updateReplyCount(holder, news, position)
-                        val canManageLabels = canAddLabel(news)
-                        labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
-                        labelManager.showChips(holder.binding, news, canManageLabels)
+                        updateLabels(holder, news)
                         val currentLeader = getCurrentLeader(userModel, news)
                         setMemberClickListeners(holder, userModel, currentLeader)
                     }
                     PAYLOAD_NON_TEAM_MEMBER_CHANGED -> {
                         showReplyButton(holder, news, position)
                         showShareButton(holder, news)
-                        val canManageLabels = canAddLabel(news)
-                        labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
-                        labelManager.showChips(holder.binding, news, canManageLabels)
+                        updateLabels(holder, news)
                     }
                     PAYLOAD_REPLY_COUNT -> updateReplyCount(holder, news, position)
                     PAYLOAD_USER_FETCHED -> {
                         val userModel = configureUser(holder, news)
                         val currentLeader = getCurrentLeader(userModel, news)
                         setMemberClickListeners(holder, userModel, currentLeader)
+                        configureEditDeleteButtons(holder, news)
                     }
                     PAYLOAD_EDIT_ACTION -> {
+                        val sharedTeamName = news.parsedSharedTeamName ?: JsonUtils.extractSharedTeamName(news)
+                        setMessageAndDate(holder, news, sharedTeamName)
                         configureEditDeleteButtons(holder, news)
                         showReplyButton(holder, news, position)
+                        handleChat(holder, news)
                     }
                 }
             }
@@ -293,7 +325,7 @@ class VoicesAdapter(
             val news = getNews(holder, position)
 
             run {
-                val sharedTeamName = JsonUtils.extractSharedTeamName(news)
+                val sharedTeamName = news.parsedSharedTeamName ?: JsonUtils.extractSharedTeamName(news)
                 resetViews(holder)
                 updateReplyCount(holder, news, position)
                 val userModel = configureUser(holder, news)
@@ -302,9 +334,7 @@ class VoicesAdapter(
                 configureEditDeleteButtons(holder, news)
                 loadImage(holder.binding, news)
                 showReplyButton(holder, news, position)
-                val canManageLabels = canAddLabel(news)
-                labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
-                news.let { labelManager.showChips(holder.binding, it, canManageLabels) }
+                updateLabels(holder, news)
                 handleChat(holder, news)
                 val currentLeader = getCurrentLeader(userModel, news)
                 setMemberClickListeners(holder, userModel, currentLeader)
@@ -313,14 +343,29 @@ class VoicesAdapter(
     }
 
     fun removePost(newsId: String) {
-        val snapshotList = currentList.toMutableList()
-        val pos = snapshotList.indexOfFirst { it?.id == newsId }
-        if (pos != -1) {
-            snapshotList.removeAt(pos)
-            submitList(snapshotList)
-        } else if (parentNews?.id == newsId) {
-            submitList(emptyList())
+        val isParent = parentNews?.id == newsId
+        val posInCurrent = currentList.indexOfFirst { it.id == newsId }
+
+        if (posInCurrent == -1 && !isParent) {
+            return
         }
+
+        if (isParent) {
+            parentNews = null
+        }
+
+        val updatedCurrentList = currentList.toMutableList()
+        if (posInCurrent != -1) {
+            updatedCurrentList.removeAt(posInCurrent)
+        }
+
+        val children = if (parentNews != null && updatedCurrentList.isNotEmpty() && updatedCurrentList[0].id == parentNews?.id) {
+            updatedCurrentList.drop(1)
+        } else {
+            updatedCurrentList
+        }
+        super.submitList(prepareSubmitList(children))
+
         parentNews?.id?.let { pid ->
             val current = replyCountCache[pid]
             replyCountCache[pid] = if (current != null) maxOf(0, current - 1) else 0
@@ -389,10 +434,8 @@ class VoicesAdapter(
                 getUserFn(userId) { userModel ->
                     userCache[userId] = userModel
                     fetchingUserIds.remove(userId)
-                    currentList.forEachIndexed { index, item ->
-                        if (item.userId == userId) {
-                            safeNotifyItemChanged(index, PAYLOAD_USER_FETCHED)
-                        }
+                    userIdPositions[userId]?.forEach { index ->
+                        safeNotifyItemChanged(index, PAYLOAD_USER_FETCHED)
                     }
                 }
             }
@@ -452,8 +495,18 @@ class VoicesAdapter(
                         holder,
                         voicesRepository,
                         { h, updatedNews, pos ->
-                            showReplyButton(h, updatedNews, pos)
-                            safeNotifyItemChanged(pos, PAYLOAD_EDIT_ACTION)
+                            val targetNews = updatedNews ?: news
+                            preParseNews(targetNews)
+                            if (pos in 0 until itemCount) {
+                                val newList = currentList.toMutableList()
+                                newList[pos] = targetNews
+                                submitList(newList) {
+                                    safeNotifyItemChanged(pos, PAYLOAD_EDIT_ACTION)
+                                }
+                            } else {
+                                showReplyButton(h, targetNews, pos)
+                                safeNotifyItemChanged(pos, PAYLOAD_EDIT_ACTION)
+                            }
                         },
                         onEditAction
                     )
@@ -503,10 +556,21 @@ class VoicesAdapter(
         return null
     }
 
+    private fun updateLabels(holder: VoicesViewHolder, news: News?) {
+        val canManageLabels = canAddLabel(news)
+        labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
+        news?.let { labelManager.showChips(holder.binding, it, canManageLabels) }
+    }
+
     fun updateParentNews(news: News?) {
         parentNews = news
         preParseNews(parentNews)
-        submitList(originalList)
+        val children = if (currentList.isNotEmpty() && currentList[0].id == parentNews?.id) {
+            currentList.drop(1)
+        } else {
+            currentList
+        }
+        super.submitList(prepareSubmitList(children))
     }
 
     private fun parseViewIn(viewIn: String?): JsonArray? {
@@ -558,15 +622,26 @@ class VoicesAdapter(
                 }
 
                 val currentImageUrls = it.imageUrls?.toList()
-                if ((it.parsedImageUrls == null || it.rawImageUrls != currentImageUrls) && !currentImageUrls.isNullOrEmpty()) {
-                    val parsed = parseImageUrls(currentImageUrls)
-                    if (parsed != null) {
-                        it.parsedImageUrls = parsed
-                        it.rawImageUrls = currentImageUrls
+                if (it.rawImageUrls != currentImageUrls) {
+                    if (!currentImageUrls.isNullOrEmpty()) {
+                        val parsed = parseImageUrls(currentImageUrls)
+                        if (parsed != null) {
+                            it.parsedImageUrls = parsed
+                            it.rawImageUrls = currentImageUrls
+                        }
+                    } else {
+                        it.parsedImageUrls = null
+                        it.rawImageUrls = null
                     }
                 }
-            } catch (e: IllegalStateException) {
-                // If Realm manages the object, and we are on a different thread, mutating @Ignore fields might throw.
+                if (it.parsedImagesArray == null || it.rawImages != it.images) {
+                    it.parsedImagesArray = it.imagesArray
+                    it.rawImages = it.images
+                }
+
+                it.parsedSharedTeamName = JsonUtils.extractSharedTeamName(it)
+            } catch (e: Exception) {
+                // Catch any parsing exceptions so one bad row doesn't break submitList
                 e.printStackTrace()
             }
         }
@@ -794,7 +869,8 @@ class VoicesAdapter(
             }
         }
 
-        news?.imagesArray?.let { imagesArray ->
+        val imagesToLoad = news?.parsedImagesArray ?: news?.imagesArray
+        imagesToLoad?.let { imagesArray ->
             if (imagesArray.size() > 0) {
                 if (imagesArray.size() == 1) {
                     val ob = imagesArray[0]?.asJsonObject

@@ -28,9 +28,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
@@ -50,7 +47,6 @@ import java.util.TimeZone
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.language
 import org.ole.planet.myplanet.R.array.subject_level
@@ -91,7 +87,7 @@ class UserProfileFragment : Fragment() {
                 val uri = result.data?.data ?: return@registerForActivityResult
                 photoURI  = uri
                 startIntent(photoURI)
-                val imageSize = resources.getDimensionPixelSize(R.dimen.user_image_size)
+                val imageSize = resources.getDimensionPixelSize(R.dimen.profile_image_size)
                 ImageUtils.loadProfileImage(uri.toString(), binding.image, imageSize)
             }
         }
@@ -140,19 +136,16 @@ class UserProfileFragment : Fragment() {
         viewModel.loadCurrentUserProfile()
         viewModel.getOfflineVisits()
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                combine(
-                    viewModel.offlineVisits,
-                    viewModel.maxOpenedResource,
-                    viewModel.lastVisit,
-                    viewModel.numberOfResourceOpen
-                ) { _, _, _, _ -> Unit }
-                    .collect {
-                        if (isAdded) {
-                            setupStatsRecycler()
-                        }
-                    }
+        val combinedFlow = combine(
+            viewModel.offlineVisits,
+            viewModel.maxOpenedResource,
+            viewModel.lastVisit,
+            viewModel.numberOfResourceOpen
+        ) { _, _, _, _ -> Unit }
+
+        collectWhenStarted(combinedFlow) {
+            if (isAdded) {
+                setupStatsRecycler()
             }
         }
     }
@@ -223,7 +216,7 @@ class UserProfileFragment : Fragment() {
 
         if (!isAdded) return
 
-        val imageSize = resources.getDimensionPixelSize(R.dimen.user_image_size)
+        val imageSize = resources.getDimensionPixelSize(R.dimen.profile_image_size)
         Glide.with(this)
             .load(profileImageUrl)
             .diskCacheStrategy(DiskCacheStrategy.ALL)

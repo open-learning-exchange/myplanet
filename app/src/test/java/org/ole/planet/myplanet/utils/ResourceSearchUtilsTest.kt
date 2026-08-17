@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utils
 
+import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -12,19 +13,19 @@ class ResourceSearchUtilsTest {
     @Test
     fun testSearchLocalModels() {
         val model1 = ResourceListModel(
-            library = mockk(),
+            library = mockk { every { titleNormal } returns null },
             item = ResourceItem(id = "1", title = "Apple Pie Recipe", description = null, createdDate = 0L, averageRating = null, timesRated = 0, resourceId = null, isOffline = false, _rev = null, uploadDate = null, filename = null),
             rating = null,
             tags = emptyList()
         )
         val model2 = ResourceListModel(
-            library = mockk(),
+            library = mockk { every { titleNormal } returns null },
             item = ResourceItem(id = "2", title = "Banana Bread", description = null, createdDate = 0L, averageRating = null, timesRated = 0, resourceId = null, isOffline = false, _rev = null, uploadDate = null, filename = null),
             rating = null,
             tags = emptyList()
         )
         val model3 = ResourceListModel(
-            library = mockk(),
+            library = mockk { every { titleNormal } returns null },
             item = ResourceItem(id = "3", title = "Apple Juice", description = null, createdDate = 0L, averageRating = null, timesRated = 0, resourceId = null, isOffline = false, _rev = null, uploadDate = null, filename = null),
             rating = null,
             tags = emptyList()

@@ -38,13 +38,22 @@ class MembersAdapter(
     }
 
     companion object {
+        const val PAYLOAD_KEY_LEADER = "PAYLOAD_KEY_LEADER"
+        const val PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED = "PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED"
         private val DIFF_CALLBACK = DiffUtils.itemCallback<JoinedMemberData>(
             areItemsTheSame = { oldItem, newItem -> oldItem.user.id == newItem.user.id },
-            areContentsTheSame = { oldItem, newItem -> oldItem == newItem },
+            areContentsTheSame = { oldItem, newItem ->
+                oldItem.isLeader == newItem.isLeader &&
+                    oldItem.visitCount == newItem.visitCount &&
+                    oldItem.lastVisitDate == newItem.lastVisitDate &&
+                    oldItem.user.name == newItem.user.name &&
+                    oldItem.user.userImage == newItem.user.userImage &&
+                    oldItem.user.getRoleAsString() == newItem.user.getRoleAsString()
+            },
             getChangePayload = { oldItem, newItem ->
                 val payload = Bundle()
                 if (oldItem.isLeader != newItem.isLeader) {
-                    payload.putBoolean("KEY_LEADER", newItem.isLeader)
+                    payload.putBoolean(PAYLOAD_KEY_LEADER, newItem.isLeader)
                 }
                 if (payload.isEmpty) null else payload
             }
@@ -61,13 +70,28 @@ class MembersAdapter(
         payloads: MutableList<Any>
     ) {
         if (payloads.isNotEmpty()) {
-            val payload = payloads[0] as Bundle
-            if (payload.containsKey("KEY_LEADER")) {
-                val isLeader = payload.getBoolean("KEY_LEADER")
-                holder.binding.tvIsLeader.visibility = if (isLeader) View.VISIBLE else View.GONE
-                if (isLeader) {
-                    holder.binding.tvIsLeader.text = context.getString(R.string.team_leader)
+            var unhandled = false
+            payloads.forEach { payload ->
+                when (payload) {
+                    is Bundle -> {
+                        if (payload.containsKey(PAYLOAD_KEY_LEADER)) {
+                            val isLeader = payload.getBoolean(PAYLOAD_KEY_LEADER)
+                            holder.binding.tvIsLeader.visibility = if (isLeader) View.VISIBLE else View.GONE
+                            if (isLeader) {
+                                holder.binding.tvIsLeader.text = context.getString(R.string.team_leader)
+                            }
+                        } else {
+                            unhandled = true
+                        }
+                    }
+                    PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED -> {
+                        checkUserAndShowOverflowMenu(holder.binding, position)
+                    }
+                    else -> unhandled = true
                 }
+            }
+            if (unhandled) {
+                super.onBindViewHolder(holder, position, payloads)
             }
         } else {
             super.onBindViewHolder(holder, position, payloads)
@@ -168,8 +192,13 @@ class MembersAdapter(
     }
 
     fun updateData(newList: List<JoinedMemberData>, isLoggedInUserTeamLeader: Boolean) {
+        val leaderStatusChanged = this.isLoggedInUserTeamLeader != isLoggedInUserTeamLeader
         this.isLoggedInUserTeamLeader = isLoggedInUserTeamLeader
-        submitList(newList)
+        if (leaderStatusChanged) {
+            submitList(newList) { notifyItemRangeChanged(0, itemCount, PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED) }
+        } else {
+            submitList(newList)
+        }
     }
 
     class MembersViewHolder(val binding: RowJoinedUserBinding) :

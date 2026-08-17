@@ -33,23 +33,27 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@color/colorPrimary"
+                android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:padding="@dimen/padding_normal">
 
                 <TextView
                     android:id="@+id/tv_fragment_info"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:minHeight="40dp"
                     android:layout_gravity="center_vertical"
                     android:layout_margin="@dimen/_10dp"
                     android:layout_weight="1"
                     android:gravity="center_vertical"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/library"
-                    android:textColor="@color/textColorPrimary"
+                    android:textColor="@color/md_white_1000"
                     android:textSize="@dimen/text_size_large"
                     android:textStyle="bold"
                     android:minWidth="150dp" />
+                <include
+                    layout="@layout/view_grid_list_toggle" />
                 <TextView
                     android:id="@+id/tv_add"
                     style="@style/Widget.AppCompat.Button.Borderless.Colored"
@@ -84,14 +88,13 @@
                 <ImageButton
                     android:id="@+id/filter"
                     style="@style/YellowButtons"
-                    android:layout_width="@dimen/_50dp"
-                    android:layout_height="@dimen/_50dp"
-                    android:layout_margin="@dimen/padding_normal"
+                    android:layout_gravity="center_vertical"
+                    android:layout_width="@dimen/_40dp"
+                    android:layout_height="@dimen/_40dp"
+                    android:layout_margin="@dimen/padding_small"
                     android:background="@drawable/buttonyellow"
-                    android:padding="@dimen/padding_normal"
-                    android:text="@string/more_action"
+                    android:padding="@dimen/padding_small"
                     android:contentDescription="@string/more_action"
-                    android:textColor="@color/textColorPrimary"
                     app:srcCompat="@drawable/ic_filter" />
             </LinearLayout>
         </LinearLayout>
@@ -116,11 +119,13 @@
                 android:maxWidth="0dp" />
             <include
                 android:id="@+id/layout_search"
-                layout="@layout/layout_search"
+                layout="@layout/layout_search_pill"
+                android:layout_margin="10.5dp"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1" />
         </LinearLayout>
+
 
         <FrameLayout
             android:layout_width="match_parent"
@@ -128,10 +133,17 @@
             android:layout_weight="1"
             android:background="@color/secondary_bg">
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recycler"
+            <org.ole.planet.myplanet.ui.components.MaxWidthFrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="match_parent"
+                android:layout_gravity="center_horizontal">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recycler"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+            </org.ole.planet.myplanet.ui.components.MaxWidthFrameLayout>
+
             <LinearLayout
                 android:id="@+id/tv_message"
                 android:layout_width="wrap_content"
@@ -173,100 +185,123 @@
         android:visibility="gone"
         app:cardCornerRadius="8dp">
 
-        <LinearLayout
-            android:id="@+id/ll_filter"
+        <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="right"
-            android:background="@drawable/custom_border"
-            android:gravity="right"
-            android:orientation="vertical"
-            android:padding="@dimen/padding_normal"
-            app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+            android:scrollbars="vertical">
 
-            <TextView
+            <LinearLayout
+                android:id="@+id/ll_filter"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:background="@drawable/custom_border"
+                android:gravity="end"
+                android:orientation="vertical"
                 android:padding="@dimen/padding_normal"
-                android:text="@string/filter"
-                android:textColor="@color/daynight_textColor"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
 
-                <Button
-                    android:id="@+id/order_by_date_button"
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/buttonblue"
-                    android:text="@string/order_by_date"
-                    android:textColor="@color/textColorPrimary" />
-                <Button
-                    android:id="@+id/order_by_title_button"
-                    android:layout_width="0dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:padding="@dimen/padding_normal"
+                        android:text="@string/filter"
+                        android:textColor="@color/daynight_textColor"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                    <ImageView
+                        android:id="@+id/btn_close_filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:padding="@dimen/padding_normal"
+                        android:contentDescription="@string/close"
+                        android:src="@drawable/outline_close_24"
+                        app:tint="@color/daynight_textColor" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/buttonblue"
-                    android:text="@string/order_by_title"
-                    android:textColor="@color/textColorPrimary" />
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/order_by_date_button"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/buttonblue"
+                        android:text="@string/order_by_date"
+                        android:textColor="@color/textColorPrimary" />
+                    <Button
+                        android:id="@+id/order_by_title_button"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/buttonblue"
+                        android:text="@string/order_by_title"
+                        android:textColor="@color/textColorPrimary" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp">
+
+                    <Button
+                        android:id="@+id/filterCategories"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/buttonblue"
+                        android:text="@string/filter_by_category"
+                        android:textColor="@color/textColorPrimary" />
+                    <Button
+                        android:id="@+id/btn_collections"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/buttonblue"
+                        android:text="@string/collections"
+                        android:textColor="@color/textColorPrimary" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btn_clear_tags"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/buttonblue"
+                        android:text="@string/clear_tags"
+                        android:textColor="@color/textColorPrimary" />
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="4dp"
+                        android:layout_weight="1" />
+                </LinearLayout>
             </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp">
-
-                <Button
-                    android:id="@+id/filterCategories"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/buttonblue"
-                    android:text="@string/filter_by_category"
-                    android:textColor="@color/textColorPrimary" />
-                <Button
-                    android:id="@+id/btn_collections"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/buttonblue"
-                    android:text="@string/collections"
-                    android:textColor="@color/textColorPrimary" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/btn_clear_tags"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/buttonblue"
-                    android:text="@string/clear_tags"
-                    android:textColor="@color/textColorPrimary" />
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    android:layout_weight="1" />
-            </LinearLayout>
-        </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
     </androidx.cardview.widget.CardView>
 
-    <com.github.clans.fab.FloatingActionButton
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/addResource"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -274,6 +309,5 @@
         android:layout_margin="@dimen/padding_large"
         android:contentDescription="@string/add_res"
         android:src="@drawable/ic_add_white"
-        android:tint="@color/md_white_1000"
-        app:fab_label="@string/add_res" />
+        app:tint="@color/md_white_1000" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

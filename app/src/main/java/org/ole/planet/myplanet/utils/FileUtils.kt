@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.utils
 
 import android.app.PendingIntent
 import android.app.usage.StorageStatsManager
-import org.ole.planet.myplanet.utils.TimeProvider
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
@@ -26,6 +25,7 @@ import java.nio.charset.StandardCharsets
 import java.util.Locale
 import java.util.UUID
 import kotlin.math.roundToLong
+import org.ole.planet.myplanet.utils.TimeProvider
 
 object FileUtils {
     @Volatile private var cachedExternalFilesDir: File? = null
@@ -42,6 +42,10 @@ object FileUtils {
 
     fun getOlePath(context: Context): String {
         return getExternalFilesDir(context)?.let { "$it/ole/" } ?: ""
+    }
+
+    fun getLibraryFile(externalFilesDir: File, libraryId: String, address: String): File {
+        return File(externalFilesDir, "ole/$libraryId/$address")
     }
 
     @Throws(IOException::class)
@@ -117,7 +121,7 @@ object FileUtils {
     }
 
     fun getFileExtension(address: String?): String {
-        return address?.let { File(it).extension } ?: ""
+        return address?.let { File(it).extension.lowercase() } ?: ""
     }
 
     fun installApk(activity: Context, file: String?) {

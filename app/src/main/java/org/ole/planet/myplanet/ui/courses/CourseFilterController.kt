@@ -10,15 +10,17 @@ import android.widget.Spinner
 import android.widget.TextView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.utils.DefaultDispatcherProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.model.TagEntity
 
 data class FilterState(
     val searchText: String,
@@ -41,21 +43,26 @@ class CourseFilterController(
     private lateinit var etSearch: EditText
     private lateinit var spnGrade: Spinner
     private lateinit var spnSubject: Spinner
-    private lateinit var spnProgress: Spinner
     private lateinit var tvSelected: TextView
+    private var layoutSearch: View? = null
+    private var scrollChipFilter: View? = null
+    private var layoutViewToggle: View? = null
+    private var progressFilter: String = ""
     val searchTags: MutableList<TagEntity> = ArrayList()
     private var searchTextWatcher: TextWatcher? = null
     private var spinnerListener: AdapterView.OnItemSelectedListener? = null
     private var searchJob: Job? = null
     private val dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider()
-    private val coroutineScope = CoroutineScope(dispatcherProvider.main)
+    private val coroutineScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
 
     fun setup() {
         etSearch = rootView.findViewById(R.id.et_search)
         spnGrade = rootView.findViewById(R.id.spn_grade)
         spnSubject = rootView.findViewById(R.id.spn_subject)
-        spnProgress = rootView.findViewById(R.id.spn_progress)
         tvSelected = rootView.findViewById(R.id.tv_selected)
+        layoutSearch = rootView.findViewById(R.id.layout_search) ?: (etSearch.parent as? View)
+        scrollChipFilter = rootView.findViewById(R.id.scroll_chip_filter) ?: (rootView.findViewById<View>(R.id.chip_filter_row)?.parent as? View)
+        layoutViewToggle = rootView.findViewById(R.id.layout_view_toggle) ?: (rootView.findViewById<View>(R.id.toggle_grid)?.parent as? View)
         setupSpinners()
         setupSearchWatcher()
         setupClearTagsButton()
@@ -69,10 +76,6 @@ class CourseFilterController(
 
         val subjectAdapter = ArrayAdapter.createFromResource(ctx, R.array.subject_level, R.layout.spinner_item)
         subjectAdapter.setDropDownViewResource(R.layout.custom_simple_list_item_1)
-
-        val progressAdapter = ArrayAdapter.createFromResource(ctx, R.array.progress_filter, R.layout.spinner_item)
-        progressAdapter.setDropDownViewResource(R.layout.custom_simple_list_item_1)
-        spnProgress.adapter = progressAdapter
         spnSubject.adapter = subjectAdapter
 
         spinnerListener = object : AdapterView.OnItemSelectedListener {
@@ -85,7 +88,12 @@ class CourseFilterController(
         }
         spnGrade.onItemSelectedListener = spinnerListener
         spnSubject.onItemSelectedListener = spinnerListener
-        spnProgress.onItemSelectedListener = spinnerListener
+    }
+
+    fun setProgressFilter(value: String) {
+        progressFilter = value
+        _filterState.value = currentState()
+        onScrollToTop()
     }
 
     private fun setupSearchWatcher() {
@@ -119,7 +127,12 @@ class CourseFilterController(
 
     fun setTags(list: List<TagEntity>) {
         searchTags.clear()
-        list.forEach { tag -> if (!searchTags.any { it.name == tag.name }) searchTags.add(tag) }
+        val seenNames = HashSet<String?>()
+        list.forEach { tag ->
+            if (seenNames.add(tag.name)) {
+                searchTags.add(tag)
+            }
+        }
         _filterState.value = currentState()
         onScrollToTop()
     }
@@ -138,7 +151,7 @@ class CourseFilterController(
         tvSelected.text = ""
         spnGrade.setSelection(0)
         spnSubject.setSelection(0)
-        spnProgress.setSelection(0)
+        progressFilter = ""
         _filterState.value = currentState()
         onScrollToTop()
     }
@@ -148,20 +161,31 @@ class CourseFilterController(
     fun currentState(): FilterState {
         val grade = spnGrade.selectedItem?.toString()?.takeIf { it != "All" } ?: ""
         val subject = spnSubject.selectedItem?.toString()?.takeIf { it != "All" } ?: ""
-        val progress = spnProgress.selectedItem?.toString()?.takeIf { it != "All" } ?: ""
         return FilterState(
             searchText = etSearch.text.toString().trim(),
             grade = grade,
             subject = subject,
             tagNames = searchTags.mapNotNull { it.name },
-            progressFilter = progress
+            progressFilter = progressFilter
         )
     }
 
     fun setListVisible(visible: Boolean) {
         val visibility = if (visible) View.VISIBLE else View.GONE
-        etSearch.visibility = visibility
-        rootView.findViewById<View>(R.id.filter).visibility = visibility
+        layoutSearch?.visibility = visibility
+        if (layoutSearch == null) {
+            etSearch.visibility = visibility
+        }
+        scrollChipFilter?.visibility = visibility
+        if (scrollChipFilter == null) {
+            rootView.findViewById<View>(R.id.chip_filter_row)?.visibility = visibility
+        }
+        layoutViewToggle?.visibility = visibility
+        if (layoutViewToggle == null) {
+            rootView.findViewById<View>(R.id.toggle_grid)?.visibility = visibility
+            rootView.findViewById<View>(R.id.toggle_list)?.visibility = visibility
+        }
+        rootView.findViewById<View>(R.id.filter)?.visibility = visibility
         if (!visible) tvSelected.visibility = View.GONE
     }
 
@@ -172,13 +196,16 @@ class CourseFilterController(
         ) { it.name.orEmpty() }
     }
 
+    fun clear() {
+        coroutineScope.cancel()
+    }
+
     fun detach() {
         searchJob?.cancel()
         searchTextWatcher?.let { etSearch.removeTextChangedListener(it) }
         searchTextWatcher = null
         spnGrade.onItemSelectedListener = null
         spnSubject.onItemSelectedListener = null
-        spnProgress.onItemSelectedListener = null
         spinnerListener = null
     }
 }

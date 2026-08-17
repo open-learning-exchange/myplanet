@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -41,7 +42,7 @@ class EventsRepositoryImplTest {
         userRepository = mockk(relaxed = true)
         removedLogDao = mockk(relaxed = true)
         realtimeSyncManager = mockk(relaxed = true)
-        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, userRepository, removedLogDao, realtimeSyncManager)
+        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, userRepository, removedLogDao, realtimeSyncManager, Gson())
     }
 
     @Test
@@ -91,24 +92,42 @@ class EventsRepositoryImplTest {
     }
 
     @Test
-    fun toggleAttendance() = runTest {
+    fun toggleCurrentUserAttendance_success() = runTest {
         val meetup = Meetup().apply { meetupId = "meetup1" }
         coEvery { meetupDao.getByMeetupId("meetup1") } returns meetup
+        coEvery { userRepository.getUserModel() } returns UserEntity(id = "user1")
 
         meetup.userId = ""
-        val joinResult = repository.toggleAttendance("meetup1", "user1")
+        val joinResult = repository.toggleCurrentUserAttendance("meetup1")
         assertEquals("user1", meetup.userId)
         assertNotNull(joinResult)
 
         meetup.userId = "user1"
-        val leaveResult = repository.toggleAttendance("meetup1", "user1")
+        val leaveResult = repository.toggleCurrentUserAttendance("meetup1")
         assertEquals("", meetup.userId)
         assertNotNull(leaveResult)
 
         coVerify(atLeast = 1) { meetupDao.upsert(meetup) }
 
-        val emptyResult = repository.toggleAttendance("", "user1")
+        val emptyResult = repository.toggleCurrentUserAttendance("")
         assertNull(emptyResult)
+    }
+
+    @Test
+    fun toggleCurrentUserAttendance_missingActiveUser() = runTest {
+        val meetup = Meetup().apply { meetupId = "meetup1" }
+        coEvery { meetupDao.getByMeetupId("meetup1") } returns meetup
+        coEvery { userRepository.getUserModel() } returns null
+
+        meetup.userId = "user1"
+        val leaveResult = repository.toggleCurrentUserAttendance("meetup1")
+        assertEquals("user1", meetup.userId)
+        assertNotNull(leaveResult)
+
+        meetup.userId = ""
+        val joinResult = repository.toggleCurrentUserAttendance("meetup1")
+        assertEquals("", meetup.userId)
+        assertNotNull(joinResult)
     }
 
     @Test

@@ -11,7 +11,7 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.utils.JsonUtils
 
-@Entity(tableName = "achievements")
+@Entity(tableName = "achievements", indices = [androidx.room.Index("isUpdated")])
 class Achievement {
     var achievements: List<String>? = null
     var references: List<String>? = null
@@ -48,43 +48,48 @@ class Achievement {
         get() = parseStringListToJsonArray(otherInfo)
 
     fun setLinks(la: JsonArray?) {
-        links = mutableListOf()
-        if (la == null) return
-        for (el in la) {
-            val e = JsonUtils.gson.toJson(el)
-            if (links?.contains(e) != true) links = links.orEmpty() + e
+        if (la == null) {
+            links = mutableListOf()
+            return
         }
+        val uniqueItems = LinkedHashSet<String>()
+        for (el in la) {
+            uniqueItems.add(JsonUtils.gson.toJson(el))
+        }
+        links = uniqueItems.toList()
     }
 
     fun setOtherInfo(oi: JsonArray?) {
-        otherInfo = mutableListOf()
-        if (oi == null) return
-        for (el in oi) {
-            val e = JsonUtils.gson.toJson(el)
-            if (otherInfo?.contains(e) != true) otherInfo = otherInfo.orEmpty() + e
+        if (oi == null) {
+            otherInfo = mutableListOf()
+            return
         }
+        val uniqueItems = LinkedHashSet<String>()
+        for (el in oi) {
+            uniqueItems.add(JsonUtils.gson.toJson(el))
+        }
+        otherInfo = uniqueItems.toList()
     }
 
     fun setAchievements(ac: JsonArray) {
-        achievements = mutableListOf()
+        val uniqueItems = LinkedHashSet<String>()
         for (el in ac) {
-            val achievement = JsonUtils.gson.toJson(el)
-            if (achievements?.contains(achievement) != true) {
-                achievements = achievements.orEmpty() + achievement
-            }
+            uniqueItems.add(JsonUtils.gson.toJson(el))
         }
+        achievements = uniqueItems.toList()
     }
 
     fun setReferences(of: JsonArray?) {
         cachedReferencesArray = null
-        references = mutableListOf()
-        if (of == null) return
-        for (el in of) {
-            val e = JsonUtils.gson.toJson(el)
-            if (references?.contains(e) != true) {
-                references = references.orEmpty() + e
-            }
+        if (of == null) {
+            references = mutableListOf()
+            return
         }
+        val uniqueItems = LinkedHashSet<String>()
+        for (el in of) {
+            uniqueItems.add(JsonUtils.gson.toJson(el))
+        }
+        references = uniqueItems.toList()
     }
 
     companion object {

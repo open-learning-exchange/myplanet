@@ -16,29 +16,21 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.preference.Preference
 import androidx.preference.Preference.OnPreferenceChangeListener
 import androidx.preference.Preference.OnPreferenceClickListener
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkInfo
-import androidx.work.WorkManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.services.FreeSpaceWorker
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
@@ -62,7 +54,7 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        EdgeToEdgeUtils.setupEdgeToEdge(this, window.decorView)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, findViewById(android.R.id.content))
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         FragmentNavigator.replaceFragment(supportFragmentManager, android.R.id.content, SettingFragment())
         title = getString(R.string.action_settings)
@@ -100,7 +92,6 @@ class SettingsActivity : AppCompatActivity() {
         lateinit var timeProvider: TimeProvider
         var user: UserEntity? = null
         private var libraryList: List<MyLibrary>? = null
-        private lateinit var dialog: DialogUtils.CustomProgressDialog
 
 
         override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -199,7 +190,6 @@ class SettingsActivity : AppCompatActivity() {
                 user = profileDbHandler.getUserModel()
                 blockGuestSwitches()
             }
-            dialog = DialogUtils.getCustomProgressDialog(requireActivity())
 
             setBetaToggleOn()
             setAutoSyncToggleOn()
@@ -209,22 +199,10 @@ class SettingsActivity : AppCompatActivity() {
                 true
             }
 
-            val darkMode = findPreference<Preference>("dark_mode")
-            darkMode?.setOnPreferenceClickListener {
-                ThemeManager.showThemeDialog(requireActivity())
-                true
-            }
-
             val textSize = findPreference<Preference>("text_size")
             textSize?.setOnPreferenceClickListener {
                 textSizeChanger(requireActivity())
                 true
-            }
-
-            // Show Available space under the "Freeup Space" preference.
-            val spacePreference = findPreference<Preference>("freeup_space")
-            if (spacePreference != null) {
-                spacePreference.summary = "${getString(R.string.available_space_colon)} ${FileUtils.availableOverTotalMemoryFormattedString(requireContext())}"
             }
 
             val autoDownload = findPreference<SwitchPreference>("beta_auto_download")
@@ -270,10 +248,27 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         private fun initStorageBreakdown() {
+            refreshStorageBreakdownSummary()
             findPreference<Preference>("storage_breakdown")?.setOnPreferenceClickListener {
-                StorageBreakdownFragment().show(parentFragmentManager, "storage_breakdown")
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val userModel = profileDbHandler.getUserModel()
+                    if (userModel?.id?.startsWith("guest") == true) {
+                        DialogUtils.guestDialog(requireActivity())
+                    } else {
+                        StorageBreakdownFragment().show(parentFragmentManager, "storage_breakdown")
+                    }
+                }
                 true
             }
+            parentFragmentManager.setFragmentResultListener(
+                StorageBreakdownFragment.RESULT_KEY,
+                this
+            ) { _, _ -> refreshStorageBreakdownSummary() }
+        }
+
+        private fun refreshStorageBreakdownSummary() {
+            findPreference<Preference>("storage_breakdown")?.summary = getString(R.string.storage_breakdown_summary) +
+                " · ${getString(R.string.available_space_colon)} ${FileUtils.availableOverTotalMemoryFormattedString(requireContext())}"
         }
 
         private fun initRetryQueueDebug() {
@@ -309,65 +304,6 @@ class SettingsActivity : AppCompatActivity() {
                     false
                 }
             }
-            val prefFreeUp = findPreference<Preference>("freeup_space")
-            if (prefFreeUp != null) {
-                prefFreeUp.onPreferenceClickListener = OnPreferenceClickListener {
-                    AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure_want_to_delete_all_the_files)
-                        .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            dialog.show()
-                            val workManager = WorkManager.getInstance(requireContext())
-                            val freeSpaceWork = OneTimeWorkRequestBuilder<FreeSpaceWorker>()
-                                .addTag("freeSpaceWork")
-                                .build()
-
-                            workManager.enqueue(freeSpaceWork)
-
-                            viewLifecycleOwner.lifecycleScope.launch {
-                                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                                    workManager.getWorkInfoByIdFlow(freeSpaceWork.id).collect { workInfo ->
-                                        if (workInfo != null) {
-                                            when (workInfo.state) {
-                                                WorkInfo.State.RUNNING -> {
-                                                    val progress = workInfo.progress
-                                                    val deletedFiles = progress.getInt("deletedFiles", 0)
-                                                    val freedBytes = progress.getLong("freedBytes", 0)
-                                                    dialog.setText("Deleting files... $deletedFiles deleted (${FileUtils.formatSize(requireContext(), freedBytes)})")
-                                                }
-                                                WorkInfo.State.SUCCEEDED -> {
-                                                    dialog.dismiss()
-                                                    Utilities.toast(requireActivity(), getString(R.string.data_cleared))
-                                                    val output = workInfo.outputData
-                                                    val deletedFiles = output.getInt("deletedFiles", 0)
-                                                    val freedBytes = output.getLong("freedBytes", 0)
-                                                    Utilities.toast(requireActivity(), "Freed ${FileUtils.formatSize(requireContext(), freedBytes)} ($deletedFiles files)")
-                                                }
-                                                WorkInfo.State.FAILED -> {
-                                                    dialog.dismiss()
-                                                    Utilities.toast(requireActivity(), getString(R.string.unable_to_clear_files))
-                                                }
-                                                WorkInfo.State.CANCELLED -> {
-                                                    dialog.dismiss()
-                                                }
-                                                else -> {
-                                                    // ENQUEUED or BLOCKED
-                                                }
-                                            }
-                                            if (workInfo.state.isFinished) {
-                                                kotlinx.coroutines.currentCoroutineContext().cancel()
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            dialog.setNegativeButton("Cancel") {
-                                workManager.cancelWorkById(freeSpaceWork.id)
-                            }
-
-                        }.setNegativeButton("No", null).show()
-                    false
-                }
-            }
         }
 
         private fun setBetaToggleOn() {
@@ -399,10 +335,6 @@ class SettingsActivity : AppCompatActivity() {
             } else if (lastSyncDate != null) {
                 lastSyncDate.title = getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSynced, timeProvider)
             }
-        }
-
-        override fun onDestroy() {
-            super.onDestroy()
         }
 
         companion object {
@@ -447,6 +379,15 @@ class SettingsActivity : AppCompatActivity() {
 
                 val dialog = builder.create()
                 dialog.show()
+
+                if (context.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
+                    val maxHeight = (context.resources.displayMetrics.heightPixels * 0.35).toInt()
+                    dialog.listView?.let { listView ->
+                        val params = listView.layoutParams
+                        params.height = maxHeight
+                        listView.layoutParams = params
+                    }
+                }
             }
 
             fun textSizeChanger(context: Context) {

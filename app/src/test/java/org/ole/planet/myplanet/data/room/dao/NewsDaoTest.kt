@@ -1,18 +1,19 @@
 package org.ole.planet.myplanet.data.room.dao
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.runner.RunWith
-import org.junit.Test
-import org.junit.Assert.*
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
-import org.ole.planet.myplanet.data.room.AppDatabase
-import org.ole.planet.myplanet.model.News
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.ole.planet.myplanet.data.room.AppDatabase
+import org.ole.planet.myplanet.model.News
 import org.robolectric.annotation.Config
-import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [32])
@@ -96,5 +97,23 @@ class NewsDaoTest {
 
         val resultPerc = newsDao.getTopLevelByTeam("team1%", teamIdPattern("team1%"))
         assertEquals(0, resultPerc.size) // Should not match team1X
+    }
+
+    @Test
+    fun getNewsAndRepliesIds_fetchesAllRecursiveReplies() = runBlocking {
+        val root = News().apply { id = "root" }
+        val reply1 = News().apply { id = "reply1"; replyTo = "root" }
+        val reply2 = News().apply { id = "reply2"; replyTo = "reply1" }
+        val reply3 = News().apply { id = "reply3"; replyTo = "reply2" }
+        val leaf = News().apply { id = "leaf" }
+
+        newsDao.upsertAll(listOf(root, reply1, reply2, reply3, leaf))
+
+        val ids = newsDao.getNewsAndRepliesIds("root")
+        assertEquals(4, ids.size)
+        assertTrue(ids.contains("root"))
+        assertTrue(ids.contains("reply1"))
+        assertTrue(ids.contains("reply2"))
+        assertTrue(ids.contains("reply3"))
     }
 }

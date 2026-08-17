@@ -23,12 +23,13 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnNotificationsListener
 import org.ole.planet.myplanet.databinding.FragmentNotificationsBinding
 import org.ole.planet.myplanet.model.Notification
-import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
-import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
+import org.ole.planet.myplanet.ui.teams.TeamPageConfig
+import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ChatPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
+import org.ole.planet.myplanet.ui.voices.ReplyActivity
 
 @AndroidEntryPoint
 class NotificationsFragment : Fragment() {
@@ -123,55 +124,52 @@ class NotificationsFragment : Fragment() {
     }
 
     private fun handleNotificationClick(notification: Notification) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val result = when (notification.type) {
-                "task" -> viewModel.getTaskDetails(notification.relatedId)
-                "join_request" -> notification.relatedId?.let {
-                    viewModel.getJoinRequestTeamId(it)
-                }
-                else -> null
+        when (notification.type) {
+            "join_request" -> resolveAndOpenTeam(notification.relatedId, JoinRequestsPage) { relatedId ->
+                viewModel.getJoinRequestTeamId(relatedId)
             }
-
-            when (notification.type) {
-                "storage" -> {
-                    val intent = Intent(ACTION_INTERNAL_STORAGE_SETTINGS)
-                    startActivity(intent)
-                }
-                "task" -> {
-                    val teamDetails = result as? TaskNotificationResult
-                    if (teamDetails != null && activity is OnHomeItemClickListener) {
-                        val (teamId, teamName, teamType) = teamDetails
-                        val f = TeamDetailFragment.newInstance(
-                            teamId = teamId,
-                            teamName = teamName ?: "",
-                            teamType = teamType ?: "",
-                            isMyTeam = true,
-                            navigateToPage = TasksPage,
-                        )
-                        (activity as OnHomeItemClickListener).openCallFragment(f)
-                    }
-                }
-                "join_request" -> {
-                    val teamId = result as? String
-                    if (teamId?.isNotEmpty() == true && activity is OnHomeItemClickListener) {
-                        val f = TeamDetailFragment()
-                        val b = Bundle()
-                        b.putString("id", teamId)
-                        b.putBoolean("isMyTeam", true)
-                        b.putString("navigateToPage", JoinRequestsPage.id)
-                        f.arguments = b
-                        (activity as OnHomeItemClickListener).openCallFragment(f)
-                    }
-                }
-                "resource" -> {
-                    (activity as? OnHomeItemClickListener)?.openMyFragment(ResourcesFragment())
-                }
+            "team_join" -> openTeam(notification.relatedId, navigateToPage = null)
+            "chat" -> openTeam(notification.relatedId, ChatPage)
+            "task" -> resolveAndOpenTeam(notification.relatedId, TasksPage) { relatedId ->
+                viewModel.getTaskDetails(relatedId)?.teamId
             }
-
-            if (!notification.isRead) {
-                viewModel.markAsRead(notification.id)
+            "voice_reply" -> notification.relatedId?.let { newsId ->
+                startActivity(Intent(requireContext(), ReplyActivity::class.java).putExtra("id", newsId))
             }
+            "resource" -> (activity as? OnHomeItemClickListener)?.openMyFragment(ResourcesFragment())
+            "storage" -> startActivity(Intent(ACTION_INTERNAL_STORAGE_SETTINGS))
         }
+
+        if (!notification.isRead) {
+            viewModel.markAsRead(notification.id)
+        }
+    }
+
+    /**
+     * [relatedId] is either a task/join-request id (resolved to a team id via [resolve]) or
+     * already a team id (server-synced notifications carry the team id directly). When [resolve]
+     * can't match it to a known task/join-request, [relatedId] is used as-is.
+     */
+    private fun resolveAndOpenTeam(relatedId: String?, navigateToPage: TeamPageConfig?, resolve: suspend (String) -> String?) {
+        if (relatedId.isNullOrEmpty()) return
+        viewLifecycleOwner.lifecycleScope.launch {
+            val teamId = resolve(relatedId) ?: relatedId
+            openTeam(teamId, navigateToPage)
+        }
+    }
+
+    private fun openTeam(teamId: String?, navigateToPage: TeamPageConfig?) {
+        if (teamId.isNullOrEmpty()) return
+        val listener = activity as? OnHomeItemClickListener ?: return
+        listener.openCallFragment(
+            TeamDetailFragment.newInstance(
+                teamId = teamId,
+                teamName = "",
+                teamType = "",
+                isMyTeam = true,
+                navigateToPage = navigateToPage,
+            )
+        )
     }
 
     fun refreshNotificationsList() {

@@ -14,7 +14,6 @@ import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @AndroidEntryPoint
 abstract class BaseTeamFragment : BaseVoicesFragment() {
@@ -31,8 +30,6 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
     lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var teamsSyncRepository: TeamsSyncRepository
-    @Inject
-    open lateinit var dispatcherProvider: DispatcherProvider
     private val _teamFlow = MutableStateFlow<MyTeam?>(null)
     val teamFlow: StateFlow<MyTeam?> = _teamFlow.asStateFlow()
     private val _isMemberFlow = MutableStateFlow(false)
@@ -52,7 +49,7 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
     override fun setData(list: List<News?>?) {}
 
     private fun loadTeamDetails() {
-        val shouldQueryTeam = shouldQueryTeamFromRealm()
+        val shouldQueryTeam = shouldQueryTeamLocally()
         val existingTeam = team
         lifecycleScope.launch(dispatcherProvider.io) {
             val teamResult = if (shouldQueryTeam) {
@@ -82,19 +79,19 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
         }
     }
 
-    protected open fun shouldQueryTeamFromRealm(): Boolean {
+    protected open fun shouldQueryTeamLocally(): Boolean {
         val hasDirectData = requireArguments().containsKey("teamName") &&
                 requireArguments().containsKey("teamType") &&
                 requireArguments().containsKey("teamId")
         return !hasDirectData
     }
 
-    protected fun getEffectiveTeamName(): String {
-        return requireArguments().getString("teamName") ?: team?.name ?: ""
+    protected open fun getEffectiveTeamName(): String {
+        return requireArguments().getString("teamName")?.takeIf { it.isNotBlank() } ?: team?.name ?: ""
     }
 
-    protected fun getEffectiveTeamType(): String {
-        return requireArguments().getString("teamType") ?: team?.type ?: ""
+    protected open fun getEffectiveTeamType(): String {
+        return requireArguments().getString("teamType")?.takeIf { it.isNotBlank() } ?: team?.type ?: ""
     }
 
     protected fun getEffectiveTeamId(): String {

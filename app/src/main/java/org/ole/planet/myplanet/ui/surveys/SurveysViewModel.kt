@@ -12,15 +12,19 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.Utilities
 
-private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
 
 @HiltViewModel
 class SurveysViewModel @Inject constructor(
     private val surveysRepository: SurveysRepository,
+    private val submissionsRepository: SubmissionsRepository,
+    private val userRepository: UserRepository,
     private val userSessionManager: UserSessionManager
 ) : ViewModel() {
 
@@ -54,6 +58,12 @@ class SurveysViewModel @Inject constructor(
 
     private val _userMessage = MutableStateFlow<String?>(null)
     val userMessage: StateFlow<String?> = _userMessage.asStateFlow()
+
+    private val _users = MutableStateFlow<List<UserEntity>>(emptyList())
+    val users: StateFlow<List<UserEntity>> = _users.asStateFlow()
+
+    private val _surveySent = MutableStateFlow(false)
+    val surveySent: StateFlow<Boolean> = _surveySent.asStateFlow()
 
     fun loadSurveys(isTeam: Boolean, teamId: String?, isTeamShareAllowed: Boolean) {
         this.isTeam = isTeam
@@ -164,6 +174,19 @@ class SurveysViewModel @Inject constructor(
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to adopt survey"
             }
+        }
+    }
+
+    fun loadUsers() {
+        viewModelScope.launch {
+            _users.value = userRepository.getAllUsers()
+        }
+    }
+
+    fun sendSurveyToUsers(surveyId: String, selectedUserIds: List<String>) {
+        viewModelScope.launch {
+            submissionsRepository.createBulkSurveySubmissions(surveyId, selectedUserIds)
+            _surveySent.value = true
         }
     }
 }

@@ -20,19 +20,21 @@
             android:background="@color/colorPrimary"
             android:gravity="end"
             android:orientation="vertical"
-            android:padding="@dimen/padding_large">
+            android:padding="@dimen/padding_small">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@color/colorPrimary"
+                android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:padding="@dimen/padding_normal">
 
                 <TextView
                     android:id="@+id/tv_fragment_info"
                     android:layout_width="0dp"
-                    android:layout_height="40dp"
+                    android:layout_height="wrap_content"
+                    android:minHeight="40dp"
                     android:layout_gravity="center_vertical"
                     android:layout_margin="@dimen/_10dp"
                     android:layout_weight="1"
@@ -42,8 +44,9 @@
                     android:textColor="@color/md_white_1000"
                     android:textSize="@dimen/text_size_large"
                     android:textStyle="bold"
-                    android:maxLines="1"
                     android:minWidth="150dp" />
+                <include
+                    layout="@layout/view_grid_list_toggle" />
                 <Button
                     android:id="@+id/btn_remove"
                     android:layout_width="70dp"
@@ -109,8 +112,6 @@
                     android:layout_margin="@dimen/padding_small"
                     android:background="@drawable/buttonyellow"
                     android:padding="@dimen/padding_small"
-                    android:text="@string/more_action"
-                    android:textColor="@color/md_white_1000"
                     app:srcCompat="@drawable/ic_filter"
                     android:contentDescription="@string/more_action" />
             </LinearLayout>
@@ -137,11 +138,31 @@
                 android:maxWidth="0dp"
                 android:checked="false" />
             <include
-                layout="@layout/layout_search"
+                android:id="@+id/layout_search"
+                layout="@layout/layout_search_pill"
                 android:layout_width="0dp"
+                android:layout_margin="10.5dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1" /> <!-- Set layout_width to 0dp and layout_weight to 1 for equal distribution -->
+                android:layout_weight="1" />
         </LinearLayout>
+
+        <HorizontalScrollView
+            android:id="@+id/scroll_chip_filter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/secondary_bg"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/chip_filter_row"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingStart="@dimen/padding_normal"
+                android:paddingTop="4dp"
+                android:paddingEnd="@dimen/padding_normal"
+                android:paddingBottom="8dp" />
+        </HorizontalScrollView>
 
         <FrameLayout
             android:layout_width="match_parent"
@@ -149,10 +170,17 @@
             android:layout_weight="1"
             android:background="@color/secondary_bg">
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recycler"
+            <org.ole.planet.myplanet.ui.components.MaxWidthFrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="match_parent"
+                android:layout_gravity="center_horizontal">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recycler"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+            </org.ole.planet.myplanet.ui.components.MaxWidthFrameLayout>
+
             <TextView
                 android:id="@+id/tv_message"
                 android:layout_width="wrap_content"
@@ -171,150 +199,153 @@
         android:visibility="gone"
         app:cardCornerRadius="8dp">
 
-        <LinearLayout
-            android:id="@+id/ll_filter"
+        <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:background="@drawable/custom_border"
-            android:gravity="end"
-            android:orientation="vertical"
-            android:padding="@dimen/padding_normal"
-            app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+            android:scrollbars="vertical">
 
-            <TextView
+            <LinearLayout
+                android:id="@+id/ll_filter"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:background="@drawable/custom_border"
+                android:gravity="end"
+                android:orientation="vertical"
                 android:padding="@dimen/padding_normal"
-                android:text="@string/filter"
-                android:textColor="@color/daynight_textColor"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp">
+                app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="horizontal">
 
                     <TextView
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:padding="4dp"
-                        android:textColor="@color/daynight_textColor"
-                        android:text="@string/grade_level" />
-                    <Spinner
-                        android:id="@+id/spn_grade"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:entries="@array/grade_level" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:padding="4dp"
-                        android:textColor="@color/daynight_textColor"
-                        android:text="@string/subject_level" />
-                    <Spinner
-                        android:id="@+id/spn_subject"
-                        android:layout_width="match_parent"
-                        android:layout_height="0dp"
                         android:layout_weight="1"
-                        android:entries="@array/subject_level" />
+                        android:padding="@dimen/padding_normal"
+                        android:text="@string/filter"
+                        android:textColor="@color/daynight_textColor"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                    <ImageView
+                        android:id="@+id/btn_close_filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:padding="@dimen/padding_normal"
+                        android:contentDescription="@string/close"
+                        android:src="@drawable/outline_close_24"
+                        app:tint="@color/daynight_textColor" />
                 </LinearLayout>
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp">
 
-                    <TextView
-                        android:layout_width="match_parent"
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:padding="4dp"
-                        android:textColor="@color/daynight_textColor"
-                        android:text="@string/progress" />
-                    <Spinner
-                        android:id="@+id/spn_progress"
-                        android:layout_width="match_parent"
-                        android:layout_height="0dp"
-                        android:layout_weight="1" />
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:padding="4dp"
+                            android:textColor="@color/daynight_textColor"
+                            android:text="@string/grade_level" />
+                        <Spinner
+                            android:id="@+id/spn_grade"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:entries="@array/grade_level" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:padding="4dp"
+                            android:textColor="@color/daynight_textColor"
+                            android:text="@string/subject_level" />
+                        <Spinner
+                            android:id="@+id/spn_subject"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:entries="@array/subject_level" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/order_by_date_button"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/buttonblue"
+                        android:text="@string/order_by_date"
+                        android:textColor="@color/md_white_1000" />
+                    <Button
+                        android:id="@+id/order_by_title_button"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/buttonblue"
+                        android:text="@string/order_by_title"
+                        android:textColor="@color/md_white_1000" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btn_collections"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/buttonblue"
+                        android:text="@string/collections"
+                        android:textColor="@color/md_white_1000" />
+                    <Button
+                        android:id="@+id/btn_clear_tags"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/buttonblue"
+                        android:text="@string/clear_tags"
+                        android:textColor="@color/md_white_1000" />
                 </LinearLayout>
             </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/order_by_date_button"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/buttonblue"
-                    android:text="@string/order_by_date"
-                    android:textColor="@color/md_white_1000" />
-                <Button
-                    android:id="@+id/order_by_title_button"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/buttonblue"
-                    android:text="@string/order_by_title"
-                    android:textColor="@color/md_white_1000" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <Button
-                    android:id="@+id/btn_collections"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/buttonblue"
-                    android:text="@string/collections"
-                    android:textColor="@color/md_white_1000" />
-                <Button
-                    android:id="@+id/btn_clear_tags"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/buttonblue"
-                    android:text="@string/clear_tags"
-                    android:textColor="@color/md_white_1000" />
-            </LinearLayout>
-        </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
     </androidx.cardview.widget.CardView>
 
-    <com.github.clans.fab.FloatingActionButton
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabMyProgress"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/ic_my_progress"
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/padding_large"
         android:contentDescription="@string/my_progress"
-        app:fab_label="@string/my_progress"
-        android:visibility="gone" />
+        android:src="@drawable/ic_my_progress"
+        android:visibility="gone"
+        app:tint="@color/md_white_1000" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

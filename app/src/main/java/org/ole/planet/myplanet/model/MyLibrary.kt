@@ -14,9 +14,10 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 /**
- * Room replacement for the former Realm `MyLibrary` model (resources).
+ * Room replacement for the former `MyLibrary` model (resources).
  *
  * The multi-valued primitive fields (`userId`, `resourceFor`, `subject`, `level`, `tag`,
  * `languages`, formerly `RealmList<String>`) become `List<String>?` stored as JSON via the shared
@@ -24,10 +25,10 @@ import org.ole.planet.myplanet.utils.NetworkUtils
  * `RealmList<Attachment>`) — a value-object child never queried on its own — becomes an
  * embedded JSON `List<Attachment>`. Shelf membership (`userId` list containment) is queried
  * with `LIKE` on the JSON column (see `MyLibraryDao`). The class name is kept so the wide resources
- * UI/repo surface is untouched; a later rename pass drops the `Realm` prefix. Persistence goes
+ * UI/repo surface is untouched. Persistence goes
  * through [org.ole.planet.myplanet.data.room.dao.MyLibraryDao].
  */
-@Entity(tableName = "my_library", indices = [Index("_rev"), Index("titleNormal")])
+@Entity(tableName = "my_library", indices = [Index("_rev"), Index("titleNormal"), Index("resourceId")])
 open class MyLibrary {
     @PrimaryKey
     @JvmField
@@ -211,7 +212,7 @@ open class MyLibrary {
 
         /**
          * Builds/updates an unmanaged [MyLibrary] from a CouchDB doc, merging into
-         * [InsertParams.existing] when supplied (mirrors the former Realm find-or-create logic).
+         * [InsertParams.existing] when supplied (mirrors the former find-or-create logic).
          */
         fun insertMyLibrary(params: InsertParams): MyLibrary? {
             if (params.doc.entrySet().isEmpty()) return null
@@ -235,11 +236,7 @@ open class MyLibrary {
                 this.resourceId = resourceId
                 val titleString = JsonUtils.getString("title", params.doc)
                 title = titleString
-                titleNormal = titleString.let {
-                    java.text.Normalizer.normalize(it, java.text.Normalizer.Form.NFD)
-                        .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
-                        .lowercase(java.util.Locale.ROOT)
-                }
+                titleNormal = Utilities.normalizeText(titleString)
                 description = JsonUtils.getString("description", params.doc)
                 if (params.doc.has("_attachments")) {
                     val attachmentsObj = params.doc["_attachments"].asJsonObject

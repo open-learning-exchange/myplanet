@@ -98,7 +98,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private lateinit var audioRecorder: AudioRecorder
     private lateinit var library: MyLibrary
     private var pdfText: String = ""
-    private var isExtractingText = false
     private var externalFilesDir: File? = null
 
     private val viewModel: ResourceViewerViewModel by viewModels()
@@ -169,9 +168,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         audioRecorder.setCaller(requireActivity(), requireContext())
 
         viewLifecycleOwner.lifecycleScope.launch {
-            externalFilesDir = withContext(dispatcherProvider.io) {
-                requireContext().getExternalFilesDir(null)
-            }
+            externalFilesDir = viewModel.getExternalFilesDir()
             resourceId?.let {
                 library = viewModel.getLibraryItemById(it) ?: return@launch
             }
@@ -380,8 +377,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private fun resolveAudioPath(originalPath: String?): String {
         if (isFullPath) return originalPath ?: ""
         val processedPath = originalPath?.let {
-            val uuidPattern = Pattern.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/")
-            val matcher = uuidPattern.matcher(it)
+            val matcher = UUID_PATTERN.matcher(it)
             if (matcher.find()) it.substring(matcher.end()) else it
         }
         return File(externalFilesDir, "ole/$processedPath").absolutePath
@@ -429,16 +425,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private fun extractPdfText() {
         val file = File(externalFilesDir, "ole/$filePath")
         if (!file.exists()) return
-        isExtractingText = true
-        lifecycleScope.launch(dispatcherProvider.io) {
-            pdfText = try {
-                PDFBoxResourceLoader.init(requireContext().applicationContext)
-                val document = PDDocument.load(file)
-                val text = PDFTextStripper().getText(document).trim()
-                document.close()
-                text
-            } catch (e: Exception) { "" }
-            withContext(dispatcherProvider.main) { isExtractingText = false }
+        viewLifecycleOwner.lifecycleScope.launch {
+            pdfText = viewModel.extractPdfText(file)
         }
     }
 
@@ -502,11 +490,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                 streamingHttpDataSourceFactory?.setDefaultRequestProperties(hashMapOf("Cookie" to auth))
             }
             if (isOnline) {
-                withContext(dispatcherProvider.io) {
-                    if (!FileUtils.checkFileExist(requireContext(), url)) {
-                        DownloadUtils.openDownloadService(requireContext(), arrayListOf(url), false)
-                    }
-                }
+                viewModel.downloadResource(url)
             }
         }
     }
@@ -586,6 +570,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     }
 
     companion object {
+        private val UUID_PATTERN = Pattern.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/")
         private const val MIN_PIP_ASPECT_RATIO = 1.0 / 2.39
         private const val MAX_PIP_ASPECT_RATIO = 2.39 / 1.0
         private const val PIP_ASPECT_RATIO_DENOMINATOR = 1000

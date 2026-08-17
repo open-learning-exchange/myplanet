@@ -9,7 +9,6 @@ import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -27,8 +26,10 @@ import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.ui.ratings.RatingsFragment
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
@@ -43,6 +44,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var coursesRepository: CoursesRepository
+    @Inject
+    lateinit var ratingsRepository: RatingsRepository
     private val viewModel: TakeCourseViewModel by viewModels()
     private var courseId: String? = null
     private var userModel: UserEntity? = null
@@ -56,6 +59,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private var pendingJoinDialog = false
     private var courseDetailContentReady = false
     private var coursesPagerAdapter: CoursesPagerAdapter? = null
+    private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -125,13 +129,14 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 courseId
             )
             binding.viewPager2.adapter = coursesPagerAdapter
-            binding.viewPager2.registerOnPageChangeCallback(object :
-                ViewPager2.OnPageChangeCallback() {
+
+            pageChangeCallback = object : ViewPager2.OnPageChangeCallback() {
                 override fun onPageSelected(position: Int) {
                     super.onPageSelected(position)
                     this@TakeCourseFragment.onPageSelected(position)
                 }
-            })
+            }
+            pageChangeCallback?.let { binding.viewPager2.registerOnPageChangeCallback(it) }
         }
         coursesPagerAdapter?.submitList(steps.mapNotNull { it?.id })
 
@@ -142,7 +147,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             binding.previousStep.visibility = View.GONE
         }
         setCourseData()
-        checkSurveyCompletion()
     }
 
     override fun onResume() {
@@ -194,6 +198,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             val stepNumber = position
             binding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", stepNumber, steps.size)
         }
+        binding.nextStep.text = if (position == 0) getString(R.string.start) else getString(R.string.next)
         binding.courseStepProgressBar.max = steps.size
         binding.courseStepProgressBar.progress = position
         viewLifecycleOwner.lifecycleScope.launch {
@@ -230,17 +235,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         }
 
         binding.courseProgress.max = stepsSize
+        binding.courseProgress.visibility = if (containsUserId) View.VISIBLE else View.GONE
 
-        if (containsUserId) {
-            if (position < steps.size - 1) {
-                binding.nextStep.visibility = View.VISIBLE
-            }
-            binding.courseProgress.visibility = View.VISIBLE
-        } else {
-            binding.nextStep.visibility = View.GONE
-            binding.previousStep.visibility = View.GONE
-            binding.courseProgress.visibility = View.GONE
-        }
+        updateNavigationVisibility()
 
         val detachedUserModel = userModel
         val detachedCurrentCourse = currentCourse
@@ -259,9 +256,44 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         }
     }
 
+    private fun updateNavigationVisibility() {
+        val containsUserId = currentCourse?.userId?.contains(userModel?.id) == true
+        if (containsUserId) {
+            if (position >= steps.size) {
+                binding.nextStep.visibility = View.GONE
+                binding.finishStep.visibility = View.VISIBLE
+            } else {
+                binding.nextStep.visibility = View.VISIBLE
+                binding.finishStep.visibility = View.GONE
+            }
+            binding.previousStep.visibility = if (position == 0) View.GONE else View.VISIBLE
+        } else {
+            binding.nextStep.visibility = View.GONE
+            binding.previousStep.visibility = View.GONE
+        }
+
+        binding.root.post {
+            if (_binding != null) {
+                binding.contentLayout.requestLayout()
+                binding.nextStep.requestLayout()
+                binding.previousStep.requestLayout()
+                binding.finishStep.requestLayout()
+            }
+        }
+    }
+
     fun onCourseDetailContentReady() {
         courseDetailContentReady = true
         maybeShowJoinDialog()
+    }
+
+    fun navigateToStep(stepId: String) {
+        if (_binding == null || !this::steps.isInitialized) return
+        val containsUserId = currentCourse?.userId?.contains(userModel?.id) == true
+        if (!containsUserId) return
+        val index = steps.indexOfFirst { it?.id == stepId }
+        if (index < 0) return
+        binding.viewPager2.setCurrentItem(index + 1, true)
     }
 
     private fun maybeShowJoinDialog() {
@@ -275,13 +307,11 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onPageSelected(position: Int) {
         if (!this::steps.isInitialized) return
         isNextStepLocked = false
-        if (position > 0) {
-            if (position - 1 < steps.size) changeNextButtonState(position)
-        } else {
-            binding.nextStep.visibility = View.VISIBLE
-            binding.nextStep.isClickable = true
+        this.position = position
+        if (position > 0 && position - 1 < steps.size) {
+            changeNextButtonState(position)
         }
-
+        updateNavigationVisibility()
         updateStepDisplay(position)
     }
 
@@ -355,8 +385,50 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 }
             }
 
-            R.id.finish_step -> checkSurveyCompletion()
+            R.id.finish_step -> onFinishStep()
             R.id.btn_remove -> addRemoveCourse()
+        }
+    }
+
+    private suspend fun showCourseRatingDialogAndFinish() {
+        val cId = courseId ?: currentCourse?.courseId
+        val title = currentCourse?.courseTitle ?: ""
+        val userId = userModel?.id
+        val hasRated = if (!cId.isNullOrEmpty() && !userId.isNullOrEmpty()) {
+            try {
+                val summary = ratingsRepository.getRatingSummary("course", cId, userId)
+                summary.userRating != null || summary.existingRating != null
+            } catch (e: Exception) {
+                false
+            }
+        } else {
+            false
+        }
+
+        if (!cId.isNullOrEmpty() && !hasRated && isAdded) {
+            val ratingDialog = RatingsFragment.newInstance("course", cId, title)
+            ratingDialog.setOnDismissListener {
+                if (isAdded) {
+                    FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
+                }
+            }
+            ratingDialog.show(parentFragmentManager, RatingsFragment.TAG)
+        } else if (isAdded) {
+            FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
+        }
+    }
+
+    private fun onFinishStep() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val hasUnfinishedSurvey = courseId?.let {
+                coursesRepository.hasUnfinishedSurveys(it, userModel?.id)
+            } ?: false
+
+            if (hasUnfinishedSurvey && courseId == MANDATORY_SURVEY_COURSE_ID) {
+                Toast.makeText(context, getString(R.string.please_complete_survey), Toast.LENGTH_SHORT).show()
+            } else {
+                showCourseRatingDialogAndFinish()
+            }
         }
     }
 
@@ -375,6 +447,16 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             }
 
             result.onSuccess {
+                val updatedUserIds = if (isJoined) {
+                    currentCourse?.userId.orEmpty().filter { it != userId }
+                } else {
+                    (currentCourse?.userId.orEmpty() + userId).distinct()
+                }
+                currentCourse = currentCourse?.copy(userId = updatedUserIds)
+                if (_binding != null) {
+                    setCourseData()
+                }
+
                 viewModel.loadCourse(cId, forceRefresh = true)
 
                 val statusMessage = if (isJoined) {
@@ -387,23 +469,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             }.onFailure { e ->
                 e.printStackTrace()
                 Utilities.toast(activity, "Failed to update course: ${e.message}")
-            }
-        }
-    }
-
-    private fun checkSurveyCompletion() = viewLifecycleOwner.lifecycleScope.launch {
-        val hasUnfinishedSurvey = courseId?.let {
-            coursesRepository.hasUnfinishedSurveys(it, userModel?.id)
-        } ?: false
-
-        if (hasUnfinishedSurvey && courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
-            binding.finishStep.setOnClickListener {
-                Toast.makeText(context, getString(R.string.please_complete_survey), Toast.LENGTH_SHORT).show()
-            }
-        } else {
-            binding.finishStep.isEnabled = true
-            binding.finishStep.setOnClickListener {
-                FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
             }
         }
     }
@@ -421,6 +486,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     override fun onDestroyView() {
         binding.courseProgress.setOnSeekBarChangeListener(null)
+        pageChangeCallback?.let { binding.viewPager2.unregisterOnPageChangeCallback(it) }
+        pageChangeCallback = null
         lifecycleScope.coroutineContext.cancelChildren()
         joinDialog?.dismiss()
         joinDialog = null
@@ -433,6 +500,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private val isValidClickLeft: Boolean get() = binding.viewPager2.adapter != null && binding.viewPager2.currentItem > 0
 
     companion object {
+        // Special course with mandatory completion survey (e.g. MyPlanet Onboarding course)
+        private const val MANDATORY_SURVEY_COURSE_ID = "4e6b78800b6ad18b4e8b0e1e38a98cac"
         private const val JOIN_DIALOG_FALLBACK_MS = 5000L
 
         fun newInstance(b: Bundle?): TakeCourseFragment {

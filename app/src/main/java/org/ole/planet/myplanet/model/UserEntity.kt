@@ -10,7 +10,6 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.io.File
 import java.io.InputStream
-import java.util.Locale
 import org.apache.commons.lang3.StringUtils
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -169,14 +168,12 @@ open class UserEntity(
     }
 
     fun isManager(): Boolean {
-        val roles = getRoles()
-        val isManager = roles.toString().lowercase(Locale.ROOT).contains("manager") || userAdmin ?: false
-        return isManager
+        val hasManagerRole = rolesList?.any { it.contains("manager", ignoreCase = true) } == true
+        return hasManagerRole || userAdmin ?: false
     }
 
     fun isLeader(): Boolean {
-        val roles = getRoles()
-        return roles.toString().lowercase(Locale.ROOT).contains("leader")
+        return rolesList?.any { it.contains("leader", ignoreCase = true) } == true
     }
 
     fun isGuest(): Boolean {

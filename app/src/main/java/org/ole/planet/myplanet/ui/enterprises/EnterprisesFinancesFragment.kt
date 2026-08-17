@@ -17,11 +17,12 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import dagger.hilt.android.AndroidEntryPoint
-import java.text.ParseException
-import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import java.util.Calendar
 import java.util.Locale
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
@@ -39,7 +40,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     private val viewModel: EnterprisesFinancesViewModel by viewModels()
     private var _binding: FragmentFinanceBinding? = null
     private val binding get() = _binding!!
-    private val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.getDefault()).withZone(ZoneId.systemDefault())
     private lateinit var addTransactionBinding: AddTransactionBinding
     private lateinit var financeAdapter: EnterprisesFinancesAdapter
     var date: Calendar? = null
@@ -124,13 +125,27 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }
+
+        val initialDate = if (isFromDate) {
+            val fromDateText = binding.tvFromDateCalendar.text.toString()
+            if (fromDateText.isNotEmpty()) parseDate(fromDateText) ?: now else now
+        } else {
+            val toDateText = binding.etToDate.text.toString()
+            if (toDateText.isNotEmpty()) {
+                parseDate(toDateText) ?: now
+            } else {
+                val fromDateText = binding.tvFromDateCalendar.text.toString()
+                if (fromDateText.isNotEmpty()) parseDate(fromDateText) ?: now else now
+            }
+        }
+
         val datePickerDialog = DatePickerDialog(
             requireContext(),
             { _, year, monthOfYear, dayOfMonth ->
                 val selectedDate = Calendar.getInstance().apply {
                     set(year, monthOfYear, dayOfMonth)
                 }
-                val formattedDate = selectedDate.formatToString("yyyy-MM-dd")
+                val formattedDate = selectedDate.formatToString()
 
                 if (isFromDate) {
                     binding.tvFromDateCalendar.setText(formattedDate)
@@ -149,9 +164,9 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
                 filterIfBothDatesSelected()
             },
-            now[Calendar.YEAR],
-            now[Calendar.MONTH],
-            now[Calendar.DAY_OF_MONTH]
+            initialDate[Calendar.YEAR],
+            initialDate[Calendar.MONTH],
+            initialDate[Calendar.DAY_OF_MONTH]
         )
 
         if (!isFromDate) {
@@ -167,9 +182,8 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     }
 
 
-    private fun Calendar.formatToString(pattern: String): String {
-        val dateFormat = if (pattern == "yyyy-MM-dd") dateFormatter else SimpleDateFormat(pattern, Locale.getDefault())
-        return dateFormat.format(this.time)
+    private fun Calendar.formatToString(): String {
+        return dateFormatter.format(this.toInstant())
     }
 
     private fun updateToDateState(enabled: Boolean) {
@@ -181,15 +195,11 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
     private fun parseDate(dateString: String): Calendar? {
         return try {
-            val date = dateFormatter.parse(dateString)
-            if (date != null) {
-                Calendar.getInstance().apply {
-                    time = date
-                }
-            } else {
-                null
+            val localDate = LocalDate.parse(dateString, dateFormatter)
+            Calendar.getInstance().apply {
+                timeInMillis = localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
             }
-        } catch (e: ParseException) {
+        } catch (e: DateTimeParseException) {
             null
         }
     }
@@ -206,13 +216,13 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
     private fun filterDataByDateRange(fromDate: String, toDate: String) {
         try {
-            val start = dateFormatter.parse(fromDate)?.time ?: throw IllegalArgumentException("Invalid fromDate format")
-            val end = dateFormatter.parse(toDate)?.time ?: throw IllegalArgumentException("Invalid toDate format")
+            val start = LocalDate.parse(fromDate, dateFormatter).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            val end = LocalDate.parse(toDate, dateFormatter).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
             currentStartDate = start
             currentEndDate = end
             observeTransactions()
 
-        } catch (e: ParseException) {
+        } catch (e: DateTimeParseException) {
             e.printStackTrace()
         } catch (e: IllegalArgumentException) {
             e.printStackTrace()

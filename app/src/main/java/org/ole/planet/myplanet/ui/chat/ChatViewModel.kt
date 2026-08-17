@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ChatRepository
@@ -48,7 +49,6 @@ class ChatViewModel @Inject constructor(
 
     companion object {
         const val PAGE_SIZE = 20
-        private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -75,6 +75,14 @@ class ChatViewModel @Inject constructor(
 
     private var loadDataJob: kotlinx.coroutines.Job? = null
     private var searchJob: kotlinx.coroutines.Job? = null
+
+    sealed class ShareChatResult {
+        object AlreadyShared : ShareChatResult()
+        data class Shared(val news: News, val chatId: String) : ShareChatResult()
+    }
+
+    private val _shareResult = MutableSharedFlow<ShareChatResult>()
+    val shareResult: SharedFlow<ShareChatResult> = _shareResult.asSharedFlow()
 
     private val _screenData = MutableStateFlow<ChatHistoryScreenData?>(null)
     val screenData: StateFlow<ChatHistoryScreenData?> = _screenData.asStateFlow()
@@ -161,18 +169,16 @@ class ChatViewModel @Inject constructor(
         }
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            val results = withContext(dispatcherProvider.default) {
-                if (isFullSearch) {
-                    fullConvoSearch(query, isQuestion)
-                } else {
-                    searchByTitle(query)
-                }
+            val results = if (isFullSearch) {
+                fullConvoSearch(query, isQuestion)
+            } else {
+                searchByTitle(query)
             }
             _filteredChats.value = results
         }
     }
 
-    private fun fullConvoSearch(s: String, isQuestion: Boolean): List<ChatHistory> {
+    private suspend fun fullConvoSearch(s: String, isQuestion: Boolean): List<ChatHistory> = withContext(dispatcherProvider.default) {
         var conversation: String?
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
@@ -202,10 +208,10 @@ class ChatViewModel @Inject constructor(
                 }
             }
         }
-        return inTitleStartQuery + inTitleContainsQuery + startsWithQuery + containsQuery
+        inTitleStartQuery + inTitleContainsQuery + startsWithQuery + containsQuery
     }
 
-    private fun searchByTitle(s: String): List<ChatHistory> {
+    private suspend fun searchByTitle(s: String): List<ChatHistory> = withContext(dispatcherProvider.default) {
         var title: String?
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
@@ -222,7 +228,7 @@ class ChatViewModel @Inject constructor(
                 containsQuery.add(pChat.chat)
             }
         }
-        return startsWithQuery + containsQuery
+        startsWithQuery + containsQuery
     }
 
     private suspend fun loadCurrentUser(userId: String?): UserEntity? {
@@ -347,5 +353,16 @@ class ChatViewModel @Inject constructor(
 
     fun shouldFetchAiProviders(): Boolean {
         return _aiProviders.value == null && !_aiProvidersLoading.value
+    }
+
+    fun shareChatToVoices(chatId: String, viewInId: String, payload: HashMap<String?, String>) {
+        viewModelScope.launch {
+            if (voicesRepository.isAlreadyShared(chatId, viewInId)) {
+                _shareResult.emit(ShareChatResult.AlreadyShared)
+            } else {
+                val news = voicesRepository.createNews(payload, cachedUser, null)
+                _shareResult.emit(ShareChatResult.Shared(news, chatId))
+            }
+        }
     }
 }

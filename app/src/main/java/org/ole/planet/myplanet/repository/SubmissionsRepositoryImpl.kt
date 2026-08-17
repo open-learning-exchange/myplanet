@@ -207,8 +207,25 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         } else {
             examId
         }
-        userIds.forEach { userId ->
-            getOrCreateSubmission(userId, parentId)
+
+        userIds.chunked(500).forEach { chunk ->
+            val existingSubmissions = submissionDao.getPendingByUsersAndParent(chunk, parentId)
+            val existingUserIds = existingSubmissions.mapNotNull { it.userId }.toSet()
+            val newSubmissions = chunk.filter { it !in existingUserIds }.map { userId ->
+                Submission().apply {
+                    id = UUID.randomUUID().toString()
+                    this.userId = userId
+                    this.parentId = parentId
+                    status = "pending"
+                    type = "survey"
+                    startTime = Date().time
+                    lastUpdateTime = startTime
+                    answers = mutableListOf()
+                }
+            }
+            if (newSubmissions.isNotEmpty()) {
+                submissionDao.upsertAll(newSubmissions)
+            }
         }
     }
 
@@ -722,7 +739,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         `object`.addProperty("sender", submission.sender)
         `object`.addProperty("source", sharedPrefManager.getPlanetCode())
         `object`.addProperty("parentCode", sharedPrefManager.getParentCode())
-        `object`.add("answers", Answer.serializeRealmAnswer(submission.answers ?: mutableListOf()))
+        `object`.add("answers", Answer.serializeAnswer(submission.answers ?: mutableListOf()))
         if (exam != null) {
             `object`.add("parent", StepExam.serializeExam(exam, payloadData.questions))
         } else {
@@ -765,7 +782,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             jsonObject.addProperty("sender", submission.sender)
             jsonObject.addProperty("source", source)
             jsonObject.addProperty("parentCode", parentCode)
-            jsonObject.add("answers", Answer.serializeRealmAnswer(submission.answers ?: mutableListOf()))
+            jsonObject.add("answers", Answer.serializeAnswer(submission.answers ?: mutableListOf()))
             if (exam != null) {
                 jsonObject.add("parent", StepExam.serializeExam(exam, payloadData.questions))
             } else if (!submission.parent.isNullOrEmpty()) {

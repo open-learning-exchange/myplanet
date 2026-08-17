@@ -7,17 +7,13 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnPersonalSelectedListener
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentMyPersonalsBinding
 import org.ole.planet.myplanet.model.Personal
-import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -30,9 +26,6 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
     private lateinit var pg: DialogUtils.CustomProgressDialog
     private var addResourceFragment: AddResourceFragment? = null
     private var personalAdapter: PersonalsAdapter? = null
-
-    @Inject
-    lateinit var uploadManager: UploadManager
 
     private val viewModel: PersonalsViewModel by viewModels()
 
@@ -53,6 +46,28 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setAdapter()
+
+        collectLatestWhenStarted(viewModel.uploadState) { state ->
+            when (state) {
+                is UploadState.Loading -> {
+                    pg.setText("Please wait...")
+                    pg.show()
+                }
+                is UploadState.Success -> {
+                    pg.dismiss()
+                    Utilities.toast(activity, state.message)
+                    viewModel.resetUploadState()
+                }
+                is UploadState.Error -> {
+                    pg.dismiss()
+                    Utilities.toast(activity, state.message)
+                    viewModel.resetUploadState()
+                }
+                is UploadState.Idle -> {
+                    // Do nothing
+                }
+            }
+        }
     }
 
     private fun setAdapter() {
@@ -81,19 +96,8 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
     }
 
     override fun onUpload(personal: Personal?) {
-        pg.setText("Please wait...")
-        pg.show()
         if (personal != null) {
-            viewLifecycleOwner.lifecycleScope.launch {
-                try {
-                    val result = uploadManager.uploadMyPersonal(personal)
-                    Utilities.toast(activity, result)
-                } catch (e: Exception) {
-                    Utilities.toast(activity, "Upload failed: ${e.message}")
-                } finally {
-                    pg.dismiss()
-                }
-            }
+            viewModel.uploadPersonal(personal)
         }
     }
 

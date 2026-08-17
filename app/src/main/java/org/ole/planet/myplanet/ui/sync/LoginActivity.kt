@@ -30,7 +30,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -61,6 +60,7 @@ import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils.getUrl
 import org.ole.planet.myplanet.utils.Utilities.toast
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
+import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
 @OptIn(FlowPreview::class)
@@ -72,6 +72,8 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     lateinit var loginSyncManager: LoginSyncManager
     @Inject
     override lateinit var sharedPrefManager: SharedPrefManager
+    @Inject
+    lateinit var themeManager: ThemeManager
 
     private lateinit var binding: ActivityLoginBinding
     private var guest = false
@@ -205,7 +207,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         }
         val selectDarkModeButton = binding.themeToggleButton
         selectDarkModeButton.setOnClickListener {
-            ThemeManager.showThemeDialog(this)
+            themeManager.showThemeDialog(this)
         }
     }
 
@@ -373,7 +375,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 }
             }
         }
-        binding.inputName.textChanges()
+        val usernameFlow = binding.inputName.textChanges()
             .onEach { s ->
                 val input = s?.toString() ?: ""
                 val lowercaseText = input.lowercase()
@@ -383,34 +385,35 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 }
             }
             .debounce(300)
-            .onEach { s ->
-                val input = s?.toString() ?: ""
-                if (input.isNotEmpty()) {
-                    binding.inputName.error = validateUsernameInput(input)
-                } else {
-                    binding.inputName.error = null
-                }
-                updateSignInButtonState()
+
+        collectWhenStarted(usernameFlow) { s ->
+            val input = s?.toString() ?: ""
+            if (input.isNotEmpty()) {
+                binding.inputName.error = validateUsernameInput(input)
+            } else {
+                binding.inputName.error = null
             }
-            .launchIn(lifecycleScope)
+            updateSignInButtonState()
+        }
+
         if (getUrl().isNotEmpty()) {
             loadTeamsAsync()
         }
     }
 
     private fun setupFormValidation() {
-        binding.inputPassword.textChanges()
+        val passwordFlow = binding.inputPassword.textChanges()
             .debounce(300)
-            .onEach { s ->
-                val input = s?.toString() ?: ""
-                if (input.isNotEmpty()) {
-                    binding.inputPassword.error = validatePasswordInput(input)
-                } else {
-                    binding.inputPassword.error = null
-                }
-                updateSignInButtonState()
+
+        collectWhenStarted(passwordFlow) { s ->
+            val input = s?.toString() ?: ""
+            if (input.isNotEmpty()) {
+                binding.inputPassword.error = validatePasswordInput(input)
+            } else {
+                binding.inputPassword.error = null
             }
-            .launchIn(lifecycleScope)
+            updateSignInButtonState()
+        }
     }
 
     private fun validateUsernameInput(username: String): String? {
@@ -514,7 +517,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         val languageCodes = arrayOf("en", "es", "so", "ne", "ar", "fr")
         val checkedItem = languageCodes.indexOf(currentLanguage)
 
-        AlertDialog.Builder(this, R.style.AlertDialogTheme)
+        val dialog = AlertDialog.Builder(this, R.style.AlertDialogTheme)
             .setTitle(getString(R.string.select_language))
             .setSingleChoiceItems(
                 ArrayAdapter(this, R.layout.checked_list_item, options),
@@ -530,7 +533,18 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 }
             }
             .setNegativeButton(R.string.cancel, null)
-            .show()
+            .create()
+
+        dialog.show()
+
+        if (resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
+            val maxHeight = (resources.displayMetrics.heightPixels * 0.35).toInt()
+            dialog.listView?.let { listView ->
+                val params = listView.layoutParams
+                params.height = maxHeight
+                listView.layoutParams = params
+            }
+        }
     }
 
     override fun attachBaseContext(newBase: Context) {

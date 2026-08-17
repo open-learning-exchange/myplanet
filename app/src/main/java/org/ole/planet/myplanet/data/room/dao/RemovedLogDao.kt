@@ -22,4 +22,7 @@ interface RemovedLogDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(log: RemovedLog)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(logs: List<RemovedLog>)
 }

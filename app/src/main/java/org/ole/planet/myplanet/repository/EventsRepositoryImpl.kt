@@ -20,7 +20,8 @@ class EventsRepositoryImpl @Inject constructor(
     private val meetupDao: MeetupDao,
     private val userRepository: UserRepository,
     private val removedLogDao: RemovedLogDao,
-    private val realtimeSyncManager: RealtimeSyncManager
+    private val realtimeSyncManager: RealtimeSyncManager,
+    private val gson: Gson
 ) : EventsRepository {
 
     override suspend fun getMeetupsForTeam(teamId: String): List<Meetup> {
@@ -84,17 +85,27 @@ class EventsRepositoryImpl @Inject constructor(
             .map { it }
     }
 
-    override suspend fun toggleAttendance(meetupId: String, currentUserId: String?): Meetup? {
+    override suspend fun toggleCurrentUserAttendance(meetupId: String): Meetup? {
         if (meetupId.isBlank()) {
             return null
         }
 
+        val currentUser = userRepository.getUserModel()
+        val currentUserId = currentUser?.id
+
+        if (currentUserId.isNullOrBlank()) {
+            return getMeetupById(meetupId)
+        }
+
         val meetup = meetupDao.getByMeetupId(meetupId) ?: return null
         val isJoined = !meetup.userId.isNullOrEmpty()
-        if (isJoined || !currentUserId.isNullOrEmpty()) {
-            meetup.userId = if (isJoined) "" else currentUserId
-            meetupDao.upsert(meetup)
+        if (isJoined) {
+            meetup.userId = ""
+        } else {
+            meetup.userId = currentUserId
         }
+        meetupDao.upsert(meetup)
+
         return getMeetupById(meetupId)
     }
 
@@ -138,7 +149,6 @@ class EventsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun createMeetup(params: MeetupCreationParams): Boolean {
-        val gson = Gson()
         val currentUserId = userRepository.getUserModel()?.id
         val meetup = Meetup().apply {
             id = "${UUID.randomUUID()}"
@@ -174,11 +184,6 @@ class EventsRepositoryImpl @Inject constructor(
             e.printStackTrace()
             false
         }
-    }
-
-    override suspend fun getMeetupIdsForUser(userId: String?): List<String> {
-        if (userId.isNullOrBlank()) return emptyList()
-        return meetupDao.getByUserId(userId).mapNotNull { it.meetupId }
     }
 
     override suspend fun getPendingMeetupUploads(): List<Meetup> {

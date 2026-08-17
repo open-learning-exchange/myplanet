@@ -1,13 +1,13 @@
 package org.ole.planet.myplanet.ui.notifications
 
-import android.text.Html
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNotificationHeaderBinding
@@ -34,17 +34,17 @@ class NotificationsAdapter(
     )
 ) {
 
-    private var dateFormat: SimpleDateFormat? = null
+    private var dateFormatter: DateTimeFormatter? = null
     private var lastLocale: Locale? = null
 
-    private fun getDateFormat(): SimpleDateFormat {
+    private fun getDateFormatter(): DateTimeFormatter {
         val currentLocale = Locale.getDefault()
-        val cached = dateFormat
+        val cached = dateFormatter
         if (cached != null && lastLocale == currentLocale) {
             return cached
         }
-        return SimpleDateFormat("MMM d, yyyy", currentLocale).also {
-            dateFormat = it
+        return DateTimeFormatter.ofPattern("MMM d, yyyy", currentLocale).withZone(ZoneId.systemDefault()).also {
+            dateFormatter = it
             lastLocale = currentLocale
         }
     }
@@ -146,7 +146,7 @@ class NotificationsAdapter(
                 diff < 86_400_000L -> context.getString(R.string.hours_ago, diff / 3_600_000L)
                 diff < 172_800_000L -> context.getString(R.string.yesterday)
                 diff < 604_800_000L -> context.getString(R.string.days_ago, diff / 86_400_000L)
-                else -> getDateFormat().format(Date(createdAt))
+                else -> getDateFormatter().format(Instant.ofEpochMilli(createdAt))
             }
         }
     }

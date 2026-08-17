@@ -1,16 +1,11 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.pdf.PdfRenderer
 import android.media.MediaMetadataRetriever
-import android.os.ParcelFileDescriptor
-import android.util.LruCache
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
-import androidx.core.graphics.createBitmap
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -19,11 +14,11 @@ import com.opencsv.CSVParserBuilder
 import com.opencsv.CSVReaderBuilder
 import java.io.File
 import java.io.FileReader
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -32,6 +27,7 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.PdfThumbnailLoader
 import org.ole.planet.myplanet.utils.ResourceOpener
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -49,9 +45,9 @@ class InlineResourceAdapter(
         },
         getChangePayload = { old, new ->
             val payloads = mutableListOf<String>()
-            if (old.title != new.title) payloads.add("TITLE")
-            if (old.resourceLocalAddress != new.resourceLocalAddress) payloads.add("ADDRESS")
-            if (old.isResourceOffline() != new.isResourceOffline()) payloads.add("STATUS")
+            if (old.title != new.title) payloads.add(PAYLOAD_TITLE)
+            if (old.resourceLocalAddress != new.resourceLocalAddress) payloads.add(PAYLOAD_ADDRESS)
+            if (old.isResourceOffline() != new.isResourceOffline()) payloads.add(PAYLOAD_STATUS)
             if (payloads.isEmpty()) null else payloads
         }
     )
@@ -59,13 +55,6 @@ class InlineResourceAdapter(
 
     private var externalFilesDir: File? = null
     private val textCache = mutableMapOf<String, String>()
-    private val maxMemory = (Runtime.getRuntime().maxMemory() / 1024).toInt()
-    private val cacheSize = maxMemory / 8
-    private val bitmapCache = object : LruCache<String, Bitmap>(cacheSize) {
-        override fun sizeOf(key: String, bitmap: Bitmap): Int {
-            return bitmap.byteCount / 1024
-        }
-    }
 
     private var adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
 
@@ -98,10 +87,10 @@ class InlineResourceAdapter(
         previousList.forEach { prev ->
             val current = currentMap[prev.id]
             if (current == null || current.resourceLocalAddress != prev.resourceLocalAddress) {
-                val file = File(dir, "ole/${prev.id}/${prev.resourceLocalAddress}")
+                val address = prev.resourceLocalAddress ?: return@forEach
+                val file = FileUtils.getLibraryFile(dir, prev.id, address)
                 val prefix = file.absolutePath
                 textCache.keys.filter { it.startsWith(prefix) }.forEach { textCache.remove(it) }
-                bitmapCache.snapshot().keys.filter { it.startsWith(prefix) }.forEach { bitmapCache.remove(it) }
             }
         }
     }
@@ -118,7 +107,6 @@ class InlineResourceAdapter(
         super.onDetachedFromRecyclerView(recyclerView)
         adapterScope.cancel()
         textCache.clear()
-        bitmapCache.evictAll()
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
@@ -139,12 +127,12 @@ class InlineResourceAdapter(
             if (payloadList is List<*>) {
                 payloadList.forEach { payload ->
                     when (payload) {
-                        "TITLE" -> holder.binding.tvResourceTitle.text = resource.title ?: resource.resourceLocalAddress ?: ""
-                        "ADDRESS" -> {
+                        PAYLOAD_TITLE -> holder.binding.tvResourceTitle.text = resource.title ?: resource.resourceLocalAddress ?: ""
+                        PAYLOAD_ADDRESS -> {
                             holder.binding.tvResourceTitle.text = resource.title ?: resource.resourceLocalAddress ?: ""
                             updateStatusAndPreview(holder, context, resource)
                         }
-                        "STATUS" -> updateStatusAndPreview(holder, context, resource)
+                        PAYLOAD_STATUS -> updateStatusAndPreview(holder, context, resource)
                     }
                 }
             }
@@ -240,28 +228,10 @@ class InlineResourceAdapter(
 
     private suspend fun showPdfPreview(holder: ViewHolder, file: File) {
         if (!file.exists()) return
-        val cacheKey = getCacheKey(file)
-        val cachedBitmap = bitmapCache.get(cacheKey)
-        val bitmap = if (cachedBitmap != null) {
-            cachedBitmap
-        } else {
-            withContext(dispatcherProvider.io) {
-                try {
-                    ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { fd ->
-                        PdfRenderer(fd).use { renderer ->
-                            renderer.openPage(0).use { page ->
-                                val scale = 2
-                                createBitmap(page.width * scale, page.height * scale).also {
-                                    page.render(it, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                                }
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    null
-                }
-            }?.also { bitmapCache.put(cacheKey, it) }
-        }
+        val context = holder.itemView.context
+        val targetWidthPx = (PDF_PREVIEW_WIDTH_DP * context.resources.displayMetrics.density).toInt()
+        Glide.with(context).clear(holder.binding.ivResourcePreview)
+        val bitmap = PdfThumbnailLoader.firstPageBitmap(file, dispatcherProvider, targetWidthPx)
         if (bitmap != null) {
             holder.binding.ivResourcePreview.visibility = View.VISIBLE
             holder.binding.ivResourcePreview.scaleType = ImageView.ScaleType.FIT_CENTER
@@ -349,4 +319,11 @@ class InlineResourceAdapter(
     }
 
     private fun getCacheKey(file: File): String = "${file.absolutePath}_${file.lastModified()}_${file.length()}"
+
+    companion object {
+        const val PAYLOAD_TITLE = "PAYLOAD_TITLE"
+        const val PAYLOAD_ADDRESS = "PAYLOAD_ADDRESS"
+        const val PAYLOAD_STATUS = "PAYLOAD_STATUS"
+        private const val PDF_PREVIEW_WIDTH_DP = 240
+    }
 }

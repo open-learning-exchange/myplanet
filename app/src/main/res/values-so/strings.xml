@@ -168,6 +168,7 @@
     <string name="cannot_remove_user">Isticmaalaha lama saari karin</string>
     <string name="no_members_task">Wax xubno koox ah looma hayo in shaqo loo xil saaro</string>
     <string name="no_member_selected">Ma jiro xubin la doortay. Fadlan isku day mar kale</string>
+    <string name="last_login_message">Kani waa soo galitaankaagii ugu dambeeyay ka hor intaadan u baahnayn inaad xubin noqoto</string>
 
     <string-array name="level">
         <item>Bilow</item>
@@ -357,7 +358,8 @@
     <string-array name="sort_by_date">
         <item>Ururinta Tariikhda - Desc</item>
         <item>Ururinta Tariikhda - Asc</item>
-        <item>Ururinta Magaca</item>
+        <item>Ururinta Cinwaanka - Asc</item>
+        <item>Ururinta Cinwaanka - Desc</item>
     </string-array>
 
     <string-array name="sort_member">
@@ -778,6 +780,7 @@
     <string name="unable_to_clear_files">Lama xarigo faylasha</string>
     <string name="last_synced_never">waligeyn la isku midayn</string>
     <string name="last_synced_colon">"Kor u kac: "</string>
+    <string name="dashboard_sync_status">Isku-dari · %1$s</string>
 
     <string name="disclaimer">
     <![CDATA[
@@ -943,6 +946,9 @@
     <string name="virtual_assistant_currently_not_available">kaaliyaha farsamada hadda lama heli karo</string>
     <string name="no_courses">ma jiro koorsad la helin</string>
     <string name="no_resources">ma jiraan ilaha la heli karo</string>
+    <string name="no_resources_added_yet">Waxaad ku dari kartaa ilo</string>
+    <string name="no_courses_joined_yet">Waxaad ku biiri kartaa koorsooyin</string>
+    <string name="no_teams_joined_yet">Waxaad ku biiri kartaa koox</string>
     <string name="no_finance_record">hisaabka ma jiro</string>
     <string name="no_team_courses">koorsadaha kooxiga ma jiraan</string>
     <string name="no_team_resources">ilaha kooxiga ma jiraan</string>
@@ -1284,6 +1290,8 @@
     <string name="storage_unknown_resource">Agabka Aan La Garanayn</string>
     <string name="file_count_one">1 fayl</string>
     <string name="file_count_many">%1$d fayl</string>
+    <string name="storage_deleting_progress">Faylasha waa la tirtirayaa... %1$d la tirtiray (%2$s)</string>
+    <string name="storage_freed_summary">%1$s ayaa la banneeyay (%2$d fayl)</string>
     <string name="skip">Ka gudub</string>
     <string name="add_meetup">Ku dar kulan</string>
     <string name="download_report">Soo deji warbixinta</string>
@@ -1345,11 +1353,28 @@
     <string name="failed_to_update_resource">Cusbooneysiin kheyraadka waxay ku guuldareysatay</string>
     <string name="join_team_first">Fadlan ku biir koox si aad u wadaagto wada sheekaysigan</string>
     <string name="join_enterprise_first">Fadlan ku biir shirkad si aad u wadaagto wada sheekaysigan</string>
-
     <string name="open_link_with">Ku fur xiriirka adigoo isticmaalaya</string>
     <string name="just_once">Hal mar kaliya</string>
     <string name="always">Mar walba</string>
     <string name="survey_load_failed">Sahanka lama soo rarin. Fadlan isku day mar kale.</string>
     <string name="survey_submitted">Sahanka waa la gudbiyay. Mahadsanid!</string>
     <string name="survey_submit_failed">Sahanka lama gudbin. Fadlan isku day mar kale.</string>
+    <string name="item_count_pill">%d shay</string>
+    <string name="view_grid">Muuqaal shabag</string>
+    <string name="view_list">Muuqaal liis</string>
+    <string name="steps_done_of_total">%1$d ka mid ah %2$d ayaa la dhammeeyay</string>
+    <string name="course_steps_count">%d tallaabo</string>
+    <string name="subject_label_mathematics">Xisaabta</string>
+    <string name="subject_label_literacy">Aqoonyahannimada</string>
+    <string name="subject_label_health">Caafimaadka</string>
+    <string name="subject_label_social_studies">Cilmiga Bulshada</string>
+    <string name="subject_label_technology">Tignoolajiyadda</string>
+    <string name="filter_all">Dhammaan</string>
+    <string name="filter_books">Buugag</string>
+    <string name="filter_videos">Muuqaallo</string>
+    <string name="filter_audio">Codad</string>
+    <string name="filter_pdfs">PDF-yo</string>
+    <string name="downloaded">La soo dejiyay</string>
+    <string name="not_downloaded">Lama soo dejin</string>
+
 </resources>

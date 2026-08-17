@@ -5,11 +5,14 @@ import com.google.gson.JsonParser
 import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -65,7 +68,9 @@ class ResourcesRepositoryImplTest {
             myLibraryDao,
             userRepository,
             teamDao,
-            userSessionManager
+            userSessionManager,
+            mockk(relaxed = true),
+            mockk(relaxed = true)
         )
     }
 
@@ -259,5 +264,185 @@ class ResourcesRepositoryImplTest {
         assertEquals(listOf("beginner"), filter.getAsJsonArray("level").map { it.asString })
         assertEquals(listOf("video"), filter.getAsJsonArray("mediaType").map { it.asString })
         assertTrue(filter.getAsJsonArray("tags").isEmpty)
+    }
+
+    @Test
+    fun `getRecentResources returns flow from dao with correct pattern`() = runTest {
+        val userId = "testUser123"
+        val expectedPattern = "%\"testUser123\"%"
+        val expectedList = listOf(mockk<MyLibrary>())
+
+        every { myLibraryDao.getRecentForUserPatternFlow(expectedPattern) } returns flowOf(expectedList)
+
+        val result = repository.getRecentResources(userId).first()
+
+        assertEquals(expectedList, result)
+    }
+
+    @Test
+    fun `getPendingDownloads returns flow from dao with correct pattern`() = runTest {
+        val userId = "testUser123"
+        val expectedPattern = "%\"testUser123\"%"
+        val expectedList = listOf("lib1")
+
+        every { myLibraryDao.getPendingDownloadsForUserPatternFlow(expectedPattern) } returns flowOf(expectedList)
+
+        val result = repository.getPendingDownloads(userId).first()
+
+        assertEquals(expectedList, result)
+    }
+
+    @Test
+    fun `getLibraryItemByResourceId returns item by resourceId`() = runTest {
+        val resourceId = "res123"
+        val expectedLib = MyLibrary().apply { id = "id1" }
+        coEvery { myLibraryDao.getByResourceId(resourceId) } returns expectedLib
+
+        val result = repository.getLibraryItemByResourceId(resourceId)
+
+        assertEquals(expectedLib, result)
+        coVerify(exactly = 1) { myLibraryDao.getByResourceId(resourceId) }
+        coVerify(exactly = 0) { myLibraryDao.getByUnderscoreId(any()) }
+    }
+
+    @Test
+    fun `getLibraryItemByResourceId falls back to getByUnderscoreId if getByResourceId returns null`() = runTest {
+        val resourceId = "res123"
+        val expectedLib = MyLibrary().apply { id = "id2" }
+        coEvery { myLibraryDao.getByResourceId(resourceId) } returns null
+        coEvery { myLibraryDao.getByUnderscoreId(resourceId) } returns expectedLib
+
+        val result = repository.getLibraryItemByResourceId(resourceId)
+
+        assertEquals(expectedLib, result)
+        coVerify(exactly = 1) { myLibraryDao.getByResourceId(resourceId) }
+        coVerify(exactly = 1) { myLibraryDao.getByUnderscoreId(resourceId) }
+    }
+
+    @Test
+    fun `getLibraryItemsByIds returns empty list if ids is empty`() = runTest {
+        val result = repository.getLibraryItemsByIds(emptyList())
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { myLibraryDao.getByUnderscoreIds(any()) }
+    }
+
+    @Test
+    fun `getLibraryItemsByIds returns items from dao`() = runTest {
+        val ids = listOf("id1", "id2")
+        val expectedList = listOf(MyLibrary().apply { id = "id1" })
+        coEvery { myLibraryDao.getByUnderscoreIds(ids) } returns expectedList
+
+        val result = repository.getLibraryItemsByIds(ids)
+
+        assertEquals(expectedList, result)
+        coVerify(exactly = 1) { myLibraryDao.getByUnderscoreIds(ids) }
+    }
+
+    @Test
+    fun `getLibraryItemsByLocalAddress returns items from dao`() = runTest {
+        val address = "local/address"
+        val expectedList = listOf(MyLibrary().apply { id = "id1" })
+        coEvery { myLibraryDao.getByLocalAddress(address) } returns expectedList
+
+        val result = repository.getLibraryItemsByLocalAddress(address)
+
+        assertEquals(expectedList, result)
+        coVerify(exactly = 1) { myLibraryDao.getByLocalAddress(address) }
+    }
+
+    @Test
+    fun `getLibraryListForUser returns empty list if userId is null`() = runTest {
+        val result = repository.getLibraryListForUser(null)
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { myLibraryDao.getPublicForUserPattern(any()) }
+    }
+
+    @Test
+    fun `getLibraryListForUser returns filtered items`() = runTest {
+        val userId = "user123"
+        // Need to update is true if !resourceOffline OR (resourceLocalAddress != null && _rev != downloadedRev)
+        val needsUpdateLib = MyLibrary().apply { resourceOffline = false }
+        val noUpdateLib = MyLibrary().apply { resourceOffline = true; resourceLocalAddress = null }
+
+        coEvery { myLibraryDao.getPublicForUserPattern(any()) } returns listOf(needsUpdateLib, noUpdateLib)
+
+        val result = repository.getLibraryListForUser(userId)
+
+        assertEquals(1, result.size)
+        assertEquals(needsUpdateLib, result[0])
+        val expectedPattern = "%\"user123\"%"
+        coVerify(exactly = 1) { myLibraryDao.getPublicForUserPattern(expectedPattern) }
+    }
+
+    @Test
+    fun `getMyLibrary returns empty list if userId is null or blank`() = runTest {
+        assertTrue(repository.getMyLibrary(null).isEmpty())
+        assertTrue(repository.getMyLibrary("").isEmpty())
+        assertTrue(repository.getMyLibrary("   ").isEmpty())
+
+        coVerify(exactly = 0) { myLibraryDao.getForUserPattern(any()) }
+    }
+
+    @Test
+    fun `getMyLibrary returns items from dao`() = runTest {
+        val userId = "user123"
+        val expectedList = listOf(MyLibrary().apply { id = "id1" })
+        coEvery { myLibraryDao.getForUserPattern(any()) } returns expectedList
+
+        val result = repository.getMyLibrary(userId)
+
+        assertEquals(expectedList, result)
+        val expectedPattern = "%\"user123\"%"
+        coVerify(exactly = 1) { myLibraryDao.getForUserPattern(expectedPattern) }
+    }
+
+    @Test
+    fun `getAllStepResources returns empty list if stepId is null`() = runTest {
+        val result = repository.getAllStepResources(null)
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { myLibraryDao.getByStepId(any()) }
+    }
+
+    @Test
+    fun `getAllStepResources returns items from dao`() = runTest {
+        val stepId = "step123"
+        val expectedList = listOf(MyLibrary().apply { id = "id1" })
+        coEvery { myLibraryDao.getByStepId(stepId) } returns expectedList
+
+        val result = repository.getAllStepResources(stepId)
+
+        assertEquals(expectedList, result)
+        coVerify(exactly = 1) { myLibraryDao.getByStepId(stepId) }
+    }
+
+    @Test
+    fun `removeResourcesFromShelf batches dao calls instead of one per item`() = runTest {
+        val userId = "testUser123"
+        val resourceIds = (1..50).map { "resource$it" }
+        val libraryItems = resourceIds.map { rid -> MyLibrary().apply { resourceId = rid; setUserId(userId) } }
+
+        coEvery { myLibraryDao.getByResourceIds(resourceIds) } returns libraryItems
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+        coEvery { removedLogDao.insertAll(any()) } returns Unit
+
+        val result = repository.removeResourcesFromShelf(resourceIds, userId)
+
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) { myLibraryDao.getByResourceIds(resourceIds) }
+        coVerify(exactly = 1) { myLibraryDao.upsertAll(match { it.size == 50 }) }
+        coVerify(exactly = 1) { removedLogDao.insertAll(match { it.size == 50 }) }
+        coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+    }
+
+    @Test
+    fun `removeResourcesFromShelf with empty list does nothing`() = runTest {
+        val result = repository.removeResourcesFromShelf(emptyList(), "testUser123")
+
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 0) { myLibraryDao.getByResourceIds(any()) }
+        coVerify(exactly = 0) { removedLogDao.insertAll(any()) }
     }
 }
