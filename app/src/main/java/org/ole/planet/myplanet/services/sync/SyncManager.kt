@@ -522,7 +522,7 @@ class SyncManager @Inject constructor(
                     async(dispatcherProvider.io) {
                         semaphore.withPermit {
                             val shelfStartTime = SystemClock.elapsedRealtime()
-                            val items = syncRepository.processShelfParallel(shelfId, apiInterface)
+                            val items = syncRepository.processShelfParallel(shelfId)
                             val shelfDuration = SystemClock.elapsedRealtime() - shelfStartTime
                             if (items > 0) {
                                 logger.logDetail("library_sync", "Shelf ${index + 1}/${shelvesWithData.size} ($shelfId): $items items in ${shelfDuration}ms")

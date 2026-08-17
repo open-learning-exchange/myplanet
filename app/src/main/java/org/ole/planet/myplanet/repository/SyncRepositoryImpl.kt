@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 @Singleton
 class SyncRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val apiInterface: ApiInterface,
     private val dispatcherProvider: DispatcherProvider,
     private val resourcesRepository: ResourcesRepository,
     private val coursesRepository: CoursesRepository,
@@ -86,7 +87,7 @@ class SyncRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun processShelfParallel(shelfId: String, apiInterface: ApiInterface): Int {
+    override suspend fun processShelfParallel(shelfId: String): Int {
         var processedItems = 0
 
         try {
@@ -113,7 +114,7 @@ class SyncRepositoryImpl @Inject constructor(
                     val array = getJsonArray(shelfData.key, shelfDoc)
                     if (array.size() > 0) {
                         async(dispatcherProvider.io) {
-                            processShelfDataOptimizedSync(shelfId, shelfData, shelfDoc, apiInterface)
+                            processShelfDataOptimizedSync(shelfId, shelfData, shelfDoc)
                         }
                     } else null
                 }
@@ -127,7 +128,7 @@ class SyncRepositoryImpl @Inject constructor(
         return processedItems
     }
 
-    private suspend fun processShelfDataOptimizedSync(shelfId: String?, shelfData: Constants.ShelfData, shelfDoc: JsonObject?, apiInterface: ApiInterface): Int {
+    private suspend fun processShelfDataOptimizedSync(shelfId: String?, shelfData: Constants.ShelfData, shelfDoc: JsonObject?): Int {
         var processedCount = 0
         val logger = SyncTimeLogger
 
