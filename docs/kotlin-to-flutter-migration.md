@@ -1446,6 +1446,56 @@ features (deferred):
 
 ---
 
-**Last updated**: 2026-08-17 (Phase 38 complete; `c5141b658` harvest)
+## Harvest audit — the 2026-08-16/17 commit batch
+
+The five commits after `c18d15808` (up to `ffa3fe862`) were audited. One was
+harvested; the rest are refactors or perf no-ops:
+
+**Harvested.**
+
+- `756cf75ce` (sync: smoother sync repository json tree mapping) — **harvested.**
+  `MyTeam.serialize` builds the team document sent to CouchDB by
+  `addProperty`-ing every field (nulls included) and then stripping null-valued
+  keys at the end (`object.keySet().filter { isJsonNull }.forEach { remove }`),
+  so the uploaded doc never carries `"field": null`. The commit replaced the
+  old serialize-then-reparse round-trip (`JsonParser.parseString(gson.toJson)`)
+  with this explicit in-place strip — same contract, faster — and added
+  `MyTeamTest.testSerializeStripsNulls` to lock it in. The port's
+  `TeamsRepository.serializeTeamDocument` already strips nulls for most fields
+  via Dart `if (row.X != null)` collection-if entries, but four nullable
+  columns — `teamId`, `userId`, `docType`, `teamType` — were added
+  unconditionally and would have sent nulls upstream. All four are now guarded
+  with `if (row.X != null)`, and a port of `testSerializeStripsNulls` (a row
+  with only `_id`/`_rev`/`name` asserts the four are absent) was added to
+  `teams_repository_test.dart`. (A broader field-set divergence — the Kotlin's
+  `resourceLink` minimal payload and its `report`/`request` field omission —
+  predates this commit and is tracked separately as porting work, not part of
+  this harvest.)
+
+**Refactor / perf no-ops.**
+
+- `ffa3fe862` (sync: repository api interface injecting) — moves `apiInterface`
+  from a `processShelfParallel` method param to constructor injection in
+  `SyncRepository`. DI tidy; the port's shelf processing holds its api via the
+  repository. No-op.
+- `97afa19a2` (teams: voices repository view modelling) — removes
+  `getUserById`/`getLibraryResource` from `TeamsRepository` (callers inject
+  `UserRepository`/`ResourcesRepository` directly) and drops
+  `userRepositoryLazy`. Dependency-structure refactor. No-op.
+- `5133ea3ef` (life: health examination dispatcher providing) — refactors
+  `HealthExaminationAdapter` to pre-resolve `formattedDate`/
+  `isSelfExamination`/`resolvedName` into a `HealthExaminationItem` data class
+  (off the `onBindViewHolder` thread) via `DispatcherProvider`. Same displayed
+  result; the port's health list builds inline. No-op.
+- `25e6a0a97` (life: list adapter caching) — caches `lifeAdapter` so it is not
+  recreated on every view creation and guards observer re-attachment
+  (`isObserverAttached`). A Kotlin `RecyclerView` perf/leak fix; Flutter's
+  `ListView` rebuild is cheap and has no manual observer to double-attach.
+  No-op.
+
+---
+
+**Last updated**: 2026-08-17 (Phase 38 complete; `c5141b658`, `756cf75ce`
+harvest)
 **Phase**: 38 of N (27 of 28 UI packages have a screen — see Status for what that does and does
 not mean)

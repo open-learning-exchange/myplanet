@@ -51,6 +51,27 @@ void main() {
     expect(await repository.watchMemberCount('team').first, 1);
   });
 
+  // Port of `MyTeamTest.testSerializeStripsNulls` (commit 756cf75ce). A team
+  // document uploaded to CouchDB must never carry null-valued keys — the
+  // Kotlin strips them in `MyTeam.serialize`, and `serializeTeamDocument`
+  // does the same via its `if (row.X != null)` entries. Guards the four
+  // nullable columns (`teamId`/`userId`/`docType`/`teamType`) that were once
+  // added unconditionally and would have sent `"teamId": null` upstream.
+  test('serializeTeamDocument strips null-valued keys', () async {
+    await database.teamDao.upsert(
+      TeamMapper.fromDoc({'_id': 'nulls', '_rev': 'r1', 'name': 'Named'})!,
+    );
+    final row = (await database.teamDao.getById('nulls'))!;
+    final doc = TeamsRepository.serializeTeamDocument(row);
+    expect(doc['_id'], 'nulls');
+    expect(doc['_rev'], 'r1');
+    expect(doc['name'], 'Named');
+    expect(doc.containsKey('teamId'), isFalse);
+    expect(doc.containsKey('userId'), isFalse);
+    expect(doc.containsKey('docType'), isFalse);
+    expect(doc.containsKey('teamType'), isFalse);
+  });
+
   test(
     'creates, totals, edits, serializes, and archives financial reports',
     () async {
