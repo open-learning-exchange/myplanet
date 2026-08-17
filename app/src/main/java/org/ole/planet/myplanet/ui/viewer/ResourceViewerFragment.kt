@@ -114,6 +114,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     @Inject lateinit var ttsManager: TTSManager
     private var authSessionUpdater: AuthSessionUpdater? = null
 
+    private var hasPromptedThisSession: Boolean = false
+
     private val audioRecordListener = object : OnAudioRecordListener {
         override fun onRecordStarted() {
             Utilities.toast(requireContext(), getString(R.string.recording_started))
@@ -344,9 +346,12 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                     Player.STATE_BUFFERING -> showVideoLoading(getString(R.string.video_loading_buffering))
                     Player.STATE_READY -> hideVideoLoading()
                     Player.STATE_ENDED -> {
-                        val rid = library?.resourceId ?: return
+                        if (!::library.isInitialized) return
+                        val rid = library.resourceId ?: return
                         viewLifecycleOwner.lifecycleScope.launch {
-                            showResourceRatingDialogIfNeverRated(rid)
+                            if (!hasPromptedThisSession) {
+                                showResourceRatingDialogIfNeverRated(rid)
+                            }
                         }
                     }
                     else -> {}
@@ -357,6 +362,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     }
 
     private suspend fun showResourceRatingDialogIfNeverRated(resourceId: String) {
+        if (!::library.isInitialized) return
         val userId = userRepository.getUserModel()?.id
         val hasRated = if (!userId.isNullOrEmpty()) {
             try {
@@ -372,6 +378,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         if (!hasRated && isAdded) {
             val ratingDialog = RatingsFragment.newInstance("resource", resourceId, library.title)
             ratingDialog.show(parentFragmentManager, RatingsFragment.TAG)
+            hasPromptedThisSession = true
         }
     }
 
@@ -518,8 +525,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.S)
-    @OptIn(UnstableApi::class)
     override fun setAuthSession(responseHeader: Map<String, List<String>>) {
         val cookieHeader = responseHeader["Set-Cookie"]?.get(0)
         val headerAuth = cookieHeader?.split(";") ?: run {
