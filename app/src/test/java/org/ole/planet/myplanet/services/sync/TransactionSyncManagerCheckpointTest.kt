@@ -116,7 +116,6 @@ class TransactionSyncManagerCheckpointTest {
             mockk<UserRepository>(relaxed = true),
             mockk<UserSyncRepository>(relaxed = true),
             mockk<ActivitiesRepository>(relaxed = true),
-            mockk<Lazy<TeamsRepository>>(relaxed = true),
             mockk<Lazy<TeamsSyncRepository>>(relaxed = true),
             mockk<NotificationsRepository>(relaxed = true),
             mockk<TagsRepository>(relaxed = true),

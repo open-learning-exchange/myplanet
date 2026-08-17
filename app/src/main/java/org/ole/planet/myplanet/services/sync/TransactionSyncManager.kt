@@ -68,7 +68,6 @@ class TransactionSyncManager @Inject constructor(
     private val userRepository: UserRepository,
     private val userSyncRepository: UserSyncRepository,
     private val activitiesRepository: ActivitiesRepository,
-    private val teamsRepository: Lazy<TeamsRepository>,
     private val teamsSyncRepository: Lazy<TeamsSyncRepository>,
     private val notificationsRepository: NotificationsRepository,
     private val tagsRepository: TagsRepository,
