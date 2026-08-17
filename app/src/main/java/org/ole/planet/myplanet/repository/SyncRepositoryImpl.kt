@@ -158,7 +158,7 @@ class SyncRepositoryImpl @Inject constructor(
                 i = end
 
                 val keysObject = JsonObject()
-                keysObject.add("keys", gson.fromJson(gson.toJson(batch), JsonArray::class.java))
+                keysObject.add("keys", gson.toJsonTree(batch))
 
                 // API call
                 val apiStartTime = SystemClock.elapsedRealtime()
