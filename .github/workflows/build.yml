@@ -6,7 +6,6 @@ on:
       - '**'
       - '!master'
 
-# Supersede stale runs on the same branch (this workflow never runs on master).
 concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: true
@@ -29,16 +28,11 @@ jobs:
         uses: gradle/actions/setup-gradle@v6.3.0
         with:
           gradle-version: wrapper
-          # see test.yml: off master this cache is read-only by default, so no
-          # branch run could ever seed it
           cache-read-only: false
 
-      # see test.yml: keeps Kotlin compilation incremental across runs
       - name: restore project build dir
         uses: actions/cache@v4
         with:
-          # see test.yml: configuration-cache dir can embed env-var credentials,
-          # and the positive pattern must be .gradle/* for the negation to work
           path: |
             app/build
             .gradle/*
@@ -52,8 +46,6 @@ jobs:
           GRADLE_BUILD_CACHE_URL: ${{ secrets.GRADLE_BUILD_CACHE_URL }}
           GRADLE_BUILD_CACHE_USER: ${{ secrets.GRADLE_BUILD_CACHE_USER }}
           GRADLE_BUILD_CACHE_PASS: ${{ secrets.GRADLE_BUILD_CACHE_PASS }}
-          # Push from every in-repo branch (fork PRs never see these secrets);
-          # see test.yml for the automerge/master cache-seeding rationale.
           GRADLE_BUILD_CACHE_PUSH: 'true'
         run: |
           FLAVOR=${{ matrix.build }}
