@@ -60,10 +60,9 @@ object ServiceModule {
         userSyncRepository: UserSyncRepository,
         healthRepository: HealthRepository,
         @ApplicationScope appScope: CoroutineScope,
-        dispatcherProvider: DispatcherProvider,
-        apiInterface: ApiInterface
+        dispatcherProvider: DispatcherProvider
     ): UploadToShelfService {
-        return UploadToShelfService(context, preferences, sharedPrefManager, userRepository, userSyncRepository, healthRepository, appScope, dispatcherProvider, apiInterface)
+        return UploadToShelfService(context, preferences, sharedPrefManager, userRepository, userSyncRepository, healthRepository, appScope, dispatcherProvider)
     }
 
     @Provides
