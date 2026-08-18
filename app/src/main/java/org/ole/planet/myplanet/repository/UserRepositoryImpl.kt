@@ -107,10 +107,12 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getUsersByIds(userIds: List<String>): List<UserEntity> {
         if (userIds.isEmpty()) return emptyList()
-        val userIdSet = userIds.toSet()
-        return userDao.getAll()
-            .filter { it.id in userIdSet || it._id in userIdSet }
-            .map { it }
+        val userIdList = userIds.distinct()
+        val result = mutableListOf<UserEntity>()
+        userIdList.chunked(400).forEach { chunk ->
+            result.addAll(userDao.getUsersByAnyIds(chunk))
+        }
+        return result.distinctBy { it.id }
     }
 
     override suspend fun getUserByAnyId(id: String): UserEntity? {
@@ -171,6 +173,15 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getUsersSortedBy(fieldName: String, descending: Boolean): List<UserEntity> {
         return sortUsers(getAllUsers(), fieldName, descending)
+    }
+
+    override suspend fun searchUsers(query: String, sortField: String, descending: Boolean): List<UserEntity> {
+        val users = userDao.search(query)
+        return sortUsers(users, sortField, descending)
+    }
+
+    override suspend fun saveUser(user: UserEntity) {
+        userDao.upsert(user)
     }
 
     override suspend fun getPendingSyncUsers(limit: Int): List<UserEntity> {
@@ -944,8 +955,8 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun cleanupDuplicateUsers() {
-        val allUsers = userDao.getAll()
-        val usersByName = allUsers.groupBy { it.name }
+        val duplicateUsers = userDao.getDuplicateUsers()
+        val usersByName = duplicateUsers.groupBy { it.name }
 
         usersByName.forEach { (_, users) ->
             if (users.size > 1) {

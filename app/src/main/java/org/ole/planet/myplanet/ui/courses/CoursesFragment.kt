@@ -160,6 +160,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
                 showNoData(tvMessage, adapterCourses.itemCount, "courses")
             }
             selectionController.clearAll(null)
+            checkList()
         }
 
         collectLatestWhenStarted(viewModel.coursesState) { state ->
@@ -600,7 +601,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
             refreshJobs[id]?.cancel()
             refreshJobs[id] = viewLifecycleOwner.lifecycleScope.launch {
                 viewModel.refreshCourseRatings(model?.id)
-                adapterCourses.refreshWithDiff(id)
+                adapterCourses.notifyItemChangedById(id)
             }
         }
     }
