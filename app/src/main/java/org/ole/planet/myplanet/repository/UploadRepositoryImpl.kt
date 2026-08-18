@@ -5,7 +5,7 @@ import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.ExamDao
@@ -14,7 +14,6 @@ import org.ole.planet.myplanet.model.MembershipDoc
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.services.FileUploader
-import org.ole.planet.myplanet.utils.FileUtils
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -127,9 +126,7 @@ class UploadRepositoryImpl @Inject constructor(
         val (mimeType, body) = withContext(dispatcherProvider.io) {
             val connection = file.toURI().toURL().openConnection()
             val type = connection.contentType ?: "application/octet-stream"
-            val requestBody = FileUtils.fullyReadFileToBytes(file)
-                .toRequestBody("application/octet-stream".toMediaTypeOrNull())
-            type to requestBody
+            type to file.asRequestBody("application/octet-stream".toMediaTypeOrNull())
         }
         val url = String.format(destinationFormat, UrlUtils.getUrl(), id, name)
 
