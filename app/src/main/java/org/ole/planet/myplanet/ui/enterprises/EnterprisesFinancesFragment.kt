@@ -106,8 +106,8 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             observeTransactions(sortAscending = newSort)
         }
         binding.btnReset.setOnClickListener {
-            resetDateFilter()
-            observeTransactions(sortAscending = isAsc, startDate = null, endDate = null)
+            resetFilterAndSort()
+            observeTransactions()
         }
         return binding.root
     }
@@ -348,7 +348,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         }
     }
 
-    private fun resetDateFilter() {
+    private fun resetFilterAndSort() {
         _binding?.let { b ->
             b.tvFromDateCalendar.setText("")
             b.etToDate.setText("")
@@ -360,24 +360,18 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         isAsc = false
     }
 
-    override fun setMenuVisibility(menuVisible: Boolean) {
-        super.setMenuVisibility(menuVisible)
-        if (!menuVisible && _binding != null) {
-            resetDateFilter()
-            observeTransactions(sortAscending = isAsc, startDate = null, endDate = null)
-        }
+    override fun onResume() {
+        super.onResume()
+        observeTransactions()
     }
 
-    override fun onHiddenChanged(hidden: Boolean) {
-        super.onHiddenChanged(hidden)
-        if (hidden && _binding != null) {
-            resetDateFilter()
-            observeTransactions(sortAscending = isAsc, startDate = null, endDate = null)
-        }
+    override fun onPause() {
+        super.onPause()
+        resetFilterAndSort()
     }
 
     override fun onDestroyView() {
-        resetDateFilter()
+        resetFilterAndSort()
         transactions = emptyList()
         _binding = null
         super.onDestroyView()
