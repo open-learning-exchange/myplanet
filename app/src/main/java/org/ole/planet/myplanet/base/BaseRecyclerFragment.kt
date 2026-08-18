@@ -81,8 +81,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             val adapter = getAdapter()
             if (recyclerView.adapter !== adapter) {
                 recyclerView.adapter = adapter
-            } else {
-                adapter.notifyItemRangeChanged(0, adapter.itemCount, "refresh")
             }
             if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
                 resources?.let { showDownloadDialog(it) }
@@ -114,8 +112,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             val adapter = getAdapter()
             if (recyclerView.adapter !== adapter) {
                 recyclerView.adapter = adapter
-            } else {
-                adapter.notifyItemRangeChanged(0, adapter.itemCount, "refresh")
             }
         }
     }
@@ -202,8 +198,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         val newAdapter = getAdapter()
         if (recyclerView.adapter !== newAdapter) {
             recyclerView.adapter = newAdapter
-        } else {
-            newAdapter.notifyItemRangeChanged(0, newAdapter.itemCount, "refresh")
         }
         showNoData(tvMessage, newAdapter.itemCount, "")
     }
