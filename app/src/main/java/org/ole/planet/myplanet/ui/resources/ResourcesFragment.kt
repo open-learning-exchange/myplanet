@@ -96,7 +96,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     lateinit var prefManager: SharedPrefManager
 
     private val viewModel: ResourcesViewModel by viewModels()
-    
     @Inject
     lateinit var realtimeSyncManager: RealtimeSyncManager
 
@@ -148,16 +147,23 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
 
         val user = userRepository.getUserModel()
-        val factory = adapterFactory ?: DefaultBaseAdapterFactory()
-        adapterLibrary = factory.createResourcesAdapter(
-            context = requireActivity(),
-            isGuest = user?.isGuest() == true,
-            openedResourceIds = emptySet(),
-            currentUserName = user?.name,
-            viewMode = prefManager.getLibraryViewMode(),
-            dispatcherProvider = dispatcherProvider,
-            onEditClick = { model -> openEditResource(model) }
-        )
+        // The adapter caches the Context (Activity) which outlives onCreateView,
+        // but Fragments and their host Activities are re-created together so this is safe from leaks.
+        if (!::adapterLibrary.isInitialized) {
+            val factory = adapterFactory ?: DefaultBaseAdapterFactory()
+            adapterLibrary = factory.createResourcesAdapter(
+                context = requireActivity(),
+                isGuest = user?.isGuest() == true,
+                openedResourceIds = emptySet(),
+                currentUserName = user?.name,
+                viewMode = prefManager.getLibraryViewMode(),
+                dispatcherProvider = dispatcherProvider,
+                onEditClick = { model -> openEditResource(model) }
+            )
+        } else {
+            adapterLibrary.setViewMode(prefManager.getLibraryViewMode())
+            adapterLibrary.updateIdentity(user?.isGuest() == true, user?.name)
+        }
 
         adapterLibrary.setListener(this)
 

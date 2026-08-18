@@ -38,9 +38,9 @@ import org.ole.planet.myplanet.utils.Utilities
 
 class ResourcesAdapter(
     private val context: Context,
-    private val isGuest: Boolean,
+    private var isGuest: Boolean,
     private var openedResourceIds: Set<String>,
-    private val currentUserName: String? = null,
+    private var currentUserName: String? = null,
     private var viewMode: ListViewMode = ListViewMode.GRID,
     private val dispatcherProvider: DispatcherProvider,
     private val onEditClick: ((ResourceListModel) -> Unit)? = null
@@ -112,10 +112,26 @@ class ResourcesAdapter(
     }
 
     fun setViewMode(mode: ListViewMode, onChanged: (() -> Unit)? = null) {
-        if (viewMode == mode) return
-        viewMode = mode
-        notifyItemRangeChanged(0, itemCount)
+        if (viewMode != mode) {
+            viewMode = mode
+            notifyItemRangeChanged(0, itemCount)
+        }
         onChanged?.invoke()
+    }
+
+    fun updateIdentity(isGuest: Boolean, currentUserName: String?) {
+        var changed = false
+        if (this.isGuest != isGuest) {
+            this.isGuest = isGuest
+            changed = true
+        }
+        if (this.currentUserName != currentUserName) {
+            this.currentUserName = currentUserName
+            changed = true
+        }
+        if (changed) {
+            notifyItemRangeChanged(0, itemCount)
+        }
     }
 
     fun markItemAsOffline(id: String) {

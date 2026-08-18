@@ -67,7 +67,6 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     private val refreshJobs = mutableMapOf<String, Job>()
     private var pendingScrollState: Parcelable? = null
     private val viewModel: CoursesViewModel by viewModels()
-
     @Inject
     lateinit var userSessionManager: UserSessionManager
 
@@ -118,13 +117,20 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
             userModel = userSessionManager.getUserModel()
         }
 
-        val factory = adapterFactory ?: DefaultBaseAdapterFactory()
-        adapterCourses = factory.createCoursesAdapter(
-            context = hostActivity,
-            isGuest = userModel?.isGuest() ?: true,
-            isMyCourseLib = isMyCourseLib,
-            viewMode = sharedPrefManager.getCourseViewMode()
-        )
+        // The adapter caches the Context (Activity) which outlives onCreateView,
+        // but Fragments and their host Activities are re-created together so this is safe from leaks.
+        if (!::adapterCourses.isInitialized) {
+            val factory = adapterFactory ?: DefaultBaseAdapterFactory()
+            adapterCourses = factory.createCoursesAdapter(
+                context = hostActivity,
+                isGuest = userModel?.isGuest() ?: true,
+                isMyCourseLib = isMyCourseLib,
+                viewMode = sharedPrefManager.getCourseViewMode()
+            )
+        } else {
+            adapterCourses.setViewMode(sharedPrefManager.getCourseViewMode())
+            adapterCourses.updateIdentity(userModel?.isGuest() ?: true)
+        }
 
         adapterCourses.setListener(this@CoursesFragment)
         enableSortButtons()
