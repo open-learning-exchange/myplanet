@@ -56,14 +56,13 @@ object ServiceModule {
     fun provideUploadToShelfService(
         @ApplicationContext context: Context,
         @AppPreferences preferences: SharedPreferences,
-        sharedPrefManager: SharedPrefManager,
         userRepository: UserRepository,
         userSyncRepository: UserSyncRepository,
         healthRepository: HealthRepository,
         @ApplicationScope appScope: CoroutineScope,
         dispatcherProvider: DispatcherProvider
     ): UploadToShelfService {
-        return UploadToShelfService(context, preferences, sharedPrefManager, userRepository, userSyncRepository, healthRepository, appScope, dispatcherProvider)
+        return UploadToShelfService(context, preferences, userRepository, userSyncRepository, healthRepository, appScope, dispatcherProvider)
     }
 
     @Provides

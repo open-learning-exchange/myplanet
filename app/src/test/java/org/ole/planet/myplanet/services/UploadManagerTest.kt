@@ -127,7 +127,6 @@ class UploadManagerTest {
     private lateinit var uploadManager: UploadManager
     private val context: Context = mockk(relaxed = true)
     private val submissionsRepository: SubmissionsRepository = mockk(relaxed = true)
-    private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
     private val uploadCoordinator: UploadCoordinator = mockk(relaxed = true)
     private val uploadRepository: UploadRepository = mockk(relaxed = true)
@@ -162,7 +161,7 @@ class UploadManagerTest {
         uploadManager = spyk(
             UploadManager(
                 context,
-                sharedPrefManager,
+                submissionsRepository,
                 gson,
                 uploadCoordinator,
                 uploadRepository,
