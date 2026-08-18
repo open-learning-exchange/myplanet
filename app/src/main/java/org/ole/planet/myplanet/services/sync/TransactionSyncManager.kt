@@ -68,7 +68,6 @@ class TransactionSyncManager @Inject constructor(
     private val userRepository: UserRepository,
     private val userSyncRepository: UserSyncRepository,
     private val activitiesRepository: ActivitiesRepository,
-    private val teamsRepository: Lazy<TeamsRepository>,
     private val teamsSyncRepository: Lazy<TeamsSyncRepository>,
     private val notificationsRepository: NotificationsRepository,
     private val tagsRepository: TagsRepository,
@@ -79,7 +78,6 @@ class TransactionSyncManager @Inject constructor(
     private val healthRepository: HealthRepository,
     private val progressRepository: ProgressRepository,
     private val surveysRepository: SurveysRepository,
-    @ApplicationScope private val applicationScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
     private val userSessionManager: UserSessionManager
 ) {
@@ -195,7 +193,7 @@ class TransactionSyncManager @Inject constructor(
                 currentCoroutineContext().ensureActive()
                 batchNumber++
                 if (useCheckpoint) {
-                    sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).commit()
+                    sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).apply()
                 }
                 val batchStartTime = SystemClock.elapsedRealtime()
                 val batchApiStartTime = SystemClock.elapsedRealtime()
@@ -310,7 +308,7 @@ class TransactionSyncManager @Inject constructor(
                 // Persist progress immediately after a batch is committed so an interruption
                 // resumes past it rather than re-processing the just-inserted page.
                 if (useCheckpoint) {
-                    sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).commit()
+                    sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).apply()
                 }
                 val batchDuration = SystemClock.elapsedRealtime() - batchStartTime
                 Log.d("SyncPerf", "    $table batch $batchNumber: ${arr.size()} docs in ${batchDuration}ms (total: $totalDocs)")

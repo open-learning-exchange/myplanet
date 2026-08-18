@@ -27,15 +27,27 @@ class EnterprisesReportsAdapter(
         return ReportsViewHolder(binding)
     }
 
+    override fun onBindViewHolder(holder: ReportsViewHolder, position: Int, payloads: MutableList<Any>) {
+        if (payloads.isNotEmpty()) {
+            var unhandled = false
+            payloads.forEach { payload ->
+                if (payload == PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED) {
+                    setNonTeamMemberVisibility(holder.binding)
+                } else {
+                    unhandled = true
+                }
+            }
+            if (unhandled) {
+                super.onBindViewHolder(holder, position, payloads)
+            }
+        } else {
+            super.onBindViewHolder(holder, position, payloads)
+        }
+    }
+
     override fun onBindViewHolder(holder: ReportsViewHolder, position: Int) {
         val binding = holder.binding
-        if (nonTeamMember) {
-            binding.edit.visibility = View.GONE
-            binding.delete.visibility = View.GONE
-        } else {
-            binding.edit.visibility = View.VISIBLE
-            binding.delete.visibility = View.VISIBLE
-        }
+        setNonTeamMemberVisibility(binding)
         val report = getItem(position)
         binding.tvReportTitle.text = context.getString(R.string.team_financial_report, teamName)
         report?.let {
@@ -75,6 +87,14 @@ class EnterprisesReportsAdapter(
         }
     }
 
+    override fun onViewRecycled(holder: ReportsViewHolder) {
+        super.onViewRecycled(holder)
+        Glide.with(context).clear(holder.binding.reportImage)
+        holder.binding.reportImage.setOnClickListener(null)
+        holder.binding.edit.setOnClickListener(null)
+        holder.binding.delete.setOnClickListener(null)
+    }
+
     private fun bindReportImage(binding: ReportListItemBinding, report: MyTeam) {
         val imageFile = MyTeam.getAttachmentFile(context, report._id, report.imageName)
         if (imageFile != null && imageFile.exists()) {
@@ -96,12 +116,23 @@ class EnterprisesReportsAdapter(
     fun setNonTeamMember(nonTeamMember: Boolean) {
         if (this.nonTeamMember == nonTeamMember) return
         this.nonTeamMember = nonTeamMember
-        notifyItemRangeChanged(0, itemCount)
+        notifyItemRangeChanged(0, itemCount, PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED)
+    }
+
+    private fun setNonTeamMemberVisibility(binding: ReportListItemBinding) {
+        if (nonTeamMember) {
+            binding.edit.visibility = View.GONE
+            binding.delete.visibility = View.GONE
+        } else {
+            binding.edit.visibility = View.VISIBLE
+            binding.delete.visibility = View.VISIBLE
+        }
     }
 
     class ReportsViewHolder(val binding: ReportListItemBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
+        const val PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED = "PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED"
         val diffCallback = DiffUtils.itemCallback<MyTeam>(
             areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
             areContentsTheSame = { oldItem, newItem ->
