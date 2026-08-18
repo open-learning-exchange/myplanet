@@ -6,7 +6,7 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 interface SyncRepository {
     fun uploadLoginData(): Flow<SyncUiState>
     fun uploadBulkData(): Flow<SyncUiState>
-    suspend fun processShelfParallel(shelfId: String, apiInterface: ApiInterface): Int
+    suspend fun processShelfParallel(shelfId: String): Int
     suspend fun syncDashboardKeyId(role: String?): SyncUiState
 }
 

@@ -53,6 +53,12 @@ class EnterprisesFinancesAdapter(
         updateBackgroundColor(binding.llayout, position)
     }
 
+    override fun onViewRecycled(holder: FinanceViewHolder) {
+        super.onViewRecycled(holder)
+        Glide.with(context).clear(holder.binding.financeImage)
+        holder.binding.financeImage.setOnClickListener(null)
+    }
+
     private fun bindFinanceImage(binding: RowFinanceBinding, item: Transaction) {
         val imageFile = MyTeam.getAttachmentFile(context, item.id, item.imageName)
         if (imageFile != null && imageFile.exists()) {

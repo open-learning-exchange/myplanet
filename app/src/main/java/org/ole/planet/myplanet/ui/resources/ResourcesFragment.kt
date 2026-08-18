@@ -34,7 +34,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.base.DefaultBaseAdapterFactory
@@ -156,6 +155,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             openedResourceIds = emptySet(),
             currentUserName = user?.name,
             viewMode = prefManager.getLibraryViewMode(),
+            dispatcherProvider = dispatcherProvider,
             onEditClick = { model -> openEditResource(model) }
         )
 
@@ -207,10 +207,11 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                 }
             }
         }
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             userModel = userRepository.getUserModel()
-            setupGuestUserRestrictions()
-
+            if (::adapterLibrary.isInitialized && _binding != null) {
+                checkList()
+            }
             val userId = userModel?.id
             if (userId != null) {
                 viewModel.observeOpenedResourceIds(userId)
@@ -301,13 +302,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             tvSelected.visibility = View.GONE
         } else {
             tvSelected.visibility = View.VISIBLE
-        }
-    }
-
-    private fun setupGuestUserRestrictions() {
-        if(userModel?.isGuest() == true){
-            tvAddToLib.visibility = View.GONE
-            selectAll.visibility = View.GONE
         }
     }
 
@@ -443,7 +437,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val count = selectedItems?.size ?: 0
         tvDelete?.isEnabled = count != 0
         tvAddToLib.isEnabled = count != 0
-        if(count != 0){
+        if(count != 0 && userModel?.isGuest() != true){
             if(isMyCourseLib) tvDelete?.visibility = View.VISIBLE
             else tvAddToLib.visibility = View.VISIBLE
         } else {
@@ -454,25 +448,26 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private fun checkList(listSize: Int = if (::adapterLibrary.isInitialized) adapterLibrary.currentList.size else 0) {
         val hasAnyLibraryData = allResourceModels.isNotEmpty()
+        val isGuest = userModel?.isGuest() == true
 
         if (!hasAnyLibraryData && listSize == 0) {
             selectAll.visibility = View.GONE
             layoutSearch.visibility = View.GONE
             layoutViewToggle?.visibility = View.GONE
-            tvAddToLib.visibility = View.GONE
             tvSelected.visibility = View.GONE
             binding.btnCollections.visibility = View.GONE
             filter.visibility = View.GONE
             clearTags.visibility = View.GONE
             tvDelete?.visibility = View.GONE
         } else {
-            selectAll.visibility = View.VISIBLE
+            selectAll.visibility = if (isGuest) View.GONE else View.VISIBLE
             layoutSearch.visibility = View.VISIBLE
             layoutViewToggle?.visibility = View.VISIBLE
             binding.btnCollections.visibility = View.VISIBLE
             filter.visibility = View.VISIBLE
             clearTags.visibility = if (hasActiveFilters()) View.VISIBLE else View.GONE
         }
+        hideButton()
     }
 
     private fun hasActiveFilters(): Boolean {
@@ -635,7 +630,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     private fun changeButtonStatus() {
-        tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
         if (adapterLibrary.areAllSelected()) {
             selectAll.isChecked = true
             selectAll.text = getString(R.string.unselect_all)
@@ -666,7 +660,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     override suspend fun getData(): Map<String, Set<String>> {
         // Keep facet options stable so applying one filter does not hide other available options.
-        return resourcesRepository.getFilterFacets(allResourceModels.map { it.library })
+        return viewModel.getFilterFacets(allResourceModels.map { it.library })
     }
 
     override fun getSelectedFilter(): Map<String, Set<String>> {
@@ -714,12 +708,12 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val planetCode = model?.planetCode
         val parentCode = model?.parentCode
 
-        lifecycleScope.launch(dispatcherProvider.io) {
+        viewLifecycleOwner.lifecycleScope.launch {
             if (!filterApplied(searchText) || userName == null || planetCode == null || parentCode == null) {
                 return@launch
             }
 
-            resourcesRepository.saveSearchActivity(
+            viewModel.saveSearchActivity(
                 userName,
                 searchText,
                 planetCode,
@@ -815,16 +809,20 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val itemsToDelete = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToDelete.isNotEmpty()) {
-            lifecycleScope.launch(dispatcherProvider.io) {
-                resourcesRepository.removeResourcesFromShelf(itemsToDelete, userId)
-                withContext(dispatcherProvider.main) {
-                    _binding ?: return@withContext
-                    Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
-                    refreshResourcesData()
-                    selectedItems?.clear()
-                    changeButtonStatus()
-                    hideButton()
-                }
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewModel.removeResourcesFromShelf(itemsToDelete, userId)
+                    .onSuccess {
+                        _binding ?: return@onSuccess
+                        Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+                        refreshResourcesData()
+                        selectedItems?.clear()
+                        changeButtonStatus()
+                        hideButton()
+                    }
+                    .onFailure {
+                        _binding ?: return@onFailure
+                        Utilities.toast(activity, getString(R.string.error, it.message))
+                    }
             }
         }
     }
