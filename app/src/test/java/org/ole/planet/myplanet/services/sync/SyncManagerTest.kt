@@ -19,11 +19,9 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -36,7 +34,6 @@ class SyncManagerTest {
 
     private lateinit var syncManager: SyncManager
     private val context: Context = mockk(relaxed = true)
-    private val databaseService: DatabaseService = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val apiInterface: ApiInterface = mockk(relaxed = true)
     private val transactionSyncManager: TransactionSyncManager = mockk(relaxed = true)
@@ -48,7 +45,6 @@ class SyncManagerTest {
     private val dispatcherProvider: DispatcherProvider = TestDispatcherProvider(testDispatcher)
     private val teamsRepository: TeamsRepository = mockk(relaxed = true)
     private val coursesRepository: CoursesRepository = mockk(relaxed = true)
-    private val eventsRepository: EventsRepository = mockk(relaxed = true)
     private val listener: OnSyncListener = mockk(relaxed = true)
 
     @Before
@@ -69,7 +65,6 @@ class SyncManagerTest {
             TestTimeProvider(),
             teamsRepository,
             coursesRepository,
-            eventsRepository,
             mockk(),
             mockk()
         )
