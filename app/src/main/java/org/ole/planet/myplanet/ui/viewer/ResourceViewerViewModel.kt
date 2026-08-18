@@ -5,10 +5,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
 import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class ResourceViewerViewModel @Inject constructor(
@@ -16,8 +17,44 @@ class ResourceViewerViewModel @Inject constructor(
     private val authSessionUpdaterFactory: AuthSessionUpdater.Factory,
     private val serverUrlMapper: ServerUrlMapper,
     private val sharedPrefManager: SharedPrefManager,
-    private val dispatcherProvider: DispatcherProvider
+    private val userRepository: UserRepository,
+    private val ratingsRepository: RatingsRepository
 ) : ViewModel() {
+
+    companion object {
+        private const val RATING_PROMPT_PREFIX = "rating_prompted_"
+    }
+
+    suspend fun showResourceRatingDialogIfNeverRated(resourceId: String): Boolean {
+        val userId = userRepository.getUserModel()?.id ?: return false
+        if (isRatingPrompted(userId, resourceId)) {
+            return false
+        }
+
+        val hasRated = if (!userId.isNullOrEmpty()) {
+            try {
+                val summary = ratingsRepository.getRatingSummary("resource", resourceId, userId)
+                summary.userRating != null || summary.existingRating != null
+            } catch (e: Exception) {
+                false
+            }
+        } else {
+            false
+        }
+
+        // Mark as prompted after dialog is shown, even if user chooses not to rate. Respects user decision.
+        return !hasRated
+    }
+
+    fun isRatingPrompted(userId: String?, resourceId: String?): Boolean {
+        val key = "$RATING_PROMPT_PREFIX${userId}_$resourceId"
+        return sharedPrefManager.getRawString(key, "false") == "true"
+    }
+
+    fun setRatingPrompted(userId: String?, resourceId: String?) {
+        val key = "${RATING_PROMPT_PREFIX}${userId}_$resourceId"
+        sharedPrefManager.setRawString(key, "true")
+    }
 
     suspend fun ensureServerUrlUpdated() {
         val serverUrl = sharedPrefManager.getServerUrl()

@@ -7,7 +7,6 @@ import android.content.IntentFilter
 import android.content.res.Configuration
 import android.graphics.pdf.PdfRenderer
 import android.media.AudioManager
-import android.os.Build
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.text.TextUtils
@@ -21,7 +20,6 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.registerReceiver
@@ -63,7 +61,6 @@ import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
 import org.ole.planet.myplanet.databinding.FragmentResourceViewerBinding
 import org.ole.planet.myplanet.model.MyLibrary
-import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.AudioRecorder
 import org.ole.planet.myplanet.ui.ratings.RatingsFragment
@@ -107,11 +104,9 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private var externalFilesDir: File? = null
 
     private val viewModel: ResourceViewerViewModel by viewModels()
-
     @Inject lateinit var dispatcherProvider: DispatcherProvider
-    @Inject lateinit var ratingsRepository: RatingsRepository
-    @Inject lateinit var userRepository: UserRepository
     @Inject lateinit var ttsManager: TTSManager
+    @Inject lateinit var userRepository: UserRepository
     private var authSessionUpdater: AuthSessionUpdater? = null
 
     private val audioRecordListener = object : OnAudioRecordListener {
@@ -347,7 +342,13 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                         if (!::library.isInitialized) return
                         val rid = library.resourceId ?: return
                         viewLifecycleOwner.lifecycleScope.launch {
-                            showResourceRatingDialogIfNeverRated(rid)
+                            val showDialog= viewModel.showResourceRatingDialogIfNeverRated(rid)
+                            if (showDialog) {
+                                val userId = userRepository.getUserModel()?.id
+                                val ratingDialog = RatingsFragment.newInstance("resource", resourceId, library.title)
+                                ratingDialog.show(parentFragmentManager, RatingsFragment.TAG)
+                                viewModel.setRatingPrompted(userId, resourceId)
+                            }
                         }
                     }
                     else -> {}
@@ -355,34 +356,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             }
         })
         return player
-    }
-
-    private suspend fun showResourceRatingDialogIfNeverRated(resourceId: String) {
-        if (!::library.isInitialized) return
-        val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val promptKey = "$KEY_PROMPTED_PREFIX$resourceId"
-
-        if (prefs.getBoolean(promptKey, false)) {
-            return
-        }
-
-        val userId = userRepository.getUserModel()?.id
-        val hasRated = if (!userId.isNullOrEmpty()) {
-            try {
-                val summary = ratingsRepository.getRatingSummary("resource", resourceId, userId)
-                summary.userRating != null || summary.existingRating != null
-            } catch (e: Exception) {
-                false
-            }
-        } else {
-            false
-        }
-
-        if (!hasRated && isAdded) {
-            prefs.edit().putBoolean(promptKey, true).apply()
-            val ratingDialog = RatingsFragment.newInstance("resource", resourceId, library.title)
-            ratingDialog.show(parentFragmentManager, RatingsFragment.TAG)
-        }
     }
 
     private fun setupAudioViewer() {
@@ -641,7 +614,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         private const val ARG_IS_FULL_PATH = "isFullPath"
         private const val ARG_AUTH = "auth"
         private const val PREFS_NAME = "rating_prompt_prefs"
-        private const val KEY_PROMPTED_PREFIX = "prompted_"
+        private const val KEY_RATING_PROMPT_PREFIX = "prompted_"
 
         fun newInstance(resourceId: String?, filePath: String?, title: String?, type: ResourceType, isOnline: Boolean = false, auth: String = "", isFullPath: Boolean = false): ResourceViewerFragment {
             return ResourceViewerFragment().apply {
