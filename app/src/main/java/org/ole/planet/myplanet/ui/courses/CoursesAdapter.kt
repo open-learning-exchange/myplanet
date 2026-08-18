@@ -228,6 +228,18 @@ class CoursesAdapter(
         }
     }
 
+    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
+        super.onViewRecycled(holder)
+        when (holder) {
+            is GridViewHolder -> {
+                Glide.with(context).clear(holder.binding.ivCover)
+            }
+            is ListViewHolder -> {
+                Glide.with(context).clear(holder.binding.ivCover)
+            }
+        }
+    }
+
     private fun openCourse(course: Course?, step: Int) {
         if (homeItemClickListener != null) {
             val f: Fragment = TakeCourseFragment()
