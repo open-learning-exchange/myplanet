@@ -50,7 +50,7 @@ object NetworkUtils {
     val isNetworkConnectedFlow: StateFlow<Boolean> by lazy {
         _currentNetwork
             .map { it.isConnected() }
-            .stateIn(scope = coroutineScope, started = SharingStarted.WhileSubscribed(), initialValue = _currentNetwork.value.isConnected())
+            .stateIn(scope = coroutineScope, started = SharingStarted.WhileSubscribed(5_000), initialValue = _currentNetwork.value.isConnected())
     }
 
     val isNetworkConnected: Boolean
