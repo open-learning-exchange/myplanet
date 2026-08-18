@@ -62,7 +62,6 @@ class ChatViewModel @Inject constructor(
     )
     companion object {
         const val PAGE_SIZE = 20
-        private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
     }
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal var allConversations: List<Conversation> = emptyList()

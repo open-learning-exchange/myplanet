@@ -25,7 +25,6 @@ import org.junit.Test
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter
@@ -40,7 +39,6 @@ class LoginSyncManagerTest {
     private lateinit var loginSyncManager: LoginSyncManager
     private val context: Context = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
-    private val userRepository: UserRepository = mockk(relaxed = true)
     private val userSyncRepository: UserSyncRepository = mockk(relaxed = true)
     private val apiInterface: ApiInterface = mockk(relaxed = true)
     private val testDispatcher = UnconfinedTestDispatcher()
@@ -65,7 +63,6 @@ class LoginSyncManagerTest {
         loginSyncManager = LoginSyncManager(
             context,
             sharedPrefManager,
-            userRepository,
             userSyncRepository,
             apiInterface,
             testScope,
