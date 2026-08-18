@@ -15,6 +15,8 @@ import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepositoryImpl
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.CoursesRepositoryImpl
+import org.ole.planet.myplanet.repository.DiagnosticsRepository
+import org.ole.planet.myplanet.repository.DiagnosticsRepositoryImpl
 import org.ole.planet.myplanet.repository.DownloadRepository
 import org.ole.planet.myplanet.repository.DownloadRepositoryImpl
 import org.ole.planet.myplanet.repository.EventsRepository
@@ -41,6 +43,8 @@ import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepositoryImpl
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.SurveysRepositoryImpl
+import org.ole.planet.myplanet.repository.SyncRepository
+import org.ole.planet.myplanet.repository.SyncRepositoryImpl
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.repository.TagsRepositoryImpl
 import org.ole.planet.myplanet.repository.TeamsRepository
@@ -60,11 +64,11 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindRetryRepository(impl: RetryRepositoryImpl): RetryRepository
+    abstract fun bindActivitiesRepository(impl: ActivitiesRepositoryImpl): ActivitiesRepository
 
     @Binds
     @Singleton
-    abstract fun bindActivitiesRepository(impl: ActivitiesRepositoryImpl): ActivitiesRepository
+    abstract fun bindDiagnosticsRepository(impl: DiagnosticsRepositoryImpl): DiagnosticsRepository
 
     @Binds
     @Singleton
@@ -124,11 +128,19 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindRetryRepository(impl: RetryRepositoryImpl): RetryRepository
+
+    @Binds
+    @Singleton
     abstract fun bindSubmissionsRepository(impl: SubmissionsRepositoryImpl): SubmissionsRepository
 
     @Binds
     @Singleton
     abstract fun bindSurveysRepository(impl: SurveysRepositoryImpl): SurveysRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSyncRepository(impl: SyncRepositoryImpl): SyncRepository
 
     @Binds
     @Singleton
@@ -144,6 +156,10 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindUploadRepository(impl: UploadRepositoryImpl): UploadRepository
+
+    @Binds
+    @Singleton
     abstract fun bindUserRepository(impl: UserRepositoryImpl): UserRepository
 
     @Binds
@@ -153,8 +169,4 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindVoicesRepository(impl: VoicesRepositoryImpl): VoicesRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindUploadRepository(impl: UploadRepositoryImpl): UploadRepository
 }

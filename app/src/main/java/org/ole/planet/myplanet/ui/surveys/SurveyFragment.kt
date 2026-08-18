@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -28,6 +29,7 @@ import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.textChanges
@@ -43,6 +45,9 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
     private val surveyInfoMap = mutableMapOf<String, SurveyInfo>()
     private val bindingDataMap = mutableMapOf<String, SurveyFormState>()
     private val viewModel: SurveysViewModel by viewModels()
+
+    @Inject
+    lateinit var realtimeSyncManager: RealtimeSyncManager
 
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private val adapterMutex = Mutex()
@@ -89,7 +94,7 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        realtimeSyncHelper = RealtimeSyncHelper(this, this)
+        realtimeSyncHelper = RealtimeSyncHelper(this, this, realtimeSyncManager)
         realtimeSyncHelper.setupRealtimeSync()
         initializeViews()
         binding.layoutSearch.etSearch.textChanges()
@@ -143,26 +148,14 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
                 when (i) {
                     0 -> viewModel.sort(SurveysViewModel.SortOption.DATE_DESC)
                     1 -> viewModel.sort(SurveysViewModel.SortOption.DATE_ASC)
-                    2 -> {
-                        viewModel.toggleTitleSort()
-                    }
+                    2 -> viewModel.sort(SurveysViewModel.SortOption.TITLE_ASC)
+                    3 -> viewModel.sort(SurveysViewModel.SortOption.TITLE_DESC)
                 }
                 recyclerView.scrollToPosition(0)
             }
 
             override fun onNothingSelected(adapterView: AdapterView<*>?) {}
         }
-
-        binding.spnSort.onSameItemSelected(object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
-                if (i == 2) {
-                    viewModel.toggleTitleSort()
-                }
-                recyclerView.scrollToPosition(0)
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        })
 
         binding.rbAdoptSurvey.setOnClickListener {
             viewModel.loadSurveys(isTeam, teamId, true)
@@ -190,12 +183,14 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
                     viewModel.surveyInfos.collect { infos ->
                         surveyInfoMap.clear()
                         surveyInfoMap.putAll(infos)
+                        getAdapter().notifyDataSetChanged()
                     }
                 }
                 launch {
                     viewModel.bindingData.collect { data ->
                         bindingDataMap.clear()
                         bindingDataMap.putAll(data)
+                        getAdapter().notifyDataSetChanged()
                     }
                 }
                 launch {

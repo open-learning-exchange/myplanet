@@ -41,6 +41,7 @@ class VoicesRepositoryImplTest {
     private val teamNotificationDao: TeamNotificationDao = mockk(relaxed = true)
     private val newsDao: NewsDao = mockk(relaxed = true)
     private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
+    private val newsLogDao: org.ole.planet.myplanet.data.room.dao.NewsLogDao = mockk(relaxed = true)
 
     private fun newRepository(gsonInstance: Gson): VoicesRepositoryImpl {
         return spyk(
@@ -48,10 +49,10 @@ class VoicesRepositoryImplTest {
                 dispatcherProvider,
                 gsonInstance,
                 sharedPrefManager,
-                dagger.Lazy { userRepository },
                 teamNotificationDao,
                 newsDao,
-                myLibraryDao
+                myLibraryDao,
+                newsLogDao
             ),
             recordPrivateCalls = true
         )
@@ -183,12 +184,7 @@ class VoicesRepositoryImplTest {
 
     @Test
     fun `deleteNews recursively deletes replies`() = testScope.runTest {
-        val reply1 = News().apply { id = "reply1_id" }
-        val reply2 = News().apply { id = "reply2_id" }
-
-        coEvery { newsDao.getDirectReplies("newsId") } returns listOf(reply1)
-        coEvery { newsDao.getDirectReplies("reply1_id") } returns listOf(reply2)
-        coEvery { newsDao.getDirectReplies("reply2_id") } returns emptyList()
+        coEvery { newsDao.getNewsAndRepliesIds("newsId") } returns listOf("newsId", "reply1_id", "reply2_id")
 
         repository.deleteNews("newsId")
 
@@ -229,14 +225,19 @@ class VoicesRepositoryImplTest {
     }
 
     @Test
-    fun `getUserById delegates to userRepository`() = testScope.runTest {
-        val testUserId = "test_user_123"
-        val mockUser = mockk<UserEntity>()
+    fun `postReply sets replyTo to the parent's local id, not its server _id`() = testScope.runTest {
+        val repoWithRealGson = newRepository(Gson())
+        val parentNews = News().apply {
+            id = "local-uuid-1234"
+            _id = "server-doc-id-5678"
+        }
+        val currentUser = UserEntity()
 
-        coEvery { userRepository.getUserById(testUserId) } returns mockUser
+        repoWithRealGson.postReply("Hello reply", parentNews, currentUser, null)
 
-        val result = repository.getUserById(testUserId)
-
-        assertEquals(mockUser, result)
+        val slot = slot<News>()
+        coVerify(exactly = 1) { newsDao.upsert(capture(slot)) }
+        assertEquals("local-uuid-1234", slot.captured.replyTo)
     }
+
 }

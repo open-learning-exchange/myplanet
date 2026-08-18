@@ -145,7 +145,8 @@ class NotificationsRepositoryImpl @Inject constructor(
                 priority = it.priority,
                 isFromServer = it.isFromServer,
                 rev = it.rev,
-                needsSync = it.needsSync
+                needsSync = it.needsSync,
+                subType = it.subType
             )
         }
     }
@@ -276,24 +277,6 @@ class NotificationsRepositoryImpl @Inject constructor(
         return map
     }
 
-    override suspend fun getTeamNotificationInfo(teamId: String, userId: String): TeamNotificationInfo {
-        val current = timeProvider.now()
-        val tomorrow = Calendar.getInstance()
-        tomorrow.add(Calendar.DAY_OF_YEAR, 1)
-
-        val notification = teamNotificationDao.findByParentAndType(teamId, "chat")
-
-        val chatCount = voicesRepository.countTeamChats(teamId)
-
-        val hasChat = notification != null && notification.lastCount < chatCount
-
-        val tasks = teamTaskDao.getTasksForUserBetween(userId, current, tomorrow.timeInMillis)
-
-        val hasTask = tasks.isNotEmpty()
-
-        return TeamNotificationInfo(hasTask, hasChat)
-    }
-
     override suspend fun getTeamNotifications(teamIds: List<String>, userId: String): Map<String, TeamNotificationInfo> {
         if (teamIds.isEmpty()) {
             return emptyMap()
@@ -346,18 +329,51 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     private fun parseNotification(doc: JsonObject): AppNotification? {
         val id = doc.get("_id")?.asString ?: return null
+        val rawType = doc.get("type")?.asString ?: ""
+        val message = doc.get("message")?.asString ?: ""
+        val link = doc.get("link")?.asString
         return AppNotification().apply {
             this.id = id
             userId = doc.get("user")?.asString ?: ""
-            message = doc.get("message")?.asString ?: ""
-            type = doc.get("type")?.asString ?: ""
-            link = doc.get("link")?.asString
+            this.message = message
+            type = rawType
+            subType = extractTeamSubtype(rawType, doc)
+            relatedId = extractRelatedId(rawType, link, doc)
+            this.link = link
             priority = doc.get("priority")?.asInt ?: 0
             rev = doc.get("_rev")?.asString
             isRead = doc.get("status")?.asString != "unread"
             createdAt = doc.get("time")?.let { Date(it.asLong) } ?: Date()
             isFromServer = true
         }
+    }
+
+    /**
+     * Raw type "team" covers join requests, team-membership changes, and chat posts alike, and the
+     * server renders `message` in the recipient's locale, so it can't be classified reliably by
+     * sniffing English/Spanish phrases. `linkParams.activeTab == "applicantTab"` is a locale-independent
+     * signal the server sends specifically for join-request notifications; use it when present.
+     */
+    private fun extractTeamSubtype(rawType: String, doc: JsonObject): String? {
+        if (rawType != "team") return null
+        val activeTab = doc.getAsJsonObject("linkParams")?.get("activeTab")?.asString
+        return if (activeTab == "applicantTab") "join_request" else null
+    }
+
+    private fun extractRelatedId(rawType: String, link: String?, doc: JsonObject): String? {
+        return when (rawType) {
+            "team" -> doc.get("item")?.asString
+            "replyMessage" -> doc.get("replyTo")?.asString
+            "newTask" -> extractIdFromLink(link)
+            else -> null
+        }
+    }
+
+    private fun extractIdFromLink(link: String?): String? {
+        if (link.isNullOrBlank()) return null
+        val segments = link.trim('/').split('/')
+        val viewIndex = segments.indexOf("view")
+        return if (viewIndex in 0 until segments.lastIndex) segments[viewIndex + 1] else null
     }
 
     override suspend fun insert(doc: JsonObject) {

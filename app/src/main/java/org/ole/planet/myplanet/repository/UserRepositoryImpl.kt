@@ -20,6 +20,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Semaphore
@@ -40,7 +43,6 @@ import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.DashboardProfile
 import org.ole.planet.myplanet.model.HealthExamination
-import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MemberInfo
 import org.ole.planet.myplanet.model.MyHealth
@@ -48,11 +50,8 @@ import org.ole.planet.myplanet.model.MyHealth.MyHealthProfile
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.services.UploadToShelfService
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -108,10 +107,12 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getUsersByIds(userIds: List<String>): List<UserEntity> {
         if (userIds.isEmpty()) return emptyList()
-        val userIdSet = userIds.toSet()
-        return userDao.getAll()
-            .filter { it.id in userIdSet || it._id in userIdSet }
-            .map { it }
+        val userIdList = userIds.distinct()
+        val result = mutableListOf<UserEntity>()
+        userIdList.chunked(400).forEach { chunk ->
+            result.addAll(userDao.getUsersByAnyIds(chunk))
+        }
+        return result.distinctBy { it.id }
     }
 
     override suspend fun getUserByAnyId(id: String): UserEntity? {
@@ -174,6 +175,15 @@ class UserRepositoryImpl @Inject constructor(
         return sortUsers(getAllUsers(), fieldName, descending)
     }
 
+    override suspend fun searchUsers(query: String, sortField: String, descending: Boolean): List<UserEntity> {
+        val users = userDao.search(query)
+        return sortUsers(users, sortField, descending)
+    }
+
+    override suspend fun saveUser(user: UserEntity) {
+        userDao.upsert(user)
+    }
+
     override suspend fun getPendingSyncUsers(limit: Int): List<UserEntity> {
         return userDao.getAll()
             .asSequence()
@@ -183,19 +193,7 @@ class UserRepositoryImpl @Inject constructor(
             .toList()
     }
 
-    override suspend fun searchUsers(query: String, sortField: String, descending: Boolean): List<UserEntity> {
-        val users = if (query.isBlank()) {
-            userDao.getAll()
-        } else {
-            userDao.search(query)
-        }.map { it }
-        return sortUsers(users, sortField, descending)
-    }
 
-    override suspend fun isUserExists(name: String?): Boolean {
-        if (name.isNullOrBlank()) return false
-        return userDao.getByName(name)?.let { !it._id.orEmpty().startsWith("guest") } == true
-    }
 
     override fun parseLeadersJson(jsonString: String): List<UserEntity> {
         val leadersList = mutableListOf<UserEntity>()
@@ -390,32 +388,6 @@ class UserRepositoryImpl @Inject constructor(
             "isArchived" -> if (descending) users.sortedByDescending { it.isArchived } else users.sortedBy { it.isArchived }
             else -> users
         }
-    }
-
-    override suspend fun getMonthlyLoginCounts(
-        userId: String,
-        startMillis: Long,
-        endMillis: Long,
-    ): Map<Int, Int> {
-        if (startMillis > endMillis) {
-            return emptyMap()
-        }
-
-        val activities = offlineActivityDao.getByUserIdAndLoginTimeBetween(userId, startMillis, endMillis)
-
-        if (activities.isEmpty()) {
-            return emptyMap()
-        }
-
-        val calendar = Calendar.getInstance()
-        return activities.mapNotNull { it.loginTime }
-            .map { loginTime ->
-                calendar.timeInMillis = loginTime
-                calendar.get(Calendar.MONTH)
-            }
-            .groupingBy { it }
-            .eachCount()
-            .toSortedMap()
     }
 
     override suspend fun saveUser(
@@ -884,45 +856,7 @@ class UserRepositoryImpl @Inject constructor(
         return getUserModel()?.id ?: ""
     }
 
-    override suspend fun getHealthRecordsAndAssociatedUsers(
-        userId: String,
-        currentUser: UserEntity
-    ): HealthRecord? {
-        val mh = healthRepository.getByIdOrUserId(userId) ?: return null
-        val json = AndroidDecrypter.decrypt(mh.data, currentUser.key, currentUser.iv)
-        val mm = if (TextUtils.isEmpty(json)) {
-            null
-        } else {
-            try {
-                JsonUtils.gson.fromJson(json, MyHealth::class.java)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
-        } ?: return null
 
-        val list = healthRepository.getByProfileId(mm.userKey ?: "")
-        if (list.isEmpty()) {
-            return HealthRecord(mh, mm, emptyList(), emptyMap())
-        }
-
-        val userIds = list.mapNotNull {
-            it.getEncryptedDataAsJson(currentUser).let { jsonData ->
-                jsonData.get("createdBy")?.asString
-            }
-        }.distinct()
-
-        val userMap = if (userIds.isEmpty()) {
-            emptyMap()
-        } else {
-            val userIdSet = userIds.toSet()
-            userDao.getAll()
-                .filter { it.id in userIdSet }
-                .map { it }
-                .associateBy { it.id ?: "" }
-        }
-        return HealthRecord(mh, mm, list, userMap)
-    }
 
     override suspend fun getHealthProfile(userId: String): MyHealth? {
         val userModel = getUserByAnyId(userId)
@@ -1354,7 +1288,9 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun checkShelfBatchForDataOptimized(shelfIds: List<String>): List<String> {
         val shelvesWithData = mutableListOf<String>()
         val keysObject = JsonObject().apply {
-            add("keys", JsonUtils.gson.fromJson(JsonUtils.gson.toJson(shelfIds), JsonArray::class.java))
+            val jsonArray = JsonArray()
+            shelfIds.forEach { jsonArray.add(it) }
+            add("keys", jsonArray)
         }
 
         val response = org.ole.planet.myplanet.data.api.ApiClient.executeWithRetryAndWrap {

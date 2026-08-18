@@ -365,6 +365,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getPlanetType(): String? {
+        return sharedPrefManager.getRawString("planetType")
+    }
+
     private fun buildCouchdbUrl(currentUrl: String, pin: String): String {
         val uri = currentUrl.toUri()
         return if (currentUrl.contains("@")) {
@@ -440,4 +444,13 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun ensureServerUrlUpdated() {
+        val serverUrl = sharedPrefManager.getServerUrl()
+        val mapping = serverUrlMapper.processUrl(serverUrl)
+        if (mapping.alternativeUrl != null) {
+            serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
+                serverUrlMapper.isUrlDirectlyReachable(url)
+            }
+        }
+    }
 }

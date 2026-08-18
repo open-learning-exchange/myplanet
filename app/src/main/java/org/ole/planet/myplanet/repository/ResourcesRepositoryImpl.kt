@@ -13,6 +13,10 @@ import kotlin.math.ceil
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
@@ -20,6 +24,7 @@ import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
@@ -28,6 +33,7 @@ import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -47,7 +53,9 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val myLibraryDao: MyLibraryDao,
     private val userRepository: UserRepository,
     private val teamDao: TeamDao,
-    private val userSessionManager: UserSessionManager
+    private val userSessionManager: UserSessionManager,
+    private val configurationsRepository: ConfigurationsRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) : ResourcesRepository {
 
     // Shelf membership is stored as a JSON userId list; match a single entry with LIKE %"id"%.
@@ -318,7 +326,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         return myLibraryDao.getRecentForUserPatternFlow(userIdPattern(userId))
     }
 
-    override fun getPendingDownloads(userId: String): Flow<List<MyLibrary>> {
+    override fun getPendingDownloads(userId: String): Flow<List<String>> {
         return myLibraryDao.getPendingDownloadsForUserPatternFlow(userIdPattern(userId))
     }
 
@@ -381,6 +389,24 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun downloadResourcesPriority(resources: List<MyLibrary>): Boolean {
         return downloadResources(resources)
+    }
+
+override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrary> {
+        var files = libraryList
+        if (files == null) {
+            files = getAllLibrariesToSync()
+        }
+        val safeFiles = files ?: emptyList()
+        val urls = DownloadUtils.downloadAllFiles(safeFiles)
+
+        MainApplication.applicationScope.launch {
+            if (configurationsRepository.checkServerAvailability()) {
+                if (urls.isNotEmpty()) {
+                    DownloadUtils.openDownloadService(context, urls, false)
+                }
+            }
+        }
+        return safeFiles
     }
 
     override suspend fun getAllLibrariesToSync(): List<MyLibrary> {
@@ -472,15 +498,17 @@ class ResourcesRepositoryImpl @Inject constructor(
         val resource = getLibraryItemByResourceId(resourceId) ?: return ResourceUrlsResponse.ResourceNotFound
         if (resource.attachments.isNullOrEmpty()) return ResourceUrlsResponse.NoAttachments
 
-        val urls = resource.attachments?.mapNotNull { attachment ->
-            attachment.name?.let { name ->
-                val baseDir = File(context.getExternalFilesDir(null), "ole/$resourceId")
-                val lastSlashIndex = name.lastIndexOf('/')
-                if (lastSlashIndex > 0) {
-                    val dirPath = name.substring(0, lastSlashIndex)
-                    File(baseDir, dirPath).mkdirs()
+        val urls = withContext(dispatcherProvider.io) {
+            resource.attachments?.mapNotNull { attachment ->
+                attachment.name?.let { name ->
+                    val baseDir = File(context.getExternalFilesDir(null), "ole/$resourceId")
+                    val lastSlashIndex = name.lastIndexOf('/')
+                    if (lastSlashIndex > 0) {
+                        val dirPath = name.substring(0, lastSlashIndex)
+                        File(baseDir, dirPath).mkdirs()
+                    }
+                    UrlUtils.getUrl(resourceId, name)
                 }
-                UrlUtils.getUrl(resourceId, name)
             }
         }
 
@@ -639,10 +667,6 @@ class ResourcesRepositoryImpl @Inject constructor(
             .associate { (it.resourceId ?: "") to (it.title ?: "") }
     }
 
-    override suspend fun getCourseResourcesGroupedByStepId(courseId: String): Map<String?, List<MyLibrary>> {
-        return myLibraryDao.getByCourseId(courseId).groupBy { it.stepId }
-    }
-
     override suspend fun markResourcesAsNotOffline(resourceIds: Collection<String>) {
         if (resourceIds.isEmpty()) return
         val results = myLibraryDao.getOfflineByResourceIds(resourceIds.toList())
@@ -690,5 +714,49 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun trackResourceOpen(item: MyLibrary) {
         userSessionManager.setResourceOpenCount(item, UserSessionManager.KEY_RESOURCE_OPEN)
+    }
+
+    override suspend fun getOfflineResourceItems(
+        oleDirPath: String,
+        extensions: Set<String>,
+        allKnownExtensions: Set<String>
+    ): List<OfflineResourceItem> = withContext(dispatcherProvider.io) {
+        val oleDir = File(oleDirPath)
+        if (!oleDir.exists() || !oleDir.isDirectory) return@withContext emptyList()
+
+        val titleMap = getResourceTitlesMap()
+
+        val grouped = mutableMapOf<String, MutableList<File>>()
+        oleDir.walkTopDown().filter { it.isFile }.forEach { file ->
+            val ext = file.extension.lowercase()
+            val matchesCategory = if (extensions.isEmpty()) {
+                ext !in allKnownExtensions
+            } else {
+                ext in extensions
+            }
+            if (matchesCategory) {
+                val resourceId = file.parentFile?.name ?: return@forEach
+                grouped.getOrPut(resourceId) { mutableListOf() }.add(file)
+            }
+        }
+
+        return@withContext grouped.map { (resourceId, files) ->
+            val totalSize = files.sumOf { it.length() }
+            val title = titleMap[resourceId]?.takeIf { it.isNotBlank() } ?: context.getString(R.string.storage_unknown_resource)
+            OfflineResourceItem(resourceId, title, files.map { it.absolutePath }, totalSize)
+        }.sortedBy { it.title }
+    }
+
+    override suspend fun deleteOfflineResources(oleDirPath: String, items: List<OfflineResourceItem>) = withContext(dispatcherProvider.io) {
+        val oleDir = File(oleDirPath)
+        items.forEach { item ->
+            item.filePaths.forEach { File(it).delete() }
+            val parentDir = oleDir.resolve(item.resourceId)
+            if (parentDir.exists() && parentDir.list().isNullOrEmpty()) {
+                parentDir.delete()
+            }
+        }
+        val deletedIds = items.map { it.resourceId }.toSet()
+        markResourcesAsNotOffline(deletedIds)
     }
 }

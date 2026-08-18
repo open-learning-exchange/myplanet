@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import dagger.Lazy
 import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.async
@@ -12,9 +13,9 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.HealthExamination.Companion.serialize
+import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.AndroidDecrypter
@@ -26,10 +27,12 @@ class HealthRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
     private val dispatcherProvider: DispatcherProvider,
     private val healthExaminationDao: HealthExaminationDao,
-    private val userDao: UserDao
+    // Lazy wrapper is required here to prevent a Dagger cyclic dependency,
+    // as UserRepositoryImpl also depends on HealthRepository.
+    private val userRepository: Lazy<UserRepository>
 ) : HealthRepository {
     override suspend fun getHealthEntry(userId: String): Pair<UserEntity?, HealthExamination?> {
-        val userCopy = userDao.getById(userId)
+        val userCopy = userRepository.get().getUserById(userId)
         val pojoCopy = healthExaminationDao.getByIdOrUserId(userId)
 
         return Pair(userCopy, pojoCopy)
@@ -63,7 +66,7 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveExamination(examination: HealthExamination?, pojo: HealthExamination?, user: UserEntity?) {
-        user?.let { userDao.upsert(it) }
+        user?.let { userRepository.get().saveUser(it) }
         pojo?.let { healthExaminationDao.upsert(it) }
         examination?.let { healthExaminationDao.upsert(it) }
     }
@@ -144,5 +147,55 @@ class HealthRepositoryImpl @Inject constructor(
 
     override suspend fun upsert(examination: HealthExamination) {
         healthExaminationDao.upsert(examination)
+    }
+
+    override suspend fun getPatientById(id: String): UserEntity? {
+        return userRepository.get().getUserById(id)
+    }
+
+    override suspend fun getPatientsSortedBy(fieldName: String, descending: Boolean): List<UserEntity> {
+        return userRepository.get().getUsersSortedBy(fieldName, descending)
+    }
+
+    override suspend fun searchPatients(query: String, sortField: String, descending: Boolean): List<UserEntity> {
+        return if (query.isBlank()) {
+            userRepository.get().getUsersSortedBy(sortField, descending)
+        } else {
+            userRepository.get().searchUsers(query, sortField, descending)
+        }
+    }
+
+    override suspend fun getPatientHealthRecords(userId: String, currentUser: UserEntity): HealthRecord? {
+        val mh = getByIdOrUserId(userId) ?: return null
+        val json = AndroidDecrypter.decrypt(mh.data, currentUser.key, currentUser.iv)
+        val mm = if (json.isNullOrEmpty()) {
+            null
+        } else {
+            try {
+                JsonUtils.gson.fromJson(json, MyHealth::class.java)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        } ?: return null
+
+        val list = getByProfileId(mm.userKey ?: "")
+        if (list.isEmpty()) {
+            return HealthRecord(mh, mm, emptyList(), emptyMap())
+        }
+
+        val userIds = list.mapNotNull {
+            it.getEncryptedDataAsJson(currentUser).let { jsonData ->
+                jsonData.get("createdBy")?.asString
+            }
+        }.distinct()
+
+        val userMap = if (userIds.isEmpty()) {
+            emptyMap()
+        } else {
+            userRepository.get().getUsersByIds(userIds)
+                .associateBy { it.id ?: "" }
+        }
+        return HealthRecord(mh, mm, list, userMap)
     }
 }

@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
@@ -30,6 +31,7 @@ class TakeCourseViewModelTest {
     val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
     private val coursesRepository: CoursesRepository = mockk()
+    private val progressRepository: ProgressRepository = mockk()
     private val userSessionManager: UserSessionManager = mockk()
 
     private lateinit var viewModel: TakeCourseViewModel
@@ -45,13 +47,13 @@ class TakeCourseViewModelTest {
         coEvery { userSessionManager.getUserModel() } returns user
         coEvery { coursesRepository.getCourseById(courseId) } returns course
         coEvery { coursesRepository.getCourseSteps(courseId) } returns steps
-        coEvery { coursesRepository.getCourseProgress(user?.id, listOf(courseId)) } returns
-            hashMapOf<String?, JsonObject>(courseId to JsonObject().apply { addProperty("current", currentProgress) })
+        coEvery { progressRepository.getCourseProgress(listOf(courseId), user?.id) } returns
+            hashMapOf(courseId to org.ole.planet.myplanet.model.CourseProgressState(current = currentProgress, max = steps.size))
     }
 
     @Before
     fun setUp() {
-        viewModel = TakeCourseViewModel(coursesRepository, userSessionManager)
+        viewModel = TakeCourseViewModel(coursesRepository, progressRepository, userSessionManager)
     }
 
     @Test
@@ -92,7 +94,7 @@ class TakeCourseViewModelTest {
 
         coVerify(exactly = 1) { coursesRepository.getCourseById(courseId) }
         coVerify(exactly = 1) { coursesRepository.getCourseSteps(courseId) }
-        coVerify(exactly = 1) { coursesRepository.getCourseProgress(any(), any<List<String>>()) }
+        coVerify(exactly = 1) { progressRepository.getCourseProgress(any<List<String>>(), any()) }
     }
 
     @Test
@@ -115,8 +117,8 @@ class TakeCourseViewModelTest {
         coEvery { coursesRepository.getCourseById(otherCourseId) } returns
             MyCourse().apply { courseId = otherCourseId }
         coEvery { coursesRepository.getCourseSteps(otherCourseId) } returns emptyList()
-        coEvery { coursesRepository.getCourseProgress(any(), listOf(otherCourseId)) } returns
-            hashMapOf<String?, JsonObject>()
+        coEvery { progressRepository.getCourseProgress(listOf(otherCourseId), any()) } returns
+            hashMapOf()
 
         viewModel.loadCourse(courseId)
         advanceUntilIdle()

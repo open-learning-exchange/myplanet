@@ -10,6 +10,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -242,6 +243,23 @@ class CoursesRepositoryImplTest {
     }
 
     @Test
+    fun `getMyCoursesFlow suppresses redundant emissions`() = runTest {
+        val course = MyCourse(id = "1", userId = listOf("user1"))
+        // Create an identical copy simulating Room's recreation on query
+        val identicalCourse = MyCourse(id = "1", userId = listOf("user1"))
+
+        coEvery { courseDao.observeAll() } returns flowOf(listOf(course), listOf(identicalCourse))
+        coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
+
+        val emissions = repository.getMyCoursesFlow("user1").toList()
+
+        // DAO emitted twice, but lists are logically identical, so downstream should receive only 1 emission
+        assertEquals(1, emissions.size)
+        assertEquals(1, emissions[0].size)
+        assertEquals("1", emissions[0][0].id)
+    }
+
+    @Test
     fun `getCourseByCourseIdFlow returns mapped course with steps`() = runTest {
         val courseId = "course-123"
         val myCourse = MyCourse(id = courseId, courseId = courseId, courseTitle = "Test Course")
@@ -285,6 +303,34 @@ class CoursesRepositoryImplTest {
     }
 
     @Test
+    fun `flushPendingCourseResources batches existing DAO queries`() = runTest {
+        val jsonArray = com.google.gson.JsonArray().apply {
+            add(com.google.gson.JsonObject().apply { addProperty("_id", "resource1") })
+            add(com.google.gson.JsonObject().apply { addProperty("_id", "resource2") })
+        }
+
+        // Use reflection to enqueue items into the private pendingCourseResources list
+        // This isolates the test without expanding the public API of the repository.
+        val queueMethod = CoursesRepositoryImpl::class.java.getDeclaredMethod(
+            "queueCourseResources",
+            String::class.java,
+            String::class.java,
+            com.google.gson.JsonArray::class.java
+        )
+        queueMethod.isAccessible = true
+        queueMethod.invoke(repository, "courseId", "stepId", jsonArray)
+
+        val existingResource = org.ole.planet.myplanet.model.MyLibrary().apply { id = "resource1" }
+        coEvery { myLibraryDao.getByIds(listOf("resource1", "resource2")) } returns listOf(existingResource)
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+
+        repository.flushPendingCourseResources()
+
+        coVerify(exactly = 1) { myLibraryDao.getByIds(listOf("resource1", "resource2")) }
+        coVerify(exactly = 1) { myLibraryDao.upsertAll(any()) }
+    }
+
+    @Test
     fun getCourseDetailModel_whenCourseExists_returnsAggregatedData() = runTest {
         val course = MyCourse().apply { courseId = "course_id" }
         val step = org.ole.planet.myplanet.model.CourseStep().apply { id = "step_1"; stepTitle = "Title" }
@@ -292,7 +338,7 @@ class CoursesRepositoryImplTest {
 
         coEvery { courseDao.observeByCourseId("course_id") } returns kotlinx.coroutines.flow.flowOf(course)
         coEvery { userRepository.get().getUserModel() } returns user
-        coEvery { examDao.getByCourseIdAndType("course_id", "courses") } returns listOf(mockk<org.ole.planet.myplanet.model.StepExam>(), mockk<org.ole.planet.myplanet.model.StepExam>(), mockk<org.ole.planet.myplanet.model.StepExam>(), mockk<org.ole.planet.myplanet.model.StepExam>(), mockk<org.ole.planet.myplanet.model.StepExam>())
+        coEvery { examDao.countByCourseIdAndType("course_id", "courses") } returns 5
         coEvery { myLibraryDao.getCourseResources("course_id", false) } returns emptyList()
         coEvery { myLibraryDao.getCourseResources("course_id", true) } returns emptyList()
         coEvery { courseStepDao.getByCourseId("course_id") } returns listOf(org.ole.planet.myplanet.model.CourseStep().apply { id = "step_1"; stepTitle = "Title" })

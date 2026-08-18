@@ -1,6 +1,10 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.ole.planet.myplanet.data.room.dao.RetryDao
 import org.ole.planet.myplanet.model.RetryFailure
 import org.ole.planet.myplanet.model.RetryOperation
@@ -10,6 +14,13 @@ class RetryRepositoryImpl @Inject constructor(
     private val retryDao: RetryDao,
     private val timeProvider: TimeProvider
 ) : RetryRepository {
+
+    companion object {
+        private const val TAG = "RetryRepositoryImpl"
+    }
+
+    private val isProcessing = AtomicBoolean(false)
+    private val mutex = Mutex()
 
     override suspend fun enqueue(
         uploadType: String,
@@ -105,5 +116,36 @@ class RetryRepositoryImpl @Inject constructor(
 
     override suspend fun recoverStuckOperations() {
         retryDao.recoverStuck(timeProvider.now() + 60_000)
+    }
+
+    override fun isCurrentlyProcessing(): Boolean = isProcessing.get()
+
+    override fun setProcessing(processing: Boolean) {
+        isProcessing.set(processing)
+    }
+
+    override suspend fun safeClearQueue(): Boolean {
+        if (isProcessing.get()) {
+            Log.w(TAG, "Cannot clear queue while processing is active")
+            return false
+        }
+
+        return mutex.withLock {
+            if (isProcessing.get()) {
+                Log.w(TAG, "Cannot clear queue while processing is active")
+                return@withLock false
+            }
+
+            deletePendingAndAbandonedOperations()
+            Log.i(TAG, "Queue cleared successfully")
+            true
+        }
+    }
+
+    override suspend fun getRetryQueueSnapshot(): RetryQueueDetails {
+        val pendingCount = getPendingCount()
+        val pendingOps = getPending()
+        val isProcessing = isCurrentlyProcessing()
+        return RetryQueueDetails(pendingCount, pendingOps, isProcessing)
     }
 }

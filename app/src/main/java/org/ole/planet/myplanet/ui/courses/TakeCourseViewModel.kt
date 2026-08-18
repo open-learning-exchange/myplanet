@@ -11,6 +11,7 @@ import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 
 sealed interface TakeCourseUiState {
@@ -27,6 +28,7 @@ sealed interface TakeCourseUiState {
 @HiltViewModel
 class TakeCourseViewModel @Inject constructor(
     private val coursesRepository: CoursesRepository,
+    private val progressRepository: ProgressRepository,
     private val userSessionManager: UserSessionManager
 ) : ViewModel() {
 
@@ -59,8 +61,8 @@ class TakeCourseViewModel @Inject constructor(
                 }
 
                 val steps = coursesRepository.getCourseSteps(courseId)
-                val progressMap = coursesRepository.getCourseProgress(userModel?.id, listOf(courseId))
-                val progress = progressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
+                val progressMap = progressRepository.getCourseProgress(listOf(courseId), userModel?.id)
+                val progress = progressMap[courseId]?.current ?: 0
 
                 _uiState.value = TakeCourseUiState.Success(course, steps, userModel, progress)
             } catch (e: Exception) {

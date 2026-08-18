@@ -1,11 +1,15 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.slot
 import io.mockk.unmockkAll
+import io.mockk.unmockkObject
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -15,13 +19,16 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import com.google.gson.JsonObject
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.model.Personal
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -41,26 +48,26 @@ class PersonalsRepositoryImplTest {
         uploadRepository = mockk(relaxed = true)
         context = mockk(relaxed = true)
 
-        io.mockk.mockkObject(org.ole.planet.myplanet.utils.UrlUtils)
-        io.mockk.every { org.ole.planet.myplanet.utils.UrlUtils.header } returns "mock-header"
-        io.mockk.every { org.ole.planet.myplanet.utils.UrlUtils.getUrl() } returns "mock-url"
+        mockkObject(UrlUtils)
+        every { UrlUtils.header } returns "mock-header"
+        every { UrlUtils.getUrl() } returns "mock-url"
 
-        io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
-        io.mockk.every { org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier() } returns "mock-unique-id"
-        io.mockk.every { org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName() } returns "mock-device-name"
-        io.mockk.every { org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName(any()) } returns "mock-custom-device-name"
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "mock-unique-id"
+        every { NetworkUtils.getDeviceName() } returns "mock-device-name"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "mock-custom-device-name"
 
-        io.mockk.mockkObject(org.ole.planet.myplanet.utils.FileUtils)
-        io.mockk.every { org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl(any()) } returns "test.txt"
+        mockkObject(FileUtils)
+        every { FileUtils.getFileNameFromUrl(any()) } returns "test.txt"
 
         repository = PersonalsRepositoryImpl(personalDao, apiInterface, uploadRepository, context)
     }
 
     @After
     fun tearDown() {
-        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.UrlUtils)
-        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
-        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.FileUtils)
+        unmockkObject(UrlUtils)
+        unmockkObject(NetworkUtils)
+        unmockkObject(FileUtils)
         unmockkAll()
     }
 
@@ -176,6 +183,37 @@ class PersonalsRepositoryImplTest {
         assertEquals("new-id", personal._id)
         assertEquals("rev-1", personal._rev)
         coVerify { personalDao.update(personal) }
+    }
+
+    @Test
+    fun `uploadPersonalDocument returns Pair of id and rev on success`() = runTest {
+        val personal = Personal().apply { id = "test-id" }
+        coEvery { personalDao.findById("test-id") } returns personal
+
+        val responseJson = JsonObject().apply {
+            addProperty("id", "new-id")
+            addProperty("rev", "rev-1")
+        }
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns Response.success(responseJson)
+
+        val result = repository.uploadPersonalDocument(personal)
+
+        assertEquals("new-id", result?.first)
+        assertEquals("rev-1", result?.second)
+        assertTrue(personal.isUploaded)
+        assertEquals("new-id", personal._id)
+        assertEquals("rev-1", personal._rev)
+        coVerify { personalDao.update(personal) }
+    }
+
+    @Test
+    fun `uploadPersonalDocument returns null when response body is null`() = runTest {
+        val personal = Personal().apply { id = "test-id" }
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns Response.success<JsonObject>(null)
+
+        val result = repository.uploadPersonalDocument(personal)
+
+        assertNull(result)
     }
 
     @Test

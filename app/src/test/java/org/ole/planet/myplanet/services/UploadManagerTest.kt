@@ -28,7 +28,6 @@ import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MyLibrary
-import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.StepExam
@@ -133,13 +132,10 @@ class UploadManagerTest {
     private val uploadCoordinator: UploadCoordinator = mockk(relaxed = true)
     private val uploadRepository: UploadRepository = mockk(relaxed = true)
     private val retryQueue: RetryQueue = mockk(relaxed = true)
-    private val personalsRepository: PersonalsRepository = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
-    private val chatRepository: ChatRepository = mockk(relaxed = true)
     private val voicesRepository: VoicesRepository = mockk(relaxed = true)
     private val uploadConfigs: UploadConfigs = mockk(relaxed = true)
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
-    private val teamsRepository: Lazy<TeamsRepository> = mockk(relaxed = true)
     private val teamsSyncRepository: Lazy<TeamsSyncRepository> = mockk(relaxed = true)
     private val apiInterface: ApiInterface = mockk(relaxed = true)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
@@ -166,19 +162,15 @@ class UploadManagerTest {
         uploadManager = spyk(
             UploadManager(
                 context,
-                submissionsRepository,
                 sharedPrefManager,
                 gson,
                 uploadCoordinator,
                 uploadRepository,
                 retryQueue,
-                personalsRepository,
                 userRepository,
-                chatRepository,
                 voicesRepository,
                 uploadConfigs,
                 resourcesRepository,
-                teamsRepository,
                 teamsSyncRepository,
                 apiInterface,
                 activitiesRepository,

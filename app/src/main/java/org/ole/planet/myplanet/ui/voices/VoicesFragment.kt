@@ -33,12 +33,11 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
@@ -53,8 +52,6 @@ class VoicesFragment : BaseVoicesFragment() {
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var voicesRepository: VoicesRepository
-    @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var etSearch: EditText
 
     private var isSpinnerUpdating = false
@@ -98,6 +95,7 @@ class VoicesFragment : BaseVoicesFragment() {
             if (user?.id?.startsWith("guest") == true) {
                 binding.btnNewVoice.visibility = View.GONE
             }
+            (binding.rvNews.adapter as? VoicesAdapter)?.setCurrentUser(user)
 
             voicesViewModel.observeCommunityNews(getUserIdentifier())
         }

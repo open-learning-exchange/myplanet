@@ -46,7 +46,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
     private val binding get() = _binding!!
     private var datePicker: TextView? = null
     private var currentTab = R.id.btn_all
-    private var updateTasksJob: Job? = null
+    private var refreshJob: Job? = null
 
     private data class TaskSnapshot(
         val id: String?,
@@ -299,8 +299,8 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
     private fun updateTasks() {
         if (!isAdded) return
 
-        updateTasksJob?.cancel()
-        updateTasksJob = viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.main) {
+        refreshJob?.cancel()
+        refreshJob = viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.main) {
             val knownAssigneeIds = adapterTask.getKnownAssigneeIds()
             val tasksSnapshot = teamViewModel.taskList.value.toList()
 

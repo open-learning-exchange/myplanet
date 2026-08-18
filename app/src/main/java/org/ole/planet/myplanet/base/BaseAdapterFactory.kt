@@ -1,10 +1,11 @@
 package org.ole.planet.myplanet.base
 
 import android.content.Context
-import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.ui.courses.CoursesAdapter
 import org.ole.planet.myplanet.ui.resources.ResourcesAdapter
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.ListViewMode
 
 interface BaseAdapterFactory {
     fun createResourcesAdapter(
@@ -12,14 +13,16 @@ interface BaseAdapterFactory {
         isGuest: Boolean,
         openedResourceIds: Set<String>,
         currentUserName: String? = null,
+        viewMode: ListViewMode = ListViewMode.GRID,
+        dispatcherProvider: DispatcherProvider,
         onEditClick: ((ResourceListModel) -> Unit)? = null
     ): ResourcesAdapter
 
     fun createCoursesAdapter(
         context: Context,
-        map: HashMap<String?, JsonObject>,
         isGuest: Boolean,
-        isMyCourseLib: Boolean = false
+        isMyCourseLib: Boolean = false,
+        viewMode: ListViewMode = ListViewMode.GRID
     ): CoursesAdapter
 }
 
@@ -29,6 +32,8 @@ class DefaultBaseAdapterFactory : BaseAdapterFactory {
         isGuest: Boolean,
         openedResourceIds: Set<String>,
         currentUserName: String?,
+        viewMode: ListViewMode,
+        dispatcherProvider: DispatcherProvider,
         onEditClick: ((ResourceListModel) -> Unit)?
     ): ResourcesAdapter {
         return ResourcesAdapter(
@@ -36,21 +41,23 @@ class DefaultBaseAdapterFactory : BaseAdapterFactory {
             isGuest = isGuest,
             openedResourceIds = openedResourceIds,
             currentUserName = currentUserName,
+            viewMode = viewMode,
+            dispatcherProvider = dispatcherProvider,
             onEditClick = onEditClick
         )
     }
 
     override fun createCoursesAdapter(
         context: Context,
-        map: HashMap<String?, JsonObject>,
         isGuest: Boolean,
-        isMyCourseLib: Boolean
+        isMyCourseLib: Boolean,
+        viewMode: ListViewMode
     ): CoursesAdapter {
         return CoursesAdapter(
             context = context,
-            map = map,
             isGuest = isGuest,
-            isMyCourseLib = isMyCourseLib
+            isMyCourseLib = isMyCourseLib,
+            viewMode = viewMode
         )
     }
 }

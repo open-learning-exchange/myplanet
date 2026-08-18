@@ -11,9 +11,11 @@ import android.os.SystemClock
 import android.util.Log
 import androidx.core.content.edit
 import com.google.gson.JsonArray
-import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -24,13 +26,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
@@ -41,19 +41,16 @@ import org.ole.planet.myplanet.model.MyCourse.Companion.saveConcatenatedLinksToP
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.SyncRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils.getInt
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utils.JsonUtils.getString
-import org.ole.planet.myplanet.utils.JsonUtils.gson
 import org.ole.planet.myplanet.utils.NotificationUtils.cancel
 import org.ole.planet.myplanet.utils.NotificationUtils.create
 import org.ole.planet.myplanet.utils.SyncTimeLogger
@@ -72,14 +69,13 @@ class SyncManager @Inject constructor(
     private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider,
     private val timeProvider: TimeProvider,
-    private val teamsRepository: TeamsRepository,
     private val teamsSyncRepository: TeamsSyncRepository,
     private val coursesRepository: CoursesRepository,
-    private val eventsRepository: EventsRepository,
-    private val userSyncRepository: UserSyncRepository
+    private val userSyncRepository: UserSyncRepository,
+    private val syncRepository: SyncRepository
 ) {
+    private val timestampFormat = DateTimeFormatter.ofPattern("HH:mm:ss.SSS").withZone(ZoneId.systemDefault())
     private val isSyncing = AtomicBoolean(false)
-    private val stringArray = arrayOfNulls<String>(4)
     private var listener: OnSyncListener? = null
     private var backgroundSync: Job? = null
     private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
@@ -142,7 +138,7 @@ class SyncManager @Inject constructor(
         val logger = SyncTimeLogger
         logger.startLogging()
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-        Log.d("SyncPerf", "FULL SYNC STARTED at ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(Date())}")
+        Log.d("SyncPerf", "FULL SYNC STARTED at ${timestampFormat.format(Instant.now())}")
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
         try {
 
@@ -211,7 +207,7 @@ class SyncManager @Inject constructor(
             val minutes = totalSyncTime / 60000
             val seconds = (totalSyncTime % 60000) / 1000
             Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-            Log.d("SyncPerf", "FULL SYNC COMPLETED at ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(Date())}")
+            Log.d("SyncPerf", "FULL SYNC COMPLETED at ${timestampFormat.format(Instant.now())}")
             Log.d("SyncPerf", "TOTAL SYNC TIME: ${minutes}m ${seconds}s (${totalSyncTime}ms)")
             Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
         } catch (err: Exception) {
@@ -522,7 +518,7 @@ class SyncManager @Inject constructor(
                     async(dispatcherProvider.io) {
                         semaphore.withPermit {
                             val shelfStartTime = SystemClock.elapsedRealtime()
-                            val items = processShelfParallel(shelfId, apiInterface)
+                            val items = syncRepository.processShelfParallel(shelfId)
                             val shelfDuration = SystemClock.elapsedRealtime() - shelfStartTime
                             if (items > 0) {
                                 logger.logDetail("library_sync", "Shelf ${index + 1}/${shelvesWithData.size} ($shelfId): $items items in ${shelfDuration}ms")
@@ -554,138 +550,5 @@ class SyncManager @Inject constructor(
             val failDuration = SystemClock.elapsedRealtime() - librarySyncStartTime
             Log.d("SyncPerf", "  ✗ Library sync failed after ${failDuration}ms: ${e.message}")
         }
-    }
-
-    private suspend fun processShelfParallel(shelfId: String, apiInterface: ApiInterface): Int {
-        var processedItems = 0
-
-        try {
-            val shelfDoc: JsonObject? = withContext(dispatcherProvider.io) {
-                var doc: JsonObject? = null
-                ApiClient.executeWithRetryAndWrap {
-                    apiInterface.getJsonObject(
-                        UrlUtils.header,
-                        "${UrlUtils.getUrl()}/shelf/$shelfId"
-                    )
-                }?.let {
-                    doc = it.body()
-                }
-                coroutineContext.ensureActive()
-                doc
-            }
-
-            if (shelfDoc == null) {
-                return 0
-            }
-
-            coroutineScope {
-                val dataJobs = Constants.shelfDataList.mapNotNull { shelfData ->
-                    val array = getJsonArray(shelfData.key, shelfDoc)
-                    if (array.size() > 0) {
-                        async(dispatcherProvider.io) {
-                            processShelfDataOptimizedSync(shelfId, shelfData, shelfDoc, apiInterface)
-                        }
-                    } else null
-                }
-
-                processedItems = dataJobs.awaitAll().sum()
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        return processedItems
-    }
-
-    private suspend fun processShelfDataOptimizedSync(shelfId: String?, shelfData: Constants.ShelfData, shelfDoc: JsonObject?, apiInterface: ApiInterface): Int {
-        var processedCount = 0
-        val logger = SyncTimeLogger
-
-        try {
-            val array = getJsonArray(shelfData.key, shelfDoc)
-            if (array.size() == 0) return 0
-
-            stringArray[0] = shelfId
-            stringArray[1] = shelfData.categoryKey
-            stringArray[2] = shelfData.type
-
-            val validIds = mutableListOf<String>()
-            for (i in 0 until array.size()) {
-                if (array[i] !is JsonNull) {
-                    validIds.add(array[i].asString)
-                }
-            }
-
-            if (validIds.isEmpty()) return 0
-
-            val batchSizer = AdaptiveBatchProcessor(initialSize = 50)
-            var i = 0
-            var batchNum = 0
-
-            while (i < validIds.size) {
-                batchNum++
-                val batchStartTime = SystemClock.elapsedRealtime()
-
-                val end = minOf(i + batchSizer.currentSize, validIds.size)
-                val batch = validIds.subList(i, end)
-                i = end
-
-                val keysObject = JsonObject()
-                keysObject.add("keys", gson.fromJson(gson.toJson(batch), JsonArray::class.java))
-
-                // API call
-                val apiStartTime = SystemClock.elapsedRealtime()
-                var response: JsonObject? = null
-                ApiClient.executeWithRetryAndWrap {
-                    apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true", keysObject)
-                }?.let {
-                    response = it.body()
-                }
-                val apiDuration = SystemClock.elapsedRealtime() - apiStartTime
-
-                if (response == null) {
-                    batchSizer.recordFailure()
-                    logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum)", apiDuration, false, 0)
-                    continue
-                }
-                batchSizer.recordSuccess(apiDuration)
-
-                val responseRows = getJsonArray("rows", response)
-                logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum)", apiDuration, true, responseRows.size())
-
-                if (responseRows.size() == 0) continue
-
-                val documentsToProcess = mutableListOf<JsonObject>()
-                for (j in 0 until responseRows.size()) {
-                    val rowObj = responseRows[j].asJsonObject
-                    if (rowObj.has("doc")) {
-                        val doc = getJsonObject("doc", rowObj)
-                        documentsToProcess.add(doc)
-                    }
-                }
-
-                if (documentsToProcess.isNotEmpty()) {
-                    val realmStartTime = SystemClock.elapsedRealtime()
-                    when (shelfData.type) {
-                        "resources" -> processedCount += resourcesRepository.batchInsertMyLibrary(shelfId, documentsToProcess)
-                        "courses" -> processedCount += coursesRepository.batchInsertMyCourses(shelfId, documentsToProcess)
-                        "meetups" -> processedCount += eventsRepository.batchInsertMeetups(documentsToProcess)
-                        "teams" -> processedCount += teamsSyncRepository.batchInsertMyTeams(documentsToProcess)
-                    }
-                    val realmDuration = SystemClock.elapsedRealtime() - realmStartTime
-                    logger.logRealmOperation("shelf_insert", shelfData.type, realmDuration, documentsToProcess.size)
-                }
-
-                val batchDuration = SystemClock.elapsedRealtime() - batchStartTime
-                if (batchDuration > 1000) {
-                    logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} batch $batchNum ($end/${validIds.size} ids): ${batchDuration}ms for ${documentsToProcess.size} docs")
-                }
-            }
-
-        } catch (e: Exception) {
-            e.printStackTrace()
-            logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} failed: ${e.message}")
-        }
-        return processedCount
     }
 }

@@ -8,14 +8,9 @@ import android.view.MenuItem
 import android.view.View
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityFeedbackDetailBinding
 import org.ole.planet.myplanet.model.Feedback
@@ -23,6 +18,7 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class FeedbackDetailActivity : AppCompatActivity() {
@@ -53,31 +49,23 @@ class FeedbackDetailActivity : AppCompatActivity() {
         feedbackId = id
         setUpReplies()
 
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.feedback.collectLatest { fb ->
-                    fb?.let {
-                        feedback = it
-                        activityFeedbackDetailBinding.tvDate.text = getFormattedDateWithTime(it.openTime)
-                        activityFeedbackDetailBinding.tvMessage.text =
-                            if (TextUtils.isEmpty(it.message)) "N/A" else it.message
-                        replyAdapter = FeedbackReplyAdapter(this@FeedbackDetailActivity)
-                        activityFeedbackDetailBinding.rvFeedbackReply.adapter = replyAdapter
-                        replyAdapter?.submitList(it.messageList)
-                        updateForClosed()
-                    }
-                }
+        collectLatestWhenStarted(viewModel.feedback) { fb ->
+            fb?.let {
+                feedback = it
+                activityFeedbackDetailBinding.tvDate.text = getFormattedDateWithTime(it.openTime)
+                activityFeedbackDetailBinding.tvMessage.text =
+                    if (TextUtils.isEmpty(it.message)) "N/A" else it.message
+                replyAdapter = FeedbackReplyAdapter(this@FeedbackDetailActivity)
+                activityFeedbackDetailBinding.rvFeedbackReply.adapter = replyAdapter
+                replyAdapter?.submitList(it.messageList)
+                updateForClosed()
             }
         }
 
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.events.collectLatest { event ->
-                    when (event) {
-                        is FeedbackDetailViewModel.FeedbackDetailEvent.CloseFeedbackSuccess ->
-                            navigateToFeedbackListFragment()
-                    }
-                }
+        collectLatestWhenStarted(viewModel.events) { event ->
+            when (event) {
+                is FeedbackDetailViewModel.FeedbackDetailEvent.CloseFeedbackSuccess ->
+                    navigateToFeedbackListFragment()
             }
         }
 

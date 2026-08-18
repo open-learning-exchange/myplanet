@@ -44,6 +44,10 @@ object FileUtils {
         return getExternalFilesDir(context)?.let { "$it/ole/" } ?: ""
     }
 
+    fun getLibraryFile(externalFilesDir: File, libraryId: String, address: String): File {
+        return File(externalFilesDir, "ole/$libraryId/$address")
+    }
+
     @Throws(IOException::class)
     fun fullyReadFileToBytes(f: File): ByteArray = f.readBytes()
 
@@ -117,7 +121,7 @@ object FileUtils {
     }
 
     fun getFileExtension(address: String?): String {
-        return address?.let { File(it).extension } ?: ""
+        return address?.let { File(it).extension.lowercase() } ?: ""
     }
 
     fun installApk(activity: Context, file: String?) {
