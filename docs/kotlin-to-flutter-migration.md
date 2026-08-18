@@ -1495,7 +1495,117 @@ harvested; the rest are refactors or perf no-ops:
 
 ---
 
-**Last updated**: 2026-08-17 (Phase 38 complete; `c5141b658`, `756cf75ce`
-harvest)
+## Harvest audit — the 2026-08-18 commit batch
+
+The 23 commits after `ffa3fe862` (up to `f53e466b6`, the current tip of
+`master`) were audited. None was harvested: every commit is a Kotlin-only DI,
+perf, or idiom refactor with no behavioural change the port lacks, or it lands
+on an unported feature. The port's own structure (Riverpod providers rather
+than ViewModels, Drift rather than Room, no RecyclerView payload/diff model)
+already carries the equivalent behaviour where one exists.
+
+**Dependency-structure / DI refactors (same behaviour, cleaner wiring).**
+
+- `41fd50fbc` (dashboard bell view modelling) — moves `checkPendingSurveys`,
+  `handleDueReminders`, `scheduleSurveyReminder`, and `getUserModel` out of
+  `BellDashboardFragment` and into `BellDashboardViewModel` (a `surveyPrompt`
+  `SharedFlow` replaces the fragment's direct dialog calls). Pure extraction;
+  the port's dashboard providers already drive the survey-remind-later flow
+  landed in Phase 33. No-op.
+- `1837101d3` (user repository dao save searching) — `HealthRepositoryImpl`
+  and `SubmissionsRepositoryImpl` stop injecting `UserDao` and go through
+  `UserRepository` (a `Lazy` wrapper breaks the Dagger cycle), and
+  `getUsersByIds` is rewritten as a batched `getUsersByAnyIds`(`chunked(400)`)
+  DB query instead of loading every user and filtering in memory. Same result,
+  fewer round-trips — the same shape as `8e0a813fa`'s submissions bulk lookup,
+  which was already audited as a no-op. The port's user lookups go through its
+  own DAO and have no in-memory load-all filter. No-op.
+- `d1747995f` (feedback repository saving) — adds `createAndSaveFeedback`, a
+  convenience that calls `createFeedback` then `saveFeedback`, and points the
+  fragment at it. The port's `FeedbackRepositoryImpl.createFeedback` already
+  creates and persists in one step. No-op.
+- `b0b6b5bc7` (configurations repository server url updating) — lifts
+  `ensureServerUrlUpdated` out of `ResourceViewerViewModel` (where it inlined
+  `ServerUrlMapper` + `SharedPrefManager`) into
+  `ConfigurationsRepository.ensureServerUrlUpdated`, and swaps
+  `UserSessionManager` → `UserRepository` in `CourseProgressViewModel`. DI
+  tidy; the port's viewer holds its server-URL update path through its own
+  providers. No-op.
+- `230991ae7` (diagnostics repository configs uploading) — extracts a
+  `DiagnosticsRepository` (crash / `ApkLog` save + pending-lookup + mark-uploaded)
+  out of `MainApplication` and `UploadConfigs`, and threads `getDiagnosticsCount`
+  hooks through `Activities`/`Progress`/`Submissions`/`Voices` repositories.
+  The port has **no** apk-log / crash-diagnostics feature (no `apk_log` table,
+  no `CrashLogStore`), so this lands on an unported feature, not a harvest.
+  Deferred.
+
+**Perf / concurrency refactors (same displayed result, faster).**
+
+- `212769b7a` (courses progress repository state mapping) — replaces
+  `getCourseProgress`'s `HashMap<String?, JsonObject>` return with a typed
+  `Map<String, CourseProgressState>` (`current`/`max`), serialising back to JSON
+  only at the export boundary. The port's `courseProgressSummary` already
+  returns a typed `CourseProgressSummary({max, current})` model — the same
+  shape, ported ahead of this commit. No-op.
+- `891e5f057` (repositories json parsing) — three Gson-parse tidy-ups:
+  `FeedbackRepositoryImpl.addMessage` guards `messages.isNullOrEmpty()` → an
+  empty `JsonArray` (the port's `FeedbackMapper.addReply` already returns `[]`
+  on null/empty before appending); `SubmissionsRepositoryImpl` hoists
+  `JsonParser.parseString(question.choices)` out of the per-choice loop so a
+  malformed choices blob fails once rather than per choice (the port decodes
+  choices once via `jsonDecode`); and `News.calculateSortDate` /
+  `VoicesRepositoryImpl` cache the parsed `viewIn` `JsonArray` in a
+  `parsedViewIn` field (the port has no `parsedViewIn` cache to add and parses
+  inline). No-op.
+- `69719d475` (courses surveys sort views modelling) — moves
+  `CoursesViewModel.sortCourses` and `SurveysViewModel.applyFilterAndSort` off
+  the main thread (`withContext(default)`) and cancels stale sort `Job`s. Same
+  sorted output; the port's courses/surveys screens already expose
+  `titleAscending`/`titleDescending`/date sort. No-op.
+- `d266d7362` (view models loading) — parallelises independent loads with
+  `async`/`coroutineScope` in `EventsDetailViewModel`, `HealthViewModel`, and
+  `UserProfileViewModel`. Same data, faster; the port's screens load through
+  their own providers. No-op.
+- `dd16b4d6b` (resources search view modelling) — wraps
+  `saveSearchActivity`, `removeResourcesFromShelf`, and `getFilterFacets` in
+  `ResourcesViewModel` methods and makes `removeResourcesFromShelf` surface
+  its `Result.onFailure` as an error toast. The port has no batch resource
+  selection / removal screen and no `saveSearchActivity` / `getFilterFacets`
+  (search-activity logging is unported), and its single-resource shelf removal
+  in `resource_detail_screen.dart` already shows a failure snackbar. Deferred
+  (lands on the unported batch-resources path); the error-surfacing half is
+  already present.
+
+**RecyclerView / adapter-internal refactors (no Flutter equivalent).**
+
+- `2459a4ae2` (courses surveys refreshing) — drops the `OnDiffRefreshListener`
+  interface from `CoursesAdapter`/`SurveysAdapter` in favour of a direct
+  `notifyItemChangedById`. Flutter's `ListView` rebuild has no payload/diff
+  concept. No-op.
+- `87ee0cc59` (resources payload notifying) — replaces
+  `notifyDataSetChanged` with `notifyItemRangeChanged` and inlines a
+  per-item-lookup in `markItemAsOffline`. RecyclerView payload-notify perf;
+  Flutter has no payload-bundle. No-op.
+
+**Kotlin-idiom / dead-code removal (no behaviour).**
+
+- `f53e466b6` (courses repository parts matching) — rewrites
+  `matchesAllParts`'s `for` loop as `parts.all { title.contains(it) }`. Pure
+  idiom. No-op.
+- `9975795ee` (dialog utils indeterminate) — deletes an unused
+  `DialogUtils` method. No-op.
+- `30b2ace49`, `18edd6a34`, `e2a498d6e`, `dc92815f8`, `d2ca98fda`,
+  `6a1b25707`, `da72b96f8`, `61efc728e`, `dcd47dbb8` (the "less … is more"
+  series) — each drops an unused repository dependency from a manager
+  (`SyncManager`, `UploadManager`, `RetryQueue`, `LoginSyncManager`,
+  `TransactionSyncManager`) and the matching test field. Pure DI removal; the
+  port's sync/upload/outbox wiring has a different structure with no unused
+  injection to trim. No-op.
+
+---
+
+**Last updated**: 2026-08-18 (Phase 38 complete; the `ffa3fe862`..`f53e466b6`
+batch audited, nothing harvestable — all DI/perf/idiom no-ops or deferred to
+unported diagnostics/batch-resources features)
 **Phase**: 38 of N (27 of 28 UI packages have a screen — see Status for what that does and does
 not mean)
