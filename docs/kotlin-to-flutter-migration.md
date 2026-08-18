@@ -26,8 +26,8 @@ Known gaps:
   https Planet hosts need an associated-domains entitlement and an
   `apple-app-site-association` file served by each planet — neither exists, and the shipping
   app is Android-only.
-- The dashboard's About and Disclaimer destinations are unported — static translated HTML with
-  no logic (see Phase 33).
+- The dashboard's About and Disclaimer destinations are ported (see Phase 33);
+  their translated HTML bodies are rendered as markdown.
 - Device and tablet usage telemetry (`myplanet_activities`, `MyPlanet.getTabletUsages`) is
   unported: it needs a device-info plugin, and the same absence is why the activity documents
   the port posts omit the `androidId`/`deviceName`/`customDeviceName` trio. Challenge actions
@@ -280,10 +280,27 @@ supported languages, stored under the Kotlin's own `language` preference key and
 `MaterialApp.locale`. Unset means "follow the device", which is what the app did before. The
 labels were already translated upstream and are seeded from `values-es` as usual.
 
-Still unported from this screen: the **About** and **Disclaimer** destinations. They are static
-HTML bodies in `strings.xml` (1.8 KB and 6.8 KB, translated into five languages) with no logic at
-all, and porting ~43 KB of translated markup earns less than anything else left on the list.
-OS-scheduled background sync remains out of scope for the same reason it always has.
+**About and Disclaimer.** `R.id.action_about` / `R.id.action_disclaimer` →
+`AboutFragment` / `DisclaimerFragment`. Static HTML bodies in `strings.xml`,
+rendered as markdown through the port's `flutter_markdown_plus` (the same
+renderer the challenge dialog and resource viewer use) rather than porting an
+HTML widget. The Kotlin's HTML maps cleanly to markdown (`<h1>`→`#`,
+`<ul><li>`→`-`, `<strong>`→`**`, `<a href>`→`[text](url)`), so the content is
+authored once as markdown in `app_en.arb` / `app_es.arb` — no new rendering
+dependency, just `url_launcher` to stand in for `LinkMovementMethod` on the
+disclaimer's contact link.
+
+`AboutFragment` injects the app version after the `<h3>MyPlanet</h3>` heading
+(`about` → `<h3>MyPlanet</h3>\n<h4>Version …</h4>`); the port does the same
+by appending `\n\n#### $versionLine` to `aboutContent`. The Kotlin reads
+`BuildConfig.VERSION_NAME`; the port has no `package_info_plus` dependency, so
+`ConfigurationsRepository.defaultAppVersion` — the same constant the
+configuration flow uses — stands in. Both bodies are seeded into Spanish from
+`values-es`; the other four locales fall back to English until Crowdin fills
+them, the same as every other key.
+
+OS-scheduled background sync remains out of scope for the same reason it
+always has.
 
 ## Phase 34 — the activity log, and something that leaves it
 
@@ -1080,7 +1097,10 @@ flutter pub get 2>&1 | grep -i discontinued
   debounced username validation is still validate-on-submit here.
 - `settings` -- the free-up-space button and available-space text inside the storage sheet, which
   need `FreeSpaceWorker`'s delete-and-mark-not-offline pass and a disk-stats plugin.
-- `dashboard` -- the About and Disclaimer destinations, static translated HTML.
+- `dashboard` -- the home dashboard's OS-scheduled background sync (the
+  `AutoSyncWorker` half landed in Phase 38 through the `workmanager` plugin;
+  `TaskNotificationWorker`'s deadline notifications and `DownloadWorker`'s
+  queue remain open).
 - `teams` -- team attachments.
 - `sync` -- OS-scheduled background work, a platform gap rather than a screen.
 

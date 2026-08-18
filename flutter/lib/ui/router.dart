@@ -14,6 +14,7 @@ import 'courses/course_detail_screen.dart';
 import 'courses/courses_screen.dart';
 import 'courses/courses_progress_screen.dart';
 import 'courses/take_course_screen.dart';
+import 'dashboard/about_disclaimer_screens.dart';
 import 'dashboard/activities_screen.dart';
 import 'dashboard/dashboard_shell.dart';
 import 'dashboard/home_screen.dart';
@@ -107,6 +108,8 @@ class Routes {
   static const String feedback = '/life/feedback';
   static const String feedbackDetail = '/life/feedback/:feedbackId';
   static const String feedbackCreate = '/life/feedback/create';
+  static const String about = '/about';
+  static const String disclaimer = '/disclaimer';
   static const String community = '/community';
   static const String exam = '/courses/exam/:examId';
   static const String userInfo = '/exam/user-info/:submissionId';
@@ -253,6 +256,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.syncCenter,
         builder: (context, state) => const SyncCenterScreen(),
+      ),
+      GoRoute(
+        path: Routes.about,
+        builder: (context, state) => const AboutScreen(),
+      ),
+      GoRoute(
+        path: Routes.disclaimer,
+        builder: (context, state) => const DisclaimerScreen(),
       ),
       GoRoute(
         path: Routes.activities,

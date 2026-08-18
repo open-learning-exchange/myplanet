@@ -21,7 +21,16 @@ import '../life/life_features.dart';
 import '../router.dart';
 import 'dashboard_drawer.dart';
 
-enum _HomeMenuAction { sync, feedback, settings, theme, language, logout }
+enum _HomeMenuAction {
+  sync,
+  feedback,
+  settings,
+  theme,
+  language,
+  about,
+  disclaimer,
+  logout,
+}
 
 /// Port of `ui/dashboard/BellDashboardFragment.kt` — the home ("bell")
 /// dashboard: the profile card with its completed-course stars, network-status
@@ -30,9 +39,9 @@ enum _HomeMenuAction { sync, feedback, settings, theme, language, logout }
 /// pending-survey dialog with its remind-later scheduler.
 ///
 /// Still unported from the Kotlin home screen, tracked in the migration doc:
-/// the About and Disclaimer overflow destinations (static HTML bodies in
-/// `strings.xml`, translated into five languages), and OS-scheduled background
-/// sync, which needs platform scheduling rather than a screen.
+/// OS-scheduled background sync, which needs platform scheduling rather than a
+/// screen (the `AutoSyncWorker` half landed in Phase 38 through the
+/// `workmanager` plugin).
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -307,6 +316,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
               PopupMenuItem(
+                value: _HomeMenuAction.about,
+                child: ListTile(
+                  leading: const Icon(Icons.info_outline),
+                  title: Text(l10n.about),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: _HomeMenuAction.disclaimer,
+                child: ListTile(
+                  leading: const Icon(Icons.privacy_tip_outlined),
+                  title: Text(l10n.disclaimer),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
                 value: _HomeMenuAction.logout,
                 child: ListTile(
                   leading: const Icon(Icons.logout),
@@ -423,6 +448,12 @@ Future<void> _handleMenuAction(
       return;
     case _HomeMenuAction.language:
       await _showLanguageDialog(context, ref);
+      return;
+    case _HomeMenuAction.about:
+      context.push(Routes.about);
+      return;
+    case _HomeMenuAction.disclaimer:
+      context.push(Routes.disclaimer);
       return;
     case _HomeMenuAction.logout:
       await ref.read(sessionProvider.notifier).signOut();
