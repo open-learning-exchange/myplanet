@@ -157,14 +157,12 @@ jobs:
           treehouses feedback "new myplanet app: <https://github.com/open-learning-exchange/myplanet/releases/tag/v${{ env.ANDROID_VERSION_NAME }}>"
 
       # Both upload attempts failed, so this version is not on the playstore.
-      # Fail the run: the automerge drain refuses to merge onto a red base,
-      # so it stops itself before the next merge -- no cancellation needed.
-      - name: fail the run when the playstore upload failed, stopping the automerge drain
+      # The warning below lands as a check-run annotation on this job, and
+      # automerge.sh looks for its 'playstore upload failed twice' prefix
+      # before each merge -- the drain stops itself, this run stays green.
+      - name: warn that the playstore upload failed, which stops the automerge drain
         if: github.event_name != 'workflow_dispatch' && matrix.build == 'lite' && steps.playstore.outcome == 'failure' && steps.playstore_fallback.outcome == 'failure'
         run: |
-          MESSAGE="the playstore upload of ${{ env.PLAYSTORE_RELEASE_NAME }} failed twice, so it was not published, and this red run stops the automerge drain. If it hit the daily save quota (resets at midnight PT), re-run this workflow run after the reset -- a green re-run publishes the missing version and unblocks the drain."
-          echo "::error::${MESSAGE}"
-          echo "### playstore upload failed -- the red run stops the automerge drain" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "${MESSAGE}" >> $GITHUB_STEP_SUMMARY
-          exit 1
+          MESSAGE="playstore upload failed twice: ${{ env.PLAYSTORE_RELEASE_NAME }} was not published. If it hit the daily save quota (resets at midnight PT), re-run this workflow run after the reset to publish it and unblock the automerge drain."
+          echo "::warning::${MESSAGE}"
+          echo "### ${MESSAGE}" >> $GITHUB_STEP_SUMMARY

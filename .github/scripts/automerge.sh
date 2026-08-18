@@ -22,6 +22,8 @@ VERSION_SH="${VERSION_SH:?}"
 COAUTHORS_SH="${COAUTHORS_SH:?}"
 REQUIRE_CHECKS="${REQUIRE_CHECKS:-true}"
 REQUIRED_WORKFLOWS="${REQUIRED_WORKFLOWS:-}"
+PUBLISH_JOB="${PUBLISH_JOB:-}"
+PUBLISH_FAIL_MARKER="${PUBLISH_FAIL_MARKER:-playstore upload failed twice}"
 DELETE_BRANCH="${DELETE_BRANCH:-true}"
 DRY_RUN="${DRY_RUN:-true}"
 MAX_MERGES="${MAX_MERGES:-0}"
@@ -187,6 +189,31 @@ wait_for_runs() {
     done
 }
 
+# The release workflow leaves a "$PUBLISH_FAIL_MARKER ..." warning annotation
+# on its $PUBLISH_JOB job when a release was not published (release.yml keeps
+# the run green so the playstore hiccup does not read as a broken build).
+# Finding that annotation on $1's completed runs means every merge would
+# publish past the gap, so the drain must stop. API trouble reads as
+# published -- transient hiccups must not halt the queue. Blank $PUBLISH_JOB
+# disables the check.
+publish_failed() {
+    local sha=$1 run_id job_id note
+    [ -n "$PUBLISH_JOB" ] || return 1
+    for run_id in $(gh api "repos/$REPO/actions/runs?head_sha=$sha&per_page=100" \
+                      --jq '.workflow_runs[] | select(.status == "completed") | .id' 2>/dev/null || true); do
+        job_id=$(gh api "repos/$REPO/actions/runs/$run_id/jobs?per_page=100" \
+                   --jq ".jobs[] | select(.name == \"$PUBLISH_JOB\") | .id" 2>/dev/null | head -n 1 || true)
+        [ -n "$job_id" ] || continue
+        note=$(gh api "repos/$REPO/check-runs/$job_id/annotations?per_page=100" \
+                 --jq "[.[] | select(.annotation_level == \"warning\") | .message | select(startswith(\"$PUBLISH_FAIL_MARKER\"))] | first" 2>/dev/null || true)
+        if [ -n "$note" ] && [ "$note" != "null" ]; then
+            log "  $note"
+            return 0
+        fi
+    done
+    return 1
+}
+
 # Non-blocking peek; step 4 does the blocking version.
 base_already_failed() {
     local sha=$1 runs bad
@@ -280,6 +307,14 @@ while :; do
 
     git fetch --quiet origin "$BASE"
     base_at_prepare=$(git rev-parse "origin/$BASE")
+
+    # Cheap peek before the expensive prepare; a release still running on
+    # $BASE reads as published here, and step 4 re-checks once it settles.
+    if [ "$REQUIRE_CHECKS" = 'true' ] && publish_failed "$base_at_prepare"; then
+        log "the release on $BASE (${base_at_prepare:0:7}) was not published -- stopping the drain"
+        summary "| | | **stopped**: release on \`$BASE\` not published |"
+        exit 1
+    fi
 
     pr_json=$(pick_pr)
     if [ "$pr_json" = "null" ] || [ -z "$pr_json" ]; then
@@ -387,11 +422,17 @@ while :; do
         log "  require_checks is off -- merging ${merge_sha:0:7} unverified"
     fi
 
-    # 4. Merge, but only onto a settled green base.
+    # 4. Merge, but only onto a settled green base whose release published.
     if [ "$REQUIRE_CHECKS" = 'true' ]; then
         git fetch --quiet origin "$BASE"
         wait_for_runs "$(git rev-parse "origin/$BASE")" '' pass \
             || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: \`$BASE\` is red |"; exit 1; }
+
+        if publish_failed "$(git rev-parse "origin/$BASE")"; then
+            log "the release of the last merge was not published -- stopping before #$NUMBER"
+            summary "| #$NUMBER | → \`$new_name\` | **stopped**: release of the last merge not published |"
+            exit 1
+        fi
 
         # Prepared against a base that no longer exists; prepare again.
         git fetch --quiet origin "$BASE"
