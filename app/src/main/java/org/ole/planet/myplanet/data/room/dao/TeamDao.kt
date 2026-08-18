@@ -8,6 +8,8 @@ import org.ole.planet.myplanet.model.MyTeam
 
 @Dao
 interface TeamDao {
+    @Query("SELECT * FROM teams WHERE _id IN (:ids)") suspend fun getByIds(ids: List<String>): List<MyTeam>
+    @Query("SELECT resourceId FROM teams WHERE teamId = :teamId AND resourceId IS NOT NULL AND TRIM(resourceId) != '' AND (docType IS NULL OR TRIM(docType) = '' OR docType = 'resourceLink' OR docType = 'link')") suspend fun getResourceIdsByTeamId(teamId: String): List<String>
     @Query("SELECT * FROM teams WHERE _id = :teamId OR teamId = :teamId LIMIT 1") suspend fun getByTeamId(teamId: String): MyTeam?
     @Query("SELECT * FROM teams WHERE _id = :id LIMIT 1") suspend fun getById(id: String): MyTeam?
     @Query("SELECT * FROM teams WHERE userId = :userId") suspend fun getByUserId(userId: String): List<MyTeam>

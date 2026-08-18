@@ -19,6 +19,7 @@ import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -291,7 +292,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 }.map { it }
             }
             mapToTeamDetails(teams, userId)
-        }.flowOn(dispatcherProvider.default)
+        }.flowOn(dispatcherProvider.default).distinctUntilChanged()
     }
 
     override suspend fun getShareableEnterpriseDetails(userId: String?): List<TeamDetails> {
@@ -397,8 +398,9 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun getJoinRequestsInfo(requestIds: List<String>): List<JoinRequestInfo> {
         if (requestIds.isEmpty()) return emptyList()
-        return teamDao.getAll()
-            .filter { (it._id ?: it.id) in requestIds }
+        return requestIds.chunked(500)
+            .flatMap { chunk -> teamDao.getByIds(chunk) }
+            .distinctBy { it._id ?: it.id }
             .map { entity ->
                 JoinRequestInfo(
                     id = entity._id ?: entity.id,
@@ -414,8 +416,9 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun getTeamNamesByIds(ids: List<String>): Map<String, String> {
         if (ids.isEmpty()) return emptyMap()
-        return teamDao.getAll()
-            .filter { (it._id ?: it.id) in ids }
+        return ids.chunked(500)
+            .flatMap { chunk -> teamDao.getByIds(chunk) }
+            .distinctBy { it._id ?: it.id }
             .associateBy({ it._id ?: it.id }, { it.name ?: "Unknown Team" })
     }
 
@@ -986,11 +989,7 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     private suspend fun getResourceIds(teamId: String): List<String> {
-        return teamDao.getAll().filter {
-            it.teamId == teamId &&
-                it.resourceId?.isNotBlank() == true &&
-                (it.docType.isNullOrBlank() || it.docType == "resourceLink" || it.docType == "link")
-        }.mapNotNull { it.resourceId }
+        return teamDao.getResourceIdsByTeamId(teamId)
     }
 
     override suspend fun getTeamType(teamId: String): String? {
@@ -1101,10 +1100,6 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun getJoinedMemberCount(teamId: String): Int {
         return teamDao.countByTeamIdAndDocType(teamId, "membership")
-    }
-
-    override suspend fun getAssignee(userId: String): UserEntity? {
-        return userRepository.getUserById(userId)
     }
 
     override suspend fun getRequestedMembers(teamId: String): List<UserEntity> {

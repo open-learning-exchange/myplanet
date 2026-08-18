@@ -31,6 +31,7 @@ USING_PAT="${USING_PAT:-false}"
 RUN_APPEAR_TIMEOUT_SEC=300
 POLL_INTERVAL_SEC=20
 PR_SETTLE_TIMEOUT_SEC=120
+MERGE_RETRY_DELAYS='5 10 15'
 
 self_ref="${GITHUB_WORKFLOW_REF:-}"
 self_ref="${self_ref%@*}"
@@ -103,6 +104,7 @@ runs_for() {
         || { echo '[]'; return 0; }
     jq -c --arg self "$SELF_WORKFLOW_PATH" --arg run "$SELF_RUN_ID" '
         [ .workflow_runs[]?
+          | select(.path | startswith(".github/workflows/"))
           | select(.path != $self)
           | select(($run | length == 0) or ((.id | tostring) != $run))
           | {name, status, conclusion} ]' <<<"$raw" 2>/dev/null || echo '[]'
@@ -215,6 +217,30 @@ verify_version_only_diff() {
         return 1
     fi
     log "  bump is version-only ($from -> $to)"
+}
+
+# Retries only a head-modified refusal that left the head at $2 -- GitHub
+# reindexing, not a real push. Last gh output stays in $merge_out.
+merge_with_retry() {
+    local pr=$1 head_sha=$2 delay live
+    shift 2
+
+    for delay in $MERGE_RETRY_DELAYS ''; do
+        merge_out=$(gh pr merge "$pr" "$@" 2>&1) && return 0
+
+        case "$merge_out" in *"Head branch was modified"*) ;; *) return 1 ;; esac
+
+        live=$(gh pr view "$pr" --repo "$REPO" --json headRefOid --jq '.headRefOid' 2>/dev/null || echo '')
+        if [ "$live" != "$head_sha" ]; then
+            log "  #$pr head moved to ${live:-unknown} -- the green commit is gone, not retrying"
+            return 1
+        fi
+
+        [ -n "$delay" ] || break
+        log "  merge of #$pr hit GitHub's head race, but ${head_sha:0:7} is still the head -- retrying in ${delay}s"
+        sleep "$delay"
+    done
+    return 1
 }
 
 push_with_retry() {
@@ -399,7 +425,7 @@ while :; do
     if [ "$DELETE_BRANCH" = 'true' ]; then
         ARGS+=(--delete-branch)
     fi
-    if ! merge_out=$(gh pr merge "$NUMBER" "${ARGS[@]}" 2>&1); then
+    if ! merge_with_retry "$NUMBER" "$merge_sha" "${ARGS[@]}"; then
         printf '%s\n' "$merge_out" | sed 's/^/    /'
         log "  merge of #$NUMBER refused"
         reason="merge refused"
@@ -421,6 +447,15 @@ while :; do
                 log "  approving review, a codeowner review, or an unresolved conversation."
                 log "  --auto is deliberately not used: it returns before the merge happens,"
                 log "  and the drain must know the merge landed to bump the next version."
+                ;;
+            *"Head branch was modified"*)
+                reason="**stopped**: #$NUMBER's head no longer matches what CI passed"
+                log "  re-run the drain to prepare #$NUMBER on its new head."
+                ;;
+            *"Base branch was modified"*)
+                reason="**stopped**: \`$BASE\` moved between the check and the merge"
+                log "  the bump was computed against an older $BASE."
+                log "  re-run the drain to prepare #$NUMBER on top of the new $BASE."
                 ;;
             *"is not mergeable"*|*"required status check"*)
                 reason="**stopped**: base requires checks the prepared commit has not passed"

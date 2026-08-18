@@ -141,7 +141,6 @@ interface TeamsRepository {
     suspend fun refreshJoinedMembersForLogin(teamId: String): List<UserEntity>
     suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData>
     suspend fun getJoinedMemberCount(teamId: String): Int
-    suspend fun getAssignee(userId: String): UserEntity?
     suspend fun getRequestedMembers(teamId: String): List<UserEntity>
     suspend fun isTeamNameExists(name: String, type: String, excludeTeamId: String? = null): Boolean
     suspend fun updateTeamLeader(teamId: String, newLeaderId: String): Boolean
