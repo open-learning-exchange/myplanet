@@ -102,9 +102,6 @@ runs_for() {
     local raw
     raw=$(gh api "repos/$REPO/actions/runs?head_sha=$1&per_page=100" 2>/dev/null) \
         || { echo '[]'; return 0; }
-    # Only workflows from .github/workflows/ judge a commit. GitHub-injected
-    # ones (path dynamic/..., e.g. Dependabot Updates) attach to the base
-    # commit and their failures say nothing about the tree's health.
     jq -c --arg self "$SELF_WORKFLOW_PATH" --arg run "$SELF_RUN_ID" '
         [ .workflow_runs[]?
           | select(.path | startswith(".github/workflows/"))
