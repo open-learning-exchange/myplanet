@@ -422,7 +422,7 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
             if (libraryItems.isNotEmpty()) {
                 myLibraryDao.upsertAll(libraryItems)
             }
-            removedLogDao.deleteByTypeUserAndDocs("resources", userId, resourceIds)
+            removedLogDao.deleteByTypeUserAndDocsChunked("resources", userId, resourceIds)
         }
     }
 

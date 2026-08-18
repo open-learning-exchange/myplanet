@@ -13,9 +13,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
@@ -69,7 +67,6 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     }
     private var di: DialogUtils.CustomProgressDialog? = null
 
-
     @Inject
     lateinit var lifeRepository: LifeRepository
 
@@ -117,51 +114,25 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     }
 
     private fun observeUiState() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    viewModel.uiState
-                        .map { it.library }
-                        .distinctUntilChanged()
-                        .collect { library ->
-                            renderMyLibrary(library)
-                        }
-                }
-                launch {
-                    viewModel.uiState
-                        .map { it.courses }
-                        .distinctUntilChanged()
-                        .collect { courses ->
-                            renderMyCourses(courses)
-                        }
-                }
-                launch {
-                    viewModel.uiState
-                        .map { it.teams }
-                        .distinctUntilChanged()
-                        .collect { teams ->
-                            renderMyTeams(teams)
-                        }
-                }
-                launch {
-                    viewModel.uiState
-                        .map { it.fullName to it.offlineLogins }
-                        .distinctUntilChanged()
-                        .collect { (fullName, offlineLogins) ->
-                            view?.findViewById<TextView>(R.id.txtFullName)?.text =
-                                getString(R.string.user_name, fullName, offlineLogins)
-                        }
-                }
-                launch {
-                    newsViewModel.privateImageUrls.collect { urls ->
-                        if (urls.isNotEmpty()) {
-                            Utilities.toast(activity, getString(R.string.downloading_images_please_check_notification))
-                            DownloadUtils.openDownloadService(activity, ArrayList(urls), false)
-                        } else {
-                            Utilities.toast(activity, getString(R.string.no_images_to_download))
-                        }
-                    }
-                }
+        collectWhenStarted(viewModel.uiState.map { it.library }.distinctUntilChanged()) { library ->
+            renderMyLibrary(library)
+        }
+        collectWhenStarted(viewModel.uiState.map { it.courses }.distinctUntilChanged()) { courses ->
+            renderMyCourses(courses)
+        }
+        collectWhenStarted(viewModel.uiState.map { it.teams }.distinctUntilChanged()) { teams ->
+            renderMyTeams(teams)
+        }
+        collectWhenStarted(viewModel.uiState.map { it.fullName to it.offlineLogins }.distinctUntilChanged()) { (fullName, offlineLogins) ->
+            view?.findViewById<TextView>(R.id.txtFullName)?.text =
+                getString(R.string.user_name, fullName, offlineLogins)
+        }
+        collectWhenStarted(newsViewModel.privateImageUrls) { urls ->
+            if (urls.isNotEmpty()) {
+                Utilities.toast(activity, getString(R.string.downloading_images_please_check_notification))
+                DownloadUtils.openDownloadService(activity, ArrayList(urls), false)
+            } else {
+                Utilities.toast(activity, getString(R.string.no_images_to_download))
             }
         }
     }

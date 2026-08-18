@@ -19,6 +19,8 @@ interface HealthRepository {
     suspend fun uploadHealthData(myHealths: List<HealthExamination>): Map<String, String?>
     suspend fun getExaminationConditions(examination: HealthExamination?): Map<String, Boolean>
     suspend fun getByIdOrUserId(id: String): HealthExamination?
+    suspend fun getHealthProfile(userId: String): MyHealth?
+    suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>)
     suspend fun getByProfileId(profileId: String): List<HealthExamination>
     suspend fun upsert(examination: HealthExamination)
     suspend fun getPatientById(id: String): UserEntity?

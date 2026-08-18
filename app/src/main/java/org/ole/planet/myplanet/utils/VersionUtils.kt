@@ -54,8 +54,8 @@ object VersionUtils {
 
     fun parseApkVersionString(raw: String?): Int? {
         if (raw.isNullOrEmpty()) return null
-        var vsn = raw.replace("v".toRegex(), "")
-        vsn = vsn.replace("\\.".toRegex(), "")
+        var vsn = raw.replace("v", "")
+        vsn = vsn.replace(".", "")
         val cleaned = if (vsn.startsWith("0")) vsn.replaceFirst("0", "") else vsn
         return cleaned.toIntOrNull()
     }

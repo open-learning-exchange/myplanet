@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.ResourceListModel
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
@@ -52,6 +54,18 @@ class ResourcesViewModel @Inject constructor(
                 _openedResourceIds.value = ids
             }
         }
+    }
+
+    suspend fun saveSearchActivity(userName: String, searchText: String, planetCode: String, parentCode: String, searchTags: List<TagEntity>, subjects: Set<String>, languages: Set<String>, levels: Set<String>, mediums: Set<String>) = withContext(dispatcherProvider.io) {
+        resourcesRepository.saveSearchActivity(userName, searchText, planetCode, parentCode, searchTags, subjects, languages, levels, mediums)
+    }
+
+    suspend fun removeResourcesFromShelf(resourceIds: List<String>, userId: String): Result<Unit> = withContext(dispatcherProvider.io) {
+        resourcesRepository.removeResourcesFromShelf(resourceIds, userId)
+    }
+
+    suspend fun getFilterFacets(libraries: List<MyLibrary>): Map<String, Set<String>> = withContext(dispatcherProvider.default) {
+        resourcesRepository.getFilterFacets(libraries)
     }
 
     suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String): Result<Unit> {

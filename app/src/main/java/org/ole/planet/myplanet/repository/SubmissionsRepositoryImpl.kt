@@ -5,6 +5,7 @@ import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.util.Date
@@ -19,7 +20,6 @@ import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
@@ -48,7 +48,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     private val answerDao: AnswerDao,
     private val examDao: ExamDao,
     private val questionDao: QuestionDao,
-    private val userDao: UserDao
+    // Lazy wrapper is required here to prevent a Dagger cyclic dependency,
+    // as UserRepositoryImpl also depends on HealthRepository which creates a cycle
+    // (and we follow this pattern consistently).
+    private val userRepository: Lazy<UserRepository>
 ) : SubmissionsRepository {
 
     override suspend fun generateSubmissionPdf(submissionId: String): File? {
@@ -255,7 +258,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         val examId = submission.parentId?.substringBefore('@')
         val exam = examId?.let { getExamById(it) }
 
-        val user = submission.userId?.let { userDao.getById(it) }
+        val user = submission.userId?.let { userRepository.get().getUserById(it) }
 
         val questions = examId?.let { questionDao.getByExamId(it).map { question -> question } } ?: emptyList()
 
@@ -270,14 +273,18 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                     val choices = answer.valueChoices
                     if (!choices.isNullOrEmpty()) {
                         if (question.type?.startsWith("select") == true && !question.choices.isNullOrEmpty()) {
+                                val choicesArray = try {
+                                    JsonParser.parseString(question.choices).asJsonArray
+                                } catch (_: Exception) {
+                                    null
+                                }
                             formattedAnswer = choices.joinToString(", ") { choiceId ->
                                 try {
-                                    val choicesArray = JsonParser.parseString(question.choices).asJsonArray
-                                    val choiceObject = choicesArray.find {
-                                        it.isJsonObject && it.asJsonObject.has("id") && it.asJsonObject.get(
-                                            "id"
-                                        ).asString == choiceId
-                                    }?.asJsonObject
+                                        val choiceObject = choicesArray?.find {
+                                            it.isJsonObject && it.asJsonObject.has("id") && it.asJsonObject.get(
+                                                "id"
+                                            ).asString == choiceId
+                                        }?.asJsonObject
                                     choiceObject?.get("text")?.asString ?: choiceId
                                 } catch (_: Exception) {
                                     choiceId
@@ -562,6 +569,15 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         photoId?.let { submitPhotosDao.markUploaded(it, rev, id) }
     }
 
+    override suspend fun getPendingSubmitPhotosUploads(): List<SubmitPhotos> {
+        return submitPhotosDao.getUnuploaded()
+    }
+
+    override suspend fun markSubmitPhotosUploaded(localId: String, remoteId: String, rev: String): Boolean {
+        return submitPhotosDao.markUploaded(localId, rev, remoteId) != 0
+    }
+
+
     override suspend fun getPhotosByIds(ids: Array<String>): List<SubmitPhotos> {
         if (ids.isEmpty()) return emptyList()
         return submitPhotosDao.getByIds(ids)
@@ -613,6 +629,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             val id = JsonUtils.getString("_id", submission)
             if (id.isBlank()) return@forEach
             val serverStatus = JsonUtils.getString("status", submission)
+            val rev = JsonUtils.getString("_rev", submission)
+            val parentId = JsonUtils.getString("parentId", submission)
             // Drop base64 `_attachments` (e.g. a profile photo) from the embedded user before
             // persisting it as a blob; otherwise a single row can exceed SQLite's ~2MB
             // CursorWindow limit and crash later `SELECT *` reads (SQLiteBlobTooBigException).
@@ -626,8 +644,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 Submission(
                     id = id,
                     _id = id,
-                    _rev = JsonUtils.getString("_rev", submission),
-                    parentId = JsonUtils.getString("parentId", submission),
+                    _rev = rev,
+                    parentId = parentId,
                     type = JsonUtils.getString("type", submission),
                     userId = userId,
                     user = JsonUtils.gson.toJson(userJson),
@@ -635,7 +653,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                     lastUpdateTime = JsonUtils.getLong("lastUpdateTime", submission),
                     grade = JsonUtils.getLong("grade", submission),
                     status = serverStatus,
-                    uploaded = JsonUtils.getString("_rev", submission).isNotEmpty(),
+                    uploaded = rev.isNotEmpty(),
                     sender = JsonUtils.getString("sender", submission),
                     source = JsonUtils.getString("source", submission),
                     parentCode = JsonUtils.getString("parentCode", submission),
@@ -654,8 +672,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 } else {
                     null
                 }
-                val examIdPart = JsonUtils.getString("parentId", submission).split("@").firstOrNull()
-                    ?: JsonUtils.getString("parentId", submission)
+                val examIdPart = parentId.split("@").firstOrNull() ?: parentId
                 answers.add(
                     Answer(
                         id = "$id-$i",
@@ -669,7 +686,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                         valueChoices = valueChoices,
                         mistakes = JsonUtils.getInt("mistakes", answerJson),
                         isPassed = JsonUtils.getBoolean("passed", answerJson),
-                        examId = JsonUtils.getString("parentId", submission),
+                        examId = parentId,
                         questionId = JsonUtils.getString("questionId", answerJson).ifBlank { "$examIdPart-$i" },
                         submissionId = id,
                     )
@@ -699,7 +716,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     )
 
     private suspend fun getPayloadData(submission: Submission): PayloadData {
-        val user = submission.userId?.let { userDao.getById(it) }
+        val user = submission.userId?.let { userRepository.get().getUserById(it) }
         val examId = submission.examIdFromParentId()
         val exam = examId?.let { examDao.getById(it) }
         val questions = exam?.id?.let { questionDao.getByExamId(it).map { question -> question } } ?: emptyList()
@@ -756,7 +773,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return `object`
     }
 
-    override suspend fun serializeSubmission(submission: Submission, context: Context, source: String, parentCode: String): JsonObject {
+    override suspend fun serializeSubmission(submission: Submission, source: String, parentCode: String): JsonObject {
         val jsonObject = JsonObject()
 
         try {

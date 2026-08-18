@@ -29,10 +29,10 @@ import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.ChatRepository
-import org.ole.planet.myplanet.repository.CommunityRepository
+import org.ole.planet.myplanet.repository.ChatSyncWriter
+import org.ole.planet.myplanet.repository.CommunitySyncWriter
 import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.FeedbackSyncWriter
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
@@ -62,24 +62,22 @@ class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
     @param:ApplicationContext private val context: Context,
     private val voicesRepository: VoicesRepository,
-    private val chatRepository: ChatRepository,
-    private val feedbackRepository: FeedbackRepository,
+    private val chatRepository: ChatSyncWriter,
+    private val feedbackRepository: FeedbackSyncWriter,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
     private val userSyncRepository: UserSyncRepository,
     private val activitiesRepository: ActivitiesRepository,
-    private val teamsRepository: Lazy<TeamsRepository>,
     private val teamsSyncRepository: Lazy<TeamsSyncRepository>,
     private val notificationsRepository: NotificationsRepository,
     private val tagsRepository: TagsRepository,
     private val ratingsRepository: RatingsRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val coursesRepository: CoursesRepository,
-    private val communityRepository: CommunityRepository,
+    private val communityRepository: CommunitySyncWriter,
     private val healthRepository: HealthRepository,
     private val progressRepository: ProgressRepository,
     private val surveysRepository: SurveysRepository,
-    @ApplicationScope private val applicationScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
     private val userSessionManager: UserSessionManager
 ) {
@@ -195,7 +193,7 @@ class TransactionSyncManager @Inject constructor(
                 currentCoroutineContext().ensureActive()
                 batchNumber++
                 if (useCheckpoint) {
-                    sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).commit()
+                    sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).apply()
                 }
                 val batchStartTime = SystemClock.elapsedRealtime()
                 val batchApiStartTime = SystemClock.elapsedRealtime()
@@ -310,7 +308,7 @@ class TransactionSyncManager @Inject constructor(
                 // Persist progress immediately after a batch is committed so an interruption
                 // resumes past it rather than re-processing the just-inserted page.
                 if (useCheckpoint) {
-                    sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).commit()
+                    sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).apply()
                 }
                 val batchDuration = SystemClock.elapsedRealtime() - batchStartTime
                 Log.d("SyncPerf", "    $table batch $batchNumber: ${arr.size()} docs in ${batchDuration}ms (total: $totalDocs)")
