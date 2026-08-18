@@ -14,7 +14,6 @@ import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @AndroidEntryPoint
 abstract class BaseTeamFragment : BaseVoicesFragment() {
@@ -31,8 +30,6 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
     lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var teamsSyncRepository: TeamsSyncRepository
-    @Inject
-    open lateinit var dispatcherProvider: DispatcherProvider
     private val _teamFlow = MutableStateFlow<MyTeam?>(null)
     val teamFlow: StateFlow<MyTeam?> = _teamFlow.asStateFlow()
     private val _isMemberFlow = MutableStateFlow(false)
@@ -89,12 +86,12 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
         return !hasDirectData
     }
 
-    protected fun getEffectiveTeamName(): String {
-        return requireArguments().getString("teamName") ?: team?.name ?: ""
+    protected open fun getEffectiveTeamName(): String {
+        return requireArguments().getString("teamName")?.takeIf { it.isNotBlank() } ?: team?.name ?: ""
     }
 
-    protected fun getEffectiveTeamType(): String {
-        return requireArguments().getString("teamType") ?: team?.type ?: ""
+    protected open fun getEffectiveTeamType(): String {
+        return requireArguments().getString("teamType")?.takeIf { it.isNotBlank() } ?: team?.type ?: ""
     }
 
     protected fun getEffectiveTeamId(): String {

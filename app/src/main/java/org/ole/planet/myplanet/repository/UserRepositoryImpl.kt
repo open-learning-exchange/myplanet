@@ -169,6 +169,15 @@ class UserRepositoryImpl @Inject constructor(
         return sortUsers(getAllUsers(), fieldName, descending)
     }
 
+    override suspend fun searchUsers(query: String, sortField: String, descending: Boolean): List<UserEntity> {
+        val users = userDao.search(query)
+        return sortUsers(users, sortField, descending)
+    }
+
+    override suspend fun saveUser(user: UserEntity) {
+        userDao.upsert(user)
+    }
+
     override suspend fun getPendingSyncUsers(limit: Int): List<UserEntity> {
         return userDao.getPendingSyncUsers(limit)
     }
@@ -936,8 +945,8 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun cleanupDuplicateUsers() {
-        val duplicates = userDao.getDuplicateUsers()
-        val usersByName = duplicates.groupBy { it.name }
+        val duplicateUsers = userDao.getDuplicateUsers()
+        val usersByName = duplicateUsers.groupBy { it.name }
 
         usersByName.forEach { (_, users) ->
             if (users.size > 1) {

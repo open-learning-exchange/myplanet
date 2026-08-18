@@ -5,6 +5,8 @@ import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.OfflineActivity
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.SearchActivity
+import org.ole.planet.myplanet.model.ResourceActivity
 
 interface ActivitiesRepository {
     suspend fun getOfflineVisitCount(userId: String): Int
@@ -29,4 +31,9 @@ interface ActivitiesRepository {
     suspend fun uploadMyPlanetActivities(userModel: UserEntity)
     suspend fun getPendingCourseActivityUploads(): List<CourseActivity>
     suspend fun markCourseActivityUploaded(localId: String, remoteId: String, rev: String): Boolean
+    suspend fun getPendingSearchActivityUploads(): List<SearchActivity>
+    suspend fun markSearchActivityUploaded(localId: String, remoteId: String, rev: String): Boolean
+    suspend fun getPendingResourceActivityUploads(): List<ResourceActivity>
+    suspend fun getPendingResourceActivitySyncUploads(): List<ResourceActivity>
+    suspend fun markResourceActivityUploaded(localId: String, remoteId: String, rev: String): Boolean
 }

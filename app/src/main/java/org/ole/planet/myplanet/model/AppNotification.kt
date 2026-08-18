@@ -15,6 +15,7 @@ class AppNotification {
     var isRead: Boolean = false
     var createdAt: Date = Date()
     var type: String = ""
+    var subType: String? = null
     var relatedId: String? = null
     var title: String? = null
     var link: String? = null

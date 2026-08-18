@@ -9,6 +9,8 @@ import org.ole.planet.myplanet.model.UserEntity
 interface UserDao {
     @Query("SELECT * FROM users WHERE id = :id OR _id = :id LIMIT 1")
     suspend fun getById(id: String): UserEntity?
+    @Query("SELECT * FROM users WHERE id IN (:userIds) OR _id IN (:userIds)")
+    suspend fun getUsersByAnyIds(userIds: List<String>): List<UserEntity>
     @Query("SELECT * FROM users") suspend fun getAll(): List<UserEntity>
     @Query("SELECT * FROM users WHERE name = :name LIMIT 1") suspend fun getByName(name: String): UserEntity?
     @Query("SELECT * FROM users WHERE name = :name COLLATE NOCASE LIMIT 1") suspend fun getByNameIgnoreCase(name: String): UserEntity?
@@ -19,12 +21,6 @@ interface UserDao {
     @Query("DELETE FROM users WHERE id IN (:ids)") suspend fun deleteByIds(ids: List<String>): Int
     @Upsert suspend fun upsert(item: UserEntity)
     @Upsert suspend fun upsertAll(items: List<UserEntity>)
-
-    @Query("SELECT * FROM users WHERE id IN (:userIds) OR _id IN (:userIds)")
-    suspend fun getUsersByAnyIds(userIds: List<String>): List<UserEntity>
-
-    @Query("SELECT * FROM users WHERE id IN (:userIds)")
-    suspend fun getUsersByIds(userIds: List<String>): List<UserEntity>
 
     @Query("SELECT * FROM users WHERE (_id IS NOT NULL AND TRIM(_id) != '') AND SUBSTR(id, 1, 5) != 'guest'")
     suspend fun getSyncedUsers(): List<UserEntity>
