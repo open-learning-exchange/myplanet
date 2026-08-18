@@ -480,7 +480,7 @@ class SubmissionsRepositoryImplTest {
             user = "{\"_id\":\"stored_user\"}"
         }
 
-        val result = repository.serializeSubmission(submission, context, "planet", "parent")
+        val result = repository.serializeSubmission(submission, "planet", "parent")
 
         assertEquals("fresh_user", result.getAsJsonObject("user").get("_id").asString)
     }
@@ -499,7 +499,7 @@ class SubmissionsRepositoryImplTest {
             user = "{\"_id\":\"stored_user\"}"
         }
 
-        val result = repository.serializeSubmission(submission, context, "planet", "parent")
+        val result = repository.serializeSubmission(submission, "planet", "parent")
 
         assertEquals("stored_user", result.getAsJsonObject("user").get("_id").asString)
     }

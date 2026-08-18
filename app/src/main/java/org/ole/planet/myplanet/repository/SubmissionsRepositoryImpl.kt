@@ -773,7 +773,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return `object`
     }
 
-    override suspend fun serializeSubmission(submission: Submission, context: Context, source: String, parentCode: String): JsonObject {
+    override suspend fun serializeSubmission(submission: Submission, source: String, parentCode: String): JsonObject {
         val jsonObject = JsonObject()
 
         try {

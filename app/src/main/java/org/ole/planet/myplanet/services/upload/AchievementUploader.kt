@@ -7,7 +7,7 @@ import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.FileUploader
@@ -50,7 +50,7 @@ class AchievementUploader @Inject constructor(
         val cvFile = File(FileUtils.getOlePath(context) + "cv/$resumeFileName")
         if (!cvFile.exists()) return
         try {
-            val body = cvFile.readBytes().toRequestBody("application/pdf".toMediaTypeOrNull())
+            val body = cvFile.asRequestBody("application/pdf".toMediaTypeOrNull())
             // CouchDB attachment key is always "resume.pdf"
             val url = "${UrlUtils.getUrl()}/achievements/$docId/resume.pdf"
             uploadRepository.uploadResource(FileUploader.getHeaderMap("application/pdf", rev), url, body)
