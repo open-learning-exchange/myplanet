@@ -78,7 +78,6 @@ class TransactionSyncManager @Inject constructor(
     private val healthRepository: HealthRepository,
     private val progressRepository: ProgressRepository,
     private val surveysRepository: SurveysRepository,
-    @ApplicationScope private val applicationScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
     private val userSessionManager: UserSessionManager
 ) {
