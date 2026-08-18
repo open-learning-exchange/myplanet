@@ -1091,10 +1091,6 @@ class TeamsRepositoryImpl @Inject constructor(
         return teamDao.countByTeamIdAndDocType(teamId, "membership")
     }
 
-    override suspend fun getAssignee(userId: String): UserEntity? {
-        return userRepository.getUserById(userId)
-    }
-
     override suspend fun getRequestedMembers(teamId: String): List<UserEntity> {
         val requestedMemberIds = teamDao.getByTeamIdAndDocType(teamId, "request")
             .mapNotNull { it.userId }
