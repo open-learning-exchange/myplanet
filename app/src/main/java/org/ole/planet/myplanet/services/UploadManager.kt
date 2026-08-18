@@ -20,7 +20,6 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.UserEntity
@@ -69,7 +68,6 @@ class UploadManager @Inject constructor(
     private val uploadConfigs: UploadConfigs,
     private val resourcesRepository: ResourcesRepository,
     private val teamsSyncRepository: Lazy<TeamsSyncRepository>,
-    private val apiInterface: ApiInterface,
     private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider,
     @ApplicationScope private val scope: CoroutineScope,
@@ -364,7 +362,7 @@ class UploadManager @Inject constructor(
             val body = imageFile.readBytes().toRequestBody(mimeType.toMediaTypeOrNull())
             val encodedName = Uri.encode(imageName)
             val url = "${UrlUtils.getUrl()}/teams/$teamId/$encodedName"
-            val response = apiInterface.uploadResource(FileUploader.getHeaderMap(mimeType, rev), url, body)
+            val response = uploadRepository.uploadResource(FileUploader.getHeaderMap(mimeType, rev), url, body)
             val newRev = response.body()?.get("rev")?.asString
             if (!newRev.isNullOrEmpty()) {
                 newRev
@@ -450,7 +448,7 @@ class UploadManager @Inject constructor(
                             val fileBody = FileUtils.fullyReadFileToBytes(imageFile)
                                 .toRequestBody("application/octet-stream".toMediaTypeOrNull())
 
-                            apiInterface.uploadResource(
+                            uploadRepository.uploadResource(
                                 getHeaderMap(mimeType, resourceRev),
                                 "${UrlUtils.getUrl()}/resources/$resourceId/$fileName",
                                 fileBody
