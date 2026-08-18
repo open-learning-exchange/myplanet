@@ -9,7 +9,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.repository.HealthRepository
@@ -22,13 +21,11 @@ import org.ole.planet.myplanet.utils.SecurePrefs
 class UploadToShelfService @Inject constructor(
     @ApplicationContext private val context: Context,
     @AppPreferences private val sharedPreferences: SharedPreferences,
-    private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
     private val userSyncRepository: UserSyncRepository,
     private val healthRepository: HealthRepository,
     @ApplicationScope private val appScope: CoroutineScope,
-    private val dispatcherProvider: DispatcherProvider,
-    private val apiInterface: ApiInterface
+    private val dispatcherProvider: DispatcherProvider
 ) {
 
     fun uploadUserData(listener: OnSuccessListener) {

@@ -14,6 +14,7 @@ interface UploadRepository {
     suspend fun putUpload(url: String, serializedData: JsonObject): Response<JsonObject>
     suspend fun fetchExistingDoc(url: String): Response<JsonObject>
     suspend fun uploadAttachment(file: java.io.File, destinationFormat: String, id: String, rev: String, name: String): Response<JsonObject>
+    suspend fun uploadResource(headerMap: Map<String, String>, url: String, body: okhttp3.RequestBody): Response<JsonObject>
 }
 
 data class UploadQueryContract<T : Any>(

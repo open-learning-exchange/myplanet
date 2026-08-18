@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
@@ -58,15 +59,13 @@ object ServiceModule {
     fun provideUploadToShelfService(
         @ApplicationContext context: Context,
         @AppPreferences preferences: SharedPreferences,
-        sharedPrefManager: SharedPrefManager,
         userRepository: UserRepository,
         userSyncRepository: UserSyncRepository,
         healthRepository: HealthRepository,
         @ApplicationScope appScope: CoroutineScope,
-        dispatcherProvider: DispatcherProvider,
-        apiInterface: ApiInterface
+        dispatcherProvider: DispatcherProvider
     ): UploadToShelfService {
-        return UploadToShelfService(context, preferences, sharedPrefManager, userRepository, userSyncRepository, healthRepository, appScope, dispatcherProvider, apiInterface)
+        return UploadToShelfService(context, preferences, userRepository, userSyncRepository, healthRepository, appScope, dispatcherProvider)
     }
 
     @Provides
@@ -81,7 +80,6 @@ object ServiceModule {
         userRepository: UserRepository,
         userSyncRepository: UserSyncRepository,
         activitiesRepository: ActivitiesRepository,
-        teamsRepository: Lazy<TeamsRepository>,
         teamsSyncRepository: Lazy<TeamsSyncRepository>,
         notificationsRepository: NotificationsRepository,
         tagsRepository: TagsRepository,
@@ -92,10 +90,9 @@ object ServiceModule {
         healthRepository: HealthRepository,
         progressRepository: ProgressRepository,
         surveysRepository: SurveysRepository,
-        @ApplicationScope scope: CoroutineScope,
         dispatcherProvider: DispatcherProvider,
-        userSessionManager: org.ole.planet.myplanet.services.UserSessionManager
+        userSessionManager: UserSessionManager
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, scope, dispatcherProvider, userSessionManager)
+        return TransactionSyncManager(apiInterface, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, dispatcherProvider, userSessionManager)
     }
 }
