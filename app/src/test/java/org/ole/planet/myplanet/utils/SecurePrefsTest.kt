@@ -43,4 +43,11 @@ class SecurePrefsTest {
         assertEquals("testPass", encryptedPrefs.getString("loginUserPassword", null))
         assertNull(encryptedPrefs.getString("nonSensitive", null))
     }
+
+    @Test
+    fun warmUpSwallowsFailuresWhenSecureStorageIsUnavailable() {
+        // No AndroidKeyStore on the JVM, so the warm-up fails internally. It runs from a
+        // fire-and-forget coroutine in MainApplication, so it must not rethrow.
+        SecurePrefs.warmUp(context)
+    }
 }

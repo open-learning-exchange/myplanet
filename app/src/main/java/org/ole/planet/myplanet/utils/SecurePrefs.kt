@@ -55,8 +55,15 @@ object SecurePrefs {
     }
     
     fun warmUp(context: Context) {
-        if (cachedAead == null) getAead(context)
-        if (cachedSecureStore == null) getSecureStore(context)
+        // Warm-up is best effort: on devices (and JVM test runtimes) where the keystore is
+        // unavailable, failing here must not take down the caller, which is a fire-and-forget
+        // coroutine. Real reads/writes still surface the failure at their own call sites.
+        runCatching {
+            if (cachedAead == null) getAead(context)
+        }.onFailure { Log.w("SecurePrefs", "Failed to warm up keyset", it) }
+        runCatching {
+            if (cachedSecureStore == null) getSecureStore(context)
+        }.onFailure { Log.w("SecurePrefs", "Failed to warm up secure store", it) }
     }
 
     @Suppress("DEPRECATION")

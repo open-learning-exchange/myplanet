@@ -10,6 +10,7 @@ import android.net.TrafficStats
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
+import android.util.Log
 import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.hilt.work.HiltWorkerFactory
@@ -288,9 +289,9 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
     private fun performDeferredInitialization() {
         applicationScope.launch(dispatcherProvider.io) {
-            FileUtils.warmUp(this@MainApplication)
-            SecurePrefs.warmUp(this@MainApplication)
-            MarkdownUtils.warmUp(this@MainApplication)
+            warmUpQuietly("file utils") { FileUtils.warmUp(this@MainApplication) }
+            warmUpQuietly("secure prefs") { SecurePrefs.warmUp(this@MainApplication) }
+            warmUpQuietly("markdown") { MarkdownUtils.warmUp(this@MainApplication) }
             runCatching { Class.forName("pl.droidsonroids.gif.GifInfoHandle") }
         }
         applicationScope.launch {
@@ -302,6 +303,13 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             scheduleWorkersOnStart()
             observeNetworkForDownloads()
         }
+    }
+
+    private fun warmUpQuietly(what: String, warmUp: () -> Unit) {
+        // The warm-ups only prime caches, so a failure must never escape this fire-and-forget
+        // coroutine: applicationScope has no exception handler, and an uncaught throwable here
+        // would reach the default handler and take the process down on startup.
+        runCatching(warmUp).onFailure { Log.w("MainApplication", "Deferred $what warm-up failed", it) }
     }
 
     private suspend fun sweepPendingLogs() {
