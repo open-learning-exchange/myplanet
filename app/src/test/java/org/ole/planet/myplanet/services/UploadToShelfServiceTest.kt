@@ -20,7 +20,6 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.HealthRepository
@@ -40,7 +39,6 @@ class UploadToShelfServiceTest {
     private lateinit var healthRepository: HealthRepository
     private lateinit var appScope: CoroutineScope
     private lateinit var dispatcherProvider: DispatcherProvider
-    private lateinit var apiInterface: ApiInterface
 
     private lateinit var service: UploadToShelfService
 
@@ -65,8 +63,6 @@ class UploadToShelfServiceTest {
             override val unconfined = testDispatcher
         }
 
-        apiInterface = mockk(relaxed = true)
-
         mockkObject(SecurePrefs)
         every { SecurePrefs.getPassword(context, sharedPreferences) } returns "testPassword"
 
@@ -78,8 +74,7 @@ class UploadToShelfServiceTest {
             userSyncRepository,
             healthRepository,
             appScope,
-            dispatcherProvider,
-            apiInterface
+            dispatcherProvider
         )
     }
 

@@ -34,7 +34,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.base.DefaultBaseAdapterFactory
@@ -154,6 +153,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             openedResourceIds = emptySet(),
             currentUserName = user?.name,
             viewMode = prefManager.getLibraryViewMode(),
+            dispatcherProvider = dispatcherProvider,
             onEditClick = { model -> openEditResource(model) }
         )
 
@@ -656,7 +656,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     override suspend fun getData(): Map<String, Set<String>> {
         // Keep facet options stable so applying one filter does not hide other available options.
-        return resourcesRepository.getFilterFacets(allResourceModels.map { it.library })
+        return viewModel.getFilterFacets(allResourceModels.map { it.library })
     }
 
     override fun getSelectedFilter(): Map<String, Set<String>> {
@@ -704,12 +704,12 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val planetCode = model?.planetCode
         val parentCode = model?.parentCode
 
-        lifecycleScope.launch(dispatcherProvider.io) {
+        viewLifecycleOwner.lifecycleScope.launch {
             if (!filterApplied(searchText) || userName == null || planetCode == null || parentCode == null) {
                 return@launch
             }
 
-            resourcesRepository.saveSearchActivity(
+            viewModel.saveSearchActivity(
                 userName,
                 searchText,
                 planetCode,
@@ -805,16 +805,20 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val itemsToDelete = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToDelete.isNotEmpty()) {
-            lifecycleScope.launch(dispatcherProvider.io) {
-                resourcesRepository.removeResourcesFromShelf(itemsToDelete, userId)
-                withContext(dispatcherProvider.main) {
-                    _binding ?: return@withContext
-                    Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
-                    refreshResourcesData()
-                    selectedItems?.clear()
-                    changeButtonStatus()
-                    hideButton()
-                }
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewModel.removeResourcesFromShelf(itemsToDelete, userId)
+                    .onSuccess {
+                        _binding ?: return@onSuccess
+                        Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+                        refreshResourcesData()
+                        selectedItems?.clear()
+                        changeButtonStatus()
+                        hideButton()
+                    }
+                    .onFailure {
+                        _binding ?: return@onFailure
+                        Utilities.toast(activity, getString(R.string.error, it.message))
+                    }
             }
         }
     }
