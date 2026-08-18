@@ -370,7 +370,6 @@ class ChatViewModelTest {
         job.cancel()
     }
 
-
     @Test
     fun `viewModel fetchAiProviders proxies to chatRepository`() = runTest {
         val serverUrl = "https://example.com"
