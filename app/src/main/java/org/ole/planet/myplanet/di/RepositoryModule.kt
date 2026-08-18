@@ -9,10 +9,10 @@ import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ActivitiesRepositoryImpl
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.ChatRepositoryImpl
-import org.ole.planet.myplanet.repository.ChatSyncHandler
+import org.ole.planet.myplanet.repository.ChatSyncWriter
 import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.CommunityRepositoryImpl
-import org.ole.planet.myplanet.repository.CommunitySyncHandler
+import org.ole.planet.myplanet.repository.CommunitySyncWriter
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepositoryImpl
 import org.ole.planet.myplanet.repository.CoursesRepository
@@ -21,10 +21,10 @@ import org.ole.planet.myplanet.repository.DownloadRepository
 import org.ole.planet.myplanet.repository.DownloadRepositoryImpl
 import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.EventsRepositoryImpl
-import org.ole.planet.myplanet.repository.EventsSyncHandler
+import org.ole.planet.myplanet.repository.EventsSyncWriter
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.repository.FeedbackRepositoryImpl
-import org.ole.planet.myplanet.repository.FeedbackSyncHandler
+import org.ole.planet.myplanet.repository.FeedbackSyncWriter
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.HealthRepositoryImpl
 import org.ole.planet.myplanet.repository.LifeRepository
@@ -82,7 +82,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindChatSyncHandler(impl: ChatRepositoryImpl): ChatSyncHandler
+    abstract fun bindChatSyncWriter(impl: ChatRepositoryImpl): ChatSyncWriter
 
     @Binds
     @Singleton
@@ -90,7 +90,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindCommunitySyncHandler(impl: CommunityRepositoryImpl): CommunitySyncHandler
+    abstract fun bindCommunitySyncWriter(impl: CommunityRepositoryImpl): CommunitySyncWriter
 
     @Binds
     @Singleton
@@ -106,7 +106,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindEventsSyncHandler(impl: EventsRepositoryImpl): EventsSyncHandler
+    abstract fun bindEventsSyncWriter(impl: EventsRepositoryImpl): EventsSyncWriter
 
     @Binds
     @Singleton
@@ -114,7 +114,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindFeedbackSyncHandler(impl: FeedbackRepositoryImpl): FeedbackSyncHandler
+    abstract fun bindFeedbackSyncWriter(impl: FeedbackRepositoryImpl): FeedbackSyncWriter
 
     @Binds
     @Singleton

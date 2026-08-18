@@ -29,10 +29,10 @@ import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.ChatSyncHandler
-import org.ole.planet.myplanet.repository.CommunitySyncHandler
+import org.ole.planet.myplanet.repository.ChatSyncWriter
+import org.ole.planet.myplanet.repository.CommunitySyncWriter
 import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.FeedbackSyncHandler
+import org.ole.planet.myplanet.repository.FeedbackSyncWriter
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
@@ -62,8 +62,8 @@ class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
     @param:ApplicationContext private val context: Context,
     private val voicesRepository: VoicesRepository,
-    private val chatRepository: ChatSyncHandler,
-    private val feedbackRepository: FeedbackSyncHandler,
+    private val chatRepository: ChatSyncWriter,
+    private val feedbackRepository: FeedbackSyncWriter,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
     private val userSyncRepository: UserSyncRepository,
@@ -75,7 +75,7 @@ class TransactionSyncManager @Inject constructor(
     private val ratingsRepository: RatingsRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val coursesRepository: CoursesRepository,
-    private val communityRepository: CommunitySyncHandler,
+    private val communityRepository: CommunitySyncWriter,
     private val healthRepository: HealthRepository,
     private val progressRepository: ProgressRepository,
     private val surveysRepository: SurveysRepository,

@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
 class FeedbackRepositoryImpl @Inject constructor(
     private val feedbackDao: FeedbackDao,
     private val gson: Gson
-) : FeedbackRepository, FeedbackSyncHandler {
+) : FeedbackRepository, FeedbackSyncWriter {
 
     override fun createFeedback(
         user: String?,

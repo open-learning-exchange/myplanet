@@ -23,10 +23,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.ChatSyncHandler
-import org.ole.planet.myplanet.repository.CommunitySyncHandler
+import org.ole.planet.myplanet.repository.ChatSyncWriter
+import org.ole.planet.myplanet.repository.CommunitySyncWriter
 import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.FeedbackSyncHandler
+import org.ole.planet.myplanet.repository.FeedbackSyncWriter
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
@@ -109,8 +109,8 @@ class TransactionSyncManagerCheckpointTest {
             apiInterface,
             mockk(relaxed = true),
             mockk<VoicesRepository>(relaxed = true),
-            mockk<ChatSyncHandler>(relaxed = true),
-            mockk<FeedbackSyncHandler>(relaxed = true),
+            mockk<ChatSyncWriter>(relaxed = true),
+            mockk<FeedbackSyncWriter>(relaxed = true),
             sharedPrefManager,
             mockk<UserRepository>(relaxed = true),
             mockk<UserSyncRepository>(relaxed = true),
@@ -122,7 +122,7 @@ class TransactionSyncManagerCheckpointTest {
             ratingsRepository,
             mockk<SubmissionsRepository>(relaxed = true),
             mockk<CoursesRepository>(relaxed = true),
-            mockk<CommunitySyncHandler>(relaxed = true),
+            mockk<CommunitySyncWriter>(relaxed = true),
             mockk<HealthRepository>(relaxed = true),
             mockk<ProgressRepository>(relaxed = true),
             mockk<SurveysRepository>(relaxed = true),
