@@ -2,9 +2,9 @@ package org.ole.planet.myplanet
 
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
+import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
-import androidx.work.impl.WorkManagerImpl
 import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.WorkManagerTestInitHelper
 import io.mockk.every
@@ -20,8 +20,10 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
+private const val AUTO_SYNC_WORK = "autoSyncWork"
+
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34]) // WorkManager testing often requires newer SDKs for accurate background simulation in Robolectric
+@Config(sdk = [33])
 class MainApplicationAutoSyncTest {
 
     private lateinit var mainApplication: MainApplication
@@ -52,15 +54,26 @@ class MainApplicationAutoSyncTest {
         mainApplication.applyAutoSyncSettings()
 
         val workManager = WorkManager.getInstance(mainApplication)
-        val workInfos = workManager.getWorkInfosForUniqueWork("autoSyncWork").get()
+        val workInfos = workManager.getWorkInfosForUniqueWork(AUTO_SYNC_WORK).get()
 
         assertTrue(workInfos.isNotEmpty())
         assertEquals(WorkInfo.State.ENQUEUED, workInfos[0].state)
+        assertEquals(15 * 60 * 1000L, workInfos[0].periodicityInfo?.repeatIntervalMillis)
+    }
 
-        // Also assert that the interval is properly used by inspecting the WorkSpec if needed.
-        val workManagerImpl = workManager as WorkManagerImpl
-        val workSpec = workManagerImpl.workDatabase.workSpecDao().getWorkSpec(workInfos[0].id.toString())
-        assertEquals((15 * 60 * 1000).toLong(), workSpec?.intervalDuration)
+    @Test
+    fun `applyAutoSyncSettings clamps interval to MIN_PERIODIC_INTERVAL_MILLIS when interval is too short`() {
+        every { mockSharedPrefManager.getAutoSync() } returns true
+        every { mockSharedPrefManager.getAutoSyncInterval() } returns 5 * 60 // 5 mins
+
+        mainApplication.applyAutoSyncSettings()
+
+        val workManager = WorkManager.getInstance(mainApplication)
+        val workInfos = workManager.getWorkInfosForUniqueWork(AUTO_SYNC_WORK).get()
+
+        assertTrue(workInfos.isNotEmpty())
+        assertEquals(WorkInfo.State.ENQUEUED, workInfos[0].state)
+        assertEquals(PeriodicWorkRequest.MIN_PERIODIC_INTERVAL_MILLIS, workInfos[0].periodicityInfo?.repeatIntervalMillis)
     }
 
     @Test
@@ -71,7 +84,7 @@ class MainApplicationAutoSyncTest {
         mainApplication.applyAutoSyncSettings()
 
         val workManager = WorkManager.getInstance(mainApplication)
-        var workInfos = workManager.getWorkInfosForUniqueWork("autoSyncWork").get()
+        var workInfos = workManager.getWorkInfosForUniqueWork(AUTO_SYNC_WORK).get()
         assertTrue(workInfos.isNotEmpty())
         assertEquals(WorkInfo.State.ENQUEUED, workInfos[0].state)
 
@@ -80,7 +93,7 @@ class MainApplicationAutoSyncTest {
         mainApplication.applyAutoSyncSettings()
 
         // Verify it's cancelled
-        workInfos = workManager.getWorkInfosForUniqueWork("autoSyncWork").get()
+        workInfos = workManager.getWorkInfosForUniqueWork(AUTO_SYNC_WORK).get()
         assertTrue(workInfos.isNotEmpty())
         assertEquals(WorkInfo.State.CANCELLED, workInfos[0].state)
     }
