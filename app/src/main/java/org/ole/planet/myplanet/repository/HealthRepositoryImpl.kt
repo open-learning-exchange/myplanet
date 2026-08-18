@@ -166,9 +166,10 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     private fun decodeHealth(healthPojo: HealthExamination?, userModel: UserEntity?): MyHealth? {
-        if (healthPojo == null || TextUtils.isEmpty(healthPojo.data)) return null
+        val data = healthPojo?.data
+        if (data.isNullOrEmpty()) return null
         return try {
-            val decrypted = AndroidDecrypter.decrypt(healthPojo.data, userModel?.key, userModel?.iv)
+            val decrypted = AndroidDecrypter.decrypt(data, userModel?.key, userModel?.iv)
             JsonUtils.gson.fromJson(decrypted, MyHealth::class.java)
         } catch (e: Exception) {
             e.printStackTrace()
