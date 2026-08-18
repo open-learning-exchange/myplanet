@@ -68,29 +68,27 @@ class TeamViewModel @Inject constructor(
         currentUserId = userId
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
+            val targetType = type ?: "team"
             when {
                 fromDashboard -> {
                     if (userId != null) {
-                        teamsRepository.getMyTeamDetailsFlow(userId)
+                        teamsRepository.getMyTeamDetailsFlow(userId, targetType)
                             .flowOn(dispatcherProvider.io)
                             .collectLatest { list ->
-                                if (list.isEmpty()) {
-                                    val allTeams = withContext(dispatcherProvider.io) {
-                                        teamsRepository.getTeamDetails(userId)
-                                    }
-                                    applyFilters(allTeams, currentSearchQuery)
-                                } else {
-                                    applyFilters(list, currentSearchQuery)
-                                }
+                                applyFilters(list, currentSearchQuery)
                             }
                     } else {
                         val teamList = withContext(dispatcherProvider.io) {
-                            teamsRepository.getTeamDetails(null)
+                            if (targetType == "enterprise") {
+                                teamsRepository.getShareableEnterpriseDetails(null)
+                            } else {
+                                teamsRepository.getTeamDetails(null)
+                            }
                         }
                         applyFilters(teamList, currentSearchQuery)
                     }
                 }
-                type == "enterprise" -> {
+                targetType == "enterprise" -> {
                     val teamList = withContext(dispatcherProvider.io) {
                         teamsRepository.getShareableEnterpriseDetails(userId)
                     }

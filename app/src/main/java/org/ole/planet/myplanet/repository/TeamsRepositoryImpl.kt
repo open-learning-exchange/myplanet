@@ -202,7 +202,8 @@ class TeamsRepositoryImpl @Inject constructor(
                 entities.filter {
                     (it._id ?: it.id) in teamIds &&
                         it.status != "archived" &&
-                        it.isRootTeam()
+                        it.isRootTeam() &&
+                        (it.type == "team" || it.type.isNullOrBlank())
                 }.map { it }
             }
         }.flowOn(dispatcherProvider.default)
@@ -278,10 +279,14 @@ class TeamsRepositoryImpl @Inject constructor(
         )
     }
 
-    override fun getMyTeamDetailsFlow(userId: String): Flow<List<TeamDetails>> {
+    override fun getMyTeamDetailsFlow(userId: String, type: String?): Flow<List<TeamDetails>> {
+        val targetType = type ?: "team"
         return teamDao.observeAll().map { entities ->
             val teamIds = entities.filter {
-                it.userId == userId && it.docType == "membership"
+                it.userId == userId &&
+                    it.docType == "membership" &&
+                    !it.isDeletePending &&
+                    !it.teamId.isNullOrBlank()
             }.mapNotNull { it.teamId }.toSet()
 
             val teams = if (teamIds.isEmpty()) {
@@ -290,7 +295,8 @@ class TeamsRepositoryImpl @Inject constructor(
                 entities.filter {
                     it.isRootTeam() &&
                         (it._id ?: it.id) in teamIds &&
-                        it.status != "archived"
+                        it.status != "archived" &&
+                        (if (targetType == "enterprise") it.type == "enterprise" else (it.type == "team" || it.type.isNullOrBlank()))
                 }.map { it }
             }
             mapToTeamDetails(teams, userId)

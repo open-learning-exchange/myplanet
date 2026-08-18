@@ -109,7 +109,7 @@ class TeamViewModelTest {
         val myTeams = listOf(
             TeamDetails(_id = "team1", name = "My Team", teamType = null, createdDate = null, type = null, status = "active", visitCount = 0L, teamStatus = TeamStatus(isMember = true, isLeader = false, hasPendingRequest = false), description = null, services = null, rules = null, teamId = null)
         )
-        coEvery { teamsRepository.getMyTeamDetailsFlow("user1") } returns flowOf(myTeams)
+        coEvery { teamsRepository.getMyTeamDetailsFlow("user1", "team") } returns flowOf(myTeams)
 
         viewModel.loadTeams(fromDashboard = true, type = "team", userId = "user1")
         advanceUntilIdle()
@@ -117,24 +117,6 @@ class TeamViewModelTest {
         val data = viewModel.teamData.value
         assertEquals(1, data.size)
         assertEquals("team1", data[0]._id)
-    }
-
-    @Test
-    fun `loadTeams fromDashboard when user has not joined any team falls back to existing teams`() = runTest(testDispatcher) {
-        val allTeams = listOf(
-            TeamDetails(_id = "teamA", name = "Existing Team A", teamType = null, createdDate = null, type = null, status = "active", visitCount = 0L, teamStatus = null, description = null, services = null, rules = null, teamId = null),
-            TeamDetails(_id = "teamB", name = "Existing Team B", teamType = null, createdDate = null, type = null, status = "active", visitCount = 0L, teamStatus = null, description = null, services = null, rules = null, teamId = null)
-        )
-        coEvery { teamsRepository.getMyTeamDetailsFlow("user1") } returns flowOf(emptyList())
-        coEvery { teamsRepository.getTeamDetails("user1") } returns allTeams
-
-        viewModel.loadTeams(fromDashboard = true, type = "team", userId = "user1")
-        advanceUntilIdle()
-
-        val data = viewModel.teamData.value
-        assertEquals(2, data.size)
-        assertEquals("teamA", data[0]._id)
-        assertEquals("teamB", data[1]._id)
     }
 
     @Test

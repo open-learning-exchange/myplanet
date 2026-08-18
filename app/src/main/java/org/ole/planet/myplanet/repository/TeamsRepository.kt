@@ -74,7 +74,7 @@ interface TeamsRepository {
     suspend fun getMyTeamsFlow(userId: String): Flow<List<MyTeam>>
     suspend fun getTeamSummaries(userId: String?): List<TeamSummary>
     suspend fun getShareableEnterpriseSummaries(userId: String?): List<TeamSummary>
-    fun getMyTeamDetailsFlow(userId: String): Flow<List<TeamDetails>>
+    fun getMyTeamDetailsFlow(userId: String, type: String? = null): Flow<List<TeamDetails>>
     suspend fun getShareableEnterpriseDetails(userId: String?): List<TeamDetails>
     suspend fun getTeamDetails(userId: String?): List<TeamDetails>
 
