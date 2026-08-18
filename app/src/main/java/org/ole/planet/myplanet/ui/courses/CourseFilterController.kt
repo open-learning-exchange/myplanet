@@ -44,6 +44,9 @@ class CourseFilterController(
     private lateinit var spnGrade: Spinner
     private lateinit var spnSubject: Spinner
     private lateinit var tvSelected: TextView
+    private var layoutSearch: View? = null
+    private var scrollChipFilter: View? = null
+    private var layoutViewToggle: View? = null
     private var progressFilter: String = ""
     val searchTags: MutableList<TagEntity> = ArrayList()
     private var searchTextWatcher: TextWatcher? = null
@@ -57,6 +60,9 @@ class CourseFilterController(
         spnGrade = rootView.findViewById(R.id.spn_grade)
         spnSubject = rootView.findViewById(R.id.spn_subject)
         tvSelected = rootView.findViewById(R.id.tv_selected)
+        layoutSearch = rootView.findViewById(R.id.layout_search) ?: (etSearch.parent as? View)
+        scrollChipFilter = rootView.findViewById(R.id.scroll_chip_filter) ?: (rootView.findViewById<View>(R.id.chip_filter_row)?.parent as? View)
+        layoutViewToggle = rootView.findViewById(R.id.layout_view_toggle) ?: (rootView.findViewById<View>(R.id.toggle_grid)?.parent as? View)
         setupSpinners()
         setupSearchWatcher()
         setupClearTagsButton()
@@ -166,8 +172,20 @@ class CourseFilterController(
 
     fun setListVisible(visible: Boolean) {
         val visibility = if (visible) View.VISIBLE else View.GONE
-        etSearch.visibility = visibility
-        rootView.findViewById<View>(R.id.filter).visibility = visibility
+        layoutSearch?.visibility = visibility
+        if (layoutSearch == null) {
+            etSearch.visibility = visibility
+        }
+        scrollChipFilter?.visibility = visibility
+        if (scrollChipFilter == null) {
+            rootView.findViewById<View>(R.id.chip_filter_row)?.visibility = visibility
+        }
+        layoutViewToggle?.visibility = visibility
+        if (layoutViewToggle == null) {
+            rootView.findViewById<View>(R.id.toggle_grid)?.visibility = visibility
+            rootView.findViewById<View>(R.id.toggle_list)?.visibility = visibility
+        }
+        rootView.findViewById<View>(R.id.filter)?.visibility = visibility
         if (!visible) tvSelected.visibility = View.GONE
     }
 

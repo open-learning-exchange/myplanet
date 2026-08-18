@@ -132,13 +132,10 @@ class UploadManagerTest {
     private val uploadCoordinator: UploadCoordinator = mockk(relaxed = true)
     private val uploadRepository: UploadRepository = mockk(relaxed = true)
     private val retryQueue: RetryQueue = mockk(relaxed = true)
-    private val personalsRepository: PersonalsRepository = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
-    private val chatRepository: ChatRepository = mockk(relaxed = true)
     private val voicesRepository: VoicesRepository = mockk(relaxed = true)
     private val uploadConfigs: UploadConfigs = mockk(relaxed = true)
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
-    private val teamsRepository: Lazy<TeamsRepository> = mockk(relaxed = true)
     private val teamsSyncRepository: Lazy<TeamsSyncRepository> = mockk(relaxed = true)
     private val apiInterface: ApiInterface = mockk(relaxed = true)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
@@ -160,26 +157,21 @@ class UploadManagerTest {
         every { Log.e(any(), any()) } returns 0
         every { Log.e(any(), any(), any()) } returns 0
 
-        photoUploader = PhotoUploader(submissionsRepository, apiInterface, TestDispatcherProvider(testDispatcher), testScope, uploadRepository)
+        photoUploader = PhotoUploader(submissionsRepository, TestDispatcherProvider(testDispatcher), testScope, uploadRepository)
 
         uploadManager = spyk(
             UploadManager(
                 context,
-                submissionsRepository,
                 sharedPrefManager,
                 gson,
                 uploadCoordinator,
                 uploadRepository,
                 retryQueue,
-                personalsRepository,
                 userRepository,
-                chatRepository,
                 voicesRepository,
                 uploadConfigs,
                 resourcesRepository,
-                teamsRepository,
                 teamsSyncRepository,
-                apiInterface,
                 activitiesRepository,
                 TestDispatcherProvider(testDispatcher),
                 testScope,
@@ -331,7 +323,7 @@ class UploadManagerTest {
         }
 
         coEvery { submissionsRepository.getUnuploadedPhotos() } returns mockPhotosList
-        coEvery { apiInterface.postDoc(any(), any(), any(), mockSerialized) } returns retrofit2.Response.success(mockResponseObject)
+        coEvery { uploadRepository.postUpload(any(), mockSerialized) } returns retrofit2.Response.success(mockResponseObject)
         coEvery { submissionsRepository.getPhotosByIds(arrayOf(photoId)) } returns emptyList()
 
         val listener: OnSuccessListener = mockk(relaxed = true)
