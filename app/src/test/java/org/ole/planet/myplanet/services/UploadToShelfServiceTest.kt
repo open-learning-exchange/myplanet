@@ -2,7 +2,13 @@ package org.ole.planet.myplanet.services
 
 import android.content.Context
 import android.content.SharedPreferences
-import io.mockk.*
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkAll
+import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestCoroutineScheduler
@@ -14,7 +20,6 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.HealthRepository
@@ -28,13 +33,11 @@ class UploadToShelfServiceTest {
 
     private lateinit var context: Context
     private lateinit var sharedPreferences: SharedPreferences
-    private lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var userRepository: UserRepository
     private lateinit var userSyncRepository: UserSyncRepository
     private lateinit var healthRepository: HealthRepository
     private lateinit var appScope: CoroutineScope
     private lateinit var dispatcherProvider: DispatcherProvider
-    private lateinit var apiInterface: ApiInterface
 
     private lateinit var service: UploadToShelfService
 
@@ -45,7 +48,6 @@ class UploadToShelfServiceTest {
     fun setUp() {
         context = mockk(relaxed = true)
         sharedPreferences = mockk(relaxed = true)
-        sharedPrefManager = mockk(relaxed = true)
         userRepository = mockk(relaxed = true)
         userSyncRepository = mockk(relaxed = true)
         healthRepository = mockk(relaxed = true)
@@ -59,21 +61,17 @@ class UploadToShelfServiceTest {
             override val unconfined = testDispatcher
         }
 
-        apiInterface = mockk(relaxed = true)
-
         mockkObject(SecurePrefs)
         every { SecurePrefs.getPassword(context, sharedPreferences) } returns "testPassword"
 
         service = UploadToShelfService(
             context,
             sharedPreferences,
-            sharedPrefManager,
             userRepository,
             userSyncRepository,
             healthRepository,
             appScope,
-            dispatcherProvider,
-            apiInterface
+            dispatcherProvider
         )
     }
 

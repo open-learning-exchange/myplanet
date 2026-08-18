@@ -104,6 +104,7 @@ class TransactionSyncManagerCheckpointTest {
         every { editor.putInt(any(), capture(putValues)) } returns editor
         every { editor.remove(any()) } returns editor
         every { editor.commit() } returns true
+        every { editor.apply() } returns Unit
 
         transactionSyncManager = TransactionSyncManager(
             apiInterface,
@@ -115,7 +116,6 @@ class TransactionSyncManagerCheckpointTest {
             mockk<UserRepository>(relaxed = true),
             mockk<UserSyncRepository>(relaxed = true),
             mockk<ActivitiesRepository>(relaxed = true),
-            mockk<Lazy<TeamsRepository>>(relaxed = true),
             mockk<Lazy<TeamsSyncRepository>>(relaxed = true),
             mockk<NotificationsRepository>(relaxed = true),
             mockk<TagsRepository>(relaxed = true),
@@ -126,9 +126,6 @@ class TransactionSyncManagerCheckpointTest {
             mockk<HealthRepository>(relaxed = true),
             mockk<ProgressRepository>(relaxed = true),
             mockk<SurveysRepository>(relaxed = true),
-            // syncDb confines its work to dispatcherProvider.io, not this scope; a throwaway
-            // scope is enough and keeps each test isolated (no shared leaked-exception state).
-            CoroutineScope(Dispatchers.Unconfined),
             dispatcherProvider,
             mockk<org.ole.planet.myplanet.services.UserSessionManager>(relaxed = true)
         )
