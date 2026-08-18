@@ -444,4 +444,13 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun ensureServerUrlUpdated() {
+        val serverUrl = sharedPrefManager.getServerUrl()
+        val mapping = serverUrlMapper.processUrl(serverUrl)
+        if (mapping.alternativeUrl != null) {
+            serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
+                serverUrlMapper.isUrlDirectlyReachable(url)
+            }
+        }
+    }
 }

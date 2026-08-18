@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6444
-        versionName = "0.64.44"
+        versionCode = 6505
+        versionName = "0.65.5"
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
@@ -23,6 +23,22 @@ android {
                 test.maxParallelForks = requested ? requested.toInteger()
                     : Math.min(Runtime.runtime.availableProcessors(), 4)
                 test.maxHeapSize = "1536m"
+                def shardTotal = (project.findProperty('testShardTotal') ?: '1').toInteger()
+                def shardIndex = (project.findProperty('testShardIndex') ?: '0').toInteger()
+                if (shardTotal < 1 || shardIndex < 0 || shardIndex >= shardTotal) {
+                    throw new GradleException("Invalid test shard config: testShardIndex=$shardIndex must be in [0, testShardTotal=$shardTotal); a bad index would silently deselect every test")
+                }
+                if (shardTotal > 1) {
+                    test.include { element ->
+                        if (element.directory) return true
+                        def path = element.relativePath.pathString
+                        if (!path.endsWith('.class')) return true
+                        def topLevel = path.substring(0, path.length() - 6)
+                        def dollar = topLevel.indexOf('$')
+                        if (dollar >= 0) topLevel = topLevel.substring(0, dollar)
+                        return (topLevel.hashCode() & Integer.MAX_VALUE) % shardTotal == shardIndex
+                    }
+                }
             }
         }
     }
@@ -146,6 +162,14 @@ android {
         it.buildConfigField 'String', 'PLANET_EMBAKASI_CLONE_PIN', "\"${planetEmbakasiClonePin}\""
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_URL', "\"${planetCambridgeUrl}\""
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
+    }
+}
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.buildConfigFields.put('VERSION_CODE',
+            new com.android.build.api.variant.BuildConfigField('int', '1', 'pinned; real version lives in the manifest'))
+        variant.buildConfigFields.put('VERSION_NAME',
+            new com.android.build.api.variant.BuildConfigField('String', '"pinned"', 'pinned; real version lives in the manifest'))
     }
 }
 dependencies {

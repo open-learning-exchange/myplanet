@@ -245,9 +245,24 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
-    private fun resolveType(type: String, message: String): String {
+    private fun resolveType(type: String, message: String, subType: String? = null): String {
         if (type.lowercase() in KNOWN_TYPES) return type.lowercase()
         val lower = message.lowercase()
+        // Raw server type "team" covers every team-related event (message/request/added/rejected/removed) in
+        // whatever language the server rendered the message in, so classify structurally first and only fall
+        // back to English message-sniffing to pick a more specific sub-bucket when it's recognizable.
+        if (type == "team") {
+            if (subType != null) return subType
+            return when {
+                lower.contains("requested to join") || lower.contains("wants to join") ||
+                    lower.contains("solicitado unirse") -> "join_request"
+                lower.contains("posted a message on") || lower.contains("posted a new voice") ||
+                    lower.contains("new voice in") || lower.contains("posted in") -> "chat"
+                else -> "team_join"
+            }
+        }
+        if (type == "newTask") return "task"
+        if (type == "newResource") return "resource"
         return when {
             lower.contains("requested to join") || lower.contains("wants to join") -> "join_request"
             lower.contains("added you to") || lower.contains("you've been added") || lower.contains("you have been added") -> "team_join"
@@ -311,7 +326,7 @@ class NotificationsViewModel @Inject constructor(
         taskTeamNames: Map<String, String> = emptyMap(),
         joinRequestDetails: Map<String, Pair<String, String>> = emptyMap()
     ): Notification {
-        val resolvedType = resolveType(notification.type, notification.message)
+        val resolvedType = resolveType(notification.type, notification.message, notification.subType)
         val formattedText = when (resolvedType) {
             "task" -> {
                 val parsedDate = parseTaskDate(notification.message)

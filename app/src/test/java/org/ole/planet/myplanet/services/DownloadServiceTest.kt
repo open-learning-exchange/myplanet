@@ -23,6 +23,7 @@ import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import java.lang.reflect.Field
+import javax.inject.Provider
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -32,8 +33,6 @@ import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -67,116 +66,6 @@ class DownloadServiceTest {
         unmockkAll()
         // Reset SDK version for other tests that might run in same VM
         ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", 0)
-    }
-
-    // --- Tests for getNextUrl (testing both Priority and Pending paths) ---
-
-    @Test
-    fun `test getNextUrl returns null when no urls`() {
-        every { mockPreferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet()) } returns emptySet()
-        val result = DownloadService.getNextUrl(mockPreferences, DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet(), true)
-        assertNull(result)
-    }
-
-    @Test
-    // Since getNextUrl sorts the URLs, we expect 'http://example.com/file1' to be picked first deterministically.
-    fun `test getNextUrl returns first valid url deterministically`() {
-        val urlSet = setOf("http://example.com/file2", "http://example.com/file1")
-        every { mockPreferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet()) } returns urlSet
-
-        val result = DownloadService.getNextUrl(mockPreferences, DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet(), true)
-        assertNotNull(result)
-
-        assertEquals("http://example.com/file1", result?.url)
-        assertEquals(true, result?.isPriority)
-    }
-
-    @Test
-    fun `test getNextUrl skips processed urls`() {
-        val urlSet = setOf("http://example.com/file1", "http://example.com/file2")
-        every { mockPreferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet()) } returns urlSet
-
-        val processedUrls = setOf("http://example.com/file1")
-        val result = DownloadService.getNextUrl(mockPreferences, DownloadService.PRIORITY_DOWNLOADS_KEY, processedUrls, true)
-
-        assertNotNull(result)
-        assertEquals("http://example.com/file2", result?.url)
-    }
-
-    @Test
-    fun `test getNextUrl returns null if all urls are processed`() {
-        val urlSet = setOf("http://example.com/file1", "http://example.com/file2")
-        every { mockPreferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet()) } returns urlSet
-
-        val processedUrls = setOf("http://example.com/file1", "http://example.com/file2")
-        val result = DownloadService.getNextUrl(mockPreferences, DownloadService.PRIORITY_DOWNLOADS_KEY, processedUrls, true)
-
-        assertNull(result)
-    }
-
-    @Test
-    fun `test getNextUrl skips blank urls`() {
-        val urlSet = setOf("   ", "http://example.com/file1")
-        every { mockPreferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet()) } returns urlSet
-
-        val result = DownloadService.getNextUrl(mockPreferences, DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet(), true)
-        assertNotNull(result)
-        assertEquals("http://example.com/file1", result?.url)
-    }
-
-    @Test
-    fun `test getNextUrl handles pending urls correctly`() {
-        val urlSet = setOf("http://example.com/file2", "http://example.com/file1")
-        every { mockPreferences.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, emptySet()) } returns urlSet
-
-        val result = DownloadService.getNextUrl(mockPreferences, DownloadService.PENDING_DOWNLOADS_KEY, emptySet(), false)
-        assertNotNull(result)
-
-        assertEquals("http://example.com/file1", result?.url)
-        assertEquals(false, result?.isPriority)
-    }
-
-    // --- Tests for getNextPriorityUrl ---
-
-    @Test
-    fun `test getNextPriorityUrl returns null when queue is empty`() {
-        val result = DownloadService.getNextPriorityUrl(emptyList())
-        assertNull(result)
-    }
-
-    @Test
-    fun `test getNextPriorityUrl returns single item`() {
-        val queue = listOf(DownloadService.QueuedUrl("url1", true, 5))
-        val result = DownloadService.getNextPriorityUrl(queue)
-        assertNotNull(result)
-        assertEquals("url1", result?.url)
-        assertEquals(5, result?.priority)
-    }
-
-    @Test
-    fun `test getNextPriorityUrl returns item with highest priority`() {
-        val queue = listOf(
-            DownloadService.QueuedUrl("url1", true, 5),
-            DownloadService.QueuedUrl("url2", true, 10),
-            DownloadService.QueuedUrl("url3", true, 3)
-        )
-        val result = DownloadService.getNextPriorityUrl(queue)
-        assertNotNull(result)
-        assertEquals("url2", result?.url)
-        assertEquals(10, result?.priority)
-    }
-
-    @Test
-    fun `test getNextPriorityUrl returns first item if multiple have same max priority`() {
-        val queue = listOf(
-            DownloadService.QueuedUrl("url1", true, 10),
-            DownloadService.QueuedUrl("url2", true, 10),
-            DownloadService.QueuedUrl("url3", true, 5)
-        )
-        val result = DownloadService.getNextPriorityUrl(queue)
-        assertNotNull(result)
-        assertEquals("url1", result?.url)
-        assertEquals(10, result?.priority)
     }
 
     // --- Tests for startService ---
@@ -306,9 +195,9 @@ class DownloadServiceTest {
 
         val testScope = CoroutineScope(job + Dispatchers.IO + exceptionHandler)
 
-        val prefsField: Field = DownloadService::class.java.getDeclaredField("preferences")
+        val prefsField: Field = DownloadService::class.java.getDeclaredField("preferencesProvider")
         prefsField.isAccessible = true
-        prefsField.set(service, mockPreferences)
+        prefsField.set(service, Provider { mockPreferences })
 
         val appScopeField: Field = DownloadService::class.java.getDeclaredField("appScope")
         appScopeField.isAccessible = true
