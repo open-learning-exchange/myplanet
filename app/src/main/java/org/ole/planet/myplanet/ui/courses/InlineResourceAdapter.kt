@@ -24,11 +24,12 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.PdfThumbnailLoader
 import org.ole.planet.myplanet.utils.ResourceOpener
+import org.ole.planet.myplanet.utils.ResourcesPreviewLoader
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 class InlineResourceAdapter(
-    private val previewHelper: ResourcePreviewHelper,
+    private val previewLoader: ResourcesPreviewLoader,
     private val dispatcherProvider: DispatcherProvider,
     private val onResourceClick: (MyLibrary) -> Unit
 ) : ListAdapter<MyLibrary, InlineResourceAdapter.ViewHolder>(
@@ -244,7 +245,7 @@ class InlineResourceAdapter(
         val durationText = if (cachedDuration != null) {
             cachedDuration
         } else {
-            previewHelper.getAudioPreview(file).also { textCache[cacheKey] = it }
+            previewLoader.getAudioPreview(file).also { textCache[cacheKey] = it }
         }
         holder.binding.tvAudioDuration.text = durationText
     }
@@ -256,7 +257,7 @@ class InlineResourceAdapter(
         val preview = if (cachedPreview != null) {
             cachedPreview
         } else {
-            previewHelper.getCsvPreview(file)?.also { textCache[cacheKey] = it }
+            previewLoader.getCsvPreview(file)?.also { textCache[cacheKey] = it }
         }
         if (!preview.isNullOrEmpty()) {
             holder.binding.tvTextPreview.visibility = View.VISIBLE
@@ -271,7 +272,7 @@ class InlineResourceAdapter(
         val text = if (cachedText != null) {
             cachedText
         } else {
-            previewHelper.getTextPreview(file)?.also { textCache[cacheKey] = it }
+            previewLoader.getTextPreview(file)?.also { textCache[cacheKey] = it }
         }
         if (!text.isNullOrEmpty()) {
             holder.binding.tvTextPreview.visibility = View.VISIBLE

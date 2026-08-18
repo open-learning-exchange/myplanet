@@ -1,14 +1,14 @@
-package org.ole.planet.myplanet.ui.courses
+package org.ole.planet.myplanet.utils
 
 import android.media.MediaMetadataRetriever
 import com.opencsv.CSVParserBuilder
 import com.opencsv.CSVReaderBuilder
-import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import java.io.File
 import java.io.FileReader
+import java.util.Locale
+import kotlinx.coroutines.withContext
 
-class ResourcePreviewHelper(private val dispatcherProvider: DispatcherProvider) {
+class ResourcesPreviewLoader(private val dispatcherProvider: DispatcherProvider) {
 
     suspend fun getAudioPreview(file: File): String {
         return withContext(dispatcherProvider.io) {
@@ -17,7 +17,7 @@ class ResourcePreviewHelper(private val dispatcherProvider: DispatcherProvider) 
                 retriever.setDataSource(file.absolutePath)
                 val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
                 val totalSeconds = durationMs / 1000
-                String.format(java.util.Locale.US, "%d:%02d", totalSeconds / 60, totalSeconds % 60)
+                String.format(Locale.US, "%d:%02d", totalSeconds / 60, totalSeconds % 60)
             } catch (e: Exception) {
                 ""
             } finally {
