@@ -17,6 +17,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.SimpleItemAnimator
 import com.bumptech.glide.Glide
 import dagger.hilt.android.AndroidEntryPoint
 import java.time.LocalDate
@@ -48,6 +49,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     private lateinit var financeAdapter: EnterprisesFinancesAdapter
     private lateinit var headerAdapter: FinanceHeaderAdapter
     private val headerState = HeaderState()
+    private val PAYLOAD_HEADER = "PAYLOAD_HEADER"
     var date: Calendar? = null
     private var transactions: List<Transaction> = emptyList()
     private var currentStartDate: Long? = null
@@ -84,21 +86,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         return binding.root
     }
 
-    private fun bindHeader(hBinding: HeaderFinanceBinding) {
-        hBinding.tvFromDateCalendar.setText(headerState.fromDate)
-        hBinding.etToDate.setText(headerState.toDate)
-        hBinding.etToDate.isEnabled = headerState.isToDateEnabled
-        hBinding.tvToDateCalendarIcon.isEnabled = headerState.isToDateEnabled
-        hBinding.etToDate.alpha = if (headerState.isToDateEnabled) 1.0f else 0.5f
-        hBinding.tvToDateCalendarIcon.alpha = if (headerState.isToDateEnabled) 1.0f else 0.5f
-
-        hBinding.imgDate.rotation = if (headerState.isAsc) 180f else 0f
-
-        hBinding.tvDebit.text = getString(R.string.number_placeholder, headerState.debit)
-        hBinding.tvCredit.text = getString(R.string.number_placeholder, headerState.credit)
-        hBinding.tvBalance.text = getString(R.string.number_placeholder, headerState.total)
-        hBinding.balanceCaution.visibility = if (headerState.isCautionVisible) View.VISIBLE else View.GONE
-
+    private fun setupHeaderListeners(hBinding: HeaderFinanceBinding) {
         hBinding.tvFromDateCalendar.setOnClickListener {
             showDatePickerDialog(isFromDate = true)
         }
@@ -117,13 +105,29 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         }
         hBinding.llDate.setOnClickListener {
             headerState.isAsc = !headerState.isAsc
-            headerAdapter.notifyItemChanged(0)
+            headerAdapter.notifyItemChanged(0, PAYLOAD_HEADER)
             observeTransactions(sortAscending = headerState.isAsc)
         }
         hBinding.btnReset.setOnClickListener {
             resetFilterAndSort()
             observeTransactions()
         }
+    }
+
+    private fun bindHeader(hBinding: HeaderFinanceBinding) {
+        hBinding.tvFromDateCalendar.setText(headerState.fromDate)
+        hBinding.etToDate.setText(headerState.toDate)
+        hBinding.etToDate.isEnabled = headerState.isToDateEnabled
+        hBinding.tvToDateCalendarIcon.isEnabled = headerState.isToDateEnabled
+        hBinding.etToDate.alpha = if (headerState.isToDateEnabled) 1.0f else 0.5f
+        hBinding.tvToDateCalendarIcon.alpha = if (headerState.isToDateEnabled) 1.0f else 0.5f
+
+        hBinding.imgDate.rotation = if (headerState.isAsc) 180f else 0f
+
+        hBinding.tvDebit.text = getString(R.string.number_placeholder, headerState.debit)
+        hBinding.tvCredit.text = getString(R.string.number_placeholder, headerState.credit)
+        hBinding.tvBalance.text = getString(R.string.number_placeholder, headerState.total)
+        hBinding.balanceCaution.visibility = if (headerState.isCautionVisible) View.VISIBLE else View.GONE
     }
 
     private fun showDatePickerDialog(isFromDate: Boolean) {
@@ -172,7 +176,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
                     headerState.toDate = formattedDate
                 }
 
-                headerAdapter.notifyItemChanged(0)
+                headerAdapter.notifyItemChanged(0, PAYLOAD_HEADER)
                 filterIfBothDatesSelected()
             },
             initialDate[Calendar.YEAR],
@@ -236,8 +240,12 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         super.onViewCreated(view, savedInstanceState)
         binding.addTransaction.setOnClickListener { addTransaction() }
         financeAdapter = EnterprisesFinancesAdapter(requireActivity())
-        headerAdapter = FinanceHeaderAdapter { hBinding -> bindHeader(hBinding) }
+        headerAdapter = FinanceHeaderAdapter(
+            onCreateHeader = { hBinding -> setupHeaderListeners(hBinding) },
+            onBindHeader = { hBinding -> bindHeader(hBinding) }
+        )
         binding.rvFinance.layoutManager = LinearLayoutManager(activity)
+        (binding.rvFinance.itemAnimator as? SimpleItemAnimator)?.supportsChangeAnimations = false
         binding.rvFinance.adapter = ConcatAdapter(headerAdapter, financeAdapter)
 
         collectLatestWhenStarted(isMemberFlow) { isMember ->
@@ -247,7 +255,6 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         collectLatestWhenStarted(viewModel.transactions) { results ->
             transactions = results
             updatedFinanceList(results)
-            showNoData(binding.tvNodata, transactions.size, "finances")
         }
 
         observeTransactions()
@@ -274,7 +281,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         headerState.credit = credit
         headerState.total = total
         headerState.isCautionVisible = total < 0
-        headerAdapter.notifyItemChanged(0)
+        headerAdapter.notifyItemChanged(0, PAYLOAD_HEADER)
     }
 
     private fun addTransaction() {
@@ -343,13 +350,8 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         financeAdapter.submitList(results)
         calculateTotal(results)
 
-        if (results.isNotEmpty() || headerState.fromDate.isNotEmpty() || headerState.toDate.isNotEmpty()) {
-            binding.tvNodata.visibility = View.GONE
-            binding.rvFinance.visibility = View.VISIBLE
-        } else {
-            binding.tvNodata.visibility = View.VISIBLE
-            binding.rvFinance.visibility = View.GONE
-        }
+        binding.rvFinance.visibility = View.VISIBLE
+        binding.tvNodata.visibility = if (results.isEmpty()) View.VISIBLE else View.GONE
     }
 
     private fun resetFilterAndSort() {
@@ -360,7 +362,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         currentStartDate = null
         currentEndDate = null
         if (::headerAdapter.isInitialized) {
-            headerAdapter.notifyItemChanged(0)
+            headerAdapter.notifyItemChanged(0, PAYLOAD_HEADER)
         }
     }
 
@@ -406,16 +408,22 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     )
 
     private class FinanceHeaderAdapter(
+        private val onCreateHeader: (HeaderFinanceBinding) -> Unit,
         private val onBindHeader: (HeaderFinanceBinding) -> Unit
     ) : RecyclerView.Adapter<FinanceHeaderAdapter.HeaderViewHolder>() {
         class HeaderViewHolder(val binding: HeaderFinanceBinding) : RecyclerView.ViewHolder(binding.root)
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): HeaderViewHolder {
             val binding = HeaderFinanceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            onCreateHeader(binding)
             return HeaderViewHolder(binding)
         }
 
         override fun onBindViewHolder(holder: HeaderViewHolder, position: Int) {
+            onBindHeader(holder.binding)
+        }
+
+        override fun onBindViewHolder(holder: HeaderViewHolder, position: Int, payloads: MutableList<Any>) {
             onBindHeader(holder.binding)
         }
 

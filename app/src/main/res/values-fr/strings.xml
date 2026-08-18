@@ -619,7 +619,7 @@
     <string name="to_date">Date de fin</string>
     <string name="select_from_date">Sélectionner la date de début</string>
     <string name="select_to_date">Sélectionner la date de fin</string>
-    <string name="note_is_required">Une note est requise</string>
+    <string name="note_is_required">La note est requise</string>
     <string name="amount_is_required">Le montant est requis</string>
     <string name="date_is_required">La date est requise</string>
     <string name="transaction_added">Transaction ajoutée</string>

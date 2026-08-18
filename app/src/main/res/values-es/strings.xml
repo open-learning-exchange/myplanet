@@ -619,7 +619,7 @@
     <string name="to_date">Hasta fecha</string>
     <string name="select_from_date">Seleccionar desde fecha</string>
     <string name="select_to_date">Seleccionar hasta fecha</string>
-    <string name="note_is_required">La nota es obligatoria</string>
+    <string name="note_is_required">Se requiere una nota</string>
     <string name="amount_is_required">Se requiere una cantidad</string>
     <string name="date_is_required">Se requiere una fecha</string>
     <string name="transaction_added">Transacción agregada</string>
