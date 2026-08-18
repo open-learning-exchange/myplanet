@@ -15,9 +15,12 @@ import kotlinx.coroutines.SupervisorJob
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.repository.ChatSyncWriter
 import org.ole.planet.myplanet.repository.CommunityRepository
+import org.ole.planet.myplanet.repository.CommunitySyncWriter
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.FeedbackSyncWriter
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
@@ -71,8 +74,8 @@ object ServiceModule {
         apiInterface: ApiInterface,
         @ApplicationContext context: Context,
         voicesRepository: VoicesRepository,
-        chatRepository: ChatRepository,
-        feedbackRepository: FeedbackRepository,
+        chatRepository: ChatSyncWriter,
+        feedbackRepository: FeedbackSyncWriter,
         sharedPrefManager: SharedPrefManager,
         userRepository: UserRepository,
         userSyncRepository: UserSyncRepository,
@@ -83,7 +86,7 @@ object ServiceModule {
         ratingsRepository: RatingsRepository,
         submissionsRepository: SubmissionsRepository,
         coursesRepository: CoursesRepository,
-        communityRepository: CommunityRepository,
+        communityRepository: CommunitySyncWriter,
         healthRepository: HealthRepository,
         progressRepository: ProgressRepository,
         surveysRepository: SurveysRepository,
