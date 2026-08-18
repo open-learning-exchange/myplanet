@@ -15,12 +15,12 @@ import kotlinx.coroutines.SupervisorJob
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatRepository
-import org.ole.planet.myplanet.repository.ChatSyncRepository
+import org.ole.planet.myplanet.repository.ChatSyncHandler
 import org.ole.planet.myplanet.repository.CommunityRepository
-import org.ole.planet.myplanet.repository.CommunitySyncRepository
+import org.ole.planet.myplanet.repository.CommunitySyncHandler
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
-import org.ole.planet.myplanet.repository.FeedbackSyncRepository
+import org.ole.planet.myplanet.repository.FeedbackSyncHandler
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
@@ -75,8 +75,8 @@ object ServiceModule {
         apiInterface: ApiInterface,
         @ApplicationContext context: Context,
         voicesRepository: VoicesRepository,
-        chatRepository: ChatSyncRepository,
-        feedbackRepository: FeedbackSyncRepository,
+        chatRepository: ChatSyncHandler,
+        feedbackRepository: FeedbackSyncHandler,
         sharedPrefManager: SharedPrefManager,
         userRepository: UserRepository,
         userSyncRepository: UserSyncRepository,
@@ -88,7 +88,7 @@ object ServiceModule {
         ratingsRepository: RatingsRepository,
         submissionsRepository: SubmissionsRepository,
         coursesRepository: CoursesRepository,
-        communityRepository: CommunitySyncRepository,
+        communityRepository: CommunitySyncHandler,
         healthRepository: HealthRepository,
         progressRepository: ProgressRepository,
         surveysRepository: SurveysRepository,
