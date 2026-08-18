@@ -51,11 +51,13 @@ class SubmissionsRepositoryImplTest {
     private val answerDao: AnswerDao = mockk(relaxed = true)
     private val examDao: ExamDao = mockk(relaxed = true)
     private val questionDao: QuestionDao = mockk(relaxed = true)
-    private val userDao: UserDao = mockk(relaxed = true)
+    private val lazyUserRepository: dagger.Lazy<UserRepository> = mockk(relaxed = true)
+    private val userRepository: UserRepository = mockk(relaxed = true)
     private lateinit var repository: SubmissionsRepositoryImpl
 
     @Before
     fun setUp() {
+        every { lazyUserRepository.get() } returns userRepository
         val teamsRepo = mockk<TeamsRepository>(relaxed = true)
         teamsRepositoryProvider = mockk(relaxed = true)
         every { teamsRepositoryProvider.get() } returns teamsRepo
@@ -74,7 +76,7 @@ class SubmissionsRepositoryImplTest {
             answerDao,
             examDao,
             questionDao,
-            userDao
+            lazyUserRepository
         ), recordPrivateCalls = true)
     }
 
@@ -471,7 +473,7 @@ class SubmissionsRepositoryImplTest {
         // blob, whose _attachments were stripped for storage safety.
         val freshUser = mockk<UserEntity>()
         every { freshUser.serialize() } returns JsonObject().apply { addProperty("_id", "fresh_user") }
-        coEvery { userDao.getById("u1") } returns freshUser
+        coEvery { userRepository.getUserById("u1") } returns freshUser
 
         val submission = Submission().apply {
             id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
@@ -490,7 +492,7 @@ class SubmissionsRepositoryImplTest {
         every { NetworkUtils.getDeviceName() } returns "device"
         every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
 
-        coEvery { userDao.getById(any()) } returns null
+        coEvery { userRepository.getUserById(any()) } returns null
 
         val submission = Submission().apply {
             id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"

@@ -62,7 +62,7 @@ class TakeCourseViewModel @Inject constructor(
 
                 val steps = coursesRepository.getCourseSteps(courseId)
                 val progressMap = progressRepository.getCourseProgress(listOf(courseId), userModel?.id)
-                val progress = progressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
+                val progress = progressMap[courseId]?.current ?: 0
 
                 _uiState.value = TakeCourseUiState.Success(course, steps, userModel, progress)
             } catch (e: Exception) {

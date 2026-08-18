@@ -41,10 +41,8 @@ import org.ole.planet.myplanet.model.MyCourse.Companion.saveConcatenatedLinksToP
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SyncRepository
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -71,10 +69,8 @@ class SyncManager @Inject constructor(
     private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider,
     private val timeProvider: TimeProvider,
-    private val teamsRepository: TeamsRepository,
     private val teamsSyncRepository: TeamsSyncRepository,
     private val coursesRepository: CoursesRepository,
-    private val eventsRepository: EventsRepository,
     private val userSyncRepository: UserSyncRepository,
     private val syncRepository: SyncRepository
 ) {
@@ -522,7 +518,7 @@ class SyncManager @Inject constructor(
                     async(dispatcherProvider.io) {
                         semaphore.withPermit {
                             val shelfStartTime = SystemClock.elapsedRealtime()
-                            val items = syncRepository.processShelfParallel(shelfId, apiInterface)
+                            val items = syncRepository.processShelfParallel(shelfId)
                             val shelfDuration = SystemClock.elapsedRealtime() - shelfStartTime
                             if (items > 0) {
                                 logger.logDetail("library_sync", "Shelf ${index + 1}/${shelvesWithData.size} ($shelfId): $items items in ${shelfDuration}ms")

@@ -41,6 +41,7 @@ class VoicesRepositoryImplTest {
     private val teamNotificationDao: TeamNotificationDao = mockk(relaxed = true)
     private val newsDao: NewsDao = mockk(relaxed = true)
     private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
+    private val newsLogDao: org.ole.planet.myplanet.data.room.dao.NewsLogDao = mockk(relaxed = true)
 
     private fun newRepository(gsonInstance: Gson): VoicesRepositoryImpl {
         return spyk(
@@ -48,10 +49,10 @@ class VoicesRepositoryImplTest {
                 dispatcherProvider,
                 gsonInstance,
                 sharedPrefManager,
-                dagger.Lazy { userRepository },
                 teamNotificationDao,
                 newsDao,
-                myLibraryDao
+                myLibraryDao,
+                newsLogDao
             ),
             recordPrivateCalls = true
         )
@@ -239,15 +240,4 @@ class VoicesRepositoryImplTest {
         assertEquals("local-uuid-1234", slot.captured.replyTo)
     }
 
-    @Test
-    fun `getUserById delegates to userRepository`() = testScope.runTest {
-        val testUserId = "test_user_123"
-        val mockUser = mockk<UserEntity>()
-
-        coEvery { userRepository.getUserById(testUserId) } returns mockUser
-
-        val result = repository.getUserById(testUserId)
-
-        assertEquals(mockUser, result)
-    }
 }

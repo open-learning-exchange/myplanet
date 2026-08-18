@@ -55,6 +55,7 @@ import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class TeamsRepositoryImpl @Inject constructor(
@@ -794,14 +795,24 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun exportReportsAsCsv(reports: List<MyTeam>, teamName: String): String {
         val csvBuilder = StringBuilder()
-        csvBuilder.append("$teamName Financial Report Summary\n\n")
+        csvBuilder.append(teamName).append(" Financial Report Summary\n\n")
         csvBuilder.append("Start Date, End Date, Created Date, Updated Date, Beginning Balance, Sales, Other Income, Wages, Other Expenses, Profit/Loss, Ending Balance\n")
         for (report in reports) {
             val totalIncome = report.sales + report.otherIncome
             val totalExpenses = report.wages + report.otherExpenses
             val profitLoss = totalIncome - totalExpenses
             val endingBalance = profitLoss + report.beginningBalance
-            csvBuilder.append("${org.ole.planet.myplanet.utils.TimeUtils.formatDateForCsv(report.startDate)}, ${org.ole.planet.myplanet.utils.TimeUtils.formatDateForCsv(report.endDate)}, ${org.ole.planet.myplanet.utils.TimeUtils.formatDateForCsv(report.createdDate)}, ${org.ole.planet.myplanet.utils.TimeUtils.formatDateForCsv(report.updatedDate)}, ${report.beginningBalance}, ${report.sales}, ${report.otherIncome}, ${report.wages}, ${report.otherExpenses}, $profitLoss, $endingBalance\n")
+            csvBuilder.append(TimeUtils.formatDateForCsv(report.startDate)).append(", ")
+                .append(TimeUtils.formatDateForCsv(report.endDate)).append(", ")
+                .append(TimeUtils.formatDateForCsv(report.createdDate)).append(", ")
+                .append(TimeUtils.formatDateForCsv(report.updatedDate)).append(", ")
+                .append(report.beginningBalance).append(", ")
+                .append(report.sales).append(", ")
+                .append(report.otherIncome).append(", ")
+                .append(report.wages).append(", ")
+                .append(report.otherExpenses).append(", ")
+                .append(profitLoss).append(", ")
+                .append(endingBalance).append('\n')
         }
         return csvBuilder.toString()
     }
@@ -1089,10 +1100,6 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun getJoinedMemberCount(teamId: String): Int {
         return teamDao.countByTeamIdAndDocType(teamId, "membership")
-    }
-
-    override suspend fun getAssignee(userId: String): UserEntity? {
-        return userRepository.getUserById(userId)
     }
 
     override suspend fun getRequestedMembers(teamId: String): List<UserEntity> {

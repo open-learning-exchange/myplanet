@@ -104,6 +104,7 @@ runs_for() {
         || { echo '[]'; return 0; }
     jq -c --arg self "$SELF_WORKFLOW_PATH" --arg run "$SELF_RUN_ID" '
         [ .workflow_runs[]?
+          | select(.path | startswith(".github/workflows/"))
           | select(.path != $self)
           | select(($run | length == 0) or ((.id | tostring) != $run))
           | {name, status, conclusion} ]' <<<"$raw" 2>/dev/null || echo '[]'
