@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 /**
  * Room replacement for the former `MyLibrary` model (resources).
@@ -235,11 +236,7 @@ open class MyLibrary {
                 this.resourceId = resourceId
                 val titleString = JsonUtils.getString("title", params.doc)
                 title = titleString
-                titleNormal = titleString.let {
-                    java.text.Normalizer.normalize(it, java.text.Normalizer.Form.NFD)
-                        .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
-                        .lowercase(java.util.Locale.ROOT)
-                }
+                titleNormal = Utilities.normalizeText(titleString)
                 description = JsonUtils.getString("description", params.doc)
                 if (params.doc.has("_attachments")) {
                     val attachmentsObj = params.doc["_attachments"].asJsonObject

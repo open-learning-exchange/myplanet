@@ -14,6 +14,14 @@ interface FeedbackRepository {
         item: String? = null,
         state: String? = null,
     ): Feedback
+    suspend fun createAndSaveFeedback(
+        user: String?,
+        urgent: String,
+        type: String,
+        message: String,
+        item: String? = null,
+        state: String? = null,
+    )
     suspend fun getFeedback(userModel: UserEntity?): Flow<List<Feedback>>
     suspend fun getPendingFeedback(): List<Feedback>
     suspend fun getFeedbackById(id: String?): Feedback?

@@ -27,6 +27,8 @@ class VoicesViewModelTest {
 
     private lateinit var voicesRepository: VoicesRepository
     private lateinit var teamsRepository: TeamsRepository
+    private lateinit var userRepository: org.ole.planet.myplanet.repository.UserRepository
+    private lateinit var resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository
     private lateinit var viewModel: VoicesViewModel
 
     private val testDispatcherProvider = object : DispatcherProvider {
@@ -41,7 +43,9 @@ class VoicesViewModelTest {
     fun setup() {
         voicesRepository = mockk(relaxed = true)
         teamsRepository = mockk(relaxed = true)
-        viewModel = VoicesViewModel(voicesRepository, teamsRepository, testDispatcherProvider)
+        userRepository = mockk(relaxed = true)
+        resourcesRepository = mockk(relaxed = true)
+        viewModel = VoicesViewModel(voicesRepository, teamsRepository, testDispatcherProvider, userRepository, resourcesRepository)
     }
 
     @Test

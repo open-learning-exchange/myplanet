@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.repository
 
+import android.app.Application
+import android.os.Build
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
@@ -14,13 +16,18 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.utils.TestTimeProvider
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [Build.VERSION_CODES.P], application = Application::class)
 @ExperimentalCoroutinesApi
 class NotificationsRepositoryImplTest {
 
@@ -156,6 +163,157 @@ class NotificationsRepositoryImplTest {
         repository.insert(jsonObject)
 
         assertTrue(upsertSlot.captured.isRead)
+    }
+
+    @Test
+    fun `insert keeps raw team type and extracts team id from item for join requests`() = runTest {
+        val jsonObject = JsonObject().apply {
+            addProperty("_id", "notifId1")
+            addProperty("user", "testUser")
+            addProperty("message", "<b>Jane</b> has requested to join <b>\"My Team\"</b> team.")
+            addProperty("type", "team")
+            addProperty("item", "team123")
+            add("linkParams", JsonObject().apply { addProperty("activeTab", "applicantTab") })
+            addProperty("status", "unread")
+        }
+        coEvery { notificationDao.getById("notifId1") } returns null
+        val upsertSlot = slot<AppNotification>()
+        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+
+        repository.insert(jsonObject)
+
+        val saved = upsertSlot.captured
+        assertEquals("team", saved.type)
+        assertEquals("<b>Jane</b> has requested to join <b>\"My Team\"</b> team.", saved.message)
+        assertEquals("team123", saved.relatedId)
+        assertEquals("join_request", saved.subType)
+    }
+
+    @Test
+    fun `insert keeps raw team type and extracts team id from item for team updates`() = runTest {
+        val jsonObject = JsonObject().apply {
+            addProperty("_id", "notifId2")
+            addProperty("user", "testUser")
+            addProperty("message", "You have been added to <b>\"My Team\"</b> team.")
+            addProperty("type", "team")
+            addProperty("item", "team456")
+            addProperty("status", "unread")
+        }
+        coEvery { notificationDao.getById("notifId2") } returns null
+        val upsertSlot = slot<AppNotification>()
+        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+
+        repository.insert(jsonObject)
+
+        val saved = upsertSlot.captured
+        assertEquals("team", saved.type)
+        assertEquals("team456", saved.relatedId)
+        assertEquals(null, saved.subType)
+    }
+
+    @Test
+    fun `insert keeps raw replyMessage type and extracts news id from replyTo`() = runTest {
+        val jsonObject = JsonObject().apply {
+            addProperty("_id", "notifId3")
+            addProperty("user", "testUser")
+            addProperty("message", "<b>Jane</b> replied to your message.")
+            addProperty("type", "replyMessage")
+            addProperty("replyTo", "news789")
+            addProperty("status", "unread")
+        }
+        coEvery { notificationDao.getById("notifId3") } returns null
+        val upsertSlot = slot<AppNotification>()
+        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+
+        repository.insert(jsonObject)
+
+        val saved = upsertSlot.captured
+        assertEquals("replyMessage", saved.type)
+        assertEquals("news789", saved.relatedId)
+    }
+
+    @Test
+    fun `insert keeps raw newTask type and extracts team id from link`() = runTest {
+        val jsonObject = JsonObject().apply {
+            addProperty("_id", "notifId4")
+            addProperty("user", "testUser")
+            addProperty("message", "You were assigned a new task")
+            addProperty("type", "newTask")
+            addProperty("link", "/teams/view/team321")
+            addProperty("status", "unread")
+        }
+        coEvery { notificationDao.getById("notifId4") } returns null
+        val upsertSlot = slot<AppNotification>()
+        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+
+        repository.insert(jsonObject)
+
+        val saved = upsertSlot.captured
+        assertEquals("newTask", saved.type)
+        assertEquals("team321", saved.relatedId)
+    }
+
+    @Test
+    fun `insert leaves unrecognized types unchanged with no relatedId`() = runTest {
+        val jsonObject = JsonObject().apply {
+            addProperty("_id", "notifId5")
+            addProperty("user", "testUser")
+            addProperty("message", "New resource notification")
+            addProperty("type", "newResource")
+            addProperty("link", "/resources")
+            addProperty("status", "unread")
+        }
+        coEvery { notificationDao.getById("notifId5") } returns null
+        val upsertSlot = slot<AppNotification>()
+        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+
+        repository.insert(jsonObject)
+
+        val saved = upsertSlot.captured
+        assertEquals("newResource", saved.type)
+        assertEquals(null, saved.relatedId)
+    }
+
+    @Test
+    fun `getTaskDetails resolves team via task link when task exists`() = runTest {
+        val task = org.ole.planet.myplanet.model.TeamTask().apply {
+            id = "task1"
+            link = "{\"teams\":\"team321\"}"
+        }
+        coEvery { teamTaskDao.getById("task1") } returns task
+        coEvery { teamsRepository.get().getTeamLabelInfo("team321") } returns TeamLabelInfo("team321", "My Team", "team")
+
+        val result = repository.getTaskDetails("task1")
+
+        assertEquals("team321", result?.teamId)
+        assertEquals("My Team", result?.teamName)
+    }
+
+    @Test
+    fun `getTaskDetails returns null when relatedId is not a known task id`() = runTest {
+        coEvery { teamTaskDao.getById("team321") } returns null
+
+        val result = repository.getTaskDetails("team321")
+
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun `getJoinRequestTeamId strips join_request_ prefix and resolves team id`() = runTest {
+        coEvery { teamsRepository.get().getJoinRequestInfo("req1") } returns JoinRequestInfo("req1", "team9", "user1")
+
+        val result = repository.getJoinRequestTeamId("join_request_req1")
+
+        assertEquals("team9", result)
+    }
+
+    @Test
+    fun `getJoinRequestTeamId returns null when relatedId is not a known join request id`() = runTest {
+        coEvery { teamsRepository.get().getJoinRequestInfo("team123") } returns null
+
+        val result = repository.getJoinRequestTeamId("team123")
+
+        assertEquals(null, result)
     }
 
     @Test

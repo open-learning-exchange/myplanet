@@ -28,7 +28,6 @@ import org.ole.planet.myplanet.utils.UrlUtils
 class LoginSyncManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val sharedPrefManager: SharedPrefManager,
-    private val userRepository: UserRepository,
     private val userSyncRepository: UserSyncRepository,
     private val apiInterface: ApiInterface,
     @ApplicationScope private val applicationScope: CoroutineScope,
