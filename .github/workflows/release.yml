@@ -156,27 +156,15 @@ jobs:
           echo "https://github.com/open-learning-exchange/myplanet/releases/tag/v${{ env.ANDROID_VERSION_NAME }}"
           treehouses feedback "new myplanet app: <https://github.com/open-learning-exchange/myplanet/releases/tag/v${{ env.ANDROID_VERSION_NAME }}>"
 
-      # Both upload attempts failed, so this version is not on the playstore
-      # whatever the reason (daily save quota, auth, a rejected bundle) --
-      # stop the drain rather than let it publish past the gap. The step
-      # deliberately does not classify the error: outcomes are known in-job,
-      # while reading this job's own log for the message is impossible (the
-      # API only serves a job's log once the job has finished).
-      - name: stop the automerge drain when the playstore upload fails
+      # Both upload attempts failed, so this version is not on the playstore.
+      # Fail the run: the automerge drain refuses to merge onto a red base,
+      # so it stops itself before the next merge -- no cancellation needed.
+      - name: fail the run when the playstore upload failed, stopping the automerge drain
         if: github.event_name != 'workflow_dispatch' && matrix.build == 'lite' && steps.playstore.outcome == 'failure' && steps.playstore_fallback.outcome == 'failure'
-        env:
-          GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
-          DRAIN: automerge.yml
         run: |
-          MESSAGE="the playstore upload of ${{ env.PLAYSTORE_RELEASE_NAME }} failed twice, so it was not published. If it hit the daily save quota, that resets at midnight PT. Upload myPlanet-lite.aab from the release by hand, then dispatch \`myPlanet automerge\` again."
-          echo "::warning::${MESSAGE}"
-          echo "### playstore upload failed -- stopping the automerge drain" >> $GITHUB_STEP_SUMMARY
+          MESSAGE="the playstore upload of ${{ env.PLAYSTORE_RELEASE_NAME }} failed twice, so it was not published, and this red run stops the automerge drain. If it hit the daily save quota (resets at midnight PT), re-run this workflow run after the reset -- a green re-run publishes the missing version and unblocks the drain."
+          echo "::error::${MESSAGE}"
+          echo "### playstore upload failed -- the red run stops the automerge drain" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "${MESSAGE}" >> $GITHUB_STEP_SUMMARY
-
-          for RUN in $(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/$DRAIN/runs?per_page=20" \
-                         --jq '.workflow_runs[] | select(.status != "completed") | .id' 2>/dev/null || true); do
-            gh api -X POST "repos/$GITHUB_REPOSITORY/actions/runs/$RUN/cancel" >/dev/null 2>&1 \
-              && echo "cancelled automerge run $RUN" \
-              || echo "::warning::could not cancel automerge run $RUN"
-          done
+          exit 1
