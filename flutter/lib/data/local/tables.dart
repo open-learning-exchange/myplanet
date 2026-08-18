@@ -695,6 +695,13 @@ class Teams extends Table {
   /// For transactions: the transaction amount (positive = credit, negative = debit).
   IntColumn get amount => integer().withDefault(const Constant(0))();
 
+  /// The name of a binary attachment (a transaction or finance-report receipt
+  /// image). Port of `MyTeam.imageName` / `getFirstAttachmentName`: the bytes
+  /// live under `team_attachments/<docId>/<imageName>` (see `TeamAttachments`),
+  /// and the name is what the upload write-back and the in-app preview resolve
+  /// the file from. Null for every document without an attachment.
+  TextColumn get imageName => text().nullable()();
+
   /// Set by every local write. The `teams` database mixes the server catalog
   /// with documents the user authors offline — a join request, a membership,
   /// a financial report, a resource link — and they are otherwise

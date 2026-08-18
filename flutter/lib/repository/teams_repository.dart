@@ -1,4 +1,5 @@
 import '../core/config/server_config.dart';
+import '../core/files/team_attachments.dart';
 import '../core/network/network_result.dart';
 import '../core/sync/adaptive_batch_processor.dart';
 import '../core/sync/sync_result.dart';
@@ -49,14 +50,24 @@ class TeamsRepository {
   );
 
   /// Create a new transaction (debit or credit entry).
-  Future<bool> createTransaction({
+  ///
+  /// When [imageName] and [imageBytes] are both supplied the receipt image is
+  /// written to `team_attachments/<id>/<imageName>` and its name is stored on
+  /// the row, porting `TeamsRepositoryImpl.createTransaction` +
+  /// `attachTeamImage`. The bytes are persisted before the row is flagged for
+  /// upload so the write-back can PUT them once the document is acknowledged;
+  /// the attachment is best-effort, the way the Kotlin source does not roll the
+  /// document back if the file write fails.
+  Future<TeamRow?> createTransaction({
     required String teamId,
     required String type, // 'debit' or 'credit'
     required String note,
     required int amount,
     required int date,
+    String? imageName,
+    List<int>? imageBytes,
   }) async {
-    if (teamId.isEmpty) return false;
+    if (teamId.isEmpty) return null;
     final id = _createId();
     await _dao.upsert(
       TeamsCompanion.insert(
@@ -71,7 +82,23 @@ class TeamsRepository {
         isUpdated: const Value(true),
       ),
     );
-    return true;
+    if (imageName != null && imageName.isNotEmpty && imageBytes != null) {
+      await TeamAttachments.write(
+        docId: id,
+        filename: imageName,
+        bytes: imageBytes,
+      );
+      final row = await _dao.getById(id);
+      if (row != null) {
+        await _dao.upsert(
+          row.toCompanion(false).copyWith(
+            imageName: Value(imageName),
+            isUpdated: const Value(true),
+          ),
+        );
+      }
+    }
+    return _dao.getById(id);
   }
 
   Future<TeamRow?> saveReport({
@@ -85,12 +112,15 @@ class TeamsRepository {
     required int otherIncome,
     required int wages,
     required int otherExpenses,
+    String? imageName,
+    List<int>? imageBytes,
   }) async {
     if (teamId.isEmpty || startDate > endDate) return null;
     final now = DateTime.now().millisecondsSinceEpoch;
     final existing = id == null ? null : await _dao.getById(id);
     final base =
         existing?.toCompanion(false) ?? TeamsCompanion.insert(id: _createId());
+    final docId = existing?.id ?? base.id.value;
     await _dao.upsert(
       base.copyWith(
         teamId: Value(teamId),
@@ -109,7 +139,27 @@ class TeamsRepository {
         isUpdated: const Value(true),
       ),
     );
-    return _dao.getById(existing?.id ?? base.id.value);
+    // Port of `attachTeamImage` in `addReport`/`updateReport`: the image is
+    // attached only when both name and bytes are present, and an absent image
+    // leaves an existing report's attachment untouched (a no-image edit does
+    // not clear the prior receipt).
+    if (imageName != null && imageName.isNotEmpty && imageBytes != null) {
+      await TeamAttachments.write(
+        docId: docId,
+        filename: imageName,
+        bytes: imageBytes,
+      );
+      final row = await _dao.getById(docId);
+      if (row != null) {
+        await _dao.upsert(
+          row.toCompanion(false).copyWith(
+            imageName: Value(imageName),
+            isUpdated: const Value(true),
+          ),
+        );
+      }
+    }
+    return _dao.getById(docId);
   }
 
   Future<TeamRow?> archiveReport(String id) async {
@@ -322,6 +372,11 @@ class TeamsRepository {
       'endDate': row.endDate,
       'updatedDate': row.updatedDate,
     },
+    // The attachment's bytes are PUT separately to `teams/<id>/<imageName>`
+    // by the uploader, so the document body carries only the name — never the
+    // base64 blob. Omitting it for a row without an attachment keeps the
+    // document null-free, the way the Kotlin `serialize` guards each field.
+    if (row.imageName?.isNotEmpty == true) 'imageName': row.imageName,
   };
 
   Future<SyncResult> sync({
@@ -386,6 +441,15 @@ class TeamsRepository {
           .whereType<TeamsCompanion>()
           .toList();
       await _dao.upsertAll(mapped);
+      // Port of `TransactionSyncManager.downloadTeamAttachmentsFromBatch`:
+      // a finance document's receipt image is stored as a CouchDB attachment,
+      // not in the document body, so the `_all_docs` pull above only records
+      // its name. The bytes are fetched per-document to the
+      // `team_attachments/<docId>/<name>` slot the preview and upload read-back
+      // share. Best-effort, like the Kotlin source — a single failed download
+      // does not fail the sync, the row still shows with its name and a missing
+      // thumbnail.
+      await _downloadAttachments(config, docs, auth);
       syncedIds.addAll(mapped.map((row) => row.id.value));
       skip += rawRows.length;
       onProgress?.call(
@@ -394,6 +458,43 @@ class TeamsRepository {
     }
     await _dao.deleteNotIn(syncedIds);
     return SyncComplete(syncedIds.length);
+  }
+
+  /// Downloads each finance document's named attachment, porting
+  /// `TransactionSyncManager.downloadTeamAttachmentsFromBatch` +
+  /// `downloadTeamAttachment`. A document whose `_attachments` is missing or
+  /// whose attachment already exists locally is skipped, matching the Kotlin
+  /// `!destFile.exists()` guard — re-downloading on every sync would burn the
+  /// bandwidth myPlanet is built to conserve.
+  Future<void> _downloadAttachments(
+    ServerConfig config,
+    List<Map<String, dynamic>> docs,
+    String auth,
+  ) async {
+    final base = '${UrlUtils.dbUrl(config)}/teams';
+    for (final doc in docs) {
+      final docId = JsonUtils.getString('_id', doc);
+      if (docId.isEmpty || docId.startsWith('_design/')) continue;
+      final name = TeamMapper.firstAttachmentName(doc['_attachments']);
+      if (name == null || name.isEmpty) continue;
+      final existing = await TeamAttachments.existingFileFor(
+        docId: docId,
+        filename: name,
+      );
+      if (existing != null) continue;
+      final result = await _api.getBytes(
+        '$base/${Uri.encodeComponent(docId)}/${Uri.encodeComponent(name)}',
+        authHeader: auth,
+      );
+      final bytes = result is NetworkSuccess<List<int>> ? result.data : null;
+      if (bytes != null && bytes.isNotEmpty) {
+        await TeamAttachments.write(
+          docId: docId,
+          filename: name,
+          bytes: bytes,
+        );
+      }
+    }
   }
 }
 

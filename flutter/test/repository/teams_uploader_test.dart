@@ -1,24 +1,39 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart' hide isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:myplanet/core/files/team_attachments.dart';
 import 'package:myplanet/core/network/network_result.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/data/local/team_mapper.dart';
 import 'package:myplanet/repository/teams_uploader.dart';
+import 'package:path_provider/path_provider.dart';
 
 void main() {
   late AppDatabase database;
   late MockPlanetApi api;
   late TeamsUploader uploader;
+  late Directory tmpRoot;
 
-  setUp(() {
+  setUp(() async {
     database = AppDatabase.memory();
     api = MockPlanetApi();
     uploader = TeamsUploader(api, database.teamDao);
     registerFallbackValue(<String, dynamic>{});
+
+    // Route `TeamAttachments` at a temp dir so the write-back can read the
+    // bytes back without a platform channel. The class's own
+    // `baseDirectory` override is the seam tests are expected to use.
+    tmpRoot = await Directory.systemTemp.createTemp('team_attachments_test');
+    TeamAttachments.baseDirectory = () async => tmpRoot;
   });
-  tearDown(() => database.close());
+  tearDown(() async {
+    TeamAttachments.baseDirectory = getApplicationDocumentsDirectory;
+    await database.close();
+    if (await tmpRoot.exists()) await tmpRoot.delete(recursive: true);
+  });
 
   OutboxRow rowFor(String itemId) => OutboxRow(
     id: 'op-1',
@@ -153,6 +168,104 @@ void main() {
       'Server copy',
     );
     expect(await database.teamDao.deleteNotIn(const []), 1);
+  });
+
+  test('a document with an attachment PUTs its bytes after upload', () async {
+    // Port of `UploadManager.uploadTeamImageAttachment`: once the document is
+    // acknowledged, the receipt image is written to the named attachment slot.
+    // The bytes are read back from `team_attachments/<id>/<name>`, so the
+    // write-back is what proves the repository persisted them.
+    await database.teamDao.upsert(
+      TeamsCompanion.insert(
+        id: 'tx-1',
+        teamId: const Value('team-1'),
+        docType: const Value('transaction'),
+        description: const Value('sale'),
+        amount: const Value(100),
+        imageName: const Value('receipt.jpg'),
+        isUpdated: const Value(true),
+      ),
+    );
+    await TeamAttachments.write(
+      docId: 'tx-1',
+      filename: 'receipt.jpg',
+      bytes: [1, 2, 3, 4],
+    );
+
+    when(
+      () => api.postJsonObject(
+        any(),
+        any(),
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).thenAnswer(
+      (_) async => NetworkSuccess<Map<String, dynamic>>({'rev': '2-b'}),
+    );
+    when(
+      () => api.uploadAttachment(
+        any(),
+        bytes: any(named: 'bytes'),
+        authHeader: any(named: 'authHeader'),
+        contentType: any(named: 'contentType'),
+        ifMatch: any(named: 'ifMatch'),
+      ),
+    ).thenAnswer(
+      (_) async => NetworkSuccess<Map<String, dynamic>>({'ok': true}),
+    );
+
+    final result = await uploader.handler(rowFor('tx-1'), {}, 'auth');
+
+    expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
+    final captured = verify(
+      () => api.uploadAttachment(
+        captureAny(),
+        bytes: captureAny(named: 'bytes'),
+        authHeader: any(named: 'authHeader'),
+        contentType: captureAny(named: 'contentType'),
+        ifMatch: captureAny(named: 'ifMatch'),
+      ),
+    ).captured;
+    expect(captured[0], contains('/teams/tx-1/receipt.jpg'));
+    expect(captured[1], [1, 2, 3, 4]);
+    expect(captured[2], 'image/jpeg');
+    expect(captured[3], '2-b');
+  });
+
+  test('a document without an attachment skips the attachment PUT', () async {
+    await seedLocalReport();
+
+    when(
+      () => api.postJsonObject(
+        any(),
+        any(),
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).thenAnswer(
+      (_) async => NetworkSuccess<Map<String, dynamic>>({'rev': '2-b'}),
+    );
+    when(
+      () => api.uploadAttachment(
+        any(),
+        bytes: any(named: 'bytes'),
+        authHeader: any(named: 'authHeader'),
+        contentType: any(named: 'contentType'),
+        ifMatch: any(named: 'ifMatch'),
+      ),
+    ).thenAnswer(
+      (_) async => NetworkSuccess<Map<String, dynamic>>({'ok': true}),
+    );
+
+    await uploader.handler(rowFor('report-1'), {}, 'auth');
+
+    verifyNever(
+      () => api.uploadAttachment(
+        any(),
+        bytes: any(named: 'bytes'),
+        authHeader: any(named: 'authHeader'),
+        contentType: any(named: 'contentType'),
+        ifMatch: any(named: 'ifMatch'),
+      ),
+    );
   });
 }
 

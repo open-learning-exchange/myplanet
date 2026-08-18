@@ -1,7 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as p;
 
+import '../../core/files/team_attachments.dart';
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/teams_provider.dart';
@@ -67,6 +72,7 @@ class TeamReportsScreen extends ConsumerWidget {
     };
     var start = report?.startDate ?? DateTime.now().millisecondsSinceEpoch;
     var end = report?.endDate ?? start;
+    XFile? selectedImage;
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
@@ -116,6 +122,42 @@ class TeamReportsScreen extends ConsumerWidget {
                     controller: values['expenses']!,
                     label: l10n.otherExpenses,
                   ),
+                  // Port of the report image picker in
+                  // `EnterprisesReportsFragment`/`EnterprisesReportsAdapter`:
+                  // a report can carry one receipt image, attached on create
+                  // or replace. Editing without picking a new image leaves the
+                  // existing attachment in place — the repository only attaches
+                  // when both name and bytes are supplied.
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(
+                      selectedImage == null
+                          ? Icons.add_photo_alternate_outlined
+                          : Icons.image_outlined,
+                    ),
+                    title: Text(
+                      selectedImage == null
+                          ? (report?.imageName?.isNotEmpty == true
+                                ? l10n.viewReceipt
+                                : l10n.addReceipt)
+                          : l10n.receiptSelected,
+                    ),
+                    subtitle: selectedImage == null
+                        ? (report?.imageName?.isNotEmpty == true
+                              ? Text(p.basename(report!.imageName!))
+                              : Text(l10n.noReceipt))
+                        : Text(p.basename(selectedImage!.name)),
+                    onTap: () async {
+                      final picker = ImagePicker();
+                      final picked = await picker.pickImage(
+                        source: ImageSource.gallery,
+                        imageQuality: 85,
+                      );
+                      if (picked != null) {
+                        setState(() => selectedImage = picked);
+                      }
+                    },
+                  ),
                 ],
               ),
             ),
@@ -129,6 +171,20 @@ class TeamReportsScreen extends ConsumerWidget {
               onPressed: start > end
                   ? null
                   : () async {
+                      String? imageName;
+                      List<int>? imageBytes;
+                      if (selectedImage != null) {
+                        imageName = p.basename(selectedImage!.name);
+                        try {
+                          imageBytes = await selectedImage!.readAsBytes();
+                        } on Exception {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(l10n.unavailable)),
+                          );
+                          return;
+                        }
+                      }
                       final ok = await ref
                           .read(teamReportActionsProvider)
                           .save(
@@ -145,6 +201,8 @@ class TeamReportsScreen extends ConsumerWidget {
                             wages: int.tryParse(values['wages']!.text) ?? 0,
                             otherExpenses:
                                 int.tryParse(values['expenses']!.text) ?? 0,
+                            imageName: imageName,
+                            imageBytes: imageBytes,
                           );
                       if (ok && dialogContext.mounted) {
                         Navigator.pop(dialogContext);
@@ -188,6 +246,8 @@ class _ReportCard extends StatelessWidget {
             Text(dates, style: Theme.of(context).textTheme.titleMedium),
             if (report.description?.isNotEmpty == true)
               Text(report.description!),
+            if (report.imageName?.isNotEmpty == true)
+              _ReportReceiptThumb(report: report),
             const Divider(),
             _Total(label: l10n.totalIncome, value: report.totalIncome),
             _Total(label: l10n.totalExpenses, value: report.totalExpenses),
@@ -209,6 +269,78 @@ class _ReportCard extends StatelessWidget {
                 ],
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Port of `EnterprisesReportsAdapter.bindReportImage`: shows the local
+/// attachment thumbnail and opens a zoomable view on tap.
+class _ReportReceiptThumb extends StatelessWidget {
+  const _ReportReceiptThumb({required this.report});
+  final TeamRow report;
+
+  @override
+  Widget build(BuildContext context) {
+    final imageName = report.imageName;
+    final docId = report.id;
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: FutureBuilder<File?>(
+        future: imageName == null || imageName.isEmpty || docId.isEmpty
+            ? Future.value(null)
+            : TeamAttachments.existingFileFor(
+                docId: docId,
+                filename: imageName,
+              ),
+        builder: (context, snapshot) {
+          final file = snapshot.data;
+          if (file == null) return const SizedBox.shrink();
+          return InkWell(
+            onTap: () => _openViewer(context, file),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Image.file(
+                file,
+                width: 96,
+                height: 96,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stack) =>
+                    const SizedBox.shrink(),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _openViewer(BuildContext context, File file) {
+    final l10n = AppLocalizations.of(context);
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            title: Text(l10n.receipt),
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              child: Image.file(file, errorBuilder: (context, error, stack) {
+                final l = AppLocalizations.of(context);
+                return Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    l.unavailable,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                );
+              }),
+            ),
+          ),
         ),
       ),
     );

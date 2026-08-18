@@ -7,6 +7,7 @@ import 'sync_state.dart';
 import 'session_provider.dart';
 import '../core/utils/url_utils.dart';
 import '../repository/teams_repository.dart';
+import '../repository/teams_uploader.dart';
 
 final teamsSearchProvider = StateProvider<String>((ref) => '');
 final teamsTypeProvider = StateProvider<String>((ref) => 'team');
@@ -111,10 +112,12 @@ class TeamFinancesActions {
     required String note,
     required int amount,
     required int date,
+    String? imageName,
+    List<int>? imageBytes,
   }) async {
     final config = ref.read(serverConfigProvider);
     if (config == null) return false;
-    final ok = await ref
+    final row = await ref
         .read(teamsRepositoryProvider)
         .createTransaction(
           teamId: teamId,
@@ -122,21 +125,17 @@ class TeamFinancesActions {
           note: note,
           amount: amount,
           date: date,
+          imageName: imageName,
+          imageBytes: imageBytes,
         );
-    if (!ok) return false;
+    if (row == null) return false;
     await ref
         .read(outboxRepositoryProvider)
         .enqueue(
-          uploadType: 'teamFinances',
-          itemId: teamId,
+          uploadType: TeamsUploader.financesType,
+          itemId: row.id,
           endpoint: '${UrlUtils.credentialFreeDbUrl(config)}/teams',
-          payload: {
-            'teamId': teamId,
-            'type': type,
-            'note': note,
-            'amount': amount,
-            'date': date,
-          },
+          payload: TeamsRepository.serializeTeamDocument(row),
           userId: ref.read(sessionProvider).valueOrNull?.id,
         );
     return true;
@@ -341,6 +340,8 @@ class TeamReportActions {
     required int otherIncome,
     required int wages,
     required int otherExpenses,
+    String? imageName,
+    List<int>? imageBytes,
   }) async => _queue(
     await ref
         .read(teamsRepositoryProvider)
@@ -355,6 +356,8 @@ class TeamReportActions {
           otherIncome: otherIncome,
           wages: wages,
           otherExpenses: otherExpenses,
+          imageName: imageName,
+          imageBytes: imageBytes,
         ),
   );
 

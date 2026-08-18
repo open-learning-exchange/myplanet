@@ -95,7 +95,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 30;
+  int get schemaVersion => 31;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -238,6 +238,15 @@ class AppDatabase extends _$AppDatabase {
         await _addColumnIfMissing(m, users, users.isUpdated);
         await _addColumnIfMissing(m, users, users.age);
         await _addColumnIfMissing(m, users, users.birthPlace);
+      }
+
+      // `teams` is preserved, so `createAll` does not alter it. v31 adds the
+      // `imageName` attachment column that `TeamsRepository.createTransaction`
+      // and `saveReport` set when a receipt image is attached. Existing rows
+      // have no attachment, so the nullable column's default is correct and no
+      // backfill is needed.
+      if (from < 31) {
+        await _addColumnIfMissing(m, teams, teams.imageName);
       }
     },
   );

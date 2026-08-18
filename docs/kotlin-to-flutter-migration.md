@@ -1101,12 +1101,12 @@ flutter pub get 2>&1 | grep -i discontinued
   `AutoSyncWorker` half landed in Phase 38 through the `workmanager` plugin;
   `TaskNotificationWorker`'s deadline notifications and `DownloadWorker`'s
   queue remain open).
-- `teams` -- team attachments.
 - `sync` -- OS-scheduled background work, a platform gap rather than a screen.
 
-Earlier revisions of this list also named team voices, team/public survey sharing and personal
-attachments; those landed in Phases 26 and 28, and deep links and the durable public-survey
-response in Phase 35.
+Earlier revisions of this list also named team voices, team/public survey sharing, personal
+attachments, and team attachments; team attachments (receipt images on finance transactions and
+reports, with their upload write-back and sync-in download) landed via `TeamAttachments`, and the
+others landed in Phases 26 and 28, and deep links and the durable public-survey response in Phase 35.
 
 **Notes on remaining packages:**
 - `components` -- reusable utility widgets. `CheckboxList` is in use; `ChallengeDialog` and

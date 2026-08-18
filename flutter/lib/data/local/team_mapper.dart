@@ -54,7 +54,21 @@ class TeamMapper {
       updatedDate: Value(JsonUtils.getLong('updatedDate', doc)),
       date: Value(JsonUtils.getLong('date', doc)),
       amount: Value(JsonUtils.getInt('amount', doc)),
+      imageName: Value(firstAttachmentName(doc['_attachments'])),
     );
+  }
+
+  /// Port of `MyTeam.getFirstAttachmentName`: a team document's binary
+  /// attachment (a receipt image) is stored under CouchDB `_attachments`, whose
+  /// keys are the attachment names. There is at most one per finance document,
+  /// so the first key is the name the preview and the upload read-back use.
+  static String? firstAttachmentName(Object? attachments) {
+    if (attachments is! Map) return null;
+    final keys = attachments.keys;
+    for (final key in keys) {
+      if (key is String && key.isNotEmpty) return key;
+    }
+    return keys.isEmpty ? null : keys.first.toString();
   }
 
   static List<String> _courseIds(Object? value) {

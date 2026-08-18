@@ -1,12 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
+import 'package:myplanet/core/files/team_attachments.dart';
 import 'package:myplanet/core/network/network_result.dart';
 import 'package:myplanet/core/sync/sync_result.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/data/local/team_mapper.dart';
 import 'package:myplanet/repository/teams_repository.dart';
+import 'package:path_provider/path_provider.dart';
 
 void main() {
   late AppDatabase database;
@@ -457,6 +461,61 @@ void main() {
     expect((await repository.addCourses('team-1', ['course-1']))?.courses, [
       'course-1',
     ]);
+  });
+
+  test('a transaction with a receipt stores the name and the bytes', () async {
+    // Port of `TeamsRepositoryImpl.createTransaction` + `attachTeamImage`: the
+    // receipt's name lands on the row and the bytes land at the attachment
+    // slot the uploader and preview share. Routing the file store at a temp
+    // dir keeps this off the platform channel.
+    final tmp = await Directory.systemTemp.createTemp('team_tx_test');
+    TeamAttachments.baseDirectory = () async => tmp;
+    try {
+      final local = TeamsRepository(
+        api,
+        database.teamDao,
+        createId: () => 'tx-1',
+      );
+      final row = await local.createTransaction(
+        teamId: 'team-1',
+        type: 'credit',
+        note: 'sale',
+        amount: 100,
+        date: 5,
+        imageName: 'receipt.png',
+        imageBytes: [10, 20, 30],
+      );
+
+      expect(row?.id, 'tx-1');
+      expect(row?.imageName, 'receipt.png');
+      expect(row?.isUpdated, isTrue);
+      expect(
+        TeamsRepository.serializeTeamDocument(row!)['imageName'],
+        'receipt.png',
+      );
+      final file = await TeamAttachments.existingFileFor(
+        docId: 'tx-1',
+        filename: 'receipt.png',
+      );
+      expect(file, isNotNull);
+      expect(await file!.readAsBytes(), [10, 20, 30]);
+    } finally {
+      TeamAttachments.baseDirectory = getApplicationDocumentsDirectory;
+      if (await tmp.exists()) await tmp.delete(recursive: true);
+    }
+  });
+
+  test('a transaction without a receipt stores no attachment name', () async {
+    final row = await repository.createTransaction(
+      teamId: 'team-1',
+      type: 'debit',
+      note: 'cash',
+      amount: 50,
+      date: 5,
+    );
+
+    expect(row?.imageName, isNull);
+    expect(row?.isUpdated, isTrue);
   });
 }
 

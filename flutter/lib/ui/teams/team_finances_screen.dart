@@ -1,7 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as p;
 
+import '../../core/files/team_attachments.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/teams_provider.dart';
 
@@ -184,6 +189,7 @@ class _TeamFinancesScreenState extends ConsumerState<TeamFinancesScreen> {
     final amountController = TextEditingController();
     String selectedType = 'credit';
     var selectedDate = DateTime.now().millisecondsSinceEpoch;
+    XFile? selectedImage;
 
     await showDialog<void>(
       context: context,
@@ -253,6 +259,39 @@ class _TeamFinancesScreenState extends ConsumerState<TeamFinancesScreen> {
                       }
                     },
                   ),
+                  // Port of `EnterprisesFinancesFragment`'s receipt picker:
+                  // `pickImageLauncher` launches `GetContent("image/*")`,
+                  // and the picked uri supplies both the name and the bytes.
+                  // The picker reads the file into the app cache and hands
+                  // back a path; the bytes are read at submit time, the way
+                  // `FileUtils.readBytesFromUri` reads them just before the
+                  // repository call.
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(
+                      selectedImage == null
+                          ? Icons.add_photo_alternate_outlined
+                          : Icons.image_outlined,
+                    ),
+                    title: Text(
+                      selectedImage == null
+                          ? l10n.addReceipt
+                          : l10n.receiptSelected,
+                    ),
+                    subtitle: selectedImage == null
+                        ? Text(l10n.noReceipt)
+                        : Text(p.basename(selectedImage!.name)),
+                    onTap: () async {
+                      final picker = ImagePicker();
+                      final picked = await picker.pickImage(
+                        source: ImageSource.gallery,
+                        imageQuality: 85,
+                      );
+                      if (picked != null) {
+                        setDialogState(() => selectedImage = picked);
+                      }
+                    },
+                  ),
                 ],
               ),
             ),
@@ -278,6 +317,20 @@ class _TeamFinancesScreenState extends ConsumerState<TeamFinancesScreen> {
                   ).showSnackBar(SnackBar(content: Text(l10n.amountRequired)));
                   return;
                 }
+                String? imageName;
+                List<int>? imageBytes;
+                if (selectedImage != null) {
+                  imageName = p.basename(selectedImage!.name);
+                  try {
+                    imageBytes = await selectedImage!.readAsBytes();
+                  } on Exception {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(l10n.unavailable)),
+                    );
+                    return;
+                  }
+                }
                 final ok = await ref
                     .read(teamFinancesActionsProvider)
                     .createTransaction(
@@ -286,6 +339,8 @@ class _TeamFinancesScreenState extends ConsumerState<TeamFinancesScreen> {
                       note: note,
                       amount: amount,
                       date: selectedDate,
+                      imageName: imageName,
+                      imageBytes: imageBytes,
                     );
                 if (ok && dialogContext.mounted) {
                   Navigator.pop(dialogContext);
@@ -425,6 +480,8 @@ class _TransactionCard extends StatelessWidget {
                   ),
                   if (transaction.row.description?.isNotEmpty == true)
                     Text(transaction.row.description!),
+                  if (transaction.row.imageName?.isNotEmpty == true)
+                    _ReceiptThumb(transaction: transaction),
                 ],
               ),
             ),
@@ -448,6 +505,81 @@ class _TransactionCard extends StatelessWidget {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Port of `EnterprisesFinancesAdapter.bindFinanceImage`: loads the local
+/// attachment file (when present) and shows a tappable thumbnail that opens a
+/// zoomable view, the way `ImageViewerUtils.showZoomableImage` does.
+class _ReceiptThumb extends StatelessWidget {
+  const _ReceiptThumb({required this.transaction});
+  final TransactionRow transaction;
+
+  @override
+  Widget build(BuildContext context) {
+    final imageName = transaction.row.imageName;
+    final docId = transaction.row.id;
+    return FutureBuilder<File?>(
+      future: imageName == null || imageName.isEmpty || docId.isEmpty
+          ? Future.value(null)
+          : TeamAttachments.existingFileFor(
+              docId: docId,
+              filename: imageName,
+            ),
+      builder: (context, snapshot) {
+        final file = snapshot.data;
+        if (file == null) {
+          return const SizedBox.shrink();
+        }
+        return Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: InkWell(
+            onTap: () => _openViewer(context, file),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Image.file(
+                file,
+                width: 72,
+                height: 72,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stack) =>
+                    const SizedBox.shrink(),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _openViewer(BuildContext context, File file) {
+    final l10n = AppLocalizations.of(context);
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            title: Text(l10n.receipt),
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              child: Image.file(file, errorBuilder: (context, error, stack) {
+                final l = AppLocalizations.of(context);
+                return Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    l.unavailable,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                );
+              }),
+            ),
+          ),
         ),
       ),
     );
