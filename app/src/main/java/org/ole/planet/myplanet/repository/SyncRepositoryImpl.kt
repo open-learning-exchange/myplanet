@@ -40,7 +40,7 @@ class SyncRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val resourcesRepository: ResourcesRepository,
     private val coursesRepository: CoursesRepository,
-    private val eventsRepository: EventsRepository,
+    private val eventsRepository: EventsSyncWriter,
     private val teamsSyncRepository: TeamsSyncRepository,
     private val transactionSyncManager: dagger.Lazy<TransactionSyncManager>
 ) : SyncRepository {

@@ -7,9 +7,7 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
@@ -32,6 +30,7 @@ import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
+import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
@@ -169,51 +168,35 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
     }
 
     private fun setupObservers() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    viewModel.surveys.collect { surveys ->
-                        (getAdapter() as SurveysAdapter).submitList(surveys) {
-                            recyclerView.scrollToPosition(0)
-                            updateUIState()
-                        }
-                    }
-                }
-                launch {
-                    viewModel.surveyInfos.collect { infos ->
-                        surveyInfoMap.clear()
-                        surveyInfoMap.putAll(infos)
-                        getAdapter().notifyDataSetChanged()
-                    }
-                }
-                launch {
-                    viewModel.bindingData.collect { data ->
-                        bindingDataMap.clear()
-                        bindingDataMap.putAll(data)
-                        getAdapter().notifyDataSetChanged()
-                    }
-                }
-                launch {
-                    viewModel.isLoading.collect { isLoading ->
-                        binding.loadingSpinner.visibility = if (isLoading) View.VISIBLE else View.GONE
-                    }
-                }
-                launch {
-                    viewModel.errorMessage.collect { message ->
-                        message?.let {
-                            Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
-                        }
-                    }
-                }
-                launch {
-                    viewModel.userMessage.collect { message ->
-                        message?.let {
-                            Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
-                            if (it == "Survey adopted successfully") {
-                                 binding.rbTeamSurvey.isChecked = true
-                            }
-                        }
-                    }
+        collectWhenStarted(viewModel.surveys) { surveys ->
+            (getAdapter() as SurveysAdapter).submitList(surveys) {
+                recyclerView.scrollToPosition(0)
+                updateUIState()
+            }
+        }
+        collectWhenStarted(viewModel.surveyInfos) { infos ->
+            surveyInfoMap.clear()
+            surveyInfoMap.putAll(infos)
+            getAdapter().notifyDataSetChanged()
+        }
+        collectWhenStarted(viewModel.bindingData) { data ->
+            bindingDataMap.clear()
+            bindingDataMap.putAll(data)
+            getAdapter().notifyDataSetChanged()
+        }
+        collectWhenStarted(viewModel.isLoading) { isLoading ->
+            binding.loadingSpinner.visibility = if (isLoading) View.VISIBLE else View.GONE
+        }
+        collectWhenStarted(viewModel.errorMessage) { message ->
+            message?.let {
+                Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
+            }
+        }
+        collectWhenStarted(viewModel.userMessage) { message ->
+            message?.let {
+                Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
+                if (it == "Survey adopted successfully") {
+                     binding.rbTeamSurvey.isChecked = true
                 }
             }
         }

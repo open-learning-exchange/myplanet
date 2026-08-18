@@ -10,15 +10,12 @@ import android.widget.RatingBar.OnRatingBarChangeListener
 import androidx.core.view.isVisible
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentRatingBinding
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class RatingsFragment : DialogFragment() {
@@ -89,60 +86,48 @@ class RatingsFragment : DialogFragment() {
     }
     
     private fun observeViewModel() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.ratingState.collect { state ->
-                    when (state) {
-                        is RatingsViewModel.RatingUiState.Loading -> {}
-                        is RatingsViewModel.RatingUiState.Success -> {
-                            state.existingRating?.let { rating ->
-                                binding.ratingBar.rating = rating.rate.toFloat()
-                                binding.etComment.setText(rating.comment)
-                            }
-                        }
-                        is RatingsViewModel.RatingUiState.Error -> {
-                            Utilities.toast(activity, state.message)
-                        }
+        collectWhenStarted(viewModel.ratingState) { state ->
+            when (state) {
+                is RatingsViewModel.RatingUiState.Loading -> {}
+                is RatingsViewModel.RatingUiState.Success -> {
+                    state.existingRating?.let { rating ->
+                        binding.ratingBar.rating = rating.rate.toFloat()
+                        binding.etComment.setText(rating.comment)
                     }
+                }
+                is RatingsViewModel.RatingUiState.Error -> {
+                    Utilities.toast(activity, state.message)
                 }
             }
         }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.userState.collect { user ->
-                    isUserReady = user != null
-                    binding.userStatusContainer.isVisible = !isUserReady
-                    updateSubmitButtonState()
-                }
-            }
+        collectWhenStarted(viewModel.userState) { user ->
+            isUserReady = user != null
+            binding.userStatusContainer.isVisible = !isUserReady
+            updateSubmitButtonState()
         }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.submitState.collect { state ->
-                    currentSubmitState = state
-                    when (state) {
-                        is RatingsViewModel.SubmitState.Success -> {
-                            Utilities.toast(activity, "Thank you, your rating is submitted.")
-                            val t = type
-                            val i = id
-                            if (t != null && i != null) {
-                                ratingListener?.onRatingChanged(t, i)
-                            } else {
-                                ratingListener?.onRatingChanged()
-                            }
-                            dismiss()
-                        }
-                        is RatingsViewModel.SubmitState.Error -> {
-                            Utilities.toast(activity, state.message)
-                        }
-                        RatingsViewModel.SubmitState.Submitting,
-                        RatingsViewModel.SubmitState.Idle -> Unit
+        collectWhenStarted(viewModel.submitState) { state ->
+            currentSubmitState = state
+            when (state) {
+                is RatingsViewModel.SubmitState.Success -> {
+                    Utilities.toast(activity, "Thank you, your rating is submitted.")
+                    val t = type
+                    val i = id
+                    if (t != null && i != null) {
+                        ratingListener?.onRatingChanged(t, i)
+                    } else {
+                        ratingListener?.onRatingChanged()
                     }
-                    updateSubmitButtonState()
+                    dismiss()
                 }
+                is RatingsViewModel.SubmitState.Error -> {
+                    Utilities.toast(activity, state.message)
+                }
+                RatingsViewModel.SubmitState.Submitting,
+                RatingsViewModel.SubmitState.Idle -> Unit
             }
+            updateSubmitButtonState()
         }
     }
     

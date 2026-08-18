@@ -204,6 +204,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
 
         filterController = CourseFilterController(
             rootView = requireView(),
+            coroutineScope = viewLifecycleOwner.lifecycleScope,
             onScrollToTop = { scrollToTop() }
         )
         filterController.setup()
@@ -582,7 +583,6 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
 
     override fun onDestroyView() {
         if (::filterController.isInitialized) {
-            filterController.clear()
             filterController.detach()
         }
         if (::adapterCourses.isInitialized) {

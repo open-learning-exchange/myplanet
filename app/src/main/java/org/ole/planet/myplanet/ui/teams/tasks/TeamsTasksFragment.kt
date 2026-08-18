@@ -15,15 +15,12 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.nex3z.togglebuttongroup.SingleSelectToggleGroup
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -39,6 +36,8 @@ import org.ole.planet.myplanet.ui.teams.TeamViewModel
 import org.ole.planet.myplanet.ui.user.UserArrayAdapter
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
@@ -234,51 +233,41 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
 
         teamViewModel.loadTasks(teamId)
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    isMemberFlow.collectLatest { isMember ->
-                        binding.fab.isVisible = isMember
-                        val nonTeamMember = !isMember
-                        if (adapterTask.nonTeamMember != nonTeamMember) {
-                            adapterTask.nonTeamMember = nonTeamMember
-                        }
-                        updateTasks()
+        collectLatestWhenStarted(isMemberFlow) { isMember ->
+            binding.fab.isVisible = isMember
+            val nonTeamMember = !isMember
+            if (adapterTask.nonTeamMember != nonTeamMember) {
+                adapterTask.nonTeamMember = nonTeamMember
+            }
+            updateTasks()
+        }
+        collectLatestWhenStarted(teamViewModel.taskList) { tasks ->
+            updateTasks()
+        }
+        collectWhenStarted(teamsTasksViewModel.taskActionEvents) { event ->
+            when (event) {
+                is TaskActionEvent.TaskCreatedOrUpdated -> {
+                    val shouldStayOnMyTasks = currentTab == R.id.btn_my && event.assigneeId == user?.id
+                    if (!shouldStayOnMyTasks) {
+                        currentTab = R.id.btn_all
+                        binding.taskToggle.check(R.id.btn_all)
                     }
+                    Utilities.toast(
+                        activity,
+                        String.format(
+                            getString(R.string.task_s_successfully),
+                            if (event.isCreated) getString(R.string.added) else getString(R.string.updated)
+                        )
+                    )
+                    updateTasks()
                 }
-                launch {
-                    teamViewModel.taskList.collectLatest { tasks ->
-                        updateTasks()
-                    }
+                is TaskActionEvent.TaskDeleted -> {
+                    Utilities.toast(activity, getString(R.string.task_deleted_successfully))
+                    updateTasks()
                 }
-                launch {
-                    teamsTasksViewModel.taskActionEvents.collect { event ->
-                        when (event) {
-                            is TaskActionEvent.TaskCreatedOrUpdated -> {
-                                val shouldStayOnMyTasks = currentTab == R.id.btn_my && event.assigneeId == user?.id
-                                if (!shouldStayOnMyTasks) {
-                                    currentTab = R.id.btn_all
-                                    binding.taskToggle.check(R.id.btn_all)
-                                }
-                                Utilities.toast(
-                                    activity,
-                                    String.format(
-                                        getString(R.string.task_s_successfully),
-                                        if (event.isCreated) getString(R.string.added) else getString(R.string.updated)
-                                    )
-                                )
-                                updateTasks()
-                            }
-                            is TaskActionEvent.TaskDeleted -> {
-                                Utilities.toast(activity, getString(R.string.task_deleted_successfully))
-                                updateTasks()
-                            }
-                            is TaskActionEvent.TaskAssigned -> {
-                                Utilities.toast(activity, getString(R.string.assign_task_to) + " " + event.userName)
-                                updateTasks()
-                            }
-                        }
-                    }
+                is TaskActionEvent.TaskAssigned -> {
+                    Utilities.toast(activity, getString(R.string.assign_task_to) + " " + event.userName)
+                    updateTasks()
                 }
             }
         }
