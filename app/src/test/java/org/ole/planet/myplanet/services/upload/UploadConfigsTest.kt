@@ -23,6 +23,7 @@ class UploadConfigsTest {
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val voicesRepository: VoicesRepository = mockk(relaxed = true)
     private val uploadConfigs = UploadConfigs(
+        context = mockk(relaxed = true),
         voicesRepository = voicesRepository,
         submissionsRepository = mockk(relaxed = true),
         activitiesRepository = activitiesRepository,
