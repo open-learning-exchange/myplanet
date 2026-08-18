@@ -47,6 +47,8 @@ import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
+    open val shouldShowDownloadDialog: Boolean = true
+
     @Inject
     lateinit var timeProvider: TimeProvider
     @Inject
@@ -143,6 +145,7 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     protected open fun showDownloadDialog(dbMyLibrary: List<MyLibrary?>) {
+        if (!shouldShowDownloadDialog) return
         if (!isAdded) return
         if (dbMyLibrary.isEmpty()) {
             return
