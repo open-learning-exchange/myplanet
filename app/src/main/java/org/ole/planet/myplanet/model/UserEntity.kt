@@ -11,6 +11,8 @@ import com.google.gson.JsonParser
 import java.io.File
 import java.io.InputStream
 import org.apache.commons.lang3.StringUtils
+import org.json.JSONException
+import org.json.JSONObject
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -190,7 +192,7 @@ open class UserEntity(
         fun parseLeadersJson(jsonString: String): List<UserEntity> {
             val leadersList = mutableListOf<UserEntity>()
             try {
-                val jsonObject = org.json.JSONObject(jsonString)
+                val jsonObject = JSONObject(jsonString)
                 val docsArray = jsonObject.getJSONArray("docs")
                 for (i in 0 until docsArray.length()) {
                     val docObject = docsArray.getJSONObject(i)
@@ -213,7 +215,7 @@ open class UserEntity(
                     }
                     leadersList.add(user)
                 }
-            } catch (e: org.json.JSONException) {
+            } catch (e: JSONException) {
                 e.printStackTrace()
             }
             return leadersList

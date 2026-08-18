@@ -14,7 +14,6 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.HealthExamination.Companion.serialize
 import org.ole.planet.myplanet.model.HealthRecord
@@ -30,7 +29,6 @@ class HealthRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
     private val dispatcherProvider: DispatcherProvider,
     private val healthExaminationDao: HealthExaminationDao,
-    private val userDao: UserDao,
     private val userRepository: Lazy<UserRepository>
 ) : HealthRepository {
     override suspend fun getHealthEntry(userId: String): Pair<UserEntity?, HealthExamination?> {
@@ -167,26 +165,24 @@ class HealthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getHealthProfile(userId: String): MyHealth? {
-        val userModel = userDao.getById(userId)
-        val healthPojo = healthExaminationDao.getByIdOrUserId(userId)
-
-        if (healthPojo != null && !TextUtils.isEmpty(healthPojo.data)) {
-            try {
-                val decrypted = AndroidDecrypter.decrypt(healthPojo.data, userModel?.key, userModel?.iv)
-                return JsonUtils.gson.fromJson(decrypted, MyHealth::class.java)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+    private fun decodeHealth(healthPojo: HealthExamination?, userModel: UserEntity?): MyHealth? {
+        if (healthPojo == null || TextUtils.isEmpty(healthPojo.data)) return null
+        return try {
+            val decrypted = AndroidDecrypter.decrypt(healthPojo.data, userModel?.key, userModel?.iv)
+            JsonUtils.gson.fromJson(decrypted, MyHealth::class.java)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
-        return null
     }
 
-    override suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>) {
-        val userModel = userDao.getById(userId)
-        val healthPojo = healthExaminationDao.getByIdOrUserId(userId) ?: HealthExamination().apply { _id = userId }
+    override suspend fun getHealthProfile(userId: String): MyHealth? {
+        val userModel = userRepository.get().getUserById(userId)
+        return decodeHealth(healthExaminationDao.getByIdOrUserId(userId), userModel)
+    }
 
-        userModel?.apply {
+    private fun applyUserDetails(userModel: UserEntity, userData: Map<String, Any?>) {
+        userModel.apply {
             firstName = (userData["firstName"] as? String)?.trim()
             middleName = (userData["middleName"] as? String)?.trim()
             lastName = (userData["lastName"] as? String)?.trim()
@@ -198,37 +194,35 @@ class HealthRepositoryImpl @Inject constructor(
                 dob = TimeUtils.convertDDMMYYYYToISO(dobInput)
             }
             isUpdated = true
-            userDao.upsert(this)
+        }
+    }
+
+    private fun applyProfileFields(profile: MyHealth.MyHealthProfile, userData: Map<String, Any?>) {
+        fun trimmed(key: String) = (userData[key] as? String)?.trim() ?: ""
+
+        profile.emergencyContactName = trimmed("emergencyContactName")
+        profile.emergencyContact = trimmed("emergencyContact").ifEmpty { profile.emergencyContact }
+        profile.emergencyContactType = trimmed("emergencyContactType").ifEmpty { profile.emergencyContactType }
+        profile.specialNeeds = trimmed("specialNeeds")
+        profile.notes = trimmed("notes")
+    }
+
+    override suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>) {
+        val userModel = userRepository.get().getUserById(userId)
+        val healthPojo = healthExaminationDao.getByIdOrUserId(userId) ?: HealthExamination().apply { _id = userId }
+
+        userModel?.let {
+            applyUserDetails(it, userData)
+            userRepository.get().saveUser(it)
         }
 
-        var myHealth: MyHealth? = null
-        if (!TextUtils.isEmpty(healthPojo.data)) {
-            try {
-                val decrypted = AndroidDecrypter.decrypt(healthPojo.data, userModel?.key, userModel?.iv)
-                myHealth = JsonUtils.gson.fromJson(decrypted, MyHealth::class.java)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-
-        if (myHealth == null) {
-            myHealth = MyHealth()
-        }
+        val myHealth = decodeHealth(healthPojo, userModel) ?: MyHealth()
         if (TextUtils.isEmpty(myHealth.userKey)) {
             myHealth.userKey = AndroidDecrypter.generateKey()
         }
 
         val profile = myHealth.profile ?: MyHealth.MyHealthProfile().also { myHealth.profile = it }
-
-        profile.emergencyContactName = (userData["emergencyContactName"] as? String)?.trim() ?: ""
-        val newEmergencyContact = (userData["emergencyContact"] as? String)?.trim() ?: ""
-        profile.emergencyContact = if (TextUtils.isEmpty(newEmergencyContact)) profile.emergencyContact else newEmergencyContact
-
-        val newEmergencyContactType = (userData["emergencyContactType"] as? String)?.trim() ?: ""
-        profile.emergencyContactType = if (TextUtils.isEmpty(newEmergencyContactType)) profile.emergencyContactType else newEmergencyContactType
-
-        profile.specialNeeds = (userData["specialNeeds"] as? String)?.trim() ?: ""
-        profile.notes = (userData["notes"] as? String)?.trim() ?: ""
+        applyProfileFields(profile, userData)
 
         healthPojo.userId = userModel?._id
         healthPojo.isUpdated = true
@@ -237,7 +231,7 @@ class HealthRepositoryImpl @Inject constructor(
             val key = userModel?.key ?: AndroidDecrypter.generateKey().also { newKey -> userModel?.key = newKey }
             val iv = userModel?.iv ?: AndroidDecrypter.generateIv().also { newIv -> userModel?.iv = newIv }
             healthPojo.data = AndroidDecrypter.encrypt(JsonUtils.gson.toJson(myHealth), key, iv)
-            userModel?.let { userDao.upsert(it) }
+            userModel?.let { userRepository.get().saveUser(it) }
         } catch (e: Exception) {
             e.printStackTrace()
         }
