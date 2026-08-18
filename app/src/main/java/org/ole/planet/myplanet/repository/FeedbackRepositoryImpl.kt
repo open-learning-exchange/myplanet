@@ -6,16 +6,19 @@ import com.google.gson.JsonObject
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.JsonUtils
 
+
+@Singleton
 class FeedbackRepositoryImpl @Inject constructor(
     private val feedbackDao: FeedbackDao,
     private val gson: Gson
-) : FeedbackRepository {
+) : FeedbackRepository, FeedbackSyncWriter {
 
     override suspend fun createAndSaveFeedback(
         user: String?,

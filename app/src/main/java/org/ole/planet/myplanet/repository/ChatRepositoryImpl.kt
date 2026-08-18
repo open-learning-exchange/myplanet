@@ -6,6 +6,7 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import java.util.Date
 import javax.inject.Inject
+import javax.inject.Singleton
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.data.api.ChatApiService
@@ -22,12 +23,14 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.JsonUtils
 
+
+@Singleton
 class ChatRepositoryImpl @Inject constructor(
     private val chatDao: ChatDao,
     private val chatApiService: ChatApiService,
     private val serverUrlMapper: ServerUrlMapper,
     private val sharedPrefManager: SharedPrefManager
-) : ChatRepository {
+) : ChatRepository, ChatSyncWriter {
 
     @VisibleForTesting
     internal var reachabilityCheck: suspend (String) -> Boolean = { url ->
