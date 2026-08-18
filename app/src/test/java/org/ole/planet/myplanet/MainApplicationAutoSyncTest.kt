@@ -4,6 +4,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.work.Configuration
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import androidx.work.impl.WorkManagerImpl
 import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.WorkManagerTestInitHelper
 import io.mockk.every
@@ -55,6 +56,11 @@ class MainApplicationAutoSyncTest {
 
         assertTrue(workInfos.isNotEmpty())
         assertEquals(WorkInfo.State.ENQUEUED, workInfos[0].state)
+
+        // Also assert that the interval is properly used by inspecting the WorkSpec if needed.
+        val workManagerImpl = workManager as WorkManagerImpl
+        val workSpec = workManagerImpl.workDatabase.workSpecDao().getWorkSpec(workInfos[0].id.toString())
+        assertEquals((15 * 60 * 1000).toLong(), workSpec?.intervalDuration)
     }
 
     @Test
