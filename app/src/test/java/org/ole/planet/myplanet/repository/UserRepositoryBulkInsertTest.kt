@@ -30,7 +30,6 @@ class UserRepositoryBulkInsertTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
-            mockk(relaxed = true),
             userDao,
             mockk(relaxed = true)
         )
@@ -77,7 +76,6 @@ class UserRepositoryBulkInsertTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
-            mockk(relaxed = true),
             userDao,
             mockk(relaxed = true)
         )
@@ -108,7 +106,6 @@ class UserRepositoryBulkInsertTest {
     fun `insertUsersFromSync deduplicates ids correctly`() = runTest {
         val userDao = mockk<UserDao>(relaxed = true)
         val userRepository = UserRepositoryImpl(
-            mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
