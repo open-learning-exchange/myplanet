@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +8,7 @@ import '../../core/utils/constants.dart';
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
+import '../../repository/user_repository.dart';
 
 /// Port of `ui/user/BecomeMemberActivity.kt`.
 ///
@@ -42,6 +45,16 @@ class _BecomeMemberScreenState extends ConsumerState<BecomeMemberScreen> {
   String _selectedLanguage = memberLanguages.first;
   String _selectedLevel = memberLevels.first;
 
+  /// Debounced live username validation (port of
+  /// `BecomeMemberActivity`'s `usernameValidationJob`). A 300 ms `Timer`
+  /// supersedes the previous one on every keystroke, so a fast-typing user
+  /// does not hammer the DAO or see flicker from stale lookups. The stale-result
+  /// guard (`_usernameController.text == input`) drops a result that arrived
+  /// after the user kept typing.
+  Timer? _usernameValidationTimer;
+  String? _usernameError;
+  bool _isValidatingUsername = false;
+
   @override
   void initState() {
     super.initState();
@@ -57,6 +70,7 @@ class _BecomeMemberScreenState extends ConsumerState<BecomeMemberScreen> {
 
   @override
   void dispose() {
+    _usernameValidationTimer?.cancel();
     _usernameController.dispose();
     _passwordController.dispose();
     _rePasswordController.dispose();
@@ -94,6 +108,56 @@ class _BecomeMemberScreenState extends ConsumerState<BecomeMemberScreen> {
     final password = _passwordController.text;
     final rePassword = _rePasswordController.text;
     return password.isEmpty || password == rePassword;
+  }
+
+  void _scheduleUsernameValidation() {
+    final input = _usernameController.text;
+    _usernameValidationTimer?.cancel();
+    // An empty field has nothing to check yet — the form validator covers it on
+    // submit. Clearing any stale error here keeps the field from showing a
+    // red outline after the user deleted everything.
+    if (input.isEmpty) {
+      if (_usernameError != null || _isValidatingUsername) {
+        setState(() {
+          _usernameError = null;
+          _isValidatingUsername = false;
+        });
+      }
+      return;
+    }
+    setState(() => _isValidatingUsername = true);
+    _usernameValidationTimer = Timer(const Duration(milliseconds: 300), () {
+      _validateUsername(input);
+    });
+  }
+
+  Future<void> _validateUsername(String input) async {
+    final l10n = AppLocalizations.of(context);
+    final error = await ref.read(userRepositoryProvider).validateUsername(
+          input,
+          UsernameValidationMessages(
+            cannotBeEmpty: l10n.usernameCannotBeEmpty,
+            invalid: l10n.invalidUsername,
+            mustStartWithLetterOrNumber: l10n.usernameMustStartWithLetterOrNumber,
+            onlyLettersNumbers: l10n.usernameOnlyLettersNumbers,
+            taken: l10n.usernameTaken,
+          ),
+        );
+    // Stale-result guard: drop the result if the user kept typing past `input`.
+    if (!mounted || _usernameController.text != input) return;
+    // The Kotlin path lowercases a valid input in place; do the same so the
+    // stored username is always lowercased even before submit.
+    if (error == null && input != input.toLowerCase()) {
+      final lower = input.toLowerCase();
+      _usernameController.value = TextEditingValue(
+        text: lower,
+        selection: TextSelection.collapsed(offset: lower.length),
+      );
+    }
+    setState(() {
+      _usernameError = error;
+      _isValidatingUsername = false;
+    });
   }
 
   Future<void> _submit() async {
@@ -253,16 +317,34 @@ class _BecomeMemberScreenState extends ConsumerState<BecomeMemberScreen> {
                       decoration: InputDecoration(
                         labelText: l10n.enterUsername,
                         prefixIcon: const Icon(Icons.person_outline),
+                        // Live, debounced result of `UserRepository.validateUsername`
+                        // (the field also has a submit-time validator below, so an
+                        // empty field stays covered until submit).
+                        errorText: _usernameError,
+                        suffixIcon: _isValidatingUsername
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: Padding(
+                                  padding: EdgeInsets.all(12),
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              )
+                            : null,
                       ),
                       textInputAction: TextInputAction.next,
                       autofocus: true,
+                      onChanged: (_) => _scheduleUsernameValidation(),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return l10n.enterUsername;
                         }
-                        if (value.trim() != value.trim().toLowerCase()) {
-                          _usernameController.text = value.trim().toLowerCase();
-                        }
+                        // The debounced check owns the deep validation; the
+                        // submit-time validator only guarantees non-empty so a
+                        // fast tap does not slip through before the debounce
+                        // fires. If a debounced error is already showing, hold
+                        // the line and block submit.
+                        if (_usernameError != null) return _usernameError;
                         return null;
                       },
                     ),

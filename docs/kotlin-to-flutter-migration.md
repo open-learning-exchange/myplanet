@@ -613,8 +613,16 @@ not built, or needs a primitive the port lacks):
   they are, implement the *new* semantics (progress filter over the whole library, `max`
   falling back to the step count; sort state living in the provider so it survives stream
   emissions).
-- `4fdc7fcb1`: `BecomeMemberActivity`'s username validation is now debounced 300 ms with a
-  stale-result guard; the port validates on submit only.
+- `4fdc7fcb1` is **now ported** (was spec debt): `BecomeMemberActivity`'s username validation is
+  debounced 300 ms with a stale-result guard. The Flutter `BecomeMemberScreen` owns a
+  `_usernameValidationTimer` that supersedes the previous one on every keystroke, and a stale-result
+  guard drops a result whose input no longer matches the field. The check itself moved into
+  `UserRepository.validateUsername` (port of `UserRepositoryImpl.validateUsername`): empty/whitespace/
+  first-char/charset rules plus the taken-check that skips guest rows. The Dart charset rule is the
+  stricter "ASCII letter, digit, `_`, `.`, `-` only" — Kotlin relies on `Character.isLetter` plus an
+  ICU `Normalizer.NFD` pass to reject accented Latin, and Dart has no pure-Dart NFD normaliser, so
+  the ASCII-only rule encodes the same intent the user-facing message advertises. The submit-time
+  validator now also surfaces the live error so a fast tap cannot slip past it.
 - `9f3fac1d9`: the dashboard key/IV sync (not ported) gained an in-flight re-entrancy guard â€”
   carry it when that flow is ported.
 - `dc5659243`: if memberships ever gain a delete-pending state, the roster query must filter it.

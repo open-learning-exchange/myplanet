@@ -298,6 +298,86 @@ void main() {
     });
   });
 
+  group('username live validation', () {
+    final usernameField =
+        find.widgetWithText(TextFormField, 'Enter username');
+
+    testWidgets('debounces the check 300 ms before showing an error', (
+      tester,
+    ) async {
+      await pumpScreen(tester);
+      // Typing a username with an illegal space — the check should only fire
+      // after the 300 ms debounce window, not immediately on the keystroke.
+      await tester.enterText(usernameField, 'bad name');
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('Invalid username'), findsNothing);
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(find.text('Invalid username'), findsOneWidget);
+    });
+
+    testWidgets('cancels a pending check when the user keeps typing', (
+      tester,
+    ) async {
+      await pumpScreen(tester);
+      await tester.enterText(usernameField, 'bad name');
+      await tester.pump(const Duration(milliseconds: 150));
+      // Supersede the first input before its 300 ms timer fires.
+      await tester.enterText(usernameField, 'goodname');
+      await tester.pump(const Duration(milliseconds: 350));
+      // The first input's error never lands; the second input is valid.
+      expect(find.text('Invalid username'), findsNothing);
+      expect(find.text('username taken'), findsNothing);
+    });
+
+    testWidgets('shows a taken error for an existing non-guest user', (
+      tester,
+    ) async {
+      await db.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'org.couchdb.user:ada',
+          couchId: const Value('org.couchdb.user:ada'),
+          name: const Value('ada'),
+        ),
+      );
+      await pumpScreen(tester);
+      await tester.enterText(usernameField, 'ada');
+      await tester.pump(const Duration(milliseconds: 350));
+      expect(find.text('username taken'), findsOneWidget);
+    });
+
+    testWidgets('clears the error after the user fixes the input', (
+      tester,
+    ) async {
+      await pumpScreen(tester);
+      await tester.enterText(usernameField, 'bad name');
+      await tester.pump(const Duration(milliseconds: 350));
+      expect(find.text('Invalid username'), findsOneWidget);
+      await tester.enterText(usernameField, 'goodname');
+      await tester.pump(const Duration(milliseconds: 350));
+      expect(find.text('Invalid username'), findsNothing);
+    });
+
+    testWidgets('blocks submit while a live error is showing', (tester) async {
+      await pumpScreen(tester);
+      await tester.enterText(usernameField, 'bad name');
+      await tester.pump(const Duration(milliseconds: 350));
+      // Fill the rest of the form so submit would otherwise proceed.
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Enter password'),
+        'secret',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Retype password'),
+        'secret',
+      );
+      await selectMale(tester);
+      await tapSubmit(tester);
+      await tester.pumpAndSettle();
+      // No member created — the live error holds the form.
+      expect(await db.userDao.count(), 0);
+    });
+  });
+
   group('username normalization', () {
     testWidgets('lowercases the username before checking for duplicates', (
       tester,

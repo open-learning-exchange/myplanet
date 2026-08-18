@@ -867,4 +867,63 @@ void main() {
       expect(result, isFalse);
     });
   });
+
+  group('validateUsername', () {
+    const messages = UsernameValidationMessages(
+      cannotBeEmpty: 'empty',
+      invalid: 'invalid',
+      mustStartWithLetterOrNumber: 'must-start',
+      onlyLettersNumbers: 'only-letters',
+      taken: 'taken',
+    );
+
+    test('rejects an empty username', () async {
+      expect(await repository.validateUsername('', messages), 'empty');
+    });
+
+    test('rejects a username containing a space', () async {
+      expect(await repository.validateUsername('a b', messages), 'invalid');
+    });
+
+    test('rejects a first character that is not a letter or digit', () async {
+      expect(await repository.validateUsername('_abc', messages), 'must-start');
+      expect(await repository.validateUsername('-abc', messages), 'must-start');
+      expect(await repository.validateUsername('.abc', messages), 'must-start');
+    });
+
+    test('rejects characters outside a-z, 0-9, _, ., -', () async {
+      expect(await repository.validateUsername('café', messages), 'only-letters');
+      expect(await repository.validateUsername('a@b', messages), 'only-letters');
+      expect(await repository.validateUsername('a*b', messages), 'only-letters');
+    });
+
+    test('accepts a free username with allowed characters', () async {
+      expect(await repository.validateUsername('ada', messages), isNull);
+      expect(await repository.validateUsername('a.b-c_2', messages), isNull);
+    });
+
+    test('flags a username already taken by a non-guest user', () async {
+      await db.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'org.couchdb.user:ada',
+          couchId: const Value('org.couchdb.user:ada'),
+          name: const Value('ada'),
+        ),
+      );
+      expect(await repository.validateUsername('ada', messages), 'taken');
+    });
+
+    test('lets a guest user re-take their own name', () async {
+      // A guest row's `_id` starts with `guest`, so the taken-check skips it —
+      // the same exclusion `UserRepositoryImpl.validateUsername` applies.
+      await db.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'guest_ada',
+          couchId: const Value('guest_ada'),
+          name: const Value('ada'),
+        ),
+      );
+      expect(await repository.validateUsername('ada', messages), isNull);
+    });
+  });
 }
