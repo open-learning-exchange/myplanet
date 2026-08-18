@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Provider
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.launchIn
@@ -106,6 +107,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             .build()
 
     companion object {
+        private const val TAG = "MainApplication"
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
         private const val ANR_LOG_TYPE = "anr"
@@ -309,7 +311,13 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         // The warm-ups only prime caches, so a failure must never escape this fire-and-forget
         // coroutine: applicationScope has no exception handler, and an uncaught throwable here
         // would reach the default handler and take the process down on startup.
-        runCatching(warmUp).onFailure { Log.w("MainApplication", "Deferred $what warm-up failed", it) }
+        try {
+            warmUp()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "Deferred $what warm-up failed", e)
+        }
     }
 
     private suspend fun sweepPendingLogs() {

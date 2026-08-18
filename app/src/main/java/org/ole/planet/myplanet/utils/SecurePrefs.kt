@@ -24,6 +24,7 @@ object SecurePrefs {
     private const val KEYSET_NAME = "master_keyset"
     private const val PREF_FILE_NAME = "master_key_preference"
     private const val MASTER_KEY_URI = "android-keystore://master_key"
+    private const val TAG = "SecurePrefs"
 
     @Volatile private var cachedAead: Aead? = null
     @Volatile private var cachedSecureStore: SharedPreferences? = null
@@ -58,12 +59,16 @@ object SecurePrefs {
         // Warm-up is best effort: on devices (and JVM test runtimes) where the keystore is
         // unavailable, failing here must not take down the caller, which is a fire-and-forget
         // coroutine. Real reads/writes still surface the failure at their own call sites.
-        runCatching {
+        try {
             if (cachedAead == null) getAead(context)
-        }.onFailure { Log.w("SecurePrefs", "Failed to warm up keyset", it) }
-        runCatching {
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to warm up keyset", e)
+        }
+        try {
             if (cachedSecureStore == null) getSecureStore(context)
-        }.onFailure { Log.w("SecurePrefs", "Failed to warm up secure store", it) }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to warm up secure store", e)
+        }
     }
 
     @Suppress("DEPRECATION")
@@ -94,7 +99,7 @@ object SecurePrefs {
             }
             encryptedPrefs
         } catch (e: Exception) {
-            Log.w("SecurePrefs", "Failed to create EncryptedSharedPreferences, clearing and retrying", e)
+            Log.w(TAG, "Failed to create EncryptedSharedPreferences, clearing and retrying", e)
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     context.deleteSharedPreferences(ENCRYPTED_PREFS_FILE_NAME)
@@ -103,7 +108,7 @@ object SecurePrefs {
                 keyStore.load(null)
                 keyStore.deleteEntry(MasterKey.DEFAULT_MASTER_KEY_ALIAS)
             } catch (cleanupEx: Exception) {
-                Log.w("SecurePrefs", "Cleanup failed", cleanupEx)
+                Log.w(TAG, "Cleanup failed", cleanupEx)
             }
 
             try {
