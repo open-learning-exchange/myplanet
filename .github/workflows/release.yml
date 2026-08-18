@@ -156,9 +156,6 @@ jobs:
           echo "https://github.com/open-learning-exchange/myplanet/releases/tag/v${{ env.ANDROID_VERSION_NAME }}"
           treehouses feedback "new myplanet app: <https://github.com/open-learning-exchange/myplanet/releases/tag/v${{ env.ANDROID_VERSION_NAME }}>"
 
-  # A job cannot read its own log while it is still running (the API only
-  # serves a job's log once that job has finished), so the playstore outcome
-  # is classified here, in a job that starts after the release jobs complete.
   playstore-quota-guard:
     name: stop the automerge drain when playstore is out of daily quota
     needs: release
