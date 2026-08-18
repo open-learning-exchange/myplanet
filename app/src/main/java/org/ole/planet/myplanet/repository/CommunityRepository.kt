@@ -9,4 +9,5 @@ interface CommunityRepository {
     suspend fun getAllSorted(): List<Community>
     suspend fun syncCommunityDocs(): Boolean
     suspend fun insertMeetupsFromSync(docs: List<JsonObject>)
+    suspend fun deleteByIds(ids: List<String>)
 }

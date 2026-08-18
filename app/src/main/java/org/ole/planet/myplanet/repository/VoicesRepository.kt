@@ -48,6 +48,7 @@ interface VoicesRepository {
     suspend fun editPost(newsId: String, message: String, imagesToRemove: Set<String>, newImages: List<String>?): News?
     suspend fun getPlanetNewsMessages(planetCode: String?): List<News>
     suspend fun insertNewsList(docs: List<JsonObject>)
+    suspend fun deleteByIds(ids: List<String>)
     suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String>
     suspend fun countTeamChats(teamId: String): Long
     suspend fun getTeamChatViewableIds(teamIds: List<String>): List<String>

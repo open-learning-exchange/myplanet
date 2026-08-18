@@ -116,6 +116,11 @@ class TagsRepositoryImpl @Inject constructor(
         return tagIds.mapNotNull { parentsById[it] }
     }
 
+    override suspend fun deleteByIds(ids: List<String>) {
+        if (ids.isEmpty()) return
+        tagDao.deleteByIds(ids)
+    }
+
     override suspend fun insert(documentList: List<JsonObject>) {
         if (documentList.isEmpty()) return
         val tagsToInsert = documentList

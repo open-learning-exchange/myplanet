@@ -23,6 +23,7 @@ interface ProgressRepository {
     )
     suspend fun hasUserCompletedSync(userId: String): Boolean
     suspend fun insertCourseProgressFromSync(docs: List<JsonObject>)
+    suspend fun deleteByIds(ids: List<String>)
     fun findProgressForCourse(courseData: JsonArray, courseId: String): JsonObject?
     suspend fun getPendingCourseProgressUploads(): List<CourseProgress>
     suspend fun markCourseProgressUploaded(localId: String, remoteId: String, rev: String): Boolean

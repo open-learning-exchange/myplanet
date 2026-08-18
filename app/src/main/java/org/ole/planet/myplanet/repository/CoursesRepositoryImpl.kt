@@ -570,6 +570,11 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun deleteByIds(ids: List<String>) {
+        if (ids.isEmpty()) return
+        courseDao.deleteByIds(ids)
+    }
+
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
         val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
@@ -746,6 +751,11 @@ class CoursesRepositoryImpl @Inject constructor(
                 )
             )
         }
+    }
+
+    override suspend fun deleteCertificationsByIds(ids: List<String>) {
+        if (ids.isEmpty()) return
+        certificationDao.deleteByIds(ids)
     }
 
     override suspend fun insertCertificationsFromSync(jsonArray: JsonArray) {

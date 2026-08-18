@@ -37,4 +37,7 @@ interface RatingDao {
 
     @Update
     suspend fun update(item: Rating)
+
+    @Query("DELETE FROM rating WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<String>): Int
 }

@@ -23,4 +23,7 @@ interface ChatDao {
 
     @Update
     suspend fun update(item: ChatHistory)
+
+    @Query("DELETE FROM chat_history WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<String>): Int
 }

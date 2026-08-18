@@ -26,6 +26,9 @@ interface TeamTaskDao {
     @Query("DELETE FROM team_tasks WHERE id = :taskId")
     suspend fun deleteById(taskId: String)
 
+    @Query("DELETE FROM team_tasks WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<String>): Int
+
     @Upsert
     suspend fun upsert(task: TeamTask)
 

@@ -57,6 +57,11 @@ class TransactionSyncManagerCheckpointTest {
     private val apiInterface: ApiInterface = mockk()
     private val sharedPrefManager: SharedPrefManager = mockk()
     private val ratingsRepository: RatingsRepository = mockk()
+    private val tagsRepository: TagsRepository = mockk()
+    private val teamsSyncRepository: TeamsSyncRepository = mockk()
+    private val teamsSyncRepositoryLazy: Lazy<TeamsSyncRepository> = mockk()
+    private val notificationsRepository: NotificationsRepository = mockk()
+    private val coursesRepository: CoursesRepository = mockk()
     private val syncCursorDao: SyncCursorDao = mockk()
     private val upsertedCursors = mutableListOf<SyncCursor>()
 
@@ -85,6 +90,26 @@ class TransactionSyncManagerCheckpointTest {
         return response
     }
 
+    private fun deletedChangesResponse(deletedIds: List<String>, lastSeq: String): Response<JsonObject> {
+        val body = JsonObject().apply {
+            add("results", JsonArray().apply {
+                deletedIds.forEach { id ->
+                    add(JsonObject().apply {
+                        addProperty("seq", lastSeq)
+                        addProperty("id", id)
+                        addProperty("deleted", true)
+                    })
+                }
+            })
+            addProperty("last_seq", lastSeq)
+        }
+        val response = mockk<Response<JsonObject>>()
+        every { response.isSuccessful } returns true
+        every { response.body() } returns body
+        every { response.code() } returns 200
+        return response
+    }
+
     @Before
     fun setup() {
         mockkObject(UrlUtils)
@@ -99,8 +124,9 @@ class TransactionSyncManagerCheckpointTest {
         every { dispatcherProvider.io } returns Dispatchers.Unconfined
         every { dispatcherProvider.main } returns Dispatchers.Unconfined
 
-        coEvery { syncCursorDao.getSince("ratings") } returns null
+        coEvery { syncCursorDao.getSince(any()) } returns null
         coEvery { syncCursorDao.upsert(capture(upsertedCursors)) } returns Unit
+        every { teamsSyncRepositoryLazy.get() } returns teamsSyncRepository
 
         transactionSyncManager = TransactionSyncManager(
             apiInterface,
@@ -112,12 +138,12 @@ class TransactionSyncManagerCheckpointTest {
             mockk<UserRepository>(relaxed = true),
             mockk<UserSyncRepository>(relaxed = true),
             mockk<ActivitiesRepository>(relaxed = true),
-            mockk<Lazy<TeamsSyncRepository>>(relaxed = true),
-            mockk<NotificationsRepository>(relaxed = true),
-            mockk<TagsRepository>(relaxed = true),
+            teamsSyncRepositoryLazy,
+            notificationsRepository,
+            tagsRepository,
             ratingsRepository,
             mockk<SubmissionsRepository>(relaxed = true),
-            mockk<CoursesRepository>(relaxed = true),
+            coursesRepository,
             mockk<CommunityRepository>(relaxed = true),
             mockk<HealthRepository>(relaxed = true),
             mockk<ProgressRepository>(relaxed = true),
@@ -179,5 +205,56 @@ class TransactionSyncManagerCheckpointTest {
         } catch (_: CancellationException) {
             // expected: the generic catch(Exception) must not swallow cancellation
         }
+    }
+
+    // The following cover deleteBatch's per-table dispatch added when incremental sync was
+    // extended to the rest of parallelTables -- one representative case per wiring style rather
+    // than all 16, per table: a freshly-added DAO passthrough (tags), an existing general-purpose
+    // repository method reused as-is (teams), an existing Set<String>-based method (notifications),
+    // and the deliberately-narrow top-level-only case (courses).
+
+    @Test
+    fun `a deleted tags doc is propagated via the new deleteByIds passthrough`() = runBlocking {
+        coEvery { apiInterface.getJsonObject(any(), any()) } returnsMany
+            listOf(deletedChangesResponse(listOf("tag1"), lastSeq = "5"), changesResponse(0, lastSeq = "5"))
+        coEvery { tagsRepository.deleteByIds(listOf("tag1")) } returns Unit
+
+        val total = transactionSyncManager.syncDb("tags", useCheckpoint = false)
+
+        assertEquals(0, total)
+        coVerify { tagsRepository.deleteByIds(listOf("tag1")) }
+    }
+
+    @Test
+    fun `a deleted teams doc reuses the existing deleteLocalTeamRecords method`() = runBlocking {
+        coEvery { apiInterface.getJsonObject(any(), any()) } returnsMany
+            listOf(deletedChangesResponse(listOf("team1"), lastSeq = "5"), changesResponse(0, lastSeq = "5"))
+        coEvery { teamsSyncRepository.deleteLocalTeamRecords(listOf("team1")) } returns Unit
+
+        transactionSyncManager.syncDb("teams", useCheckpoint = false)
+
+        coVerify { teamsSyncRepository.deleteLocalTeamRecords(listOf("team1")) }
+    }
+
+    @Test
+    fun `a deleted notifications doc reuses the existing Set-based deleteNotifications method`() = runBlocking {
+        coEvery { apiInterface.getJsonObject(any(), any()) } returnsMany
+            listOf(deletedChangesResponse(listOf("n1"), lastSeq = "5"), changesResponse(0, lastSeq = "5"))
+        coEvery { notificationsRepository.deleteNotifications(setOf("n1")) } returns setOf("n1")
+
+        transactionSyncManager.syncDb("notifications", useCheckpoint = false)
+
+        coVerify { notificationsRepository.deleteNotifications(setOf("n1")) }
+    }
+
+    @Test
+    fun `a deleted courses doc only removes the top-level MyCourse row`() = runBlocking {
+        coEvery { apiInterface.getJsonObject(any(), any()) } returnsMany
+            listOf(deletedChangesResponse(listOf("course1"), lastSeq = "5"), changesResponse(0, lastSeq = "5"))
+        coEvery { coursesRepository.deleteByIds(listOf("course1")) } returns Unit
+
+        transactionSyncManager.syncDb("courses", useCheckpoint = false)
+
+        coVerify { coursesRepository.deleteByIds(listOf("course1")) }
     }
 }

@@ -110,6 +110,11 @@ class RatingsRepositoryImpl @Inject constructor(
         return getRatingSummary(type, itemId, resolvedUserId)
     }
 
+    override suspend fun deleteByIds(ids: List<String>) {
+        if (ids.isEmpty()) return
+        ratingDao.deleteByIds(ids)
+    }
+
     override suspend fun insertRatingsFromSync(documentList: List<JsonObject>) {
         if (documentList.isEmpty()) return
         val entities = documentList.map { act ->

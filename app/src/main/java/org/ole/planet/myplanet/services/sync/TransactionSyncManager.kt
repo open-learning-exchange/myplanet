@@ -91,11 +91,16 @@ class TransactionSyncManager @Inject constructor(
     // mutex serializes only the DB-write portion of each batch; network fetches still overlap.
     private val dbWriteMutex = Mutex()
 
-    // These tables are unbounded, append-mostly logs (see HeavyTableSyncWorker.ALL_HEAVY_TABLES)
-    // where a full _all_docs re-scan every sync is the most wasteful. They sync via CouchDB's
-    // _changes feed with a persisted since-cursor (syncDbIncremental) instead.
+    // These tables sync via CouchDB's _changes feed with a persisted since-cursor
+    // (syncDbIncremental) instead of a full _all_docs re-scan every time. The first 5 are the
+    // unbounded, append-mostly logs (see HeavyTableSyncWorker.ALL_HEAVY_TABLES); the rest are
+    // SyncManager's foreground parallelTables. "resources" and the per-user library/shelf sync
+    // are deliberately not included here -- they're shelf-based ID-list lookups against a
+    // shared DB, not a scannable table history, and need their own design.
     private val incrementalTables = setOf(
-        "ratings", "courses_progress", "submissions", "login_activities", "team_activities"
+        "ratings", "courses_progress", "submissions", "login_activities", "team_activities",
+        "tablet_users", "exams", "achievements", "tags", "news", "feedback", "tasks", "health",
+        "certifications", "chat_history", "teams", "meetups", "courses", "notifications"
     )
 
     suspend fun authenticate(): Boolean {
@@ -212,7 +217,11 @@ class TransactionSyncManager @Inject constructor(
                 currentCoroutineContext().ensureActive()
                 batchNumber++
                 val batchStartTime = SystemClock.elapsedRealtime()
-                val changesUrl = "$url/$table/_changes?since=$since&include_docs=true&limit=$pageSize&style=main_only"
+                // CouchDB's opaque seq tokens can contain characters (+, /, =) that are only
+                // safe inside a query string when percent-encoded; an unencoded token risks
+                // being silently mis-parsed by the server into a different (often earlier)
+                // position, which would look exactly like a cursor that "isn't advancing".
+                val changesUrl = "$url/$table/_changes?since=${Uri.encode(since)}&include_docs=true&limit=$pageSize&style=main_only"
                 val batchApiStartTime = SystemClock.elapsedRealtime()
                 val response = apiInterface.getJsonObject(authHeader, changesUrl)
                 val batchApiDuration = SystemClock.elapsedRealtime() - batchApiStartTime
@@ -259,6 +268,7 @@ class TransactionSyncManager @Inject constructor(
                 }
 
                 val lastSeq = getString("last_seq", body)
+                Log.d("SyncPerf", "    $table since=$since -> last_seq=$lastSeq pending=${if (body.has("pending")) body.get("pending").asInt else -1}")
                 if (lastSeq.isNotEmpty()) since = lastSeq
                 // Persist after every page so an interruption resumes from the last committed
                 // page, not from the start of this whole incremental pull.
@@ -482,6 +492,28 @@ class TransactionSyncManager @Inject constructor(
     private suspend fun deleteBatch(table: String, ids: List<String>) {
         when (table) {
             "submissions" -> submissionsRepository.deleteByIds(ids)
+            "ratings" -> ratingsRepository.deleteByIds(ids)
+            "courses_progress" -> progressRepository.deleteByIds(ids)
+            "tablet_users" -> userSyncRepository.deleteByIds(ids)
+            "achievements" -> userSyncRepository.deleteAchievementsByIds(ids)
+            "exams" -> surveysRepository.deleteByIds(ids)
+            "tags" -> tagsRepository.deleteByIds(ids)
+            "news" -> voicesRepository.deleteByIds(ids)
+            "feedback" -> feedbackRepository.deleteByIds(ids)
+            "tasks" -> teamsSyncRepository.get().deleteTasksByIds(ids)
+            "health" -> healthRepository.deleteByIds(ids)
+            "certifications" -> coursesRepository.deleteCertificationsByIds(ids)
+            "chat_history" -> chatRepository.deleteByIds(ids)
+            // teams already has a general-purpose local-removal method (also used after an
+            // upload confirms server-side deletion); reused here rather than duplicating it.
+            "teams" -> teamsSyncRepository.get().deleteLocalTeamRecords(ids)
+            "meetups" -> communityRepository.deleteByIds(ids)
+            // Only the top-level MyCourse row -- CourseStep/embedded StepExam/ExamQuestion rows
+            // are keyed by synthetic, non-couch ids and aren't couch documents in their own
+            // right, so _changes never reports their deletion directly. Cascading their cleanup
+            // is a separate problem, deliberately not handled here.
+            "courses" -> coursesRepository.deleteByIds(ids)
+            "notifications" -> notificationsRepository.deleteNotifications(ids.toSet())
             else -> Log.d("SyncPerf", "    $table: ${ids.size} deletion(s) from _changes not yet propagated locally")
         }
     }

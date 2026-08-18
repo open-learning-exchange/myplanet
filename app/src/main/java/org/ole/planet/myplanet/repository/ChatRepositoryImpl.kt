@@ -136,6 +136,11 @@ class ChatRepositoryImpl @Inject constructor(
         insertChatsBatchInternal(chats)
     }
 
+    override suspend fun deleteByIds(ids: List<String>) {
+        if (ids.isEmpty()) return
+        chatDao.deleteByIds(ids)
+    }
+
     override suspend fun insertChatHistoryFromSync(docs: List<JsonObject>) {
         val unwrappedDocs = mutableListOf<JsonObject>()
         for (j in docs) {

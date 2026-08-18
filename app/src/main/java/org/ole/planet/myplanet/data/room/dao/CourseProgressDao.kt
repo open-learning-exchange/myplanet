@@ -39,4 +39,9 @@ interface CourseProgressDao {
 
     @Upsert
     suspend fun upsertAll(progress: List<CourseProgress>)
+
+    // _id is only populated for already-synced rows, so this never matches a locally-pending
+    // (not-yet-uploaded) row even if its couch id happens to collide with one in `ids`.
+    @Query("DELETE FROM course_progress WHERE _id IN (:ids)")
+    suspend fun deleteByIds(ids: List<String>): Int
 }

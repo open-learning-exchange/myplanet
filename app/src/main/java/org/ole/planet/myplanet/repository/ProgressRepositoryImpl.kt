@@ -263,6 +263,11 @@ class ProgressRepositoryImpl @Inject constructor(
         return courseProgress
     }
 
+    override suspend fun deleteByIds(ids: List<String>) {
+        if (ids.isEmpty()) return
+        courseProgressDao.deleteByIds(ids)
+    }
+
     override suspend fun insertCourseProgressFromSync(docs: List<JsonObject>) {
         val docIds = docs.map { JsonUtils.getString("_id", it) }.filter { it.isNotEmpty() }.distinct()
         val courseIds = docs.map { JsonUtils.getString("courseId", it) }.filter { it.isNotEmpty() }.distinct()

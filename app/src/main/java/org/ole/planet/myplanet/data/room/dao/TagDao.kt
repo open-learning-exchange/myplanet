@@ -35,4 +35,7 @@ interface TagDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<TagEntity>)
+
+    @Query("DELETE FROM tag WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<String>): Int
 }

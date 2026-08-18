@@ -19,6 +19,7 @@ interface TeamsSyncRepository {
     suspend fun batchInsertMyTeams(documents: List<JsonObject>): Int
     suspend fun bulkInsertFromSync(jsonArray: JsonArray)
     suspend fun bulkInsertTasksFromSync(jsonArray: JsonArray)
+    suspend fun deleteTasksByIds(ids: List<String>)
     suspend fun bulkInsertTeamActivitiesFromSync(jsonArray: JsonArray)
     suspend fun getPendingTaskUploads(): List<org.ole.planet.myplanet.model.TeamTask>
     suspend fun markTaskUploaded(localId: String, remoteId: String?, remoteRev: String?): Boolean
