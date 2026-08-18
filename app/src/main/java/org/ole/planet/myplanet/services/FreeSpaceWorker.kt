@@ -61,29 +61,22 @@ class FreeSpaceWorker @AssistedInject constructor(
     }
 
     private suspend fun deleteRecursive(fileOrDirectory: File) {
-        if (isStopped) return
+        fileOrDirectory.walkBottomUp().forEach { file ->
+            if (isStopped) return
 
-        if (fileOrDirectory.isDirectory) {
-            val children = fileOrDirectory.listFiles()
-            if (children != null) {
-                for (child in children) {
-                    deleteRecursive(child)
-                }
-            }
-        }
+            if (file.exists()) {
+                val length = file.length()
+                if (file.delete()) {
+                    deletedFiles++
+                    freedBytes += length
 
-        if (fileOrDirectory.exists()) {
-            val length = fileOrDirectory.length()
-            if (fileOrDirectory.delete()) {
-                deletedFiles++
-                freedBytes += length
-
-                // Report progress every 10 files or so to avoid spamming updates
-                if (deletedFiles % 10 == 0) {
-                     setProgress(workDataOf(
-                         "deletedFiles" to deletedFiles,
-                         "freedBytes" to freedBytes
-                     ))
+                    // Report progress every 10 files or so to avoid spamming updates
+                    if (deletedFiles % 10 == 0) {
+                         setProgress(workDataOf(
+                             "deletedFiles" to deletedFiles,
+                             "freedBytes" to freedBytes
+                         ))
+                    }
                 }
             }
         }
