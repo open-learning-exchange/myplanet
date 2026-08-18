@@ -381,6 +381,11 @@ class SurveysRepositoryImpl @Inject constructor(
         return (if (ascending) entities else entities.asReversed()).map { it }
     }
 
+    override suspend fun deleteByIds(ids: List<String>) {
+        if (ids.isEmpty()) return
+        examDao.deleteByIds(ids)
+    }
+
     override suspend fun bulkInsertExamsFromSync(jsonArray: JsonArray) {
         val exams = mutableListOf<StepExam>()
         val questions = mutableListOf<ExamQuestion>()

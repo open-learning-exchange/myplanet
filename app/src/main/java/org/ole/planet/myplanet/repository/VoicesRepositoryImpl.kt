@@ -380,6 +380,11 @@ class VoicesRepositoryImpl @Inject constructor(
         return newsDao.getPlanetMessages(planetCode)
     }
 
+    override suspend fun deleteByIds(ids: List<String>) {
+        if (ids.isEmpty()) return
+        newsDao.deleteByIds(ids)
+    }
+
     override suspend fun insertNewsList(docs: List<JsonObject>) {
         // Pre-fetch existing rows in one query instead of a getByUnderscoreId per doc (an N+1
         // that ran serially inside the sync write lock for hundreds of news items).

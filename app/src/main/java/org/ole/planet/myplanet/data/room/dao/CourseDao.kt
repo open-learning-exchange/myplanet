@@ -14,6 +14,7 @@ interface CourseDao {
     @Query("SELECT * FROM courses") fun observeAll(): Flow<List<MyCourse>>
     @Query("SELECT * FROM courses WHERE courseId = :courseId OR id = :courseId LIMIT 1") fun observeByCourseId(courseId: String): Flow<MyCourse?>
     @Query("DELETE FROM courses WHERE courseId = :courseId") suspend fun deleteByCourseId(courseId: String): Int
+    @Query("DELETE FROM courses WHERE id IN (:ids)") suspend fun deleteByIds(ids: List<String>): Int
     @Upsert suspend fun upsertAll(items: List<MyCourse>)
     @Upsert fun upsertAllBlocking(items: List<MyCourse>)
     @Upsert suspend fun upsert(item: MyCourse)

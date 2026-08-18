@@ -13,6 +13,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.room.dao.SyncCursorDao
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.CommunityRepository
@@ -89,8 +90,9 @@ object ServiceModule {
         surveysRepository: SurveysRepository,
         @ApplicationScope scope: CoroutineScope,
         dispatcherProvider: DispatcherProvider,
-        userSessionManager: org.ole.planet.myplanet.services.UserSessionManager
+        userSessionManager: org.ole.planet.myplanet.services.UserSessionManager,
+        syncCursorDao: SyncCursorDao
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, scope, dispatcherProvider, userSessionManager)
+        return TransactionSyncManager(apiInterface, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, scope, dispatcherProvider, userSessionManager, syncCursorDao)
     }
 }

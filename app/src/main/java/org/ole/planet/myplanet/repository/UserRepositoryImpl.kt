@@ -1160,6 +1160,16 @@ class UserRepositoryImpl @Inject constructor(
         achievementDao.markUploaded(id, rev)
     }
 
+    override suspend fun deleteByIds(ids: List<String>) {
+        if (ids.isEmpty()) return
+        userDao.deleteByIds(ids)
+    }
+
+    override suspend fun deleteAchievementsByIds(ids: List<String>) {
+        if (ids.isEmpty()) return
+        achievementDao.deleteByIds(ids)
+    }
+
     override suspend fun bulkInsertAchievementsFromSync(jsonArray: JsonArray) {
         val achievements = ArrayList<Achievement>(jsonArray.size())
         for (j in jsonArray) {

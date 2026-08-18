@@ -75,6 +75,11 @@ class HealthRepositoryImpl @Inject constructor(
         healthExaminationDao.updateUserId(id, userId)
     }
 
+    override suspend fun deleteByIds(ids: List<String>) {
+        if (ids.isEmpty()) return
+        healthExaminationDao.deleteByIds(ids)
+    }
+
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
         val examinations = ArrayList<HealthExamination>(jsonArray.size())
         for (j in jsonArray) {

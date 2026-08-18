@@ -56,6 +56,11 @@ class CommunityRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun deleteByIds(ids: List<String>) {
+        if (ids.isEmpty()) return
+        meetupDao.deleteByIds(ids)
+    }
+
     override suspend fun insertMeetupsFromSync(docs: List<JsonObject>) {
         if (docs.isEmpty()) return
         val ids = docs.map { JsonUtils.getString("_id", it) }

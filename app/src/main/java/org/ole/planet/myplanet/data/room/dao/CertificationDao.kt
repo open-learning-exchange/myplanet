@@ -14,4 +14,7 @@ interface CertificationDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<Certification>)
+
+    @Query("DELETE FROM certification WHERE _id IN (:ids)")
+    suspend fun deleteByIds(ids: List<String>): Int
 }

@@ -26,6 +26,7 @@ interface ExamDao {
     @Query("SELECT * FROM exams WHERE teamId = :teamId") suspend fun getByTeamId(teamId: String): List<StepExam>
     @Query("SELECT * FROM exams WHERE teamId = :teamId AND type = :type") suspend fun getByTeamIdAndType(teamId: String, type: String): List<StepExam>
     @Query("DELETE FROM exams WHERE id = :id") suspend fun deleteById(id: String): Int
+    @Query("DELETE FROM exams WHERE id IN (:ids)") suspend fun deleteByIds(ids: List<String>): Int
     @Upsert suspend fun upsert(item: StepExam)
     @Upsert suspend fun upsertAll(items: List<StepExam>)
     @Upsert fun upsertAllBlocking(items: List<StepExam>)

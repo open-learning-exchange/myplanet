@@ -198,7 +198,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
                 }
                 uploadExamResultWrapper()
             }
-            HeavyTableSyncWorker.scheduleIfPending(applicationContext, sharedPrefManager)
+            HeavyTableSyncWorker.scheduleIfPending(applicationContext)
             if (!syncAlreadyRunning) {
                 RetryQueueWorker.triggerImmediateRetry(applicationContext)
             }
