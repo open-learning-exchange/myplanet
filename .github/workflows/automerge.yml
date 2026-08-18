@@ -35,6 +35,11 @@ on:
         required: false
         default: 'myPlanet build, myPlanet test'
         type: string
+      publish_job:
+        description: 'job whose "playstore upload failed twice" warning stops the drain (blank = skip the check)'
+        required: false
+        default: 'myPlanet release (lite)'
+        type: string
       delete_branch:
         description: 'delete each head branch after merging'
         required: false
@@ -102,6 +107,7 @@ jobs:
           LABEL: ${{ inputs.label }}
           REQUIRE_CHECKS: ${{ inputs.require_checks }}
           REQUIRED_WORKFLOWS: ${{ inputs.required_workflows }}
+          PUBLISH_JOB: ${{ inputs.publish_job }}
           DELETE_BRANCH: ${{ inputs.delete_branch }}
           DRY_RUN: ${{ inputs.dry_run }}
           MAX_MERGES: ${{ inputs.max_merges }}

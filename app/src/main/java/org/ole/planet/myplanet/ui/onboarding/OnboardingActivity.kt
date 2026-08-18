@@ -41,6 +41,7 @@ class OnboardingActivity : AppCompatActivity() {
     lateinit var prefData: SharedPrefManager
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
+    private var pageChangeListener: ViewPager.OnPageChangeListener? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -107,7 +108,8 @@ class OnboardingActivity : AppCompatActivity() {
         mAdapter = OnboardingAdapter(this, onBoardItems)
         binding.pagerIntroduction.adapter = mAdapter
         binding.pagerIntroduction.currentItem = 0
-        binding.pagerIntroduction.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
+
+        pageChangeListener = object : ViewPager.OnPageChangeListener {
             override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
 
             override fun onPageSelected(position: Int) {
@@ -128,7 +130,8 @@ class OnboardingActivity : AppCompatActivity() {
             }
 
             override fun onPageScrollStateChanged(state: Int) {}
-        })
+        }
+        pageChangeListener?.let { binding.pagerIntroduction.addOnPageChangeListener(it) }
 
         binding.skip.setOnClickListener{
             finishTutorial()
@@ -360,6 +363,11 @@ class OnboardingActivity : AppCompatActivity() {
         prefData.setFirstLaunch(true)
         startActivity(Intent(this, LoginActivity::class.java))
         finish()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        pageChangeListener?.let { binding.pagerIntroduction.removeOnPageChangeListener(it) }
     }
 
     companion object {
