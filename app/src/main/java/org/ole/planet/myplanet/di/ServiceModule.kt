@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.di
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import dagger.Lazy
 import dagger.Module
 import dagger.Provides
@@ -10,6 +11,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Qualifier
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -43,11 +45,19 @@ annotation class ApplicationScope
 @InstallIn(SingletonComponent::class)
 object ServiceModule {
 
+    private const val TAG = "ApplicationScope"
+
     @Provides
     @Singleton
     @ApplicationScope
     fun provideApplicationScope(dispatcherProvider: DispatcherProvider): CoroutineScope {
-        return CoroutineScope(SupervisorJob() + dispatcherProvider.io)
+        // Work launched here is fire-and-forget, so without a handler any failure reaches the
+        // default uncaught handler and kills the process. Log and degrade instead: a failed
+        // background upload or warm-up must not take the app down.
+        val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+            Log.e(TAG, "Uncaught exception in application scope", throwable)
+        }
+        return CoroutineScope(SupervisorJob() + dispatcherProvider.io + exceptionHandler)
     }
 
     @Provides

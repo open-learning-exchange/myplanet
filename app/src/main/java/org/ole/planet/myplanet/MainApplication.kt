@@ -10,7 +10,6 @@ import android.net.TrafficStats
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
-import android.util.Log
 import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.hilt.work.HiltWorkerFactory
@@ -34,7 +33,6 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Provider
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.launchIn
@@ -107,7 +105,6 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             .build()
 
     companion object {
-        private const val TAG = "MainApplication"
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
         private const val ANR_LOG_TYPE = "anr"
@@ -291,9 +288,9 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
     private fun performDeferredInitialization() {
         applicationScope.launch(dispatcherProvider.io) {
-            warmUpQuietly("file utils") { FileUtils.warmUp(this@MainApplication) }
-            warmUpQuietly("secure prefs") { SecurePrefs.warmUp(this@MainApplication) }
-            warmUpQuietly("markdown") { MarkdownUtils.warmUp(this@MainApplication) }
+            FileUtils.warmUp(this@MainApplication)
+            SecurePrefs.warmUp(this@MainApplication)
+            MarkdownUtils.warmUp(this@MainApplication)
             runCatching { Class.forName("pl.droidsonroids.gif.GifInfoHandle") }
         }
         applicationScope.launch {
@@ -304,19 +301,6 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             setupAnrWatchdog()
             scheduleWorkersOnStart()
             observeNetworkForDownloads()
-        }
-    }
-
-    private fun warmUpQuietly(what: String, warmUp: () -> Unit) {
-        // The warm-ups only prime caches, so a failure must never escape this fire-and-forget
-        // coroutine: applicationScope has no exception handler, and an uncaught throwable here
-        // would reach the default handler and take the process down on startup.
-        try {
-            warmUp()
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Log.w(TAG, "Deferred $what warm-up failed", e)
         }
     }
 
