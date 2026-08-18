@@ -13,6 +13,9 @@ import androidx.core.content.edit
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -38,11 +41,9 @@ import org.ole.planet.myplanet.model.MyCourse.Companion.saveConcatenatedLinksToP
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SyncRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -69,12 +70,11 @@ class SyncManager @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val timeProvider: TimeProvider,
     private val teamsRepository: TeamsRepository,
-    private val teamsSyncRepository: TeamsSyncRepository,
     private val coursesRepository: CoursesRepository,
-    private val eventsRepository: EventsRepository,
     private val userSyncRepository: UserSyncRepository,
     private val syncRepository: SyncRepository
 ) {
+    private val timestampFormat = DateTimeFormatter.ofPattern("HH:mm:ss.SSS").withZone(ZoneId.systemDefault())
     private val isSyncing = AtomicBoolean(false)
     private var listener: OnSyncListener? = null
     private var backgroundSync: Job? = null
@@ -138,7 +138,7 @@ class SyncManager @Inject constructor(
         val logger = SyncTimeLogger
         logger.startLogging()
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-        Log.d("SyncPerf", "FULL SYNC STARTED at ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(Date())}")
+        Log.d("SyncPerf", "FULL SYNC STARTED at ${timestampFormat.format(Instant.now())}")
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
         try {
 
@@ -207,7 +207,7 @@ class SyncManager @Inject constructor(
             val minutes = totalSyncTime / 60000
             val seconds = (totalSyncTime % 60000) / 1000
             Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-            Log.d("SyncPerf", "FULL SYNC COMPLETED at ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(Date())}")
+            Log.d("SyncPerf", "FULL SYNC COMPLETED at ${timestampFormat.format(Instant.now())}")
             Log.d("SyncPerf", "TOTAL SYNC TIME: ${minutes}m ${seconds}s (${totalSyncTime}ms)")
             Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
         } catch (err: Exception) {
@@ -518,7 +518,7 @@ class SyncManager @Inject constructor(
                     async(dispatcherProvider.io) {
                         semaphore.withPermit {
                             val shelfStartTime = SystemClock.elapsedRealtime()
-                            val items = syncRepository.processShelfParallel(shelfId, apiInterface)
+                            val items = syncRepository.processShelfParallel(shelfId)
                             val shelfDuration = SystemClock.elapsedRealtime() - shelfStartTime
                             if (items > 0) {
                                 logger.logDetail("library_sync", "Shelf ${index + 1}/${shelvesWithData.size} ($shelfId): $items items in ${shelfDuration}ms")
