@@ -42,7 +42,8 @@ class SurveysViewModelTest {
             surveysRepository,
             submissionsRepository,
             userRepository,
-            userSessionManager
+            userSessionManager,
+            testDispatcherProvider
         )
     }
 
@@ -93,6 +94,7 @@ class SurveysViewModelTest {
 
         // Switch to DATE_ASC
         viewModel.sort(SurveysViewModel.SortOption.DATE_ASC)
+        testDispatcher.scheduler.advanceUntilIdle()
         currentSurveys = viewModel.surveys.value
         assertEquals("1", currentSurveys[0].id)
         assertEquals("3", currentSurveys[1].id)
@@ -100,6 +102,7 @@ class SurveysViewModelTest {
 
         // Switch to TITLE_ASC
         viewModel.sort(SurveysViewModel.SortOption.TITLE_ASC)
+        testDispatcher.scheduler.advanceUntilIdle()
         currentSurveys = viewModel.surveys.value
         assertEquals("2", currentSurveys[0].id) // Apple
         assertEquals("3", currentSurveys[1].id) // Banana
@@ -107,6 +110,7 @@ class SurveysViewModelTest {
 
         // Switch to TITLE_DESC
         viewModel.sort(SurveysViewModel.SortOption.TITLE_DESC)
+        testDispatcher.scheduler.advanceUntilIdle()
         currentSurveys = viewModel.surveys.value
         assertEquals("1", currentSurveys[0].id) // Zebra
         assertEquals("3", currentSurveys[1].id) // Banana
@@ -125,11 +129,13 @@ class SurveysViewModelTest {
 
         // Toggle from default (DATE_DESC) -> TITLE_ASC
         viewModel.toggleTitleSort()
+        testDispatcher.scheduler.advanceUntilIdle()
         var currentSurveys = viewModel.surveys.value
         assertEquals("2", currentSurveys[0].id) // Apple
 
         // Toggle again -> TITLE_DESC
         viewModel.toggleTitleSort()
+        testDispatcher.scheduler.advanceUntilIdle()
         currentSurveys = viewModel.surveys.value
         assertEquals("1", currentSurveys[0].id) // Zebra
     }
@@ -163,22 +169,27 @@ class SurveysViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.search("niño")
+        testDispatcher.scheduler.advanceUntilIdle()
         assertEquals(1, viewModel.surveys.value.size)
         assertEquals("1", viewModel.surveys.value[0].id)
 
         viewModel.search("nino")
+        testDispatcher.scheduler.advanceUntilIdle()
         assertEquals(1, viewModel.surveys.value.size)
         assertEquals("1", viewModel.surveys.value[0].id)
 
         viewModel.search("CAFE")
+        testDispatcher.scheduler.advanceUntilIdle()
         assertEquals(1, viewModel.surveys.value.size)
         assertEquals("3", viewModel.surveys.value[0].id)
 
         viewModel.search("lait cafe")
+        testDispatcher.scheduler.advanceUntilIdle()
         assertEquals(1, viewModel.surveys.value.size)
         assertEquals("3", viewModel.surveys.value[0].id)
 
         viewModel.search("The dog")
+        testDispatcher.scheduler.advanceUntilIdle()
         assertEquals(1, viewModel.surveys.value.size)
         assertEquals("2", viewModel.surveys.value[0].id)
     }
