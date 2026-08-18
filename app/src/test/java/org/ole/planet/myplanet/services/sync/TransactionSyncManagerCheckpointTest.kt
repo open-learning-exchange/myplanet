@@ -104,6 +104,7 @@ class TransactionSyncManagerCheckpointTest {
         every { editor.putInt(any(), capture(putValues)) } returns editor
         every { editor.remove(any()) } returns editor
         every { editor.commit() } returns true
+        every { editor.apply() } returns Unit
 
         transactionSyncManager = TransactionSyncManager(
             apiInterface,
@@ -115,7 +116,6 @@ class TransactionSyncManagerCheckpointTest {
             mockk<UserRepository>(relaxed = true),
             mockk<UserSyncRepository>(relaxed = true),
             mockk<ActivitiesRepository>(relaxed = true),
-            mockk<Lazy<TeamsRepository>>(relaxed = true),
             mockk<Lazy<TeamsSyncRepository>>(relaxed = true),
             mockk<NotificationsRepository>(relaxed = true),
             mockk<TagsRepository>(relaxed = true),

@@ -60,6 +60,9 @@ interface NewsDao {
     @Query("SELECT COUNT(*) FROM news WHERE replyTo = :newsId COLLATE NOCASE")
     suspend fun getReplyCount(newsId: String): Int
 
+    @Query("WITH RECURSIVE thread(id) AS (SELECT :newsId UNION SELECT news.id FROM news JOIN thread ON news.replyTo = thread.id) SELECT id FROM thread")
+    suspend fun getNewsAndRepliesIds(newsId: String): List<String>
+
     @Query(
         "SELECT * FROM news WHERE docType = 'message' COLLATE NOCASE " +
             "AND createdOn = :planetCode COLLATE NOCASE"

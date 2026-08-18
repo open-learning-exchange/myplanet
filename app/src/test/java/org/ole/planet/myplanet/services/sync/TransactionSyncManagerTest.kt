@@ -16,7 +16,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.repository.ActivitiesRepository
@@ -46,7 +45,6 @@ class TransactionSyncManagerTest {
 
     private lateinit var transactionSyncManager: TransactionSyncManager
     private val apiInterface: ApiInterface = mockk()
-    private val databaseService: DatabaseService = mockk()
     private val context: Context = mockk()
     private val voicesRepository: VoicesRepository = mockk()
     private val chatRepository: ChatRepository = mockk()
@@ -55,7 +53,6 @@ class TransactionSyncManagerTest {
     private val userRepository: UserRepository = mockk()
     private val userSyncRepository: UserSyncRepository = mockk()
     private val activitiesRepository: ActivitiesRepository = mockk()
-    private val teamsRepository: Lazy<TeamsRepository> = mockk()
     private val teamsSyncRepository: Lazy<TeamsSyncRepository> = mockk()
 	private val notificationsRepository: NotificationsRepository = mockk()
     private val tagsRepository: TagsRepository = mockk()
@@ -89,7 +86,6 @@ class TransactionSyncManagerTest {
             userRepository,
             userSyncRepository,
             activitiesRepository,
-			teamsRepository,
             teamsSyncRepository,
 			notificationsRepository,
             tagsRepository,
