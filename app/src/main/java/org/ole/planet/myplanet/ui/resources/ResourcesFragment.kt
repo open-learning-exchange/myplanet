@@ -71,11 +71,13 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private val binding get() = _binding!!
     private val tvAddToLib get() = binding.tvAdd
     private val tvSelected get() = binding.tvSelected
+    private val layoutSearch get() = binding.layoutSearch.root
     private val etSearch get() = binding.layoutSearch.etSearch
     private val flexBoxTags get() = binding.layoutSearch.flexboxTags
     private val clearTags get() = binding.btnClearTags
     private val selectAll get() = binding.selectAll
     private val filter get() = binding.filter
+    private val layoutViewToggle get() = binding.root.findViewById<View>(R.id.layout_view_toggle) ?: (toggleGridButton?.parent as? View)
     private lateinit var searchTags: MutableList<TagEntity>
     private lateinit var config: ChipCloudConfig
     private lateinit var adapterLibrary: ResourcesAdapter
@@ -450,7 +452,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
         if (!hasAnyLibraryData && listSize == 0) {
             selectAll.visibility = View.GONE
-            etSearch.visibility = View.GONE
+            layoutSearch.visibility = View.GONE
+            layoutViewToggle?.visibility = View.GONE
             tvSelected.visibility = View.GONE
             binding.btnCollections.visibility = View.GONE
             filter.visibility = View.GONE
@@ -458,7 +461,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             tvDelete?.visibility = View.GONE
         } else {
             selectAll.visibility = if (isGuest) View.GONE else View.VISIBLE
-            etSearch.visibility = View.VISIBLE
+            layoutSearch.visibility = View.VISIBLE
+            layoutViewToggle?.visibility = View.VISIBLE
             binding.btnCollections.visibility = View.VISIBLE
             filter.visibility = View.VISIBLE
             clearTags.visibility = if (hasActiveFilters()) View.VISIBLE else View.GONE
