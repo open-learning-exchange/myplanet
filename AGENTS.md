@@ -66,3 +66,25 @@ UI package at a time. Conventions worth remembering across slices:
 - **Tests**: `flutter analyze` (must be clean) + `flutter test` (CI gate).
   Repository tests use `AppDatabase.memory()` + mocktail `Mock implements
   PlanetApi`. Uploader tests mirror `test/repository/ratings_uploader_test.dart`.
+  - **l10n/initState trap**: a `ConsumerStatefulWidget` that needs
+    `AppLocalizations.of(context)` must kick off its async load in
+    `didChangeDependencies` (guarded by a `_loaded` bool), **not** `initState`.
+    `initState` runs before the localization delegates finish loading, so
+    `AppLocalizations.of(context)` throws and the load Future never sets
+    `_isLoading=false` — the spinner spins forever and `pumpAndSettle` times
+    out. See `storage_breakdown_screen.dart` / `storage_category_detail_screen.dart`.
+  - **dart:io under `flutter test`**: `Directory.exists()`/`File` async ops
+    hang under the binding's fake clock (they need the real event loop). A
+    screen that walks the filesystem inline is therefore untestable — route
+    the read through a repository seam and mock it in widget tests (as
+    `storage_breakdown_screen_test.dart` does via `getOfflineResourceItems`).
+  - **Platform channels as seams**: when a feature needs a platform-only API
+    with no pure-Dart equivalent (device free space via Android
+    `StorageStatsManager`, etc.), define an abstract Dart seam
+    (`lib/core/system/*.dart`, e.g. `DiskStats`) backed by a
+    `MethodChannel` impl, plus the Kotlin handler in
+    `flutter/android/app/src/main/kotlin/.../MainActivity.kt`
+    (`configureFlutterEngine` override). Production sets
+    `DiskStats.instance = _MethodChannelDiskStats()`; a `diskStatsProvider`
+    lets widget tests inject a fake. The Kotlin side is not unit-tested in
+    the Flutter gate (it compiles only on an Android build).

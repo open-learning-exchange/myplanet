@@ -598,13 +598,17 @@ need nothing from the port. Four changes were harvested:
 Recorded as spec debt rather than harvested (the Kotlin change lands on something the port has
 not built, or needs a primitive the port lacks):
 
-- The rest of `82140152b`: the free-up-space button and available-space text inside the
-  breakdown sheet. Free-up-space needs `FreeSpaceWorker`'s delete-and-mark-not-offline pass;
-  available space needs a disk-stats plugin. The category-detail stubs that blocked this are
-  now ported â€” `getResourceTitlesMap`, `markResourcesAsNotOffline`,
-  `getOfflineResourceItems`, and `deleteOfflineResources` live on `ResourcesRepository`, and
-  `StorageCategoryDetailScreen` reads from it (no more `_getResourceTitlesMap` returning
-  `{}` or no-op `_markResourcesAsNotOffline`).
+- The rest of `82140152b` is **now ported** (was spec debt): the free-up-space button and
+  available-space text inside the breakdown sheet. `ResourcesRepository.freeUpSpace` walks the
+  `ole/` tree, deletes every resource-id directory, and clears the offline flag on the matching
+  library rows (the `FreeSpaceWorker.doWork` delete-and-mark-not-offline pass, with a
+  `spareDirectoryNames` seam for a future `cv` store). The available/total disk figures come
+  through a `DiskStats` seam backed by a `disk_stats` method channel on `MainActivity` (Android
+  `StorageStatsManager` — there is no pure-Dart device-free-space API, so the seam keeps the UI
+  testable with a fake). `StorageBreakdownScreen` now sizes its categories through
+  `ResourcesRepository.getOfflineResourceItems` rather than an inline `ole/` walk, which both
+  removes a duplicate of the repository's grouping logic and makes the screen testable under the
+  fake clock (an inline walk hangs the way `storage_category_detail_screen_test` documents).
 - `b8e98c550` / `2b39eb329`: the courses progress filter and sort toggle are not ported; when
   they are, implement the *new* semantics (progress filter over the whole library, `max`
   falling back to the step count; sort state living in the provider so it survives stream
@@ -1095,8 +1099,10 @@ flutter pub get 2>&1 | grep -i discontinued
 - `user` -- profile photo *upload* (`PhotoUploader`, `updateUserImage`); displaying the photo
   landed in Phase 36. Membership registration landed in Phase 27, and `BecomeMemberActivity`'s
   debounced username validation is still validate-on-submit here.
-- `settings` -- the free-up-space button and available-space text inside the storage sheet, which
-  need `FreeSpaceWorker`'s delete-and-mark-not-offline pass and a disk-stats plugin.
+- `settings` -- nothing open. The free-up-space button and available-space text inside the
+  storage sheet landed in this slice: `ResourcesRepository.freeUpSpace` (the
+  `FreeSpaceWorker.doWork` delete-and-mark-not-offline pass) plus a `DiskStats` seam over a
+  `disk_stats` method channel (`StorageStatsManager`) for the available/total figures.
 - `dashboard` -- the home dashboard's OS-scheduled background sync (the
   `AutoSyncWorker` half landed in Phase 38 through the `workmanager` plugin;
   `TaskNotificationWorker`'s deadline notifications and `DownloadWorker`'s

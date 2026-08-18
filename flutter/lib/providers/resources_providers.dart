@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/server_config.dart';
+import '../core/system/disk_stats.dart';
 import '../core/sync/sync_result.dart';
 import '../data/local/app_database.dart';
 import 'app_providers.dart';
@@ -37,3 +38,17 @@ final resourceSyncProvider =
     NotifierProvider<ResourceSyncNotifier, SyncUiState>(
       ResourceSyncNotifier.new,
     );
+
+/// The device's total and available storage. Backed by the `disk_stats` method
+/// channel in production (`DiskStats.instance`); tests override this with a
+/// fake so the storage breakdown screen can render a known `available/total`
+/// string without a platform call.
+final diskStatsProvider = Provider<DiskStats>((ref) => DiskStats.instance);
+
+/// The result of a "free up space" pass — bytes freed and files deleted — kept
+/// on a provider so the storage breakdown screen can show the summary snackbar
+/// the way the Kotlin's `WorkInfo.outputData` fed it back to
+/// `StorageBreakdownFragment`. `null` until the first run.
+typedef FreeSpaceResult = ({int deletedFiles, int freedBytes});
+
+final freeSpaceResultProvider = StateProvider<FreeSpaceResult?>((ref) => null);

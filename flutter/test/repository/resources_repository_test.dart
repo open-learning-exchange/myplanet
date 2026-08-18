@@ -472,6 +472,88 @@ void main() {
         expect(File('${tempDir.path}/ole/res-1/a.pdf').existsSync(), isTrue);
       },
     );
+
+    test(
+      'freeUpSpace clears every resource dir and marks the rows not offline',
+      () async {
+        // Port of `FreeSpaceWorker.doWork`: a top-level sweep that deletes each
+        // resource-id directory under `ole/` and clears the offline flag on
+        // the rows whose files just vanished, so the list stops offering them
+        // as available offline before the next sync.
+        await seedOffline(
+          id: 'res-1',
+          title: 'Algebra',
+          filename: 'lecture.mp4',
+          bytes: [1, 2, 3, 4],
+        );
+        await seedOffline(
+          id: 'res-2',
+          title: 'Biology',
+          filename: 'notes.pdf',
+          bytes: [5, 6],
+        );
+
+        final result = await repository.freeUpSpace();
+
+        expect(result.deletedFiles, 2);
+        expect(result.freedBytes, 6);
+        expect(
+          Directory('${tempDir.path}/ole/res-1').existsSync(),
+          isFalse,
+        );
+        expect(
+          Directory('${tempDir.path}/ole/res-2').existsSync(),
+          isFalse,
+        );
+        expect(
+          (await db.myLibraryDao.getById('res-1'))!.resourceOffline,
+          isFalse,
+        );
+        expect(
+          (await db.myLibraryDao.getById('res-2'))!.resourceOffline,
+          isFalse,
+        );
+      },
+    );
+
+    test(
+      'freeUpSpace spares a named directory and leaves its flag alone',
+      () async {
+        // The Kotlin skips the `cv` resume directory; the port has no resume
+        // feature yet, but the [spareDirectoryNames] seam keeps the contract —
+        // a future slice can exclude its store without touching the call site.
+        await seedOffline(
+          id: 'res-1',
+          title: 'Algebra',
+          filename: 'lecture.mp4',
+        );
+        await Directory('${tempDir.path}/ole/cv').create(recursive: true);
+        await File('${tempDir.path}/ole/cv/resume.pdf').writeAsBytes([7, 8, 9]);
+
+        final result = await repository.freeUpSpace(
+          spareDirectoryNames: const {'cv'},
+        );
+
+        expect(result.deletedFiles, 1);
+        expect(result.freedBytes, 3);
+        expect(
+          File('${tempDir.path}/ole/cv/resume.pdf').existsSync(),
+          isTrue,
+        );
+        expect(
+          (await db.myLibraryDao.getById('res-1'))!.resourceOffline,
+          isFalse,
+        );
+      },
+    );
+
+    test('freeUpSpace is a no-op when the ole directory does not exist',
+        () async {
+      final result = await repository.freeUpSpace();
+
+      expect(result.deletedFiles, 0);
+      expect(result.freedBytes, 0);
+    });
   });
 }
 

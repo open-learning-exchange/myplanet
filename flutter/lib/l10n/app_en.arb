@@ -899,6 +899,28 @@
   "deleteAll": "Delete All",
   "selectAll": "Select All",
   "noStorageUsed": "No downloaded files found",
+  "availableSpace": "Available space",
+  "freeUpSpace": "Free up space",
+  "freeUpSpaceConfirm": "This will delete all downloaded resources to free up storage space. Continue?",
+  "storageFreedSummary": "Freed {bytes}. {count, plural, =0{No files removed} =1{1 file removed} other{{count} files removed}}.",
+  "@storageFreedSummary": {
+    "placeholders": {
+      "bytes": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "freeUpSpaceFailed": "Could not free up space: {error}",
+  "@freeUpSpaceFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "enterUsername": "Enter username",
   "enterPassword": "Enter password",
   "retypePassword": "Retype password",

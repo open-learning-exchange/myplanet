@@ -268,6 +268,82 @@ class ResourcesRepository {
     await markResourcesAsNotOffline(deletedIds);
   }
 
+  /// Port of `FreeSpaceWorker.doWork` — the "free up space" pass that clears
+  /// every downloaded resource under the `ole` directory and, for each removed
+  /// resource-id directory, clears the offline flag on the matching library
+  /// rows so the list stops offering them as available offline before the next
+  /// sync re-checks file existence.
+  ///
+  /// The Kotlin walks `ole/`'s direct children, recursing past each; a child
+  /// that is itself a directory is a resource id, so its name is what
+  /// `markResourcesAsNotOffline` keys on. Files that landed directly in `ole/`
+  /// (no enclosing resource dir) are still deleted but contribute no id. The
+  /// Kotlin skips the `cv` resume directory; the Flutter port has no resume
+  /// feature yet, so there is nothing to spare — but [spareDirectoryNames] is
+  /// kept on the signature so a future slice can exclude its store without
+  /// touching the call sites.
+  ///
+  /// Returns the bytes freed and the file count, the two values the Kotlin
+  /// surfaces through `WorkInfo.outputData` for the summary snackbar.
+  Future<({int deletedFiles, int freedBytes})> freeUpSpace({
+    Set<String> spareDirectoryNames = const {},
+  }) async {
+    final oleDir = await _oleDir;
+    if (!await oleDir.exists()) {
+      return (deletedFiles: 0, freedBytes: 0);
+    }
+    var deletedFiles = 0;
+    var freedBytes = 0;
+    final clearedIds = <String>{};
+    await for (final child in oleDir.list()) {
+      final name = child.path.split(Platform.pathSeparator).last;
+      final isDir = child is Directory;
+      if (isDir && spareDirectoryNames.contains(name)) continue;
+      final before = deletedFiles;
+      final (childFiles, childBytes) = await _deleteRecursive(child);
+      deletedFiles += childFiles;
+      freedBytes += childBytes;
+      if (isDir && (deletedFiles > before || !await child.exists())) {
+        clearedIds.add(name);
+      }
+    }
+    if (clearedIds.isNotEmpty) {
+      await markResourcesAsNotOffline(clearedIds);
+    }
+    return (deletedFiles: deletedFiles, freedBytes: freedBytes);
+  }
+
+  /// Recursive delete mirroring `FreeSpaceWorker.deleteRecursive`. Returns the
+  /// file count and byte count it freed, the values the worker accumulates for
+  /// its summary. A missing entity is a no-op, the way the Kotlin's
+  /// `!child.exists()` early-out would treat it.
+  Future<(int, int)> _deleteRecursive(FileSystemEntity entity) async {
+    if (!await entity.exists()) return (0, 0);
+    if (entity is File) {
+      final size = entity.lengthSync();
+      await entity.delete();
+      return (1, size);
+    }
+    if (entity is! Directory) return (0, 0);
+    var files = 0;
+    var bytes = 0;
+    try {
+      await for (final child in entity.list()) {
+        final (f, b) = await _deleteRecursive(child);
+        files += f;
+        bytes += b;
+      }
+    } catch (_) {
+      // A vanished child or permission error is best-effort, like the Kotlin.
+    }
+    try {
+      await entity.delete();
+    } catch (_) {
+      // Leaving an empty directory behind is harmless.
+    }
+    return (files, bytes);
+  }
+
   /// The `ole` directory resources are downloaded into. Resolved through
   /// `ResourceFiles` so this stays in step with the downloader and viewer,
   /// which are the only writers to that tree.
