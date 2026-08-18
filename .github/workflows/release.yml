@@ -159,7 +159,7 @@ jobs:
       - name: stop the automerge drain when playstore is out of daily quota
         if: github.event_name != 'workflow_dispatch' && matrix.build == 'lite' && steps.playstore.outcome == 'failure' && steps.playstore_fallback.outcome == 'failure'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
           JOB_NAME: myPlanet release (${{ matrix.build }})
           QUOTA_ERROR: Daily save quota exceeded
           DRAIN: .github/workflows/automerge.yml
