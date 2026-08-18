@@ -156,45 +156,60 @@ jobs:
           echo "https://github.com/open-learning-exchange/myplanet/releases/tag/v${{ env.ANDROID_VERSION_NAME }}"
           treehouses feedback "new myplanet app: <https://github.com/open-learning-exchange/myplanet/releases/tag/v${{ env.ANDROID_VERSION_NAME }}>"
 
-      - name: stop the automerge drain when playstore is out of daily quota
-        if: github.event_name != 'workflow_dispatch' && matrix.build == 'lite' && steps.playstore.outcome == 'failure' && steps.playstore_fallback.outcome == 'failure'
+  # A job cannot read its own log while it is still running (the API only
+  # serves a job's log once that job has finished), so the playstore outcome
+  # is classified here, in a job that starts after the release jobs complete.
+  playstore-quota-guard:
+    name: stop the automerge drain when playstore is out of daily quota
+    needs: release
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: classify the lite job's playstore failure and cancel the drain
         env:
-          GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
-          JOB_NAME: myPlanet release (${{ matrix.build }})
+          GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
+          JOB_NAME: myPlanet release (lite)
+          STEP_MARKER: Run dogi/upload-google-play
           QUOTA_ERROR: Daily save quota exceeded
-          DRAIN: .github/workflows/automerge.yml
+          DRAIN: automerge.yml
         run: |
           JOBS_API="repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs"
-          JOB_ID=$(gh api "$JOBS_API" --jq ".jobs[] | select(.name == \"$JOB_NAME\") | .id" 2>/dev/null || true)
+          JOB_ID=$(gh api "$JOBS_API" --paginate \
+                     --jq ".jobs[] | select(.name == \"$JOB_NAME\") | .id" 2>/dev/null | head -n 1)
           if [ -z "$JOB_ID" ]; then
-            JOB_ID=$(gh api "$JOBS_API" --jq ".jobs[] | select(.runner_name == \"$RUNNER_NAME\") | .id" 2>/dev/null || true)
+            echo "::warning::could not find the '$JOB_NAME' job in this run, so the playstore outcome went unclassified"
+            exit 0
           fi
 
+          # The lite job has finished (needs: release), so its log is
+          # servable; the retry only rides out log-ingestion lag.
           LOG=""
           for _ in 1 2 3 4 5; do
-            [ -n "$JOB_ID" ] || break
-            LOG=$(gh api "repos/$GITHUB_REPOSITORY/actions/jobs/$JOB_ID/logs" 2>/dev/null || true)
-            grep -qF 'upload-google-play' <<<"$LOG" && break
+            LOG=$(gh api "repos/$GITHUB_REPOSITORY/actions/jobs/$JOB_ID/logs" 2>/dev/null | tr -d '\r' || true)
+            grep -qF "$STEP_MARKER" <<<"$LOG" && break
             LOG=""
             sleep 10
           done
 
           if [ -z "$LOG" ]; then
-            echo "::warning::could not read this job's log, so the playstore failure went unclassified"
+            echo "::warning::could not read the '$JOB_NAME' log, so the playstore outcome went unclassified"
             exit 0
           fi
-          if ! grep -qF "Error: $QUOTA_ERROR" <<<"$LOG"; then
+          # The raw log carries the annotation form '##[error]...', not the
+          # 'Error: ...' the web UI renders it as.
+          if ! grep -qF "##[error]$QUOTA_ERROR" <<<"$LOG"; then
             echo "playstore upload did not fail on '$QUOTA_ERROR' -- leaving the automerge drain alone"
             exit 0
           fi
 
-          MESSAGE="playstore is out of daily save quota, so ${{ env.PLAYSTORE_RELEASE_NAME }} was not published and the quota resets at midnight PT. Upload myPlanet-lite.aab from the release by hand, then dispatch \`myPlanet automerge\` again."
+          RELEASE_NAME=$(grep -oP 'PLAYSTORE_RELEASE_NAME: \K.+' <<<"$LOG" | head -n 1)
+          MESSAGE="playstore is out of daily save quota, so ${RELEASE_NAME:-this release} was not published and the quota resets at midnight PT. Upload myPlanet-lite.aab from the release by hand, then dispatch \`myPlanet automerge\` again."
           echo "::warning::${MESSAGE}"
           echo "### playstore is out of daily save quota" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "${MESSAGE}" >> $GITHUB_STEP_SUMMARY
 
-          for RUN in $(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/${DRAIN##*/}/runs?per_page=20" \
+          for RUN in $(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/$DRAIN/runs?per_page=20" \
                          --jq '.workflow_runs[] | select(.status != "completed") | .id' 2>/dev/null || true); do
             gh api -X POST "repos/$GITHUB_REPOSITORY/actions/runs/$RUN/cancel" >/dev/null 2>&1 \
               && echo "cancelled automerge run $RUN" \
