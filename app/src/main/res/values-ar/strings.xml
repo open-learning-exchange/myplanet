@@ -358,7 +358,8 @@
     <string-array name="sort_by_date">
         <item>ترتيب حسب التاريخ - تنازليًا</item>
         <item>ترتيب حسب التاريخ - تصاعديًا</item>
-        <item>ترتيب حسب العنوان</item>
+        <item>ترتيب حسب العنوان - تصاعديًا</item>
+        <item>ترتيب حسب العنوان - تنازليًا</item>
     </string-array>
 
     <string-array name="sort_member">

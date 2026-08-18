@@ -106,6 +106,14 @@ class UploadRepositoryImpl @Inject constructor(
         return failed
     }
 
+    override suspend fun uploadResource(
+        headerMap: Map<String, String>,
+        url: String,
+        body: okhttp3.RequestBody
+    ): Response<JsonObject> {
+        return apiInterface.uploadResource(headerMap, url, body)
+    }
+
     override suspend fun uploadAttachment(
         file: File,
         destinationFormat: String,
