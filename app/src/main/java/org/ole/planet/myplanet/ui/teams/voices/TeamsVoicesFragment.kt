@@ -249,8 +249,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(viewLifecycleOwner.lifecycleScope, dispatcherProvider),
                     labelManager = labelManager,
                     voicesRepository = voicesRepository,
-                    userRepository = userRepository,
-                    getCommunityLeadersFn = { sharedPrefManager.getCommunityLeaders() },
+                    leadersList = userRepository.parseLeadersJson(sharedPrefManager.getCommunityLeaders()),
                     setRepliedNewsIdFn = { sharedPrefManager.setRepliedNewsId(it) }
                 )
             }
