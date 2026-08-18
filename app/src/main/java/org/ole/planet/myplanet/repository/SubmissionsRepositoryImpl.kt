@@ -616,6 +616,11 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         upsertRoomSubmissionsFromSync(documentList)
     }
 
+    override suspend fun deleteByIds(ids: List<String>) {
+        if (ids.isEmpty()) return
+        submissionDao.deleteByIds(ids)
+    }
+
     override suspend fun insertSubmission(submission: JsonObject) {
         if (submission.has("_attachments")) return
         upsertRoomSubmissionsFromSync(listOf(submission))

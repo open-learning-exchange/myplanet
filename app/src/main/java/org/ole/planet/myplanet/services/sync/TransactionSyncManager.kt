@@ -24,9 +24,11 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.room.dao.SyncCursorDao
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.SyncCursor
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatRepository
@@ -80,13 +82,21 @@ class TransactionSyncManager @Inject constructor(
     private val surveysRepository: SurveysRepository,
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
-    private val userSessionManager: UserSessionManager
+    private val userSessionManager: UserSessionManager,
+    private val syncCursorDao: SyncCursorDao
 ) {
     // The heavy tables are fetched in parallel (see SyncManager), but SQLite has a single
     // writer, so running ~14 batch inserts concurrently just thrashes the write lock/WAL — the
     // same inserts that take ~1ms/doc uncontended balloon to >100ms/doc under contention. This
     // mutex serializes only the DB-write portion of each batch; network fetches still overlap.
     private val dbWriteMutex = Mutex()
+
+    // These tables are unbounded, append-mostly logs (see HeavyTableSyncWorker.ALL_HEAVY_TABLES)
+    // where a full _all_docs re-scan every sync is the most wasteful. They sync via CouchDB's
+    // _changes feed with a persisted since-cursor (syncDbIncremental) instead.
+    private val incrementalTables = setOf(
+        "ratings", "courses_progress", "submissions", "login_activities", "team_activities"
+    )
 
     suspend fun authenticate(): Boolean {
         try {
@@ -167,10 +177,120 @@ class TransactionSyncManager @Inject constructor(
     }
 
     suspend fun syncDb(table: String, useCheckpoint: Boolean = false): Int = withContext(dispatcherProvider.io) {
+        if (table in incrementalTables) {
+            syncDbIncremental(table)
+        } else {
+            syncDbFull(table, useCheckpoint)
+        }
+    }
+
+    /**
+     * CouchDB `_changes` feed with a persisted since-cursor (see [syncCursorDao]), for the
+     * unbounded log-style tables in [incrementalTables]. Only ever pulls what changed since the
+     * last successful page — no full re-scan. Live docs are wrapped into the same `{"doc": ...}`
+     * row shape `_all_docs` returns so [upsertBatch] and its per-table dispatch stay identical
+     * to the full-scan path.
+     */
+    private suspend fun syncDbIncremental(table: String): Int {
+        val syncStartTime = SystemClock.elapsedRealtime()
+        Log.d("SyncPerf", "  ▶ Starting $table sync (incremental)")
+        return try {
+            val pageSize = when (table) {
+                "ratings" -> 20
+                "submissions" -> 100
+                "courses_progress", "login_activities", "team_activities" -> 200
+                else -> 1000
+            }
+            var since = syncCursorDao.getSince(table) ?: "0"
+            var totalDocs = 0
+            var batchNumber = 0
+            var resetAttempted = false
+            val url = UrlUtils.getUrl()
+            val authHeader = UrlUtils.header
+
+            while (true) {
+                currentCoroutineContext().ensureActive()
+                batchNumber++
+                val batchStartTime = SystemClock.elapsedRealtime()
+                val changesUrl = "$url/$table/_changes?since=$since&include_docs=true&limit=$pageSize&style=main_only"
+                val batchApiStartTime = SystemClock.elapsedRealtime()
+                val response = apiInterface.getJsonObject(authHeader, changesUrl)
+                val batchApiDuration = SystemClock.elapsedRealtime() - batchApiStartTime
+                val body = response.body()
+                if (!response.isSuccessful || body == null) {
+                    SyncTimeLogger.logApiCall("$changesUrl (batch $batchNumber)", batchApiDuration, false, 0)
+                    // Self-heal once on a rejected cursor (e.g. the server's update-seq counter
+                    // was reset) instead of getting stuck failing on the same since token forever.
+                    if (!resetAttempted && since != "0") {
+                        Log.d("SyncPerf", "  ↻ $table _changes rejected since=$since (HTTP ${response.code()}); resetting to since=0")
+                        syncCursorDao.clear(table)
+                        since = "0"
+                        resetAttempted = true
+                        continue
+                    }
+                    Log.d("SyncPerf", "  ✗ Failed $table batch $batchNumber: HTTP ${response.code()}")
+                    break
+                }
+                val results = getJsonArray("results", body)
+                SyncTimeLogger.logApiCall("$changesUrl (batch $batchNumber)", batchApiDuration, true, results.size())
+                if (results.size() == 0) break
+
+                val liveRows = JsonArray()
+                val deletedIds = mutableListOf<String>()
+                for (element in results) {
+                    val result = element.asJsonObject
+                    val id = getString("id", result)
+                    val isDeleted = result.has("deleted") && result.get("deleted").asBoolean
+                    if (isDeleted) {
+                        if (id.isNotEmpty()) deletedIds.add(id)
+                        continue
+                    }
+                    val doc = result.getAsJsonObject("doc") ?: continue
+                    if (getString("_id", doc).startsWith("_design")) continue
+                    liveRows.add(JsonObject().apply { add("doc", doc) })
+                }
+
+                if (liveRows.size() > 0) {
+                    upsertBatch(table, liveRows)
+                    totalDocs += liveRows.size()
+                }
+                if (deletedIds.isNotEmpty()) {
+                    deleteBatch(table, deletedIds)
+                }
+
+                val lastSeq = getString("last_seq", body)
+                if (lastSeq.isNotEmpty()) since = lastSeq
+                // Persist after every page so an interruption resumes from the last committed
+                // page, not from the start of this whole incremental pull.
+                syncCursorDao.upsert(SyncCursor(table, since))
+
+                val pending = if (body.has("pending")) body.get("pending").asInt else -1
+                val batchDuration = SystemClock.elapsedRealtime() - batchStartTime
+                Log.d("SyncPerf", "    $table batch $batchNumber: ${results.size()} changes in ${batchDuration}ms (total upserted: $totalDocs)")
+
+                if (pending == 0 || results.size() < pageSize) break
+            }
+
+            val totalDuration = SystemClock.elapsedRealtime() - syncStartTime
+            Log.d("SyncPerf", "  ✓ Completed $table sync (incremental): $totalDocs docs in ${totalDuration}ms")
+            totalDocs
+        } catch (e: CancellationException) {
+            val stopDuration = SystemClock.elapsedRealtime() - syncStartTime
+            Log.d("SyncPerf", "  ⏸ Interrupted $table sync after ${stopDuration}ms; will resume from last committed cursor")
+            throw e
+        } catch (e: Exception) {
+            e.printStackTrace()
+            val failDuration = SystemClock.elapsedRealtime() - syncStartTime
+            Log.d("SyncPerf", "  ✗ Failed $table sync after ${failDuration}ms: ${e.message}")
+            0
+        }
+    }
+
+    private suspend fun syncDbFull(table: String, useCheckpoint: Boolean): Int {
         val syncStartTime = SystemClock.elapsedRealtime()
         val checkpointKey = "heavy_sync_skip_$table"
         Log.d("SyncPerf", "  ▶ Starting $table sync")
-        try {
+        return try {
             val pageSize = when (table) {
                 "ratings" -> 20
                 "submissions" -> 100
@@ -220,90 +340,7 @@ class TransactionSyncManager @Inject constructor(
                     response.isSuccessful,
                     arr.size()
                 )
-                when (table) {
-                    "news" -> timedBatchInsert(table, arr.size()) {
-                        voicesRepository.insertNewsList(extractDocs(arr))
-                    }
-                    "feedback" -> timedBatchInsert(table, arr.size()) {
-                        feedbackRepository.insertFeedbackList(extractDocs(arr))
-                    }
-                    "chat_history" -> timedBatchInsert(table, arr.size()) {
-                        chatRepository.insertChatHistoryFromSync(arr.map { it.asJsonObject })
-                    }
-                    "tablet_users" -> timedBatchInsert(table, arr.size()) {
-                        userSyncRepository.insertUsersFromSync(arr.map { it.asJsonObject })
-                    }
-                    "meetups" -> timedBatchInsert(table, arr.size()) {
-                        communityRepository.insertMeetupsFromSync(extractDocs(arr))
-                    }
-                    "login_activities" -> timedBatchInsert(table, arr.size()) {
-                        activitiesRepository.insertLoginActivitiesFromSync(extractDocs(arr))
-                    }
-                    "courses_progress" -> timedBatchInsert(table, arr.size()) {
-                        progressRepository.insertCourseProgressFromSync(extractDocs(arr))
-                    }
-                    "ratings" -> timedBatchInsert(table, arr.size()) {
-                        ratingsRepository.insertRatingsFromSync(extractDocs(arr))
-                    }
-                    "certifications" -> timedBatchInsert(table, arr.size()) {
-                        coursesRepository.insertCertificationsFromSync(arr)
-                    }
-                    "tags" -> timedBatchInsert(table, arr.size()) {
-                        tagsRepository.insert(extractDocs(arr))
-                    }
-                    "team_activities" -> timedBatchInsert(table, arr.size()) {
-                        teamsSyncRepository.get().bulkInsertTeamActivitiesFromSync(arr)
-                    }
-                    "tasks" -> timedBatchInsert(table, arr.size()) {
-                        teamsSyncRepository.get().bulkInsertTasksFromSync(arr)
-                    }
-                    "notifications" -> timedBatchInsert(table, arr.size()) {
-                        notificationsRepository.bulkInsertFromSync(arr)
-                    }
-                    "achievements" -> timedBatchInsert(table, arr.size()) {
-                        userSyncRepository.bulkInsertAchievementsFromSync(arr)
-                    }
-                    "health" -> timedBatchInsert(table, arr.size()) {
-                        healthRepository.bulkInsertFromSync(arr)
-                    }
-                    "courses" -> timedBatchInsert(table, arr.size()) {
-                        val insertStartTime = SystemClock.elapsedRealtime()
-                        coursesRepository.bulkInsertFromSync(arr)
-                        val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
-                        Log.d("SyncPerf", "    $table insertDuration: ${insertDuration}ms for ${arr.size()} items")
-                    }
-                    else -> {
-                        val insertStartTime = SystemClock.elapsedRealtime()
-                        dbWriteMutex.withLock {
-                            when (table) {
-                                "exams" -> surveysRepository.bulkInsertExamsFromSync(arr)
-                                "submissions" -> submissionsRepository.bulkInsertFromSync(arr)
-                                "teams" -> teamsSyncRepository.get().bulkInsertFromSync(arr)
-                                else -> Log.e("SyncPerf", "Unknown table: $table")
-                            }
-                        }
-                        val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
-                        SyncTimeLogger.logRealmOperation(
-                            "insert_batch",
-                            table,
-                            insertDuration,
-                            arr.size()
-                        )
-                    }
-                }
-
-                if (table == "achievements") {
-                    downloadCvAttachmentsFromBatch(arr)
-                }
-                if (table == "teams") {
-                    downloadTeamAttachmentsFromBatch(arr)
-                }
-                if (table == "courses") {
-                    downloadCourseCoversFromBatch(arr)
-                    // Resources embedded in course steps were queued during course upserts;
-                    // persist them to the Room library table now.
-                    coursesRepository.flushPendingCourseResources()
-                }
+                upsertBatch(table, arr)
                 totalDocs += arr.size()
                 skip += arr.size()
                 // Persist progress immediately after a batch is committed so an interruption
@@ -340,6 +377,112 @@ class TransactionSyncManager @Inject constructor(
             val failDuration = SystemClock.elapsedRealtime() - syncStartTime
             Log.d("SyncPerf", "  ✗ Failed $table sync after ${failDuration}ms: ${e.message}")
             0
+        }
+    }
+
+    /**
+     * Per-table upsert dispatch, shared by [syncDbFull] and [syncDbIncremental]. Both feed it the
+     * same `{"rows": [{"doc": ...}, ...]}`-shaped [arr], so a table's insert path and attachment
+     * downloads behave identically regardless of whether it came from a full `_all_docs` scan or
+     * an incremental `_changes` page.
+     */
+    private suspend fun upsertBatch(table: String, arr: JsonArray) {
+        when (table) {
+            "news" -> timedBatchInsert(table, arr.size()) {
+                voicesRepository.insertNewsList(extractDocs(arr))
+            }
+            "feedback" -> timedBatchInsert(table, arr.size()) {
+                feedbackRepository.insertFeedbackList(extractDocs(arr))
+            }
+            "chat_history" -> timedBatchInsert(table, arr.size()) {
+                chatRepository.insertChatHistoryFromSync(arr.map { it.asJsonObject })
+            }
+            "tablet_users" -> timedBatchInsert(table, arr.size()) {
+                userSyncRepository.insertUsersFromSync(arr.map { it.asJsonObject })
+            }
+            "meetups" -> timedBatchInsert(table, arr.size()) {
+                communityRepository.insertMeetupsFromSync(extractDocs(arr))
+            }
+            "login_activities" -> timedBatchInsert(table, arr.size()) {
+                activitiesRepository.insertLoginActivitiesFromSync(extractDocs(arr))
+            }
+            "courses_progress" -> timedBatchInsert(table, arr.size()) {
+                progressRepository.insertCourseProgressFromSync(extractDocs(arr))
+            }
+            "ratings" -> timedBatchInsert(table, arr.size()) {
+                ratingsRepository.insertRatingsFromSync(extractDocs(arr))
+            }
+            "certifications" -> timedBatchInsert(table, arr.size()) {
+                coursesRepository.insertCertificationsFromSync(arr)
+            }
+            "tags" -> timedBatchInsert(table, arr.size()) {
+                tagsRepository.insert(extractDocs(arr))
+            }
+            "team_activities" -> timedBatchInsert(table, arr.size()) {
+                teamsSyncRepository.get().bulkInsertTeamActivitiesFromSync(arr)
+            }
+            "tasks" -> timedBatchInsert(table, arr.size()) {
+                teamsSyncRepository.get().bulkInsertTasksFromSync(arr)
+            }
+            "notifications" -> timedBatchInsert(table, arr.size()) {
+                notificationsRepository.bulkInsertFromSync(arr)
+            }
+            "achievements" -> timedBatchInsert(table, arr.size()) {
+                userSyncRepository.bulkInsertAchievementsFromSync(arr)
+            }
+            "health" -> timedBatchInsert(table, arr.size()) {
+                healthRepository.bulkInsertFromSync(arr)
+            }
+            "courses" -> timedBatchInsert(table, arr.size()) {
+                val insertStartTime = SystemClock.elapsedRealtime()
+                coursesRepository.bulkInsertFromSync(arr)
+                val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
+                Log.d("SyncPerf", "    $table insertDuration: ${insertDuration}ms for ${arr.size()} items")
+            }
+            else -> {
+                val insertStartTime = SystemClock.elapsedRealtime()
+                dbWriteMutex.withLock {
+                    when (table) {
+                        "exams" -> surveysRepository.bulkInsertExamsFromSync(arr)
+                        "submissions" -> submissionsRepository.bulkInsertFromSync(arr)
+                        "teams" -> teamsSyncRepository.get().bulkInsertFromSync(arr)
+                        else -> Log.e("SyncPerf", "Unknown table: $table")
+                    }
+                }
+                val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
+                SyncTimeLogger.logRealmOperation(
+                    "insert_batch",
+                    table,
+                    insertDuration,
+                    arr.size()
+                )
+            }
+        }
+
+        if (table == "achievements") {
+            downloadCvAttachmentsFromBatch(arr)
+        }
+        if (table == "teams") {
+            downloadTeamAttachmentsFromBatch(arr)
+        }
+        if (table == "courses") {
+            downloadCourseCoversFromBatch(arr)
+            // Resources embedded in course steps were queued during course upserts;
+            // persist them to the Room library table now.
+            coursesRepository.flushPendingCourseResources()
+        }
+    }
+
+    /**
+     * Deletion side of the `_changes` incremental path (see [syncDbIncremental]). Only tables
+     * with an existing delete-by-id method are wired up; the rest just log what _changes reports
+     * as deleted so a follow-up has a concrete list to act on — today's full `_all_docs` scan
+     * already doesn't propagate deletes for these tables either, so this isn't a regression.
+     */
+    private suspend fun deleteBatch(table: String, ids: List<String>) {
+        when (table) {
+            "submissions" -> submissionsRepository.deleteByIds(ids)
+            else -> Log.d("SyncPerf", "    $table: ${ids.size} deletion(s) from _changes not yet propagated locally")
         }
     }
 
