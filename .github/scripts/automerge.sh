@@ -22,6 +22,8 @@ VERSION_SH="${VERSION_SH:?}"
 COAUTHORS_SH="${COAUTHORS_SH:?}"
 REQUIRE_CHECKS="${REQUIRE_CHECKS:-true}"
 REQUIRED_WORKFLOWS="${REQUIRED_WORKFLOWS:-}"
+PUBLISH_JOB="${PUBLISH_JOB:-}"
+PUBLISH_FAIL_MARKER="${PUBLISH_FAIL_MARKER:-playstore upload failed twice}"
 DELETE_BRANCH="${DELETE_BRANCH:-true}"
 DRY_RUN="${DRY_RUN:-true}"
 MAX_MERGES="${MAX_MERGES:-0}"
@@ -50,8 +52,6 @@ last_base_sha=""
 MAX_REPREPARES=2
 reprep_pr=""
 reprep_n=0
-
-# ---------------------------------------------------------------- helpers
 
 pick_pr() {
     gh pr list \
@@ -113,7 +113,6 @@ runs_for() {
 runs_failed()  { jq '[.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")] | length' <<<"$1"; }
 runs_pending() { jq '[.[] | select(.status != "completed")] | length' <<<"$1"; }
 
-# Names in $2 with no successful run yet; blank $2 = none.
 runs_missing() {
     jq -r --arg req "$2" '
         [ ($req | split(",")[] | gsub("^\\s+|\\s+$"; "")) | select(length > 0) ] as $need
@@ -123,8 +122,6 @@ runs_missing() {
     ' <<<"$1"
 }
 
-# Green: nothing failed, nothing running, every workflow in $need passed.
-# $absent = what no runs at all means: 'fail' (we pushed it), 'pass' ($BASE).
 wait_for_runs() {
     local sha=$1 need=$2 absent=$3
     local deadline=$(( SECONDS + WAIT_TIMEOUT_MIN * 60 ))
@@ -187,7 +184,24 @@ wait_for_runs() {
     done
 }
 
-# Non-blocking peek; step 4 does the blocking version.
+publish_failed() {
+    local sha=$1 run_id job_id note
+    [ -n "$PUBLISH_JOB" ] || return 1
+    for run_id in $(gh api "repos/$REPO/actions/runs?head_sha=$sha&per_page=100" \
+                      --jq '.workflow_runs[] | select(.status == "completed") | .id' 2>/dev/null || true); do
+        job_id=$(gh api "repos/$REPO/actions/runs/$run_id/jobs?per_page=100" \
+                   --jq ".jobs[] | select(.name == \"$PUBLISH_JOB\") | .id" 2>/dev/null | head -n 1 || true)
+        [ -n "$job_id" ] || continue
+        note=$(gh api "repos/$REPO/check-runs/$job_id/annotations?per_page=100" \
+                 --jq "[.[] | select(.annotation_level == \"warning\") | .message | select(startswith(\"$PUBLISH_FAIL_MARKER\"))] | first" 2>/dev/null || true)
+        if [ -n "$note" ] && [ "$note" != "null" ]; then
+            log "  $note"
+            return 0
+        fi
+    done
+    return 1
+}
+
 base_already_failed() {
     local sha=$1 runs bad
     runs=$(runs_for "$sha")
@@ -198,7 +212,6 @@ base_already_failed() {
     return 0
 }
 
-# Guard against a broken version.sh.
 verify_version_only_diff() {
     local from=$1 to=$2 files bad
 
@@ -219,8 +232,6 @@ verify_version_only_diff() {
     log "  bump is version-only ($from -> $to)"
 }
 
-# Retries only a head-modified refusal that left the head at $2 -- GitHub
-# reindexing, not a real push. Last gh output stays in $merge_out.
 merge_with_retry() {
     local pr=$1 head_sha=$2 delay live
     shift 2
@@ -255,8 +266,6 @@ push_with_retry() {
     return 1
 }
 
-# ------------------------------------------------------------------- main
-
 log "draining '$LABEL' into $BASE (dry_run=$DRY_RUN)"
 summary "### automerge: draining \`$LABEL\` into \`$BASE\`"
 summary ""
@@ -281,6 +290,12 @@ while :; do
     git fetch --quiet origin "$BASE"
     base_at_prepare=$(git rev-parse "origin/$BASE")
 
+    if [ "$REQUIRE_CHECKS" = 'true' ] && publish_failed "$base_at_prepare"; then
+        log "the release on $BASE (${base_at_prepare:0:7}) was not published -- stopping the drain"
+        summary "| | | **stopped**: release on \`$BASE\` not published |"
+        exit 1
+    fi
+
     pr_json=$(pick_pr)
     if [ "$pr_json" = "null" ] || [ -z "$pr_json" ]; then
         log "no open non-draft PR labelled '$LABEL' targets $BASE -- queue empty"
@@ -302,7 +317,6 @@ while :; do
         exit 1
     fi
 
-    # The list index can be stale; ask about this PR directly before working it.
     state=$(pr_state "$NUMBER")
     if [ -n "$state" ] && [ "$state" != "OPEN" ]; then
         log "  #$NUMBER is no longer open (state: $state) -- skipping"
@@ -310,8 +324,6 @@ while :; do
         continue
     fi
 
-    # A branch policy needing an approval refuses the merge in step 4, after a
-    # full build. Skip rather than stop, so approved PRs behind it still drain.
     review=$(pr_review "$NUMBER")
     case "$review" in
         REVIEW_REQUIRED|CHANGES_REQUIRED|CHANGES_REQUESTED)
@@ -323,7 +335,6 @@ while :; do
 
     check_mergeable "$NUMBER" || { summary "| #$NUMBER | | **stopped**: conflicts with \`$BASE\` |"; exit 1; }
 
-    # "Next" comes off the base -- it is what the merge lands on.
     git show "origin/$BASE:$GRADLE_FILE" > /tmp/base-build.gradle
     eval "$("$VERSION_SH" next /tmp/base-build.gradle | sed 's/^/new_/')"
     log "  version -> $new_name ($new_code)"
@@ -347,8 +358,6 @@ while :; do
 
     git checkout --quiet -B "$HEAD" "origin/$HEAD"
 
-    # 1. Base first: a branch cut earlier collides on the exact version lines
-    #    step 2 rewrites, and this makes step 3 test what actually lands.
     if ! git merge --quiet --no-edit "origin/$BASE"; then
         git merge --abort || true
         log "  #$NUMBER conflicts with $BASE -- needs a human"
@@ -356,8 +365,6 @@ while :; do
         exit 1
     fi
 
-    # 2. Bump. Every merge publishes a release tagged from versionName, so
-    #    each needs its own number; writing it here puts it in the squash.
     pre_bump_sha=$(git rev-parse HEAD)
     "$VERSION_SH" apply "$GRADLE_FILE" "$new_code" "$new_name"
 
@@ -372,7 +379,6 @@ while :; do
             || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: bump was not version-only |"; exit 1; }
     fi
 
-    # 3. Push and let CI judge the prepared commit.
     if [ "$merge_sha" != "$SHA" ]; then
         push_with_retry "$HEAD" \
             || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: push failed |"; exit 1; }
@@ -387,13 +393,17 @@ while :; do
         log "  require_checks is off -- merging ${merge_sha:0:7} unverified"
     fi
 
-    # 4. Merge, but only onto a settled green base.
     if [ "$REQUIRE_CHECKS" = 'true' ]; then
         git fetch --quiet origin "$BASE"
         wait_for_runs "$(git rev-parse "origin/$BASE")" '' pass \
             || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: \`$BASE\` is red |"; exit 1; }
 
-        # Prepared against a base that no longer exists; prepare again.
+        if publish_failed "$(git rev-parse "origin/$BASE")"; then
+            log "the release of the last merge was not published -- stopping before #$NUMBER"
+            summary "| #$NUMBER | → \`$new_name\` | **stopped**: release of the last merge not published |"
+            exit 1
+        fi
+
         git fetch --quiet origin "$BASE"
         base_now=$(git rev-parse "origin/$BASE")
         if [ "$base_now" != "$base_at_prepare" ]; then
