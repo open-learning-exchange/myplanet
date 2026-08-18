@@ -96,7 +96,6 @@ class TransactionSyncManagerTest {
             healthRepository,
             progressRepository,
             surveysRepository,
-            testScope,
             dispatcherProvider,
             userSessionManager
         )
