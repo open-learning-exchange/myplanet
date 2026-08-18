@@ -18,6 +18,8 @@ import java.text.Normalizer
 import java.util.Locale
 
 object Utilities {
+    private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
+
     fun isValidEmail(target: CharSequence): Boolean {
         return target.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(target).matches()
     }
@@ -87,7 +89,7 @@ object Utilities {
 
     fun normalizeText(str: String): String {
         return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
-            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+            .replace(DIACRITICS_REGEX, "")
     }
 
     fun getMimeType(url: String?): String? {
