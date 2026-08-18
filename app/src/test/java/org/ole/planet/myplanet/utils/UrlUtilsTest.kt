@@ -309,7 +309,17 @@ class UrlUtilsTest {
         val header3 = UrlUtils.header
 
         assertEquals("Basic dXNlcjI6cGFzczI=", header3)
+
+        // Change password but keep user same
+        every { mockSpm.getUrlUser() } returns "user2"
+        every { mockSpm.getUrlPwd() } returns "pass3"
+
+        val header4 = UrlUtils.header
+
+        assertEquals("Basic dXNlcjI6cGFzczM=", header4)
+
         verify(exactly = 1) { UrlUtils.basicAuthHeader("user1", "pass1") }
         verify(exactly = 1) { UrlUtils.basicAuthHeader("user2", "pass2") }
+        verify(exactly = 1) { UrlUtils.basicAuthHeader("user2", "pass3") }
     }
 }
