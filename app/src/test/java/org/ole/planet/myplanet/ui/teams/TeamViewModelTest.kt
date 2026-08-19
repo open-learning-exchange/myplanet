@@ -133,4 +133,34 @@ class TeamViewModelTest {
         assertEquals(1, data.size)
         assertEquals("teamA", data[0]._id)
     }
+
+    @Test
+    fun `loadTeams fromDashboard when userId is null and type is enterprise loads all enterprises`() = runTest(testDispatcher) {
+        val allEnterprises = listOf(
+            TeamDetails(_id = "entA", name = "Enterprise A", teamType = null, createdDate = null, type = "enterprise", status = "active", visitCount = 0L, teamStatus = null, description = null, services = null, rules = null, teamId = null)
+        )
+        coEvery { teamsRepository.getShareableEnterpriseDetails(null) } returns allEnterprises
+
+        viewModel.loadTeams(fromDashboard = true, type = "enterprise", userId = null)
+        advanceUntilIdle()
+
+        val data = viewModel.teamData.value
+        assertEquals(1, data.size)
+        assertEquals("entA", data[0]._id)
+    }
+
+    @Test
+    fun `loadTeams when fromDashboard is false and type is enterprise loads enterprise details`() = runTest(testDispatcher) {
+        val allEnterprises = listOf(
+            TeamDetails(_id = "ent1", name = "Enterprise 1", teamType = null, createdDate = null, type = "enterprise", status = "active", visitCount = 0L, teamStatus = null, description = null, services = null, rules = null, teamId = null)
+        )
+        coEvery { teamsRepository.getShareableEnterpriseDetails("user1") } returns allEnterprises
+
+        viewModel.loadTeams(fromDashboard = false, type = "enterprise", userId = "user1")
+        advanceUntilIdle()
+
+        val data = viewModel.teamData.value
+        assertEquals(1, data.size)
+        assertEquals("ent1", data[0]._id)
+    }
 }

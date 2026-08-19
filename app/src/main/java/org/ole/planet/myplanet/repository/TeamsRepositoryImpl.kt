@@ -200,8 +200,9 @@ class TeamsRepositoryImpl @Inject constructor(
                 emptyList()
             } else {
                 entities.filter {
-                    (it._id ?: it.id) in teamIds &&
+                    it._id in teamIds &&
                         it.status != "archived" &&
+                        !it.isDeletePending &&
                         it.isRootTeam() &&
                         (it.type == "team" || it.type.isNullOrBlank())
                 }.map { it }
@@ -294,8 +295,9 @@ class TeamsRepositoryImpl @Inject constructor(
             } else {
                 entities.filter {
                     it.isRootTeam() &&
-                        (it._id ?: it.id) in teamIds &&
+                        it._id in teamIds &&
                         it.status != "archived" &&
+                        !it.isDeletePending &&
                         (if (targetType == "enterprise") it.type == "enterprise" else (it.type == "team" || it.type.isNullOrBlank()))
                 }.map { it }
             }
