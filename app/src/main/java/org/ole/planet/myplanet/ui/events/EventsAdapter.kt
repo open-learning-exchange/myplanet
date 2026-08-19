@@ -1,16 +1,22 @@
 package org.ole.planet.myplanet.ui.events
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isVisible
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemMeetupBinding
 import org.ole.planet.myplanet.model.Meetup
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.ui.teams.InlineCommentsAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
 class EventsAdapter(
+    var nonTeamMember: Boolean = false,
     private val onMeetupClick: ((Meetup) -> Unit)? = null
 ) : ListAdapter<Meetup, EventsAdapter.EventsViewHolder>(
     DiffUtils.itemCallback<Meetup>(
@@ -32,6 +38,32 @@ class EventsAdapter(
     )
 ) {
     private val dateCache = mutableMapOf<Long, String>()
+    private val commentsMap: MutableMap<String, List<News>> = mutableMapOf()
+    private val expandedMeetupIds: MutableSet<String> = mutableSetOf()
+    private var currentUserId: String? = null
+    private var isLeader: Boolean = false
+    private var onSendCommentListener: ((meetupId: String, message: String) -> Unit)? = null
+    private var onDeleteCommentListener: ((News) -> Unit)? = null
+
+    fun setCurrentUser(userId: String?, leader: Boolean) {
+        currentUserId = userId
+        isLeader = leader
+        notifyDataSetChanged()
+    }
+
+    fun updateComments(newCommentsMap: Map<String, List<News>>) {
+        commentsMap.clear()
+        commentsMap.putAll(newCommentsMap)
+        notifyDataSetChanged()
+    }
+
+    fun setOnCommentActions(
+        onSend: (meetupId: String, message: String) -> Unit,
+        onDelete: (News) -> Unit
+    ) {
+        this.onSendCommentListener = onSend
+        this.onDeleteCommentListener = onDelete
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EventsViewHolder {
         val binding = ItemMeetupBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -63,6 +95,7 @@ class EventsAdapter(
                     }
                 }
             }
+            bindCommentSection(holder, meetup)
             binding.root.setOnClickListener {
                 onMeetupClick?.invoke(meetup)
             }
@@ -82,8 +115,80 @@ class EventsAdapter(
         binding.tvLink.text = context.getString(R.string.message_placeholder, meetup.meetupLink)
         binding.tvRecurring.text = context.getString(R.string.message_placeholder, meetup.recurring)
         binding.tvCreator.text = context.getString(R.string.message_placeholder, meetup.creator)
+        bindCommentSection(holder, meetup)
         binding.root.setOnClickListener {
             onMeetupClick?.invoke(meetup)
+        }
+    }
+
+    private fun bindCommentSection(holder: EventsViewHolder, meetup: Meetup) {
+        val binding = holder.binding
+        val context = binding.root.context
+        val meetupId = meetup.id ?: ""
+        val comments = commentsMap[meetupId] ?: emptyList()
+
+        binding.tvCommentCount.text = context.getString(R.string.comments_count, comments.size)
+
+        if (nonTeamMember) {
+            binding.llCommentInput.visibility = View.GONE
+        } else {
+            binding.llCommentInput.visibility = View.VISIBLE
+        }
+
+        val isExpanded = expandedMeetupIds.contains(meetupId)
+        binding.llCommentsContainer.isVisible = isExpanded
+        binding.ivExpandComments.setImageResource(
+            if (isExpanded) R.drawable.ic_keyboard_arrow_up_black_24dp
+            else R.drawable.ic_keyboard_arrow_down_black_24dp
+        )
+
+        val commentsAdapter = InlineCommentsAdapter(
+            currentUserId = currentUserId,
+            isLeader = isLeader,
+            onDeleteComment = { comment -> onDeleteCommentListener?.invoke(comment) }
+        )
+        binding.rvComments.layoutManager = LinearLayoutManager(context)
+        binding.rvComments.adapter = commentsAdapter
+        commentsAdapter.submitList(comments)
+
+        binding.llCommentToggle.setOnClickListener {
+            val adapterPosition = holder.bindingAdapterPosition
+            val currentId: String = if (adapterPosition != RecyclerView.NO_POSITION && adapterPosition < itemCount) {
+                this@EventsAdapter.getItem(adapterPosition).id
+            } else {
+                meetup.id
+            }
+
+            if (expandedMeetupIds.contains(currentId)) {
+                expandedMeetupIds.remove(currentId)
+            } else {
+                expandedMeetupIds.add(currentId)
+            }
+            if (adapterPosition != RecyclerView.NO_POSITION && adapterPosition < itemCount) {
+                notifyItemChanged(adapterPosition)
+            } else {
+                val isExp = expandedMeetupIds.contains(currentId)
+                binding.llCommentsContainer.isVisible = isExp
+                binding.ivExpandComments.setImageResource(
+                    if (isExp) R.drawable.ic_keyboard_arrow_up_black_24dp
+                    else R.drawable.ic_keyboard_arrow_down_black_24dp
+                )
+            }
+        }
+
+        binding.btnSendComment.setOnClickListener {
+            val adapterPosition = holder.bindingAdapterPosition
+            val currentId: String = if (adapterPosition != RecyclerView.NO_POSITION && adapterPosition < itemCount) {
+                this@EventsAdapter.getItem(adapterPosition).id
+            } else {
+                meetup.id
+            }
+
+            val message = binding.etComment.text?.toString()?.trim().orEmpty()
+            if (message.isNotEmpty()) {
+                onSendCommentListener?.invoke(currentId, message)
+                binding.etComment.setText("")
+            }
         }
     }
 

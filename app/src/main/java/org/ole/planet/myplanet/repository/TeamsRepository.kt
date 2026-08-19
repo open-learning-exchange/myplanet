@@ -6,6 +6,7 @@ import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamResourceDto
 import org.ole.planet.myplanet.model.TeamSummary
@@ -150,4 +151,9 @@ interface TeamsRepository {
 
     suspend fun getLastVisit(userName: String?, teamId: String?): Long?
     fun getTeamNameFromPrefs(): String?
+
+    fun getCommentsForTaskFlow(taskId: String): Flow<List<News>>
+    fun getCommentsForTasksFlow(taskIds: List<String>): Flow<List<News>>
+    suspend fun addComment(parentId: String, teamId: String?, message: String, user: UserEntity?): News
+    suspend fun deleteComment(commentId: String)
 }

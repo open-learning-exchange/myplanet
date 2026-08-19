@@ -10,58 +10,163 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:orientation="horizontal">
 
-            <CheckBox
-                android:id="@+id/checkbox"
-                android:layout_width="match_parent"
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:padding="@dimen/padding_normal"
-                android:textColor="@color/daynight_textColor"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:buttonTint="@color/daynight_textColor" />
-            <TextView
-                android:id="@+id/deadline"
-                android:layout_width="match_parent"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <CheckBox
+                    android:id="@+id/checkbox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/daynight_textColor"
+                    android:padding="@dimen/padding_normal"
+                    android:textColor="@color/daynight_textColor"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/deadline"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_normal"
+                    android:textColor="@color/hint_color" />
+
+                <TextView
+                    android:id="@+id/assignee"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingLeft="@dimen/padding_normal"
+                    android:paddingRight="@dimen/padding_normal"
+                    android:textColor="@color/hint_color" />
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/edit_task"
+                android:layout_width="@dimen/_30dp"
                 android:layout_height="wrap_content"
-                android:padding="@dimen/padding_normal"
-                android:textColor="@color/hint_color" />
-            <TextView
-                android:id="@+id/assignee"
-                android:layout_width="match_parent"
+                android:layout_margin="@dimen/padding_small"
+                app:srcCompat="@drawable/ic_edit" />
+
+            <ImageView
+                android:id="@+id/delete_task"
+                android:layout_width="28dp"
+                android:layout_height="25dp"
+                android:layout_margin="@dimen/padding_small"
+                app:srcCompat="@drawable/ic_delete"
+                app:tint="@color/daynight_textColor" />
+
+            <ImageView
+                android:id="@+id/ic_more"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingLeft="@dimen/padding_normal"
-                android:paddingRight="@dimen/padding_normal"
-                android:textColor="@color/hint_color" />
+                android:layout_margin="@dimen/padding_small"
+                android:translationY="1dp"
+                app:srcCompat="@drawable/ic_more"
+                app:tint="@color/daynight_textColor" />
         </LinearLayout>
 
-        <ImageView
-            android:id="@+id/edit_task"
-            android:layout_width="@dimen/_30dp"
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="2dp"
+            android:alpha="0.15"
+            android:background="@color/hint_color" />
+
+        <LinearLayout
+            android:id="@+id/ll_comment_toggle"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="@dimen/padding_small"
-            app:srcCompat="@drawable/ic_edit" />
-        <ImageView
-            android:id="@+id/delete_task"
-            android:layout_width="28dp"
-            android:layout_height="25dp"
-            android:layout_margin="@dimen/padding_small"
-            app:srcCompat="@drawable/ic_delete"
-            app:tint="@color/daynight_textColor" />
-        <ImageView
-            android:id="@+id/ic_more"
-            android:layout_width="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="4dp"
+            android:paddingTop="6dp"
+            android:paddingEnd="4dp"
+            android:paddingBottom="6dp">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/baseline_forum_24"
+                app:tint="@color/daynight_textColor" />
+
+            <TextView
+                android:id="@+id/tv_comment_count"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:text="@string/comments_count"
+                android:textColor="@color/daynight_textColor"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:id="@+id/iv_expand_comments"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_keyboard_arrow_down_black_24dp"
+                app:tint="@color/daynight_textColor" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/ll_comments_container"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="@dimen/padding_small"
-            android:translationY="1dp"
-            app:srcCompat="@drawable/ic_more"
-            app:tint="@color/daynight_textColor" />
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_comments"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false" />
+
+            <LinearLayout
+                android:id="@+id/ll_comment_input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/et_comment"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_comment_input"
+                    android:hint="@string/add_a_comment"
+                    android:maxLines="3"
+                    android:padding="8dp"
+                    android:textColor="@color/daynight_textColor"
+                    android:textColorHint="@color/hint_color"
+                    android:textSize="13sp" />
+
+                <ImageView
+                    android:id="@+id/btn_send_comment"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="6dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/send_comment"
+                    android:padding="6dp"
+                    android:src="@drawable/ic_send"
+                    app:tint="@color/mainColor" />
+            </LinearLayout>
+        </LinearLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

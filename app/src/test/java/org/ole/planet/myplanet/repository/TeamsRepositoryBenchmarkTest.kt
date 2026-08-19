@@ -77,6 +77,7 @@ class TeamsRepositoryBenchmarkTest {
             teamDao,
             courseDao,
             courseStepDao,
+            mockk<org.ole.planet.myplanet.data.room.dao.NewsDao>(relaxed = true),
             appDatabase,
         )
     }

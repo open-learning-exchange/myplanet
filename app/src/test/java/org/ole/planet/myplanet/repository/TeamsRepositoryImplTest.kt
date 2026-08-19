@@ -28,10 +28,12 @@ import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.data.room.dao.CourseDao
 import org.ole.planet.myplanet.data.room.dao.CourseStepDao
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
+import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.User
@@ -63,6 +65,7 @@ class TeamsRepositoryImplTest {
     private val teamDao: TeamDao = mockk(relaxed = true)
     private val courseDao: CourseDao = mockk(relaxed = true)
     private val courseStepDao: CourseStepDao = mockk(relaxed = true)
+    private val newsDao: NewsDao = mockk(relaxed = true)
     private val appDatabase: AppDatabase = mockk(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
@@ -103,6 +106,7 @@ class TeamsRepositoryImplTest {
             teamDao,
             courseDao,
             courseStepDao,
+            newsDao,
             appDatabase,
         )
     }
@@ -330,5 +334,60 @@ class TeamsRepositoryImplTest {
         io.mockk.unmockkStatic(android.text.TextUtils::class)
         io.mockk.unmockkObject(NetworkUtils)
         io.mockk.unmockkObject(org.ole.planet.myplanet.MainApplication.Companion)
+    }
+
+    @Test
+    fun `test getCommentsForTaskFlow returns comments from newsDao`() = runTest(testDispatcher) {
+        val mockNews = News().apply {
+            id = "comment1"
+            replyTo = "task1"
+            message = "Task comment"
+        }
+        every { newsDao.getCommentsForParentFlow("task1") } returns flowOf(listOf(mockNews))
+
+        val result = teamsRepository.getCommentsForTaskFlow("task1").first()
+
+        assertEquals(1, result.size)
+        assertEquals("comment1", result[0].id)
+        assertEquals("Task comment", result[0].message)
+    }
+
+    @Test
+    fun `test getCommentsForTasksFlow returns comments from newsDao`() = runTest(testDispatcher) {
+        val mockNews = News().apply {
+            id = "comment1"
+            replyTo = "task1"
+            message = "Task comment"
+        }
+        every { newsDao.getCommentsForParentsFlow(listOf("task1", "task2")) } returns flowOf(listOf(mockNews))
+
+        val result = teamsRepository.getCommentsForTasksFlow(listOf("task1", "task2")).first()
+
+        assertEquals(1, result.size)
+        assertEquals("comment1", result[0].id)
+    }
+
+    @Test
+    fun `test addComment persists news and returns created comment`() = runTest(testDispatcher) {
+        val user = UserEntity().apply {
+            id = "user1"
+            name = "John Doe"
+            planetCode = "planet1"
+        }
+        val comment = teamsRepository.addComment("task1", "team1", "Hello team", user)
+
+        assertEquals("task1", comment.replyTo)
+        assertEquals("team1", comment.viewableId)
+        assertEquals("teams", comment.viewableBy)
+        assertEquals("Hello team", comment.message)
+        assertEquals("user1", comment.userId)
+        assertEquals("John Doe", comment.userName)
+        coVerify { newsDao.upsert(any()) }
+    }
+
+    @Test
+    fun `test deleteComment deletes news by id`() = runTest(testDispatcher) {
+        teamsRepository.deleteComment("comment1")
+        coVerify { newsDao.deleteById("comment1") }
     }
 }

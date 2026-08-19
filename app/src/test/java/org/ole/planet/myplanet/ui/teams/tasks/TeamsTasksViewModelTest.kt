@@ -7,10 +7,13 @@ import io.mockk.mockk
 import java.util.Calendar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.yield
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -18,13 +21,12 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.yield
 
 @ExperimentalCoroutinesApi
 class TeamsTasksViewModelTest {
@@ -243,5 +245,56 @@ class TeamsTasksViewModelTest {
 
         assertEquals(mapOf("1" to "Name1", "2" to "Name2"), result)
         coVerify { mockUserRepository.getUsersByIds(listOf("1", "2")) }
+    }
+
+    @Test
+    fun `getCommentsForTaskFlow returns comments from repository`() = runTest(testDispatcher) {
+        val mockNews = News().apply { id = "c1" }
+        every { mockTeamsRepository.getCommentsForTaskFlow("task1") } returns kotlinx.coroutines.flow.flowOf(listOf(mockNews))
+
+        val result = viewModel.getCommentsForTaskFlow("task1").first()
+        assertEquals(1, result.size)
+        assertEquals("c1", result[0].id)
+    }
+
+    @Test
+    fun `getCommentsForTasksFlow returns comments from repository`() = runTest(testDispatcher) {
+        val mockNews = News().apply { id = "c1" }
+        every { mockTeamsRepository.getCommentsForTasksFlow(listOf("task1")) } returns kotlinx.coroutines.flow.flowOf(listOf(mockNews))
+
+        val result = viewModel.getCommentsForTasksFlow(listOf("task1")).first()
+        assertEquals(1, result.size)
+    }
+
+    @Test
+    fun `addComment fetches current user and calls repository`() = runTest(testDispatcher) {
+        val mockUser = UserEntity().apply { id = "u1" }
+        coEvery { mockUserRepository.getUserModel() } returns mockUser
+
+        viewModel.addComment("task1", "team1", "hello")
+        yield()
+
+        coVerify { mockTeamsRepository.addComment("task1", "team1", "hello", mockUser) }
+    }
+
+    @Test
+    fun `deleteComment calls repository deleteComment`() = runTest(testDispatcher) {
+        viewModel.deleteComment("c1")
+        yield()
+
+        coVerify { mockTeamsRepository.deleteComment("c1") }
+    }
+
+    @Test
+    fun `getCurrentUser and isTeamLeader delegate to repositories`() = runTest(testDispatcher) {
+        val mockUser = UserEntity().apply { id = "u1" }
+        coEvery { mockUserRepository.getUserModel() } returns mockUser
+        coEvery { mockTeamsRepository.isTeamLeader("team1", "u1") } returns true
+
+        val user = viewModel.getCurrentUser()
+        val isLeader = viewModel.isTeamLeader("team1", "u1")
+
+        assertEquals(mockUser, user)
+        assertTrue(isLeader)
     }
 }

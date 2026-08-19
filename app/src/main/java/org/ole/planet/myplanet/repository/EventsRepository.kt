@@ -1,8 +1,9 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonObject
+import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 
 interface EventsRepository {
@@ -18,4 +19,8 @@ interface EventsRepository {
                              recurring: String): Boolean
     suspend fun getPendingMeetupUploads(): List<Meetup>
     suspend fun markMeetupUploaded(localId: String, remoteId: String, remoteRev: String): Boolean
+    fun getCommentsForMeetupFlow(meetupId: String): Flow<List<News>>
+    fun getCommentsForMeetupsFlow(meetupIds: List<String>): Flow<List<News>>
+    suspend fun addComment(parentId: String, teamId: String?, message: String, user: UserEntity?): News
+    suspend fun deleteComment(commentId: String)
 }

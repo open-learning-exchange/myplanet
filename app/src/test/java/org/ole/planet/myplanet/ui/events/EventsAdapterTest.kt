@@ -26,6 +26,7 @@ class EventsAdapterTest {
     @Before
     fun setup() {
         context = ApplicationProvider.getApplicationContext()
+        context.setTheme(androidx.appcompat.R.style.Theme_AppCompat)
         adapter = EventsAdapter { meetup ->
             clickedMeetup = meetup
         }
@@ -97,5 +98,59 @@ class EventsAdapterTest {
         holder.binding.root.performClick()
         assertEquals("New Title", clickedMeetup?.title)
         assertEquals("New Location", clickedMeetup?.meetupLocation)
+    }
+
+    @Test
+    fun `test comments section toggle and send actions`() {
+        val meetup = Meetup().apply {
+            id = "m1"
+            title = "Meetup 1"
+            description = "Desc"
+            startDate = 1000L
+            endDate = 2000L
+        }
+
+        var sentId: String? = null
+        var sentMsg: String? = null
+        adapter.setOnCommentActions(
+            onSend = { id, msg ->
+                sentId = id
+                sentMsg = msg
+            },
+            onDelete = {}
+        )
+
+        val comments = listOf(
+            org.ole.planet.myplanet.model.News().apply {
+                id = "c1"
+                replyTo = "m1"
+                message = "Meetup comment"
+                userName = "User1"
+            }
+        )
+        adapter.updateComments(mapOf("m1" to comments))
+
+        var committed = false
+        adapter.submitList(listOf(meetup)) { committed = true }
+        while (!committed) { ShadowLooper.idleMainLooper() }
+
+        val parent = LinearLayout(context)
+        val holder = adapter.onCreateViewHolder(parent, 0)
+        adapter.onBindViewHolder(holder, 0)
+
+        assertEquals("Comments (1)", holder.binding.tvCommentCount.text.toString())
+        assertEquals(android.view.View.GONE, holder.binding.llCommentsContainer.visibility)
+
+        // Toggle expand
+        holder.binding.llCommentToggle.performClick()
+        assertEquals(android.view.View.VISIBLE, holder.binding.llCommentsContainer.visibility)
+
+        // Send comment
+        holder.binding.etComment.setText("Hello meetup")
+        holder.binding.btnSendComment.performClick()
+
+        assertEquals("m1", sentId)
+        assertEquals("Hello meetup", sentMsg)
+        assertEquals("", holder.binding.etComment.text.toString())
     }
 }

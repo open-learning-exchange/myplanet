@@ -225,10 +225,31 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         binding.rvTask.layoutManager = LinearLayoutManager(activity)
         adapterTask = TeamsTasksAdapter(requireContext(), !isMemberFlow.value)
         adapterTask.setListener(this)
+        adapterTask.setOnCommentActions(
+            onSend = { taskId, message ->
+                teamsTasksViewModel.addComment(taskId, teamId, message)
+            },
+            onDelete = { comment ->
+                AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+                    .setTitle(R.string.delete)
+                    .setMessage(R.string.delete_comment_confirm)
+                    .setPositiveButton(R.string.delete) { _, _ ->
+                        comment.id?.let { teamsTasksViewModel.deleteComment(it) }
+                    }
+                    .setNegativeButton(R.string.cancel, null)
+                    .show()
+            }
+        )
         binding.rvTask.adapter = adapterTask
         binding.taskToggle.setOnCheckedChangeListener { _: SingleSelectToggleGroup?, checkedId: Int ->
             currentTab = checkedId
             updateTasks()
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val currentUser = teamsTasksViewModel.getCurrentUser()
+            val isLeader = teamsTasksViewModel.isTeamLeader(teamId, currentUser?.id)
+            adapterTask.setCurrentUser(currentUser?.id, isLeader)
         }
 
         teamViewModel.loadTasks(teamId)
@@ -242,6 +263,17 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
             updateTasks()
         }
         collectLatestWhenStarted(teamViewModel.taskList) { tasks ->
+            val taskIds = tasks.mapNotNull { it.id }.filter { it.isNotBlank() }
+            if (taskIds.isNotEmpty()) {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    teamsTasksViewModel.getCommentsForTasksFlow(taskIds).collect { comments ->
+                        val commentsMap = comments.groupBy { it.replyTo ?: "" }
+                        adapterTask.updateComments(commentsMap)
+                    }
+                }
+            } else {
+                adapterTask.updateComments(emptyMap())
+            }
             updateTasks()
         }
         collectWhenStarted(teamsTasksViewModel.taskActionEvents) { event ->
