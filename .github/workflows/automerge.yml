@@ -6,6 +6,10 @@ name: myPlanet automerge
 #
 # Needs AUTOMERGE_TOKEN. GITHUB_TOKEN cannot merge into a protected branch,
 # and its pushes do not trigger the workflow runs the drain waits for.
+#
+# A commit on the base was already built and tested green as a PR head, so a
+# red workflow there is treated as flaky first: it is re-run (base_rerun_attempts
+# times) and only a second failure stops the drain.
 
 on:
   workflow_dispatch:
@@ -50,6 +54,11 @@ on:
         required: false
         default: '0'
         type: string
+      base_rerun_attempts:
+        description: 'how often to re-run a workflow that fails on the base before stopping the drain (0 = never)'
+        required: false
+        default: '1'
+        type: string
       wait_timeout_minutes:
         description: 'how long to wait for workflows: build and test on the prepared commit, and whatever is in flight on the base'
         required: false
@@ -66,7 +75,7 @@ permissions:
   pull-requests: write
   checks: read
   statuses: read
-  actions: read
+  actions: write   # re-running a failed workflow on the base needs write
 
 env:
   DEFAULT_BASE: master
@@ -112,6 +121,7 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run }}
           MAX_MERGES: ${{ inputs.max_merges }}
           WAIT_TIMEOUT_MIN: ${{ inputs.wait_timeout_minutes }}
+          BASE_RERUN_ATTEMPTS: ${{ inputs.base_rerun_attempts }}
           VERSION_SH: ${{ steps.stage.outputs.dir }}/version.sh
           COAUTHORS_SH: ${{ steps.stage.outputs.dir }}/coauthors.sh
           OWNER_LOGIN: ${{ inputs.owner_login }}
