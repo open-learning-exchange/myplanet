@@ -15,6 +15,7 @@
         android:layout_height="match_parent">
 
         <FrameLayout
+            android:id="@+id/ll_home_library"
             android:layout_width="wrap_content"
             android:layout_height="match_parent">
 

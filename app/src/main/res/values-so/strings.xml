@@ -358,7 +358,8 @@
     <string-array name="sort_by_date">
         <item>Ururinta Tariikhda - Desc</item>
         <item>Ururinta Tariikhda - Asc</item>
-        <item>Ururinta Magaca</item>
+        <item>Ururinta Cinwaanka - Asc</item>
+        <item>Ururinta Cinwaanka - Desc</item>
     </string-array>
 
     <string-array name="sort_member">

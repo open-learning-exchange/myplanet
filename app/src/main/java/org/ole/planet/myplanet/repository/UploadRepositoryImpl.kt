@@ -5,7 +5,7 @@ import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.ExamDao
@@ -14,7 +14,8 @@ import org.ole.planet.myplanet.model.MembershipDoc
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.services.FileUploader
-import org.ole.planet.myplanet.utils.FileUtils
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
@@ -24,6 +25,7 @@ class UploadRepositoryImpl @Inject constructor(
     private val examDao: ExamDao,
     private val submissionDao: SubmissionDao,
     private val answerDao: AnswerDao,
+    private val dispatcherProvider: DispatcherProvider,
 ) : UploadRepository {
 
     @Suppress("UNCHECKED_CAST")
@@ -106,6 +108,14 @@ class UploadRepositoryImpl @Inject constructor(
         return failed
     }
 
+    override suspend fun uploadResource(
+        headerMap: Map<String, String>,
+        url: String,
+        body: okhttp3.RequestBody
+    ): Response<JsonObject> {
+        return apiInterface.uploadResource(headerMap, url, body)
+    }
+
     override suspend fun uploadAttachment(
         file: File,
         destinationFormat: String,
@@ -113,10 +123,11 @@ class UploadRepositoryImpl @Inject constructor(
         rev: String,
         name: String
     ): Response<JsonObject> {
-        val connection = file.toURI().toURL().openConnection()
-        val mimeType = connection.contentType ?: "application/octet-stream"
-        val body = FileUtils.fullyReadFileToBytes(file)
-            .toRequestBody("application/octet-stream".toMediaTypeOrNull())
+        val (mimeType, body) = withContext(dispatcherProvider.io) {
+            val connection = file.toURI().toURL().openConnection()
+            val type = connection.contentType ?: "application/octet-stream"
+            type to file.asRequestBody("application/octet-stream".toMediaTypeOrNull())
+        }
         val url = String.format(destinationFormat, UrlUtils.getUrl(), id, name)
 
         return apiInterface.uploadResource(
