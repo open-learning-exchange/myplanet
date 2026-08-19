@@ -96,10 +96,6 @@ wait_pr_merged() {
     done
 }
 
-# Runs on a commit, optionally narrowed to the branch that commit is being
-# judged as. A sha is not owned by one branch: a branch cut from the base sits
-# on the base's tip, and its own (often concurrency-cancelled) runs answer to
-# the same head_sha. Judging the base by those is how a green base reads red.
 runs_for() {
     local raw
     raw=$(gh api "repos/$REPO/actions/runs?head_sha=$1&per_page=100" 2>/dev/null) \
@@ -113,11 +109,6 @@ runs_for() {
           | {id, name, status, conclusion} ]' <<<"$raw" 2>/dev/null || echo '[]'
 }
 
-# The runs that are a real verdict of red: completed, not green, and not
-# superseded by a green run of the same workflow on this commit. `cancelled` is
-# not a verdict at all -- `cancel-in-progress` retires runs by the dozen -- so a
-# cancelled run counts as absent, and runs_missing is what holds a required
-# workflow to actually having passed.
 runs_bad() {
     jq -c '
         ([ .[] | select(.status == "completed" and .conclusion == "success") | .name ] | unique) as $green
