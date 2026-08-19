@@ -9,8 +9,13 @@ import com.google.gson.JsonPrimitive
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.runs
+import io.mockk.unmockkObject
 import io.mockk.verify
+import java.io.File
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.CoroutineScope
@@ -24,7 +29,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.AppDatabase
@@ -60,6 +67,9 @@ class ConfigurationsRepositoryImplTest {
         override val default = testDispatcher
         override val unconfined = testDispatcher
     }
+
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
 
     @Before
     fun setup() {
@@ -602,5 +612,70 @@ class ConfigurationsRepositoryImplTest {
         assertTrue(result is ConfigurationsRepository.ConfigurationResult.Failure)
 
         io.mockk.unmockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
+    }
+
+    @Test
+    fun `clearFirstRunStorageAndSetFlag wipes the ole directory and clears the flag`() = runTest(testDispatcher) {
+        val oleDir = temporaryFolder.newFolder("ole")
+        val looseFile = File(oleDir, "loose.txt").apply { writeText("stale") }
+        val nested = File(oleDir, "nested").apply { mkdirs() }
+        val nestedFile = File(nested, "deep.txt").apply { writeText("stale") }
+
+        every { sharedPrefManager.getFirstRun() } returns true
+        every { sharedPrefManager.setFirstRun(false) } just runs
+
+        mockkObject(FileUtils)
+        every { FileUtils.getOlePath(context) } returns oleDir.absolutePath
+
+        try {
+            repository.clearFirstRunStorageAndSetFlag(true)
+
+            assertFalse(looseFile.exists())
+            assertFalse(nestedFile.exists())
+            assertFalse(nested.exists())
+            assertTrue(oleDir.exists())
+            verify { sharedPrefManager.setFirstRun(false) }
+        } finally {
+            unmockkObject(FileUtils)
+        }
+    }
+
+    @Test
+    fun `clearFirstRunStorageAndSetFlag does nothing without write permission`() = runTest(testDispatcher) {
+        every { sharedPrefManager.getFirstRun() } returns true
+
+        repository.clearFirstRunStorageAndSetFlag(false)
+
+        verify(exactly = 0) { sharedPrefManager.setFirstRun(any()) }
+    }
+
+    @Test
+    fun `clearFirstRunStorageAndSetFlag does nothing when it is not the first run`() = runTest(testDispatcher) {
+        every { sharedPrefManager.getFirstRun() } returns false
+
+        repository.clearFirstRunStorageAndSetFlag(true)
+
+        verify(exactly = 0) { sharedPrefManager.setFirstRun(any()) }
+    }
+
+    @Test
+    fun `getQueuedDownloads returns empty list when prefs is null`() = runTest(testDispatcher) {
+        every { sharedPrefManager.getConcatenatedLinks() } returns null
+
+        assertTrue(repository.getQueuedDownloads().isEmpty())
+    }
+
+    @Test
+    fun `getQueuedDownloads returns empty list when prefs holds malformed JSON`() = runTest(testDispatcher) {
+        every { sharedPrefManager.getConcatenatedLinks() } returns "not json"
+
+        assertTrue(repository.getQueuedDownloads().isEmpty())
+    }
+
+    @Test
+    fun `getQueuedDownloads returns decoded list when prefs has valid JSON`() = runTest(testDispatcher) {
+        every { sharedPrefManager.getConcatenatedLinks() } returns "[\"link1\", \"link2\"]"
+
+        assertEquals(listOf("link1", "link2"), repository.getQueuedDownloads())
     }
 }

@@ -6,6 +6,7 @@ import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
 import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
@@ -19,6 +20,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.Json
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.data.api.ApiClient
@@ -369,6 +371,31 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
     override fun getPlanetType(): String? {
         return sharedPrefManager.getRawString("planetType")
+    }
+
+    override suspend fun clearFirstRunStorageAndSetFlag(hasWritePermission: Boolean) {
+        withContext(dispatcherProvider.io) {
+            if (hasWritePermission && sharedPrefManager.getFirstRun()) {
+                val myDir = File(FileUtils.getOlePath(context))
+                if (myDir.isDirectory) {
+                    myDir.listFiles()?.forEach { it.deleteRecursively() }
+                }
+                sharedPrefManager.setFirstRun(false)
+            }
+        }
+    }
+
+    override suspend fun getQueuedDownloads(): List<String> {
+        return withContext(dispatcherProvider.io) {
+            val storedJsonConcatenatedLinks = sharedPrefManager.getConcatenatedLinks()
+            if (storedJsonConcatenatedLinks.isNullOrEmpty()) {
+                emptyList()
+            } else {
+                runCatching {
+                    Json.decodeFromString<List<String>>(storedJsonConcatenatedLinks)
+                }.getOrDefault(emptyList())
+            }
+        }
     }
 
     private fun buildCouchdbUrl(currentUrl: String, pin: String): String {
