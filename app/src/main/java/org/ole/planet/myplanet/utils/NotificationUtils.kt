@@ -43,18 +43,23 @@ object NotificationUtils {
     const val CHANNEL_TASKS = "task_notifications"
     const val CHANNEL_SYSTEM = "system_notifications"
     const val CHANNEL_TEAM = "team_notifications"
+    const val CHANNEL_MEETUPS = "meetup_notifications"
+    const val CHANNEL_COURSES = "course_notifications"
     const val TYPE_SURVEY = "survey"
     const val TYPE_TASK = "task"
     const val TYPE_STORAGE = "storage"
     const val TYPE_JOIN_REQUEST = "join_request"
     const val TYPE_RESOURCE = "resource"
     const val TYPE_COURSE = "course"
+    const val TYPE_MEETUP = "meetup"
     private const val PREFS_NAME = "notification_preferences"
     private const val KEY_ENABLED = "notifications_enabled"
     private const val KEY_SURVEY_ENABLED = "survey_notifications_enabled"
     private const val KEY_TASK_ENABLED = "task_notifications_enabled"
     private const val KEY_SYSTEM_ENABLED = "system_notifications_enabled"
     private const val KEY_TEAM_ENABLED = "team_notifications_enabled"
+    private const val KEY_MEETUP_ENABLED = "meetup_notifications_enabled"
+    private const val KEY_COURSE_ENABLED = "course_notifications_enabled"
     private const val KEY_ACTIVE_NOTIFICATIONS = "active_notifications"
     const val ACTION_MARK_AS_READ = "mark_as_read"
     const val ACTION_OPEN_NOTIFICATION = "open_notification"
@@ -136,6 +141,50 @@ object NotificationUtils {
             actionable = true,
             extras = mapOf("taskId" to taskId),
             relatedId = taskId
+        )
+    }
+
+    fun createMeetupNotification(
+        meetupId: String,
+        meetupTitle: String,
+        timeInfo: String,
+        location: String?,
+        teamId: String?,
+        timeProvider: TimeProvider
+    ): NotificationConfig {
+        val locationStr = if (!location.isNullOrBlank()) "\n📍 Location: $location" else ""
+        return NotificationConfig(
+            id = "meetup_$meetupId",
+            type = TYPE_MEETUP,
+            title = "📅 Upcoming Team Meetup",
+            message = "$meetupTitle\n🕒 $timeInfo$locationStr",
+            priority = NotificationCompat.PRIORITY_HIGH,
+            category = NotificationCompat.CATEGORY_EVENT,
+            actionable = true,
+            extras = mapOf(
+                "meetupId" to meetupId,
+                "teamId" to (teamId ?: "")
+            ),
+            relatedId = meetupId
+        )
+    }
+
+    fun createCourseReminderNotification(
+        courseId: String,
+        courseTitle: String,
+        message: String,
+        timeProvider: TimeProvider
+    ): NotificationConfig {
+        return NotificationConfig(
+            id = "course_$courseId",
+            type = TYPE_COURSE,
+            title = "📖 Study Reminder",
+            message = "$courseTitle\n$message",
+            priority = NotificationCompat.PRIORITY_HIGH,
+            category = NotificationCompat.CATEGORY_REMINDER,
+            actionable = true,
+            extras = mapOf("courseId" to courseId),
+            relatedId = courseId
         )
     }
 
@@ -282,7 +331,9 @@ object NotificationUtils {
                     createChannel(ChannelConfig(CHANNEL_SURVEYS, "Survey Notifications", "New surveys and survey reminders", IMPORTANCE_HIGH, true, true)),
                     createChannel(ChannelConfig(CHANNEL_TASKS, "Task Notifications", "Task assignments and deadlines", IMPORTANCE_HIGH, true, true)),
                     createChannel(ChannelConfig(CHANNEL_SYSTEM, "System Notifications", "Storage warnings and system updates", IMPORTANCE_DEFAULT, false)),
-                    createChannel(ChannelConfig(CHANNEL_TEAM, "Team Notifications", "Team join requests and team updates", IMPORTANCE_DEFAULT, true))
+                    createChannel(ChannelConfig(CHANNEL_TEAM, "Team Notifications", "Team join requests and team updates", IMPORTANCE_DEFAULT, true)),
+                    createChannel(ChannelConfig(CHANNEL_MEETUPS, "Meetup & Event Reminders", "Scheduled team meetups and calendar events", IMPORTANCE_HIGH, true, true)),
+                    createChannel(ChannelConfig(CHANNEL_COURSES, "Course & Study Reminders", "Course schedules and study reminders", IMPORTANCE_HIGH, true, true))
                 ).forEach { systemNotificationManager.createNotificationChannel(it) }
             }
         }
@@ -382,6 +433,8 @@ object NotificationUtils {
             when (config.type) {
                 TYPE_SURVEY -> builder.addAction(R.drawable.survey, "Take Survey", createOpenPendingIntent(config))
                 TYPE_TASK -> builder.addAction(R.drawable.team, "View Task", createOpenPendingIntent(config))
+                TYPE_MEETUP -> builder.addAction(R.drawable.meetups, "View Meetup", createOpenPendingIntent(config))
+                TYPE_COURSE -> builder.addAction(R.drawable.ourcourses, "Resume Course", createOpenPendingIntent(config))
                 TYPE_STORAGE -> {
                     val storageIntent = Intent(context, NotificationActionReceiver::class.java).apply {
                         action = ACTION_STORAGE_SETTINGS
@@ -429,7 +482,9 @@ object NotificationUtils {
             return when (type) {
                 TYPE_SURVEY -> preferences.getBoolean(KEY_SURVEY_ENABLED, true)
                 TYPE_TASK -> preferences.getBoolean(KEY_TASK_ENABLED, true)
-                TYPE_STORAGE, TYPE_RESOURCE, TYPE_COURSE -> preferences.getBoolean(KEY_SYSTEM_ENABLED, true)
+                TYPE_MEETUP -> preferences.getBoolean(KEY_MEETUP_ENABLED, true)
+                TYPE_COURSE -> preferences.getBoolean(KEY_COURSE_ENABLED, true)
+                TYPE_STORAGE, TYPE_RESOURCE -> preferences.getBoolean(KEY_SYSTEM_ENABLED, true)
                 TYPE_JOIN_REQUEST -> preferences.getBoolean(KEY_TEAM_ENABLED, true)
                 else -> true
             }
@@ -438,7 +493,9 @@ object NotificationUtils {
         private fun getChannelForType(type: String): String = when (type) {
             TYPE_SURVEY -> CHANNEL_SURVEYS
             TYPE_TASK -> CHANNEL_TASKS
-            TYPE_STORAGE, TYPE_RESOURCE, TYPE_COURSE -> CHANNEL_SYSTEM
+            TYPE_MEETUP -> CHANNEL_MEETUPS
+            TYPE_COURSE -> CHANNEL_COURSES
+            TYPE_STORAGE, TYPE_RESOURCE -> CHANNEL_SYSTEM
             TYPE_JOIN_REQUEST -> CHANNEL_TEAM
             else -> CHANNEL_GENERAL
         }
@@ -446,10 +503,11 @@ object NotificationUtils {
         private fun getIconForType(type: String): Int = when (type) {
             TYPE_SURVEY -> R.drawable.survey
             TYPE_TASK -> R.drawable.team
+            TYPE_MEETUP -> R.drawable.meetups
+            TYPE_COURSE -> R.drawable.ourcourses
             TYPE_STORAGE -> android.R.drawable.stat_sys_warning
             TYPE_JOIN_REQUEST -> R.drawable.business
             TYPE_RESOURCE -> R.drawable.ourlibrary
-            TYPE_COURSE -> R.drawable.ourcourses
             else -> R.drawable.ic_home
         }
 

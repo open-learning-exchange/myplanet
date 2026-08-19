@@ -9,15 +9,16 @@ import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.services.reminders.LocalReminderScheduler
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
-
 
 @Singleton
 class EventsRepositoryImpl @Inject constructor(
     private val timeProvider: TimeProvider,
     private val meetupDao: MeetupDao,
     private val userRepository: UserRepository,
+    private val localReminderScheduler: LocalReminderScheduler,
     private val gson: Gson
 ) : EventsRepository, EventsSyncWriter {
 
@@ -44,6 +45,7 @@ class EventsRepositoryImpl @Inject constructor(
             meetup.recurring = recurring
             meetup.updated = true
             meetupDao.upsert(meetup)
+            localReminderScheduler.scheduleMeetupReminder(meetup)
             true
         } catch (e: Exception) {
             e.printStackTrace()
@@ -158,6 +160,7 @@ class EventsRepositoryImpl @Inject constructor(
         }
         return try {
             meetupDao.upsert(meetup)
+            localReminderScheduler.scheduleMeetupReminder(meetup)
             true
         } catch (e: Exception) {
             e.printStackTrace()

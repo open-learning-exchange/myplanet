@@ -511,6 +511,24 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         }
                     })
                 }
+                NotificationUtils.TYPE_MEETUP -> {
+                    val teamId = intent.getStringExtra("teamId")
+                    val meetupId = intent.getStringExtra("meetupId")
+                    openMyFragment(TeamFragment().apply {
+                        arguments = Bundle().apply {
+                            teamId?.let { putString("teamId", it) }
+                            meetupId?.let { putString("meetupId", it) }
+                        }
+                    })
+                }
+                NotificationUtils.TYPE_COURSE -> {
+                    val courseId = intent.getStringExtra("courseId")
+                    openMyFragment(CoursesFragment().apply {
+                        arguments = Bundle().apply {
+                            courseId?.let { putString("id", it) }
+                        }
+                    })
+                }
                 else -> {
                     openNotificationsList(user?.id ?: "")
                 }
@@ -539,6 +557,20 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     lifecycleScope.launch {
                         handleJoinRequestNavigation(relatedId)
                     }
+                }
+                NotificationUtils.TYPE_MEETUP -> {
+                    openMyFragment(TeamFragment().apply {
+                        arguments = Bundle().apply {
+                            relatedId?.let { putString("meetupId", it) }
+                        }
+                    })
+                }
+                NotificationUtils.TYPE_COURSE -> {
+                    openMyFragment(CoursesFragment().apply {
+                        arguments = Bundle().apply {
+                            relatedId?.let { putString("id", it) }
+                        }
+                    })
                 }
                 NotificationUtils.TYPE_RESOURCE -> {
                     openCallFragment(ResourcesFragment(), "Resources")

@@ -61,6 +61,8 @@ import org.ole.planet.myplanet.repository.UserRepositoryImpl
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.VoicesRepositoryImpl
+import org.ole.planet.myplanet.services.reminders.LocalReminderScheduler
+import org.ole.planet.myplanet.services.reminders.LocalReminderSchedulerImpl
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -189,4 +191,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindVoicesRepository(impl: VoicesRepositoryImpl): VoicesRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindLocalReminderScheduler(impl: LocalReminderSchedulerImpl): LocalReminderScheduler
 }

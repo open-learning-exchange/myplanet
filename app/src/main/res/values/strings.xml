@@ -1376,5 +1376,12 @@
     <string name="filter_pdfs">PDFs</string>
     <string name="downloaded">Downloaded</string>
     <string name="not_downloaded">Not downloaded</string>
+    <string name="local_reminders">Local Reminders</string>
+    <string name="meetup_reminders">Team Meetup Reminders</string>
+    <string name="meetup_reminders_summary">Get notified 15 minutes before scheduled team meetups</string>
+    <string name="task_deadline_reminders">Task Deadline Reminders</string>
+    <string name="task_deadline_reminders_summary">Get notified when team tasks are due</string>
+    <string name="course_reminders">Course &amp; Study Reminders</string>
+    <string name="course_reminders_summary">Receive offline reminders for course schedules</string>
 
 </resources>
