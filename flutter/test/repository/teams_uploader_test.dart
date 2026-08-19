@@ -11,6 +11,8 @@ import 'package:myplanet/data/local/team_mapper.dart';
 import 'package:myplanet/repository/teams_uploader.dart';
 import 'package:path_provider/path_provider.dart';
 
+import 'device_identity_fixture.dart';
+
 void main() {
   late AppDatabase database;
   late MockPlanetApi api;
@@ -20,7 +22,7 @@ void main() {
   setUp(() async {
     database = AppDatabase.memory();
     api = MockPlanetApi();
-    uploader = TeamsUploader(api, database.teamDao);
+    uploader = TeamsUploader(api, database.teamDao, testDeviceIdentity);
     registerFallbackValue(<String, dynamic>{});
 
     // Route `TeamAttachments` at a temp dir so the write-back can read the
@@ -62,22 +64,27 @@ void main() {
 
   test('a successful upload hands the row back to the server', () async {
     await seedLocalReport();
+    late Map<String, dynamic> posted;
     when(
       () => api.postJsonObject(
         any(),
         any(),
         authHeader: any(named: 'authHeader'),
       ),
-    ).thenAnswer(
-      (_) async => NetworkSuccess<Map<String, dynamic>>({
+    ).thenAnswer((invocation) async {
+      posted = invocation.positionalArguments[1] as Map<String, dynamic>;
+      return NetworkSuccess<Map<String, dynamic>>({
         'id': 'report-1',
         'rev': '2-b',
-      }),
-    );
+      });
+    });
 
     final result = await uploader.handler(rowFor('report-1'), {}, 'auth');
 
     expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
+    for (final field in testDeviceFields.entries) {
+      expect(posted, containsPair(field.key, field.value));
+    }
     final row = await database.teamDao.getById('report-1');
     expect(row?.rev, '2-b');
     // Still flagged, the row would outrank every future server refresh and

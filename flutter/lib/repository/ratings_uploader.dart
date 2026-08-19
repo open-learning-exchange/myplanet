@@ -1,5 +1,6 @@
 import '../core/config/server_config.dart';
 import '../core/network/network_result.dart';
+import '../core/system/device_identity.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
@@ -22,6 +23,7 @@ class RatingsUploader {
     this._dao,
     this._userDao,
     this._outbox,
+    this._identity,
   );
 
   static const type = 'rating';
@@ -31,6 +33,7 @@ class RatingsUploader {
   final RatingDao _dao;
   final UserDao _userDao;
   final OutboxRepository _outbox;
+  final DeviceIdentitySource _identity;
 
   /// Credential-free: this string is persisted in `outbox.endpoint`, a table
   /// that deliberately survives schema upgrades. The PIN travels as the
@@ -41,12 +44,16 @@ class RatingsUploader {
   /// Queues all pending ratings for upload.
   Future<int> queuePending({required ServerConfig config}) async {
     final rows = await _repository.pendingUploads();
+    final identity = rows.isEmpty ? null : await _identity.read();
     for (final row in rows) {
       await _outbox.enqueue(
         uploadType: type,
         itemId: row.id,
         endpoint: endpointFor(config),
-        payload: _toDoc(row, await _userDao.getById(row.userId)),
+        payload: {
+          ..._toDoc(row, await _userDao.getById(row.userId)),
+          ...identity!.documentFields,
+        },
         userId: row.userId,
       );
     }
@@ -98,9 +105,6 @@ class RatingsUploader {
       'createdOn': row.parentCode,
       'parentCode': row.parentCode,
       'planetCode': row.planetCode,
-      // Device info would go here in the Kotlin, but Flutter doesn't have
-      // access to the same device identification utilities. The server accepts
-      // ratings without these fields.
     };
     if (row.couchId != null) {
       doc['_id'] = row.couchId;

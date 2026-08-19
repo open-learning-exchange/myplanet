@@ -12,6 +12,8 @@ import 'package:myplanet/repository/outbox_repository.dart';
 import 'package:myplanet/repository/personals_repository.dart';
 import 'package:myplanet/repository/personals_uploader.dart';
 
+import 'device_identity_fixture.dart';
+
 class MockPlanetApi extends Mock implements PlanetApi {}
 
 void main() {
@@ -39,7 +41,7 @@ void main() {
       createId: () => 'note-${nextId++}',
     );
     outbox = OutboxRepository(database.outboxDao, now: () => clock);
-    uploader = PersonalsUploader(api, personals, outbox);
+    uploader = PersonalsUploader(api, personals, outbox, testDeviceIdentity);
   });
   tearDown(() => database.close());
 
@@ -140,6 +142,10 @@ void main() {
     final row = (await outbox.due()).single;
     expect(row.endpoint, isNot(contains(config.pin)));
     expect(row.payload, isNot(contains(config.pin)));
+    final payload = jsonDecode(row.payload) as Map<String, dynamic>;
+    for (final field in testDeviceFields.entries) {
+      expect(payload, containsPair(field.key, field.value));
+    }
   });
 
   test('a successful upload adopts the ids CouchDB assigned', () async {

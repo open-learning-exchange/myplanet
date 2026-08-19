@@ -89,9 +89,8 @@ class PersonalsRepository {
 
   /// Port of `Personal.serialize`.
   ///
-  /// The `androidId`/`deviceName`/`customDeviceName` trio is device telemetry
-  /// from `NetworkUtils` that the server does not key on; it is noted in the
-  /// migration doc rather than guessed at.
+  /// Device telemetry is deliberately added by [PersonalsUploader], where the
+  /// platform seam is available; this pure row serializer remains deterministic.
   static Map<String, dynamic> serialize(
     PersonalRow row, {
     DateTime? uploadedAt,

@@ -11,6 +11,8 @@ import 'package:myplanet/repository/outbox_repository.dart';
 import 'package:myplanet/repository/ratings_repository.dart';
 import 'package:myplanet/repository/ratings_uploader.dart';
 
+import 'device_identity_fixture.dart';
+
 void main() {
   late AppDatabase database;
   late MockPlanetApi api;
@@ -37,6 +39,7 @@ void main() {
       database.ratingDao,
       database.userDao,
       outbox,
+      testDeviceIdentity,
     );
   });
   tearDown(() => database.close());
@@ -97,6 +100,10 @@ void main() {
       DateTime.now().millisecondsSinceEpoch + 1000,
     );
     expect(queued.map((row) => row.itemId), ['rating-1']);
+    final payload = jsonDecode(queued.single.payload) as Map<String, dynamic>;
+    for (final field in testDeviceFields.entries) {
+      expect(payload, containsPair(field.key, field.value));
+    }
   });
 
   test('a successful upload marks the rating as uploaded', () async {

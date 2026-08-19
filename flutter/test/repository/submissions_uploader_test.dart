@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -8,6 +10,8 @@ import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/outbox_repository.dart';
 import 'package:myplanet/repository/submissions_repository.dart';
 import 'package:myplanet/repository/submissions_uploader.dart';
+
+import 'device_identity_fixture.dart';
 
 class MockPlanetApi extends Mock implements PlanetApi {}
 
@@ -28,7 +32,7 @@ void main() {
     api = MockPlanetApi();
     repository = SubmissionsRepository(api, db.submissionDao);
     outbox = OutboxRepository(db.outboxDao);
-    uploader = SubmissionsUploader(api, repository, outbox);
+    uploader = SubmissionsUploader(api, repository, outbox, testDeviceIdentity);
   });
   tearDown(() => db.close());
 
@@ -42,6 +46,10 @@ void main() {
     expect(await uploader.queuePending(config: config, userId: 'user-1'), 1);
     expect(await uploader.queuePending(config: config, userId: 'user-1'), 1);
     final operation = (await outbox.due()).single;
+    final queuedDoc = jsonDecode(operation.payload) as Map<String, dynamic>;
+    for (final field in testDeviceFields.entries) {
+      expect(queuedDoc, containsPair(field.key, field.value));
+    }
     when(
       () => api.postJsonObject(
         operation.endpoint,

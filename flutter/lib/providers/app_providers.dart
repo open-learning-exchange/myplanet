@@ -8,6 +8,7 @@ import '../core/notifications/task_deadline_notifier.dart';
 import '../core/prefs/planet_prefs.dart';
 import '../core/sync/server_url_mapper.dart';
 import '../core/system/device_stats.dart';
+import '../core/system/device_identity.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
@@ -131,8 +132,11 @@ final teamTasksUploaderProvider = Provider<TeamTasksUploader>(
 );
 
 final teamsUploaderProvider = Provider<TeamsUploader>(
-  (ref) =>
-      TeamsUploader(ref.watch(planetApiProvider), ref.watch(teamDaoProvider)),
+  (ref) => TeamsUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(teamDaoProvider),
+    ref.watch(deviceIdentitySourceProvider),
+  ),
 );
 
 final eventsRepositoryProvider = Provider<EventsRepository>(
@@ -222,6 +226,13 @@ final activitiesUploaderProvider = Provider<ActivitiesUploader>(
 /// fake so the platform channel is never invoked.
 final deviceStatsProvider = Provider<DeviceStats>(
   (ref) => DeviceStats.instance,
+);
+
+final deviceIdentitySourceProvider = Provider<DeviceIdentitySource>(
+  (ref) => PlatformDeviceIdentitySource(
+    ref.watch(deviceStatsProvider),
+    ref.watch(planetPrefsProvider),
+  ),
 );
 
 /// Port of the `myplanet_activities` telemetry upload path
@@ -314,6 +325,7 @@ final submissionsUploaderProvider = Provider<SubmissionsUploader>(
     ref.watch(planetApiProvider),
     ref.watch(submissionsRepositoryProvider),
     ref.watch(outboxRepositoryProvider),
+    ref.watch(deviceIdentitySourceProvider),
   ),
 );
 
@@ -436,6 +448,7 @@ final personalsUploaderProvider = Provider<PersonalsUploader>(
     ref.watch(planetApiProvider),
     ref.watch(personalsRepositoryProvider),
     ref.watch(outboxRepositoryProvider),
+    ref.watch(deviceIdentitySourceProvider),
   ),
 );
 
@@ -548,6 +561,7 @@ final ratingsUploaderProvider = Provider<RatingsUploader>(
     ref.watch(appDatabaseProvider).ratingDao,
     ref.watch(userDaoProvider),
     ref.watch(outboxRepositoryProvider),
+    ref.watch(deviceIdentitySourceProvider),
   ),
 );
 

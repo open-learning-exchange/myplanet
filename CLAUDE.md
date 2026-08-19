@@ -51,7 +51,8 @@ a testable Dart seam, though that plugin's own Android side is Kotlin, and
 `maintenance` cadence (`TaskDeadlineNotifier` policy behind a `NotificationPresenter` seam, with
 `team_tasks.isNotified` making the reminder once-only). Phase 43 closes the final WorkManager gap:
 resource requests are persisted before the foreground attempt and handed to a network-constrained
-one-shot worker for retry and process-death recovery.
+one-shot worker for retry and process-death recovery. Phase 44 then closed the device-identity
+serializer gap for personal, rating, submission and team uploads using the Phase 41 platform seam.
 
 ### Documentation Map
 

@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 43 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 44 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -30,10 +30,10 @@ Known gaps:
   app is Android-only.
 - The dashboard's About and Disclaimer destinations are ported (see Phase 33);
   their translated HTML bodies are rendered as markdown.
-- Device and tablet usage telemetry (`myplanet_activities`, `MyPlanet.getTabletUsages`) is
-  unported: it needs a device-info plugin, and the same absence is why the activity documents
-  the port posts omit the `androidId`/`deviceName`/`customDeviceName` trio. Challenge actions
-  (`user_challenge_actions`) are unported because the challenge feature has no screen here.
+- Device/tablet usage telemetry and device identity on activity documents landed in Phase 41.
+  Phase 44 carries the same `androidId`/`deviceName`/`customDeviceName` identity onto personal,
+  rating, submission and team uploads. Challenge actions (`user_challenge_actions`) remain
+  unported because the challenge feature has no screen here.
 
 - **Phase 1** -- skeleton plus the server configuration → login → resources slice.
 - **Phase 2** -- dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -1880,14 +1880,10 @@ activity queue (login/resource/course rows) that landed in earlier phases.
   omitted. `ActivitiesUploader` reads them once per `queuePending` through the
   `DeviceStats` seam.
 
-### Known gap: other uploaders
+### Closed in Phase 44: other uploaders
 
-The `androidId`/`deviceName`/`customDeviceName` fields the Kotlin adds to
-**submissions, personals, ratings, and teams** uploads are still absent. Adding them
-to those serializers is a cross-cutting sweep through every uploader; this phase
-added them to the *activity* serializers only, matching the scoped task. The
-`DeviceStats` seam now exists, so closing the gap is a matter of threading it
-through each remaining uploader's constructor and doc builder.
+The `androidId`/`deviceName`/`customDeviceName` fields Kotlin adds to submissions,
+personals, ratings and teams now use the same platform seam; see Phase 44 below.
 
 ### Fixed on merge: the identity fields on a usage row
 
@@ -2001,7 +1997,22 @@ call disables re-enqueueing, preventing a worker from recursively scheduling its
 behind the same test seam. Queue policy has a focused test covering persistence, deduplication,
 scheduling constraints and completion.
 
-**Last updated**: 2026-08-19 (Phase 43 complete — the durable, network-constrained resource download
-queue closes the final unported WorkManager job)
-**Phase**: 43 of N (27 of 28 UI packages have a screen — see Status for what that does and
+## Phase 44 — device identity parity across locally-authored uploads
+
+Phase 41 introduced the platform seam but intentionally limited its serializer changes to
+activities. That left four known document families distinguishable from Kotlin at the server:
+personal resources, ratings, submissions and team documents. All four now carry Kotlin's exact
+field trio: `androidId` is the `ANDROID_ID_buildId` composite from `uniqueIdentifier()`,
+`deviceName` is the normalized manufacturer/model string, and `customDeviceName` is read from
+preferences at upload time so a renamed tablet does not retain a stale cached label.
+
+`DeviceIdentitySource` centralizes that contract rather than teaching four repositories about
+platform channels. Queue-based uploaders read it once per batch and persist the fields in each
+outbox payload. Teams have several enqueue sites, so their shared handler adds the fields at drain
+time before POSTing. A fixed source keeps repository tests platform-independent, and each uploader
+now asserts all three values on the actual queued or posted document.
+
+**Last updated**: 2026-08-19 (Phase 44 complete — device identity parity for personal, rating,
+submission and team uploads)
+**Phase**: 44 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 
 import '../core/config/server_config.dart';
 import '../core/network/network_result.dart';
+import '../core/system/device_identity.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
@@ -28,7 +29,7 @@ import 'personals_repository.dart';
 /// the attachment is attempted, and an attachment failure does not roll the
 /// document back. This handler mirrors that ordering.
 class PersonalsUploader {
-  PersonalsUploader(this._api, this._personals, this._outbox);
+  PersonalsUploader(this._api, this._personals, this._outbox, this._identity);
 
   /// The `uploadType` these operations carry in the outbox.
   static const String type = 'personals';
@@ -36,6 +37,7 @@ class PersonalsUploader {
   final PlanetApi _api;
   final PersonalsRepository _personals;
   final OutboxRepository _outbox;
+  final DeviceIdentitySource _identity;
 
   /// Credential-free: this string is persisted in `outbox.endpoint`.
   /// The PIN travels as the `Authorization` header at send time instead.
@@ -53,12 +55,16 @@ class PersonalsUploader {
   }) async {
     final endpoint = endpointFor(config);
     final pending = await _personals.pendingUploads(userId);
+    final identity = pending.isEmpty ? null : await _identity.read();
     for (final row in pending) {
       await _outbox.enqueue(
         uploadType: type,
         itemId: row.id,
         endpoint: endpoint,
-        payload: PersonalsRepository.serialize(row),
+        payload: {
+          ...PersonalsRepository.serialize(row),
+          ...identity!.documentFields,
+        },
         userId: userId,
       );
     }

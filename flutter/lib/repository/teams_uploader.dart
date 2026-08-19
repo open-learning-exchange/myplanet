@@ -1,6 +1,7 @@
 import '../core/config/server_config.dart';
 import '../core/files/team_attachments.dart';
 import '../core/network/network_result.dart';
+import '../core/system/device_identity.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
@@ -30,7 +31,7 @@ import 'dart:developer';
 /// already uploaded before the bytes are attempted, and an attachment failure
 /// does not roll the document back.
 class TeamsUploader {
-  TeamsUploader(this._api, this._dao);
+  TeamsUploader(this._api, this._dao, this._identity);
 
   /// The upload types enqueued by the team providers, all handled the same way.
   static const membershipType = 'teamMembership';
@@ -48,21 +49,23 @@ class TeamsUploader {
 
   final PlanetApi _api;
   final TeamDao _dao;
+  final DeviceIdentitySource _identity;
 
   static String endpointFor(ServerConfig config) =>
       '${UrlUtils.credentialFreeDbUrl(config)}/teams';
 
   OutboxHandler get handler => (row, payload, authHeader) async {
+    final document = {...payload, ...(await _identity.read()).documentFields};
     final result = await _api.postJsonObject(
       row.endpoint,
-      payload,
+      document,
       authHeader: authHeader,
     );
     if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
       // A tombstone's subject was already deleted locally; there is no row
       // left to stamp, and treating the missing revision as a failure would
       // retry a delete that already succeeded.
-      if (payload['_deleted'] == true) return result;
+      if (document['_deleted'] == true) return result;
       final rev = data['rev'];
       if (rev is! String) {
         return const NetworkError<Map<String, dynamic>>(

@@ -338,11 +338,9 @@ class SubmissionsRepository {
   /// the original. This is reachable: [upsertDocuments] takes `isUpdated`
   /// straight from the server document, and [pendingUploads] selects on it.
   ///
-  /// The `androidId`/`deviceName`/`customDeviceName` telemetry and the
-  /// `source`/`parentCode` planet identifiers that Kotlin also sends are absent
-  /// — the first is device metadata the server does not key on, the second
-  /// belongs with the community-code slice. Both are noted in the migration
-  /// doc rather than guessed at.
+  /// Device telemetry is added by [SubmissionsUploader], where the platform
+  /// seam is available. The `source`/`parentCode` planet identifiers Kotlin
+  /// also sends remain part of the community-code parity gap.
   Future<Map<String, dynamic>> serialize(SubmissionRow row) async {
     final answers = await _dao.answersFor(row.id);
     return {
