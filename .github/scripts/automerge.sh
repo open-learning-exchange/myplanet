@@ -6,15 +6,6 @@
 #   2. bump the version on the PR branch
 #   3. push, and wait for build + test on that prepared commit
 #   4. wait for $BASE to be settled and green, then squash merge
-#
-# Stop on the first failure. Both waits sit in front of step 4 so they
-# overlap: $BASE releases the previous merge while this PR builds.
-#
-# Exception: a red workflow on $BASE. Every commit on $BASE is a PR head that
-# was built and tested green just before it was merged, so a failure there is
-# far more likely to be flaky than real. Re-run the failed workflow(s)
-# ($BASE_RERUN_ATTEMPTS times) and only stop if they fail again.
-#
 set -euo pipefail
 
 REPO="${REPO:?}"
