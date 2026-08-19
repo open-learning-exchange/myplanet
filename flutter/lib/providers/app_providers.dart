@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/server_config.dart';
 import '../core/prefs/planet_prefs.dart';
 import '../core/sync/server_url_mapper.dart';
+import '../core/system/device_stats.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
@@ -34,6 +35,7 @@ import '../repository/life_repository.dart';
 import '../repository/resource_downloader.dart';
 import '../repository/resources_repository.dart';
 import '../repository/shelf_repository.dart';
+import '../repository/myplanet_activities_uploader.dart';
 import '../repository/user_repository.dart';
 import '../repository/voices_repository.dart';
 import '../repository/voices_uploader.dart';
@@ -201,6 +203,25 @@ final activitiesUploaderProvider = Provider<ActivitiesUploader>(
     ref.watch(planetApiProvider),
     ref.watch(activitiesRepositoryProvider),
     ref.watch(outboxRepositoryProvider),
+    ref.watch(deviceStatsProvider),
+    ref.watch(planetPrefsProvider),
+  ),
+);
+
+/// The device-stats seam. Production wires the method-channel-backed
+/// [DeviceStats] instance; widget and repository tests override this with a
+/// fake so the platform channel is never invoked.
+final deviceStatsProvider = Provider<DeviceStats>(
+  (ref) => DeviceStats.instance,
+);
+
+/// Port of the `myplanet_activities` telemetry upload path
+/// (`ActivitiesRepositoryImpl.uploadMyPlanetActivities`).
+final myPlanetActivitiesUploaderProvider = Provider<MyPlanetActivitiesUploader>(
+  (ref) => MyPlanetActivitiesUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(planetPrefsProvider),
+    ref.watch(deviceStatsProvider),
   ),
 );
 

@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 40 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 41 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -1830,8 +1830,56 @@ they land on unported features.
 
 ---
 
-**Last updated**: 2026-08-19 (Phase 40 complete — voices share-to-community and the upstream
-voices-visibility/delete parity landed; the 2026-08-19 harvest audit found the one behavioural
-commit it picked up)
-**Phase**: 40 of N (27 of 28 UI packages have a screen — see Status for what that does and does
-not mean)
+## Phase 41 — device/tablet usage telemetry (`myplanet_activities` upload)
+
+The one telemetry path explicitly unported in `ActivitiesRepositoryImpl` — the
+`myplanet_activities` document that records device identity and per-app foreground
+usage — now ships. This is the per-sync aggregate doc, distinct from the per-row
+activity queue (login/resource/course rows) that landed in earlier phases.
+
+### What landed
+
+- **`DeviceStats` platform-channel seam** (`core/system/device_stats.dart`): a Dart
+  interface backed by a `MethodChannel` into `MainActivity.kt`, mirroring the
+  `DiskStats` pattern. The Kotlin side reads `Settings.Secure.ANDROID_ID` (bare),
+  `Build.MANUFACTURER + " " + Build.MODEL` (uppercased), `PackageInfo` version
+  code/name, and `UsageStatsManager.queryAndAggregateUsageStats` for the foreground
+  time-slice since the last upload. `PACKAGE_USAGE_STATS` (with
+  `tools:ignore="ProtectedPermissions"`) is declared in the manifest.
+- **`PlanetPrefs` additions**: `customDeviceName`, `lastUsageUploaded` (the cutoff
+  the usage query starts from), and `versionDetail` (the raw `/versions` JSON the
+  config handshake caches, which `planetVersion` is parsed out of at upload time).
+  The `ConfigurationSuccess` now carries the `versionDetail` body through the
+  handshake, and `server_config_screen` persists it.
+- **`MyPlanetActivitiesUploader`** (`repository/myplanet_activities_uploader.dart`): the
+  two-POST + one-GET merge. Posts `getNormalMyPlanetActivities` (the "sync" doc), GETs
+  the existing per-device usages doc by `androidId@uniqueIdentifier`, then POSTs the
+  merge with `UsageStatsManager` rows appended (or a fresh "usages" doc). After a
+  successful merge, `lastUsageUploaded` advances. Skipped for managers. Auth is the
+  `satellite:PIN` Basic header.
+- **Wired into both sync paths**: the dashboard `syncAll` completion fires it after at
+  least one area succeeds (swallowed on error); the `BackgroundTaskRunner` gained an
+  `onSyncComplete` hook the background entrypoint fills (also swallowed). This mirrors
+  `AutoSyncWorker`/`UserDataWorker` calling `UploadManager.uploadActivities`.
+- **Device fields on the per-row serializers**: `loginDoc` now carries
+  `androidId`/`deviceName`/`customDeviceName`, and `resourceDoc`/`courseDoc` carry
+  `androidId`/`deviceName` — the fields the Kotlin serializers add that the port
+  omitted. `ActivitiesUploader` reads them once per `queuePending` through the
+  `DeviceStats` seam.
+
+### Known gap: other uploaders
+
+The `androidId`/`deviceName`/`customDeviceName` fields the Kotlin adds to
+**submissions, personals, ratings, and teams** uploads are still absent. Adding them
+to those serializers is a cross-cutting sweep through every uploader; this phase
+added them to the *activity* serializers only, matching the scoped task. The
+`DeviceStats` seam now exists, so closing the gap is a matter of threading it
+through each remaining uploader's constructor and doc builder.
+
+---
+
+**Last updated**: 2026-08-19 (Phase 41 complete — device/tablet usage telemetry
+(`myplanet_activities` upload) ported; `DeviceStats` seam + `MyPlanetActivitiesUploader` +
+dashboard/background wiring + device fields on activity serializers)
+**Phase**: 41 of N (27 of 28 UI packages have a screen — see Status for what that does and
+does not mean)

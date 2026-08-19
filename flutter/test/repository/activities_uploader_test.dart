@@ -4,11 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/network/network_result.dart';
+import 'package:myplanet/core/prefs/planet_prefs.dart';
+import 'package:myplanet/core/system/device_stats.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/activities_repository.dart';
 import 'package:myplanet/repository/activities_uploader.dart';
 import 'package:myplanet/repository/outbox_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   late AppDatabase database;
@@ -16,6 +19,8 @@ void main() {
   late ActivitiesRepository activities;
   late ActivitiesUploader uploader;
   late OutboxRepository outbox;
+  late _FakeDeviceStats deviceStats;
+  late PlanetPrefs prefs;
 
   const config = ServerConfig(
     serverUrl: 'https://planet.example',
@@ -23,7 +28,7 @@ void main() {
     pin: '1234',
   );
 
-  setUp(() {
+  setUp(() async {
     database = AppDatabase.memory();
     api = MockPlanetApi();
     registerFallbackValue(<String, dynamic>{});
@@ -34,7 +39,10 @@ void main() {
       database.resourceActivityDao,
       database.courseActivityDao,
     );
-    uploader = ActivitiesUploader(api, activities, outbox);
+    deviceStats = _FakeDeviceStats();
+    SharedPreferences.setMockInitialValues({});
+    prefs = PlanetPrefs(await SharedPreferences.getInstance());
+    uploader = ActivitiesUploader(api, activities, outbox, deviceStats, prefs);
   });
   tearDown(() => database.close());
 
@@ -145,6 +153,10 @@ void main() {
     expect(doc['loginTime'], 1000);
     expect(doc['createdOn'], 'planet-a');
     expect(doc['parentCode'], 'nation');
+    // Device telemetry, ported through the DeviceStats seam.
+    expect(doc['androidId'], 'unique-id');
+    expect(doc['deviceName'], 'TEST DEVICE');
+    expect(doc['customDeviceName'], '');
     // The Kotlin's `_id` branch — which writes the logout *timestamp* as the
     // document id — is deliberately not reproduced; see the uploader.
     expect(doc.containsKey('_id'), isFalse);
@@ -274,8 +286,36 @@ void main() {
       'time': 4000,
       'createdOn': 'planet-a',
       'parentCode': 'nation',
+      // The Kotlin's `serializeResourceActivities` writes androidId/deviceName
+      // but no customDeviceName — the resource doc matches that shape.
+      'androidId': 'unique-id',
+      'deviceName': 'TEST DEVICE',
     });
   });
 }
 
 class MockPlanetApi extends Mock implements PlanetApi {}
+
+/// Test double for [DeviceStats] — returns fixed device-identity values so
+/// the serializer output is deterministic. No platform channel is invoked.
+class _FakeDeviceStats implements DeviceStats {
+  @override
+  Future<String> androidId() async => 'android-id';
+
+  @override
+  Future<String> uniqueIdentifier() async => 'unique-id';
+
+  @override
+  Future<String> deviceName() async => 'TEST DEVICE';
+
+  @override
+  Future<int> versionCode() async => 6342;
+
+  @override
+  Future<String?> versionName() async => '0.63.42';
+
+  @override
+  Future<List<TabletUsageStats>> tabletUsageStats({
+    required int sinceMillis,
+  }) async => const [];
+}

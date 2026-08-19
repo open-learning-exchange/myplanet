@@ -43,6 +43,7 @@ class BackgroundTaskRunner {
     required this.drainOutbox,
     required this.syncSteps,
     required this.recordLastSync,
+    this.onSyncComplete,
     this.recordRun,
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now;
@@ -55,6 +56,14 @@ class BackgroundTaskRunner {
   final BackgroundStep drainOutbox;
   final List<BackgroundSyncStep> syncSteps;
   final Future<void> Function(DateTime value) recordLastSync;
+
+  /// Fires once after every [syncSteps] step succeeds — the hook the
+  /// `myplanet_activities` telemetry upload hangs off, mirroring
+  /// `AutoSyncWorker`'s `uploadActivities` call after a completed sync. A
+  /// failure here is swallowed by the runner (it never contributes to
+  /// [failedSteps]); losing telemetry must not request an OS retry the way a
+  /// failed table pull would.
+  final BackgroundStep? onSyncComplete;
   final Future<void> Function(BackgroundRunRecord record)? recordRun;
   final DateTime Function() _now;
 
@@ -122,6 +131,16 @@ class BackgroundTaskRunner {
         await recordLastSync(_now().toUtc());
       } catch (_) {
         failed.add('lastSyncWrite');
+      }
+      // Telemetry upload after a clean sync — see [onSyncComplete]. Not a
+      // retryable step; a failure is swallowed so it cannot flip the run.
+      final complete = onSyncComplete;
+      if (complete != null) {
+        try {
+          await complete();
+        } catch (_) {
+          // Deliberately ignored — see [onSyncComplete].
+        }
       }
     }
     return _complete(taskName, failed);

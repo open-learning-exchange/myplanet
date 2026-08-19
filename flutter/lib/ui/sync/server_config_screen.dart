@@ -58,8 +58,13 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
     if (!mounted) return;
 
     switch (result) {
-      case ConfigurationSuccess(:final config):
+      case ConfigurationSuccess(:final config, :final versionDetail):
         await ref.read(serverConfigProvider.notifier).save(config);
+        if (versionDetail != null) {
+          // Port of `SharedPrefManager.setVersionDetail` — the raw `/versions`
+          // body, cached so the telemetry upload can echo `planetVersion`.
+          await ref.read(planetPrefsProvider).setVersionDetail(versionDetail);
+        }
       // The router redirect takes it from here.
       case ConfigurationFailure(:final reason):
         setState(() {

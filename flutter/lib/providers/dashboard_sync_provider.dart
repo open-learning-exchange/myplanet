@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'app_providers.dart';
 import 'activities_provider.dart';
+import 'session_provider.dart';
 import 'chat_provider.dart';
 import 'courses_providers.dart';
 import 'events_provider.dart';
@@ -122,6 +124,7 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
     }
 
     await _recordSyncActivity();
+    await _uploadMyPlanetActivities();
 
     state = state.copyWith(running: false, finishedAt: DateTime.now());
   }
@@ -148,6 +151,28 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
   Future<void> _recordSyncActivity() async {
     if (state.successCount == 0) return;
     await ref.read(activityLogProvider).recordSyncActivity();
+  }
+
+  /// Port of the `myplanet_activities` upload `AutoSyncWorker` /
+  /// `UserDataWorker` fire at the end of a completed sync via
+  /// `UploadManager.uploadActivities`'s `uploadMyPlanetActivities` half.
+  ///
+  /// Posted only when at least one area succeeded — the Kotlin aborts its sync
+  /// on failure, so a fully-failed pass has no Kotlin counterpart to be
+  /// faithful to. Swallowed on error for the same reason `_recordSyncActivity`
+  /// is: losing telemetry must not flip the sync itself to failed.
+  Future<void> _uploadMyPlanetActivities() async {
+    if (state.successCount == 0) return;
+    final config = ref.read(serverConfigProvider);
+    final user = ref.read(sessionProvider).valueOrNull;
+    if (config == null || user == null) return;
+    try {
+      await ref
+          .read(myPlanetActivitiesUploaderProvider)
+          .upload(user: user, config: config);
+    } catch (_) {
+      // Deliberately ignored — see above.
+    }
   }
 
   Future<void> _syncArea(DashboardSyncArea area) async {

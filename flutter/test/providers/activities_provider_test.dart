@@ -1,10 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/core/config/server_config.dart';
+import 'package:myplanet/core/prefs/planet_prefs.dart';
+import 'package:myplanet/core/system/device_stats.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/activities_provider.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/session_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../support/widget_harness.dart';
 
@@ -34,9 +37,13 @@ void main() {
     UserRow? current, {
     bool configured = true,
   }) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = PlanetPrefs(await SharedPreferences.getInstance());
     final container = ProviderContainer(
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
+        deviceStatsProvider.overrideWithValue(_FakeDeviceStats()),
+        planetPrefsProvider.overrideWithValue(prefs),
         sessionProvider.overrideWith(() => _TestSessionNotifier(current)),
         if (configured) serverConfigProvider.overrideWith(_TestConfig.new),
       ],
@@ -194,4 +201,26 @@ class _TestConfig extends ServerConfigNotifier {
     couchDbUrl: 'https://satellite:1234@planet.example:443',
     pin: '1234',
   );
+}
+
+class _FakeDeviceStats implements DeviceStats {
+  @override
+  Future<String> androidId() async => 'test-android-id';
+
+  @override
+  Future<String> uniqueIdentifier() async => 'test-unique-id';
+
+  @override
+  Future<String> deviceName() async => 'TEST DEVICE';
+
+  @override
+  Future<int> versionCode() async => 6342;
+
+  @override
+  Future<String?> versionName() async => '0.63.42';
+
+  @override
+  Future<List<TabletUsageStats>> tabletUsageStats({
+    required int sinceMillis,
+  }) async => const [];
 }

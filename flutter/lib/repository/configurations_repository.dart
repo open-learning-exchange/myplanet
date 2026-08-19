@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:meta/meta.dart';
 
 import '../core/config/server_config.dart';
@@ -26,9 +28,15 @@ sealed class ConfigurationResult {
 }
 
 class ConfigurationSuccess extends ConfigurationResult {
-  const ConfigurationSuccess(this.config);
+  const ConfigurationSuccess(this.config, {this.versionDetail});
 
   final ServerConfig config;
+
+  /// The raw `/versions` JSON the server reported, port of
+  /// `SharedPrefManager.setVersionDetail`. `null` when the handshake could not
+  /// read it. Persisted by the caller so `MyPlanet.getNormalMyPlanetActivities`
+  /// can echo `planetVersion` back on the next telemetry upload.
+  final String? versionDetail;
 }
 
 class ConfigurationFailure extends ConfigurationResult {
@@ -87,6 +95,7 @@ class ConfigurationsRepository {
             code: result.code,
             parentCode: result.parentCode,
           ),
+          versionDetail: result.versionDetail,
         );
       }
     }
@@ -103,6 +112,11 @@ class ConfigurationsRepository {
     if (versionsResult is! NetworkSuccess<Map<String, dynamic>>) {
       return _UrlCheckFailure(currentUrl);
     }
+
+    // Port of `SharedPrefManager.setVersionDetail`: keep the raw `/versions`
+    // body so the telemetry upload can echo `planetVersion` back. The Kotlin
+    // round-trips it through Gson; the port stores the canonical JSON string.
+    final versionDetail = jsonEncode(versionsResult.data);
 
     final minApkVersion = JsonUtils.getStringOrNull(
       'minapk',
@@ -123,6 +137,7 @@ class ConfigurationsRepository {
       parentCode: configuration.parentCode,
       preferredLanguage: configuration.preferredLanguage,
       url: currentUrl,
+      versionDetail: versionDetail,
     );
   }
 
@@ -210,6 +225,7 @@ class _UrlCheckSuccess extends _UrlCheckResult {
     required this.parentCode,
     required this.preferredLanguage,
     required this.url,
+    required this.versionDetail,
   });
 
   final String id;
@@ -217,6 +233,7 @@ class _UrlCheckSuccess extends _UrlCheckResult {
   final String parentCode;
   final String? preferredLanguage;
   final String url;
+  final String? versionDetail;
 }
 
 class _UrlCheckFailure extends _UrlCheckResult {

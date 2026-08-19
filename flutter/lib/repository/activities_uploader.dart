@@ -1,5 +1,7 @@
 import '../core/config/server_config.dart';
 import '../core/network/network_result.dart';
+import '../core/prefs/planet_prefs.dart';
+import '../core/system/device_stats.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
@@ -43,11 +45,17 @@ import 'outbox_repository.dart';
 ///   branch is ever reached would corrupt the document.
 ///
 /// The `androidId`/`deviceName`/`customDeviceName` telemetry every one of these
-/// serializers adds comes from `NetworkUtils` and needs a device-info plugin the
-/// port does not carry; omitted here as it is for submissions and personals, and
-/// noted in the migration doc.
+/// serializers adds comes from `NetworkUtils`/`SharedPrefManager`; the port
+/// reads the same values through the [DeviceStats] seam and [PlanetPrefs],
+/// captured once per `queuePending` pass (they are constant per device).
 class ActivitiesUploader {
-  ActivitiesUploader(this._api, this._activities, this._outbox);
+  ActivitiesUploader(
+    this._api,
+    this._activities,
+    this._outbox,
+    this._deviceStats,
+    this._prefs,
+  );
 
   /// One `uploadType` per destination database. They are separate types rather
   /// than one with a variable endpoint because the handler has to know which
@@ -61,6 +69,8 @@ class ActivitiesUploader {
   final PlanetApi _api;
   final ActivitiesRepository _activities;
   final OutboxRepository _outbox;
+  final DeviceStats _deviceStats;
+  final PlanetPrefs _prefs;
 
   /// Credential-free, as `outbox.endpoint` is persisted; the PIN travels as the
   /// `Authorization` header at send time.
@@ -69,6 +79,13 @@ class ActivitiesUploader {
 
   /// Queues every pending activity row. Returns how many were queued.
   Future<int> queuePending({required ServerConfig config}) async {
+    // Device identity is constant per device, so read it once for the whole
+    // pass rather than per row.
+    final androidId = await _deviceStats.uniqueIdentifier();
+    final deviceName = await _deviceStats.deviceName();
+    final customDeviceName = _prefs.customDeviceName;
+    final device = DeviceTelemetry(androidId, deviceName, customDeviceName);
+
     var queued = 0;
 
     for (final row in await _activities.pendingLoginUploads()) {
@@ -76,7 +93,7 @@ class ActivitiesUploader {
         uploadType: loginType,
         itemId: row.id,
         endpoint: endpointFor(config, 'login_activities'),
-        payload: loginDoc(row),
+        payload: loginDoc(row, device),
         userId: row.userId,
       );
       queued++;
@@ -87,7 +104,7 @@ class ActivitiesUploader {
         uploadType: resourceType,
         itemId: row.id,
         endpoint: endpointFor(config, 'resource_activities'),
-        payload: resourceDoc(row),
+        payload: resourceDoc(row, device),
       );
       queued++;
     }
@@ -97,7 +114,7 @@ class ActivitiesUploader {
         uploadType: resourceSyncType,
         itemId: row.id,
         endpoint: endpointFor(config, 'admin_activities'),
-        payload: resourceDoc(row),
+        payload: resourceDoc(row, device),
       );
       queued++;
     }
@@ -107,7 +124,7 @@ class ActivitiesUploader {
         uploadType: courseType,
         itemId: row.id,
         endpoint: endpointFor(config, 'course_activities'),
-        payload: courseDoc(row),
+        payload: courseDoc(row, device),
       );
       queued++;
     }
@@ -153,20 +170,31 @@ class ActivitiesUploader {
   ///
   /// `user` carries the user *name* — the Kotlin's key is `user` and its value
   /// is `activity.userName`, so the column named `userId` never reaches the
-  /// server.
-  static Map<String, dynamic> loginDoc(OfflineActivityRow row) => {
+  /// server. The `androidId`/`deviceName`/`customDeviceName` fields mirror the
+  /// Kotlin serializer, which writes all three on every login doc.
+  static Map<String, dynamic> loginDoc(
+    OfflineActivityRow row,
+    DeviceTelemetry device,
+  ) => {
     'user': row.userName,
     'type': row.type,
     'loginTime': row.loginTime,
     'logoutTime': row.logoutTime,
     'createdOn': row.createdOn,
     'parentCode': row.parentCode,
+    'androidId': device.androidId,
+    'deviceName': device.deviceName,
+    'customDeviceName': device.customDeviceName,
   };
 
   /// Port of the top-level `serializeResourceActivities` in
   /// `ActivitiesRepositoryImpl.kt`, shared by the `resource_activities` and
-  /// `admin_activities` configs.
-  static Map<String, dynamic> resourceDoc(ResourceActivityRow row) => {
+  /// `admin_activities` configs. The Kotlin writes `androidId`/`deviceName`
+  /// only (no `customDeviceName`), so this matches that shape.
+  static Map<String, dynamic> resourceDoc(
+    ResourceActivityRow row,
+    DeviceTelemetry device,
+  ) => {
     'user': row.user,
     'resourceId': row.resourceId,
     'type': row.type,
@@ -174,10 +202,16 @@ class ActivitiesUploader {
     'time': row.time,
     'createdOn': row.createdOn,
     'parentCode': row.parentCode,
+    'androidId': device.androidId,
+    'deviceName': device.deviceName,
   };
 
-  /// Port of `CourseActivity.serialize`.
-  static Map<String, dynamic> courseDoc(CourseActivityRow row) => {
+  /// Port of `CourseActivity.serialize`. Writes `androidId`/`deviceName` only,
+  /// matching the Kotlin.
+  static Map<String, dynamic> courseDoc(
+    CourseActivityRow row,
+    DeviceTelemetry device,
+  ) => {
     'user': row.user,
     'courseId': row.courseId,
     'type': row.type,
@@ -185,5 +219,24 @@ class ActivitiesUploader {
     'time': row.time,
     'createdOn': row.createdOn,
     'parentCode': row.parentCode,
+    'androidId': device.androidId,
+    'deviceName': device.deviceName,
   };
+}
+
+/// The per-device telemetry captured once per `queuePending` pass, threaded
+/// into the per-row serializers. Read through the [DeviceStats] seam and
+/// [PlanetPrefs] rather than `NetworkUtils`/`SharedPrefManager`.
+class DeviceTelemetry {
+  const DeviceTelemetry(this.androidId, this.deviceName, this.customDeviceName);
+
+  /// `NetworkUtils.getUniqueIdentifier` — the `androidId_buildId` composite
+  /// the Kotlin writes as the `androidId` field.
+  final String androidId;
+
+  /// `NetworkUtils.getDeviceName` — `MANUFACTURER MODEL`, uppercased.
+  final String deviceName;
+
+  /// `NetworkUtils.getCustomDeviceName` — the user-editable label, or empty.
+  final String customDeviceName;
 }

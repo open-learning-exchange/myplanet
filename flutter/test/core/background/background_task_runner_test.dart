@@ -23,6 +23,7 @@ void main() {
     Future<void> Function()? recover,
     Future<void> Function()? drain,
     List<BackgroundSyncStep>? syncs,
+    Future<void> Function()? onSyncComplete,
   }) => BackgroundTaskRunner(
     configured: configured,
     autoSyncEnabled: enabled,
@@ -47,6 +48,7 @@ void main() {
           }),
         ],
     recordLastSync: (value) async => recorded.add(value),
+    onSyncComplete: onSyncComplete,
     recordRun: (record) async => runs.add(record),
     now: () => now,
   );
@@ -245,6 +247,45 @@ void main() {
 
     expect(await subject.run(BackgroundTaskNames.autoSync), isFalse);
     expect(runs.single.failedSteps, ['lastSyncWrite']);
+    expect(runs.single.status, BackgroundRunStatus.retryRequested);
+  });
+
+  test('onSyncComplete fires after a clean sync', () async {
+    await runner(
+      onSyncComplete: () async {
+        calls.add('telemetry');
+      },
+    ).run(BackgroundTaskNames.autoSync);
+
+    expect(calls, ['recover', 'drain', 'sync', 'telemetry']);
+    expect(runs.single.status, BackgroundRunStatus.succeeded);
+  });
+
+  test(
+    'a throwing onSyncComplete is swallowed and the run still succeeds',
+    () async {
+      await runner(
+        onSyncComplete: () async {
+          calls.add('telemetry');
+          throw Exception('network');
+        },
+      ).run(BackgroundTaskNames.autoSync);
+
+      expect(calls, ['recover', 'drain', 'sync', 'telemetry']);
+      expect(runs.single.status, BackgroundRunStatus.succeeded);
+      expect(runs.single.failedSteps, isEmpty);
+    },
+  );
+
+  test('onSyncComplete does not fire when a sync step fails', () async {
+    await runner(
+      syncs: [BackgroundSyncStep('resources', () async => false)],
+      onSyncComplete: () async {
+        calls.add('telemetry');
+      },
+    ).run(BackgroundTaskNames.autoSync);
+
+    expect(calls, ['recover', 'drain']);
     expect(runs.single.status, BackgroundRunStatus.retryRequested);
   });
 }

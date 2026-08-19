@@ -60,6 +60,22 @@ class PlanetPrefs {
   static const String _keyReminderTimePrefix = 'reminder_time_';
   static const String _keyLastSync = 'LastSync';
 
+  /// `SharedPrefManager.CUSTOM_DEVICE_NAME` — a user-editable label for this
+  /// device, written onto every activity telemetry document. Defaults to the
+  /// empty string the way the Kotlin's getter does.
+  static const String _keyCustomDeviceName = 'customDeviceName';
+
+  /// `SharedPrefManager.LAST_USAGE_UPLOADED` — the cutoff (epoch millis) for
+  /// the `UsageStatsManager` query `MyPlanet.getTabletUsages` runs. Advanced to
+  /// "now" after a successful `myplanet_activities` upload so the next upload
+  /// does not re-report the same usage interval.
+  static const String _keyLastUsageUploaded = 'lastUsageUploaded';
+
+  /// `SharedPrefManager.VERSION_DETAIL` — the server's planet-version JSON
+  /// blob, cached so `MyPlanet.getNormalMyPlanetActivities` can echo
+  /// `planetVersion` back. `null` until the first server handshake reports it.
+  static const String _keyVersionDetail = 'versionDetail';
+
   /// `libraryViewMode` / `courseViewMode` — port of
   /// `SharedPrefManager.getLibraryViewMode` / `getCourseViewMode`.
   static const String _keyLibraryViewMode = 'libraryViewMode';
@@ -244,6 +260,29 @@ class PlanetPrefs {
 
   Future<void> setLastSync(int epochMillis) =>
       _prefs.setInt(_keyLastSync, epochMillis);
+
+  /// Port of `SharedPrefManager.getCustomDeviceName` /
+  /// `setCustomDeviceName`. Empty by default.
+  String get customDeviceName => _prefs.getString(_keyCustomDeviceName) ?? '';
+
+  Future<void> setCustomDeviceName(String name) =>
+      _prefs.setString(_keyCustomDeviceName, name);
+
+  /// Port of `SharedPrefManager.getLastUsageUploaded` /
+  /// `setLastUsageUploaded`. Epoch millis; `0` means "from the epoch", which
+  /// reports the full available usage history on the first upload.
+  int get lastUsageUploaded => _prefs.getInt(_keyLastUsageUploaded) ?? 0;
+
+  Future<void> setLastUsageUploaded(int epochMillis) =>
+      _prefs.setInt(_keyLastUsageUploaded, epochMillis);
+
+  /// Port of `SharedPrefManager.getVersionDetail` / `setVersionDetail`. The
+  /// raw JSON string the server reported, or `null` before the first
+  /// handshake that carries it.
+  String? get versionDetail => _prefs.getString(_keyVersionDetail);
+
+  Future<void> setVersionDetail(String json) =>
+      _prefs.setString(_keyVersionDetail, json);
 
   /// Persisted library (resources) view mode. Port of
   /// `SharedPrefManager.getLibraryViewMode` / `setLibraryViewMode`.

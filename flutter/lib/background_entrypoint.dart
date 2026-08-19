@@ -131,6 +131,23 @@ Future<bool> executeBackgroundTask(String taskName) async {
             ],
       recordLastSync: (value) =>
           prefs.setLastSync(value.millisecondsSinceEpoch),
+      // Port of `AutoSyncWorker`'s `uploadActivities` call after a clean sync:
+      // posts the `myplanet_activities` telemetry doc. Skipped when no user is
+      // signed in (the Kotlin's `uploadActivities` does the same) or when the
+      // upload throws — losing telemetry must not flip the run to retry.
+      onSyncComplete: config == null
+          ? null
+          : () async {
+              final userId = prefs.loggedInUserId;
+              if (userId == null) return;
+              final user = await container
+                  .read(userDaoProvider)
+                  .getById(userId);
+              if (user == null) return;
+              await container
+                  .read(myPlanetActivitiesUploaderProvider)
+                  .upload(user: user, config: config);
+            },
       recordRun: (record) => prefs.recordBackgroundRun(
         taskName: record.taskName,
         attemptedAt: record.attemptedAt,

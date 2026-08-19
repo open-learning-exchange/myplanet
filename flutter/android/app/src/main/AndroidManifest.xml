@@ -1,7 +1,17 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- The whole app is a CouchDB client; without this, release builds have no
          network at all (the Flutter template only declares it for debug/profile). -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Tablet usage telemetry (`MyPlanet.getTabletUsages`), ported through the
+         `device_stats` method channel. A privileged permission the user grants
+         in Settings rather than at runtime; without it the usage query yields
+         nothing and the `myplanet_activities` `usages` array posts empty --
+         the same fall-back the Kotlin has. `tools:ignore` matches the Kotlin
+         manifest, which silences the lint that flags it as protected. -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions"/>
 
     <application
         android:label="myplanet"
