@@ -153,11 +153,11 @@ class AchievementFragment : BaseContainerFragment() {
 
         if (summary.streakInfo.isActiveToday) {
             binding.tvStreakActiveToday.text = getString(R.string.active_today)
-            binding.tvStreakActiveToday.setBackgroundResource(R.drawable.badge_background)
+            binding.tvStreakActiveToday.setBackgroundResource(R.drawable.bg_streak_pill_active)
             binding.tvStreakMessage.text = getString(R.string.streak_active_encouragement)
         } else {
             binding.tvStreakActiveToday.text = getString(R.string.not_active_today)
-            binding.tvStreakActiveToday.setBackgroundResource(R.drawable.rounded_corner_bg)
+            binding.tvStreakActiveToday.setBackgroundResource(R.drawable.bg_streak_pill_inactive)
             binding.tvStreakMessage.text = getString(R.string.streak_encouragement)
         }
 

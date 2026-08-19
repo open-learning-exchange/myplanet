@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/secondary_bg"
+    android:background="@color/dashboard_page_bg"
     tools:context=".ui.user.AchievementFragment">
 
     <androidx.core.widget.NestedScrollView
@@ -82,20 +82,32 @@
                     android:id="@+id/btn_tab_gamification"
                     style="?attr/materialButtonOutlinedStyle"
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="46dp"
                     android:layout_weight="1"
+                    app:backgroundTint="@color/tab_toggle_bg_color"
+                    android:textColor="@color/tab_toggle_text_color"
+                    app:strokeColor="@color/card_border"
+                    app:strokeWidth="1dp"
+                    app:cornerRadius="23dp"
                     android:text="@string/badges_and_streaks"
                     android:textAllCaps="false"
+                    android:textStyle="bold"
                     android:textSize="14sp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_tab_portfolio"
                     style="?attr/materialButtonOutlinedStyle"
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="46dp"
                     android:layout_weight="1"
+                    app:backgroundTint="@color/tab_toggle_bg_color"
+                    android:textColor="@color/tab_toggle_text_color"
+                    app:strokeColor="@color/card_border"
+                    app:strokeWidth="1dp"
+                    app:cornerRadius="23dp"
                     android:text="@string/portfolio_and_goals"
                     android:textAllCaps="false"
+                    android:textStyle="bold"
                     android:textSize="14sp" />
             </com.google.android.material.button.MaterialButtonToggleGroup>
 
@@ -114,7 +126,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
                     app:cardCornerRadius="16dp"
-                    app:cardElevation="3dp"
+                    app:cardElevation="2dp"
                     app:strokeWidth="0dp">
 
                     <LinearLayout
@@ -165,7 +177,7 @@
                                 android:id="@+id/tv_streak_active_today"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:background="@drawable/badge_background"
+                                android:background="@drawable/bg_streak_pill_active"
                                 android:paddingHorizontal="10dp"
                                 android:paddingVertical="4dp"
                                 android:text="@string/active_today"
@@ -197,12 +209,12 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:layout_marginEnd="6dp"
+                        android:layout_marginEnd="4dp"
                         app:cardBackgroundColor="@color/card_bg"
                         app:cardCornerRadius="12dp"
-                        app:cardElevation="1dp"
-                        app:strokeColor="@color/daynight_textColor"
-                        app:strokeWidth="0.5dp">
+                        app:cardElevation="0dp"
+                        app:strokeColor="@color/card_border"
+                        app:strokeWidth="1dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -215,7 +227,7 @@
                                 android:id="@+id/tv_stat_badges"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:textColor="@color/daynight_textColor"
+                                android:textColor="@color/dashboard_ink_1"
                                 android:textSize="18sp"
                                 android:textStyle="bold"
                                 tools:text="4/18" />
@@ -223,7 +235,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:textColor="@color/hint_color"
+                                android:textColor="@color/dashboard_ink_3"
                                 android:textSize="11sp"
                                 android:text="@string/total_badges" />
                         </LinearLayout>
@@ -234,12 +246,12 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:layout_marginHorizontal="3dp"
+                        android:layout_marginHorizontal="2dp"
                         app:cardBackgroundColor="@color/card_bg"
                         app:cardCornerRadius="12dp"
-                        app:cardElevation="1dp"
-                        app:strokeColor="@color/daynight_textColor"
-                        app:strokeWidth="0.5dp">
+                        app:cardElevation="0dp"
+                        app:strokeColor="@color/card_border"
+                        app:strokeWidth="1dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -252,7 +264,7 @@
                                 android:id="@+id/tv_stat_courses"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:textColor="@color/daynight_textColor"
+                                android:textColor="@color/dashboard_ink_1"
                                 android:textSize="18sp"
                                 android:textStyle="bold"
                                 tools:text="2" />
@@ -260,7 +272,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:textColor="@color/hint_color"
+                                android:textColor="@color/dashboard_ink_3"
                                 android:textSize="11sp"
                                 android:text="@string/completed_courses_count" />
                         </LinearLayout>
@@ -271,12 +283,12 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:layout_marginHorizontal="3dp"
+                        android:layout_marginHorizontal="2dp"
                         app:cardBackgroundColor="@color/card_bg"
                         app:cardCornerRadius="12dp"
-                        app:cardElevation="1dp"
-                        app:strokeColor="@color/daynight_textColor"
-                        app:strokeWidth="0.5dp">
+                        app:cardElevation="0dp"
+                        app:strokeColor="@color/card_border"
+                        app:strokeWidth="1dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -289,7 +301,7 @@
                                 android:id="@+id/tv_stat_resources"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:textColor="@color/daynight_textColor"
+                                android:textColor="@color/dashboard_ink_1"
                                 android:textSize="18sp"
                                 android:textStyle="bold"
                                 tools:text="15" />
@@ -297,7 +309,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:textColor="@color/hint_color"
+                                android:textColor="@color/dashboard_ink_3"
                                 android:textSize="11sp"
                                 android:text="@string/resources_read_count" />
                         </LinearLayout>
@@ -308,12 +320,12 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:layout_marginStart="6dp"
+                        android:layout_marginStart="4dp"
                         app:cardBackgroundColor="@color/card_bg"
                         app:cardCornerRadius="12dp"
-                        app:cardElevation="1dp"
-                        app:strokeColor="@color/daynight_textColor"
-                        app:strokeWidth="0.5dp">
+                        app:cardElevation="0dp"
+                        app:strokeColor="@color/card_border"
+                        app:strokeWidth="1dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -326,7 +338,7 @@
                                 android:id="@+id/tv_stat_tasks"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:textColor="@color/daynight_textColor"
+                                android:textColor="@color/dashboard_ink_1"
                                 android:textSize="18sp"
                                 android:textStyle="bold"
                                 tools:text="5" />
@@ -334,7 +346,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:textColor="@color/hint_color"
+                                android:textColor="@color/dashboard_ink_3"
                                 android:textSize="11sp"
                                 android:text="@string/tasks_done_count" />
                         </LinearLayout>
@@ -354,7 +366,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="@string/badges_hub"
-                        android:textColor="@color/daynight_textColor"
+                        android:textColor="@color/dashboard_ink_1"
                         android:textSize="17sp"
                         android:textStyle="bold" />
 
@@ -389,6 +401,12 @@
                             style="@style/Widget.MaterialComponents.Chip.Choice"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            app:chipBackgroundColor="@color/chip_filter_bg_color"
+                            android:textColor="@color/chip_filter_text_color"
+                            app:chipStrokeColor="@color/chip_filter_stroke_color"
+                            app:chipStrokeWidth="1dp"
+                            app:chipCornerRadius="16dp"
+                            app:checkedIconVisible="false"
                             android:text="@string/category_all" />
 
                         <com.google.android.material.chip.Chip
@@ -396,6 +414,12 @@
                             style="@style/Widget.MaterialComponents.Chip.Choice"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            app:chipBackgroundColor="@color/chip_filter_bg_color"
+                            android:textColor="@color/chip_filter_text_color"
+                            app:chipStrokeColor="@color/chip_filter_stroke_color"
+                            app:chipStrokeWidth="1dp"
+                            app:chipCornerRadius="16dp"
+                            app:checkedIconVisible="false"
                             android:text="@string/category_courses" />
 
                         <com.google.android.material.chip.Chip
@@ -403,6 +427,12 @@
                             style="@style/Widget.MaterialComponents.Chip.Choice"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            app:chipBackgroundColor="@color/chip_filter_bg_color"
+                            android:textColor="@color/chip_filter_text_color"
+                            app:chipStrokeColor="@color/chip_filter_stroke_color"
+                            app:chipStrokeWidth="1dp"
+                            app:chipCornerRadius="16dp"
+                            app:checkedIconVisible="false"
                             android:text="@string/category_streaks" />
 
                         <com.google.android.material.chip.Chip
@@ -410,6 +440,12 @@
                             style="@style/Widget.MaterialComponents.Chip.Choice"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            app:chipBackgroundColor="@color/chip_filter_bg_color"
+                            android:textColor="@color/chip_filter_text_color"
+                            app:chipStrokeColor="@color/chip_filter_stroke_color"
+                            app:chipStrokeWidth="1dp"
+                            app:chipCornerRadius="16dp"
+                            app:checkedIconVisible="false"
                             android:text="@string/category_teams" />
 
                         <com.google.android.material.chip.Chip
@@ -417,6 +453,12 @@
                             style="@style/Widget.MaterialComponents.Chip.Choice"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            app:chipBackgroundColor="@color/chip_filter_bg_color"
+                            android:textColor="@color/chip_filter_text_color"
+                            app:chipStrokeColor="@color/chip_filter_stroke_color"
+                            app:chipStrokeWidth="1dp"
+                            app:chipCornerRadius="16dp"
+                            app:checkedIconVisible="false"
                             android:text="@string/category_resources" />
 
                         <com.google.android.material.chip.Chip
@@ -424,6 +466,12 @@
                             style="@style/Widget.MaterialComponents.Chip.Choice"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            app:chipBackgroundColor="@color/chip_filter_bg_color"
+                            android:textColor="@color/chip_filter_text_color"
+                            app:chipStrokeColor="@color/chip_filter_stroke_color"
+                            app:chipStrokeWidth="1dp"
+                            app:chipCornerRadius="16dp"
+                            app:checkedIconVisible="false"
                             android:text="@string/category_exams" />
                     </com.google.android.material.chip.ChipGroup>
                 </HorizontalScrollView>
@@ -442,7 +490,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="8dp"
                     android:text="@string/certificates_of_completion"
-                    android:textColor="@color/daynight_textColor"
+                    android:textColor="@color/dashboard_ink_1"
                     android:textSize="17sp"
                     android:textStyle="bold" />
 
@@ -451,9 +499,12 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    android:textColor="@color/hint_color"
-                    android:textSize="13sp"
+                    android:background="@drawable/bg_certificate_card"
+                    android:padding="20dp"
+                    android:gravity="center"
                     android:text="@string/no_certificates_yet"
+                    android:textColor="@color/dashboard_ink_3"
+                    android:textSize="13sp"
                     android:visibility="gone" />
 
                 <androidx.recyclerview.widget.RecyclerView
