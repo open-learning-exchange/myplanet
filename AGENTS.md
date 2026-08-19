@@ -63,7 +63,9 @@ UI package at a time. Conventions worth remembering across slices:
   `dashboard_sync_provider.dart`; each area maps to a `*SyncNotifier` in its
   feature's `*_providers.dart`. A "sync courses" refreshes related tables
   together (e.g. `CourseSyncNotifier` runs courses + progress + certifications).
-- **Tests**: `flutter analyze` (must be clean) + `flutter test` (CI gate).
+- **Tests**: `flutter analyze` (must be clean) + `flutter test` (CI gate). The
+  Flutter workflow also gates on formatting — run `dart format lib test` before
+  pushing (check with `dart format --output=none --set-exit-if-changed lib test`).
   Repository tests use `AppDatabase.memory()` + mocktail `Mock implements
   PlanetApi`. Uploader tests mirror `test/repository/ratings_uploader_test.dart`.
   - **l10n/initState trap**: a `ConsumerStatefulWidget` that needs
