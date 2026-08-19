@@ -118,7 +118,10 @@ class CoursesViewModel @Inject constructor(
                     val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
 
                     val myCourses = if (isMyCourseLib) {
-                        coursesRepository.getMyCourses(userId, validCourses)
+                        val courses = coursesRepository.getMyCourses(userId, validCourses)
+                        courses.ifEmpty {
+                            allCourses
+                        }
                     } else {
                         emptyList()
                     }
