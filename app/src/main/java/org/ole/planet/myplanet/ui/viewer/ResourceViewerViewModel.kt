@@ -26,7 +26,7 @@ class ResourceViewerViewModel @Inject constructor(
     }
 
     suspend fun showResourceRatingDialogIfNeverRated(resourceId: String): Boolean {
-        val userId = userRepository.getUserModel()?.id ?: return false
+        val userId = userRepository.getUserModel()?.id?.takeIf { it.isNotBlank() } ?: return false
         if (isRatingPrompted(userId, resourceId)) {
             return false
         }
@@ -47,7 +47,7 @@ class ResourceViewerViewModel @Inject constructor(
     }
 
     fun isRatingPrompted(userId: String?, resourceId: String?): Boolean {
-        val key = "$RATING_PROMPT_PREFIX${userId}_$resourceId"
+        val key = "${RATING_PROMPT_PREFIX}${userId}_$resourceId"
         return sharedPrefManager.getRawString(key, "false") == "true"
     }
 

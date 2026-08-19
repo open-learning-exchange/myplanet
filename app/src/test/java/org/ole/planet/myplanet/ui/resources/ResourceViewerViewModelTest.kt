@@ -7,14 +7,11 @@ import io.mockk.mockk
 import io.mockk.unmockkAll
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.RatingSummary
@@ -22,6 +19,7 @@ import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class ResourceViewerViewModelTest {
@@ -30,11 +28,11 @@ internal class ResourceViewerViewModelTest {
     private val userRepository = mockk<UserRepository>(relaxed = true)
     private val ratingsRepository = mockk<RatingsRepository>(relaxed = true)
     private lateinit var viewModel: ResourceViewerViewModel
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     @Before
     fun setup() {
-        Dispatchers.setMain(StandardTestDispatcher())
-
         viewModel = ResourceViewerViewModel(
             resourcesRepository = resourcesRepository,
             authSessionUpdaterFactory = mockk(relaxed = true),
@@ -47,20 +45,18 @@ internal class ResourceViewerViewModelTest {
 
     @After
     fun tearDown() {
-        Dispatchers.resetMain()
         unmockkAll()
     }
-
 
     @Test
     fun `showRatingDialog returns false for already rated users` () = runTest {
         val userId = "123"
         val resourceId = "resourceId123"
 
-        val mockUser = mockk<UserEntity> { every { id } returns userId }
+        val mockUser = UserEntity().apply { id = userId }
         coEvery { userRepository.getUserModel() } returns mockUser
         every { sharedPrefManager.getRawString("rating_prompted_${userId}_${resourceId}", "false") } returns "false"
-        coEvery { ratingsRepository.getRatingSummary(any(), any(), any())} returns
+        coEvery { ratingsRepository.getRatingSummary("resource", resourceId, userId)} returns
                 RatingSummary(userRating = 4, existingRating = null, averageRating = 0f, totalRatings = 0)
 
         val result = viewModel.showResourceRatingDialogIfNeverRated(resourceId)
@@ -73,10 +69,10 @@ internal class ResourceViewerViewModelTest {
         val userId = "123"
         val resourceId = "resourceId123"
 
-        val mockUser = mockk<UserEntity> {every { id } returns userId}
+        val mockUser = UserEntity().apply { id = userId }
         coEvery{ userRepository.getUserModel() } returns mockUser
         every { sharedPrefManager.getRawString("rating_prompted_${userId}_${resourceId}", "false")} returns "false"
-        coEvery { ratingsRepository.getRatingSummary(any(), any(), any())} returns
+        coEvery { ratingsRepository.getRatingSummary("resource", resourceId, userId)} returns
                 RatingSummary(userRating = null, existingRating = null, averageRating = 0f, totalRatings = 0)
 
         val result = viewModel.showResourceRatingDialogIfNeverRated(resourceId)
@@ -89,7 +85,7 @@ internal class ResourceViewerViewModelTest {
         val userId = "123"
         val resourceId = "resourceId123"
 
-        val mockUser = mockk<UserEntity> {every { id } returns userId}
+        val mockUser = UserEntity().apply { id = userId }
         coEvery { userRepository.getUserModel() } returns mockUser
         every { sharedPrefManager.getRawString("rating_prompted_${userId}_${resourceId}", "false")} returns "true"
 
