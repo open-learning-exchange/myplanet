@@ -126,6 +126,8 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             set(Calendar.MILLISECOND, 0)
         }
 
+        val maxDay = Calendar.getInstance()
+
         val initialDate = if (isFromDate) {
             val fromDateText = binding.tvFromDateCalendar.text.toString()
             if (fromDateText.isNotEmpty()) parseDate(fromDateText) ?: now else now
@@ -168,6 +170,8 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             initialDate[Calendar.MONTH],
             initialDate[Calendar.DAY_OF_MONTH]
         )
+
+        datePickerDialog.datePicker.maxDate = maxDay.timeInMillis
 
         if (!isFromDate) {
             val fromDateText = binding.tvFromDateCalendar.text.toString()
