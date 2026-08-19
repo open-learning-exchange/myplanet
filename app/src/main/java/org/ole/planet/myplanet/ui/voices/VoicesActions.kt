@@ -24,7 +24,6 @@ import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -130,7 +129,7 @@ object VoicesActions {
         isEdit: Boolean,
         components: EditDialogComponents,
         news: News?,
-        repository: VoicesRepository,
+        repository: VoicesEditActions,
         currentUser: UserEntity?,
         imageList: List<String>?,
         listener: OnNewsItemClickListener?,
@@ -171,7 +170,7 @@ object VoicesActions {
         currentUser: UserEntity?,
         listener: OnNewsItemClickListener?,
         viewHolder: RecyclerView.ViewHolder,
-        repository: VoicesRepository,
+        repository: VoicesEditActions,
         updateReplyButton: (RecyclerView.ViewHolder, News?, Int) -> Unit = { _, _, _ -> },
         launchAction: (suspend () -> Unit) -> Unit
     ) {

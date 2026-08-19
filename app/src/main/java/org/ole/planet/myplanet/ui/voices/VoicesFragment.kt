@@ -267,7 +267,17 @@ class VoicesFragment : BaseVoicesFragment() {
             },
             onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(viewLifecycleOwner.lifecycleScope, dispatcherProvider),
             labelManager = labelManager,
-            voicesRepository = voicesRepository,
+            voicesEditActions = object : VoicesEditActions {
+                override suspend fun editPost(newsId: String, message: String, imagesToRemove: Set<String>, newImages: List<String>?): News? {
+                    return voicesRepository.editPost(newsId, message, imagesToRemove, newImages)
+                }
+                override suspend fun postReply(message: String, news: News, currentUser: UserEntity, imageList: List<String>?) {
+                    voicesRepository.postReply(message, news, currentUser, imageList)
+                }
+                override suspend fun getNewsById(id: String): News? {
+                    return voicesRepository.getNewsById(id)
+                }
+            },
             leadersList = UserEntity.parseLeadersJson(sharedPrefManager.getCommunityLeaders()),
             setRepliedNewsIdFn = { sharedPrefManager.setRepliedNewsId(it) }
         )
