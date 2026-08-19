@@ -35,7 +35,8 @@ four-database upload path that carries it and the profile stats that read it, an
 answer sheet they collect, and profile photos with the `login_activities` sync-in (harvested from
 `flutter-openhands4`), and — harvested from `flutter-openhands7` — the About and Disclaimer
 screens, team finance/report receipt attachments in both directions, free-up-space storage
-management over a `disk_stats` method channel, and debounced username validation, have landed.
+management over a `disk_stats` method channel, and debounced username validation, have landed —
+plus voices share-to-community with the upstream `f4adebf` visibility/un-share parity.
 Everything below in this document describes the Kotlin app and still applies to it.
 
 See **`docs/kotlin-to-flutter-migration.md`** for scope, the technology mapping (Hilt→Riverpod,

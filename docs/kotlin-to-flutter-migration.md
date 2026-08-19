@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 39 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 40 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -587,6 +587,49 @@ The CI action bumps in the same range (`3ce7e16b2`) looked wrong on sight — `a
 and `upload-artifact@v7` are well ahead of the versions these notes were written against. They are
 correct: `build.yml`, `release.yml`, and `automerge.yml` were already on v7 before this branch, so
 the commit brought `flutter.yml` and `test.yml` in line with the repo's own convention.
+
+## Phase 40 — voices share-to-community, and upstream voices parity
+
+The 2026-08-19 harvest audit (below) found one behavioural commit in the 43 upstream since
+`f53e466`: `f4adebf` ("community: smoother voices showing"). It changed four things in
+`VoicesRepositoryImpl`, and the port took all of them, since its voices slice was ported against
+the older semantics:
+
+- **Community visibility needs a community entry.** `isVisibleToUser` used to match *any* `viewIn`
+  entry whose `_id` named the viewer, so a team entry leaked the post into the community feed for
+  exactly that user. It now requires `section == "community"` and accepts empty/`"@"` ids and
+  viewers as planet-wide wildcards. The port's `isVisibleToUser` did the old matching and its test
+  pinned it — the test has been rewritten, with the new wildcard and "teams stays invisible" rules
+  pinned alongside.
+- **The feed orders by share date.** `getCommunityNews` gained
+  `.sortedByDescending { it.sortDate }`. The port's provider was already re-sorting locally; the
+  sort now lives in `watchCommunityFeed` itself, so the repository's contract matches
+  `getCommunityNews` and the provider just filters the search query.
+- **Sharing to the community is hardened.** `shareNewsToCommunity` no longer throws on a malformed
+  existing `viewIn` (it shares against an empty array instead of failing), fills the first entry's
+  `name` only when missing and non-empty, and never emits a bare `"@"` community id when both codes
+  are empty. The port did not have share-to-community at all — it is here now as
+  `shareToCommunity`, with the `VoiceCard`'s share button on both the feed and the team-voices
+  screens, gated like `VoicesAdapter.canShare` (logged-in, non-guest, not already community).
+- **Deleting is actually un-sharing, when possible.** `deletePost(newsId, teamName)` from a team
+  screen still removes the thread; from the community feed it strips the community (and any other
+  shared-in) entries from `viewIn`, clears `sharedBy`, and keeps the row — unless the original
+  `viewIn` had one entry or the filter empties it, in which case the thread dies. The port had
+  delete-whole-thread on every screen; `teamName = ''` on the feed and the thread, the team name on
+  team-voices, decided at the `VoiceCard`. Kotlin's own tests for this are mirrored in the port's.
+
+Two deliberate divergences, both downstream of an earlier one. The send and un-share paths mark
+the row `isEdited`, which Kotlin never needs to do — its `getNewsForUpload` re-PUTs every post on
+every sync, where this port deliberately queues only new-or-edited rows (see `pendingUploads`'s
+comment). Without the flag the share would sit locally forever. And the Kotlin adapter's
+moderator/shared-by widenings on edit/delete stay unported — the port gates on authorship, the
+subset it can support without its label-manager/admin/leader plumbing.
+
+The thread screen's author-gated app-bar edit/delete moved onto the card itself, matching
+`row_news.xml`'s per-row buttons, so team voices and the feed both get them through `VoiceCard`.
+
+Still unported on voices: the "Shared from X" date suffix the Kotlin adapter derives from its
+team-name lookups, and anything the moderator gates protect.
 
 ## Harvesting upstream: the 2026-08-12 rebase
 
@@ -1678,8 +1721,117 @@ already carries the equivalent behaviour where one exists.
 
 ---
 
-**Last updated**: 2026-08-19 (Phase 39 complete; `flutter-openhands7` fast-forwarded — About and
-Disclaimer, team receipt attachments, free-up-space storage management, and debounced username
-validation, plus two stale Status claims and two more invalid UTF-8 bytes fixed on top)
-**Phase**: 39 of N (27 of 28 UI packages have a screen — see Status for what that does and does
+## Harvest audit — the 2026-08-19 commit batch
+
+The 43 commits after `f53e466b6` (up to `9c54a03`, the current tip of
+`master`) were audited. One was harvested: `f4adebfc2` ("community: smoother
+voices showing"), which rewrote voices community-visibility, share-to-
+community, and delete-post semantics — ported in Phase 40 above. The rest were
+Refactor / CI / dependency work with no behavioural change the port lacks, or
+they land on unported features.
+
+**Behavioural — harvested (one).**
+
+- `f4adebfc2` (community voices showing) — see Phase 40. Harvested.
+
+**Deferred — lands on an unported feature.**
+
+- `beb4696d6`, `55e3d833e` (enterprises finances date filters/reset) — the
+  port has no enterprises screens of its own; the teams slice covers
+  creation/edit/archive. Deferred, as the Status note says.
+- `08e18ffdc` (dashboard library card my/call split) — distinguishes the "my
+  shelf" resources filter from the full library in the dashboard card target.
+  The port's library card opens resources outright, like the rest of the
+  unported batch-resources/filter gap. Deferred.
+- `758a06f80` (teams submissions streamlining) — `ApkLog.serialize` drops its
+  `Context` and `serializeSubmission` drops its `context` parameter; both sit
+  on the apk-log/crash-diagnostics feature the port has never had. Deferred.
+
+**View-modelling / DI structure (same behaviour, cleaner wiring).**
+
+- `c5dd782c4` (chat detail ui state view modelling) — moves chat-detail state
+  into the ViewModel with dedupe caches. The port's chat providers already
+  drive that screen. No-op.
+- `a388e44bf` (teams tasks view modelling) — moves task-creator flows into
+  `TeamsTasksViewModel` and drops `getAssignee` from the repository interface.
+  No-op.
+- `27b638c5b` (courses take view modelling) — moves `getCurrentProgress`,
+  `logCourseVisit`, `getCourseStepData`, `isStepCompleted` into
+  `TakeCourseViewModel`. No-op.
+- `f106ee8c7` (base voices tasks dispatcher providing) — `BaseTeamFragment`
+  cancels a stale team-load `Job` rather than launching over it. No-op.
+- `602eb5027` (courses steps filter coroutine scoping) — `CourseFilterController`
+  takes its scope instead of owning one, and the inline-resources preview moves
+  behind a `ResourcesPreviewLoader`. Same screen output. No-op.
+- `8f1895402` (all: gson injecting) — `@PlainGson` qualifier and a plain
+  `Gson()` provider. DI. No-op.
+- `487425f56` (configurations repository io wrapping) — wraps repository ops
+  in `withContext(io)`. No-op.
+- `970f03408` (upload repository api routing) — upload URLs move to the
+  repository. No-op.
+- `ebb7ab01d` (upload repository attachment dispatcher providing) — wraps
+  attachment upload in a dispatcher. No-op.
+- `0615f5a8e` (user repository name unifying) — duplicate-user cleanup moves
+  from load-all-group-by to a SQL query, relaxed with `IFNULL`. Same set.
+  No-op.
+- `cc7ae7fe2` (user repository dao querying) — replaces in-memory filters
+  (`getSyncedUsers`, `getUsersForHealthSync`, `getPendingSyncUsers`, guest
+  lookups, duplicates) with SQL queries. Same selection. No-op.
+- `2ea2cd6e3` (user repository parsing) — moves `parseLeadersJson` to
+  `UserEntity`'s companion and `getHealthProfile`/`updateUserHealthProfile`
+  into `HealthRepository`. Same parsed output. No-op.
+- `9d6ece3f9` (teams voices replying) — parses the leaders list once instead
+  of per-adapter. No-op.
+- `b12e4dc69` (courses download dialog handling) — replaces empty
+  `showDownloadDialog` overrides with a `shouldShowDownloadDialog` flag. The
+  port has no download dialog on courses to suppress. No-op.
+- `2cbf75368` (sync repositories interfaces writing) — adds `*SyncWriter`
+  interfaces bound to the same impls. No-op.
+- `e1abb0c79` (configurations repository provisioning) — moves first-run
+  storage clearing and queued-downloads reads into the repository. No-op.
+- `f5bd9cfc7` (all: flow collecting) — fragment-side collect idiom swap.
+  No-op.
+- `76616dd29`, `eec59939e`, `c84441c69`, `fdd0b2db2` ("less … is more") — DI
+  removals from `SyncManager`/`TransactionSyncManager`/`UploadToShelfService`/
+  `UploadManager`. No-op.
+- `646cd92e8` (teams task json testing) — test-only addition. No-op.
+
+**Perf (same result, faster).**
+
+- `c9fb2eb5b` (courses removed log dao deleting) — chunked deletion moves into
+  the DAO at chunk 900 instead of 1000. No-op.
+- `5b54eb269` (resources repository inserting) — batches per-item upserts into
+  one `upsertAll`. The port upserts in bulk already. No-op.
+- `6f10e5970` (sync file uploading streaming) — `asRequestBody` replaces
+  read-bytes-then-wrap. The port streams via Dio. No-op.
+- `473a9c032` (teams repository csv reports exporting) — rebuilds the reports
+  CSV with `append` calls instead of interpolation; same output, and the port
+  has no CSV export to chase. No-op.
+
+**Worker/adapter-internal (no Flutter equivalent).**
+
+- `c7e3ad702` (free space worker recursive deleting) — `walkBottomUp` replaces
+  hand recursion; children-before-parent semantics, same as the port's
+  `freeUpSpace`. No-op.
+- `263e6ecf9` (enterprises glide request managing) — clears Glide targets in
+  `onViewRecycled`. No-op.
+- `a63e2551d` (courses resources caching) — adapter caching and a list/grid
+  view-mode setter. RecyclerView-internal. No-op.
+- `06c7d5398` (resources list grid toggling) — hides the whole search shell
+  and the grid toggle when the list is empty. Tiniest of UI fixes, no analogue
+  in the port's resources screen. No-op.
+
+**CI / build / dependency bumps (no app impact).**
+
+- `9c54a0341`, `52d6dc03b`, `f71a68b43` — automerge/release workflow edits.
+  No-op.
+- `5f80d2453` (`actions/cache` 4→6), `dd8bcb88d` (webkit), `321f5ecaa`
+  (appcompat) — dependency bumps. No-op.
+
+---
+
+**Last updated**: 2026-08-19 (Phase 40 complete — voices share-to-community and the upstream
+voices-visibility/delete parity landed; the 2026-08-19 harvest audit found the one behavioural
+commit it picked up)
+**Phase**: 40 of N (27 of 28 UI packages have a screen — see Status for what that does and does
 not mean)

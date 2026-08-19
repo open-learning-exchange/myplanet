@@ -38,21 +38,29 @@ class VoicesRepository {
       newsId == null ? Future.value(0) : _dao.replyCount(newsId);
 
   /// Port of `getCommunityNews`: the top-level `message` posts this user is
-  /// allowed to see, newest first.
+  /// allowed to see, sorted by [sortDateOf] descending — a post shared into
+  /// the community surfaces by when it was shared, not when it was written.
   Stream<List<NewsRow>> watchCommunityFeed(String userIdentifier) {
-    return _dao.watchTopLevelMessages().map(
-      (rows) => rows
+    return _dao.watchTopLevelMessages().map((rows) {
+      final visible = rows
           .where((row) => isVisibleToUser(row, userIdentifier))
-          .toList(growable: false),
-    );
+          .toList();
+      visible.sort((a, b) => sortDateOf(b).compareTo(sortDateOf(a)));
+      return visible;
+    });
   }
 
   /// Port of `isVisibleToUser`.
   ///
   /// A post is visible when it is addressed to the community at large, or when
-  /// its `viewIn` array names the viewer. Note the fall-through: a post with no
-  /// `viewIn` and a `viewableBy` other than "community" is visible to *nobody*,
-  /// which is how team-only posts stay out of the community feed.
+  /// a *community* entry in its `viewIn` array names the viewer. Note the
+  /// fall-through: a post with no `viewIn` and a `viewableBy` other than
+  /// "community" is visible to *nobody*, which is how team-only posts stay out
+  /// of the community feed — and since upstream f4adebf, only entries with
+  /// `section == "community"` count at all, so a team entry naming the viewer
+  /// no longer leaks the post into the community feed. An empty or `"@"` id on
+  /// a community entry (or an empty/`"@"` viewer) is a wildcard for "everyone",
+  /// the Planet convention for a planet-wide share.
   ///
   /// Malformed `viewIn` JSON is treated as "not visible" rather than allowed to
   /// throw — matching the Kotlin's `catch (throwable: Throwable) { false }`,
@@ -66,11 +74,38 @@ class VoicesRepository {
     try {
       final decoded = jsonDecode(viewIn);
       if (decoded is! List) return false;
+      return decoded.any((element) {
+        if (element is! Map<String, dynamic>) return false;
+        if (JsonUtils.getString('section', element).toLowerCase() !=
+            'community') {
+          return false;
+        }
+        final id = JsonUtils.getString('_id', element);
+        return id.isEmpty ||
+            id == '@' ||
+            userIdentifier.isEmpty ||
+            userIdentifier == '@' ||
+            id.toLowerCase() == userIdentifier.toLowerCase();
+      });
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Port of `News.isCommunityNews`: the post has been shared to the community
+  /// (has a community-section entry in `viewIn`). Drives whether the share
+  /// action shows at all, matching `VoicesAdapter.canShare`.
+  static bool isCommunityNews(NewsRow row) {
+    final viewIn = row.viewIn;
+    if (viewIn == null || viewIn.isEmpty) return false;
+    try {
+      final decoded = jsonDecode(viewIn);
+      if (decoded is! List) return false;
       return decoded.any(
         (element) =>
             element is Map<String, dynamic> &&
-            JsonUtils.getString('_id', element).toLowerCase() ==
-                userIdentifier.toLowerCase(),
+            JsonUtils.getString('section', element).toLowerCase() ==
+                'community',
       );
     } catch (_) {
       return false;
@@ -240,17 +275,136 @@ class VoicesRepository {
     return true;
   }
 
+  /// Port of `shareNewsToCommunity`: append a community entry to the post's
+  /// `viewIn`, so every member of the planet can see it in the community feed.
+  ///
+  /// Upstream f4adebf hardened three things this mirrors:
+  /// - a malformed existing `viewIn` is treated as an empty array and the share
+  ///   proceeds, rather than failing the whole action;
+  /// - the first entry's `name` is filled from [teamName] only when it is
+  ///   missing *and* a non-empty name was passed;
+  /// - the community `_id` is `planetCode@parentCode`, or empty when both are —
+  ///   never a bare `"@"`.
+  ///
+  /// One deliberate divergence: the row is marked [NewsRow.isEdited] so it
+  /// qualifies for [pendingUploads]. The Kotlin re-PUTs every post on every
+  /// sync, so its share is picked up unconditionally; this port only uploads
+  /// rows that are new or edited, so without the flag the share would never
+  /// reach the server.
+  Future<bool> shareToCommunity({
+    required String newsId,
+    required String userId,
+    String planetCode = '',
+    String parentCode = '',
+    String teamName = '',
+  }) async {
+    final row = await _dao.getById(newsId);
+    if (row == null) return false;
+
+    List<dynamic> entries;
+    try {
+      entries = (row.viewIn == null || row.viewIn!.isEmpty)
+          ? <dynamic>[]
+          : jsonDecode(row.viewIn!) as List? ?? <dynamic>[];
+    } catch (_) {
+      entries = <dynamic>[];
+    }
+
+    if (entries.isNotEmpty) {
+      final first = entries.first;
+      if (first is Map<String, dynamic> &&
+          !first.containsKey('name') &&
+          teamName.isNotEmpty) {
+        first['name'] = teamName;
+      }
+    }
+
+    entries.add({
+      'section': 'community',
+      '_id': (planetCode.isNotEmpty || parentCode.isNotEmpty)
+          ? '$planetCode@$parentCode'
+          : '',
+      'sharedDate': _now().millisecondsSinceEpoch,
+    });
+
+    await _dao.upsert(
+      row
+          .toCompanion(false)
+          .copyWith(
+            sharedBy: Value(userId),
+            viewIn: Value(jsonEncode(entries)),
+            isEdited: const Value(true),
+          ),
+    );
+    return true;
+  }
+
   /// Port of `deleteNews` + `collectNewsAndReplies`: a post takes its whole
   /// reply subtree with it, or the replies would be orphaned and invisible.
-  /// The post and every reply beneath it — the exact set [deletePost] removes.
-  /// Exposed so a caller can withdraw their queued uploads first.
+  /// The post and every reply beneath it — the exact set [deletePost] removes
+  /// when it actually deletes. Exposed so a caller can withdraw their queued
+  /// uploads first.
   Future<List<String>> collectThreadIds(String newsId) =>
       _collectWithReplies(newsId);
 
-  Future<int> deletePost(String newsId) async {
-    final ids = await _collectWithReplies(newsId);
-    await _dao.deleteByIds(ids);
-    return ids.length;
+  /// Port of `deletePost(newsId, teamName)`.
+  ///
+  /// Deleting from a *team* screen (non-empty [teamName]) removes the post and
+  /// its whole reply subtree. Deleting from the *community* feed
+  /// ([teamName] empty) only unshares when the post still has another audience
+  /// left: the community entry — and any other shared-in entries — are stripped
+  /// from `viewIn`, `sharedBy` is cleared, and the row stays. A post whose
+  /// `viewIn` has fewer than two entries (a direct community post), is
+  /// unparseable, or has every entry stripped by the filter is deleted
+  /// outright, replies included.
+  ///
+  /// Returns the number of rows deleted, or 0 when the post was unshared
+  /// instead.
+  Future<int> deletePost(String newsId, {String teamName = ''}) async {
+    final row = await _dao.getById(newsId);
+    if (row == null) return 0;
+
+    List<dynamic>? entries;
+    final viewIn = row.viewIn;
+    if (viewIn != null && viewIn.isNotEmpty) {
+      try {
+        entries = jsonDecode(viewIn) as List?;
+      } catch (_) {
+        entries = null;
+      }
+    }
+
+    if (teamName.isNotEmpty || entries == null || entries.length < 2) {
+      final ids = await _collectWithReplies(newsId);
+      await _dao.deleteByIds(ids);
+      return ids.length;
+    }
+
+    final kept = entries.where((element) {
+      if (element is! Map<String, dynamic>) return false;
+      final isCommunity =
+          JsonUtils.getString('section', element).toLowerCase() == 'community';
+      return !isCommunity && !element.containsKey('sharedDate');
+    }).toList();
+
+    if (kept.isEmpty) {
+      final ids = await _collectWithReplies(newsId);
+      await _dao.deleteByIds(ids);
+      return ids.length;
+    }
+
+    // Marked edited for the same reason as [shareToCommunity]: the unshare
+    // has to qualify for the upload path, which this port keys on `isEdited`.
+    await _dao.upsert(
+      row
+          .toCompanion(false)
+          .copyWith(
+            viewIn: Value(jsonEncode(kept)),
+            sharedBy: const Value(''),
+            isEdited: const Value(true),
+          ),
+    );
+    return 0;
   }
 
   Future<List<String>> _collectWithReplies(String newsId) async {

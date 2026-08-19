@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/server_config.dart';
 import '../core/sync/sync_result.dart';
 import '../data/local/app_database.dart';
-import '../repository/voices_repository.dart';
 import '../repository/voices_uploader.dart';
 import 'app_providers.dart';
 import 'session_provider.dart';
@@ -33,24 +32,17 @@ final communityFeedProvider = StreamProvider<List<NewsRow>>((ref) async* {
   await for (final rows in repository.watchCommunityFeed(
     user.couchId ?? user.id,
   )) {
-    final filtered = query.isEmpty
-        ? rows
-        : rows
-              .where(
-                (row) =>
-                    (row.message ?? '').toLowerCase().contains(query) ||
-                    (row.userName ?? '').toLowerCase().contains(query),
-              )
-              .toList(growable: false);
-    // `getCommunityNews` stamps `sortDate` and the adapter orders by it, so a
-    // post shared into the community surfaces by when it was shared.
-    final sorted = [...filtered]
-      ..sort(
-        (a, b) => VoicesRepository.sortDateOf(
-          b,
-        ).compareTo(VoicesRepository.sortDateOf(a)),
-      );
-    yield sorted;
+    if (query.isEmpty) {
+      yield rows;
+      continue;
+    }
+    yield rows
+        .where(
+          (row) =>
+              (row.message ?? '').toLowerCase().contains(query) ||
+              (row.userName ?? '').toLowerCase().contains(query),
+        )
+        .toList(growable: false);
   }
 });
 
@@ -210,17 +202,51 @@ class VoicesActions {
     return true;
   }
 
-  Future<void> deletePost(String newsId) async {
+  /// Deleting from the community feed (no [teamName]) un-shares when the post
+  /// still has another audience; a team screen passes its team name and the
+  /// post dies outright. The repository's doc comment covers the exact rule.
+  Future<int> deletePost(String newsId, {String teamName = ''}) async {
     // Withdraw first. A post deleted while its upload is still queued would
     // otherwise be POSTed on the next drain and reappear on the server, with
-    // no local row left to record the result against.
+    // no local row left to record the result against. Done before the
+    // repository decides between delete and un-share, so the un-share path
+    // pays the small cost of cancelling a queue entry it then re-adds.
     final repository = ref.read(voicesRepositoryProvider);
     final outbox = ref.read(outboxRepositoryProvider);
     for (final id in await repository.collectThreadIds(newsId)) {
       await outbox.cancel(VoicesUploader.type, id);
     }
-    await repository.deletePost(newsId);
+    final deleted = await repository.deletePost(newsId, teamName: teamName);
+    if (deleted == 0) {
+      // Un-shared rather than deleted: queue the updated post so the share
+      // withdrawal reaches the server too.
+      await queuePending();
+    }
     ref.invalidate(voiceProvider(newsId));
+    return deleted;
+  }
+
+  /// Shares the post to the community feed, mirroring
+  /// `VoicesViewModel.shareNewsToCommunity`. The session's codes win, with the
+  /// configured community as the fallback — the same effective-code rule the
+  /// Kotlin applies against its preferences.
+  Future<bool> shareToCommunity(String newsId, {String teamName = ''}) async {
+    final user = ref.read(sessionProvider).valueOrNull;
+    if (user == null) return false;
+    final config = ref.read(serverConfigProvider);
+    final shared = await ref
+        .read(voicesRepositoryProvider)
+        .shareToCommunity(
+          newsId: newsId,
+          userId: user.couchId ?? user.id,
+          planetCode: user.planetCode ?? config?.code ?? '',
+          parentCode: user.parentCode ?? config?.parentCode ?? '',
+          teamName: teamName,
+        );
+    if (!shared) return false;
+    await queuePending();
+    ref.invalidate(voiceProvider(newsId));
+    return true;
   }
 
   Future<int> queuePending() async {

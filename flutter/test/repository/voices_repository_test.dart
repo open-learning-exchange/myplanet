@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
@@ -56,14 +57,54 @@ void main() {
       );
     });
 
-    test('a post is visible to a user named in viewIn', () {
+    test(
+      'only a community viewIn entry makes the post visible, named or wildcard',
+      () {
+        // Upstream f4adebf rewrote this: a *teams* entry that names the viewer
+        // no longer leaks the post into the community feed, and an empty or
+        // "@" community id means "everyone".
+        final named = rowWith(
+          viewIn: jsonEncode([
+            {'_id': 'USER-1', 'section': 'community'},
+          ]),
+        );
+        expect(VoicesRepository.isVisibleToUser(named, 'user-1'), isTrue);
+        expect(VoicesRepository.isVisibleToUser(named, 'user-2'), isFalse);
+
+        final wildcard = rowWith(
+          viewIn: jsonEncode([
+            {'_id': '@', 'section': 'community'},
+          ]),
+        );
+        expect(VoicesRepository.isVisibleToUser(wildcard, 'anyone'), isTrue);
+
+        final noId = rowWith(
+          viewIn: jsonEncode([
+            {'section': 'community'},
+          ]),
+        );
+        expect(VoicesRepository.isVisibleToUser(noId, 'anyone'), isTrue);
+      },
+    );
+
+    test('a team section naming the viewer stays invisible', () {
       final row = rowWith(
         viewIn: jsonEncode([
           {'_id': 'USER-1', 'section': 'teams'},
         ]),
       );
-      expect(VoicesRepository.isVisibleToUser(row, 'user-1'), isTrue);
-      expect(VoicesRepository.isVisibleToUser(row, 'user-2'), isFalse);
+      expect(VoicesRepository.isVisibleToUser(row, 'user-1'), isFalse);
+    });
+
+    test('a wildcard viewer sees every community entry', () {
+      // A guest asking with "@" would otherwise hide nothing.
+      final row = rowWith(
+        viewIn: jsonEncode([
+          {'_id': 'user-1', 'section': 'community'},
+        ]),
+      );
+      expect(VoicesRepository.isVisibleToUser(row, '@'), isTrue);
+      expect(VoicesRepository.isVisibleToUser(row, ''), isTrue);
     });
 
     test('a post addressed to nobody is visible to nobody', () {
@@ -239,6 +280,266 @@ void main() {
     // parent is gone, so they would linger invisibly forever.
     expect(removed, 3);
     expect(await database.newsDao.count(), 0);
+  });
+
+  group('community sharing', () {
+    test('isCommunityNews pins which posts offer the share action', () {
+      expect(VoicesRepository.isCommunityNews(rowWith(viewIn: '[]')), isFalse);
+      expect(
+        VoicesRepository.isCommunityNews(
+          rowWith(
+            viewIn: jsonEncode([
+              {'_id': 'team-1', 'section': 'teams'},
+            ]),
+          ),
+        ),
+        isFalse,
+      );
+      expect(
+        VoicesRepository.isCommunityNews(
+          rowWith(
+            viewIn: jsonEncode([
+              {'section': 'community', '_id': 'planet@parent'},
+            ]),
+          ),
+        ),
+        isTrue,
+      );
+    });
+
+    test(
+      'shareToCommunity appends the community entry and marks edited',
+      () async {
+        await repository.cacheDocuments([
+          {
+            '_id': 'post-1',
+            'docType': 'message',
+            'message': 'From the team',
+            'viewIn': [
+              {'_id': 'team-1', 'section': 'teams', 'name': 'Team A'},
+            ],
+          },
+        ]);
+
+        expect(
+          await repository.shareToCommunity(
+            newsId: 'post-1',
+            userId: 'user-1',
+            planetCode: 'planet',
+            parentCode: 'parent',
+          ),
+          isTrue,
+        );
+
+        final row = await repository.getById('post-1');
+        final entries = jsonDecode(row!.viewIn!) as List;
+        expect(entries, hasLength(2));
+        expect(entries.last, {
+          'section': 'community',
+          '_id': 'planet@parent',
+          'sharedDate': 5000,
+        });
+        expect(row.sharedBy, 'user-1');
+        // The only way the share qualifies for the deliberately-narrowed
+        // `pendingUploads` list.
+        expect(row.isEdited, isTrue);
+      },
+    );
+
+    test(
+      'shareToCommunity fills the first entry name only when it was missing',
+      () async {
+        await repository.cacheDocuments([
+          {
+            '_id': 'named',
+            'docType': 'message',
+            'message': 'm',
+            'viewIn': [
+              {'_id': 'team-1', 'section': 'teams'},
+            ],
+          },
+          {'_id': 'plain', 'docType': 'message', 'message': 'm'},
+        ]);
+
+        await repository.shareToCommunity(
+          newsId: 'named',
+          userId: 'user-1',
+          teamName: 'Team A',
+        );
+        await repository.shareToCommunity(newsId: 'plain', userId: 'user-1');
+
+        final named =
+            jsonDecode((await repository.getById('named'))!.viewIn!) as List;
+        expect(named.first, {
+          '_id': 'team-1',
+          'section': 'teams',
+          'name': 'Team A',
+        });
+
+        final plain =
+            jsonDecode((await repository.getById('plain'))!.viewIn!) as List;
+        expect(plain, [
+          {'section': 'community', '_id': '', 'sharedDate': 5000},
+        ]);
+      },
+    );
+
+    test(
+      'shareToCommunity survives a malformed viewIn instead of failing',
+      () async {
+        final id = await repository.createPost(
+          message: 'm',
+          userId: 'user-1',
+          userName: 'Ada',
+        );
+        // createPost writes `[]`; corrupt it behind the repository's back.
+        await database.customUpdate(
+          'UPDATE news SET view_in = ? WHERE id = ?',
+          variables: [Variable('broken'), Variable(id)],
+        );
+
+        expect(
+          await repository.shareToCommunity(newsId: id, userId: 'user-1'),
+          isTrue,
+        );
+        final entries =
+            jsonDecode((await repository.getById(id))!.viewIn!) as List;
+        expect(entries, hasLength(1));
+        expect(entries.single['section'], 'community');
+      },
+    );
+
+    group('deletePost', () {
+      test(
+        'from the community feed un-shares a shared team post, keeps the row',
+        () async {
+          // Pins upstream f4adebf's community-delete semantics.
+          await repository.cacheDocuments([
+            {
+              '_id': 'shared',
+              'docType': 'message',
+              'message': 'm',
+              'sharedBy': 'user-1',
+              'viewIn': [
+                {'_id': 'team-1', 'section': 'teams', 'name': 'Enterprise A'},
+                {
+                  'section': 'community',
+                  '_id': 'planet@parent',
+                  'sharedDate': 123456789,
+                },
+              ],
+            },
+          ]);
+
+          final removed = await repository.deletePost('shared');
+
+          expect(removed, 0);
+          final row = await repository.getById('shared');
+          expect(row, isNotNull);
+          expect(row!.sharedBy, '');
+          expect(row.isEdited, isTrue);
+          expect(jsonDecode(row.viewIn!), [
+            {'_id': 'team-1', 'section': 'teams', 'name': 'Enterprise A'},
+          ]);
+        },
+      );
+
+      test('from a team screen deletes the post and its replies', () async {
+        await repository.cacheDocuments([
+          {
+            '_id': 'team-post',
+            'docType': 'message',
+            'message': 'm',
+            'viewIn': [
+              {'_id': 'team-1', 'section': 'teams', 'name': 'Enterprise A'},
+              {
+                'section': 'community',
+                '_id': 'planet@parent',
+                'sharedDate': 123456789,
+              },
+            ],
+          },
+        ]);
+
+        final removed = await repository.deletePost(
+          'team-post',
+          teamName: 'Enterprise A',
+        );
+
+        expect(removed, 1);
+        expect(await repository.getById('team-post'), isNull);
+      });
+
+      test(
+        'from the community feed deletes a direct community post outright',
+        () async {
+          await repository.cacheDocuments([
+            {
+              '_id': 'direct',
+              'docType': 'message',
+              'message': 'm',
+              'viewIn': [
+                {'_id': 'planet@parent', 'section': 'community', 'name': ''},
+              ],
+            },
+          ]);
+
+          final removed = await repository.deletePost('direct');
+
+          expect(removed, 1);
+          expect(await repository.getById('direct'), isNull);
+        },
+      );
+
+      test(
+        'from the community feed deletes when nothing would be left',
+        () async {
+          // A post shared to two communities still dies when the un-share
+          // filter empties its viewIn.
+          await repository.cacheDocuments([
+            {
+              '_id': 'twice',
+              'docType': 'message',
+              'message': 'm',
+              'viewIn': [
+                {'section': 'community', '_id': 'a@b', 'sharedDate': 1},
+                {'section': 'community', '_id': 'c@d', 'sharedDate': 2},
+              ],
+            },
+          ]);
+
+          expect(await repository.deletePost('twice'), 1);
+          expect(await repository.getById('twice'), isNull);
+        },
+      );
+    });
+
+    test('the community feed orders by shared date, not write time', () async {
+      // `getCommunityNews` sorts by `sortDate` descending; pinned by
+      // f4adebf's `.sortedByDescending { it.sortDate }`.
+      await repository.cacheDocuments([
+        {
+          '_id': 'old-written',
+          'docType': 'message',
+          'time': 100,
+          'viewableBy': 'community',
+          'message': 'written long ago',
+        },
+        {
+          '_id': 'shared-late',
+          'docType': 'message',
+          'time': 50,
+          'message': 'shared recently',
+          'viewIn': [
+            {'section': 'community', '_id': 'p@c', 'sharedDate': 900},
+          ],
+        },
+      ]);
+
+      final rows = await repository.watchCommunityFeed('p@c').first;
+
+      expect(rows.map((row) => row.id), ['shared-late', 'old-written']);
+    });
   });
 
   test(

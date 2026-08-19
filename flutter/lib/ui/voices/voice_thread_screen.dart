@@ -18,29 +18,9 @@ class VoiceThreadScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final post = ref.watch(voiceProvider(newsId));
     final replies = ref.watch(voiceRepliesProvider(newsId));
-    final user = ref.watch(sessionProvider).valueOrNull;
-    final row = post.valueOrNull;
-    final isAuthor =
-        row != null && user != null && row.userId == (user.couchId ?? user.id);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.thread),
-        actions: [
-          if (isAuthor) ...[
-            IconButton(
-              tooltip: l10n.editVoice,
-              onPressed: () => _edit(context, ref),
-              icon: const Icon(Icons.edit_outlined),
-            ),
-            IconButton(
-              tooltip: l10n.deleteVoice,
-              onPressed: () => _delete(context, ref),
-              icon: const Icon(Icons.delete_outline),
-            ),
-          ],
-        ],
-      ),
+      appBar: AppBar(title: Text(l10n.thread)),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _reply(context, ref),
         icon: const Icon(Icons.reply),
@@ -92,46 +72,5 @@ class VoiceThreadScreen extends ConsumerWidget {
     await ref
         .read(voicesActionsProvider)
         .postReply(parentId: newsId, message: message);
-  }
-
-  Future<void> _edit(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context);
-    final row = ref.read(voiceProvider(newsId)).valueOrNull;
-    if (row == null) return;
-    final message = await showVoiceComposer(
-      context,
-      initialText: row.message,
-      title: l10n.editVoice,
-    );
-    if (message == null || message.isEmpty) return;
-    await ref
-        .read(voicesActionsProvider)
-        .editPost(newsId: newsId, message: message);
-  }
-
-  Future<void> _delete(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context);
-    final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        content: Text(l10n.deleteVoiceConfirm),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(l10n.deleteVoice),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    await ref.read(voicesActionsProvider).deletePost(newsId);
-    messenger.showSnackBar(SnackBar(content: Text(l10n.voiceDeleted)));
-    if (navigator.canPop()) navigator.pop();
   }
 }

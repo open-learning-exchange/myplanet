@@ -90,3 +90,13 @@ UI package at a time. Conventions worth remembering across slices:
     `DiskStats.instance = _MethodChannelDiskStats()`; a `diskStatsProvider`
     lets widget tests inject a fake. The Kotlin side is not unit-tested in
     the Flutter gate (it compiles only on an Android build).
+  - **CP1252 em-dash trap in docs**: em-dashes written into `CLAUDE.md`,
+    `AGENTS.md`, or `docs/` have been corrupted to a raw CP1252 `0x97` byte
+    three separate times (twice in the migration doc, once in CLAUDE.md),
+    leaving the file invalid UTF-8. After editing docs with em-dashes, verify
+    before committing:
+    `python3 -c "open('<file>','rb').read().decode('utf-8')"`.
+  - **Auditing upstream commits**: when citing master commits in
+    `docs/kotlin-to-flutter-migration.md`, use the real abbreviation from
+    `git log --format=%H --abbrev=9` — a fabricated suffix reads fine and
+    cites the wrong commit.
