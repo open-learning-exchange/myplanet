@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/secondary_bg"
+    android:background="@color/dashboard_page_bg"
     tools:context=".ui.user.AchievementFragment">
 
     <androidx.core.widget.NestedScrollView
@@ -34,29 +34,31 @@
                     <!-- Avatar circle -->
                     <de.hdodenhof.circleimageview.CircleImageView
                         android:id="@+id/imageView"
-                        android:layout_width="60dp"
-                        android:layout_height="60dp"
+                        android:layout_width="64dp"
+                        android:layout_height="64dp"
                         android:layout_gravity="center"
                         android:contentDescription="@string/profile"
                         android:src="@drawable/profile"
                         app:civ_border_color="@color/colorPrimaryDark"
                         app:civ_border_width="2dp" />
+
                     <TextView
                         android:id="@+id/tv_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
-                        android:layout_marginTop="2dp"
+                        android:layout_marginTop="4dp"
                         android:textColor="@color/daynight_textColor"
                         android:textSize="20sp"
                         android:textStyle="bold" />
+
                     <Button
                         android:id="@+id/btn_edit"
                         style="@style/YellowButtons"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="10dp"
                         android:background="@drawable/buttonyellow"
                         android:contentDescription="@string/edit_achievement"
                         android:drawableStart="@drawable/ic_edit"
@@ -65,29 +67,506 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- ── Body ── -->
+            <!-- ── Tab Segment Switcher ── -->
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/toggle_tabs"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginBottom="16dp"
+                app:checkedButton="@id/btn_tab_gamification"
+                app:cornerRadius="24dp"
+                app:selectionRequired="true"
+                app:singleSelection="true">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_tab_gamification"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:textAlignment="center"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:insetLeft="0dp"
+                    android:insetRight="0dp"
+                    android:paddingTop="0dp"
+                    android:paddingBottom="0dp"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp"
+                    android:minHeight="0dp"
+                    android:singleLine="true"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    app:backgroundTint="@color/tab_toggle_bg_color"
+                    android:textColor="@color/tab_toggle_text_color"
+                    app:strokeColor="@color/card_border"
+                    app:strokeWidth="1dp"
+                    android:text="@string/badges_and_streaks"
+                    android:textAllCaps="false"
+                    android:textStyle="bold"
+                    android:textSize="13sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_tab_portfolio"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:textAlignment="center"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:insetLeft="0dp"
+                    android:insetRight="0dp"
+                    android:paddingTop="0dp"
+                    android:paddingBottom="0dp"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp"
+                    android:minHeight="0dp"
+                    android:singleLine="true"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    app:backgroundTint="@color/tab_toggle_bg_color"
+                    android:textColor="@color/tab_toggle_text_color"
+                    app:strokeColor="@color/card_border"
+                    app:strokeWidth="1dp"
+                    android:text="@string/portfolio_and_goals"
+                    android:textAllCaps="false"
+                    android:textStyle="bold"
+                    android:textSize="13sp" />
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            <!-- ── SECTION 1: Gamification Hub (Badges & Streaks) ── -->
             <LinearLayout
+                android:id="@+id/ll_gamification_hub"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp">
 
+                <!-- Study Streak Hero Banner -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="2dp"
+                    app:strokeWidth="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_streak_card"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="🔥"
+                                android:textSize="32sp" />
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="12dp"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:id="@+id/tv_streak_count"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="#FFFFFF"
+                                    android:textSize="22sp"
+                                    android:textStyle="bold"
+                                    tools:text="7 Days Streak" />
+
+                                <TextView
+                                    android:id="@+id/tv_streak_longest"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="#FFE0B2"
+                                    android:textSize="13sp"
+                                    tools:text="Best: 14 days" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/tv_streak_active_today"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:background="@drawable/bg_streak_pill_active"
+                                android:paddingHorizontal="10dp"
+                                android:paddingVertical="4dp"
+                                android:text="@string/active_today"
+                                android:textColor="#FFFFFF"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tv_streak_message"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:textColor="#FFFFFF"
+                            android:textSize="13sp"
+                            android:text="@string/streak_active_encouragement" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Quick Stats Grid Row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:orientation="horizontal">
+
+                    <!-- Badges Stat Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="4dp"
+                        app:cardBackgroundColor="@color/card_bg"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:strokeColor="@color/card_border"
+                        app:strokeWidth="1dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="10dp"
+                            android:gravity="center">
+
+                            <TextView
+                                android:id="@+id/tv_stat_badges"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/dashboard_ink_1"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                tools:text="4/18" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/dashboard_ink_3"
+                                android:textSize="11sp"
+                                android:text="@string/total_badges" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Courses Stat Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginHorizontal="2dp"
+                        app:cardBackgroundColor="@color/card_bg"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:strokeColor="@color/card_border"
+                        app:strokeWidth="1dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="10dp"
+                            android:gravity="center">
+
+                            <TextView
+                                android:id="@+id/tv_stat_courses"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/dashboard_ink_1"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                tools:text="2" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/dashboard_ink_3"
+                                android:textSize="11sp"
+                                android:text="@string/completed_courses_count" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Resources Stat Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginHorizontal="2dp"
+                        app:cardBackgroundColor="@color/card_bg"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:strokeColor="@color/card_border"
+                        app:strokeWidth="1dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="10dp"
+                            android:gravity="center">
+
+                            <TextView
+                                android:id="@+id/tv_stat_resources"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/dashboard_ink_1"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                tools:text="15" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/dashboard_ink_3"
+                                android:textSize="11sp"
+                                android:text="@string/resources_read_count" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Tasks Stat Card -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="4dp"
+                        app:cardBackgroundColor="@color/card_bg"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:strokeColor="@color/card_border"
+                        app:strokeWidth="1dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="10dp"
+                            android:gravity="center">
+
+                            <TextView
+                                android:id="@+id/tv_stat_tasks"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/dashboard_ink_1"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                tools:text="5" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/dashboard_ink_3"
+                                android:textSize="11sp"
+                                android:text="@string/tasks_done_count" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+
+                <!-- ── Achievement Badges Section ── -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/badges_hub"
+                        android:textColor="@color/dashboard_ink_1"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_badges_unlocked_stat"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/colorPrimary"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        tools:text="4 of 18 Unlocked" />
+                </LinearLayout>
+
+                <!-- Category Filter Chips -->
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:scrollbars="none">
+
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/chip_group_badge_categories"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:checkedChip="@id/chip_cat_all"
+                        app:selectionRequired="true"
+                        app:singleLine="true"
+                        app:singleSelection="true">
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chip_cat_all"
+                            style="@style/Widget.MaterialComponents.Chip.Choice"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:chipBackgroundColor="@color/chip_filter_bg_color"
+                            android:textColor="@color/chip_filter_text_color"
+                            app:chipStrokeColor="@color/chip_filter_stroke_color"
+                            app:chipStrokeWidth="1dp"
+                            app:chipCornerRadius="16dp"
+                            app:checkedIconVisible="false"
+                            android:text="@string/category_all" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chip_cat_courses"
+                            style="@style/Widget.MaterialComponents.Chip.Choice"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:chipBackgroundColor="@color/chip_filter_bg_color"
+                            android:textColor="@color/chip_filter_text_color"
+                            app:chipStrokeColor="@color/chip_filter_stroke_color"
+                            app:chipStrokeWidth="1dp"
+                            app:chipCornerRadius="16dp"
+                            app:checkedIconVisible="false"
+                            android:text="@string/category_courses" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chip_cat_streaks"
+                            style="@style/Widget.MaterialComponents.Chip.Choice"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:chipBackgroundColor="@color/chip_filter_bg_color"
+                            android:textColor="@color/chip_filter_text_color"
+                            app:chipStrokeColor="@color/chip_filter_stroke_color"
+                            app:chipStrokeWidth="1dp"
+                            app:chipCornerRadius="16dp"
+                            app:checkedIconVisible="false"
+                            android:text="@string/category_streaks" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chip_cat_teams"
+                            style="@style/Widget.MaterialComponents.Chip.Choice"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:chipBackgroundColor="@color/chip_filter_bg_color"
+                            android:textColor="@color/chip_filter_text_color"
+                            app:chipStrokeColor="@color/chip_filter_stroke_color"
+                            app:chipStrokeWidth="1dp"
+                            app:chipCornerRadius="16dp"
+                            app:checkedIconVisible="false"
+                            android:text="@string/category_teams" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chip_cat_resources"
+                            style="@style/Widget.MaterialComponents.Chip.Choice"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:chipBackgroundColor="@color/chip_filter_bg_color"
+                            android:textColor="@color/chip_filter_text_color"
+                            app:chipStrokeColor="@color/chip_filter_stroke_color"
+                            app:chipStrokeWidth="1dp"
+                            app:chipCornerRadius="16dp"
+                            app:checkedIconVisible="false"
+                            android:text="@string/category_resources" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chip_cat_exams"
+                            style="@style/Widget.MaterialComponents.Chip.Choice"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:chipBackgroundColor="@color/chip_filter_bg_color"
+                            android:textColor="@color/chip_filter_text_color"
+                            app:chipStrokeColor="@color/chip_filter_stroke_color"
+                            app:chipStrokeWidth="1dp"
+                            app:chipCornerRadius="16dp"
+                            app:checkedIconVisible="false"
+                            android:text="@string/category_exams" />
+                    </com.google.android.material.chip.ChipGroup>
+                </HorizontalScrollView>
+
+                <!-- Badges RecyclerView -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_badges"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:nestedScrollingEnabled="false" />
+
+                <!-- ── Certificates Section ── -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="@string/certificates_of_completion"
+                    android:textColor="@color/dashboard_ink_1"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_empty_certificates"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:background="@drawable/bg_certificate_card"
+                    android:padding="20dp"
+                    android:gravity="center"
+                    android:text="@string/no_certificates_yet"
+                    android:textColor="@color/dashboard_ink_3"
+                    android:textSize="13sp"
+                    android:visibility="gone" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_certificates"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    android:nestedScrollingEnabled="false" />
+            </LinearLayout>
+
+            <!-- ── SECTION 2: Portfolio & Goals ── -->
+            <LinearLayout
+                android:id="@+id/ll_portfolio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:visibility="gone">
+
                 <!-- Purpose Card -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
-                    app:cardBackgroundColor="@color/md_white_1000"
+                    app:cardBackgroundColor="@color/card_bg"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="0dp"
-                    app:strokeColor="@color/daynight_textColor"
-                    app:strokeWidth="0.5dp">
+                    app:strokeColor="@color/card_border"
+                    app:strokeWidth="1dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="@color/secondary_bg"
+                        android:background="@color/card_bg"
                         android:orientation="vertical"
                         android:padding="16dp">
 
@@ -105,6 +584,7 @@
                                 android:text="★"
                                 android:textColor="@color/achievement_purpose_icon"
                                 android:textSize="13sp" />
+
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -112,7 +592,7 @@
                                 android:letterSpacing="0.08"
                                 android:text="@string/my_purpose"
                                 android:textAllCaps="true"
-                                android:textColor="@color/daynight_textColor"
+                                android:textColor="@color/dashboard_ink_1"
                                 android:textSize="12sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
@@ -123,7 +603,7 @@
                             android:layout_height="wrap_content"
                             android:lineSpacingMultiplier="1.4"
                             android:layout_marginStart="16dp"
-                            android:textColor="@color/daynight_textColor"
+                            android:textColor="@color/dashboard_ink_2"
                             android:textSize="15sp"
                             android:text="@string/no_purpose_added" />
                     </LinearLayout>
@@ -134,16 +614,16 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
-                    app:cardBackgroundColor="@color/md_white_1000"
+                    app:cardBackgroundColor="@color/card_bg"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="0dp"
-                    app:strokeColor="@color/daynight_textColor"
-                    app:strokeWidth="0.5dp">
+                    app:strokeColor="@color/card_border"
+                    app:strokeWidth="1dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="@color/secondary_bg"
+                        android:background="@color/card_bg"
                         android:orientation="vertical"
                         android:padding="16dp">
 
@@ -161,6 +641,7 @@
                                 android:text="◎"
                                 android:textColor="@color/achievement_goals_icon"
                                 android:textSize="13sp" />
+
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -168,7 +649,7 @@
                                 android:letterSpacing="0.08"
                                 android:text="@string/my_goals"
                                 android:textAllCaps="true"
-                                android:textColor="@color/daynight_textColor"
+                                android:textColor="@color/dashboard_ink_1"
                                 android:textSize="12sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
@@ -179,27 +660,27 @@
                             android:layout_height="wrap_content"
                             android:lineSpacingMultiplier="1.4"
                             android:layout_marginStart="16dp"
-                            android:textColor="@color/daynight_textColor"
+                            android:textColor="@color/dashboard_ink_2"
                             android:textSize="15sp"
                             android:text="@string/no_goal_added" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <!-- Achievements Card -->
+                <!-- Custom Achievements Card -->
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
-                    app:cardBackgroundColor="@color/md_white_1000"
+                    app:cardBackgroundColor="@color/card_bg"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="0dp"
-                    app:strokeColor="@color/daynight_textColor"
-                    app:strokeWidth="0.5dp">
+                    app:strokeColor="@color/card_border"
+                    app:strokeWidth="1dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="@color/secondary_bg"
+                        android:background="@color/card_bg"
                         android:orientation="vertical"
                         android:padding="16dp">
 
@@ -217,6 +698,7 @@
                                 android:text="★"
                                 android:textColor="@color/colorPrimary"
                                 android:textSize="13sp" />
+
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -224,7 +706,7 @@
                                 android:letterSpacing="0.08"
                                 android:text="@string/my_achievements"
                                 android:textAllCaps="true"
-                                android:textColor="@color/daynight_textColor"
+                                android:textColor="@color/dashboard_ink_1"
                                 android:textSize="12sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
@@ -236,9 +718,10 @@
                             android:layout_marginBottom="8dp"
                             android:lineSpacingMultiplier="1.5"
                             android:layout_marginStart="16dp"
-                            android:textColor="@color/daynight_textColor"
+                            android:textColor="@color/dashboard_ink_2"
                             android:textSize="14sp"
                             android:text="@string/no_achievement_added" />
+
                         <LinearLayout
                             android:id="@+id/ll_achievement"
                             android:layout_width="match_parent"
@@ -252,16 +735,16 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    app:cardBackgroundColor="@color/md_white_1000"
+                    app:cardBackgroundColor="@color/card_bg"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="0dp"
-                    app:strokeColor="@color/daynight_textColor"
-                    app:strokeWidth="0.5dp">
+                    app:strokeColor="@color/card_border"
+                    app:strokeWidth="1dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="@color/secondary_bg"
+                        android:background="@color/card_bg"
                         android:orientation="vertical"
                         android:padding="16dp">
 
@@ -279,6 +762,7 @@
                                 android:text="●"
                                 android:textColor="@color/achievement_references_icon"
                                 android:textSize="12sp" />
+
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -286,7 +770,7 @@
                                 android:letterSpacing="0.08"
                                 android:text="@string/references"
                                 android:textAllCaps="true"
-                                android:textColor="@color/daynight_textColor"
+                                android:textColor="@color/dashboard_ink_1"
                                 android:textSize="12sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
@@ -296,6 +780,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:nestedScrollingEnabled="false" />
+
                         <TextView
                             android:id="@+id/tv_references_header"
                             android:layout_width="match_parent"
@@ -304,27 +789,29 @@
                             android:layout_marginStart="16dp"
                             android:lineSpacingMultiplier="1.5"
                             android:text="@string/no_references_added"
-                            android:textColor="@color/daynight_textColor"
+                            android:textColor="@color/dashboard_ink_2"
                             android:textSize="14sp"
                             android:visibility="gone" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
+                <!-- CV / Resume Card -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cv_card"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
                     android:visibility="gone"
+                    app:cardBackgroundColor="@color/card_bg"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="0dp"
-                    app:strokeColor="@color/daynight_textColor"
-                    app:strokeWidth="0.5dp">
+                    app:strokeColor="@color/card_border"
+                    app:strokeWidth="1dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="@color/secondary_bg"
+                        android:background="@color/card_bg"
                         android:orientation="vertical"
                         android:padding="16dp">
 
@@ -341,6 +828,7 @@
                                 android:gravity="center"
                                 android:text="📄"
                                 android:textSize="13sp" />
+
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -348,7 +836,7 @@
                                 android:letterSpacing="0.08"
                                 android:text="@string/cv_resume"
                                 android:textAllCaps="true"
-                                android:textColor="@color/daynight_textColor"
+                                android:textColor="@color/dashboard_ink_1"
                                 android:textSize="12sp"
                                 android:textStyle="bold" />
                         </LinearLayout>

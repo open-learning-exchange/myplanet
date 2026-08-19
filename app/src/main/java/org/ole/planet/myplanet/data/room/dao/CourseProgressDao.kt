@@ -16,6 +16,9 @@ interface CourseProgressDao {
     @Query("SELECT * FROM course_progress WHERE userId = :userId")
     suspend fun getByUser(userId: String?): List<CourseProgress>
 
+    @Query("SELECT COUNT(DISTINCT courseId || '_' || stepNum) FROM course_progress WHERE userId = :userId AND passed = 1")
+    suspend fun countPassedStepsByUser(userId: String): Int
+
     @Query("SELECT * FROM course_progress WHERE courseId = :courseId AND userId = :userId AND stepNum = :stepNum LIMIT 1")
     suspend fun findByCourseUserAndStep(courseId: String?, userId: String?, stepNum: Int): CourseProgress?
 

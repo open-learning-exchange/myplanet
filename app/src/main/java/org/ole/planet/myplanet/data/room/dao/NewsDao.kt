@@ -84,6 +84,9 @@ interface NewsDao {
     @Query("SELECT viewableId FROM news WHERE viewableBy = 'teams' AND viewableId IN (:teamIds)")
     suspend fun getTeamChatViewableIds(teamIds: List<String>): List<String>
 
+    @Query("SELECT COUNT(*) FROM news WHERE userId = :userId AND replyTo IS NOT NULL AND replyTo != ''")
+    suspend fun countCommentsByUser(userId: String): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(news: News)
 
