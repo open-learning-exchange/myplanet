@@ -126,7 +126,6 @@ wait_for_runs() {
     local appear_deadline=$(( SECONDS + RUN_APPEAR_TIMEOUT_SEC ))
     local runs total pending failed missing announced=0
 
-    # exit codes: 0 green, 1 timed out / never ran, 2 a workflow failed
     log "  waiting for workflows on ${sha:0:7} (timeout ${WAIT_TIMEOUT_MIN}m)"
     while :; do
         runs=$(runs_for "$sha")
