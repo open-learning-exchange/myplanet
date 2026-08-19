@@ -289,9 +289,12 @@ class CoursesAdapter(
         }
         ivSubjectIcon.visibility = View.GONE
         ivCover.visibility = View.VISIBLE
+
+        val targetPx = ((if (viewMode == ListViewMode.GRID) 84 else 44) * context.resources.displayMetrics.density).toInt()
         Glide.with(context)
             .load(model)
             .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .override(targetPx, targetPx)
             .signature(ObjectKey(course.courseRev.orEmpty()))
             .centerCrop()
             .error(R.drawable.ole_logo)

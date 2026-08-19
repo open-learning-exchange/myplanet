@@ -202,9 +202,11 @@ class InlineResourceAdapter(
     private fun showImagePreview(binding: ItemInlineResourceBinding, context: Context, file: File) {
         if (file.exists()) {
             binding.ivResourcePreview.visibility = View.VISIBLE
+            val targetPx = (180 * context.resources.displayMetrics.density).toInt()
             Glide.with(context)
                 .load(file)
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .override(targetPx, targetPx)
                 .centerCrop()
                 .placeholder(R.drawable.ole_logo)
                 .error(R.drawable.ole_logo)
@@ -215,9 +217,11 @@ class InlineResourceAdapter(
     private fun showVideoPreview(binding: ItemInlineResourceBinding, context: Context, file: File) {
         binding.videoThumbnailContainer.visibility = View.VISIBLE
         if (file.exists()) {
+            val targetPx = (180 * context.resources.displayMetrics.density).toInt()
             Glide.with(context)
                 .load(file)
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .override(targetPx, targetPx)
                 .centerCrop()
                 .into(binding.ivVideoThumbnail)
         }

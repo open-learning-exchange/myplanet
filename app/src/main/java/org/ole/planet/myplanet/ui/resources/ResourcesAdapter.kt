@@ -268,13 +268,14 @@ class ResourcesAdapter(
 
         val file = FileUtils.getLibraryFile(dir, libraryId, address)
         val mimeType = Utilities.getMimeType(address)
+        val targetPx = (coverWidthDp * context.resources.displayMetrics.density).toInt()
         return when {
             mimeType?.startsWith("image") == true -> {
-                showImagePreview(ivPreview, ivTypeIcon, file)
+                showImagePreview(ivPreview, ivTypeIcon, file, targetPx)
                 null
             }
             mimeType?.startsWith("video") == true -> {
-                showVideoPreview(ivPreview, ivTypeIcon, file)
+                showVideoPreview(ivPreview, ivTypeIcon, file, targetPx)
                 null
             }
             mimeType?.contains("pdf") == true -> {
@@ -295,7 +296,7 @@ class ResourcesAdapter(
         ivTypeIcon.visibility = View.VISIBLE
     }
 
-    private fun showImagePreview(ivPreview: ImageView, ivTypeIcon: ImageView, file: File) {
+    private fun showImagePreview(ivPreview: ImageView, ivTypeIcon: ImageView, file: File, targetPx: Int) {
         if (!file.exists()) {
             showTypeIconOnly(ivPreview, ivTypeIcon)
             return
@@ -305,13 +306,14 @@ class ResourcesAdapter(
         Glide.with(context)
             .load(file)
             .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .override(targetPx, targetPx)
             .centerCrop()
             .placeholder(R.drawable.ole_logo)
             .error(R.drawable.ole_logo)
             .into(ivPreview)
     }
 
-    private fun showVideoPreview(ivPreview: ImageView, ivTypeIcon: ImageView, file: File) {
+    private fun showVideoPreview(ivPreview: ImageView, ivTypeIcon: ImageView, file: File, targetPx: Int) {
         if (!file.exists()) {
             showTypeIconOnly(ivPreview, ivTypeIcon)
             return
@@ -321,6 +323,7 @@ class ResourcesAdapter(
         Glide.with(context)
             .load(file)
             .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .override(targetPx, targetPx)
             .centerCrop()
             .placeholder(R.drawable.ole_logo)
             .error(R.drawable.ole_logo)
