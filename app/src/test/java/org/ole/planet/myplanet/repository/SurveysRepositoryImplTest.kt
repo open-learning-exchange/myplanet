@@ -193,14 +193,21 @@ class SurveysRepositoryImplTest {
     @Test
     fun `getSurvey returns survey by name if id not found`() = runTest {
         coEvery { examDao.getById("Survey Name") } returns null
-        coEvery { examDao.getByType("surveys") } returns listOf(
-            StepExam(id = "survey1", name = "Other Name"),
-            StepExam(id = "survey2", name = "Survey Name")
-        )
+        coEvery { examDao.getByTypeAndName("surveys", "Survey Name") } returns StepExam(id = "survey2", name = "Survey Name")
 
         val result = repository.getSurvey("Survey Name")
 
         assertEquals("survey2", result?.id)
+    }
+
+    @Test
+    fun `getSurvey returns null if no match found`() = runTest {
+        coEvery { examDao.getById("Survey Name") } returns null
+        coEvery { examDao.getByTypeAndName("surveys", "Survey Name") } returns null
+
+        val result = repository.getSurvey("Survey Name")
+
+        assertEquals(null, result)
     }
 
     @Test
