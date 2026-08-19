@@ -127,7 +127,8 @@ class MyPlanetActivitiesUploader {
         merged = Map<String, dynamic>.from(data)
           ..['usages'] = [
             ...existingUsages,
-            for (final u in usages) _usageDoc(u),
+            for (final u in usages)
+              _usageDoc(u, androidId: uniqueIdentifier, deviceName: deviceName),
           ];
       default:
         // No existing doc: build a fresh "usages"-type doc carrying the
@@ -136,6 +137,7 @@ class MyPlanetActivitiesUploader {
           user: user,
           androidId: androidId,
           uniqueIdentifier: uniqueIdentifier,
+          deviceName: deviceName,
           usages: usages,
         );
     }
@@ -192,6 +194,7 @@ class MyPlanetActivitiesUploader {
     required UserRow user,
     required String androidId,
     required String uniqueIdentifier,
+    required String deviceName,
     required List<TabletUsageStats> usages,
   }) {
     final doc = <String, dynamic>{
@@ -200,7 +203,10 @@ class MyPlanetActivitiesUploader {
       'parentCode': user.parentCode,
       'createdOn': user.planetCode,
       'type': 'usages',
-      'usages': [for (final u in usages) _usageDoc(u)],
+      'usages': [
+        for (final u in usages)
+          _usageDoc(u, androidId: uniqueIdentifier, deviceName: deviceName),
+      ],
     };
     final planetVersion = _planetVersion();
     if (planetVersion != null) doc['planetVersion'] = planetVersion;
@@ -208,16 +214,26 @@ class MyPlanetActivitiesUploader {
   }
 
   /// Port of `MyPlanet.addStats` — one foreground-usage row.
-  Map<String, dynamic> _usageDoc(TabletUsageStats u) => {
+  ///
+  /// [androidId] must be the `getUniqueIdentifier()` composite, not the bare
+  /// ANDROID_ID: `addStats` writes `NetworkUtils.getUniqueIdentifier()` into a
+  /// field it names `androidId`, exactly as the doc-level serializer does. The
+  /// server aggregates per device on this value, so sending the bare id here
+  /// while the "sync" doc sends the composite would split one device into two.
+  Map<String, dynamic> _usageDoc(
+    TabletUsageStats u, {
+    required String androidId,
+    required String deviceName,
+  }) => {
     'lastTimeUsed': u.lastTimeUsed,
     'firstTimeUsed': u.firstTimeUsed,
     'totalForegroundTime': u.totalForegroundTime,
     'totalUsed': u.totalUsed,
     'version': u.version,
     'versionName': u.versionName,
-    'androidId': u.androidId,
-    'customDeviceName': u.customDeviceName,
-    'deviceName': u.deviceName,
+    'androidId': androidId,
+    'customDeviceName': _prefs.customDeviceName,
+    'deviceName': deviceName,
     'time': u.time,
   };
 

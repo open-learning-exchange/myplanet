@@ -51,6 +51,18 @@ abstract class DeviceStats {
 
 /// One row of `MyPlanet.addStats`'s output: a single app's foreground usage
 /// over a `UsageStatsManager` interval.
+///
+/// The row carries only what the usage query actually measures. `addStats` also
+/// writes three device-identity fields onto every row — `androidId`,
+/// `customDeviceName`, `deviceName` — but those are device-wide constants, not
+/// per-row facts, and two of them cannot be answered correctly from the
+/// platform side: the Kotlin's `androidId` field is `getUniqueIdentifier()` (the
+/// `androidId_buildId` composite, *not* the bare ANDROID_ID the name suggests)
+/// and `customDeviceName` is a stored preference, which on this side lives in
+/// `PlanetPrefs`. `MyPlanetActivitiesUploader` fills all three when it
+/// serializes a row, so they are deliberately absent here rather than being
+/// carried across the channel where a plausible-looking wrong value already
+/// slipped in once.
 class TabletUsageStats {
   const TabletUsageStats({
     required this.lastTimeUsed,
@@ -59,9 +71,6 @@ class TabletUsageStats {
     required this.totalUsed,
     required this.version,
     required this.versionName,
-    required this.androidId,
-    required this.customDeviceName,
-    required this.deviceName,
     required this.time,
   });
 
@@ -71,9 +80,6 @@ class TabletUsageStats {
   final int totalUsed;
   final int version;
   final String versionName;
-  final String androidId;
-  final String customDeviceName;
-  final String deviceName;
   final int time;
 }
 
@@ -118,9 +124,6 @@ class _MethodChannelDeviceStats implements DeviceStats {
             totalUsed: _readInt(entry, 'totalUsed'),
             version: _readInt(entry, 'version'),
             versionName: _readString(entry, 'versionName'),
-            androidId: _readString(entry, 'androidId'),
-            customDeviceName: _readString(entry, 'customDeviceName'),
-            deviceName: _readString(entry, 'deviceName'),
             time: _readInt(entry, 'time'),
           ),
     ];

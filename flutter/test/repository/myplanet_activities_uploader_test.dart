@@ -99,6 +99,47 @@ void main() {
     );
   });
 
+  test('a usage row carries the stored customDeviceName, not a blank', () async {
+    // `addStats` writes `NetworkUtils.getCustomDeviceName()` onto every row.
+    // That is a preference, so only the Dart side can supply it — the platform
+    // channel used to hardcode an empty string here, which meant a user who had
+    // named their device uploaded rows that claimed they had not.
+    await prefs.setCustomDeviceName('front-desk tablet');
+    when(
+      () => api.postJsonObject(
+        MyPlanetActivitiesUploader.endpointFor(config),
+        any(),
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).thenAnswer(
+      (_) async => const NetworkSuccess<Map<String, dynamic>>({'ok': true}),
+    );
+    when(
+      () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer(
+      (_) async => const NetworkError<Map<String, dynamic>>(null, 'not found'),
+    );
+
+    await uploader.upload(user: user(), config: config);
+
+    final calls = verify(
+      () => api.postJsonObject(
+        MyPlanetActivitiesUploader.endpointFor(config),
+        captureAny(),
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).captured;
+    final syncDoc = calls.first as Map<String, dynamic>;
+    final merged = calls.last as Map<String, dynamic>;
+    // Both the doc-level field and the per-row field, so the two cannot drift
+    // apart again.
+    expect(syncDoc['customDeviceName'], 'front-desk tablet');
+    expect(
+      (merged['usages'] as List).single['customDeviceName'],
+      'front-desk tablet',
+    );
+  });
+
   test(
     'posts a fresh usages doc when none exists, then advances the cutoff',
     () async {
@@ -141,8 +182,12 @@ void main() {
       expect(merged['parentCode'], 'nation');
       expect(merged['createdOn'], 'planet-a');
       expect(merged['usages'], isA<List>());
-      // The fake returns one usage row.
-      expect((merged['usages'] as List).single['androidId'], 'android-id');
+      // The fake returns one usage row. Its `androidId` is the
+      // `getUniqueIdentifier()` composite, matching what `addStats` writes and
+      // what the "sync" doc above sends — not the bare ANDROID_ID, which would
+      // make the server see one device as two.
+      expect((merged['usages'] as List).single['androidId'], 'unique-id');
+      expect((merged['usages'] as List).single['deviceName'], 'TEST DEVICE');
 
       // The cutoff advanced so the next upload starts from "now".
       expect(prefs.lastUsageUploaded, greaterThan(0));
@@ -193,7 +238,7 @@ void main() {
     // One prior + one new.
     expect(usages, hasLength(2));
     expect(usages.first['androidId'], 'old');
-    expect(usages.last['androidId'], 'android-id');
+    expect(usages.last['androidId'], 'unique-id');
   });
 
   test('planetVersion is read from the cached versionDetail', () async {
@@ -322,9 +367,6 @@ class _FakeDeviceStats implements DeviceStats {
       totalUsed: 1000,
       version: 6342,
       versionName: '0.63.42',
-      androidId: 'android-id',
-      customDeviceName: '',
-      deviceName: 'TEST DEVICE',
       time: 2000,
     ),
   ];

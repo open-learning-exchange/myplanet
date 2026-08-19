@@ -1876,10 +1876,41 @@ added them to the *activity* serializers only, matching the scoped task. The
 `DeviceStats` seam now exists, so closing the gap is a matter of threading it
 through each remaining uploader's constructor and doc builder.
 
+### Fixed on merge: the identity fields on a usage row
+
+The `usages` rows this phase posts carried two wrong values, fixed when the branch was merged.
+Both came from the platform layer answering questions only Dart can answer:
+
+- **`androidId` was the bare `ANDROID_ID`.** `addStats` writes
+  `NetworkUtils.getUniqueIdentifier()` — the `androidId_buildId` composite — into a field it
+  merely *names* `androidId`. The doc-level serializer here got that right; the per-row one
+  passed through what the method channel supplied, which was the bare id. Since the server
+  aggregates per device on this value, the "sync" doc and the usage rows from the same handset
+  would have described two different devices.
+- **`customDeviceName` was always `""`.** It is a stored preference, so the Kotlin `MainActivity`
+  cannot read it — but `PlanetPrefs.customDeviceName` exists and the doc-level serializer already
+  used it. A user who had named their device uploaded rows claiming they had not.
+
+`device_stats.dart`'s own doc comment states the `androidId` distinction correctly, so this was a
+slip rather than a misunderstanding — and one the branch's test pinned (`expect(…['androidId'],
+'android-id')`), which is why it passed CI.
+
+The fix removes all three identity fields from `TabletUsageStats` and from the method channel's
+payload, leaving the row to carry only what the usage query measures. `MyPlanetActivitiesUploader`
+fills `androidId`, `customDeviceName`, and `deviceName` when it serializes, from the values it
+already holds. That is a structural fix rather than a value correction: the platform layer can no
+longer supply a plausible-looking wrong identity, because it no longer supplies one at all — which
+matters because, as `AGENTS.md` notes, the Kotlin side is not covered by the Flutter test gate.
+
+Two tests were added or corrected: the pinned assertion now expects the composite, and a new test
+covers the `customDeviceName` half at both the doc level and the row level so the two cannot drift
+apart again.
+
 ---
 
 **Last updated**: 2026-08-19 (Phase 41 complete — device/tablet usage telemetry
 (`myplanet_activities` upload) ported; `DeviceStats` seam + `MyPlanetActivitiesUploader` +
-dashboard/background wiring + device fields on activity serializers)
+dashboard/background wiring + device fields on activity serializers; the usage rows' `androidId`
+and `customDeviceName` fixed on merge)
 **Phase**: 41 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

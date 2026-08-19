@@ -109,10 +109,16 @@ class MainActivity : FlutterActivity() {
         }
 
     /// Port of `MyPlanet.getTabletUsages` -- a daily `UsageStatsManager` query
-    /// restricted to this app's own package, since [sinceMillis]. Each stat is
-    /// serialized to the field set `MyPlanet.addStats` writes. Returns an empty
-    /// list when the user has not granted `PACKAGE_USAGE_STATS` (the system
-    /// query simply yields nothing), matching the Kotlin.
+    /// restricted to this app's own package, since [sinceMillis]. Returns an
+    /// empty list when the user has not granted `PACKAGE_USAGE_STATS` (the
+    /// system query simply yields nothing), matching the Kotlin.
+    ///
+    /// Each row carries only what the query measures. `addStats`'s three
+    /// device-identity fields (`androidId`, `customDeviceName`, `deviceName`)
+    /// are filled by `MyPlanetActivitiesUploader` instead: `androidId` there is
+    /// the `getUniqueIdentifier()` composite rather than the bare ANDROID_ID,
+    /// and `customDeviceName` is a preference this layer cannot read. Reporting
+    /// them from here produced a plausible-looking wrong value.
     private fun tabletUsages(sinceMillis: Long): List<Map<String, Any>> {
         val usageStatsManager =
             getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
@@ -125,8 +131,6 @@ class MainActivity : FlutterActivity() {
         val packageName = packageName
         val version = versionCode()
         val versionNameValue = versionName() ?: ""
-        val androidIdValue = androidId()
-        val deviceNameValue = deviceName()
         return stats
             .orEmpty()
             .filter { it.packageName == packageName }
@@ -139,9 +143,6 @@ class MainActivity : FlutterActivity() {
                     "totalUsed" to (if (totalUsed > 0) totalUsed else 0),
                     "version" to version,
                     "versionName" to versionNameValue,
-                    "androidId" to androidIdValue,
-                    "customDeviceName" to "",
-                    "deviceName" to deviceNameValue,
                     "time" to Date().time,
                 )
             }
