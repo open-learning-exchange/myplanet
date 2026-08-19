@@ -60,7 +60,6 @@ import org.ole.planet.myplanet.utils.DialogUtils.showSnack
 import org.ole.planet.myplanet.utils.DialogUtils.showWifiSettingDialog
 import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utils.DownloadUtils.openDownloadService
-import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName
