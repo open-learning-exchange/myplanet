@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarEntry
@@ -54,7 +55,7 @@ class ActivitiesFragment : Fragment() {
         }
     }
 
-    private fun computeMonthlyCounts(
+    internal fun computeMonthlyCounts(
         logins: List<OfflineActivity>,
         startMillis: Long,
         endMillis: Long
@@ -92,16 +93,31 @@ class ActivitiesFragment : Fragment() {
         binding.chart.apply {
             description.isEnabled = false
             data = barData
-            xAxis.valueFormatter = object : ValueFormatter() {
-                override fun getFormattedValue(value: Float): String {
-                    return getMonth(value.toInt())
+            setFitBars(true)
+            setExtraOffsets(8f, 8f, 8f, 8f)
+            xAxis.apply {
+                position = XAxis.XAxisPosition.BOTTOM
+                setDrawGridLines(false)
+                granularity = 1f
+                this.textColor = textColor
+                valueFormatter = object : ValueFormatter() {
+                    override fun getFormattedValue(value: Float): String {
+                        return getMonth(value.toInt())
+                    }
                 }
             }
-            xAxis.textColor = textColor
-            axisLeft.textColor = textColor
-            axisRight.textColor = textColor
-            legend.textColor = textColor
+            axisLeft.apply {
+                axisMinimum = 0f
+                granularity = 1f
+                this.textColor = textColor
+            }
+            axisRight.isEnabled = false
+            legend.apply {
+                this.textColor = textColor
+                isWordWrapEnabled = true
+            }
             this.data.setValueTextColor(textColor)
+            this.data.setValueTextSize(10f)
             invalidate()
         }
     }

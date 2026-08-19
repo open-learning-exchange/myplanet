@@ -44,8 +44,9 @@ object FileUtils {
         return getExternalFilesDir(context)?.let { "$it/ole/" } ?: ""
     }
 
-    @Throws(IOException::class)
-    fun fullyReadFileToBytes(f: File): ByteArray = f.readBytes()
+    fun getLibraryFile(externalFilesDir: File, libraryId: String, address: String): File {
+        return File(externalFilesDir, "ole/$libraryId/$address")
+    }
 
     private fun createFilePath(context: Context, folder: String, filename: String): File {
         val baseDirectory = File(getExternalFilesDir(context), folder)
@@ -117,7 +118,7 @@ object FileUtils {
     }
 
     fun getFileExtension(address: String?): String {
-        return address?.let { File(it).extension } ?: ""
+        return address?.let { File(it).extension.lowercase() } ?: ""
     }
 
     fun installApk(activity: Context, file: String?) {
