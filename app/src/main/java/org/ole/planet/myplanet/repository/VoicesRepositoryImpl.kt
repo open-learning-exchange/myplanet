@@ -138,8 +138,15 @@ class VoicesRepositoryImpl @Inject constructor(
         return try {
             val array = news.parsedViewIn ?: gson.fromJson(viewIn, JsonArray::class.java)
             array?.any { element ->
-                element != null && element.isJsonObject &&
-                    JsonUtils.getString("_id", element.asJsonObject).equals(userIdentifier, ignoreCase = true)
+                if (element == null || !element.isJsonObject) return@any false
+                val obj = element.asJsonObject
+                val section = JsonUtils.getString("section", obj)
+                if (section.equals("community", ignoreCase = true)) {
+                    val id = JsonUtils.getString("_id", obj)
+                    id.isEmpty() || id == "@" || userIdentifier.isEmpty() || userIdentifier == "@" || id.equals(userIdentifier, ignoreCase = true)
+                } else {
+                    false
+                }
             } == true
         } catch (throwable: Throwable) {
             false
@@ -155,7 +162,11 @@ class VoicesRepositoryImpl @Inject constructor(
                             o.message == n.message &&
                             o.isEdited == n.isEdited &&
                             o.imageUrls?.toList() == n.imageUrls?.toList() &&
-                            o.images == n.images
+                            o.images == n.images &&
+                            o.viewIn == n.viewIn &&
+                            o.viewableBy == n.viewableBy &&
+                            o.viewableId == n.viewableId &&
+                            o.sharedBy == n.sharedBy
                 }
             }
             .map { allNews ->
@@ -170,7 +181,7 @@ class VoicesRepositoryImpl @Inject constructor(
                     } else {
                         null
                     }
-                }
+                }.sortedByDescending { it.sortDate }
             }.flowOn(dispatcherProvider.default)
     }
 
@@ -183,7 +194,11 @@ class VoicesRepositoryImpl @Inject constructor(
                             o.isEdited == n.isEdited &&
                             o.imageUrls?.toList() == n.imageUrls?.toList() &&
                             o.images == n.images &&
-                            o.labels?.toSet() == n.labels?.toSet()
+                            o.labels?.toSet() == n.labels?.toSet() &&
+                            o.viewIn == n.viewIn &&
+                            o.viewableBy == n.viewableBy &&
+                            o.viewableId == n.viewableId &&
+                            o.sharedBy == n.sharedBy
                 }
             }
             .flowOn(dispatcherProvider.default)
@@ -194,22 +209,35 @@ class VoicesRepositoryImpl @Inject constructor(
             val news = newsDao.getById(newsId)
             if (news != null) {
                 val viewInStr = news.viewIn
-                val array = if (viewInStr.isNullOrEmpty()) JsonArray() else gson.fromJson(viewInStr, JsonArray::class.java)
-                if (array != null && array.size() > 0) {
+                val array = try {
+                    if (viewInStr.isNullOrEmpty()) JsonArray() else gson.fromJson(viewInStr, JsonArray::class.java)
+                } catch (e: Exception) {
+                    null
+                } ?: JsonArray()
+
+                if (array.size() > 0) {
                     val firstElement = array.get(0)
                     if (firstElement.isJsonObject) {
                         val obj = firstElement.asJsonObject
-                        if (!obj.has("name")) {
+                        if (!obj.has("name") && teamName.isNotEmpty()) {
                             obj.addProperty("name", teamName)
                         }
                     }
                 }
 
+                val effectivePlanetCode = planetCode.ifEmpty { sharedPrefManager.getPlanetCode() }
+                val effectiveParentCode = parentCode.ifEmpty { sharedPrefManager.getParentCode() }
+                val communityId = if (effectivePlanetCode.isNotEmpty() || effectiveParentCode.isNotEmpty()) {
+                    "$effectivePlanetCode@$effectiveParentCode"
+                } else {
+                    ""
+                }
+
                 val ob = JsonObject()
                 ob.addProperty("section", "community")
-                ob.addProperty("_id", "$planetCode@$parentCode")
+                ob.addProperty("_id", communityId)
                 ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
-                array?.add(ob)
+                array.add(ob)
 
                 news.sharedBy = userId
                 news.viewIn = gson.toJson(array)
@@ -252,13 +280,24 @@ class VoicesRepositoryImpl @Inject constructor(
         } else {
             val filtered = JsonArray().apply {
                 ar.forEach { elem ->
-                    if (elem.isJsonObject && !elem.asJsonObject.has("sharedDate")) {
-                        add(elem)
+                    if (elem.isJsonObject) {
+                        val obj = elem.asJsonObject
+                        val isCommunity = JsonUtils.getString("section", obj).equals("community", ignoreCase = true)
+                        val hasSharedDate = obj.has("sharedDate")
+                        if (!isCommunity && !hasSharedDate) {
+                            add(elem)
+                        }
                     }
                 }
             }
-            news.viewIn = gson.toJson(filtered)
-            newsDao.upsert(news)
+            if (filtered.size() == 0) {
+                val idsToDelete = collectNewsAndReplies(newsId)
+                newsDao.deleteByIds(idsToDelete)
+            } else {
+                news.viewIn = gson.toJson(filtered)
+                news.sharedBy = ""
+                newsDao.upsert(news)
+            }
         }
     }
 
