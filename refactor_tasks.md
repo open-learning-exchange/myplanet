@@ -1,14 +1,14 @@
 # Merged Refactor Backlog
 
-78 tasks merged from 16 agent lists (161 raw). Every task below was verified against
+81 tasks merged from 18 agent lists (181 raw). Every task below was verified against
 the working tree at `9c54a03`; 30 raw tasks were dropped because their premise did not
-hold. Sorted by rating (1–100).
+hold (45 in total). Sorted by rating (1–100).
 
 Provenance is tagged `harness·model/prompt`, where *prompt* is `perf` (performance quick
 wins) or `repo` (repository boundaries). The eight agents: **claude·opus-5**,
 **codex·sol-5.6**, **copilot·grok-4.5**, **devin·swe-1.7**, **openhands·kimi-k3**,
 **openhands·glm-5.2**, **jules·gemini-3.1-pro** (perf) / **jules·gemini-3.6-flash** (repo),
-**qwen·coder-3.6**.
+**qwen·coder-3.6**, **openhands·minimax-m2.7**.
 
 **Rating** = 100 × (0.40·Evidence + 0.35·Impact + 0.25·risk-adjusted Feasibility).
 *Evidence* — did the agent cite a location, and did it survive inspection.
@@ -105,7 +105,7 @@ actually renders, and keep one `submitList` collector. Re-submitting `currentLis
 **not** a fix — `AsyncListDiffer` short-circuits on an identical reference.
 
 Files: `ui/surveys/SurveyFragment.kt`, `ui/surveys/SurveysAdapter.kt`, `ui/surveys/SurveysViewModel.kt`.
-Proposed by: **claude·opus-5/perf, devin·swe-1.7/repo, claude·opus-5/repo, openhands·kimi-k3/repo, codex·sol-5.6/perf, copilot·grok-4.5/perf, devin·swe-1.7/perf, openhands·kimi-k3/perf, copilot·grok-4.5/repo, jules·gemini-3.1-pro/perf, jules·gemini-3.6-flash/repo, openhands·glm-5.2/repo**
+Proposed by: **claude·opus-5/perf, devin·swe-1.7/repo, claude·opus-5/repo, openhands·kimi-k3/repo, codex·sol-5.6/perf, copilot·grok-4.5/perf, devin·swe-1.7/perf, openhands·minimax-m2.7/perf, openhands·kimi-k3/perf, copilot·grok-4.5/repo, jules·gemini-3.1-pro/perf, jules·gemini-3.6-flash/repo, openhands·glm-5.2/repo**
 
 ---
 
@@ -429,8 +429,13 @@ Compute `val sorted = list.filterNotNull().sortedByDescending { it.sortDate ?: 0
 the top and reuse it for all three consumers; drop the `toMutableList()`. Keep the `Trace`
 section so the improvement is measurable in a systrace.
 
-Files: `ui/voices/VoicesFragment.kt`.
-Proposed by: **claude·opus-5/perf**
+A second proposal targets the same function from the other side: move `sortNews` out of
+the fragment into `VoicesViewModel` entirely. That is the better long-term home and it
+subsumes this fix — do it that way if the VM change is affordable; otherwise collapse the
+passes in place.
+
+Files: `ui/voices/VoicesFragment.kt` (+ `ui/voices/VoicesViewModel.kt` if relocating).
+Proposed by: **claude·opus-5/perf, openhands·minimax-m2.7/repo**
 
 ---
 
@@ -872,6 +877,24 @@ Proposed by: **openhands·kimi-k3/repo**
 
 ---
 
+## 64 — `VoicesFragment.downloadResourcesForNews`: move the orchestration into the ViewModel
+
+`VoicesFragment:190-207` walks the news list, reaches into each item's `imagesArray`
+`JsonObject` to pull a `resourceId`, then launches on `viewLifecycleOwner.lifecycleScope`
+to call `resourcesRepository.getLibraryItemsByIds(resourceIds)` followed by
+`resourcesRepository.downloadResources(libraries)`. A fragment is parsing persisted JSON
+and sequencing two repository calls.
+
+Move the whole function into `VoicesViewModel` as `downloadReferencedResources(list)` so
+the coroutine runs in `viewModelScope` and the JSON extraction sits behind the VM. The
+fragment keeps only the call.
+
+Files: `ui/voices/VoicesFragment.kt`, `ui/voices/VoicesViewModel.kt`.
+**Conflict:** same file as the sort task above — sequence them.
+Proposed by: **devin·swe-1.7/repo, openhands·minimax-m2.7/repo**
+
+---
+
 ## 62 — `ResourcesFragment`: move the user lookup into `ResourcesViewModel`
 
 The fragment calls `userRepository.getUserModel()` directly at `:149` and `:217` to resolve
@@ -1296,6 +1319,49 @@ Cosmetic — ship only if a slot opens.
 
 Files: `ui/voices/VoicesFragment.kt`.
 Proposed by: **openhands·glm-5.2/repo**
+
+---
+
+## 45 — Move chat search and its precomputed index out of `ChatViewModel`
+
+`ChatViewModel` holds `allChats` and `precomputedChats` as mutable fields, rebuilds the
+normalised search index in `buildPrecomputedChats` (`:162`), and implements the ranking
+itself across `searchChats` (`:174`) and `fullConvoSearch` — four result buckets ordered by
+title-start / title-contains / body-start / body-contains. That is a search engine living
+in a ViewModel, with its corpus cached in two fields beside it.
+
+Move index construction and the search itself onto `ChatRepository` as suspend functions;
+the ViewModel keeps only the query intent and the result state.
+
+**Correction to the source proposal:** it justifies the move as "heavy ViewModel work", but
+the threading is already correct — `buildPrecomputedChats` runs inside
+`withContext(dispatcherProvider.default)` (`:145`) and `fullConvoSearch` wraps itself the
+same way. Judge this on state ownership, not on main-thread cost. The direction is also
+contestable: `isFullSearch`/`isQuestion` are UI toggles, so the repository would inherit two
+presentation flags. Settle that before starting — this is not a quick win.
+
+Files: `ui/chat/ChatViewModel.kt`, `repository/Chat*.kt`.
+Proposed by: **openhands·minimax-m2.7/repo**
+
+---
+
+## 38 — `setHasFixedSize(true)` on the RecyclerViews whose size doesn't track content
+
+Only five call sites exist app-wide (`SurveyFragment:134`, `LifeFragment:83`,
+`ChatDetailFragment:271`, `FeedbackDetailActivity:91`, and `SubmissionDetailFragment:74`
+which explicitly sets `false`). Every other list pays a layout pass on each adapter change
+that a fixed-size declaration would skip.
+
+The proposal names no files — "multiple fragments using RecyclerView" — so the work starts
+with identifying which lists actually qualify: the flag is only correct when the
+RecyclerView's own bounds cannot change as content changes, which rules out any list in a
+`wrap_content` container. Do that audit first and land a named file list, not a sweep.
+
+**Sequence late.** The obvious place to set this once is `BaseRecyclerFragment`, which is
+owned by open PR #15650 — a base-class edit here is a conflict magnet, and one other list in
+this round deferred the same idea for exactly that reason.
+
+Proposed by: **openhands·minimax-m2.7/perf**
 
 ---
 
