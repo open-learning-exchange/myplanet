@@ -4,9 +4,12 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -16,8 +19,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
+import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.SystemTimeProvider
 
@@ -25,6 +30,7 @@ import org.ole.planet.myplanet.utils.SystemTimeProvider
 class EventsRepositoryImplTest {
 
     private lateinit var meetupDao: MeetupDao
+    private lateinit var newsDao: NewsDao
     private lateinit var userRepository: UserRepository
     private lateinit var repository: EventsRepositoryImpl
 
@@ -35,8 +41,9 @@ class EventsRepositoryImplTest {
     @Before
     fun setup() {
         meetupDao = mockk(relaxed = true)
+        newsDao = mockk(relaxed = true)
         userRepository = mockk(relaxed = true)
-        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, userRepository, Gson())
+        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, newsDao, userRepository, Gson())
     }
 
     @Test
@@ -183,5 +190,57 @@ class EventsRepositoryImplTest {
 
         val result = repository.createMeetup(params)
         assertFalse(result)
+    }
+
+    @Test
+    fun getCommentsForMeetupFlow() = runTest {
+        val mockNews = News().apply {
+            id = "comment1"
+            replyTo = "meetup1"
+            message = "Meetup comment"
+        }
+        every { newsDao.getCommentsForParentFlow("meetup1") } returns flowOf(listOf(mockNews))
+
+        val result = repository.getCommentsForMeetupFlow("meetup1").first()
+        assertEquals(1, result.size)
+        assertEquals("comment1", result[0].id)
+        assertEquals("Meetup comment", result[0].message)
+    }
+
+    @Test
+    fun getCommentsForMeetupsFlow() = runTest {
+        val mockNews = News().apply {
+            id = "comment1"
+            replyTo = "meetup1"
+            message = "Meetup comment"
+        }
+        every { newsDao.getCommentsForParentsFlow(listOf("meetup1")) } returns flowOf(listOf(mockNews))
+
+        val result = repository.getCommentsForMeetupsFlow(listOf("meetup1")).first()
+        assertEquals(1, result.size)
+        assertEquals("comment1", result[0].id)
+    }
+
+    @Test
+    fun addComment() = runTest {
+        val user = UserEntity().apply {
+            id = "user1"
+            name = "Jane"
+            planetCode = "planet1"
+        }
+        val comment = repository.addComment("meetup1", "team1", "Meetup test comment", user)
+        assertEquals("meetup1", comment.replyTo)
+        assertEquals("team1", comment.viewableId)
+        assertEquals("teams", comment.viewableBy)
+        assertEquals("Meetup test comment", comment.message)
+        assertEquals("user1", comment.userId)
+        assertEquals("Jane", comment.userName)
+        coVerify { newsDao.upsert(any()) }
+    }
+
+    @Test
+    fun deleteComment() = runTest {
+        repository.deleteComment("comment1")
+        coVerify { newsDao.deleteById("comment1") }
     }
 }

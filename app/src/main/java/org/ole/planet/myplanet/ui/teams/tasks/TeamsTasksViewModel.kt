@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
@@ -127,5 +128,34 @@ class TeamsTasksViewModel @Inject constructor(
 
     suspend fun fetchAssigneeNames(assigneesToFetch: List<String>): Map<String, String> {
         return userRepository.getUsersByIds(assigneesToFetch).mapNotNull { user -> user.name?.let { user.id to it } }.toMap()
+    }
+
+    fun getCommentsForTaskFlow(taskId: String): Flow<List<News>> {
+        return teamsRepository.getCommentsForTaskFlow(taskId)
+    }
+
+    fun getCommentsForTasksFlow(taskIds: List<String>): Flow<List<News>> {
+        return teamsRepository.getCommentsForTasksFlow(taskIds)
+    }
+
+    fun addComment(taskId: String, teamId: String?, message: String) {
+        viewModelScope.launch {
+            val currentUser = userRepository.getUserModel()
+            teamsRepository.addComment(taskId, teamId, message, currentUser)
+        }
+    }
+
+    fun deleteComment(commentId: String) {
+        viewModelScope.launch {
+            teamsRepository.deleteComment(commentId)
+        }
+    }
+
+    suspend fun getCurrentUser(): UserEntity? {
+        return userRepository.getUserModel()
+    }
+
+    suspend fun isTeamLeader(teamId: String, userId: String?): Boolean {
+        return teamsRepository.isTeamLeader(teamId, userId)
     }
 }

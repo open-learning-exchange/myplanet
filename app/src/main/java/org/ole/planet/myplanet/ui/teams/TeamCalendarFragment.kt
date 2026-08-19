@@ -437,9 +437,42 @@ class TeamCalendarFragment : BaseTeamFragment() {
         recyclerView.layoutParams.height = cardHeight + extraHeight
         recyclerView.requestLayout()
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        meetupAdapter = EventsAdapter { meetup ->
+        val isNonMember = arguments?.getBoolean("fromLogin", false) == true || user?.id?.startsWith("guest") == true
+        meetupAdapter = EventsAdapter(nonTeamMember = isNonMember) { meetup ->
             showEditMeetupDialog(meetup)
         }
+        meetupAdapter?.setOnCommentActions(
+            onSend = { meetupId, message ->
+                viewModel.addComment(meetupId, teamId, message)
+            },
+            onDelete = { comment ->
+                AlertDialog.Builder(requireContext())
+                    .setTitle(R.string.delete)
+                    .setMessage(R.string.delete_comment_confirm)
+                    .setPositiveButton(R.string.delete) { _, _ ->
+                        comment.id?.let { viewModel.deleteComment(it) }
+                    }
+                    .setNegativeButton(R.string.cancel, null)
+                    .show()
+            }
+        )
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val currentUser = viewModel.getCurrentUser()
+            val isLeader = viewModel.isTeamLeader(teamId, currentUser?.id)
+            meetupAdapter?.setCurrentUser(currentUser?.id, isLeader)
+        }
+
+        val meetupIds = meetupList.mapNotNull { it.id }.filter { it.isNotBlank() }
+        if (meetupIds.isNotEmpty()) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewModel.getCommentsForMeetupsFlow(meetupIds).collect { comments ->
+                    val commentsMap = comments.groupBy { it.replyTo ?: "" }
+                    meetupAdapter?.updateComments(commentsMap)
+                }
+            }
+        }
+
         recyclerView.adapter = meetupAdapter
         meetupAdapter?.submitList(meetupList)
 

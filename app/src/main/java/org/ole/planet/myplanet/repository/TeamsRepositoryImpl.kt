@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
-import dagger.hilt.android.qualifiers.ApplicationContext
 import android.content.SharedPreferences
 import android.os.Build
 import android.text.TextUtils
@@ -10,6 +9,7 @@ import androidx.room.withTransaction
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.data.room.dao.CourseDao
 import org.ole.planet.myplanet.data.room.dao.CourseStepDao
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
+import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
@@ -37,6 +38,7 @@ import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.TeamResourceDto
@@ -78,6 +80,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val teamDao: TeamDao,
     private val courseDao: CourseDao,
     private val courseStepDao: CourseStepDao,
+    private val newsDao: NewsDao,
     private val appDatabase: AppDatabase,
 ) : TeamsRepository, TeamsSyncRepository {
     override fun getTasksFlow(userId: String?): Flow<List<TeamTask>> {
@@ -1425,6 +1428,43 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun markTeamLogUploaded(localId: String, remoteId: String, rev: String): Boolean {
         return teamLogDao.markUploaded(localId, remoteId, rev) != 0
+    }
+
+    override fun getCommentsForTaskFlow(taskId: String): Flow<List<News>> {
+        return newsDao.getCommentsForParentFlow(taskId).flowOn(dispatcherProvider.default)
+    }
+
+    override fun getCommentsForTasksFlow(taskIds: List<String>): Flow<List<News>> {
+        return newsDao.getCommentsForParentsFlow(taskIds).flowOn(dispatcherProvider.default)
+    }
+
+    override suspend fun addComment(parentId: String, teamId: String?, message: String, user: UserEntity?): News =
+        withContext(dispatcherProvider.io) {
+            val news = News().apply {
+                id = UUID.randomUUID().toString()
+                this.message = message
+                time = timeProvider.now()
+                createdOn = user?.planetCode
+                avatar = ""
+                docType = "message"
+                userName = user?.name
+                parentCode = user?.parentCode
+                messagePlanetCode = user?.planetCode
+                messageType = "comment"
+                sharedBy = ""
+                viewableBy = if (teamId.isNullOrEmpty()) "" else "teams"
+                viewableId = teamId ?: ""
+                userId = user?.id
+                replyTo = parentId
+                this.user = if (user != null) JsonUtils.gson.toJson(user.serialize()) else ""
+                imageUrls = emptyList()
+            }
+            newsDao.upsert(news)
+            news
+        }
+
+    override suspend fun deleteComment(commentId: String) = withContext(dispatcherProvider.io) {
+        newsDao.deleteById(commentId)
     }
 
     companion object {

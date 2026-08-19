@@ -1376,5 +1376,11 @@
     <string name="filter_pdfs">PDFs</string>
     <string name="downloaded">Downloaded</string>
     <string name="not_downloaded">Not downloaded</string>
+    <string name="delete">Delete</string>
+    <string name="comments_count">Comments (%d)</string>
+    <string name="add_a_comment">Add a comment…</string>
+    <string name="send_comment">Send comment</string>
+    <string name="comment_cannot_be_empty">Comment cannot be empty</string>
+    <string name="delete_comment_confirm">Are you sure you want to delete this comment?</string>
 
 </resources>
