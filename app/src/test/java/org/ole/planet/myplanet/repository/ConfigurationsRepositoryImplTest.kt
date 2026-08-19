@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
@@ -81,7 +82,8 @@ class ConfigurationsRepositoryImplTest {
             appDatabase,
             serverUrlMapper,
             dispatcherProvider,
-            TestTimeProvider()
+            TestTimeProvider(),
+            Gson()
         )
     }
 
