@@ -10,8 +10,11 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.runs
+import io.mockk.unmockkObject
 import io.mockk.verify
+import java.io.File
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.CoroutineScope
@@ -23,10 +26,11 @@ import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.AppDatabase
@@ -62,6 +66,9 @@ class ConfigurationsRepositoryImplTest {
         override val default = testDispatcher
         override val unconfined = testDispatcher
     }
+
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
 
     @Before
     fun setup() {
@@ -606,49 +613,67 @@ class ConfigurationsRepositoryImplTest {
     }
 
     @Test
-    fun `clearFirstRunStorageAndSetFlag sets firstRun to false when conditions are met`() = runTest(testDispatcher) {
+    fun `clearFirstRunStorageAndSetFlag wipes the ole directory and clears the flag`() = runTest(testDispatcher) {
+        val oleDir = temporaryFolder.newFolder("ole")
+        val looseFile = File(oleDir, "loose.txt").apply { writeText("stale") }
+        val nested = File(oleDir, "nested").apply { mkdirs() }
+        val nestedFile = File(nested, "deep.txt").apply { writeText("stale") }
+
         every { sharedPrefManager.getFirstRun() } returns true
         every { sharedPrefManager.setFirstRun(false) } just runs
 
-        io.mockk.mockkObject(FileUtils)
-        val mockFile = mockk<java.io.File>(relaxed = true)
-        every { FileUtils.getOlePath(context) } returns "mock_path"
-        every { mockFile.isDirectory } returns true
-        every { mockFile.listFiles() } returns arrayOf()
+        mockkObject(FileUtils)
+        every { FileUtils.getOlePath(context) } returns oleDir.absolutePath
 
-        // We will not mock File constructor as it causes StackOverflow.
-        // Instead, we just let it use the real File for the dummy path,
-        // since we just want to verify setFirstRun is called.
-        // File("mock_path").isDirectory will just return false on most systems,
-        // which skips the listFiles block. We mainly care about setFirstRun.
+        try {
+            repository.clearFirstRunStorageAndSetFlag(true)
 
-        repository.clearFirstRunStorageAndSetFlag(true)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        verify { sharedPrefManager.setFirstRun(false) }
-
-        io.mockk.unmockkObject(FileUtils)
+            assertFalse(looseFile.exists())
+            assertFalse(nestedFile.exists())
+            assertFalse(nested.exists())
+            assertTrue(oleDir.exists())
+            verify { sharedPrefManager.setFirstRun(false) }
+        } finally {
+            unmockkObject(FileUtils)
+        }
     }
 
     @Test
-    fun `getQueuedDownloads returns null when prefs is null`() = runTest(testDispatcher) {
+    fun `clearFirstRunStorageAndSetFlag does nothing without write permission`() = runTest(testDispatcher) {
+        every { sharedPrefManager.getFirstRun() } returns true
+
+        repository.clearFirstRunStorageAndSetFlag(false)
+
+        verify(exactly = 0) { sharedPrefManager.setFirstRun(any()) }
+    }
+
+    @Test
+    fun `clearFirstRunStorageAndSetFlag does nothing when it is not the first run`() = runTest(testDispatcher) {
+        every { sharedPrefManager.getFirstRun() } returns false
+
+        repository.clearFirstRunStorageAndSetFlag(true)
+
+        verify(exactly = 0) { sharedPrefManager.setFirstRun(any()) }
+    }
+
+    @Test
+    fun `getQueuedDownloads returns empty list when prefs is null`() = runTest(testDispatcher) {
         every { sharedPrefManager.getConcatenatedLinks() } returns null
 
-        val result = repository.getQueuedDownloads()
-        testDispatcher.scheduler.advanceUntilIdle()
+        assertTrue(repository.getQueuedDownloads().isEmpty())
+    }
 
-        assertNull(result)
+    @Test
+    fun `getQueuedDownloads returns empty list when prefs holds malformed JSON`() = runTest(testDispatcher) {
+        every { sharedPrefManager.getConcatenatedLinks() } returns "not json"
+
+        assertTrue(repository.getQueuedDownloads().isEmpty())
     }
 
     @Test
     fun `getQueuedDownloads returns decoded list when prefs has valid JSON`() = runTest(testDispatcher) {
         every { sharedPrefManager.getConcatenatedLinks() } returns "[\"link1\", \"link2\"]"
 
-        val result = repository.getQueuedDownloads()
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertEquals(2, result?.size)
-        assertEquals("link1", result?.get(0))
-        assertEquals("link2", result?.get(1))
+        assertEquals(listOf("link1", "link2"), repository.getQueuedDownloads())
     }
 }

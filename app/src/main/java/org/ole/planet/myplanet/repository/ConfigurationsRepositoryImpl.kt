@@ -383,13 +383,15 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getQueuedDownloads(): ArrayList<String>? {
+    override suspend fun getQueuedDownloads(): List<String> {
         return withContext(dispatcherProvider.io) {
             val storedJsonConcatenatedLinks = sharedPrefManager.getConcatenatedLinks()
-            if (storedJsonConcatenatedLinks != null) {
-                Json.decodeFromString(storedJsonConcatenatedLinks)
+            if (storedJsonConcatenatedLinks.isNullOrEmpty()) {
+                emptyList()
             } else {
-                null
+                runCatching {
+                    Json.decodeFromString<List<String>>(storedJsonConcatenatedLinks)
+                }.getOrDefault(emptyList())
             }
         }
     }

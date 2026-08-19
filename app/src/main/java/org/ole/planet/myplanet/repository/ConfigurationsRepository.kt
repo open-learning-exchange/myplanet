@@ -14,7 +14,7 @@ interface ConfigurationsRepository {
     fun getPlanetType(): String?
     suspend fun ensureServerUrlUpdated()
     suspend fun clearFirstRunStorageAndSetFlag(hasWritePermission: Boolean)
-    suspend fun getQueuedDownloads(): ArrayList<String>?
+    suspend fun getQueuedDownloads(): List<String>
 
     interface CheckVersionCallback {
         fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean)

@@ -532,8 +532,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     }
 
                     val links = configurationsRepository.getQueuedDownloads()
-                    if (!links.isNullOrEmpty()) {
-                        openDownloadService(context, links, true)
+                    if (links.isNotEmpty()) {
+                        openDownloadService(context, ArrayList(links), true)
                     }
 
                     val betaAutoDownload = prefData.getBetaAutoDownload()
