@@ -35,7 +35,7 @@ jobs:
           cache-read-only: false
 
       - name: restore project build dir
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             app/build

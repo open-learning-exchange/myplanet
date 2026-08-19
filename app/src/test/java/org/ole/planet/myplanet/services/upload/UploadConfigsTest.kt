@@ -8,12 +8,9 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.ole.planet.myplanet.data.room.dao.ApkLogDao
-import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
-import org.ole.planet.myplanet.data.room.dao.NewsLogDao
-import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
-import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
-import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
+import org.ole.planet.myplanet.repository.DiagnosticsRepository
+import org.ole.planet.myplanet.repository.ProgressRepository
+import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.NewsLog
 import org.ole.planet.myplanet.model.ResourceActivity
@@ -24,13 +21,10 @@ import org.ole.planet.myplanet.repository.UploadedItemResult
 
 class UploadConfigsTest {
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
-    private val searchActivityDao: SearchActivityDao = mockk(relaxed = true)
-    private val courseProgressDao: CourseProgressDao = mockk(relaxed = true)
-    private val newsLogDao: NewsLogDao = mockk(relaxed = true)
-    private val resourceActivityDao: ResourceActivityDao = mockk(relaxed = true)
-    private val submitPhotosDao: SubmitPhotosDao = mockk(relaxed = true)
+    private val voicesRepository: VoicesRepository = mockk(relaxed = true)
     private val uploadConfigs = UploadConfigs(
-        voicesRepository = mockk(relaxed = true),
+        context = mockk(relaxed = true),
+        voicesRepository = voicesRepository,
         submissionsRepository = mockk(relaxed = true),
         activitiesRepository = activitiesRepository,
         teamsSyncRepository = mockk<Lazy<TeamsSyncRepository>>(relaxed = true),
@@ -41,18 +35,14 @@ class UploadConfigsTest {
         ratingsRepository = mockk(relaxed = true),
         eventsRepository = mockk(relaxed = true),
         resourcesRepository = mockk(relaxed = true),
-        apkLogDao = mockk<ApkLogDao>(relaxed = true),
-        searchActivityDao = searchActivityDao,
-        courseProgressDao = courseProgressDao,
-        resourceActivityDao = resourceActivityDao,
-        submitPhotosDao = submitPhotosDao,
-        newsLogDao = newsLogDao
+        diagnosticsRepository = mockk<DiagnosticsRepository>(relaxed = true),
+        progressRepository = mockk<ProgressRepository>(relaxed = true)
     )
 
     @Test
     fun `SearchActivity config fetches pending Room rows from DAO`() = runTest {
         val pending = listOf(SearchActivity(id = "local-1", text = "math"))
-        coEvery { searchActivityDao.getPendingUploads() } returns pending
+        coEvery { activitiesRepository.getPendingSearchActivityUploads() } returns pending
 
         val result = uploadConfigs.SearchActivity.fetchPendingItems()
 
@@ -68,14 +58,14 @@ class UploadConfigsTest {
             response = mockk(relaxed = true)
         )
         coEvery {
-            searchActivityDao.markUploaded(localId = "local-1", remoteId = "remote-1", rev = "1-rev")
-        } returns 1
+            activitiesRepository.markSearchActivityUploaded(localId = "local-1", remoteId = "remote-1", rev = "1-rev")
+        } returns true
 
         val failures = uploadConfigs.SearchActivity.markUploaded(listOf(result))
 
         assertTrue(failures.isEmpty())
         coVerify {
-            searchActivityDao.markUploaded(localId = "local-1", remoteId = "remote-1", rev = "1-rev")
+            activitiesRepository.markSearchActivityUploaded(localId = "local-1", remoteId = "remote-1", rev = "1-rev")
         }
     }
 
@@ -88,8 +78,8 @@ class UploadConfigsTest {
             response = mockk(relaxed = true)
         )
         coEvery {
-            searchActivityDao.markUploaded(localId = "missing-local", remoteId = "remote-1", rev = "1-rev")
-        } returns 0
+            activitiesRepository.markSearchActivityUploaded(localId = "missing-local", remoteId = "remote-1", rev = "1-rev")
+        } returns false
 
         val failures = uploadConfigs.SearchActivity.markUploaded(listOf(result))
 
@@ -136,7 +126,7 @@ class UploadConfigsTest {
     @Test
     fun `ResourceActivities config fetches pending Room rows from DAO`() = runTest {
         val pending = listOf(ResourceActivity().apply { id = "resource-local-1" })
-        coEvery { resourceActivityDao.getPendingUploads() } returns pending
+        coEvery { activitiesRepository.getPendingResourceActivityUploads() } returns pending
 
         val result = uploadConfigs.ResourceActivities.fetchPendingItems()
 
@@ -146,7 +136,7 @@ class UploadConfigsTest {
     @Test
     fun `ResourceActivitiesSync config fetches pending sync Room rows from DAO`() = runTest {
         val pending = listOf(ResourceActivity().apply { id = "resource-sync-local-1"; type = "sync" })
-        coEvery { resourceActivityDao.getPendingSyncUploads() } returns pending
+        coEvery { activitiesRepository.getPendingResourceActivitySyncUploads() } returns pending
 
         val result = uploadConfigs.ResourceActivitiesSync.fetchPendingItems()
 
@@ -156,7 +146,7 @@ class UploadConfigsTest {
     @Test
     fun `NewsActivities config fetches pending Room rows from DAO`() = runTest {
         val pending = listOf(NewsLog().apply { id = "news-local-1" })
-        coEvery { newsLogDao.getPendingUploads() } returns pending
+        coEvery { voicesRepository.getPendingNewsLogUploads() } returns pending
 
         val result = uploadConfigs.NewsActivities.fetchPendingItems()
 
