@@ -76,10 +76,10 @@ class VoicesRepositoryNewsSyncTest {
             Gson(),
             Gson(),
             sharedPrefManager,
-            mockk<dagger.Lazy<UserRepository>>(relaxed = true),
             mockk<TeamNotificationDao>(relaxed = true),
             newsDao,
             mockk<MyLibraryDao>(relaxed = true),
+            mockk<org.ole.planet.myplanet.data.room.dao.NewsLogDao>(relaxed = true)
         )
     }
 
