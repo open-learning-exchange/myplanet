@@ -11,6 +11,7 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.ceil
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -323,11 +324,15 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override fun getRecentResources(userId: String): Flow<List<MyLibrary>> {
-        return myLibraryDao.getRecentForUserPatternFlow(userIdPattern(userId))
+        return myLibraryDao.getRecentForUserPatternFlow(userIdPattern(userId)).distinctUntilChanged { old, new ->
+            old.size == new.size && old.zip(new).all { (a, b) ->
+                a.id == b.id && a._rev == b._rev && a.resourceOffline == b.resourceOffline && a.userId == b.userId
+            }
+        }
     }
 
     override fun getPendingDownloads(userId: String): Flow<List<String>> {
-        return myLibraryDao.getPendingDownloadsForUserPatternFlow(userIdPattern(userId))
+        return myLibraryDao.getPendingDownloadsForUserPatternFlow(userIdPattern(userId)).distinctUntilChanged()
     }
 
     override suspend fun markAllResourcesOffline(isOffline: Boolean) {

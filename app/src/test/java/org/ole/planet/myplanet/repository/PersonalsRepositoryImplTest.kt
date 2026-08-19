@@ -289,4 +289,16 @@ class PersonalsRepositoryImplTest {
 
         assertEquals("Failed to upload personal resource: No response", result)
     }
+
+    @Test
+    fun `getPersonalResources deduplicates byte-identical flow emissions`() = runTest {
+        val p1 = Personal().apply { id = "p1"; _rev = "rev1"; isUploaded = true }
+        val p2 = Personal().apply { id = "p1"; _rev = "rev1"; isUploaded = true }
+        coEvery { personalDao.getByUserIdFlow("user1") } returns flowOf(listOf(p1), listOf(p2))
+
+        val emissions = mutableListOf<List<Personal>>()
+        repository.getPersonalResources("user1").collect { emissions.add(it) }
+
+        assertEquals(1, emissions.size)
+    }
 }

@@ -7,6 +7,7 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
@@ -50,7 +51,11 @@ class PersonalsRepositoryImpl @Inject constructor(
         if (userId.isNullOrBlank()) {
             return flowOf(emptyList())
         }
-        return personalDao.getByUserIdFlow(userId)
+        return personalDao.getByUserIdFlow(userId).distinctUntilChanged { old, new ->
+            old.size == new.size && old.zip(new).all { (a, b) ->
+                a.id == b.id && a._rev == b._rev && a.isUploaded == b.isUploaded
+            }
+        }
     }
 
     override suspend fun deletePersonalResource(id: String) {

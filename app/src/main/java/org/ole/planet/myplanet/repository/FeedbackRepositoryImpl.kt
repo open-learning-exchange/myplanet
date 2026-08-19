@@ -8,6 +8,7 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.UserEntity
@@ -70,9 +71,17 @@ class FeedbackRepositoryImpl @Inject constructor(
 
     override suspend fun getFeedback(userModel: UserEntity?): Flow<List<Feedback>> {
         return if (userModel?.isManager() == true) {
-            feedbackDao.getAllSortedFlow()
+            feedbackDao.getAllSortedFlow().distinctUntilChanged { old, new ->
+                old.size == new.size && old.zip(new).all { (a, b) ->
+                    a.id == b.id && a._rev == b._rev && a.status == b.status && a.isUploaded == b.isUploaded && a.messages == b.messages
+                }
+            }
         } else {
-            feedbackDao.getByOwnerFlow(userModel?.name)
+            feedbackDao.getByOwnerFlow(userModel?.name).distinctUntilChanged { old, new ->
+                old.size == new.size && old.zip(new).all { (a, b) ->
+                    a.id == b.id && a._rev == b._rev && a.status == b.status && a.isUploaded == b.isUploaded && a.messages == b.messages
+                }
+            }
         }
     }
 
