@@ -46,6 +46,7 @@ class ActivitiesRepositoryImplTest {
     private lateinit var resourceActivityDao: ResourceActivityDao
     private lateinit var offlineActivityDao: OfflineActivityDao
     private lateinit var removedLogDao: RemovedLogDao
+    private lateinit var searchActivityDao: org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 
     private lateinit var repository: ActivitiesRepositoryImpl
 
@@ -63,6 +64,7 @@ class ActivitiesRepositoryImplTest {
         resourceActivityDao = mockk(relaxed = true)
         offlineActivityDao = mockk(relaxed = true)
         removedLogDao = mockk(relaxed = true)
+        searchActivityDao = mockk(relaxed = true)
 
         repository = ActivitiesRepositoryImpl(
             context,
@@ -74,7 +76,8 @@ class ActivitiesRepositoryImplTest {
             courseActivityDao,
             resourceActivityDao,
             offlineActivityDao,
-            removedLogDao
+            removedLogDao,
+            searchActivityDao
         )
     }
 
