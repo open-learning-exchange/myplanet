@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_certificate_dialog"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:gravity="center_horizontal">
+
+        <!-- Close Button -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:id="@+id/btn_close_cert"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_gravity="end|top"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/baseline_close_24"
+                android:contentDescription="@string/close"
+                app:tint="#6D4C41" />
+        </FrameLayout>
+
+        <!-- Seal / Icon -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="40sp"
+            android:text="🎖️" />
+
+        <!-- Organization Name -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:letterSpacing="0.1"
+            android:text="@string/open_learning_exchange"
+            android:textAllCaps="true"
+            android:textColor="#8D6E63"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <!-- Certificate Title -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:letterSpacing="0.06"
+            android:text="@string/certificate_of_completion"
+            android:textColor="#3E2723"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="120dp"
+            android:layout_height="2dp"
+            android:layout_marginTop="8dp"
+            android:background="#C5A059" />
+
+        <!-- Presentation Subtitle -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/certificate_presented_to"
+            android:textColor="#5D4037"
+            android:textSize="13sp"
+            android:fontFamily="serif" />
+
+        <!-- Learner Name -->
+        <TextView
+            android:id="@+id/tv_dialog_learner_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="#2E1C0C"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            tools:text="Alex Morgan" />
+
+        <View
+            android:layout_width="200dp"
+            android:layout_height="1dp"
+            android:layout_marginTop="4dp"
+            android:background="#D7CCC8" />
+
+        <!-- Completion Statement -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:text="@string/certificate_completion_statement"
+            android:textColor="#5D4037"
+            android:textSize="13sp"
+            android:fontFamily="serif" />
+
+        <!-- Course Title -->
+        <TextView
+            android:id="@+id/tv_dialog_course_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:textColor="#1B5E20"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            tools:text="Community Health &amp; Hygiene" />
+
+        <!-- Details Row: Date & Certificate ID -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:orientation="vertical"
+            android:gravity="center_horizontal">
+
+            <TextView
+                android:id="@+id/tv_dialog_cert_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#795548"
+                android:textSize="12sp"
+                tools:text="Date Issued: August 19, 2026" />
+
+            <TextView
+                android:id="@+id/tv_dialog_cert_id"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="#8D6E63"
+                android:textSize="11sp"
+                tools:text="Certificate ID: OLE-CERT-C8921-U492" />
+        </LinearLayout>
+
+        <!-- Actions -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btn_share_cert"
+                style="@style/YellowButtons"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:drawableStart="@drawable/baseline_share_24"
+                android:drawablePadding="6dp"
+                android:background="@drawable/buttonyellow"
+                android:text="@string/share_certificate" />
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

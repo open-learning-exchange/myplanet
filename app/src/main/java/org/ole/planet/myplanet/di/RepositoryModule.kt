@@ -27,6 +27,8 @@ import org.ole.planet.myplanet.repository.EventsSyncWriter
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.repository.FeedbackRepositoryImpl
 import org.ole.planet.myplanet.repository.FeedbackSyncWriter
+import org.ole.planet.myplanet.repository.GamificationRepository
+import org.ole.planet.myplanet.repository.GamificationRepositoryImpl
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.HealthRepositoryImpl
 import org.ole.planet.myplanet.repository.LifeRepository
@@ -117,6 +119,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindFeedbackSyncWriter(impl: FeedbackRepositoryImpl): FeedbackSyncWriter
+
+    @Binds
+    @Singleton
+    abstract fun bindGamificationRepository(impl: GamificationRepositoryImpl): GamificationRepository
 
     @Binds
     @Singleton

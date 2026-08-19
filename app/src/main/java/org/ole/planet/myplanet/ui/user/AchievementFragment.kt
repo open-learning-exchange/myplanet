@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.core.view.isGone
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -25,6 +26,8 @@ import org.ole.planet.myplanet.databinding.RowAchievementBinding
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.gamification.BadgeCategory
+import org.ole.planet.myplanet.model.gamification.GamificationSummary
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
 import org.ole.planet.myplanet.utils.FileUtils
@@ -38,6 +41,7 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 class AchievementFragment : BaseContainerFragment() {
 
     private val viewModel: AchievementViewModel by viewModels()
+    private val gamificationViewModel: GamificationViewModel by viewModels()
 
     private var _binding: FragmentAchievementBinding? = null
     private val binding get() = _binding!!
@@ -45,26 +49,153 @@ class AchievementFragment : BaseContainerFragment() {
     var listener: OnHomeItemClickListener? = null
     private var achievementData: AchievementData? = null
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-    }
+    private lateinit var badgesAdapter: GamificationBadgesAdapter
+    private lateinit var certificatesAdapter: CourseCertificatesAdapter
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
         if (context is OnHomeItemClickListener) listener = context
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
         _binding = FragmentAchievementBinding.inflate(inflater, container, false)
-        binding.btnEdit.setOnClickListener {
-            if (listener != null) listener?.openCallFragment(EditAchievementFragment())
-        }
+        setupViews()
         return binding.root
     }
 
-    override fun onDestroyView() {
-        _binding = null
-        super.onDestroyView()
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        setupRealtimeSync()
+        setupGamificationObservers()
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            user = userRepository.getUserModel()
+            setupUserData()
+            val userId = user?.id ?: ""
+            val userName = user?.name ?: ""
+            gamificationViewModel.loadGamificationData(userId, userName)
+            achievementData = loadAchievementDataAsync()
+            updateAchievementUI()
+        }
+    }
+
+    private fun setupViews() {
+        binding.btnEdit.setOnClickListener {
+            listener?.openCallFragment(EditAchievementFragment())
+        }
+
+        // Tab switcher
+        binding.toggleTabs.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                when (checkedId) {
+                    R.id.btn_tab_gamification -> {
+                        binding.llGamificationHub.visibility = View.VISIBLE
+                        binding.llPortfolio.visibility = View.GONE
+                    }
+                    R.id.btn_tab_portfolio -> {
+                        binding.llGamificationHub.visibility = View.GONE
+                        binding.llPortfolio.visibility = View.VISIBLE
+                    }
+                }
+            }
+        }
+
+        // Setup Gamification Badges Recycler
+        badgesAdapter = GamificationBadgesAdapter()
+        binding.rvBadges.layoutManager = LinearLayoutManager(requireContext())
+        binding.rvBadges.adapter = badgesAdapter
+
+        // Setup Course Certificates Recycler
+        certificatesAdapter = CourseCertificatesAdapter { cert ->
+            val dialog = CertificateDialogFragment.newInstance(cert)
+            dialog.show(childFragmentManager, "CertificateDialog")
+        }
+        binding.rvCertificates.layoutManager = LinearLayoutManager(requireContext())
+        binding.rvCertificates.adapter = certificatesAdapter
+
+        // Setup Category Filter Chips
+        binding.chipGroupBadgeCategories.setOnCheckedStateChangeListener { _, checkedIds ->
+            val category = when (checkedIds.firstOrNull()) {
+                R.id.chip_cat_courses -> BadgeCategory.COURSES
+                R.id.chip_cat_streaks -> BadgeCategory.STREAKS
+                R.id.chip_cat_teams -> BadgeCategory.TEAMS
+                R.id.chip_cat_resources -> BadgeCategory.RESOURCES
+                R.id.chip_cat_exams -> BadgeCategory.EXAMS
+                else -> BadgeCategory.ALL
+            }
+            gamificationViewModel.setCategory(category)
+        }
+    }
+
+    private fun setupGamificationObservers() {
+        collectWhenStarted(gamificationViewModel.gamificationSummary) { summary ->
+            summary?.let { updateGamificationUI(it) }
+        }
+
+        collectWhenStarted(gamificationViewModel.filteredBadges) { badges ->
+            badgesAdapter.submitList(badges)
+        }
+    }
+
+    private fun updateGamificationUI(summary: GamificationSummary) {
+        val streak = summary.streakInfo.currentStreak
+        binding.tvStreakCount.text = if (streak == 1) {
+            getString(R.string.day_streak, 1)
+        } else {
+            getString(R.string.days_streak, streak)
+        }
+
+        binding.tvStreakLongest.text = getString(R.string.longest_streak, summary.streakInfo.longestStreak)
+
+        if (summary.streakInfo.isActiveToday) {
+            binding.tvStreakActiveToday.text = getString(R.string.active_today)
+            binding.tvStreakActiveToday.setBackgroundResource(R.drawable.badge_background)
+            binding.tvStreakMessage.text = getString(R.string.streak_active_encouragement)
+        } else {
+            binding.tvStreakActiveToday.text = getString(R.string.not_active_today)
+            binding.tvStreakActiveToday.setBackgroundResource(R.drawable.rounded_corner_bg)
+            binding.tvStreakMessage.text = getString(R.string.streak_encouragement)
+        }
+
+        binding.tvStatBadges.text = "${summary.unlockedBadgesCount}/${summary.totalBadgesCount}"
+        binding.tvStatCourses.text = "${summary.completedCoursesCount}"
+        binding.tvStatResources.text = "${summary.resourcesReadCount}"
+        binding.tvStatTasks.text = "${summary.tasksCompletedCount}"
+
+        binding.tvBadgesUnlockedStat.text = getString(
+            R.string.badges_unlocked_stat,
+            summary.unlockedBadgesCount,
+            summary.totalBadgesCount
+        )
+
+        certificatesAdapter.submitList(summary.certificates)
+        if (summary.certificates.isEmpty()) {
+            binding.tvEmptyCertificates.visibility = View.VISIBLE
+            binding.rvCertificates.visibility = View.GONE
+        } else {
+            binding.tvEmptyCertificates.visibility = View.GONE
+            binding.rvCertificates.visibility = View.VISIBLE
+        }
+    }
+
+    private fun setupUserData() {
+        ImageUtils.loadProfileImage(user?.userImage, binding.imageView, 200)
+        val fullName = listOfNotNull(user?.firstName, user?.middleName, user?.lastName)
+            .filter { it.isNotBlank() }
+            .joinToString(" ")
+
+        binding.tvName.text = if (fullName.isBlank()) user?.name ?: "" else fullName
+    }
+
+    private fun setupRealtimeSync() {
+        collectWhenStarted(viewModel.achievementUpdates) {
+            refreshAchievementData()
+            gamificationViewModel.refresh()
+        }
     }
 
     private fun refreshAchievementData() {
@@ -95,32 +226,6 @@ class AchievementFragment : BaseContainerFragment() {
         }
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        setupRealtimeSync()
-        viewLifecycleOwner.lifecycleScope.launch {
-            user = userRepository.getUserModel()
-            setupUserData()
-            achievementData = loadAchievementDataAsync()
-            updateAchievementUI()
-        }
-    }
-
-    private fun setupUserData() {
-        ImageUtils.loadProfileImage(user?.userImage, binding.imageView, 200)
-        val fullName = listOfNotNull(user?.firstName, user?.middleName, user?.lastName)
-            .filter { it.isNotBlank() }
-            .joinToString(" ")
-
-        binding.tvName.text = if (fullName.isBlank()) user?.name ?: "" else fullName
-    }
-
-    private fun setupRealtimeSync() {
-        collectWhenStarted(viewModel.achievementUpdates) {
-            refreshAchievementData()
-        }
-    }
-
     private fun setupAchievementHeader(a: AchievementData) {
         binding.tvGoals.text = a.goals.ifBlank { getString(R.string.no_goal_added) }
         binding.tvPurpose.text = a.purpose.ifBlank { getString(R.string.no_purpose_added) }
@@ -146,20 +251,20 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun createAchievementView(ob: JsonObject, resourcesMap: Map<String, MyLibrary>): View {
-        val binding = RowAchievementBinding.inflate(LayoutInflater.from(requireContext()))
+        val rowBinding = RowAchievementBinding.inflate(LayoutInflater.from(requireContext()))
         val desc = getString("description", ob)
-        binding.tvDescription.text = desc
-        binding.tvDate.text = try {
+        rowBinding.tvDescription.text = desc
+        rowBinding.tvDate.text = try {
             val epochMillis = Instant.parse(getString("date", ob)).toEpochMilli()
             getFormattedDateWithTime(epochMillis)
         } catch (e: Exception) {
             getString("date", ob)
         }
-        binding.tvTitle.text = getString("title", ob)
+        rowBinding.tvTitle.text = getString("title", ob)
         val link = getString("link", ob)
         if (link.isNotEmpty()) {
-            binding.tvLink.visibility = View.VISIBLE
-            binding.tvLink.text = link
+            rowBinding.tvLink.visibility = View.VISIBLE
+            rowBinding.tvLink.text = link
         }
 
         val resourceIds = ob.getAsJsonArray("resources")?.mapNotNull {
@@ -169,20 +274,20 @@ class AchievementFragment : BaseContainerFragment() {
         val libraries = resourceIds.mapNotNull { resourcesMap[it] }
 
         if (desc.isNotEmpty() && libraries.isNotEmpty()) {
-            binding.llRow.setOnClickListener { toggleDescription(binding) }
-            binding.flexboxResources.removeAllViews()
-            libraries.forEach { binding.flexboxResources.addView(createResourceButton(it)) }
+            rowBinding.llRow.setOnClickListener { toggleDescription(rowBinding) }
+            rowBinding.flexboxResources.removeAllViews()
+            libraries.forEach { rowBinding.flexboxResources.addView(createResourceButton(it)) }
         } else {
-            binding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
+            rowBinding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
         }
-        return binding.root
+        return rowBinding.root
     }
 
-    private fun toggleDescription(binding: RowAchievementBinding) {
-        binding.llDesc.visibility = if (binding.llDesc.isGone) View.VISIBLE else View.GONE
-        binding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(
+    private fun toggleDescription(rowBinding: RowAchievementBinding) {
+        rowBinding.llDesc.visibility = if (rowBinding.llDesc.isGone) View.VISIBLE else View.GONE
+        rowBinding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(
             0, 0,
-            if (binding.llDesc.isGone) R.drawable.ic_down else R.drawable.ic_up, 0
+            if (rowBinding.llDesc.isGone) R.drawable.ic_down else R.drawable.ic_up, 0
         )
     }
 
@@ -238,5 +343,8 @@ class AchievementFragment : BaseContainerFragment() {
         }
     }
 
-
+    override fun onDestroyView() {
+        _binding = null
+        super.onDestroyView()
+    }
 }
