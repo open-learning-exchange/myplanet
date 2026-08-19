@@ -1,6 +1,7 @@
 # Agent Scoring — Refactor Task Extraction Round
 
-27 lists (9 agents × 3 prompts) · 271 raw tasks · 209 survived verification · merged to 127 shipped.
+28 lists · 281 raw tasks · 215 survived verification · merged to 128 shipped.
+(9 agents × 3 prompts, plus a second `perf2` run of Jules on a different model — see the A/B below.)
 
 ## Agents
 
@@ -65,17 +66,21 @@ Three derived scores: **raw** (Σ shares), **per-submitted** (raw ÷ tasks submi
 | Agent | Submitted | Dropped | Raw pts | Per-submitted | Quality pts | Quality/submitted |
 |---|---:|---:|---:|---:|---:|---:|
 | **claude·opus-5** | 31 | 0 | **21.19** | **0.684** | **15.26** | **0.492** |
-| openhands·kimi-k3 | 30 | 2 | 19.73 | 0.658 | 13.33 | **0.444** |
+| openhands·kimi-k3 | 30 | 2 | 19.71 | 0.657 | 13.32 | **0.444** |
 | codex·sol-5.6 | 30 | 0 | 19.58 | 0.653 | 12.86 | 0.429 |
 | openhands·glm-5.2 | 30 | 0 | 19.00 | 0.633 | 11.49 | 0.383 |
-| devin·swe-1.7 | 30 | 0 | 18.33 | 0.611 | 11.54 | 0.385 |
+| devin·swe-1.7 | 30 | 0 | 18.23 | 0.608 | 11.48 | 0.383 |
 | copilot·grok-4.5 | 30 | 0 | 15.10 | 0.503 | 9.51 | 0.317 |
-| jules·gemini-3.1/3.6 | 30 | 15 | 6.46 | 0.215 | 4.30 | 0.143 |
+| jules·gemini (4 lists) | 40 | 19 | 7.58 | 0.190 | 4.98 | 0.125 |
 | openhands·minimax-m2.7 | 30 | 20 | 6.14 | 0.205 | 3.21 | 0.107 |
 | qwen·coder-3.6 | 30 | 25 | 1.46 | 0.049 | 0.64 | 0.021 |
-| **Total** | **271** | **62** | **127.00** | — | **72.14** | — |
+| **Total** | **281** | **66** | **128.00** | — | **72.75** | — |
 
-Point-sum check: 21.19 + 19.73 + 19.58 + 19.00 + 18.33 + 15.10 + 6.46 + 6.14 + 1.46 = **127.00** = shipped task count ✔
+Point-sum check: 21.19 + 19.71 + 19.58 + 19.00 + 18.23 + 15.10 + 7.58 + 6.14 + 1.46 = **128.00** = shipped task count ✔
+
+Jules is now four lists across two models, so its aggregate row mixes them and its
+per-submitted figure **fell** (0.215 → 0.190) despite gaining points: the extra run added ten
+submissions for 1.12 net points. Read the A/B below instead of the aggregate row.
 
 **copilot·grok-4.5 carries an asterisk.** Six of its ten `perf2` tasks are near-verbatim
 copies of an earlier list and earn zero — see *Contamination* below. Scored as if
@@ -103,10 +108,12 @@ Raw points per prompt (per-submitted in brackets):
 | openhands·glm-5.2 | 6.37 (0.637) | 6.35 (0.635) | **6.28 (0.628)** | flat |
 | devin·swe-1.7 | 3.74 (0.374) | **8.54 (0.854)** | 6.05 (0.605) | repo |
 | copilot·grok-4.5 | 8.25 (0.825) | 3.40 (0.340) | 3.45 (0.345)\* | perf |
-| jules (3.1 Pro / 3.6 Flash / 3.1 Pro) | 1.44 (0.144) | 0.26 (0.026) | **4.76 (0.476)** | **perf2** |
+| jules — 3.1 Pro (perf2) | — | — | **3.67 (0.367)** | — |
+| jules — 3.6 Flash (perf2) | — | — | 2.26 (0.226) | — |
+| jules — rounds 1–2 (3.1 Pro / 3.6 Flash) | 1.42 (0.142) | 0.24 (0.024) | — | — |
 | openhands·minimax-m2.7 | 1.09 (0.109) | 1.70 (0.170) | **3.35 (0.335)** | **perf2** |
 | qwen·coder-3.6 | 0.19 (0.019) | 1.27 (0.127) | 0.00 (0.000) | repo |
-| **Total** | **42.31 (0.470)** | 37.18 (0.409) | **47.51 (0.528)** | **perf2** |
+| **Total** | **42.29 (0.470)** | 37.16 (0.408) | **48.55 (0.485)** | **perf2** |
 
 \* copilot's perf2 figure excludes six uncredited verbatim copies.
 
@@ -115,10 +122,14 @@ most — it has both the highest yield per submitted task (0.528) *and* the lowe
 
 | | perf | repo | perf2 |
 |---|---:|---:|---:|
-| Submitted | 90 | 91 | 90 |
-| Dropped | 23 (25.6%) | 22 (24.2%) | **17 (18.9%)** |
-| Points | 42.31 | 37.18 | **47.51** |
-| Per submitted | 0.470 | 0.409 | **0.528** |
+| Submitted | 90 | 91 | 100 |
+| Dropped | 23 (25.6%) | 22 (24.2%) | **21 (21.0%)** |
+| Points | 42.29 | 37.16 | **48.55** |
+| Per submitted | 0.470 | 0.408 | **0.485** |
+
+(perf2 now carries 10 lists because Jules ran it twice. On the nine-list basis it was
+0.528 per submitted at an 18.9% drop rate; the Flash re-run is what pulled both figures
+toward the middle.)
 
 The lift is concentrated at the bottom of the table. The six strong agents were roughly
 prompt-insensitive (kimi and glm are flat to three decimal places across all three), but
@@ -230,7 +241,63 @@ Adding minimax narrowed the gap (perf led 0.537 vs 0.433 per submitted task acro
 0.486 vs 0.409 across 9) without changing the ordering. It also lifted both drop rates by
 ~6 points, because 15 of its 20 tasks failed verification.
 
-### The Jules model comparison
+### The clean model A/B: Gemini 3.1 Pro vs 3.6 Flash on `perf2`
+
+Jules ran the `perf2` work-order prompt **twice on different models**, same harness, same
+repo, same base commit `9c54a03`, same template. This is the only controlled model
+comparison in the benchmark — the round-1 pairing was confounded by different prompts.
+
+| | **Gemini 3.1 Pro** | **Gemini 3.6 Flash** |
+|---|---:|---:|
+| Submitted | 10 | 10 |
+| Dropped | **2** | 4 |
+| Raw points | **3.67** | 2.26 |
+| Per submitted | **0.367** | 0.226 |
+| Unique surviving findings | **2** | 1 |
+| Distinct defects targeted | **9** | 5 |
+
+Pro is ~62% ahead on points and half the drop rate. But the shape of the gap matters more
+than the size.
+
+**Line-reference accuracy was identical — both were perfect.** Every location Flash cited
+verified: `RequestsViewModel:39`, `AndroidDecrypter:49`, `TransactionSyncManager:326`,
+`CourseRatingUtils:22,46`, `EventsDetailFragment:190`, `TeamCalendarFragment:202`,
+`MyHealthFragment:90`, `AddHealthActivity:51`, `EditAchievementFragment:325,415`,
+`BecomeMemberActivity:60`. Flash reads the codebase correctly. It does not hallucinate.
+
+**The gap is coverage collapse.** Six of Flash's ten tasks are the *same mechanical edit* —
+replace `String.format("%0Nd…")` with `padStart` interpolation — applied to six different
+files. Pro's ten tasks target nine distinct defects across nine subsystems. Flash found one
+pattern and spent 60% of its budget copying it sideways.
+
+**And four of those six were churn.** `MyHealthFragment`, `AddHealthActivity`,
+`EditAchievementFragment` and `BecomeMemberActivity` already call
+`String.format(Locale.US, …)`. Rewriting an already-locale-pinned format call as `padStart`
+produces byte-identical output, fixes nothing, and the claimed "format parsing overhead" is
+irrelevant in a date-picker callback that fires once per user tap. Those four are dropped.
+
+**The list contradicts itself.** Flash's task 4 argues that `Locale.getDefault()` in
+`CourseRatingUtils` is a bug and the fix is `String.format(Locale.US, …)`. Tasks 7–10 then
+argue that `String.format(Locale.US, …)` should be removed. It applied a correct rule and its
+own inverse in the same document, four tasks apart, without noticing.
+
+**Flash's one unique find is genuinely good**, though, and it is the deeper version of Pro's:
+`CourseRatingUtils` formats `%.2f` with the default locale, so French and Spanish devices —
+both shipped in this app — render `4,25` instead of `4.25`. A changed decimal separator
+alters the *meaning* of the string, not just its digits. Pro found the `%02d` digit-set
+variant; Flash found the separator variant. Ship both.
+
+**Cross-run overlap confirms the memory store.** Four of ten tasks cite identical sites in
+both runs (`RequestsViewModel:39`, `AndroidDecrypter:49`, `TransactionSyncManager:326`,
+`EventsDetailFragment:190`). Two independent passes over a ~500-file repo do not converge on
+the same four lines by chance; both runs are drawing on the same persisted findings.
+
+**Read:** for this task, Flash is not a cheaper Pro — it is a model that locates evidence just
+as well and then fails at *deciding what is worth doing*, which is most of the job. Its
+failure is unfalsifiable-looking (every claim is technically true about a real line) and so is
+more expensive to review than an obviously-wrong list.
+
+### The earlier, confounded model comparison
 
 The one clean model-vs-model datapoint in the round, same harness, same repo, adjacent prompts:
 

@@ -1,8 +1,8 @@
 # Merged Refactor Backlog
 
-127 tasks merged from 27 agent lists (271 raw). Every task below was verified against
+128 tasks merged from 28 agent lists (281 raw). Every task below was verified against
 the working tree at `9c54a03`; 30 raw tasks were dropped because their premise did not
-hold (62 in total). Sorted by rating (1–100).
+hold (66 in total). Sorted by rating (1–100).
 
 Provenance is tagged `harness·model/prompt`, where *prompt* is `perf` (performance quick
 wins), `repo` (repository boundaries), or `perf2` (the structured work-order round —
@@ -400,7 +400,7 @@ Proposed by: **claude·opus-5/perf2, openhands·kimi-k3/perf2, openhands·glm-5.
 Swap the call. Two lines.
 
 Files: `ui/teams/members/RequestsViewModel.kt`. **Conflict:** two other lists in this round flag this file as owned by an open PR — verify before starting.
-Proposed by: **jules·gemini-3.1-pro/perf2**
+Proposed by: **jules·gemini-3.1-pro/perf2, jules·gemini-3.6-flash/perf2**
 
 ---
 
@@ -631,7 +631,7 @@ Collapse `clearPreferences()` into one atomic `pref.edit { clear(); tempStorage.
 and switch the checkpoint removal to `.apply()`.
 
 Files: `services/SharedPrefManager.kt`, `services/sync/TransactionSyncManager.kt`.
-Proposed by: **openhands·kimi-k3/perf, jules·gemini-3.1-pro/perf, jules·gemini-3.6-flash/repo, jules·gemini-3.1-pro/perf2**
+Proposed by: **openhands·kimi-k3/perf, jules·gemini-3.1-pro/perf, jules·gemini-3.6-flash/repo, jules·gemini-3.1-pro/perf2, jules·gemini-3.6-flash/perf2**
 
 ---
 
@@ -1022,12 +1022,19 @@ Proposed by: **openhands·glm-5.2/perf2, openhands·kimi-k3/perf2**
 
 ## 66 — Add an explicit `Locale` to the `%02d` time formatting
 
-`TimeUtils:181` and `EventsDetailFragment:190` (`String.format("%02d:%02d", hour, minute)`) format numbers with the default locale. This app ships Arabic and Nepali translations, both of which have locale digit sets — so the rendered time can come out in non-ASCII digits, and any code parsing it back breaks.
+Three sites format clock digits without pinning a locale: `TimeUtils:181`,
+`EventsDetailFragment:190` (`String.format("%02d:%02d", hour, minute)`) and
+`TeamCalendarFragment:202` (`String.format(Locale.getDefault(), "%02d:%02d", …)`). This app
+ships Arabic and Nepali translations, both of which carry locale digit sets — so the rendered
+time can come out in non-ASCII digits, and anything parsing it back breaks.
 
-Pass `Locale.US` explicitly at both sites. This is a correctness fix, not a style preference.
+Pass `Locale.US` explicitly at all three. (Zero-padded `padStart` interpolation is an equally
+correct alternative for pure digits; pick one and apply it consistently.) This is a
+correctness fix, not a style preference.
 
-Files: `utils/TimeUtils.kt`, `ui/events/EventsDetailFragment.kt`.
-Proposed by: **jules·gemini-3.1-pro/perf2**
+Files: `utils/TimeUtils.kt`, `ui/events/EventsDetailFragment.kt`, `ui/teams/TeamCalendarFragment.kt`.
+**Conflict:** two other lists flag `TeamCalendarFragment` as open-PR territory (#15158/#15266) — split that site out if it is still owned.
+Proposed by: **jules·gemini-3.1-pro/perf2, jules·gemini-3.6-flash/perf2**
 
 ---
 
@@ -1332,6 +1339,23 @@ Proposed by: **openhands·kimi-k3/perf**
 
 ---
 
+## 62 — `CourseRatingUtils`: format the average rating with a fixed locale
+
+`:22` and `:46` both read `String.format(Locale.getDefault(), "%.2f", averageRating ?: 0f)`.
+`%.2f` under a locale whose decimal separator is a comma renders `4,25` instead of `4.25` —
+and this app ships French and Spanish translations (`values-fr`, `values-es`), both of which
+do exactly that. Any code or test that parses the rendered string back, or compares it, breaks
+on those devices.
+
+Pass `Locale.US` at both sites. Same defect class as the `%02d` task below, different type
+specifier and a wider blast radius, because a decimal separator changes the *meaning* of the
+string rather than just its digits.
+
+Files: `utils/CourseRatingUtils.kt`.
+Proposed by: **jules·gemini-3.6-flash/perf2**
+
+---
+
 ## 62 — `ResourcesRepositoryImpl.getFilterFacets`: build the facets in one pass
 
 `:522-528` walks the full library list four separate times to assemble languages, subjects, mediums and levels. Facet rebuilds run whenever the resource filter opens and scale with catalog size.
@@ -1552,7 +1576,7 @@ Proposed by: **openhands·glm-5.2/perf2**
 Use a pre-computed lowercase hex `CharArray` and append two chars per byte. Mask with `0xFF` and index by nibble so output is byte-identical.
 
 Files: `utils/AndroidDecrypter.kt`, `utils/Sha256Utils.kt`.
-Proposed by: **devin·swe-1.7/perf2, jules·gemini-3.1-pro/perf2**
+Proposed by: **jules·gemini-3.1-pro/perf2, devin·swe-1.7/perf2, jules·gemini-3.6-flash/perf2**
 
 ---
 
