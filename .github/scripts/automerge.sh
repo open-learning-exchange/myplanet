@@ -6,12 +6,6 @@
 #   2. bump the version on the PR branch
 #   3. push, and wait for build + test on that prepared commit
 #   4. wait for $BASE to be settled and green, then squash merge
-#
-# Stop on the first failure. Both waits sit in front of step 4 so they
-# overlap: $BASE releases the previous merge while this PR builds.
-#
-# Runs from a copy outside the work tree -- it checks out PR branches.
-#
 set -euo pipefail
 
 REPO="${REPO:?}"
@@ -29,8 +23,11 @@ DRY_RUN="${DRY_RUN:-true}"
 MAX_MERGES="${MAX_MERGES:-0}"
 WAIT_TIMEOUT_MIN="${WAIT_TIMEOUT_MIN:-45}"
 USING_PAT="${USING_PAT:-false}"
+BASE_RERUN_ATTEMPTS="${BASE_RERUN_ATTEMPTS:-1}"
+case "$BASE_RERUN_ATTEMPTS" in *[!0-9]*|"") BASE_RERUN_ATTEMPTS=1 ;; esac
 
 RUN_APPEAR_TIMEOUT_SEC=300
+RERUN_START_TIMEOUT_SEC=180
 POLL_INTERVAL_SEC=20
 PR_SETTLE_TIMEOUT_SEC=120
 MERGE_RETRY_DELAYS='5 10 15'
@@ -52,6 +49,7 @@ last_base_sha=""
 MAX_REPREPARES=2
 reprep_pr=""
 reprep_n=0
+rerun_log=""
 
 pick_pr() {
     gh pr list \
@@ -107,7 +105,7 @@ runs_for() {
           | select(.path | startswith(".github/workflows/"))
           | select(.path != $self)
           | select(($run | length == 0) or ((.id | tostring) != $run))
-          | {name, status, conclusion} ]' <<<"$raw" 2>/dev/null || echo '[]'
+          | {id, name, status, conclusion} ]' <<<"$raw" 2>/dev/null || echo '[]'
 }
 
 runs_failed()  { jq '[.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")] | length' <<<"$1"; }
@@ -138,7 +136,7 @@ wait_for_runs() {
             if [ "$failed" -ne 0 ]; then
                 jq -r '.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral") | "    \(.conclusion)\t\(.name)"' <<<"$runs"
                 log "  $failed workflow(s) failed on ${sha:0:7}"
-                return 1
+                return 2
             fi
 
             pending=$(runs_pending "$runs")
@@ -181,6 +179,61 @@ wait_for_runs() {
             return 1
         fi
         sleep "$POLL_INTERVAL_SEC"
+    done
+}
+
+rerun_count_for() {
+    local id=$1 n=0 e
+    for e in $rerun_log; do
+        [ "$e" = "$id" ] && n=$((n + 1))
+    done
+    printf '%s\n' "$n"
+}
+
+wait_run_restarted() {
+    local id=$1 status deadline=$(( SECONDS + RERUN_START_TIMEOUT_SEC ))
+    while [ "$SECONDS" -lt "$deadline" ]; do
+        status=$(gh api "repos/$REPO/actions/runs/$id" --jq '.status' 2>/dev/null || echo '')
+        [ "$status" = 'completed' ] || return 0
+        sleep 5
+    done
+    log "  run $id still reads as completed ${RERUN_START_TIMEOUT_SEC}s after the re-run request"
+    return 1
+}
+
+rerun_failed_runs() {
+    local sha=$1 id name triggered=0
+    [ "$BASE_RERUN_ATTEMPTS" -gt 0 ] || return 1
+
+    while IFS=$'\t' read -r id name; do
+        [ -n "$id" ] || continue
+        if [ "$(rerun_count_for "$id")" -ge "$BASE_RERUN_ATTEMPTS" ]; then
+            log "  $name failed again after $BASE_RERUN_ATTEMPTS re-run(s) -- taking it as real"
+            continue
+        fi
+        if gh api -X POST "repos/$REPO/actions/runs/$id/rerun-failed-jobs" >/dev/null 2>&1 \
+           || gh api -X POST "repos/$REPO/actions/runs/$id/rerun" >/dev/null 2>&1; then
+            rerun_log="$rerun_log $id"
+            triggered=1
+            log "  re-running $name on ${sha:0:7} (run $id)"
+            wait_run_restarted "$id" || true
+        else
+            log "  could not re-run $name (run $id) -- does the token have actions: write?"
+        fi
+    done < <(jq -r '.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral") | "\(.id)\t\(.name)"' <<<"$(runs_for "$sha")")
+
+    [ "$triggered" -eq 1 ]
+}
+
+wait_base_green() {
+    local sha=$1 rc=0
+    while :; do
+        wait_for_runs "$sha" '' pass && return 0
+        rc=$?
+        [ "$rc" -eq 2 ] || return 1
+        [ "$BASE_RERUN_ATTEMPTS" -gt 0 ] \
+            && log "  ${sha:0:7} passed build and test as a PR head minutes ago -- treating this as flaky"
+        rerun_failed_runs "$sha" || return 1
     done
 }
 
@@ -283,8 +336,10 @@ while :; do
     fi
 
     if [ -n "$last_base_sha" ] && base_already_failed "$last_base_sha"; then
-        summary "| | | **stopped**: \`$BASE\` red after the last merge |"
-        exit 1
+        if ! wait_base_green "$last_base_sha"; then
+            summary "| | | **stopped**: \`$BASE\` red after the last merge |"
+            exit 1
+        fi
     fi
 
     git fetch --quiet origin "$BASE"
@@ -395,7 +450,7 @@ while :; do
 
     if [ "$REQUIRE_CHECKS" = 'true' ]; then
         git fetch --quiet origin "$BASE"
-        wait_for_runs "$(git rev-parse "origin/$BASE")" '' pass \
+        wait_base_green "$(git rev-parse "origin/$BASE")" \
             || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: \`$BASE\` is red |"; exit 1; }
 
         if publish_failed "$(git rev-parse "origin/$BASE")"; then
