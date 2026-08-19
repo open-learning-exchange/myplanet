@@ -41,6 +41,10 @@ annotation class StandardHttpClient
 @Retention(AnnotationRetention.BINARY)
 annotation class StandardRetrofit
 
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class PlainGson
+
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
@@ -56,7 +60,14 @@ object NetworkModule {
             .serializeNulls()
             .create()
     }
-    
+
+    @Provides
+    @Singleton
+    @PlainGson
+    fun providePlainGson(): Gson {
+        return Gson()
+    }
+
     private const val MAX_REQUESTS_PER_HOST = 20
 
     private fun buildOkHttpClient(connect: Long, read: Long, write: Long, retryInterceptor: RetryInterceptor? = null): OkHttpClient {

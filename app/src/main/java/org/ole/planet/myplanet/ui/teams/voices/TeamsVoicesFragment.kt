@@ -202,11 +202,11 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     teamName = effectiveTeamName,
                     teamId = teamId,
                     isTeamLeaderFn = { onResult ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
+                        val job = viewLifecycleOwner.lifecycleScope.launch {
                             val result = kotlinx.coroutines.withTimeoutOrNull(2000) {
                                 viewModel.isTeamLeader(teamId, user?._id)
                             }
-                            kotlinx.coroutines.withContext(dispatcherProvider.main) { onResult(result ?: false) }
+                            onResult(result ?: false)
                         }
                     },
                     getUserFn = { userId, onResult ->

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
@@ -47,7 +48,8 @@ class HealthRepositoryImplTest {
             mockApiInterface,
             dispatcherProvider,
             healthExaminationDao,
-            lazyUserRepository
+            lazyUserRepository,
+            Gson()
         )
     }
 
