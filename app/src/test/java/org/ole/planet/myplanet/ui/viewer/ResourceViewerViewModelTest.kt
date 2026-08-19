@@ -5,8 +5,7 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
-import junit.framework.TestCase.assertFalse
-import junit.framework.TestCase.assertTrue
+import junit.framework.TestCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -55,13 +54,23 @@ internal class ResourceViewerViewModelTest {
 
         val mockUser = UserEntity().apply { id = userId }
         coEvery { userRepository.getUserModel() } returns mockUser
-        every { sharedPrefManager.getRawString("rating_prompted_${userId}_${resourceId}", "false") } returns "false"
-        coEvery { ratingsRepository.getRatingSummary("resource", resourceId, userId)} returns
-                RatingSummary(userRating = 4, existingRating = null, averageRating = 0f, totalRatings = 0)
+        every {
+            sharedPrefManager.getRawString(
+                "rating_prompted_${userId}_${resourceId}",
+                "false"
+            )
+        } returns "false"
+        coEvery { ratingsRepository.getRatingSummary("resource", resourceId, userId) } returns
+                RatingSummary(
+                    userRating = 4,
+                    existingRating = null,
+                    averageRating = 0f,
+                    totalRatings = 0
+                )
 
-        val result = viewModel.showResourceRatingDialogIfNeverRated(resourceId)
+        val result = viewModel.shouldShowResourceRatingDialog(resourceId)
 
-        assertFalse(result)
+        TestCase.assertFalse(result)
     }
 
     @Test
@@ -70,14 +79,24 @@ internal class ResourceViewerViewModelTest {
         val resourceId = "resourceId123"
 
         val mockUser = UserEntity().apply { id = userId }
-        coEvery{ userRepository.getUserModel() } returns mockUser
-        every { sharedPrefManager.getRawString("rating_prompted_${userId}_${resourceId}", "false")} returns "false"
-        coEvery { ratingsRepository.getRatingSummary("resource", resourceId, userId)} returns
-                RatingSummary(userRating = null, existingRating = null, averageRating = 0f, totalRatings = 0)
+        coEvery { userRepository.getUserModel() } returns mockUser
+        every {
+            sharedPrefManager.getRawString(
+                "rating_prompted_${userId}_${resourceId}",
+                "false"
+            )
+        } returns "false"
+        coEvery { ratingsRepository.getRatingSummary("resource", resourceId, userId) } returns
+                RatingSummary(
+                    userRating = null,
+                    existingRating = null,
+                    averageRating = 0f,
+                    totalRatings = 0
+                )
 
-        val result = viewModel.showResourceRatingDialogIfNeverRated(resourceId)
+        val result = viewModel.shouldShowResourceRatingDialog(resourceId)
 
-        assertTrue(result)
+        TestCase.assertTrue(result)
     }
 
     @Test
@@ -87,10 +106,15 @@ internal class ResourceViewerViewModelTest {
 
         val mockUser = UserEntity().apply { id = userId }
         coEvery { userRepository.getUserModel() } returns mockUser
-        every { sharedPrefManager.getRawString("rating_prompted_${userId}_${resourceId}", "false")} returns "true"
+        every {
+            sharedPrefManager.getRawString(
+                "rating_prompted_${userId}_${resourceId}",
+                "false"
+            )
+        } returns "true"
 
-        val result = viewModel.showResourceRatingDialogIfNeverRated(resourceId)
+        val result = viewModel.shouldShowResourceRatingDialog(resourceId)
 
-        assertFalse(result)
+        TestCase.assertFalse(result)
     }
 }

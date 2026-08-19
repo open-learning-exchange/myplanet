@@ -25,7 +25,7 @@ class ResourceViewerViewModel @Inject constructor(
         private const val RATING_PROMPT_PREFIX = "rating_prompted_"
     }
 
-    suspend fun showResourceRatingDialogIfNeverRated(resourceId: String): Boolean {
+    suspend fun shouldShowResourceRatingDialog(resourceId: String): Boolean {
         val userId = userRepository.getUserModel()?.id?.takeIf { it.isNotBlank() } ?: return false
         if (isRatingPrompted(userId, resourceId)) {
             return false
@@ -42,7 +42,6 @@ class ResourceViewerViewModel @Inject constructor(
             false
         }
 
-        // Mark as prompted after dialog is shown, even if user chooses not to rate. Respects user decision.
         return !hasRated
     }
 

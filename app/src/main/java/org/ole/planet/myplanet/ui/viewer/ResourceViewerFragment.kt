@@ -342,12 +342,12 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                         if (!::library.isInitialized) return
                         val rid = library.resourceId ?: return
                         viewLifecycleOwner.lifecycleScope.launch {
-                            val showDialog= viewModel.showResourceRatingDialogIfNeverRated(rid)
+                            val showDialog= viewModel.shouldShowResourceRatingDialog(rid)
                             if (showDialog) {
                                 val userId = userRepository.getUserModel()?.id
-                                val ratingDialog = RatingsFragment.newInstance("resource", resourceId, library.title)
+                                val ratingDialog = RatingsFragment.newInstance("resource", rid, library.title)
                                 ratingDialog.show(parentFragmentManager, RatingsFragment.TAG)
-                                viewModel.setRatingPrompted(userId, resourceId)
+                                viewModel.setRatingPrompted(userId, rid)
                             }
                         }
                     }
@@ -613,8 +613,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         private const val ARG_IS_ONLINE = "isOnline"
         private const val ARG_IS_FULL_PATH = "isFullPath"
         private const val ARG_AUTH = "auth"
-        private const val PREFS_NAME = "rating_prompt_prefs"
-        private const val KEY_RATING_PROMPT_PREFIX = "prompted_"
 
         fun newInstance(resourceId: String?, filePath: String?, title: String?, type: ResourceType, isOnline: Boolean = false, auth: String = "", isFullPath: Boolean = false): ResourceViewerFragment {
             return ResourceViewerFragment().apply {
