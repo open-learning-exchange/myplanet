@@ -312,4 +312,12 @@ class ProgressRepositoryImpl @Inject constructor(
         }
         return null
     }
+
+    override suspend fun getPendingCourseProgressUploads(): List<CourseProgress> {
+        return courseProgressDao.getPendingUploads()
+    }
+
+    override suspend fun markCourseProgressUploaded(localId: String, remoteId: String, rev: String): Boolean {
+        return courseProgressDao.markUploaded(localId, remoteId, rev) != 0
+    }
 }

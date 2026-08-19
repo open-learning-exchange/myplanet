@@ -34,7 +34,6 @@ import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
@@ -63,8 +62,7 @@ class VoicesAdapter(
     private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit),
     private val labelManager: VoicesLabelManager,
     private val voicesRepository: VoicesRepository,
-    private val userRepository: UserRepository,
-    private val getCommunityLeadersFn: () -> String,
+    private val leadersList: List<UserEntity>,
     private val setRepliedNewsIdFn: (String?) -> Unit
 ) : ListAdapter<News, RecyclerView.ViewHolder>(
     DiffUtils.itemCallback<News>(
@@ -185,10 +183,6 @@ class VoicesAdapter(
     private val fetchingUserIds = mutableSetOf<String>()
     private val replyCountCache = mutableMapOf<String, Int>()
     private val userIdPositions = mutableMapOf<String, MutableList<Int>>()
-    private val leadersList: List<UserEntity> by lazy {
-        val raw = getCommunityLeadersFn()
-        userRepository.parseLeadersJson(raw)
-    }
     private var _isTeamLeader: Boolean? = null
 
     init {

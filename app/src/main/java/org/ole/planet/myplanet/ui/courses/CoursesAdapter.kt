@@ -23,7 +23,6 @@ import com.google.gson.JsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.CourseProgressState
 import org.ole.planet.myplanet.callback.OnCourseItemSelectedListener
-import org.ole.planet.myplanet.callback.OnDiffRefreshListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ItemCourseGridBinding
 import org.ole.planet.myplanet.databinding.ItemCourseListBinding
@@ -38,7 +37,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 class CoursesAdapter(
     private val context: Context,
-    private val isGuest: Boolean,
+    private var isGuest: Boolean,
     var isMyCourseLib: Boolean = false,
     private var viewMode: ListViewMode = ListViewMode.GRID
 ) : ListAdapter<Course, RecyclerView.ViewHolder>(
@@ -75,18 +74,12 @@ class CoursesAdapter(
             }
         }
     )
-), OnDiffRefreshListener {
-    override fun refreshWithDiff() {
-        submitList(currentList.toList())
-    }
-
-    override fun refreshWithDiff(id: String) {
+) {
+    fun notifyItemChangedById(id: String) {
         val index = currentList.indexOfFirst { it.courseId == id }
         if (index != -1) {
             notifyItemChanged(index)
-            return
         }
-        submitList(currentList.toList())
     }
 
     private val selectedItems: MutableList<Course?> = ArrayList()
@@ -132,10 +125,18 @@ class CoursesAdapter(
     }
 
     fun setViewMode(mode: ListViewMode, onChanged: (() -> Unit)? = null) {
-        if (viewMode == mode) return
-        viewMode = mode
-        notifyDataSetChanged()
+        if (viewMode != mode) {
+            viewMode = mode
+            notifyItemRangeChanged(0, itemCount)
+        }
         onChanged?.invoke()
+    }
+
+    fun updateIdentity(isGuest: Boolean) {
+        if (this.isGuest != isGuest) {
+            this.isGuest = isGuest
+            notifyItemRangeChanged(0, itemCount)
+        }
     }
 
     fun removeCourses(courseIds: List<String>, onComplete: (() -> Unit)? = null) {
@@ -232,6 +233,18 @@ class CoursesAdapter(
             }
         } else {
             super.onBindViewHolder(holder, position, payloads)
+        }
+    }
+
+    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
+        super.onViewRecycled(holder)
+        when (holder) {
+            is GridViewHolder -> {
+                Glide.with(context).clear(holder.binding.ivCover)
+            }
+            is ListViewHolder -> {
+                Glide.with(context).clear(holder.binding.ivCover)
+            }
         }
     }
 

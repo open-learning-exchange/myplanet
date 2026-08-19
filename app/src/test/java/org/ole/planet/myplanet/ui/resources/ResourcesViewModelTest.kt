@@ -91,21 +91,16 @@ class ResourcesViewModelTest {
 
     @Test
     fun `getLibraryListModels maps enriched libraries to ResourceListModels`() = runTest {
-        // MyLibrary is a Room entity whose id is a @JvmField and whose isResourceOffline() is
-        // @Ignore'd — neither can be stubbed with mockk; use a real instance.
         val mockLibrary = MyLibrary().apply {
             id = "lib1"
             title = "Library 1"
             resourceOffline = true
         }
         val mockRating = mockk<JsonObject>(relaxed = true)
-        // TagEntity is a Room entity whose id is a @JvmField (a Java field, not a getter), so it
-        // cannot be stubbed with mockk `every { id }`; use a real instance instead.
         val mockTag = TagEntity().apply {
             id = "tag1"
             name = "Tag 1"
         }
-
         val mockResourceItem = mockk<org.ole.planet.myplanet.model.ResourceItem>(relaxed = true)
         coEvery { resourcesRepository.getResourceListModels(any(), any()) } returns listOf(
             org.ole.planet.myplanet.model.ResourceListModel(mockLibrary, mockResourceItem, mockRating, listOf(org.ole.planet.myplanet.model.TagItem(mockTag.id, mockTag.name)))

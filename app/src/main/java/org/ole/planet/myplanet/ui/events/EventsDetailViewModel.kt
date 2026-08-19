@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,12 +35,19 @@ class EventsDetailViewModel @Inject constructor(
 
     fun loadData(meetUpId: String?) {
         viewModelScope.launch {
-            _user.value = userRepository.getUserModel()
+            coroutineScope {
+                val userDeferred = async { userRepository.getUserModel() }
 
-            if (!meetUpId.isNullOrBlank()) {
-                val loadedMeetup = eventsRepository.getMeetupByLocalId(meetUpId)
-                _meetup.value = loadedMeetup
-                _members.value = eventsRepository.getJoinedMembers(meetUpId)
+                if (!meetUpId.isNullOrBlank()) {
+                    val meetupDeferred = async { eventsRepository.getMeetupByLocalId(meetUpId) }
+                    val membersDeferred = async { eventsRepository.getJoinedMembers(meetUpId) }
+
+                    _user.value = userDeferred.await()
+                    _meetup.value = meetupDeferred.await()
+                    _members.value = membersDeferred.await()
+                } else {
+                    _user.value = userDeferred.await()
+                }
             }
         }
     }

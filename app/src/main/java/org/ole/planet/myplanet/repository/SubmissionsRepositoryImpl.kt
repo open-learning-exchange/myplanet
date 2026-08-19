@@ -569,6 +569,15 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         photoId?.let { submitPhotosDao.markUploaded(it, rev, id) }
     }
 
+    override suspend fun getPendingSubmitPhotosUploads(): List<SubmitPhotos> {
+        return submitPhotosDao.getUnuploaded()
+    }
+
+    override suspend fun markSubmitPhotosUploaded(localId: String, remoteId: String, rev: String): Boolean {
+        return submitPhotosDao.markUploaded(localId, rev, remoteId) != 0
+    }
+
+
     override suspend fun getPhotosByIds(ids: Array<String>): List<SubmitPhotos> {
         if (ids.isEmpty()) return emptyList()
         return submitPhotosDao.getByIds(ids)
@@ -764,7 +773,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return `object`
     }
 
-    override suspend fun serializeSubmission(submission: Submission, context: Context, source: String, parentCode: String): JsonObject {
+    override suspend fun serializeSubmission(submission: Submission, source: String, parentCode: String): JsonObject {
         val jsonObject = JsonObject()
 
         try {
