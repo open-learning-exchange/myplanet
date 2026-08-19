@@ -1,4 +1,5 @@
 import '../core/config/server_config.dart';
+import '../core/background/background_download_queue.dart';
 import '../core/files/resource_files.dart';
 import '../core/network/network_result.dart';
 import '../core/utils/url_utils.dart';
@@ -12,13 +13,16 @@ import '../data/local/app_database.dart';
 /// *metadata* only: the list rendered, the viewer opened, and every resource
 /// reported itself as not downloaded because nothing had ever written a file.
 ///
-/// This is a foreground, user-initiated download. `DownloadWorker`'s
-/// background queue still needs OS scheduling and is not ported.
+/// The user-initiated request starts in the foreground, but is first persisted
+/// through [BackgroundDownloadQueue]. If the process disappears or the first
+/// attempt fails, WorkManager can finish the same request in a headless isolate.
 class ResourceDownloader {
-  ResourceDownloader(this._api, this._dao);
+  ResourceDownloader(this._api, this._dao, {BackgroundDownloadQueue? queue})
+    : _queue = queue;
 
   final PlanetApi _api;
   final MyLibraryDao _dao;
+  final BackgroundDownloadQueue? _queue;
 
   /// The attachment URL, or null when the row cannot name a file.
   static String? urlFor(ServerConfig config, MyLibraryRow resource) =>
@@ -28,7 +32,9 @@ class ResourceDownloader {
     MyLibraryRow resource, {
     required ServerConfig config,
     void Function(int received, int total)? onProgress,
+    bool persistInBackground = true,
   }) async {
+    if (persistInBackground) await _queue?.enqueue(resource.id);
     final url = urlFor(config, resource);
     if (url == null) {
       return const NetworkError<String>(null, 'Resource has no attachment');
@@ -64,6 +70,7 @@ class ResourceDownloader {
     await file.writeAsBytes(result.data, flush: true);
 
     await _dao.markDownloaded(resource.id, file.path, resource.rev);
+    await _queue?.complete(resource.id);
     return NetworkSuccess<String>(file.path);
   }
 }

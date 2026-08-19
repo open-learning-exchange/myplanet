@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 41 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 43 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -17,9 +17,9 @@ working. Counted honestly:
   the shape Kotlin has.
 
 Known gaps:
-- `DownloadWorker`'s background queue is the last unported `WorkManager` job. Timed background
-  *sync* landed in Phase 38 and `TaskNotificationWorker`'s deadline notifications in Phase 42,
-  both on the `workmanager` plugin, so what remains is one job rather than the whole category.
+- All three WorkManager responsibilities are ported. Timed background sync landed in Phase 38,
+  task deadline notifications in Phase 42, and Phase 43 added the durable one-shot resource
+  download queue.
 - Team attachments are ported as of Phase 39: a receipt image on a finance transaction or a
   report is written under `team_attachments/<docId>/<imageName>`, the document POSTs, then the
   bytes PUT as a CouchDB attachment — best-effort and in that order, the same shape the
@@ -1983,9 +1983,25 @@ listing as an open localisation item.
 
 ---
 
-**Last updated**: 2026-08-19 (Phase 42 complete — `TaskNotificationWorker`'s deadline notifications
-ported on the `maintenance` cadence: `TaskDeadlineNotifier` policy + `NotificationPresenter` seam +
-`team_tasks.isNotified` at schema v32. `DownloadWorker`'s queue is the last unported WorkManager
-job)
-**Phase**: 42 of N (27 of 28 UI packages have a screen — see Status for what that does and
+## Phase 43 — durable background resource downloads (`DownloadWorker`)
+
+The last unported WorkManager responsibility now has an end-to-end caller. A viewer download first
+stores the resource id in `PlanetPrefs`, deduplicating the queue in the same spirit as Kotlin's
+persisted URL set, and registers unique network-constrained one-shot work. The foreground request
+still starts immediately, so the viewer's existing progress and success experience does not become
+worker-latency-bound. Successful writes remove the id; failures and process death leave it durable.
+
+The background entrypoint recognizes the stable `myplanet.download` task separately from periodic
+sync and maintenance. It resolves each current library row, reuses `ResourceDownloader` so file
+placement, authentication, empty-body rejection and Drift write-back cannot diverge, removes stale
+ids whose metadata vanished, and requests WorkManager retry if any attachment fails. The background
+call disables re-enqueueing, preventing a worker from recursively scheduling itself.
+
+`BackgroundScheduler` now exposes one-shot work in addition to periodic work, keeping the plugin
+behind the same test seam. Queue policy has a focused test covering persistence, deduplication,
+scheduling constraints and completion.
+
+**Last updated**: 2026-08-19 (Phase 43 complete — the durable, network-constrained resource download
+queue closes the final unported WorkManager job)
+**Phase**: 43 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

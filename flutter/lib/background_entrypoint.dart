@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'core/background/background_task_runner.dart';
+import 'core/background/background_task_names.dart';
+import 'core/network/network_result.dart';
 import 'core/prefs/planet_prefs.dart';
 import 'core/sync/sync_result.dart';
 import 'providers/app_providers.dart';
@@ -27,6 +29,25 @@ Future<bool> executeBackgroundTask(String taskName) async {
   );
   try {
     final config = prefs.serverConfig;
+    if (taskName == BackgroundTaskNames.download) {
+      if (config == null) return true;
+      var succeeded = true;
+      final downloader = container.read(resourceDownloaderProvider);
+      for (final id in prefs.pendingResourceDownloads) {
+        final resource = await container.read(myLibraryDaoProvider).getById(id);
+        if (resource == null) {
+          await prefs.removePendingResourceDownload(id);
+          continue;
+        }
+        final result = await downloader.download(
+          resource,
+          config: config,
+          persistInBackground: false,
+        );
+        if (result is! NetworkSuccess<String>) succeeded = false;
+      }
+      return succeeded;
+    }
     final drainer = container.read(outboxDrainerProvider);
     bool completed(SyncResult result) => result is SyncComplete;
     return BackgroundTaskRunner(

@@ -14,6 +14,12 @@ abstract interface class BackgroundScheduler {
   });
 
   Future<void> cancel(String uniqueName);
+
+  Future<void> scheduleOneOff({
+    required String uniqueName,
+    required String taskName,
+    required bool requiresNetwork,
+  });
 }
 
 class WorkmanagerScheduler implements BackgroundScheduler {
@@ -44,4 +50,21 @@ class WorkmanagerScheduler implements BackgroundScheduler {
   @override
   Future<void> cancel(String uniqueName) =>
       Workmanager().cancelByUniqueName(uniqueName);
+
+  @override
+  Future<void> scheduleOneOff({
+    required String uniqueName,
+    required String taskName,
+    required bool requiresNetwork,
+  }) => Workmanager().registerOneOffTask(
+    uniqueName,
+    taskName,
+    existingWorkPolicy: ExistingWorkPolicy.keep,
+    constraints: Constraints(
+      networkType: requiresNetwork
+          ? NetworkType.connected
+          : NetworkType.notRequired,
+      requiresBatteryNotLow: true,
+    ),
+  );
 }

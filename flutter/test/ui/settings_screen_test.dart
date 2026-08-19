@@ -6,7 +6,6 @@ import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/background/background_scheduler.dart';
 import 'package:myplanet/core/prefs/planet_prefs.dart';
 import 'package:myplanet/providers/app_providers.dart';
-import 'package:myplanet/providers/settings_provider.dart';
 import 'package:myplanet/ui/settings/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -205,6 +204,13 @@ class _RecordingScheduler implements BackgroundScheduler {
 
   @override
   Future<void> initialize() async {}
+
+  @override
+  Future<void> scheduleOneOff({
+    required String uniqueName,
+    required String taskName,
+    required bool requiresNetwork,
+  }) async {}
 
   @override
   Future<void> schedulePeriodic({

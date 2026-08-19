@@ -52,6 +52,7 @@ class PlanetPrefs {
   static const String _keyAutoSync = 'autoSync';
   static const String _keyAutoSyncInterval = 'autoSyncInterval';
   static const String _keyBackgroundRun = 'backgroundRun';
+  static const String _keyPendingResourceDownloads = 'pendingResourceDownloads';
 
   /// Prefix of the per-reminder keys, matching the Kotlin's
   /// `reminder_time_<surveyIds>` in its `survey_reminders` preferences file.
@@ -222,6 +223,23 @@ class PlanetPrefs {
   Future<void> clearSession() async {
     await _prefs.remove(_keyLoggedInUserId);
     await _secureStorage.delete(key: _secureKeyPassword);
+  }
+
+  /// Resource ids waiting for the one-shot background download worker.
+  /// SharedPreferences mirrors Kotlin's persisted URL set: an OS restart may
+  /// postpone the work, but cannot forget what the user asked to download.
+  List<String> get pendingResourceDownloads => List.unmodifiable(
+    _prefs.getStringList(_keyPendingResourceDownloads) ?? const [],
+  );
+
+  Future<void> addPendingResourceDownload(String resourceId) async {
+    final pending = pendingResourceDownloads.toSet()..add(resourceId);
+    await _prefs.setStringList(_keyPendingResourceDownloads, pending.toList());
+  }
+
+  Future<void> removePendingResourceDownload(String resourceId) async {
+    final pending = pendingResourceDownloads.toSet()..remove(resourceId);
+    await _prefs.setStringList(_keyPendingResourceDownloads, pending.toList());
   }
 
   /// JSON string of community leaders fetched from the server.

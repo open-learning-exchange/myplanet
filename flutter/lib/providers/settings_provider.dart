@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../core/background/background_scheduler.dart';
 import '../core/background/background_work_coordinator.dart';
 import 'app_providers.dart';
 
@@ -65,9 +64,6 @@ class LocaleNotifier extends Notifier<Locale?> {
 
 final localeProvider = NotifierProvider<LocaleNotifier, Locale?>(
   LocaleNotifier.new,
-);
-final backgroundSchedulerProvider = Provider<BackgroundScheduler>(
-  (ref) => const WorkmanagerScheduler(),
 );
 
 class BackgroundSettings {

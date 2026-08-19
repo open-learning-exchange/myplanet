@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/server_config.dart';
+import '../core/background/background_download_queue.dart';
+import '../core/background/background_scheduler.dart';
 import '../core/notifications/notification_presenter.dart';
 import '../core/notifications/task_deadline_notifier.dart';
 import '../core/prefs/planet_prefs.dart';
@@ -65,6 +67,10 @@ import 'resources_providers.dart' show diskStatsProvider;
 /// `SharedPreferencesModule` provides a ready instance.
 final planetPrefsProvider = Provider<PlanetPrefs>(
   (ref) => throw UnimplementedError('planetPrefsProvider must be overridden'),
+);
+
+final backgroundSchedulerProvider = Provider<BackgroundScheduler>(
+  (ref) => const WorkmanagerScheduler(),
 );
 
 /// Replaces `DatabaseModule` / `DatabaseService`.
@@ -232,6 +238,10 @@ final resourceDownloaderProvider = Provider<ResourceDownloader>(
   (ref) => ResourceDownloader(
     ref.watch(planetApiProvider),
     ref.watch(myLibraryDaoProvider),
+    queue: BackgroundDownloadQueue(
+      ref.watch(planetPrefsProvider),
+      ref.watch(backgroundSchedulerProvider),
+    ),
   ),
 );
 

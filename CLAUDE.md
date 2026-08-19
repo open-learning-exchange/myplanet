@@ -49,8 +49,9 @@ present — `AutoSyncWorker`'s timed sync landed in Phase 38 through the `workma
 a testable Dart seam, though that plugin's own Android side is Kotlin, and
 `TaskNotificationWorker`'s deadline notifications landed in Phase 42 on the same plugin's
 `maintenance` cadence (`TaskDeadlineNotifier` policy behind a `NotificationPresenter` seam, with
-`team_tasks.isNotified` making the reminder once-only). `DownloadWorker`'s queue is the last
-unported `WorkManager` job.
+`team_tasks.isNotified` making the reminder once-only). Phase 43 closes the final WorkManager gap:
+resource requests are persisted before the foreground attempt and handed to a network-constrained
+one-shot worker for retry and process-death recovery.
 
 ### Documentation Map
 

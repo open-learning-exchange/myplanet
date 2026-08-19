@@ -21,6 +21,13 @@ class _RecordingScheduler implements BackgroundScheduler {
   Future<void> cancel(String uniqueName) async => cancelled.add(uniqueName);
 
   @override
+  Future<void> scheduleOneOff({
+    required String uniqueName,
+    required String taskName,
+    required bool requiresNetwork,
+  }) async {}
+
+  @override
   Future<void> schedulePeriodic({
     required String uniqueName,
     required String taskName,
