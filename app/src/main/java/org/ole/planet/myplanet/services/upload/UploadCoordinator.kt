@@ -112,9 +112,7 @@ class UploadCoordinator @Inject constructor(
             val serialized = try {
                 when (val serializer = config.serializer) {
                     is UploadSerializer.Simple -> serializer.serialize(copiedItem)
-                    is UploadSerializer.WithContext -> serializer.serialize(copiedItem, context)
                     is UploadSerializer.Async -> null
-                    is UploadSerializer.AsyncContext -> null
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Serialization failed for item", e)
@@ -128,7 +126,6 @@ class UploadCoordinator @Inject constructor(
             val serialized = try {
                 when (val serializer = config.serializer) {
                     is UploadSerializer.Async -> serializer.serialize(copiedItem)
-                    is UploadSerializer.AsyncContext -> serializer.serialize(copiedItem, context)
                     else -> preSerialized ?: return@mapNotNull null
                 }
             } catch (e: Exception) {
@@ -355,9 +352,7 @@ class UploadCoordinator @Inject constructor(
             val serialized = try {
                 when (val serializer = config.serializer) {
                     is UploadSerializer.Simple -> serializer.serialize(item)
-                    is UploadSerializer.WithContext -> serializer.serialize(item, context)
                     is UploadSerializer.Async -> serializer.serialize(item)
-                    is UploadSerializer.AsyncContext -> serializer.serialize(item, context)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Serialization failed for item", e)

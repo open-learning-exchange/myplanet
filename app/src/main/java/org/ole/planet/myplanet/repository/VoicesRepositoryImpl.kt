@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.NewsDao
+import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.News
@@ -32,10 +33,10 @@ class VoicesRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val gson: Gson,
     private val sharedPrefManager: SharedPrefManager,
-    private val userRepositoryLazy: dagger.Lazy<UserRepository>,
     private val teamNotificationDao: TeamNotificationDao,
     private val newsDao: NewsDao,
-    private val myLibraryDao: MyLibraryDao
+    private val myLibraryDao: MyLibraryDao,
+    private val newsLogDao: NewsLogDao
 ) : VoicesRepository {
     private val concatenatedLinks = ArrayList<String>()
 
@@ -72,14 +73,6 @@ class VoicesRepositoryImpl @Inject constructor(
         if (toUpdate.isNotEmpty()) {
             newsDao.upsertAll(toUpdate)
         }
-    }
-
-    override suspend fun getUserById(userId: String): UserEntity? {
-        return userRepositoryLazy.get().getUserById(userId)
-    }
-
-    override suspend fun getLibraryResource(resourceId: String): MyLibrary? {
-        return myLibraryDao.getByUnderscoreId(resourceId)
     }
 
     override suspend fun getNewsWithReplies(newsId: String): Pair<News?, List<News>> {
@@ -141,7 +134,7 @@ class VoicesRepositoryImpl @Inject constructor(
         }
 
         return try {
-            val array = gson.fromJson(viewIn, JsonArray::class.java)
+            val array = news.parsedViewIn ?: gson.fromJson(viewIn, JsonArray::class.java)
             array?.any { element ->
                 if (element == null || !element.isJsonObject) return@any false
                 val obj = element.asJsonObject
@@ -175,11 +168,17 @@ class VoicesRepositoryImpl @Inject constructor(
                 }
             }
             .map { allNews ->
-                allNews.filter { news ->
-                    isVisibleToUser(news, userIdentifier)
-                }.map { news ->
-                    news.sortDate = news.calculateSortDate()
-                    news
+                allNews.mapNotNull { news ->
+                    news.viewIn?.takeIf { it.isNotEmpty() }?.let { s ->
+                        news.parsedViewIn = try { gson.fromJson(s, JsonArray::class.java) } catch (e: Exception) { null }
+                    }
+
+                    if (isVisibleToUser(news, userIdentifier)) {
+                        news.sortDate = news.calculateSortDate()
+                        news
+                    } else {
+                        null
+                    }
                 }.sortedByDescending { it.sortDate }
             }.flowOn(dispatcherProvider.default)
     }
@@ -207,8 +206,9 @@ class VoicesRepositoryImpl @Inject constructor(
         return try {
             val news = newsDao.getById(newsId)
             if (news != null) {
+                val viewInStr = news.viewIn
                 val array = try {
-                    gson.fromJson(news.viewIn, JsonArray::class.java)
+                    if (viewInStr.isNullOrEmpty()) JsonArray() else gson.fromJson(viewInStr, JsonArray::class.java)
                 } catch (e: Exception) {
                     null
                 } ?: JsonArray()
@@ -265,8 +265,9 @@ class VoicesRepositoryImpl @Inject constructor(
 
     override suspend fun deletePost(newsId: String, teamName: String) {
         val news = newsDao.getById(newsId) ?: return
+        val viewInStr = news.viewIn
         val ar = try {
-            gson.fromJson(news.viewIn, JsonArray::class.java)
+            if (viewInStr.isNullOrEmpty()) null else gson.fromJson(viewInStr, JsonArray::class.java)
         } catch (e: Exception) {
             null
         }
@@ -314,11 +315,7 @@ class VoicesRepositoryImpl @Inject constructor(
 
     // Gathers a post and all of its (recursive) replies for deletion.
     private suspend fun collectNewsAndReplies(newsId: String): List<String> {
-        val ids = mutableListOf(newsId)
-        newsDao.getDirectReplies(newsId).forEach { reply ->
-            ids.addAll(collectNewsAndReplies(reply.id))
-        }
-        return ids
+        return newsDao.getNewsAndRepliesIds(newsId)
     }
 
     override suspend fun addLabel(newsId: String, label: String) {
@@ -425,15 +422,15 @@ class VoicesRepositoryImpl @Inject constructor(
     override suspend fun insertNewsList(docs: List<JsonObject>) {
         // Pre-fetch existing rows in one query instead of a getByUnderscoreId per doc (an N+1
         // that ran serially inside the sync write lock for hundreds of news items).
-        val underscoreIds = docs.map { JsonUtils.getString("_id", it) }.filter { it.isNotEmpty() }
+        val mappedDocs = docs.map { it to JsonUtils.getString("_id", it) }
+        val underscoreIds = mappedDocs.map { it.second }.filter { it.isNotEmpty() }
         val existing = newsDao.getByUnderscoreIds(underscoreIds).associateBy { it._id }
-        val newsList = docs.map { buildNewsFromJson(it, existing) }
+        val newsList = mappedDocs.map { (doc, id) -> buildNewsFromJson(doc, id, existing) }
         newsDao.upsertAll(newsList)
         saveConcatenatedLinksToPrefs()
     }
 
-    private suspend fun buildNewsFromJson(doc: JsonObject, existing: Map<String?, News>? = null): News {
-        val underscoreId = JsonUtils.getString("_id", doc)
+    private suspend fun buildNewsFromJson(doc: JsonObject, underscoreId: String, existing: Map<String?, News>? = null): News {
         val news = (existing?.get(underscoreId) ?: newsDao.getByUnderscoreId(underscoreId))
             ?: News().apply { id = underscoreId }
         news._rev = JsonUtils.getString("_rev", doc)
@@ -449,7 +446,7 @@ class VoicesRepositoryImpl @Inject constructor(
         news.replyTo = JsonUtils.getString("replyTo", doc)
         news.parentCode = JsonUtils.getString("parentCode", doc)
         val user = JsonUtils.getJsonObject("user", doc)
-        news.user = JsonUtils.gson.toJson(JsonUtils.getJsonObject("user", doc))
+        news.user = JsonUtils.gson.toJson(user)
         news.userId = JsonUtils.getString("_id", user)
         news.userName = JsonUtils.getString("name", user)
         news.time = JsonUtils.getLong("time", doc)
@@ -521,8 +518,9 @@ class VoicesRepositoryImpl @Inject constructor(
             `object`.addProperty("viewableId", news.viewableId)
             `object`.addProperty("viewableBy", news.viewableBy)
         }
-        if (!TextUtils.isEmpty(news.viewIn)) {
-            val ar = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
+        val viewInStr = news.viewIn
+        if (!TextUtils.isEmpty(viewInStr)) {
+            val ar = JsonUtils.gson.fromJson(viewInStr, JsonArray::class.java)
             if (ar.size() > 0) `object`.add("viewIn", ar)
         }
     }
@@ -554,5 +552,13 @@ class VoicesRepositoryImpl @Inject constructor(
 
     override suspend fun getTeamChatViewableIds(teamIds: List<String>): List<String> {
         return newsDao.getTeamChatViewableIds(teamIds)
+    }
+
+    override suspend fun getPendingNewsLogUploads(): List<org.ole.planet.myplanet.model.NewsLog> {
+        return newsLogDao.getPendingUploads()
+    }
+
+    override suspend fun markNewsLogUploaded(localId: String, remoteId: String, rev: String): Boolean {
+        return newsLogDao.markUploaded(localId, remoteId, rev) != 0
     }
 }
