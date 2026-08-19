@@ -281,7 +281,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     override fun onRatingChanged() {
         lastKnownRating?.let { setRatings(it) }
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             if (!isAdded) return@launch
             try {
                 val rating = ratingsRepository.getRatingsById("resource", library.resourceId, userModel?.id)

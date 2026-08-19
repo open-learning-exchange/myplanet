@@ -161,7 +161,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             binding.btnUpdate.isEnabled = false
             Utilities.toast(activity, getString(R.string.saving))
 
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 val cvFilename = computeCvFilename()
                 userRepository.updateAchievement(
                     achievementId = achievementId,

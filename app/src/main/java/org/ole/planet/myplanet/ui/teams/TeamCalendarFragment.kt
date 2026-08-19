@@ -317,7 +317,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 else -> "none"
             }
 
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 val success = viewModel.updateMeetup(
                     meetupId = meetup.id ?: return@launch,
                     title = newTitle,
