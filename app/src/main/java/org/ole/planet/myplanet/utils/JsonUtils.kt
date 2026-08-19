@@ -96,20 +96,22 @@ object JsonUtils {
     fun getInt(fieldName: String, jsonObject: JsonObject?): Int = safeGet(0) {
         if (jsonObject?.has(fieldName) == true) {
             val el: JsonElement = jsonObject.get(fieldName)
-            if (el is JsonNull || el.asString.isEmpty()) 0 else el.asInt
+            if (el.isJsonPrimitive && el.asJsonPrimitive.isNumber) el.asInt
+            else if (el is JsonNull || el.asString.isEmpty()) 0 else el.asInt
         } else 0
     }
 
     fun getFloat(fieldName: String, jsonObject: JsonObject?): Float = safeGet(0f) {
         if (jsonObject?.has(fieldName) == true) {
             val el: JsonElement = jsonObject.get(fieldName)
-            if (el is JsonNull || el.asString.isEmpty()) 0f else el.asFloat
+            if (el.isJsonPrimitive && el.asJsonPrimitive.isNumber) el.asFloat
+            else if (el is JsonNull || el.asString.isEmpty()) 0f else el.asFloat
         } else getInt(fieldName, jsonObject).toFloat()
     }
 
     fun getJsonArray(fieldName: String, jsonObject: JsonObject?): JsonArray = safeGet(JsonArray()) {
         val array: JsonElement? = jsonObject?.let { getJsonElement(fieldName, it, JsonArray::class.java) }
-        if (array is JsonNull || array !is JsonArray) JsonArray() else array.asJsonArray
+        if (array is JsonNull || array !is JsonArray) JsonArray() else array
     }
 
     fun getJsonObject(fieldName: String, jsonObject: JsonObject?): JsonObject = safeGet(JsonObject()) {
@@ -117,9 +119,17 @@ object JsonUtils {
         if (el is JsonObject) el else JsonObject()
     }
 
-    fun getJsonElement(fieldName: String, jsonObject: JsonObject, type: Class<*>): JsonElement = safeGet(JsonObject()) {
-        val default: JsonElement = if (type == JsonObject::class.java) JsonObject() else JsonArray()
-        if (jsonObject.has(fieldName)) jsonObject.get(fieldName) else default
+    fun getJsonElement(fieldName: String, jsonObject: JsonObject, type: Class<*>): JsonElement {
+        return try {
+            if (jsonObject.has(fieldName)) {
+                jsonObject.get(fieldName)
+            } else {
+                if (type == JsonObject::class.java) JsonObject() else JsonArray()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            if (type == JsonObject::class.java) JsonObject() else JsonArray()
+        }
     }
 
     fun getLong(fieldName: String, jsonObject: JsonObject?): Long = safeGet(0L) {
