@@ -45,9 +45,6 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     @Inject
     lateinit var userSessionManager: UserSessionManager
 
-    @Inject
-    lateinit var healthRepository: HealthRepository
-
     private val viewModel: HealthExaminationViewModel by viewModels()
     private lateinit var binding: ActivityHealthExaminationBinding
     var userId: String? = null
@@ -98,21 +95,17 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
 
         viewModel.loadData(userId, intent.getStringExtra("id"))
 
-        lifecycleScope.launch {
-            viewModel.state.collect { state ->
-                if (!state.isLoading) {
-                    user = state.user
-                    pojo = state.pojo
-                    health = state.health
-                    examination = state.examination
+        collectWhenStarted(viewModel.state) { state ->
+            if (!state.isLoading) {
+                user = state.user
+                pojo = state.pojo
+                health = state.health
+                examination = state.examination
+                conditionsMap = state.conditionsMap
 
-                    lifecycleScope.launch {
-                        conditionsMap = healthRepository.getExaminationConditions(examination)
-                        initExamination()
-                        validateFields()
-                        btnSave.isEnabled = true
-                    }
-                }
+                initExamination()
+                validateFields()
+                btnSave.isEnabled = true
             }
         }
 
