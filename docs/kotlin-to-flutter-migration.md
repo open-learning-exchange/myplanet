@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 38 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 39 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -20,8 +20,10 @@ Known gaps:
 - `TaskNotificationWorker`'s deadline notifications and `DownloadWorker`'s background queue are
   still unported. Timed background *sync* landed in Phase 38 — see below — so the WorkManager
   gap is now partial rather than total.
-- Team attachments are unported. Personal-note attachments are: the note POSTs, then the file
-  PUTs as a CouchDB attachment, best-effort and in that order, as Kotlin does.
+- Team attachments are ported as of Phase 39: a receipt image on a finance transaction or a
+  report is written under `team_attachments/<docId>/<imageName>`, the document POSTs, then the
+  bytes PUT as a CouchDB attachment — best-effort and in that order, the same shape the
+  personal-note attachments use, and the sync-in direction downloads them back.
 - Universal links are Android-only. The `myplanet://` scheme is registered on iOS, but the
   https Planet hosts need an associated-domains entitlement and an
   `apple-app-site-association` file served by each planet — neither exists, and the shipping
@@ -548,6 +550,44 @@ which made it invalid UTF-8 and broke any tool that reads it as such.
 Still unported from `WorkManager`: `TaskNotificationWorker`'s deadline notifications and
 `DownloadWorker`'s background queue.
 
+## Phase 39 — harvesting `flutter-openhands7`
+
+A clean fast-forward: ten commits, a strict descendant of the previous head, nothing of this
+branch's history missing and no file deleted. Unlike the branch behind Phase 38 this one needed
+no cherry-picking. It closed four items this document had been carrying as open:
+
+- **About and Disclaimer** (`426ca043f`) — described in the Phase 33 section above, since that is
+  where the rest of the dashboard's overflow actions live. The one new dependency is
+  `url_launcher`, standing in for `LinkMovementMethod` on the disclaimer's contact link.
+- **Team finance/report receipt attachments** (`7479086a3`) — `TeamAttachments` writes the image
+  under `team_attachments/<docId>/<imageName>`; `TeamsUploader` POSTs the document and then PUTs
+  the bytes, and the sync-in direction downloads them back into the same slot the preview reads.
+  Both directions exist, so this is a feature rather than a screen.
+- **Free-up-space storage management** (`fe4c1c0ea`) — `ResourcesRepository.freeUpSpace` ports
+  `FreeSpaceWorker.doWork`, and a `DiskStats` seam over a new `disk_stats` method channel supplies
+  the available/total figures. The method channel is answered by the Flutter module's own
+  `MainActivity.kt`: there is no pure-Dart device-free-space API, and this is the platform layer,
+  the same category as the `workmanager` plugin's Kotlin side.
+- **Debounced username validation** (`349ab84e0`) — detailed in the spec-debt list above.
+
+The schema went 30 → 31 for `teams.imageName`. `teams` is a preserved table, so the column is
+added by `_addColumnIfMissing` under a `from < 31` guard rather than by `createAll` — the trap
+this document records under "The preserved-table test", handled correctly by the branch.
+
+Two defects were fixed on top of the merge rather than left for a later reader:
+
+- Two more raw CP1252 `0x97` bytes in this document, from the new commits, in the same place the
+  Phase 38 round repaired 16 of them. The file was invalid UTF-8 again. Whatever authoring path
+  produces these has now done it twice, so it is worth expecting a third time.
+- Two claims the branch's own work falsified but did not update: "Team attachments are unported"
+  in Status, and "debounced username validation is still validate-on-submit" in the remaining-
+  packages list. Both now contradicted the same document's spec-debt entries.
+
+The CI action bumps in the same range (`3ce7e16b2`) looked wrong on sight — `actions/checkout@v7`
+and `upload-artifact@v7` are well ahead of the versions these notes were written against. They are
+correct: `build.yml`, `release.yml`, and `automerge.yml` were already on v7 before this branch, so
+the commit brought `flutter.yml` and `test.yml` in line with the repo's own convention.
+
 ## Harvesting upstream: the 2026-08-12 rebase
 
 Rebased onto master again (8 new Kotlin commits, clean replay). Five changed behavior; four
@@ -604,7 +644,7 @@ not built, or needs a primitive the port lacks):
   library rows (the `FreeSpaceWorker.doWork` delete-and-mark-not-offline pass, with a
   `spareDirectoryNames` seam for a future `cv` store). The available/total disk figures come
   through a `DiskStats` seam backed by a `disk_stats` method channel on `MainActivity` (Android
-  `StorageStatsManager` � there is no pure-Dart device-free-space API, so the seam keeps the UI
+  `StorageStatsManager` — there is no pure-Dart device-free-space API, so the seam keeps the UI
   testable with a fake). `StorageBreakdownScreen` now sizes its categories through
   `ResourcesRepository.getOfflineResourceItems` rather than an inline `ole/` walk, which both
   removes a duplicate of the repository's grouping logic and makes the screen testable under the
@@ -619,7 +659,7 @@ not built, or needs a primitive the port lacks):
   guard drops a result whose input no longer matches the field. The check itself moved into
   `UserRepository.validateUsername` (port of `UserRepositoryImpl.validateUsername`): empty/whitespace/
   first-char/charset rules plus the taken-check that skips guest rows. The Dart charset rule is the
-  stricter "ASCII letter, digit, `_`, `.`, `-` only" � Kotlin relies on `Character.isLetter` plus an
+  stricter "ASCII letter, digit, `_`, `.`, `-` only" — Kotlin relies on `Character.isLetter` plus an
   ICU `Normalizer.NFD` pass to reject accented Latin, and Dart has no pure-Dart NFD normaliser, so
   the ASCII-only rule encodes the same intent the user-facing message advertises. The submit-time
   validator now also surfaces the live error so a fast tap cannot slip past it.
@@ -1102,11 +1142,11 @@ flutter pub get 2>&1 | grep -i discontinued
 ## Remaining UI packages (2 of 28)
 
 `components` and `enterprises` are the two packages with no screen of their own. What remains
-*within* ported packages, as of Phase 35:
+*within* ported packages, as of Phase 39:
 
 - `user` -- profile photo *upload* (`PhotoUploader`, `updateUserImage`); displaying the photo
   landed in Phase 36. Membership registration landed in Phase 27, and `BecomeMemberActivity`'s
-  debounced username validation is still validate-on-submit here.
+  debounced username validation landed in Phase 39.
 - `settings` -- nothing open. The free-up-space button and available-space text inside the
   storage sheet landed in this slice: `ResourcesRepository.freeUpSpace` (the
   `FreeSpaceWorker.doWork` delete-and-mark-not-offline pass) plus a `DiskStats` seam over a
@@ -1638,8 +1678,8 @@ already carries the equivalent behaviour where one exists.
 
 ---
 
-**Last updated**: 2026-08-18 (Phase 38 complete; the `ffa3fe862`..`f53e466b6`
-batch audited, nothing harvestable — all DI/perf/idiom no-ops or deferred to
-unported diagnostics/batch-resources features)
-**Phase**: 38 of N (27 of 28 UI packages have a screen — see Status for what that does and does
+**Last updated**: 2026-08-19 (Phase 39 complete; `flutter-openhands7` fast-forwarded — About and
+Disclaimer, team receipt attachments, free-up-space storage management, and debounced username
+validation, plus two stale Status claims and two more invalid UTF-8 bytes fixed on top)
+**Phase**: 39 of N (27 of 28 UI packages have a screen — see Status for what that does and does
 not mean)

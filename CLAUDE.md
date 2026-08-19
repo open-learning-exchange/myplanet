@@ -33,8 +33,10 @@ action — and the activity log (resource opens/downloads, course visits, comple
 four-database upload path that carries it and the profile stats that read it, and deep links
 (`app_links`, so a public-survey link's origin survives) with durable delivery for the anonymous
 answer sheet they collect, and profile photos with the `login_activities` sync-in (harvested from
-`flutter-openhands4`), have landed. Everything below in this document describes the Kotlin app and
-still applies to it.
+`flutter-openhands4`), and — harvested from `flutter-openhands7` — the About and Disclaimer
+screens, team finance/report receipt attachments in both directions, free-up-space storage
+management over a `disk_stats` method channel, and debounced username validation, have landed.
+Everything below in this document describes the Kotlin app and still applies to it.
 
 See **`docs/kotlin-to-flutter-migration.md`** for scope, the technology mapping (Hilt→Riverpod,
 Room→Drift, Retrofit→Dio, strings.xml→.arb), and the open problems. The `WorkManager` gap is
