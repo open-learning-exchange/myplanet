@@ -15,8 +15,6 @@
 # far more likely to be flaky than real. Re-run the failed workflow(s)
 # ($BASE_RERUN_ATTEMPTS times) and only stop if they fail again.
 #
-# Runs from a copy outside the work tree -- it checks out PR branches.
-#
 set -euo pipefail
 
 REPO="${REPO:?}"
@@ -60,8 +58,6 @@ last_base_sha=""
 MAX_REPREPARES=2
 reprep_pr=""
 reprep_n=0
-
-# run ids already re-run, one entry per attempt
 rerun_log=""
 
 pick_pr() {
@@ -204,8 +200,6 @@ rerun_count_for() {
     printf '%s\n' "$n"
 }
 
-# A re-run keeps the same run id, so poll until GitHub stops reporting the old
-# completed state -- otherwise the next wait would read the stale failure.
 wait_run_restarted() {
     local id=$1 status deadline=$(( SECONDS + RERUN_START_TIMEOUT_SEC ))
     while [ "$SECONDS" -lt "$deadline" ]; do
@@ -217,8 +211,6 @@ wait_run_restarted() {
     return 1
 }
 
-# Re-run every failed workflow on $1, at most $BASE_RERUN_ATTEMPTS times each.
-# Returns 0 if at least one re-run was started (so it is worth waiting again).
 rerun_failed_runs() {
     local sha=$1 id name triggered=0
     [ "$BASE_RERUN_ATTEMPTS" -gt 0 ] || return 1
@@ -229,8 +221,6 @@ rerun_failed_runs() {
             log "  $name failed again after $BASE_RERUN_ATTEMPTS re-run(s) -- taking it as real"
             continue
         fi
-        # rerun-failed-jobs keeps the green jobs; a cancelled run has none, so
-        # fall back to re-running the whole thing.
         if gh api -X POST "repos/$REPO/actions/runs/$id/rerun-failed-jobs" >/dev/null 2>&1 \
            || gh api -X POST "repos/$REPO/actions/runs/$id/rerun" >/dev/null 2>&1; then
             rerun_log="$rerun_log $id"
@@ -245,16 +235,11 @@ rerun_failed_runs() {
     [ "$triggered" -eq 1 ]
 }
 
-# Wait for $BASE to go green. Every commit on $BASE is a PR head that build and
-# test passed on minutes earlier (PR + version bump == the future $BASE), so a
-# red run here is far more likely to be flaky than a real regression: re-run it
-# before stopping the whole drain.
 wait_base_green() {
     local sha=$1 rc=0
     while :; do
         wait_for_runs "$sha" '' pass && return 0
         rc=$?
-        # 1 is a timeout or a run that never appeared -- a re-run cannot fix that.
         [ "$rc" -eq 2 ] || return 1
         [ "$BASE_RERUN_ATTEMPTS" -gt 0 ] \
             && log "  ${sha:0:7} passed build and test as a PR head minutes ago -- treating this as flaky"
