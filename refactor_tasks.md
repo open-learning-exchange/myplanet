@@ -4,6 +4,12 @@
 the working tree at `9c54a03`; 30 raw tasks were dropped because their premise did not
 hold. Sorted by rating (1–100).
 
+Provenance is tagged `harness·model/prompt`, where *prompt* is `perf` (performance quick
+wins) or `repo` (repository boundaries). The eight agents: **claude·opus-5**,
+**codex·sol-5.6**, **copilot·grok-4.5**, **devin·swe-1.7**, **openhands·kimi-k3**,
+**openhands·glm-5.2**, **jules·gemini-3.1-pro** (perf) / **jules·gemini-3.6-flash** (repo),
+**qwen·coder-3.6**.
+
 **Rating** = 100 × (0.40·Evidence + 0.35·Impact + 0.25·risk-adjusted Feasibility).
 *Evidence* — did the agent cite a location, and did it survive inspection.
 *Impact* — hot-path/sync/scroll cost removed, or a boundary invariant made greppable.
@@ -27,7 +33,7 @@ the existing `getByTeamIdAndDocType`; point both flows at it and append
 
 Files: `data/room/dao/TeamDao.kt`, `repository/TeamsRepositoryImpl.kt` (2 function bodies).
 **Conflict:** HIGH — same file as tasks 41 and open PRs #15656/#15662.
-Proposed by: **claude/perf**
+Proposed by: **claude·opus-5/perf**
 
 ---
 
@@ -45,7 +51,7 @@ Activity no longer imports `DictionaryDao`, `JsonArray`, `JsonUtils` or `FileUti
 Keep the download/broadcast path in the Activity.
 
 Files: new `repository/Dictionary*.kt`, `di/RepositoryModule.kt`, `ui/dictionary/DictionaryActivity.kt`.
-Proposed by: **claude/repo, codex/repo, openhands-B/repo, copilot/repo, devin/perf, openhands-A/repo**
+Proposed by: **claude·opus-5/repo, codex·sol-5.6/repo, openhands·glm-5.2/repo, copilot·grok-4.5/repo, devin·swe-1.7/perf, openhands·kimi-k3/repo**
 
 ---
 
@@ -61,7 +67,7 @@ Add `exoPlayer?.release(); exoPlayer = null` before each assignment. Also move t
 `viewLifecycleOwner.lifecycleScope`.
 
 Files: `ui/viewer/ResourceViewerFragment.kt`.
-Proposed by: **devin/perf**
+Proposed by: **devin·swe-1.7/perf**
 
 ---
 
@@ -79,7 +85,7 @@ Fold `conditionsMap` into `viewModel.state`, convert `:101` to `collectWhenStart
 the nested launch and the repository injection. Validation/form mapping stays in the Activity.
 
 Files: `ui/health/HealthExaminationActivity.kt`, `ui/health/HealthExaminationViewModel.kt`.
-Proposed by: **claude/repo, copilot/perf, codex/perf, codex/repo, openhands-A/repo, copilot/repo**
+Proposed by: **claude·opus-5/repo, copilot·grok-4.5/perf, codex·sol-5.6/perf, codex·sol-5.6/repo, openhands·kimi-k3/repo, copilot·grok-4.5/repo**
 
 ---
 
@@ -99,7 +105,7 @@ actually renders, and keep one `submitList` collector. Re-submitting `currentLis
 **not** a fix — `AsyncListDiffer` short-circuits on an identical reference.
 
 Files: `ui/surveys/SurveyFragment.kt`, `ui/surveys/SurveysAdapter.kt`, `ui/surveys/SurveysViewModel.kt`.
-Proposed by: **claude/perf, devin/repo, claude/repo, openhands-A/repo, codex/perf, copilot/perf, devin/perf, openhands-A/perf, copilot/repo, jules/perf, jules/repo, openhands-B/repo**
+Proposed by: **claude·opus-5/perf, devin·swe-1.7/repo, claude·opus-5/repo, openhands·kimi-k3/repo, codex·sol-5.6/perf, copilot·grok-4.5/perf, devin·swe-1.7/perf, openhands·kimi-k3/perf, copilot·grok-4.5/repo, jules·gemini-3.1-pro/perf, jules·gemini-3.6-flash/repo, openhands·glm-5.2/repo**
 
 ---
 
@@ -115,7 +121,7 @@ before the upload it triggered.
 Make both `private suspend fun` and call them directly from the existing coroutines.
 
 Files: `services/UploadToShelfService.kt`.
-Proposed by: **openhands-A/perf**
+Proposed by: **openhands·kimi-k3/perf**
 
 ---
 
@@ -131,7 +137,7 @@ Move the method verbatim to `ResourcesRepository`/`Impl`, point `NewsViewModel` 
 (one hop, not two), delete the method and the `MyLibraryDao` field from voices.
 
 Files: `repository/Voices*.kt`, `repository/Resources*.kt`, `ui/voices/NewsViewModel.kt`.
-Proposed by: **claude/repo, copilot/repo, devin/repo**
+Proposed by: **claude·opus-5/repo, copilot·grok-4.5/repo, devin·swe-1.7/repo**
 
 ---
 
@@ -147,7 +153,7 @@ Add `getForUserPattern` / `observeForUserPattern` DAO queries using the same
 already use, and point both methods at them. Keep the existing `distinctUntilChanged`.
 
 Files: `data/room/dao/LegacyEntityDaos.kt` (`CourseDao`), `repository/CoursesRepositoryImpl.kt`.
-Proposed by: **copilot/perf**
+Proposed by: **copilot·grok-4.5/perf**
 
 ---
 
@@ -164,7 +170,7 @@ the injection and import. Preferably make the VM method a `viewModelScope` one-s
 provider state so the fragment stops launching a coroutine purely for a data call.
 
 Files: `ui/chat/ChatHistoryFragment.kt`, `ui/chat/ChatViewModel.kt`.
-Proposed by: **claude/repo, codex/repo, copilot/repo**
+Proposed by: **claude·opus-5/repo, codex·sol-5.6/repo, copilot·grok-4.5/repo**
 
 ---
 
@@ -181,7 +187,7 @@ in the same PR**. Keep the `MyLibrary` write in resources; drop the `TeamDao` fi
 
 Files: `repository/ResourcesRepositoryImpl.kt`, `repository/Teams*.kt`.
 **Conflict:** coordinate with #15656/#15662, which are reshaping `TeamsRepository`.
-Proposed by: **claude/repo, copilot/repo**
+Proposed by: **claude·opus-5/repo, copilot·grok-4.5/repo**
 
 ---
 
@@ -199,7 +205,7 @@ Append `.distinctUntilChanged()` to each; add `.flowOn(dispatcherProvider.defaul
 where a transform follows.
 
 Files: `repository/PersonalsRepositoryImpl.kt`, `repository/FeedbackRepositoryImpl.kt`, `repository/ResourcesRepositoryImpl.kt`.
-Proposed by: **claude/perf**
+Proposed by: **claude·opus-5/perf**
 
 ---
 
@@ -218,7 +224,7 @@ Convert to an injected singleton with explicit dependencies and the project's
 clock and dispatcher.
 
 Files: `utils/SyncTimeLogger.kt`, `di/`, the three sync owners.
-Proposed by: **codex/perf**
+Proposed by: **codex·sol-5.6/perf**
 
 ---
 
@@ -235,7 +241,7 @@ Wrap the loop in `appDatabase.withTransaction { … }` (the only existing use is
 `markSynced` writes a per-row `rev`, so one statement would need a CASE expression.
 
 Files: `repository/NotificationsRepositoryImpl.kt` (+ `data/room/dao/NotificationDao.kt` if batching).
-Proposed by: **claude/perf, openhands-B/perf**
+Proposed by: **claude·opus-5/perf, openhands·glm-5.2/perf**
 
 ---
 
@@ -251,7 +257,7 @@ image dimen as `UserProfileFragment`/`ImageUtils` do. `diskCacheStrategy(ALL)` a
 `Glide.with(context).clear(...)` recycling calls are already correct — leave them.
 
 Files: `ui/resources/ResourcesAdapter.kt`, `ui/courses/CoursesAdapter.kt`, `ui/courses/InlineResourceAdapter.kt`.
-Proposed by: **claude/perf**
+Proposed by: **claude·opus-5/perf**
 
 ---
 
@@ -268,7 +274,7 @@ Hoist the `TypeToken` to a `private val`, do the mapping in `loadCourseData()` o
 shrinks to `submitList(rows)`. Add a mapping test — there is none today.
 
 Files: `ui/courses/ProgressViewModel.kt`, `ui/courses/CoursesProgressFragment.kt`.
-Proposed by: **claude/perf**
+Proposed by: **claude·opus-5/perf**
 
 ---
 
@@ -288,7 +294,7 @@ change and no attempt to split the ~1000-line adapter.
 
 Files: `ui/voices/VoicesAdapter.kt`, `ui/voices/VoicesActions.kt`, 3 call sites.
 **Conflict:** voices files are hot on master — schedule after the voices repository moves.
-Proposed by: **claude/repo, codex/repo, copilot/repo, devin/repo**
+Proposed by: **claude·opus-5/repo, codex·sol-5.6/repo, copilot·grok-4.5/repo, devin·swe-1.7/repo**
 
 ---
 
@@ -306,7 +312,7 @@ Change the return type to `RatingSummary?` (return `getRatingSummary(...)` inste
 `insertRatingsFromSync(List<JsonObject>)` stays — that is the sync boundary.
 
 Files: `repository/Ratings*.kt`, `ui/resources/ResourceDetailFragment.kt`, `base/BaseContainerFragment.kt`, `utils/CourseRatingUtils.kt`.
-Proposed by: **openhands-B/repo**
+Proposed by: **openhands·glm-5.2/repo**
 
 ---
 
@@ -324,7 +330,7 @@ intentionally launches a `NonCancellable` save after `onDestroyView()` and must 
 `BaseTeamFragment`, `BaseContainerFragment`) are deliberately excluded — base-class edits
 collide with #15650.
 
-Proposed by: **devin/perf, jules/perf, qwen/perf**
+Proposed by: **devin·swe-1.7/perf, jules·gemini-3.1-pro/perf, qwen·coder-3.6/perf**
 
 ---
 
@@ -341,7 +347,7 @@ only a supertype — no moved code), and rebind notifications to the narrow type
 `@Binds`.
 
 Files: `repository/NotificationsRepositoryImpl.kt`, `repository/Teams*.kt`, new interface, `di/RepositoryModule.kt`.
-Proposed by: **openhands-A/repo**
+Proposed by: **openhands·kimi-k3/repo**
 
 ---
 
@@ -359,7 +365,7 @@ Re-run the grep immediately before opening the PR (an open PR may have added a c
 then delete method, override, the orphaned tests, and any DAO field that becomes unused.
 Land this last in the round so the check runs against final state.
 
-Proposed by: **claude/repo**
+Proposed by: **claude·opus-5/repo**
 
 ---
 
@@ -373,7 +379,7 @@ fallback. Do **not** add a speculative index unless a query-plan test shows it i
 DAO tests should cover ID hit, name fallback, and no match.
 
 Files: `data/room/dao/ExamDao.kt`, `repository/SurveysRepositoryImpl.kt`.
-Proposed by: **codex/perf**
+Proposed by: **codex·sol-5.6/perf**
 
 ---
 
@@ -389,7 +395,7 @@ Missing users are ignored as today; ranking output must be unchanged and covered
 Stack this on the SQL-predicate task below rather than opening both against the same lines.
 
 Files: `data/room/dao/UserDao.kt`, `repository/UserRepository{,Impl}.kt`, `repository/TeamsRepositoryImpl.kt`.
-Proposed by: **codex/perf**
+Proposed by: **codex·sol-5.6/perf**
 
 ---
 
@@ -407,7 +413,7 @@ and MPAndroidChart types must not cross into the ViewModel. Do **not** fold this
 
 Files: `ui/dashboard/ActivitiesFragment.kt`, new `ui/dashboard/ActivitiesViewModel.kt`.
 **Conflict:** same file as the `getOfflineLogins` signature task below.
-Proposed by: **codex/repo, claude/repo, copilot/repo**
+Proposed by: **codex·sol-5.6/repo, claude·opus-5/repo, copilot·grok-4.5/repo**
 
 ---
 
@@ -424,7 +430,7 @@ the top and reuse it for all three consumers; drop the `toMutableList()`. Keep t
 section so the improvement is measurable in a systrace.
 
 Files: `ui/voices/VoicesFragment.kt`.
-Proposed by: **claude/perf**
+Proposed by: **claude·opus-5/perf**
 
 ---
 
@@ -441,7 +447,7 @@ only the chrome that depends on mode/guest (checkbox visibility, layout bits). N
 covers via Glide on an identity-only update.
 
 Files: `ui/courses/CoursesAdapter.kt`, `ui/resources/ResourcesAdapter.kt`.
-Proposed by: **copilot/perf**
+Proposed by: **copilot·grok-4.5/perf**
 
 ---
 
@@ -459,7 +465,7 @@ empty / completion state and a `delete(items)` one-shot; the fragment only rende
 path below the UI boundary. Deletion must not be launchable twice while active.
 
 Files: `ui/settings/StorageCategoryDetailFragment.kt`, `ui/settings/SettingsViewModel.kt`, `repository/Resources*.kt`.
-Proposed by: **codex/repo, claude/repo**
+Proposed by: **codex·sol-5.6/repo, claude·opus-5/repo**
 
 ---
 
@@ -477,7 +483,7 @@ Add one `suspend fun startExamSession(examId, parentId, userId): Submission` to
 
 Files: `ui/exam/ExamTakingFragment.kt`, `repository/Submissions*.kt`.
 **Conflict:** `ExamTakingFragment` is contested by #15559 and #14650.
-Proposed by: **openhands-A/repo**
+Proposed by: **openhands·kimi-k3/repo**
 
 ---
 
@@ -497,7 +503,7 @@ of the pattern (one interface, one impl, one caller, one existing test); leave t
 signatures for a follow-up round.
 
 Files: `repository/Activities*.kt`, `ui/dashboard/ActivitiesFragment.kt`.
-Proposed by: **claude/perf**
+Proposed by: **claude·opus-5/perf**
 
 ---
 
@@ -512,7 +518,7 @@ the DAO from the voices constructor and the method from the `VoicesRepository` i
 Land after the library-table move so the two don't collide on the same constructor.
 
 Files: `repository/Voices*.kt`, `repository/Notifications*.kt`, `ui/teams/voices/TeamsVoicesViewModel.kt`.
-Proposed by: **devin/repo**
+Proposed by: **devin·swe-1.7/repo**
 
 ---
 
@@ -528,7 +534,7 @@ Collapse `clearPreferences()` into one atomic `pref.edit { clear(); tempStorage.
 and switch the checkpoint removal to `.apply()`.
 
 Files: `services/SharedPrefManager.kt`, `services/sync/TransactionSyncManager.kt`.
-Proposed by: **openhands-A/perf, jules/repo, jules/perf**
+Proposed by: **openhands·kimi-k3/perf, jules·gemini-3.6-flash/repo, jules·gemini-3.1-pro/perf**
 
 ---
 
@@ -542,7 +548,7 @@ text re-runs the whole filter+submitList: `SurveyFragment.kt:99-100`,
 One-line addition per file; land as a single PR. Add `drop(1)` only where the initial empty
 emission would re-filter.
 
-Proposed by: **copilot/perf**
+Proposed by: **copilot·grok-4.5/perf**
 
 ---
 
@@ -559,7 +565,7 @@ submit button is disabled while active; dismiss happens only on Saved; errors st
 retryable. Use the existing repository method — do not broaden `FeedbackRepository`.
 
 Files: `ui/feedback/FeedbackFragment.kt`, new `ui/feedback/FeedbackComposerViewModel.kt`.
-Proposed by: **codex/repo, copilot/repo**
+Proposed by: **codex·sol-5.6/repo, copilot·grok-4.5/repo**
 
 ---
 
@@ -577,7 +583,7 @@ inside the VM. Creating and showing `RatingsFragment` and the back-stack work st
 fragment — no navigation object enters the ViewModel.
 
 Files: `ui/courses/TakeCourseFragment.kt`, `ui/courses/TakeCourseViewModel.kt` (+ test).
-Proposed by: **codex/repo, devin/repo**
+Proposed by: **codex·sol-5.6/repo, devin·swe-1.7/repo**
 
 ---
 
@@ -592,7 +598,7 @@ Add `createTransaction(...)` plus a `transactionCreated: SharedFlow<Result<Unit>
 toast/error. `TeamsRepository` is unchanged — only the call site moves up one layer.
 
 Files: `ui/enterprises/EnterprisesFinancesFragment.kt`, `ui/enterprises/EnterprisesFinancesViewModel.kt`.
-Proposed by: **devin/repo**
+Proposed by: **devin·swe-1.7/repo**
 
 ---
 
@@ -609,7 +615,7 @@ Cache the two `ImageButton`s in fields resolved once in `onViewCreated`; in
 GRID just assign `spanCount`, which `updateGridSpanIfNeeded()` (`:379`) already proves works.
 
 Files: `ui/courses/CoursesFragment.kt`. Does **not** touch `BaseRecyclerFragment` (#15650's file).
-Proposed by: **claude/perf**
+Proposed by: **claude·opus-5/perf**
 
 ---
 
@@ -625,7 +631,7 @@ Move the buffer read into the launched coroutine (closing the image there after 
 pass a background `Handler`/`Executor` to the listener. Keep `image.close()` ordering correct.
 
 Files: `utils/CameraUtils.kt`.
-Proposed by: **openhands-A/perf**
+Proposed by: **openhands·kimi-k3/perf**
 
 ---
 
@@ -641,7 +647,7 @@ Resolve the three views once (nullable fields set in `onViewCreated`, cleared in
 `onDestroyView`) and apply the same reuse-the-LayoutManager change.
 
 Files: `ui/resources/ResourcesFragment.kt`.
-Proposed by: **claude/perf**
+Proposed by: **claude·opus-5/perf**
 
 ---
 
@@ -656,7 +662,7 @@ Retain both objects, remove/detach them in `onDestroyView`, clear the ViewPager 
 skip `requestLayout()` when the computed height is already applied.
 
 Files: `ui/community/HomeCommunityDialogFragment.kt`.
-Proposed by: **codex/perf**
+Proposed by: **codex·sol-5.6/perf**
 
 ---
 
@@ -672,7 +678,7 @@ Add `getMyLibraryFlow(userId)` using the existing `MyLibraryDao` `userId LIKE` p
 two, and `distinctUntilChanged` on list identity before updating state.
 
 Files: `ui/dashboard/DashboardViewModel.kt`, `repository/Resources*.kt`.
-Proposed by: **copilot/perf**
+Proposed by: **copilot·grok-4.5/perf**
 
 ---
 
@@ -689,7 +695,7 @@ own direct read is out of scope — it is the app entry point, not UI; call it o
 follow-up.
 
 Files: `services/SharedPrefManager.kt`, `ui/settings/SettingsActivity.kt`.
-Proposed by: **openhands-B/repo**
+Proposed by: **openhands·glm-5.2/repo**
 
 ---
 
@@ -707,7 +713,7 @@ follow-up so the diff stays reviewable.
 
 Files: `repository/Teams*.kt`, new `repository/Enterprises*.kt`, `di/RepositoryModule.kt`, `ui/enterprises/`.
 **Conflict:** highest in the backlog — same file as the SQL-flow task and #15656/#15662.
-Proposed by: **openhands-A/repo**
+Proposed by: **openhands·kimi-k3/repo**
 
 ---
 
@@ -723,7 +729,7 @@ Delete the field and the import. Do not replace it with another dependency, and 
 the callback-based member upload into this PR — that belongs to the sync/upload
 consolidation round.
 
-Proposed by: **codex/repo, openhands-B/repo, qwen/perf, qwen/repo**
+Proposed by: **codex·sol-5.6/repo, openhands·glm-5.2/repo, qwen·coder-3.6/perf, qwen·coder-3.6/repo**
 
 ---
 
@@ -741,7 +747,7 @@ same `dbType`. Filtering widgets, keyboard behaviour, selection and adapter bind
 the fragment. Do not touch `ResourcesViewModel` or `ResourcesAdapter`.
 
 Files: `ui/resources/CollectionsFragment.kt`, new `ui/resources/CollectionsViewModel.kt`.
-Proposed by: **codex/repo, claude/repo**
+Proposed by: **codex·sol-5.6/repo, claude·opus-5/repo**
 
 ---
 
@@ -758,7 +764,7 @@ Turkish-locale bug class). Add one private `isGif(path: String?)` if a helper do
 — no new public API.
 
 Files: `ui/voices/VoicesAdapter.kt`.
-Proposed by: **openhands-A/perf**
+Proposed by: **openhands·kimi-k3/perf**
 
 ---
 
@@ -773,7 +779,7 @@ Replace with direct `==` on both fields in `areContentsTheSame` and `getChangePa
 Semantics are identical.
 
 Files: `ui/voices/VoicesAdapter.kt` (diff callback block only).
-Proposed by: **openhands-B/perf**
+Proposed by: **openhands·glm-5.2/perf**
 
 ---
 
@@ -792,7 +798,7 @@ a common-utility conflict.
 
 Files: `ui/courses/CoursesFragment.kt`, `ui/resources/ResourcesFragment.kt`.
 **Conflict:** same two files as the LayoutManager-reuse tasks above.
-Proposed by: **codex/perf, devin/repo**
+Proposed by: **codex·sol-5.6/perf, devin·swe-1.7/repo**
 
 ---
 
@@ -808,7 +814,7 @@ Move the body into `viewModelScope.launch(dispatcherProvider.default)`; keep the
 hard-coded dispatchers outside `DispatcherProvider.kt` and should keep it that way.
 
 Files: `ui/community/LeadersViewModel.kt`.
-Proposed by: **openhands-B/perf**
+Proposed by: **openhands·glm-5.2/perf**
 
 ---
 
@@ -825,7 +831,7 @@ injects `userRepository`) and returning success. Replace both call-site blocks; 
 keeps only the snackbar/state reaction. Leave the ratings read at `:283-289` alone.
 
 Files: `ui/resources/ResourceDetailFragment.kt`, `repository/Resources*.kt`.
-Proposed by: **openhands-A/repo**
+Proposed by: **openhands·kimi-k3/repo**
 
 ---
 
@@ -843,7 +849,7 @@ locale-independent), and build the alternating-row background once as `mutate()`
 go if the inset moves to holder padding. Verify striping visually.
 
 Files: `ui/enterprises/EnterprisesFinancesAdapter.kt`.
-Proposed by: **openhands-A/perf, openhands-B/perf**
+Proposed by: **openhands·kimi-k3/perf, openhands·glm-5.2/perf**
 
 ---
 
@@ -862,7 +868,7 @@ dependency.
 
 Files: `ui/courses/CourseStepFragment.kt`, `repository/Courses*.kt`.
 **Conflict:** `CourseStepFragment` is a hot file with open courses PRs.
-Proposed by: **openhands-A/repo**
+Proposed by: **openhands·kimi-k3/repo**
 
 ---
 
@@ -875,7 +881,7 @@ Inject `UserRepository` into `ResourcesViewModel`, expose `currentUser: StateFlo
 and collect it instead. No change to search or adapter behaviour.
 
 Files: `ui/resources/ResourcesFragment.kt`, `ui/resources/ResourcesViewModel.kt`.
-Proposed by: **devin/repo**
+Proposed by: **devin·swe-1.7/repo**
 
 ---
 
@@ -892,7 +898,7 @@ For `PublicSurveyActivity`, preserve the existing upload-on-completion guards so
 cannot start a duplicate upload.
 
 Files: `ui/surveys/PublicSurveyActivity.kt`, `ui/dashboard/DashboardActivity.kt`.
-Proposed by: **codex/perf, devin/repo**
+Proposed by: **codex·sol-5.6/perf, devin·swe-1.7/repo**
 
 ---
 
@@ -907,7 +913,7 @@ a cheap staleness check (`refreshIfStale()`) in the ViewModel. Do not redesign t
 `SurveysViewModel` load pipeline.
 
 Files: `ui/surveys/SurveyFragment.kt`.
-Proposed by: **copilot/perf**
+Proposed by: **copilot·grok-4.5/perf**
 
 ---
 
@@ -922,7 +928,7 @@ Route the `START_DATE`/`END_DATE` payload branches through the same `getOrPut`. 
 `getChangePayload` set semantics untouched.
 
 Files: `ui/events/EventsAdapter.kt`.
-Proposed by: **openhands-B/perf**
+Proposed by: **openhands·glm-5.2/perf**
 
 ---
 
@@ -938,7 +944,7 @@ narrow accessor, and move `TeamDetailFragment`'s filter into `getTeamUpdateFlow(
 fragment just collects. Filtering then lives in one place.
 
 Files: `services/sync/RealtimeSyncManager.kt`, `ui/chat/ChatViewModel.kt`, `ui/teams/TeamViewModel.kt`, `ui/teams/TeamDetailFragment.kt`.
-Proposed by: **openhands-B/repo**
+Proposed by: **openhands·glm-5.2/repo**
 
 ---
 
@@ -952,7 +958,7 @@ Collapse it into one repository method (`hasActiveUserSyncAction()`), expose it 
 tiny ViewModel, and drop the injection.
 
 Files: `ui/components/MarkdownDialogFragment.kt`, `repository/User*.kt`.
-Proposed by: **claude/repo**
+Proposed by: **claude·opus-5/repo**
 
 ---
 
@@ -968,7 +974,7 @@ the name inside the impl so no caller signature changes. Survey write logic stay
 
 Files: `repository/SurveysRepositoryImpl.kt`, `repository/TeamsRepository.kt`.
 **Conflict:** open PR #14650 adds a *new* `teamDao` use to this file — sequence after it or defer.
-Proposed by: **copilot/repo**
+Proposed by: **copilot·grok-4.5/repo**
 
 ---
 
@@ -985,7 +991,7 @@ Switch both inner collects to `collectLatest` and add `distinctUntilChanged` on 
 on the filter combine and the existing `observeJob?.cancel()`.
 
 Files: `ui/voices/VoicesViewModel.kt`, `ui/teams/voices/TeamsVoicesViewModel.kt`.
-Proposed by: **copilot/perf**
+Proposed by: **copilot·grok-4.5/perf**
 
 ---
 
@@ -1002,7 +1008,7 @@ already wrapped).
 Wrap the body read in `withContext(dispatcherProvider.io)`.
 
 Files: `data/api/ChatApiService.kt`.
-Proposed by: **jules/perf**
+Proposed by: **jules·gemini-3.1-pro/perf**
 
 ---
 
@@ -1020,7 +1026,7 @@ touching views (check the login/sync callers); then run the evaluation inline on
 fix it in the same PR.
 
 Files: `repository/ConfigurationsRepositoryImpl.kt`.
-Proposed by: **openhands-A/perf**
+Proposed by: **openhands·kimi-k3/perf**
 
 ---
 
@@ -1036,7 +1042,7 @@ Replace both with direct `==`. If label *order* genuinely shouldn't matter, keep
 and document why — otherwise drop it.
 
 Files: `repository/VoicesRepositoryImpl.kt` (two flow predicates).
-Proposed by: **openhands-B/perf**
+Proposed by: **openhands·glm-5.2/perf**
 
 ---
 
@@ -1054,7 +1060,7 @@ resolve the user and pass it down, plus the three test classes.
 
 Files: `repository/Ratings*.kt`, `ui/courses/RatingSummaryProvider.kt`, `ui/courses/CourseDetailViewModel.kt`, `ui/ratings/RatingsViewModel.kt`.
 **Note:** wide ripple for a design point the codebase doesn't yet settle — sequence after the typed-rating task.
-Proposed by: **devin/repo**
+Proposed by: **devin·swe-1.7/repo**
 
 ---
 
@@ -1071,7 +1077,7 @@ Add a purpose-specific DAO query applying them, keeping the null-exclusion seman
 N+1 fix above; land it first so that one stacks cleanly.
 
 Files: `data/room/dao/TeamDao.kt`, `repository/TeamsRepositoryImpl.kt`.
-Proposed by: **codex/perf**
+Proposed by: **codex·sol-5.6/perf**
 
 ---
 
@@ -1091,7 +1097,7 @@ progress assembly; `DashboardViewModel.evaluateChallengeDialog` collection aggre
 `withContext(dispatcherProvider.io/default)`; `StateFlow` emission is thread-safe.
 
 Land as five separate PRs (one per file) so they stay conflict-free.
-Proposed by: **devin/perf, qwen/repo**
+Proposed by: **devin·swe-1.7/perf, qwen·coder-3.6/repo**
 
 ---
 
@@ -1110,7 +1116,7 @@ Files: `repository/Submissions*.kt`, `ui/submissions/SubmissionDetailViewModel.k
 **Note:** the "Dagger cycle" framing is unproven — `Lazy<…>` repository edges are used
 elsewhere in this codebase (e.g. `NotificationsRepositoryImpl`). Judge it on interface
 narrowing, not on a claimed cycle.
-Proposed by: **devin/repo**
+Proposed by: **devin·swe-1.7/repo**
 
 ---
 
@@ -1126,7 +1132,7 @@ Change to `getJoinedMembers(meetupId, allUsers)` and `toggleAttendance(meetupId,
 Files: `repository/Events*.kt`, `ui/events/EventsDetailViewModel.kt`.
 **Note:** "repositories must never resolve the session user" is a convention this codebase
 has not adopted — decide the rule once before landing this and the ratings twin.
-Proposed by: **devin/repo**
+Proposed by: **devin·swe-1.7/repo**
 
 ---
 
@@ -1142,7 +1148,7 @@ Hoist to `private val`s. In `UserArrayAdapter`, also stop re-running
 only touch the background.
 
 Files: `ui/user/UserArrayAdapter.kt`, `ui/sync/ServerAddressAdapter.kt`.
-Proposed by: **openhands-B/perf**
+Proposed by: **openhands·glm-5.2/perf**
 
 ---
 
@@ -1154,7 +1160,7 @@ posted from a background thread. Toasts fire constantly during sync.
 Hoist to one shared `private val mainHandler by lazy { Handler(Looper.getMainLooper()) }`.
 
 Files: `utils/Utilities.kt`. ~2-line diff.
-Proposed by: **openhands-A/perf**
+Proposed by: **openhands·kimi-k3/perf**
 
 ---
 
@@ -1171,7 +1177,7 @@ computed in `init`; the fragment collects with `collectWhenStarted` and wires th
 `CommunityPagerAdapter`'s constructor contract is unchanged.
 
 Files: `ui/community/CommunityTabFragment.kt`, new `ui/community/CommunityTabViewModel.kt`.
-Proposed by: **openhands-B/perf**
+Proposed by: **openhands·glm-5.2/perf**
 
 ---
 
@@ -1189,7 +1195,7 @@ this PR to the three fragment call sites and leave the base-class field and the 
 ViewModels for a follow-up.
 
 Files: `ui/teams/TeamDetailFragment.kt`, `ui/teams/resources/TeamResourcesFragment.kt`, `repository/Teams*.kt`.
-Proposed by: **openhands-A/repo**
+Proposed by: **openhands·kimi-k3/repo**
 
 ---
 
@@ -1205,7 +1211,7 @@ and drop the redundant `.toList()`. `DiffUtils.calculateDiff` usage is unchanged
 
 Files: `ui/courses/CoursesPagerAdapter.kt`, `ui/teams/TeamPagerAdapter.kt`.
 **Note:** low impact — these pager lists are small; treat as filler.
-Proposed by: **openhands-A/perf**
+Proposed by: **openhands·kimi-k3/perf**
 
 ---
 
@@ -1221,7 +1227,7 @@ the interceptor synchronous (no coroutines — OkHttp interceptors must stay blo
 cancellation test if none exists.
 
 Files: `data/api/RetryInterceptor.kt`.
-Proposed by: **openhands-B/repo, openhands-B/perf**
+Proposed by: **openhands·glm-5.2/repo, openhands·glm-5.2/perf**
 
 ---
 
@@ -1237,7 +1243,7 @@ exam `id`, team id) and make sure the DiffUtil `areItemsTheSame` key matches the
 stable IDs add little, and a `hashCode().toLong()` collision produces visibly wrong item
 animations. If it goes in, it needs a collision-resistant hash, not `hashCode()`.
 
-Proposed by: **copilot/perf**
+Proposed by: **copilot·grok-4.5/perf**
 
 ---
 
@@ -1255,7 +1261,7 @@ Wrap each body in `withContext(dispatcherProvider.io)`, injecting the provider i
 **Note:** the payoff is smaller than the source proposal implies — the Room calls inside are
 already off-Main; only the Kotlin aggregation moves. Land it for dispatcher consistency, not
 for a measured win.
-Proposed by: **devin/perf**
+Proposed by: **devin·swe-1.7/perf**
 
 ---
 
@@ -1273,7 +1279,7 @@ becomes unused, keep `CoursesFragment.onRatingChanged`'s `notifyItemChangedById(
 and delete the unused import. Rendering is unchanged — no rating was shown before or after.
 
 Files: `ui/courses/CoursesViewModel.kt`, `ui/courses/CoursesFragment.kt`, `ui/courses/CoursesAdapter.kt`.
-Proposed by: **openhands-B/repo**
+Proposed by: **openhands·glm-5.2/repo**
 
 ---
 
@@ -1289,7 +1295,7 @@ Drop the `onChanged` override; keep the two range callbacks and the existing unr
 Cosmetic — ship only if a slot opens.
 
 Files: `ui/voices/VoicesFragment.kt`.
-Proposed by: **openhands-B/repo**
+Proposed by: **openhands·glm-5.2/repo**
 
 ---
 
@@ -1308,7 +1314,7 @@ this backlog removes. If it proceeds, route through `ResourceDownloadCoordinator
 already wraps this call at `:22` with an injected context) instead, and fix the
 `TeamsRepositoryImpl` global-context call in the same pass.
 
-Proposed by: **qwen/repo**
+Proposed by: **qwen·coder-3.6/repo**
 
 ---
 
@@ -1328,4 +1334,4 @@ Keep the finding, discard the remedy. If shelf-query cost is real, the fix is a 
 membership join table (or a generated column), designed and measured on its own — not an
 index and a version bump. Do not land as a quick win.
 
-Proposed by: **copilot/perf**
+Proposed by: **copilot·grok-4.5/perf**
