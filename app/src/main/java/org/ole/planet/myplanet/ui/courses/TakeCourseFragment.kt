@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
@@ -42,8 +41,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private val binding get() = _binding!!
     @Inject
     lateinit var userSessionManager: UserSessionManager
-    @Inject
-    lateinit var coursesRepository: CoursesRepository
     @Inject
     lateinit var ratingsRepository: RatingsRepository
     private val viewModel: TakeCourseViewModel by viewModels()
@@ -202,7 +199,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         binding.courseStepProgressBar.max = steps.size
         binding.courseStepProgressBar.progress = position
         viewLifecycleOwner.lifecycleScope.launch {
-            val currentProgress = coursesRepository.getCurrentProgress(steps, userModel?.id, courseId)
+            val currentProgress = viewModel.getCurrentProgress(steps, userModel?.id, courseId)
             currentCourseProgress = currentProgress
             if (currentProgress < steps.size) {
                 binding.courseProgress.secondaryProgress = currentProgress + 1
@@ -246,7 +243,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 detachedCurrentCourse?.courseId?.let { cId ->
                     detachedCurrentCourse.courseTitle?.let { courseTitle ->
                         detachedUserModel?.name?.let { userName ->
-                            coursesRepository.logCourseVisit(cId, courseTitle, userName)
+                            viewModel.logCourseVisit(cId, courseTitle, userName)
                         }
                     }
                 }
@@ -319,11 +316,11 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         if (courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
             val stepId = steps.getOrNull(position - 1)?.id
             viewLifecycleOwner.lifecycleScope.launch {
-                val stepData = stepId?.let { coursesRepository.getCourseStepData(it, userModel?.id) }
+                val stepData = stepId?.let { viewModel.getCourseStepData(it, userModel?.id) }
                 val hasExam = stepData?.stepExams?.isNotEmpty() == true
                 val hasSurvey = stepData?.stepSurvey?.isNotEmpty() == true
 
-                if (coursesRepository.isStepCompleted(stepId, userModel?.id)) {
+                if (viewModel.isStepCompleted(stepId, userModel?.id)) {
                     isNextStepLocked = false
                 } else if (hasExam || hasSurvey) {
                     isNextStepLocked = true
@@ -421,7 +418,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private fun onFinishStep() {
         viewLifecycleOwner.lifecycleScope.launch {
             val hasUnfinishedSurvey = courseId?.let {
-                coursesRepository.hasUnfinishedSurveys(it, userModel?.id)
+                viewModel.hasUnfinishedSurveys(it, userModel?.id)
             } ?: false
 
             if (hasUnfinishedSurvey && courseId == MANDATORY_SURVEY_COURSE_ID) {
@@ -434,16 +431,16 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     private fun addRemoveCourse() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val course = courseId?.let { coursesRepository.getCourseById(it) }
+            val course = courseId?.let { viewModel.getCourseById(it) }
             val isJoined = course?.userId?.contains(userModel?.id) == true
 
             val userId = userModel?.id ?: return@launch
             val cId = courseId ?: return@launch
 
             val result = if (isJoined) {
-                coursesRepository.leaveCourse(cId, userId)
+                viewModel.leaveCourse(cId, userId)
             } else {
-                coursesRepository.joinCourse(cId, userId)
+                viewModel.joinCourse(cId, userId)
             }
 
             result.onSuccess {
