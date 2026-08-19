@@ -1142,8 +1142,11 @@ class TeamsRepositoryImpl @Inject constructor(
         }
         if (members.isEmpty()) return null
 
-        val users = members.mapNotNull { member ->
-            member.userId?.let { userId -> userRepository.getUserById(userId) }
+        val userIds = members.mapNotNull { it.userId }
+        val users = if (userIds.isNotEmpty()) {
+            userRepository.getUsersByIds(userIds)
+        } else {
+            emptyList()
         }
         if (users.isEmpty()) return null
 
