@@ -36,8 +36,15 @@ class LocalReminderSchedulerImpl @Inject constructor(
 
     override suspend fun scheduleMeetupReminder(meetup: Meetup, advanceMinutes: Int) {
         if (meetup.startDate <= 0) return
-        val triggerTime = meetup.startDate - (advanceMinutes * 60 * 1000L)
-        if (triggerTime <= timeProvider.now()) return
+        val now = timeProvider.now()
+        if (meetup.startDate <= now) return
+
+        val advanceMillis = advanceMinutes * 60 * 1000L
+        val triggerTime = if (meetup.startDate - advanceMillis > now) {
+            meetup.startDate - advanceMillis
+        } else {
+            now + 1000L
+        }
 
         val intent = Intent(context, ReminderAlarmReceiver::class.java).apply {
             action = ReminderAlarmReceiver.ACTION_MEETUP_REMINDER

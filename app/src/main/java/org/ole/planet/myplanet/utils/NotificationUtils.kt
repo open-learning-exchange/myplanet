@@ -348,12 +348,15 @@ object NotificationUtils {
             }
         }
 
+        private fun isReminderType(type: String): Boolean =
+            type == TYPE_MEETUP || type == TYPE_TASK || type == TYPE_COURSE
+
         private fun getNotificationIdIfShouldShow(config: NotificationConfig): Int? {
             if (!canShowNotification(config.type)) {
                 return null
             }
 
-            if (sessionShownNotifications.contains(config.id)) {
+            if (!isReminderType(config.type) && sessionShownNotifications.contains(config.id)) {
                 return null
             }
 
@@ -478,16 +481,24 @@ object NotificationUtils {
         }
 
         private fun canShowNotification(type: String): Boolean {
-            if (!notificationManager.areNotificationsEnabled() || !preferences.getBoolean(KEY_ENABLED, true)) return false
+            if (!notificationManager.areNotificationsEnabled() || !getPrefBoolean(KEY_ENABLED, true)) return false
             return when (type) {
-                TYPE_SURVEY -> preferences.getBoolean(KEY_SURVEY_ENABLED, true)
-                TYPE_TASK -> preferences.getBoolean(KEY_TASK_ENABLED, true)
-                TYPE_MEETUP -> preferences.getBoolean(KEY_MEETUP_ENABLED, true)
-                TYPE_COURSE -> preferences.getBoolean(KEY_COURSE_ENABLED, true)
-                TYPE_STORAGE, TYPE_RESOURCE -> preferences.getBoolean(KEY_SYSTEM_ENABLED, true)
-                TYPE_JOIN_REQUEST -> preferences.getBoolean(KEY_TEAM_ENABLED, true)
+                TYPE_SURVEY -> getPrefBoolean(KEY_SURVEY_ENABLED, true)
+                TYPE_TASK -> getPrefBoolean(KEY_TASK_ENABLED, true)
+                TYPE_MEETUP -> getPrefBoolean(KEY_MEETUP_ENABLED, true)
+                TYPE_COURSE -> getPrefBoolean(KEY_COURSE_ENABLED, true)
+                TYPE_STORAGE, TYPE_RESOURCE -> getPrefBoolean(KEY_SYSTEM_ENABLED, true)
+                TYPE_JOIN_REQUEST -> getPrefBoolean(KEY_TEAM_ENABLED, true)
                 else -> true
             }
+        }
+
+        private fun getPrefBoolean(key: String, default: Boolean): Boolean {
+            val defaultPrefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
+            if (defaultPrefs.contains(key)) {
+                return defaultPrefs.getBoolean(key, default)
+            }
+            return preferences.getBoolean(key, default)
         }
 
         private fun getChannelForType(type: String): String = when (type) {

@@ -102,6 +102,26 @@ class LocalReminderSchedulerImplTest {
     }
 
     @Test
+    fun testScheduleMeetupReminder_withinAdvanceWindow_schedulesImmediately() = runTest(testDispatcher) {
+        val meetup = Meetup().apply {
+            id = "meetup_soon"
+            title = "Imminent Standup"
+            startDate = baseTime + (10 * 60 * 1000L) // 10 minutes in future (less than 15 min advance)
+            teamId = "team_1"
+        }
+
+        scheduler.scheduleMeetupReminder(meetup, advanceMinutes = 15)
+
+        verify {
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                baseTime + 1000L,
+                any()
+            )
+        }
+    }
+
+    @Test
     fun testScheduleMeetupReminder_inPast_doesNotSchedule() = runTest(testDispatcher) {
         val pastMeetup = Meetup().apply {
             id = "meetup_past"
