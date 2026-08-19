@@ -58,7 +58,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
 
             try {
-                val response = withContext(dispatcherProvider.io) { apiInterface.healthAccess(healthUrl) }
+                val response = apiInterface.healthAccess(healthUrl)
                 when (response.code()) {
                     200 -> context.getString(R.string.server_sync_successfully)
                     401 -> "Unauthorized - Invalid credentials"
@@ -203,34 +203,34 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun checkServerAvailability(url: String): Boolean {
-        return withContext(dispatcherProvider.io) {
-            try {
-                val response = apiInterface.isPlanetAvailable(url)
-                val code = response.code()
-                if (response.isSuccessful) {
-                    val ss = response.body()?.string()
-                    val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
-                    val dbCount = myList?.size ?: 0
-                    dbCount >= 8
-                } else {
-                    code == 401
-                }
-            } catch (e: Exception) {
-                false
+        return try {
+            val response = apiInterface.isPlanetAvailable(url)
+            val code = response.code()
+            if (response.isSuccessful) {
+                val ss = withContext(dispatcherProvider.io) { response.body()?.string() }
+                val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
+                val dbCount = myList?.size ?: 0
+                dbCount >= 8
+            } else {
+                code == 401
             }
+        } catch (_: Exception) {
+            false
         }
     }
 
-    override suspend fun checkCheckSum(path: String): Boolean = withContext(dispatcherProvider.io) {
-        try {
+    override suspend fun checkCheckSum(path: String): Boolean {
+        return try {
             val response = apiInterface.getChecksum(UrlUtils.getChecksumUrl(sharedPrefManager))
             if (response.isSuccessful) {
-                val checksum = response.body()?.string()
+                val checksum = withContext(dispatcherProvider.io) { response.body()?.string() }
                 if (!checksum.isNullOrEmpty()) {
                     val f = FileUtils.getSDPathFromUrl(context, path)
                     if (f.exists()) {
-                        val sha256 = Sha256Utils().getCheckSumFromFile(f)
-                        return@withContext checksum.contains(sha256)
+                        val sha256 = withContext(dispatcherProvider.io) {
+                            Sha256Utils().getCheckSumFromFile(f)
+                        }
+                        return checksum.contains(sha256)
                     }
                 }
             }
@@ -444,4 +444,13 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun ensureServerUrlUpdated() {
+        val serverUrl = sharedPrefManager.getServerUrl()
+        val mapping = serverUrlMapper.processUrl(serverUrl)
+        if (mapping.alternativeUrl != null) {
+            serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
+                serverUrlMapper.isUrlDirectlyReachable(url)
+            }
+        }
+    }
 }

@@ -15,7 +15,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ProgressRepository
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
@@ -28,7 +28,7 @@ class ProgressViewModelTest {
 
     private lateinit var viewModel: ProgressViewModel
     private val progressRepository: ProgressRepository = mockk()
-    private val userSessionManager: UserSessionManager = mockk()
+    private val userRepository: UserRepository = mockk()
     private val dispatcherProvider = object : DispatcherProvider {
         override val main: CoroutineDispatcher = testDispatcher
         override val mainImmediate: CoroutineDispatcher = testDispatcher
@@ -39,13 +39,13 @@ class ProgressViewModelTest {
 
     @Before
     fun setUp() {
-        viewModel = ProgressViewModel(progressRepository, userSessionManager)
+        viewModel = ProgressViewModel(progressRepository, userRepository)
     }
 
     @Test
     fun loadCourseData_updatesCourseData() = runTest {
         val user = UserEntity().apply { id = "user_123" }
-        coEvery { userSessionManager.getUserModel() } returns user
+        coEvery { userRepository.getUserModel() } returns user
 
         val expectedJsonArray = JsonArray().apply { add("course1") }
         coEvery { progressRepository.fetchCourseData(user.id) } returns expectedJsonArray

@@ -43,7 +43,7 @@ object CameraUtils {
         closeCamera()
     }
 
-    fun capturePhoto(scope: CoroutineScope, callback: ImageCaptureCallback, dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider()) {
+    fun capturePhoto(scope: CoroutineScope, callback: ImageCaptureCallback, dispatcherProvider: DispatcherProvider) {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             return
         }
@@ -96,7 +96,7 @@ object CameraUtils {
         imageReader = null
     }
 
-    private suspend fun savePicture(data: ByteArray, callback: ImageCaptureCallback, dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider()) {
+    private suspend fun savePicture(data: ByteArray, callback: ImageCaptureCallback, dispatcherProvider: DispatcherProvider) {
         withContext(dispatcherProvider.io) {
             val pictureFileDir = File("${FileUtils.getOlePath(context)}/userimages")
             if (!pictureFileDir.exists() && !pictureFileDir.mkdirs()) {

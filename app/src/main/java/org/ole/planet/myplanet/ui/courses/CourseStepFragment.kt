@@ -37,9 +37,9 @@ import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utils.CameraUtils
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utils.CameraUtils.capturePhoto
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
+import org.ole.planet.myplanet.utils.ResourcesPreviewLoader
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @AndroidEntryPoint
@@ -50,8 +50,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     lateinit var progressRepository: ProgressRepository
     @Inject
     lateinit var resourceDownloadCoordinator: ResourceDownloadCoordinator
-    @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
     private var nextStepId: String? = null
@@ -181,7 +179,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         fragmentCourseStepBinding.tvResourcesHeader.visibility = View.VISIBLE
         fragmentCourseStepBinding.rvInlineResources.visibility = View.VISIBLE
 
-        inlineResourceAdapter = InlineResourceAdapter(dispatcherProvider) { library ->
+        inlineResourceAdapter = InlineResourceAdapter(ResourcesPreviewLoader(dispatcherProvider), dispatcherProvider) { library ->
             openResource(library)
         }
         fragmentCourseStepBinding.rvInlineResources.apply {
