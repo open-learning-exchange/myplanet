@@ -27,7 +27,6 @@ import dagger.hilt.android.HiltAndroidApp
 import java.lang.ref.WeakReference
 import java.net.HttpURLConnection
 import java.net.URL
-import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -68,7 +67,6 @@ import org.ole.planet.myplanet.utils.PdfThumbnailLoader
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.ThemeMode
 import org.ole.planet.myplanet.utils.UrlUtils.init
-import org.ole.planet.myplanet.utils.VersionUtils.getVersionName
 
 @HiltAndroidApp
 class MainApplication : Application(), WorkManagerConfiguration.Provider {

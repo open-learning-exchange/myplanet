@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.UserEntity

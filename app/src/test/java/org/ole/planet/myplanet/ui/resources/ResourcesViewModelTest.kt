@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.resources
 
 import com.google.gson.JsonObject
 import io.mockk.coEvery
-import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

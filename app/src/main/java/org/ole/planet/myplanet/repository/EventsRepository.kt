@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.UserEntity

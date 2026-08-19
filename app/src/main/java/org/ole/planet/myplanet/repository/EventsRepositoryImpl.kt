@@ -12,7 +12,6 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 
-
 @Singleton
 class EventsRepositoryImpl @Inject constructor(
     private val timeProvider: TimeProvider,

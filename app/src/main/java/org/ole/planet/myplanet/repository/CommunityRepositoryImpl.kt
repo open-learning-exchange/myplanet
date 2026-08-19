@@ -11,7 +11,6 @@ import org.ole.planet.myplanet.model.Community
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.utils.JsonUtils
 
-
 @Singleton
 class CommunityRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,

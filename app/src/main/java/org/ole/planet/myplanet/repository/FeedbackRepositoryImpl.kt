@@ -13,7 +13,6 @@ import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.JsonUtils
 
-
 @Singleton
 class FeedbackRepositoryImpl @Inject constructor(
     private val feedbackDao: FeedbackDao,

@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import kotlinx.coroutines.flow.Flow
-import org.ole.planet.myplanet.data.api.ApiInterface
 
 interface SyncRepository {
     fun uploadLoginData(): Flow<SyncUiState>

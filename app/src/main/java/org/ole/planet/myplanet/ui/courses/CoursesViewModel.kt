@@ -15,9 +15,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.Course
+import org.ole.planet.myplanet.model.CourseProgressState
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.Tag
-import org.ole.planet.myplanet.model.CourseProgressState
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
