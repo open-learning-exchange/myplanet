@@ -298,7 +298,7 @@ by appending `\n\n#### $versionLine` to `aboutContent`. The Kotlin reads
 `BuildConfig.VERSION_NAME`; the port has no `package_info_plus` dependency, so
 `ConfigurationsRepository.defaultAppVersion` — the same constant the
 configuration flow uses — stands in. Both bodies are seeded into Spanish from
-`values-es`; the other four locales fall back to English until Crowdin fills
+`values-es`; the other four locales fall back to English until somebody fills
 them, the same as every other key.
 
 OS-scheduled background sync remains out of scope for the same reason it
@@ -913,26 +913,39 @@ Ordered by risk, highest first.
    the shared `ResourceViewerActivity` each need a package choice and a fidelity review
    (`video_player`/`media_kit`, `flutter_map`, `flutter_markdown`).
 6. **The 5 existing locales.** `values-{ar,es,fr,ne,so}/strings.xml` → `.arb` is mechanical and
-   scriptable, but `crowdin.yml` must be repointed at `flutter/lib/l10n/*.arb`. Phase 1 ships
-   `app_en.arb` in full and `app_es.arb` populated **only** from strings that already exist in
-   `values-es/strings.xml` -- nothing was machine-translated. Where a screen needs a string the
-   Kotlin never had, the English is authored and the other locales are left absent so `gen-l10n`
-   falls back and Crowdin can translate it properly. Arabic also needs an RTL pass.
+   scriptable. Phase 1 ships `app_en.arb` in full and `app_es.arb` populated **only** from strings
+   that already exist in `values-es/strings.xml` -- nothing was machine-translated. Where a screen
+   needs a string the Kotlin never had, the English is authored and the other locales are left
+   absent so `gen-l10n` falls back and it can be translated properly later. Arabic also needs an
+   RTL pass.
 
-   As of the ratings/personals/notifications batch, `app_en.arb` holds 166 keys and `app_es.arb`
-   64. A key is carried into Spanish only when a `values-es` counterpart is unambiguous -- the
-   Kotlin string name normalises to the ARB key *and* its English text matches, or the English
-   text matches exactly and every candidate shares one translation. That leaves **102 keys
-   English-only**, and they are genuinely new phrasings (`profileUnavailable`,
-   `dictionaryDownloadFailed`, `savedOffline`, the rating messages), not an unfinished pass.
-   `gen-l10n` reports them on every build; they are Crowdin's to fill.
+   **`crowdin.yml` no longer exists**: `abc0dfd01` deleted it from master, so the "repoint it at
+   `flutter/lib/l10n/*.arb`" step earlier revisions of this document called for is void, and
+   nothing in the repo now describes how translations reach either app. That removes a task from
+   the port but does not fill a single string — whoever owns translation now owns these keys, and
+   until they are filled a Spanish user reads English.
+
+   Current counts, which move every phase: `app_en.arb` holds **727** messages and `app_es.arb`
+   **205**, leaving **522 English-only** — the number `flutter gen-l10n` prints on every build. A
+   key is carried into Spanish only when a `values-es` counterpart is unambiguous: the Kotlin
+   string name normalises to the ARB key *and* its English text matches, or the English text
+   matches exactly and every candidate shares one translation. So the 522 are genuinely new
+   phrasings rather than an unfinished mechanical pass — but they are also the largest single gap
+   between this port and a shippable replacement, and they grow with every phase that authors a
+   new screen.
+
+   The other four locales are worse off than that number suggests: there is no `app_ar.arb`,
+   `app_fr.arb`, `app_ne.arb` or `app_so.arb` at all, so Arabic, French, Nepali and Somali users
+   get English for **everything**, where the Kotlin app has real `values-{ar,fr,ne,so}` files to
+   carry over. That conversion is the mechanical, scriptable part described above and remains
+   undone.
 
    Two quirks are reproduced rather than corrected, because they are what Spanish users see in
    the shipping app today: `myCourses`/`myLife`/`myHealth`/`myPersonals`/`achievements` resolve to
    `misCursos`/`miVida`/`miSalud`/`misPersonales`/`misLogros` -- untranslated camelCase in
    `values-es` -- and `search` is lower-case in English but `Buscar` in Spanish. Both are upstream
-   defects in `strings.xml`; fixing them in Crowdin corrects the Kotlin and Flutter apps together,
-   whereas diverging here would make the two apps disagree.
+   defects in `strings.xml`; fixing them at the translation source corrects the Kotlin and Flutter
+   apps together, whereas diverging here would make the two apps disagree.
 
 ## Composite row ids, and the answer that exported blank
 
