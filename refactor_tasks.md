@@ -1,11 +1,13 @@
 # Merged Refactor Backlog
 
-81 tasks merged from 18 agent lists (181 raw). Every task below was verified against
+127 tasks merged from 27 agent lists (271 raw). Every task below was verified against
 the working tree at `9c54a03`; 30 raw tasks were dropped because their premise did not
-hold (45 in total). Sorted by rating (1–100).
+hold (62 in total). Sorted by rating (1–100).
 
 Provenance is tagged `harness·model/prompt`, where *prompt* is `perf` (performance quick
-wins) or `repo` (repository boundaries). The eight agents: **claude·opus-5**,
+wins), `repo` (repository boundaries), or `perf2` (the structured work-order round —
+same theme as `perf`, but a template demanding context / files / steps / acceptance /
+size budget / out-of-scope per task, plus an open-PR collision check). The eight agents: **claude·opus-5**,
 **codex·sol-5.6**, **copilot·grok-4.5**, **devin·swe-1.7**, **openhands·kimi-k3**,
 **openhands·glm-5.2**, **jules·gemini-3.1-pro** (perf) / **jules·gemini-3.6-flash** (repo),
 **qwen·coder-3.6**, **openhands·minimax-m2.7**.
@@ -55,6 +57,17 @@ Proposed by: **claude·opus-5/repo, codex·sol-5.6/repo, openhands·glm-5.2/repo
 
 ---
 
+## 82 — `JsonUtils`: stop materializing JSON numbers as Strings
+
+`JsonUtils` is on the hottest path in the app — every field of every CouchDB document goes through it. `:99` reads `if (el is JsonNull || el.asString.isEmpty()) 0 else el.asInt`: for a numeric primitive, `asString` allocates a throwaway String purely to test emptiness, then the value is converted a second time. `getFloat` (`:106`) repeats it. Separately `getJsonElement` (`:121`) eagerly allocates a fresh `JsonObject()`/`JsonArray()` as `default` on **every** call even when the field is present, and `getJsonArray` (`:112`) calls `.asJsonArray` on a value already smart-cast to `JsonArray`.
+
+Short-circuit numeric primitives (`el.isJsonPrimitive && el.asJsonPrimitive.isNumber` → `el.asInt`) while keeping the exact string-encoded / empty-string / null fallbacks; move the `default` construction into the not-present branch; drop the redundant `.asJsonArray`.
+
+Files: `utils/JsonUtils.kt`.
+Proposed by: **claude·opus-5/perf2**
+
+---
+
 ## 80 — Release the previous `ExoPlayer` before reassigning it
 
 `ResourceViewerFragment` assigns a fresh player at `:280`, `:307` and `:363`
@@ -86,6 +99,17 @@ the nested launch and the repository injection. Validation/form mapping stays in
 
 Files: `ui/health/HealthExaminationActivity.kt`, `ui/health/HealthExaminationViewModel.kt`.
 Proposed by: **claude·opus-5/repo, copilot·grok-4.5/perf, codex·sol-5.6/perf, codex·sol-5.6/repo, openhands·kimi-k3/repo, copilot·grok-4.5/repo**
+
+---
+
+## 80 — `TimeUtils`: memoize the pattern-keyed `DateTimeFormatter`s
+
+`DateTimeFormatter.ofPattern` parses the pattern and builds a printer/parser chain — far more expensive than the formatting itself — and `TimeUtils` does it per call at ten sites (`:96, :99, :115, :119, :142, :206, :208, :211, :223, :224`). This runs per row in list binds (`EnterprisesReportsAdapter:59,70`, `EnterprisesFinancesAdapter:42`, `HealthExaminationAdapter:62`) and per visible day cell in the calendar decorator. The file already hoists six formatters as `by lazy` vals (`:21-45`) — the pattern to follow is right there.
+
+Add a private `ConcurrentHashMap`-backed `formatterFor(pattern, zone)` keyed on **pattern and zone** (the file uses both `utcZone` and `ZoneId.systemDefault()`). **Trap:** `:96, :99, :206, :208, :224` call `ofPattern` with **no** locale argument — give those a distinct key or a no-locale overload rather than silently switching them to `defaultLocale`. `formatDate(date, null)` must keep returning `""` via the existing catch.
+
+Files: `utils/TimeUtils.kt`. Do not touch any caller.
+Proposed by: **claude·opus-5/perf2, openhands·kimi-k3/perf2**
 
 ---
 
@@ -157,6 +181,17 @@ Proposed by: **copilot·grok-4.5/perf**
 
 ---
 
+## 78 — `MapTileUtils.copyAssets`: guard the map-tile copy
+
+`copyAssets` (`:12`) runs on every cold start from `OnboardingActivity:66`, **on the main thread**, and is broken three ways: it unconditionally re-copies both multi-MB `.mbtiles` files; it never creates the destination directory, so `FileOutputStream(outFile)` (`:20`) throws when `osmdroid/` is absent; and **`app/src/main/assets` does not exist in this repo at all**, so `assetManager.open(s)` throws a guaranteed `IOException` into `printStackTrace()` on every single launch.
+
+Skip files not bundled, `mkdirs()` the parent, and skip the copy when the destination already exists non-empty. Keep per-file failure isolation. `MapTileUtilsTest` already mocks `AssetManager`, so the guards are unit-testable.
+
+Files: `utils/MapTileUtils.kt`.
+Proposed by: **openhands·kimi-k3/perf2**
+
+---
+
 ## 76 — `ChatHistoryFragment`: delete the duplicate `ChatRepository` path
 
 A straight duplicate: the fragment already holds `sharedViewModel: ChatViewModel`
@@ -209,6 +244,17 @@ Proposed by: **claude·opus-5/perf**
 
 ---
 
+## 76 — `DownloadService.getNextUrl`: pick one URL in one pass
+
+`:569-572` sorts the entire pending-URL set, filters it, wraps every survivor in a `QueuedUrl`, then scans that list for the max priority — all to return one element. Every `QueuedUrl` built here takes the default `priority = 0` (`:166`), so `getNextPriorityUrl`'s `maxByOrNull { it.priority }` always returns the first element of the sorted list, i.e. the lexicographic minimum. The whole sort and every wrapper allocation is discarded. It is called twice per file inside the download loop (`:139`), making a large batch O(n² log n).
+
+Replace the chain with `urls.filter { it !in processedUrls && it.isNotBlank() }.minOrNull()` and wrap the single winner. Leave the companion `getNextPriorityUrl` and `QueuedUrl` alone — it is separately tested and is the real selector for other callers.
+
+Files: `services/DownloadService.kt`.
+Proposed by: **claude·opus-5/perf2**
+
+---
+
 ## 74 — `SyncTimeLogger`: replace the Hilt service locator with constructor injection
 
 `utils/SyncTimeLogger.kt` is a global `object` (`:19`) that reaches through
@@ -241,7 +287,9 @@ Wrap the loop in `appDatabase.withTransaction { … }` (the only existing use is
 `markSynced` writes a per-row `rev`, so one statement would need a CASE expression.
 
 Files: `repository/NotificationsRepositoryImpl.kt` (+ `data/room/dao/NotificationDao.kt` if batching).
-Proposed by: **claude·opus-5/perf, openhands·glm-5.2/perf**
+Also proposed independently in the work-order round by **claude·opus-5/perf2** and **openhands·kimi-k3/perf2**, both specifying the `@Transaction` default-method shape and the exact tests to update.
+
+Proposed by: **openhands·kimi-k3/perf2, claude·opus-5/perf2, claude·opus-5/perf, openhands·glm-5.2/perf**
 
 ---
 
@@ -330,7 +378,29 @@ intentionally launches a `NonCancellable` save after `onDestroyView()` and must 
 `BaseTeamFragment`, `BaseContainerFragment`) are deliberately excluded — base-class edits
 collide with #15650.
 
-Proposed by: **devin·swe-1.7/perf, jules·gemini-3.1-pro/perf, qwen·coder-3.6/perf**
+Proposed by: **devin·swe-1.7/perf, jules·gemini-3.1-pro/perf, jules·gemini-3.1-pro/perf2, qwen·coder-3.6/perf**
+
+---
+
+## 74 — `UserEntity.addImageUrl`: drop the JSON serialize-and-reparse round-trip
+
+`:162` reads `JsonParser.parseString(jsonDoc["_attachments"].asJsonObject.toString())` — serializing a `JsonObject` to a String and immediately parsing it back into an identical object — then `:165` iterates `entrySet()` only to `break` after the first entry. This runs once per user document during sync.
+
+Read `jsonDoc["_attachments"].asJsonObject` directly, replace the for-with-break with `entrySet().firstOrNull()?.key`, drop the now-unused `JsonParser` import. Attachment selection stays first-key-wins.
+
+Files: `model/UserEntity.kt`.
+Proposed by: **claude·opus-5/perf2, openhands·kimi-k3/perf2, openhands·glm-5.2/perf2**
+
+---
+
+## 74 — `RequestsViewModel`: use the existing COUNT query instead of loading every member
+
+`RequestsViewModel:39` calls `teamsRepository.getJoinedMembers(teamId).size` — loading every membership row **plus one user query per member** — to produce an `Int`. `TeamsRepository:143` already exposes `getJoinedMemberCount(teamId)` backed by SQL `COUNT`.
+
+Swap the call. Two lines.
+
+Files: `ui/teams/members/RequestsViewModel.kt`. **Conflict:** two other lists in this round flag this file as owned by an open PR — verify before starting.
+Proposed by: **jules·gemini-3.1-pro/perf2**
 
 ---
 
@@ -439,6 +509,28 @@ Proposed by: **claude·opus-5/perf, openhands·minimax-m2.7/repo**
 
 ---
 
+## 72 — `markResourcesAsNotOffline`: one UPDATE instead of read-modify-write
+
+`ResourcesRepositoryImpl:678` loads every matching `MyLibrary` row via `getOfflineByResourceIds`, flips `resourceOffline = false` in memory, and re-writes full rows through `upsertAll` — a full-row SELECT plus a full-row INSERT-OR-REPLACE per resource, to clear one flag. `FreeSpaceWorker:47,52` calls it with every id whose files it deleted.
+
+Add `@Query("UPDATE my_library SET resourceOffline = 0 WHERE resourceId IN (:ids) AND resourceOffline = 1")` and delegate. Leave `getOfflineByResourceIds` in place for other callers.
+
+Files: `data/room/dao/MyLibraryDao.kt`, `repository/ResourcesRepositoryImpl.kt`.
+Proposed by: **openhands·kimi-k3/perf2**
+
+---
+
+## 72 — `UploadCoordinator`: index batch reconciliation by `localId`
+
+Four O(n·m) scans per batch of 50: `:69` and `:325` do `succeeded.filter { it !in dbFailed }` (List containment with data-class `equals`), and `:258`/`:441` do `succeeded.find { it.localId == failedResult.localId }` inside `failedResults.mapNotNull`. Every sync upload pays this per batch per config.
+
+Build one `succeeded.associateBy { it.localId }` and one `HashSet` of failed local ids per batch. Preserve `mapNotNull` order, duplicate behaviour, and the ignoring of unknown failed ids.
+
+Files: `services/upload/UploadCoordinator.kt`. **Conflict:** same file as the `UrlUtils` caching task below.
+Proposed by: **openhands·kimi-k3/perf2, codex·sol-5.6/perf2**
+
+---
+
 ## 70 — Courses/Resources adapters: payload-scoped range invalidation
 
 `CoursesAdapter.kt:130,138` (`setViewMode`, `updateIdentity`) and
@@ -539,7 +631,40 @@ Collapse `clearPreferences()` into one atomic `pref.edit { clear(); tempStorage.
 and switch the checkpoint removal to `.apply()`.
 
 Files: `services/SharedPrefManager.kt`, `services/sync/TransactionSyncManager.kt`.
-Proposed by: **openhands·kimi-k3/perf, jules·gemini-3.6-flash/repo, jules·gemini-3.1-pro/perf**
+Proposed by: **openhands·kimi-k3/perf, jules·gemini-3.1-pro/perf, jules·gemini-3.6-flash/repo, jules·gemini-3.1-pro/perf2**
+
+---
+
+## 70 — `ProgressRepositoryImpl.submissionMap`: index exams once
+
+`:160` and `:162` call both `examIds.contains(question.examId)` and `examIds.indexOf(question.examId)` inside the nested submission-answer loop — two linear scans per answer, where one exam-ID→index map replaces both and keeps the serialized index keys identical.
+
+Build the map once at the top of `submissionMap`; resolve each question with one lookup; add mistakes only when the lookup succeeds; preserve first-index behaviour if `examIds` contains duplicates.
+
+Files: `repository/ProgressRepositoryImpl.kt`. **Conflict:** same file as the composite-ID task below.
+Proposed by: **codex·sol-5.6/perf2**
+
+---
+
+## 70 — `NotificationsViewModel.loadNotifications`: classify types once, not four times
+
+The load walks the full notification list four separate times, calling `it.type.lowercase()` on every element each pass — `:63`, `:69`, `:78`, `:84` — to split `task` from `join_request` rows. Separately `buildGroupedList` reallocates its ordering list on every emission (`:220` `val typeOrder = listOf(...)`), and that function re-runs on every selection toggle and group expand/collapse, not just on load.
+
+Bucket by lowered type in one pass and derive `taskIds` / `taskTitles` / `joinRequestIds` / `joinRequestsWithoutRelatedId` from it, preserving each predicate exactly. Promote `typeOrder` to the existing `companion object` beside `KNOWN_TYPES`. Do not touch `resolveType` — the four filters only ever compare the **raw** type against two literals.
+
+Files: `ui/notifications/NotificationsViewModel.kt`.
+Proposed by: **openhands·glm-5.2/perf2, claude·opus-5/perf2**
+
+---
+
+## 70 — `TTSManager`: defer the TextToSpeech engine bind to first use
+
+`:27` constructs `TextToSpeech(context)` inside the `@Singleton`'s `init`, binding to the system TTS service **on the main thread** as soon as Hilt injects it — which happens at `ResourceViewerFragment:106`, i.e. every time any resource viewer opens, including content nobody reads aloud.
+
+Replace the eager init with a private `ensureTts()` called only from `speak()`; make `stop()` and cleanup null-safe no-ops when the engine was never created. Keep `isInitialized` semantics and the `IDLE`/`SPEAKING` transitions. Passive getters must not trigger the bind.
+
+Files: `utils/TTSManager.kt`.
+Proposed by: **openhands·kimi-k3/perf2**
 
 ---
 
@@ -653,6 +778,61 @@ Resolve the three views once (nullable fields set in `onViewCreated`, cleared in
 
 Files: `ui/resources/ResourcesFragment.kt`.
 Proposed by: **claude·opus-5/perf**
+
+---
+
+## 68 — Four Room entities drop `android.text.TextUtils`
+
+In `StepExam.kt`, `Answer.kt`, `HealthExamination.kt` and `TeamTask.kt`, `android.text.TextUtils` is the **only** `android.*` import, so removing it makes each model platform-free and lifts its unit tests out of Robolectric. `TextUtils.isEmpty(s)` is exactly `s.isNullOrEmpty()` for a nullable `CharSequence`.
+
+Swap all uses, delete the import, confirm no other `android.*` import remains. Deliberately excluded: `News.kt` and `Feedback.kt` (same clean case, held for a later round) and `Achievement.kt` (also imports `android.util.LruCache` and `android.widget.EditText`, so it would not become platform-free anyway). No schema change, no version bump.
+
+Files: 4 model files.
+Proposed by: **claude·opus-5/perf2**
+
+---
+
+## 68 — `ExamTakingFragment`: index questions before restoring saved answers
+
+`populateCacheFromSavedAnswers` (`:783`) runs `questions?.find { it.id == questionId }` for every saved answer, so restoring a long survey is quadratic in answers × questions — directly visible as resume-screen latency.
+
+Build one question lookup keyed by non-null id before iterating. Preserve handling of missing ids, unknown questions, malformed choice JSON, and every question-type branch. Keep the index local to restoration.
+
+Files: `ui/exam/ExamTakingFragment.kt`. **Conflict:** flagged as open-PR territory by two other lists (#15559, #14650).
+Proposed by: **codex·sol-5.6/perf2**
+
+---
+
+## 68 — `SubmissionsRepositoryImpl.getSubmissionDetail`: index answers by question id
+
+`:250-270` scans `submission.answers` with `find` once for every exam question, so large surveys pay quadratic lookup before choice formatting even begins — although `questionId` is the natural association key.
+
+Build one answer lookup keyed by non-null `questionId` after hydration, preserving first-match behaviour for malformed duplicates. Correctness evaluation and formatted-answer fallback stay byte-for-byte equivalent.
+
+Files: `repository/SubmissionsRepositoryImpl.kt`.
+Proposed by: **codex·sol-5.6/perf2**
+
+---
+
+## 68 — `SyncManager`: hoist `UrlUtils.getUrl()` / `header` out of the sync loops
+
+`UrlUtils.getUrl()` rebuilds the server base URL from `SharedPreferences` on each call and `UrlUtils.header` recomputes basic auth — and `resourceTransactionSync()` resolves them at the count request (`:278`), inside the resource batch `while` loop (`:305`), and for every `logApiCall` (`:285, :313, :320`), with `getShelvesWithDataBatchOptimized()` repeating the pattern at `:437`. Six call sites inside the longest-running loop in the app.
+
+Capture both into locals before the loop and reuse. Do not touch `UrlUtils.kt` — an open PR owns it.
+
+Files: `services/sync/SyncManager.kt`. **Conflict:** same file as the dead-accumulator task below.
+Proposed by: **devin·swe-1.7/perf2**
+
+---
+
+## 68 — `PersonalsRepositoryImpl.updatePersonalAfterSync`: collapse into one statement
+
+`:76` does `findById(id)`, mutates three fields, then `personalDao.update(personal)` — two round-trips and a full-row rewrite per uploaded personal resource, inside the per-item upload loop (`uploadPersonalDocument`, `:97`). `PersonalDao` has no targeted update.
+
+Add `@Query("UPDATE my_personal SET isUploaded = 1, _id = :newId, _rev = :rev WHERE id = :id")` and replace the body. An UPDATE of zero rows matches today's no-op-when-missing behaviour.
+
+Files: `data/room/dao/PersonalDao.kt`, `repository/PersonalsRepositoryImpl.kt`.
+Proposed by: **openhands·kimi-k3/perf2**
 
 ---
 
@@ -807,6 +987,61 @@ Proposed by: **codex·sol-5.6/perf, devin·swe-1.7/repo**
 
 ---
 
+## 66 — `ProgressRepositoryImpl`: stop matching composite IDs with `contains`
+
+`:80` runs `courseIds.firstOrNull { parentId.contains(it) }` inside a `groupBy` over all submissions — O(N·M) against the course list, and a substring match on `examId@courseId` composites that can collide when one course id is a prefix of another.
+
+Split on the known delimiter and resolve through a `HashSet` lookup instead of scanning with `contains`.
+
+Files: `repository/ProgressRepositoryImpl.kt`. **Conflict:** same file as the exam-index task above.
+Proposed by: **jules·gemini-3.1-pro/perf2**
+
+---
+
+## 66 — `StorageBreakdownFragment`: index storage categories by extension
+
+`scanStorage()` (`:230`) runs `categories.indexOfFirst { it.extensions.isNotEmpty() && ext in it.extensions }` **inside** the `oleDir.walkTopDown().filter { it.isFile }.forEach` loop — up to four set probes plus a lambda dispatch per file, on a device holding thousands of downloaded resources, for a lookup that is a constant map.
+
+Derive one lazily-built `Map<String, Int>` from `categories` and default to `categories.lastIndex` (the "other" bucket), preserving first-match-wins.
+
+Files: `ui/settings/StorageBreakdownFragment.kt`.
+Proposed by: **claude·opus-5/perf2**
+
+---
+
+## 66 — `SyncManager`: delete the dead `batchDocuments` accumulator and the `Pair` wrapper
+
+`:328` allocates `val batchDocuments = JsonArray()` and `:338` appends every valid doc to it — and it is **never read**; the insert path uses `validDocuments.map { it.first }` at `:349`. Every batch of the resources sync allocates and grows a throwaway `JsonArray` holding full document trees. Additionally `validDocuments` stores `Pair(doc, id)` but only `.first` is ever consumed, so the pair wrapper and the trailing `.map { it.first }` are also dead weight.
+
+Delete the accumulator and its `add`; change `validDocuments` to `mutableListOf<JsonObject>()` and pass it straight to `batchInsertResources`. `id` is still needed for the `_design`/blank guard — keep that local.
+
+Files: `services/sync/SyncManager.kt`. **Conflict:** same file as the `UrlUtils` hoist above.
+Proposed by: **openhands·glm-5.2/perf2, openhands·kimi-k3/perf2**
+
+---
+
+## 66 — Add an explicit `Locale` to the `%02d` time formatting
+
+`TimeUtils:181` and `EventsDetailFragment:190` (`String.format("%02d:%02d", hour, minute)`) format numbers with the default locale. This app ships Arabic and Nepali translations, both of which have locale digit sets — so the rendered time can come out in non-ASCII digits, and any code parsing it back breaks.
+
+Pass `Locale.US` explicitly at both sites. This is a correctness fix, not a style preference.
+
+Files: `utils/TimeUtils.kt`, `ui/events/EventsDetailFragment.kt`.
+Proposed by: **jules·gemini-3.1-pro/perf2**
+
+---
+
+## 66 — `VoicesViewModel`: reverse-index the label map
+
+`:110` (in `filterNews`) and `:206` (in `collectLabels`) both run `Constants.LABELS.entries.find { it.value == label }` — a linear scan of the whole label map — for every label of every news item. `filterNews` sits in the `combine` pipeline feeding `filteredNews`, so it re-runs on **every keystroke** of voices search: O(items × labels × LABELS) per character.
+
+Build `Constants.LABELS.entries.associate { it.value to it.key }` once per pass and look up. Keep `VoicesLabelManager.formatLabelValue` as the unknown-label fallback, and do not merge it with the separate display-name→value map already built at `:103`.
+
+Files: `ui/voices/VoicesViewModel.kt`.
+Proposed by: **openhands·kimi-k3/perf2, copilot·grok-4.5/perf2**
+
+---
+
 ## 64 — `LeadersViewModel`: get the init-time JSON parse off the constructing thread
 
 `LeadersViewModel.kt:21-22` calls `loadLeaders()` directly from `init`, which synchronously
@@ -892,6 +1127,50 @@ fragment keeps only the call.
 Files: `ui/voices/VoicesFragment.kt`, `ui/voices/VoicesViewModel.kt`.
 **Conflict:** same file as the sort task above — sequence them.
 Proposed by: **devin·swe-1.7/repo, openhands·minimax-m2.7/repo**
+
+---
+
+## 64 — `ExamAnswerUtils.checkTextAnswer`: normalize the answer once
+
+`:75-78` lowercases `ans` **inside** the `correctChoices.any` predicate, so the same answer string is re-allocated for every candidate choice.
+
+Compute the locale and the normalized answer once before scanning. Preserve the null-list result, case-insensitive matching, substring behaviour and default-locale semantics; extend the existing tests with multiple candidates so the loop stays covered.
+
+Files: `utils/ExamAnswerUtils.kt`.
+Proposed by: **codex·sol-5.6/perf2**
+
+---
+
+## 64 — `ServerConfigUtils`: hoist the pin map and the local-network regex
+
+`getPinForUrl` rebuilds an eleven-entry map of compile-time `BuildConfig` constants on **every** invocation (`:52-64`) then does one lookup and throws the map away; `isLocalNetwork` compiles `Regex("^172\\.(1[6-9]|2[0-9]|3[0-1])\\..*")` per call (`:72`). Both are pure functions of constants and both are reached from the server dialog on every spinner selection.
+
+Promote both to private object-level vals. Leave `getServerAddresses` alone — it needs a `Context`. Change no PIN or URL value, and do not attempt the committed-secrets problem here; that needs server-side rotation, not a code move.
+
+Files: `utils/ServerConfigUtils.kt`.
+Proposed by: **claude·opus-5/perf2**
+
+---
+
+## 64 — `CollectionsFragment.buildTagDataList`: reuse the selection index
+
+`:107` and `:116` scan `selectedItemsList` separately for **every** parent and **every** expanded child, and `:108` additionally calls `currentTagDataList.find` per parent. Expanding a large collection tree multiplies these scans on each rebuild, though only tag ids are needed.
+
+Derive one set of selected non-null tag ids and one parent-row lookup at the top of the function. Preserve expansion state, row order, duplicate-id behaviour and the multi-select flag; keep every index local so no stale state survives a rebuild.
+
+Files: `ui/resources/CollectionsFragment.kt`.
+Proposed by: **codex·sol-5.6/perf2**
+
+---
+
+## 64 — `TagsRepositoryImpl`: chunk the `IN`-clause parameters
+
+`:80` (`tagDao.getByIds(allTagIds)`) and `:110` (`tagDao.getByIds(tagIds)`) pass unbounded id lists straight into a Room `IN` query. SQLite's `SQLITE_MAX_VARIABLE_NUMBER` will throw `too many SQL variables` once a user's tag set grows past the limit — a latent crash, not just a slowdown.
+
+Chunk at the repository layer (`.chunked(900).flatMap { tagDao.getByIds(it) }`); leave the DAO alone.
+
+Files: `repository/TagsRepositoryImpl.kt`.
+Proposed by: **jules·gemini-3.1-pro/perf2**
 
 ---
 
@@ -1053,6 +1332,39 @@ Proposed by: **openhands·kimi-k3/perf**
 
 ---
 
+## 62 — `ResourcesRepositoryImpl.getFilterFacets`: build the facets in one pass
+
+`:522-528` walks the full library list four separate times to assemble languages, subjects, mediums and levels. Facet rebuilds run whenever the resource filter opens and scale with catalog size.
+
+Allocate four mutable sets and iterate `libraries` once, preserving the same map keys and the blank-filtering / empty-list handling.
+
+Files: `repository/ResourcesRepositoryImpl.kt`.
+Proposed by: **copilot·grok-4.5/perf2**
+
+---
+
+## 62 — `UploadCoordinator`: hoist `UrlUtils.getUrl()` out of the batch loops
+
+`uploadBatch()` builds `"${UrlUtils.getUrl()}/${config.endpoint}"` for every item in a batch (`:160, :162, :190`) and `uploadBatchRoom()` repeats it (`:383, :385, :405`) — six `SharedPreferences` reads and six URL string allocations per batch, inside a network loop.
+
+Capture `val baseUrl = UrlUtils.getUrl()` before each `batch.forEach`.
+
+Files: `services/upload/UploadCoordinator.kt`. **Conflict:** same file as the `localId` indexing task above — land one, rebase the other.
+Proposed by: **devin·swe-1.7/perf2**
+
+---
+
+## 62 — `ActivitiesFragment.computeMonthlyCounts`: fold into a single pass
+
+`:64-69` chains `.mapNotNull { it.loginTime }` → `.filter { it in startMillis..endMillis }` → `.map { calendar.get(Calendar.MONTH) }` before `groupingBy`/`eachCount`, materializing three throwaway lists. It is fed the device's whole login history and narrowed client-side, so on a long-lived install these copies scale with every login ever recorded — re-allocated on every flow emission.
+
+Use a sequence or a fold into a mutable count map. Keep the shared `Calendar`, the inclusive bounds, the null-`loginTime` skip and the sorted return.
+
+Files: `ui/dashboard/ActivitiesFragment.kt`. **Conflict:** the `getMonth` task below and two repository-round tasks touch this file.
+Proposed by: **claude·opus-5/perf2**
+
+---
+
 ## 60 — `VoicesRepositoryImpl`: drop the allocations in the `distinctUntilChanged` predicates
 
 `getCommunityNews` (`:158-170`) compares `o.labels?.toSet() == n.labels?.toSet()` and
@@ -1084,6 +1396,28 @@ resolve the user and pass it down, plus the three test classes.
 Files: `repository/Ratings*.kt`, `ui/courses/RatingSummaryProvider.kt`, `ui/courses/CourseDetailViewModel.kt`, `ui/ratings/RatingsViewModel.kt`.
 **Note:** wide ripple for a design point the codebase doesn't yet settle — sequence after the typed-rating task.
 Proposed by: **devin·swe-1.7/repo**
+
+---
+
+## 60 — `ActivitiesFragment.getMonth`: cache `DateFormatSymbols().months`
+
+`:125-127` returns `DateFormatSymbols().months[month]`, constructing a fresh `DateFormatSymbols` — which loads the whole locale month-name table — on every call. It is invoked from the chart's `ValueFormatter.getFormattedValue`, i.e. once per visible x-axis label, repeated on every `invalidate()`.
+
+Hoist the array to a `private val`. Keep `getMonth` `internal` with its single-`Int` signature — the existing test calls it directly.
+
+Files: `ui/dashboard/ActivitiesFragment.kt`. **Conflict:** see the task above.
+Proposed by: **openhands·glm-5.2/perf2**
+
+---
+
+## 60 — `FeedbackAdapter`: hoist the per-bind colors and drawables
+
+`onBindViewHolder` resolves `ContextCompat.getColor` twice (`:53-54`), calls `ContextCompat.getDrawable(context, R.drawable.bg_primary)` twice (`:56-57`), and builds two fresh `ColorStateList.valueOf(...)` per row.
+
+Cache the two colors as adapter fields. Set each view's `bg_primary` background **once in the ViewHolder constructor**, as two separate drawable instances — per-view `setBackgroundTintList` must stay isolated across recycled holders, so a single shared drawable would bleed tint between rows.
+
+Files: `ui/feedback/FeedbackAdapter.kt`.
+Proposed by: **openhands·glm-5.2/perf2, devin·swe-1.7/perf2**
 
 ---
 
@@ -1170,8 +1504,10 @@ Hoist to `private val`s. In `UserArrayAdapter`, also stop re-running
 `ImageUtils.loadProfileImage` on a `PAYLOAD_SELECTION` rebind — the selection path should
 only touch the background.
 
+`StatsAdapter:20-21` and `ProgressGridAdapter:21-29` already cache exactly this pair — copy them.
+
 Files: `ui/user/UserArrayAdapter.kt`, `ui/sync/ServerAddressAdapter.kt`.
-Proposed by: **openhands·glm-5.2/perf**
+Proposed by: **devin·swe-1.7/perf2, openhands·glm-5.2/perf, openhands·glm-5.2/perf2**
 
 ---
 
@@ -1184,6 +1520,72 @@ Hoist to one shared `private val mainHandler by lazy { Handler(Looper.getMainLoo
 
 Files: `utils/Utilities.kt`. ~2-line diff.
 Proposed by: **openhands·kimi-k3/perf**
+
+---
+
+## 58 — `SurveysViewModel`: sort with `CASE_INSENSITIVE_ORDER`
+
+`:141-142` use `sortedBy { it.name?.lowercase(Locale.getDefault()) }` and the descending variant, allocating a fresh String on **every comparison** — O(n log n) throwaway strings per sort.
+
+Swap to `sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name ?: "" })` and its descending twin: one static comparator, zero per-comparison allocation. Existing TITLE_ASC/TITLE_DESC tests pin the ordering.
+
+Files: `ui/surveys/SurveysViewModel.kt`.
+Proposed by: **openhands·minimax-m2.7/perf2**
+
+---
+
+## 58 — `MyCourse.saveConcatenatedLinksToPrefs`: drop the second set copy
+
+`:96-100` already builds a mutable set, then `:105` copies it again via `toHashSet()` — and only the copy is used afterwards (`:107` add, `:109` serialize). The original is never read again, so the second full copy is allocated on every save for nothing.
+
+Build the set as a `HashSet` directly in both branches and delete the copy. Use `HashSet`, not `LinkedHashSet`, to preserve today's unspecified-order output.
+
+Files: `model/MyCourse.kt`.
+Proposed by: **openhands·glm-5.2/perf2**
+
+---
+
+## 58 — `AndroidDecrypter.bytesToHex`: replace per-byte `String.format`
+
+`:49` calls `String.format("%02x", b)` for **every byte** of encrypted output — a fresh `Formatter` plus format-string parse per byte, on the key/IV generation and encryption path at login. `Sha256Utils:19` does the same with `"%02x".format(it)` for file checksums.
+
+Use a pre-computed lowercase hex `CharArray` and append two chars per byte. Mask with `0xFF` and index by nibble so output is byte-identical.
+
+Files: `utils/AndroidDecrypter.kt`, `utils/Sha256Utils.kt`.
+Proposed by: **devin·swe-1.7/perf2, jules·gemini-3.1-pro/perf2**
+
+---
+
+## 58 — `VoicesLabelManager.getLabel`: reverse-index the chip lookup
+
+`:113-119` walks `Constants.LABELS.keys` linearly for every chip, and `showChips` (`:66-72`) calls it once per label while creating a fresh `ChipCloud` per label. Long voice threads pay repeated map scans during bind.
+
+Build a value→display-name reverse map once per `showChips`, falling back to `formatLabelValue` for unknown values. Preserve close-mode delete behaviour and the selected-label resolution in the delete listener.
+
+Files: `services/VoicesLabelManager.kt`.
+Proposed by: **copilot·grok-4.5/perf2**
+
+---
+
+## 58 — `RealtimeSyncMixin`: snapshot the watched tables once per subscription
+
+`setupRealtimeSync` (`:27-37`) calls `mixin.getWatchedTables()` and performs **list** membership for every emitted update. Watched tables are per-helper configuration, so rebuilding and rescanning the list on every realtime event is avoidable.
+
+Call it once when the pipeline is created, convert to a `Set`, and use the snapshot in the filter. Keep the snapshot scoped to each setup call so separate helpers cannot share configuration.
+
+Files: `ui/sync/RealtimeSyncMixin.kt`.
+Proposed by: **codex·sol-5.6/perf2**
+
+---
+
+## 58 — `ResourcesTagsAdapter`: cache the row colors and hoist the checkbox lookup
+
+`ChildViewHolder.bind` resolves `ContextCompat.getColor` for `multi_select_grey` and `daynight_textColor` on every child bind (`:94-95`), and `createCheckbox()` runs `convertView.findViewById<CheckBox>(R.id.checkbox)` per bind (`:111`) even though View Binding already exposes `binding.checkbox`. `ChatShareTargetAdapter.ChildViewHolder:61-62` already hoists exactly this color pair — copy that.
+
+Move both colors to `private val`s on the holder and pass `binding.checkbox` directly.
+
+Files: `ui/resources/ResourcesTagsAdapter.kt`.
+Proposed by: **devin·swe-1.7/perf2, openhands·glm-5.2/perf2**
 
 ---
 
@@ -1201,6 +1603,39 @@ computed in `init`; the fragment collects with `collectWhenStarted` and wires th
 
 Files: `ui/community/CommunityTabFragment.kt`, new `ui/community/CommunityTabViewModel.kt`.
 Proposed by: **openhands·glm-5.2/perf**
+
+---
+
+## 56 — `TeamsAdapter.showActionButton`: cache the four action strings and the pending color
+
+`:84, :94, :104, :114` resolve `context.getString(...)` for edit / leave / requested / request-to-join on every bind, and `:107` resolves `ContextCompat.getColor(R.color.pending_request_indicator)`. The teams list scrolls, so all five lookups repeat per visible row.
+
+Hoist to adapter fields initialized in `onCreateViewHolder` from `parent.context`.
+
+Files: `ui/teams/TeamsAdapter.kt`.
+Proposed by: **devin·swe-1.7/perf2**
+
+---
+
+## 56 — `NotificationsViewModel.markAsRead`: one traversal instead of two
+
+`:159-179` first searches `currentList.find { it.id == notificationId }`, then either filters the list or maps it as read — a second full traversal for a single-row update triggered on every notification tap.
+
+Fold target detection, prior-unread capture and the list transformation into one pass. Preserve removal under the `"unread"` filter and copy-as-read elsewhere; a missing or already-read notification must not decrement `_unreadCount`; keep `markedIds` as the gate for local mutation.
+
+Files: `ui/notifications/NotificationsViewModel.kt`.
+Proposed by: **codex·sol-5.6/perf2**
+
+---
+
+## 56 — `PersonalsAdapter.openResource`: `substringAfterLast` instead of a regex split
+
+`:66` compiles `"\\.".toRegex()` and allocates an intermediate list plus a `TypedArray` just to read a file extension, every time a user opens a personal resource.
+
+Use `path?.substringAfterLast('.', "")?.lowercase()` and match the `when` against it. Keep `java.io.File` — it is still used by the `mp4` branch.
+
+Files: `ui/personals/PersonalsAdapter.kt`.
+Proposed by: **devin·swe-1.7/perf2, openhands·minimax-m2.7/perf2**
 
 ---
 
@@ -1254,6 +1689,50 @@ Proposed by: **openhands·glm-5.2/repo, openhands·glm-5.2/perf**
 
 ---
 
+## 54 — `SubmissionViewModel`: build the exam key set directly
+
+`:62-66` materializes a filtered **map** from `examMap` and then retains its `keys` view purely to call `examIds.contains(it.parentId)` per submission. Producing the key set once does strictly less work.
+
+Project matching exam ids straight into a `Set` and filter by membership. Preserve case-insensitive title matching and the empty-query fast path; ordering, grouping and counts stay identical.
+
+Files: `ui/submissions/SubmissionViewModel.kt`.
+Proposed by: **codex·sol-5.6/perf2**
+
+---
+
+## 54 — `HealthExaminationActivity`: split blood pressure on a literal, not a regex
+
+`:166` runs `.split("/".toRegex())` inside a `doOnTextChanged` callback — so a `Pattern` is compiled and discarded on **every keystroke** in the blood-pressure field. `"/"` has no regex metacharacters, so `String.split(String)` is the exact equivalent.
+
+One-character change. Keep the trailing `dropLastWhile`/size checks and every validation threshold.
+
+Files: `ui/health/HealthExaminationActivity.kt`.
+Proposed by: **openhands·glm-5.2/perf2, openhands·minimax-m2.7/perf2**
+
+---
+
+## 54 — `BaseExamFragment`: `substringBefore` instead of a regex split
+
+`:89` runs `sub?.parentId?.split("@".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.get(0)` — compiling a Regex and building two intermediate collections to take everything before the first `@`.
+
+`substringBefore("@")` is the zero-allocation equivalent **and** returns the original string when the delimiter is absent, so the surrounding `if (contains("@"))` / `else` collapses to one expression.
+
+Files: `base/BaseExamFragment.kt`.
+Proposed by: **openhands·minimax-m2.7/perf2**
+
+---
+
+## 54 — `refreshServerList`: strip each server URL once
+
+`:124-147` applies `httpsPrefixRegex` while finding the pinned server (`:129`), filtering duplicates (`:134`) and computing `pinnedIndex` (`:147`) — three passes and three `replace` calls per address on a dialog users open often.
+
+Strip each candidate once into a local structure, then derive the pinned entry, the de-duplicated list and `pinnedIndex` from it. Preserve pin-at-top ordering, the absent-pin fallback, and the `submitList` completion callback. Avoid editing `SyncActivity.kt` itself — an open PR owns it.
+
+Files: `ui/sync/ServerDialogExtensions.kt`.
+Proposed by: **copilot·grok-4.5/perf2**
+
+---
+
 ## 52 — Stable IDs on the hottest `ListAdapter`s
 
 No adapter in the app calls `setHasStableIds(true)` and none overrides `getItemId` — verified
@@ -1285,6 +1764,39 @@ Wrap each body in `withContext(dispatcherProvider.io)`, injecting the provider i
 already off-Main; only the Kotlin aggregation moves. Land it for dispatcher consistency, not
 for a measured win.
 Proposed by: **devin·swe-1.7/perf**
+
+---
+
+## 52 — `SelectionUtils.handleCheck`: drop the redundant membership scan
+
+`:6-9` calls `selectedItems.contains(list[i])` and then `selectedItems.remove(list[i])` — two linear scans when unchecking a present item, where `MutableList.remove` already reports failure for an absent value.
+
+Read `list[i]` once into a local and call `remove` directly. Keep the append branch's duplicate and null handling, and keep the absent-item coverage in the tests.
+
+Files: `utils/SelectionUtils.kt`. Small lists — ship it as filler, not as a win.
+Proposed by: **codex·sol-5.6/perf2**
+
+---
+
+## 50 — `UploadRepositoryImpl`: delete two no-op collection copies
+
+`:35` is `examDao.getPendingAdoptedSurveys().map { it } as List<T>` — `.map { it }` allocates a new list of identical elements purely to feed an unchecked cast that works on the DAO list directly. `:105` is `examDao.upsertAll(updated.mapNotNull { it })`, but `updated` is `mutableListOf<StepExam>()` and only non-null exams are ever added, so the filter is a no-op copy on the per-batch mark-uploaded path.
+
+Delete both. Two lines.
+
+Files: `repository/UploadRepositoryImpl.kt`.
+Proposed by: **openhands·glm-5.2/perf2**
+
+---
+
+## 50 — `NotificationsRepositoryImpl`: drop the `Set`↔`List` round trips
+
+`:115` and `:391` both do `notificationDao.getByIds(ids.toList()).map { it.id }.toSet()` and then hand a `List` back to the next DAO call — an intermediate `Set` allocated purely to be converted straight back.
+
+Keep the mapped ids as a `List` for the DAO call and return `.toSet()` only at the boundary, so the public `Set` contract is unchanged.
+
+Files: `repository/NotificationsRepositoryImpl.kt`.
+Proposed by: **devin·swe-1.7/perf2, openhands·minimax-m2.7/perf2**
 
 ---
 

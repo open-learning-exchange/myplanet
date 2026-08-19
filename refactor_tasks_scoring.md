@@ -1,6 +1,6 @@
 # Agent Scoring — Refactor Task Extraction Round
 
-18 lists (9 agents × 2 prompts) · 181 raw tasks · 136 survived verification · merged to 81 shipped.
+27 lists (9 agents × 3 prompts) · 271 raw tasks · 209 survived verification · merged to 127 shipped.
 
 ## Agents
 
@@ -28,10 +28,16 @@ pushed within 111 seconds of each other and were split by a commit-trailer diffe
 is more likely a parallel-run artifact than a model marker. Treat those two rows as
 interchangeable until confirmed.
 
-The two prompts:
+The three prompts:
 - **perf** — "performance quick wins and micro-optimizations that unblock bigger refactors"
 - **repo** — "reinforce repository boundaries, call out cross-feature data leaks, tighten
   repository interfaces, move data functions out of UI/services into repositories"
+- **perf2** — same performance theme as `perf`, but a **structured work-order template**:
+  every task must carry *context / files / steps / acceptance / size budget / out of scope*,
+  cite exact file:line evidence, and be checked against the open-PR changed-file set.
+
+`perf2` is the one prompt that constrains the *form* of the answer rather than only its
+topic, and it is the best-performing prompt in the round by every measure — see below.
 
 ## Method
 
@@ -58,24 +64,28 @@ Three derived scores: **raw** (Σ shares), **per-submitted** (raw ÷ tasks submi
 
 | Agent | Submitted | Dropped | Raw pts | Per-submitted | Quality pts | Quality/submitted |
 |---|---:|---:|---:|---:|---:|---:|
-| **claude·opus-5** | 21 | 0 | **13.86** | 0.660 | **10.08** | **0.480** |
-| openhands·glm-5.2 | 20 | 0 | 13.65 | **0.683** | 8.33 | 0.417 |
-| openhands·kimi-k3 | 20 | 2 | 13.23 | 0.662 | 8.66 | **0.433** |
-| devin·swe-1.7 | 20 | 0 | 12.32 | 0.616 | 7.99 | 0.400 |
-| copilot·grok-4.5 | 20 | 0 | 11.65 | 0.582 | 7.47 | 0.373 |
-| codex·sol-5.6 | 20 | 0 | 10.18 | 0.509 | 7.03 | 0.352 |
-| openhands·minimax-m2.7 | 20 | 15 | 2.79 | 0.140 | 1.37 | 0.068 |
-| jules·gemini-3.1/3.6 | 20 | 13 | 1.85 | 0.093 | 1.23 | 0.062 |
-| qwen·coder-3.6 | 20 | 15 | 1.47 | 0.074 | 0.65 | 0.033 |
-| **Total** | **181** | **45** | **81.00** | — | **52.71** | — |
+| **claude·opus-5** | 31 | 0 | **21.19** | **0.684** | **15.26** | **0.492** |
+| openhands·kimi-k3 | 30 | 2 | 19.73 | 0.658 | 13.33 | **0.444** |
+| codex·sol-5.6 | 30 | 0 | 19.58 | 0.653 | 12.86 | 0.429 |
+| openhands·glm-5.2 | 30 | 0 | 19.00 | 0.633 | 11.49 | 0.383 |
+| devin·swe-1.7 | 30 | 0 | 18.33 | 0.611 | 11.54 | 0.385 |
+| copilot·grok-4.5 | 30 | 0 | 15.10 | 0.503 | 9.51 | 0.317 |
+| jules·gemini-3.1/3.6 | 30 | 15 | 6.46 | 0.215 | 4.30 | 0.143 |
+| openhands·minimax-m2.7 | 30 | 20 | 6.14 | 0.205 | 3.21 | 0.107 |
+| qwen·coder-3.6 | 30 | 25 | 1.46 | 0.049 | 0.64 | 0.021 |
+| **Total** | **271** | **62** | **127.00** | — | **72.14** | — |
 
-Point-sum check: 13.86 + 13.65 + 13.23 + 12.32 + 11.65 + 10.18 + 2.79 + 1.85 + 1.47 = **81.00** = shipped task count ✔
+Point-sum check: 21.19 + 19.73 + 19.58 + 19.00 + 18.33 + 15.10 + 6.46 + 6.14 + 1.46 = **127.00** = shipped task count ✔
 
-Adding minimax-m2.7 moved three existing rows: it took a 13th share of the survey
-`notifyDataSetChanged` task (diluting eight agents slightly), a quarter share of the voices
-sort task from claude·opus-5, and it corroborated one devin·swe-1.7 finding that had not
-otherwise shipped as a standalone task — which is why **devin gained 0.53 net** and passed
-copilot·grok-4.5.
+**copilot·grok-4.5 carries an asterisk.** Six of its ten `perf2` tasks are near-verbatim
+copies of an earlier list and earn zero — see *Contamination* below. Scored as if
+independent it would sit at 20.14 raw / 0.671 per-submitted, i.e. second place. The
+uncredited six are counted as *submitted* but not as *dropped*: the findings are real and
+ship under codex·sol-5.6.
+
+The `perf2` round reordered the middle of the table. codex·sol-5.6 went from last of the six
+strong agents to third, kimi-k3 took second, and glm-5.2 slipped from second to fourth —
+none of which was visible in the first two rounds.
 
 ## Which prompt was better
 
@@ -83,20 +93,43 @@ copilot·grok-4.5.
 
 | Agent (model) | perf raw | perf /sub | perf Q/sub | repo raw | repo /sub | repo Q/sub | Better |
 |---|---:|---:|---:|---:|---:|---:|:--|
-| claude·opus-5 | **8.42** | **0.842** | **0.618** | 5.44 | 0.494 | 0.354 | **perf** (+70%) |
-| copilot·grok-4.5 | **8.25** | **0.825** | **0.506** | 3.40 | 0.340 | 0.241 | **perf** (+143%) |
-| codex·sol-5.6 | **6.29** | **0.629** | **0.428** | 3.89 | 0.389 | 0.275 | **perf** (+62%) |
-| openhands·glm-5.2 | **7.30** | **0.730** | **0.452** | 6.35 | 0.635 | 0.382 | perf (+15%) |
-| openhands·kimi-k3 | **6.89** | **0.689** | **0.447** | 6.34 | 0.634 | 0.419 | perf (+9%) |
-| devin·swe-1.7 | 3.78 | 0.378 | 0.251 | **8.54** | **0.854** | **0.549** | **repo** (+126%) |
-| openhands·minimax-m2.7 | 1.09 | 0.109 | 0.045 | **1.70** | **0.170** | **0.092** | **repo** (+56%) |
-| qwen·coder-3.6 | 0.20 | 0.020 | 0.014 | **1.27** | **0.127** | **0.052** | **repo** (6×, off a tiny base) |
-| jules (3.1 Pro → 3.6 Flash) | **1.52** | **0.152** | **0.100** | 0.34 | 0.034 | 0.024 | *model change, not prompt* |
-| **Total** | **43.74** | **0.486** | **0.319** | 37.26 | 0.409 | 0.276 | **perf** |
+Raw points per prompt (per-submitted in brackets):
 
-Five of the eight model-constant agents did better on **perf**; devin·swe-1.7 and
-openhands·minimax-m2.7 inverted, devin hardest — 8.54 raw on repo against 3.78 on perf.
-Devin is the one agent
+| Agent | perf | repo | **perf2** | Best |
+|---|---:|---:|---:|:--|
+| claude·opus-5 | 8.11 (0.811) | 5.44 (0.494) | **7.63 (0.763)** | perf ≈ perf2 |
+| codex·sol-5.6 | 6.29 (0.629) | 3.89 (0.389) | **9.40 (0.940)** | **perf2** |
+| openhands·kimi-k3 | 6.83 (0.683) | 6.34 (0.634) | **6.56 (0.656)** | flat |
+| openhands·glm-5.2 | 6.37 (0.637) | 6.35 (0.635) | **6.28 (0.628)** | flat |
+| devin·swe-1.7 | 3.74 (0.374) | **8.54 (0.854)** | 6.05 (0.605) | repo |
+| copilot·grok-4.5 | 8.25 (0.825) | 3.40 (0.340) | 3.45 (0.345)\* | perf |
+| jules (3.1 Pro / 3.6 Flash / 3.1 Pro) | 1.44 (0.144) | 0.26 (0.026) | **4.76 (0.476)** | **perf2** |
+| openhands·minimax-m2.7 | 1.09 (0.109) | 1.70 (0.170) | **3.35 (0.335)** | **perf2** |
+| qwen·coder-3.6 | 0.19 (0.019) | 1.27 (0.127) | 0.00 (0.000) | repo |
+| **Total** | **42.31 (0.470)** | 37.18 (0.409) | **47.51 (0.528)** | **perf2** |
+
+\* copilot's perf2 figure excludes six uncredited verbatim copies.
+
+**perf2 is the best prompt in the round**, and it is not close on the metric that matters
+most — it has both the highest yield per submitted task (0.528) *and* the lowest drop rate:
+
+| | perf | repo | perf2 |
+|---|---:|---:|---:|
+| Submitted | 90 | 91 | 90 |
+| Dropped | 23 (25.6%) | 22 (24.2%) | **17 (18.9%)** |
+| Points | 42.31 | 37.18 | **47.51** |
+| Per submitted | 0.470 | 0.409 | **0.528** |
+
+The lift is concentrated at the bottom of the table. The six strong agents were roughly
+prompt-insensitive (kimi and glm are flat to three decimal places across all three), but
+**jules went from 1.70 combined across perf+repo to 4.76 on perf2 alone**, and minimax
+doubled. Forcing *context → files → steps → acceptance → size budget → out of scope* per
+task is what separated the weak models from their own worst output: it is very hard to write
+an "acceptance" line for a defect that does not exist, and the template made the absence
+obvious. That is the single most actionable result in this whole exercise — **the template
+is worth more than the model choice for the bottom half of the field.**
+
+devin·swe-1.7 remains the one agent that clearly prefers `repo`; it is the agent
 whose perf list was mostly the same idea five times over ("inject DispatcherProvider into
 this ViewModel"), which merged down to a single entry, while its repo list found four
 cross-repository couplings nobody else named.
@@ -104,6 +137,58 @@ cross-repository couplings nobody else named.
 The two openhands models are nearly prompt-neutral (+15% and +9%), which is what you'd expect
 from an agent that grounds every claim in a file:line regardless of what it's asked to look
 for.
+
+## Contamination — two findings that limit what these scores mean
+
+Both surfaced only in the third round. Neither is an accusation; both need an explanation
+from whoever ran the harness before the numbers are used comparatively.
+
+### 1. copilot·grok-4.5's perf2 list is substantially a copy of codex·sol-5.6's
+
+Six of copilot's ten tasks match a codex task at 0.879–1.000 text similarity — multi-paragraph
+prose, identical down to the "size budget: approximately 8-15 changed lines across 2 files"
+and the out-of-scope wording:
+
+| copilot perf2 | codex perf2 | similarity |
+|---|---|---:|
+| #3 index successful uploads | #4 | **1.000** |
+| #6 snapshot watched tables | #10 | 0.999 |
+| #5 reuse selection indexes | #9 | 0.985 |
+| #2 remove redundant membership scan | #2 | 0.963 |
+| #4 update a single notification | #8 | 0.889 |
+| #1 normalize free-text answers | #1 | 0.879 |
+
+codex pushed at 13:17:18 UTC, copilot at 13:28:59 — **12 minutes later**. Its remaining four
+tasks (`VoicesViewModel` label reverse-index, `VoicesLabelManager`, `getFilterFacets`,
+`refreshServerList`) are original, verified, and credited normally.
+
+Coincidence is not a plausible explanation at 1.000 similarity on multi-paragraph text. The
+live possibilities are that copilot read codex's branch (it is in the same repo, and the
+prompt asks agents to check open PRs and branches), or that both were seeded with a common
+draft. Either way the six copies are not evidence of copilot's own capability, so they score
+zero. **If they were credited as independent, copilot would rank 2nd rather than 6th** — so
+this single decision moves it four places, and you should decide it, not me.
+
+### 2. jules carries a memory store across rounds
+
+jules's perf2 list repeatedly justifies tasks with the phrase **"Memory states…"** — e.g.
+*"Memory explicitly forbids this"*, *"Memory warns: 'When querying Room DAOs using IN
+clauses…'"*, *"Memory states: 'In Android Fragments, always use
+viewLifecycleOwner.lifecycleScope…'"*. Three of its ten perf2 tasks reproduce conclusions
+that jules or another agent reached in **round 1** of this same benchmark:
+
+- perf2 #3 (`commit()`→`apply()`) — already shipped from round 1.
+- perf2 #6 (`response.body()?.string()` off the main thread) — this was jules's **own**
+  unique round-1 find, restated verbatim.
+- perf2 #10 (`viewLifecycleOwner.lifecycleScope`) — already shipped from round 1.
+
+So jules's fourfold improvement on perf2 is partly the work-order template and partly
+recall of its own earlier output. Its four genuinely new perf2 findings (`getJoinedMemberCount`,
+`Locale` on `%02d`, `IN`-clause chunking, composite-ID `contains`) are strong and are credited
+in full — but the round-over-round trend line for jules is not a clean capability signal.
+
+None of the other eight agents shows cross-round recall; each round's list reads as a fresh
+pass over the tree.
 
 ### Overall
 
@@ -161,6 +246,44 @@ Pro produced the round's only catch of a blocking `ResponseBody.string()` on the
 Flash produced nothing unique — its three survivors were all partial shares on tasks other
 agents specified better. Both hallucinated the same class of nonexistent code, so the gap is
 one of yield rather than of grounding discipline.
+
+## What the third round changed about each agent
+
+- **claude·opus-5** stayed first and produced the round's most disciplined document: it
+  fetched all 42 open PR heads, diffed each against its merge-base, and published the
+  126-file blocklist it then checked every task against. Its `DownloadService` task is the
+  single best piece of reasoning in the whole exercise — it noticed that every `QueuedUrl` is
+  built with the default `priority = 0`, therefore `maxByOrNull { it.priority }` always
+  returns the sorted list's first element, therefore the entire sort-and-wrap is dead work
+  computing a lexicographic minimum. No other agent reasoned about a function's *effective*
+  behaviour rather than its shape.
+- **codex·sol-5.6** was the round's biggest riser — last of the strong six over perf+repo,
+  first on perf2 by raw points (9.40 from 10 tasks, zero dropped). Its algorithmic eye is the
+  best in the field: seven of its ten tasks are genuine O(n²)→O(n) fixes with the key already
+  in hand. It is also the only agent that reported honestly that it *could not* check open
+  PRs (`no git remotes found`) instead of quietly claiming it had.
+- **openhands·kimi-k3** found the round's best single defect — `MapTileUtils.copyAssets`
+  runs on every cold start, on the main thread, against an assets directory **that does not
+  exist in this repo**, so it throws into `printStackTrace()` on every launch. That is a live
+  bug, not a micro-optimization, and eight other agents walked past it.
+- **openhands·glm-5.2** is the most consistent agent in the benchmark: 6.37 / 6.35 / 6.28 raw
+  across three different prompts. Its findings stay small but its verification never slips.
+- **devin·swe-1.7** kept its `repo` bias but did well on perf2 with a coherent theme nobody
+  else pursued systematically — hoisting resource lookups (`getString`, `getColor`,
+  `getDrawable`) out of `onBindViewHolder` across five adapters.
+- **jules** improved fourfold, with the caveat above.
+- **openhands·minimax-m2.7** improved but repeated its signature failure: right lines, wrong
+  conclusion. Its two `submitList(currentList.toList())` tasks propose deleting the `.toList()`
+  — which would **break the refresh**, because `AsyncListDiffer` short-circuits when the
+  submitted reference is identical to the current list. The `.toList()` is precisely the thing
+  making those calls work.
+- **qwen·coder-3.6** scored **zero on perf2** — all ten tasks cite
+  `src/main/java/com/example/**.java` files (`UserService`, `ImageLoader`, `DataProcessor`,
+  `LogProcessor`, `ConfigService`…). There is no `src/` directory in this repository and no
+  Java source anywhere in it. This is not a wrong premise about real code; it is a task list
+  written against an imagined project, with fabricated acceptance criteria ("response time
+  improves by at least 30%") attached. 25 of its 30 tasks across the whole benchmark failed
+  verification.
 
 ## Reading the scoreboard
 
@@ -304,15 +427,21 @@ Premises that held but whose prescription was wrong; the backlog entry states th
 
 ## Duplication profile
 
-| Times proposed | Tasks | Example |
-|---:|---:|---|
-| 13 | 1 | Remove the two `notifyDataSetChanged()` calls (surveys) |
-| 6 | 2 | `DictionaryRepository`; `HealthExaminationActivity` |
-| 4 | 2 | `VoicesAdapter` drops its repository; unused `UploadManager` injection |
-| 3 | 4 | `ChatHistoryFragment`; Voices→Resources images; `ActivitiesViewModel`; `viewLifecycleOwner` sweep |
-| 2 | 14 | — |
-| 1 | 58 | — |
+| Times proposed | Tasks |
+|---:|---:|
+| 13 | 1 |
+| 6 | 2 |
+| 4 | 4 |
+| 3 | 6 |
+| 2 | 22 |
+| 1 | 92 |
 
-58 of 81 tasks (72%) came from exactly one agent, which is why raw point totals stay close
-even though the lists overlap heavily at the top: everyone found the same two or three
-headline items, and the spread comes from what each found alone.
+92 of 127 tasks (72%) came from exactly one agent — the same ratio as at 81 tasks, held
+across a third round and a third prompt. That stability is the strongest structural result
+here: **agent lists overlap heavily at the top and almost not at all in the tail.** Everyone
+finds the two or three headline defects; essentially all the marginal value of adding another
+agent is in what only that agent sees.
+
+Practical consequence: for a fixed review budget, running one strong agent three times on
+three different prompts returns more distinct verified work than running three agents once on
+the same prompt.
