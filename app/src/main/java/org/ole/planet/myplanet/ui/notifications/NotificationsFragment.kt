@@ -10,9 +10,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.ArrayList
@@ -30,6 +28,7 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ChatPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.voices.ReplyActivity
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class NotificationsFragment : Fragment() {
@@ -85,41 +84,30 @@ class NotificationsFragment : Fragment() {
 
         viewModel.loadNotifications(userId, "all", isAdmin)
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    viewModel.groupedItems.collect { items ->
-                        adapter.submitList(items)
-                        val isEmpty = items.isEmpty()
-                        binding.emptyData.visibility = if (isEmpty) View.VISIBLE else View.GONE
-                        binding.emptyData.text = when (currentFilter) {
-                            "unread" -> getString(R.string.no_unread_notifications)
-                            "read" -> getString(R.string.no_read_notifications)
-                            else -> getString(R.string.no_notifications)
-                        }
-                        binding.status.visibility = if (isEmpty && currentFilter == "all") View.GONE else View.VISIBLE
-                    }
-                }
-                launch {
-                    viewModel.unreadCount.collect { count ->
-                        notificationUpdateListener?.onNotificationCountUpdated(count)
-                        val showButton = count > 0 && currentFilter != "read"
-                        binding.btnMarkAllAsRead.visibility = if (showButton) View.VISIBLE else View.GONE
-                    }
-                }
-                launch {
-                    viewModel.isSelectionMode.collect { inSelectionMode ->
-                        binding.ltBulkActionBar.visibility = if (inSelectionMode) View.VISIBLE else View.GONE
-                        binding.ltTopBar.visibility = if (inSelectionMode) View.GONE else View.VISIBLE
-                    }
-                }
-                launch {
-                    viewModel.selectedCount.collect { count ->
-                        binding.tvSelectedCount.text = getString(R.string.selected_count, count)
-                    }
-                }
+        collectWhenStarted(viewModel.groupedItems) { items ->
+            adapter.submitList(items)
+            val isEmpty = items.isEmpty()
+            binding.emptyData.visibility = if (isEmpty) View.VISIBLE else View.GONE
+            binding.emptyData.text = when (currentFilter) {
+                "unread" -> getString(R.string.no_unread_notifications)
+                "read" -> getString(R.string.no_read_notifications)
+                else -> getString(R.string.no_notifications)
             }
+            binding.status.visibility = if (isEmpty && currentFilter == "all") View.GONE else View.VISIBLE
         }
+        collectWhenStarted(viewModel.unreadCount) { count ->
+            notificationUpdateListener?.onNotificationCountUpdated(count)
+            val showButton = count > 0 && currentFilter != "read"
+            binding.btnMarkAllAsRead.visibility = if (showButton) View.VISIBLE else View.GONE
+        }
+        collectWhenStarted(viewModel.isSelectionMode) { inSelectionMode ->
+            binding.ltBulkActionBar.visibility = if (inSelectionMode) View.VISIBLE else View.GONE
+            binding.ltTopBar.visibility = if (inSelectionMode) View.GONE else View.VISIBLE
+        }
+        collectWhenStarted(viewModel.selectedCount) { count ->
+            binding.tvSelectedCount.text = getString(R.string.selected_count, count)
+        }
+
         return binding.root
     }
 

@@ -17,10 +17,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.UserEntity
@@ -60,20 +59,15 @@ private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
 class UploadManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val submissionsRepository: SubmissionsRepository,
-    private val sharedPrefManager: SharedPrefManager,
     private val gson: Gson,
     private val uploadCoordinator: UploadCoordinator,
     private val uploadRepository: UploadRepository,
     private val retryQueue: RetryQueue,
-    private val personalsRepository: PersonalsRepository,
     private val userRepository: UserRepository,
-    private val chatRepository: ChatRepository,
     private val voicesRepository: VoicesRepository,
     private val uploadConfigs: UploadConfigs,
     private val resourcesRepository: ResourcesRepository,
-    private val teamsRepository: Lazy<TeamsRepository>,
     private val teamsSyncRepository: Lazy<TeamsSyncRepository>,
-    private val apiInterface: ApiInterface,
     private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider,
     @ApplicationScope private val scope: CoroutineScope,
@@ -365,10 +359,10 @@ class UploadManager @Inject constructor(
         if (!imageFile.exists()) return rev
         return try {
             val mimeType = FileUtils.getMimeType(imageName) ?: "image/*"
-            val body = imageFile.readBytes().toRequestBody(mimeType.toMediaTypeOrNull())
+            val body = imageFile.asRequestBody(mimeType.toMediaTypeOrNull())
             val encodedName = Uri.encode(imageName)
             val url = "${UrlUtils.getUrl()}/teams/$teamId/$encodedName"
-            val response = apiInterface.uploadResource(FileUploader.getHeaderMap(mimeType, rev), url, body)
+            val response = uploadRepository.uploadResource(FileUploader.getHeaderMap(mimeType, rev), url, body)
             val newRev = response.body()?.get("rev")?.asString
             if (!newRev.isNullOrEmpty()) {
                 newRev
@@ -451,10 +445,9 @@ class UploadManager @Inject constructor(
                             val imageFile = File(getString("imageUrl", imgObject))
                             val fileName = FileUtils.getFileNameFromUrl(getString("imageUrl", imgObject))
                             val mimeType = imageFile.toURI().toURL().openConnection().contentType
-                            val fileBody = FileUtils.fullyReadFileToBytes(imageFile)
-                                .toRequestBody("application/octet-stream".toMediaTypeOrNull())
+                            val fileBody = imageFile.asRequestBody("application/octet-stream".toMediaTypeOrNull())
 
-                            apiInterface.uploadResource(
+                            uploadRepository.uploadResource(
                                 getHeaderMap(mimeType, resourceRev),
                                 "${UrlUtils.getUrl()}/resources/$resourceId/$fileName",
                                 fileBody

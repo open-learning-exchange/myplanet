@@ -48,9 +48,6 @@ object FileUtils {
         return File(externalFilesDir, "ole/$libraryId/$address")
     }
 
-    @Throws(IOException::class)
-    fun fullyReadFileToBytes(f: File): ByteArray = f.readBytes()
-
     private fun createFilePath(context: Context, folder: String, filename: String): File {
         val baseDirectory = File(getExternalFilesDir(context), folder)
 

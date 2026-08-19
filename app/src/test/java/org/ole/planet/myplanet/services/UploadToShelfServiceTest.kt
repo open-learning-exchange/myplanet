@@ -33,7 +33,6 @@ class UploadToShelfServiceTest {
 
     private lateinit var context: Context
     private lateinit var sharedPreferences: SharedPreferences
-    private lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var userRepository: UserRepository
     private lateinit var userSyncRepository: UserSyncRepository
     private lateinit var healthRepository: HealthRepository
@@ -49,7 +48,6 @@ class UploadToShelfServiceTest {
     fun setUp() {
         context = mockk(relaxed = true)
         sharedPreferences = mockk(relaxed = true)
-        sharedPrefManager = mockk(relaxed = true)
         userRepository = mockk(relaxed = true)
         userSyncRepository = mockk(relaxed = true)
         healthRepository = mockk(relaxed = true)
@@ -69,7 +67,6 @@ class UploadToShelfServiceTest {
         service = UploadToShelfService(
             context,
             sharedPreferences,
-            sharedPrefManager,
             userRepository,
             userSyncRepository,
             healthRepository,

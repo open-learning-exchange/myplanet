@@ -259,11 +259,11 @@ class ProgressRepositoryImplTest {
         advanceUntilIdle()
 
         assertEquals(2, result.size)
-        assertEquals(1, result["course1"]?.get("max")?.asInt)
-        assertEquals(1, result["course1"]?.get("current")?.asInt)
+        assertEquals(1, result["course1"]?.max)
+        assertEquals(1, result["course1"]?.current)
 
-        assertEquals(2, result["course2"]?.get("max")?.asInt)
-        assertEquals(0, result["course2"]?.get("current")?.asInt)
+        assertEquals(2, result["course2"]?.max)
+        assertEquals(0, result["course2"]?.current)
     }
 
     @Test

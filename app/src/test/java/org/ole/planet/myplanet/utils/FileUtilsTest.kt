@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Environment
 import java.io.File
 import org.junit.After
-import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -49,16 +48,6 @@ class FileUtilsTest {
         val path = FileUtils.getOlePath(context)
         assertTrue(path.endsWith("/ole/"))
         assertTrue(path.contains(context.getExternalFilesDir(null)?.absolutePath ?: ""))
-    }
-
-    @Test
-    fun fullyReadFileToBytes_returnsCorrectBytes() {
-        val file = File(tempDir, "test.txt")
-        val data = "Hello, World!".toByteArray()
-        file.writeBytes(data)
-
-        val bytes = FileUtils.fullyReadFileToBytes(file)
-        assertArrayEquals(data, bytes)
     }
 
     @Test

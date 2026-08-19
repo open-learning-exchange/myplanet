@@ -19,10 +19,10 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.ChatRepository
-import org.ole.planet.myplanet.repository.CommunityRepository
+import org.ole.planet.myplanet.repository.ChatSyncWriter
+import org.ole.planet.myplanet.repository.CommunitySyncWriter
 import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.FeedbackSyncWriter
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
@@ -47,20 +47,19 @@ class TransactionSyncManagerTest {
     private val apiInterface: ApiInterface = mockk()
     private val context: Context = mockk()
     private val voicesRepository: VoicesRepository = mockk()
-    private val chatRepository: ChatRepository = mockk()
-    private val feedbackRepository: FeedbackRepository = mockk()
+    private val chatRepository: ChatSyncWriter = mockk()
+    private val feedbackRepository: FeedbackSyncWriter = mockk()
     private val sharedPrefManager: SharedPrefManager = mockk()
     private val userRepository: UserRepository = mockk()
     private val userSyncRepository: UserSyncRepository = mockk()
     private val activitiesRepository: ActivitiesRepository = mockk()
-    private val teamsRepository: Lazy<TeamsRepository> = mockk()
     private val teamsSyncRepository: Lazy<TeamsSyncRepository> = mockk()
 	private val notificationsRepository: NotificationsRepository = mockk()
     private val tagsRepository: TagsRepository = mockk()
     private val ratingsRepository: RatingsRepository = mockk()
     private val submissionsRepository: SubmissionsRepository = mockk()
     private val coursesRepository: CoursesRepository = mockk()
-    private val communityRepository: CommunityRepository = mockk()
+    private val communityRepository: CommunitySyncWriter = mockk()
     private val healthRepository: HealthRepository = mockk()
     private val progressRepository: ProgressRepository = mockk()
     private val surveysRepository: SurveysRepository = mockk()
@@ -87,7 +86,6 @@ class TransactionSyncManagerTest {
             userRepository,
             userSyncRepository,
             activitiesRepository,
-			teamsRepository,
             teamsSyncRepository,
 			notificationsRepository,
             tagsRepository,
@@ -98,7 +96,6 @@ class TransactionSyncManagerTest {
             healthRepository,
             progressRepository,
             surveysRepository,
-            testScope,
             dispatcherProvider,
             userSessionManager
         )

@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.utils.SecurePrefs
 class UploadToShelfService @Inject constructor(
     @ApplicationContext private val context: Context,
     @AppPreferences private val sharedPreferences: SharedPreferences,
-    private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
     private val userSyncRepository: UserSyncRepository,
     private val healthRepository: HealthRepository,
