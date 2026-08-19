@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.text.TextUtils
+import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
@@ -14,6 +15,7 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
+import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.HealthExamination.Companion.serialize
 import org.ole.planet.myplanet.model.HealthRecord
@@ -29,7 +31,8 @@ class HealthRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
     private val dispatcherProvider: DispatcherProvider,
     private val healthExaminationDao: HealthExaminationDao,
-    private val userRepository: Lazy<UserRepository>
+    private val userRepository: Lazy<UserRepository>,
+    @PlainGson private val gson: Gson
 ) : HealthRepository {
     override suspend fun getHealthEntry(userId: String): Pair<UserEntity?, HealthExamination?> {
         val userCopy = userRepository.get().getUserById(userId)
@@ -93,7 +96,7 @@ class HealthRepositoryImpl @Inject constructor(
             val result = mutableMapOf<String, Boolean>()
             if (examination != null && !examination.conditions.isNullOrEmpty()) {
                 try {
-                    val conditions = JsonUtils.gson.fromJson(examination.conditions, JsonObject::class.java)
+                    val conditions = gson.fromJson(examination.conditions, JsonObject::class.java)
                     for (key in conditions.keySet()) {
                         result[key] = JsonUtils.getBoolean(key, conditions)
                     }
@@ -170,7 +173,7 @@ class HealthRepositoryImpl @Inject constructor(
         if (data.isNullOrEmpty()) return null
         return try {
             val decrypted = AndroidDecrypter.decrypt(data, userModel?.key, userModel?.iv)
-            JsonUtils.gson.fromJson(decrypted, MyHealth::class.java)
+            gson.fromJson(decrypted, MyHealth::class.java)
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -231,7 +234,7 @@ class HealthRepositoryImpl @Inject constructor(
         try {
             val key = userModel?.key ?: AndroidDecrypter.generateKey().also { newKey -> userModel?.key = newKey }
             val iv = userModel?.iv ?: AndroidDecrypter.generateIv().also { newIv -> userModel?.iv = newIv }
-            healthPojo.data = AndroidDecrypter.encrypt(JsonUtils.gson.toJson(myHealth), key, iv)
+            healthPojo.data = AndroidDecrypter.encrypt(gson.toJson(myHealth), key, iv)
             userModel?.let { userRepository.get().saveUser(it) }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -246,7 +249,7 @@ class HealthRepositoryImpl @Inject constructor(
             null
         } else {
             try {
-                JsonUtils.gson.fromJson(json, MyHealth::class.java)
+                gson.fromJson(json, MyHealth::class.java)
             } catch (e: Exception) {
                 e.printStackTrace()
                 null
