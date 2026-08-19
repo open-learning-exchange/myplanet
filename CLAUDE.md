@@ -399,6 +399,7 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 - For each labelled PR: merges the base branch in, bumps the version, waits for build + test to pass, then squash-merges
 - Logic lives in `.github/scripts/automerge.sh`; requires `AUTOMERGE_TOKEN` (the default `GITHUB_TOKEN` can't push to the protected base branch)
 - A red workflow on the base is re-run before the drain gives up (`base_rerun_attempts`, default 1): every base commit is a PR head that build + test passed on just before the squash merge, so a failure there is treated as flaky until it reproduces
+- Workflow verdicts are read per `head_sha` **and** `head_branch`: any branch cut from the base sits on the base's tip and its runs answer to the same sha, so an unscoped lookup lets another branch's runs judge the base. `cancelled` counts as absent rather than red (`cancel-in-progress` retires runs routinely), and a green run outranks an older red one of the same workflow on the same commit
 
 **Dependabot** (`.github/dependabot.yml`)
 - Daily checks for GitHub Actions updates (max 10 open PRs)
