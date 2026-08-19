@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
@@ -76,7 +77,8 @@ class SubmissionsRepositoryImplTest {
             answerDao,
             examDao,
             questionDao,
-            lazyUserRepository
+            lazyUserRepository,
+            Gson()
         ), recordPrivateCalls = true)
     }
 

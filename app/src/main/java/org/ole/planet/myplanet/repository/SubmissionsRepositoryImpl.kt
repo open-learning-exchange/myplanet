@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.text.TextUtils
+import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -20,6 +21,7 @@ import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
+import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
@@ -51,7 +53,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     // Lazy wrapper is required here to prevent a Dagger cyclic dependency,
     // as UserRepositoryImpl also depends on HealthRepository which creates a cycle
     // (and we follow this pattern consistently).
-    private val userRepository: Lazy<UserRepository>
+    private val userRepository: Lazy<UserRepository>,
+    @PlainGson private val gson: Gson
 ) : SubmissionsRepository {
 
     override suspend fun generateSubmissionPdf(submissionId: String): File? {
@@ -648,7 +651,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                     parentId = parentId,
                     type = JsonUtils.getString("type", submission),
                     userId = userId,
-                    user = JsonUtils.gson.toJson(userJson),
+                    user = gson.toJson(userJson),
                     startTime = JsonUtils.getLong("startTime", submission),
                     lastUpdateTime = JsonUtils.getLong("lastUpdateTime", submission),
                     grade = JsonUtils.getLong("grade", submission),
@@ -657,7 +660,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                     sender = JsonUtils.getString("sender", submission),
                     source = JsonUtils.getString("source", submission),
                     parentCode = JsonUtils.getString("parentCode", submission),
-                    parent = JsonUtils.gson.toJson(JsonUtils.getJsonObject("parent", submission)),
+                    parent = gson.toJson(JsonUtils.getJsonObject("parent", submission)),
                     teamId = JsonUtils.getString("_id", teamJson).ifBlank { JsonUtils.getString("teamId", membershipJson) },
                     isUpdated = false,
                 )
@@ -760,7 +763,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         if (exam != null) {
             `object`.add("parent", StepExam.serializeExam(exam, payloadData.questions))
         } else {
-            val parent = JsonUtils.gson.fromJson(submission.parent, JsonObject::class.java)
+            val parent = gson.fromJson(submission.parent, JsonObject::class.java)
             `object`.add("parent", parent)
         }
         // Prefer the fresh user record (attachment-free, current data) so the upload never
