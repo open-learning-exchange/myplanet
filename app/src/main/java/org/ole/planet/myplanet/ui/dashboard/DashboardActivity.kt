@@ -246,6 +246,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             if (status == lastSyncStatus) return@collectWhenStarted
             lastSyncStatus = status
             if (status is SyncManager.SyncStatus.Success) {
+                prefData.setSyncStatusDismissed(false)
                 updateLastSyncStatus()
             }
         }
@@ -272,6 +273,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         binding.dashboardSyncNow.setOnClickListener {
             logSyncInSharedPrefs()
+        }
+        binding.btnDismissSync.setOnClickListener {
+            prefData.setSyncStatusDismissed(true)
+            binding.dashboardSyncBanner.visibility = View.GONE
         }
     }
 
@@ -585,7 +590,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun updateLastSyncStatus() {
         val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        binding.dashboardSyncBanner.visibility = if (isLandscape) View.GONE else View.VISIBLE
+        binding.dashboardSyncBanner.visibility = if (isLandscape || prefData.isSyncStatusDismissed()) View.GONE else View.VISIBLE
         if (isLandscape) return
 
         val lastSyncMillis = prefData.getLastSync()
