@@ -55,7 +55,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         }
     }
 
-    fun openCallFragment(newFragment: Fragment, tag: String?) {
+    open fun openCallFragment(newFragment: Fragment, tag: String?) {
         val fragmentManager = supportFragmentManager
         if(c<2){
             c=0

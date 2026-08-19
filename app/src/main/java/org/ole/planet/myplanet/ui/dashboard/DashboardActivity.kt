@@ -246,8 +246,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             if (status == lastSyncStatus) return@collectWhenStarted
             lastSyncStatus = status
             if (status is SyncManager.SyncStatus.Success) {
-                prefData.setSyncStatusDismissed(false)
-                updateLastSyncStatus()
+                resetSyncStatusDismissed()
             }
         }
     }
@@ -586,6 +585,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         collectWhenStarted(dashboardViewModel.dashboardDataFlow(user?.id)) {
             onRealmDataChange()
         }
+    }
+
+    private fun resetSyncStatusDismissed() {
+        prefData.setSyncStatusDismissed(false)
+        updateLastSyncStatus()
     }
 
     private fun updateLastSyncStatus() {
@@ -972,6 +976,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         super.onDestroy()
     }
 
+    override fun openCallFragment(newFragment: Fragment, tag: String?) {
+        resetSyncStatusDismissed()
+        super.openCallFragment(newFragment, tag)
+    }
+
+    override fun onBackStackChanged() {
+        super.onBackStackChanged()
+        resetSyncStatusDismissed()
+    }
+
     override fun openCallFragment(f: Fragment) {
         val id = f.arguments?.getString("id")
         val tag = if (id != null) "${f::class.java.simpleName}_$id" else f::class.java.simpleName
@@ -1077,8 +1091,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onResume() {
         super.onResume()
+        resetSyncStatusDismissed()
         checkNotificationPermissionStatus()
-        updateLastSyncStatus()
     }
 
     override fun onNewIntent(intent: Intent?) {
