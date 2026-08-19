@@ -24,6 +24,26 @@ class TeamTasksRepository {
   Future<TeamTaskRow?> getById(String id) => _dao.getById(id);
   Future<List<TeamTaskRow>> pending() => _dao.pending();
 
+  /// Port of `TeamsRepositoryImpl.getPendingTasksForUser`, including its guards:
+  /// a blank user id or an inverted window returns nothing rather than issuing a
+  /// query that would match every task or none by accident.
+  Future<List<TeamTaskRow>> pendingDeadlineTasks({
+    required String userId,
+    required int start,
+    required int end,
+  }) async {
+    if (userId.trim().isEmpty || start > end) return const [];
+    return _dao.pendingDeadlineTasks(userId, start, end);
+  }
+
+  /// Port of `TeamsRepositoryImpl.markTasksNotified` — blank ids dropped and the
+  /// list de-duplicated before it reaches the `IN` clause.
+  Future<void> markNotified(Iterable<String> taskIds) async {
+    final valid = taskIds.where((id) => id.trim().isNotEmpty).toSet().toList();
+    if (valid.isEmpty) return;
+    await _dao.markNotified(valid);
+  }
+
   Future<String?> create({
     required String teamId,
     required String title,

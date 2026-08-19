@@ -81,6 +81,11 @@ dependencies:
   # Opening external links — replaces `LinkMovementMethod` in the static
   # About/Disclaimer fragments, where `<a href>` links open in the browser.
   url_launcher: ^6.3.1
+  # OS notifications — replaces `NotificationUtils`'s `NotificationCompat`
+  # builder and channel setup, which `TaskNotificationWorker` uses to surface
+  # task deadlines while the app is not running. Only the Android side is used;
+  # the shipping app is Android-only.
+  flutter_local_notifications: ^22.3.0
 
 dev_dependencies:
   flutter_test:

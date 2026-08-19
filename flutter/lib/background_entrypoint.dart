@@ -148,6 +148,17 @@ Future<bool> executeBackgroundTask(String taskName) async {
                   .read(myPlanetActivitiesUploaderProvider)
                   .upload(user: user, config: config);
             },
+      // Port of `TaskNotificationWorker`, which the Kotlin schedules as its own
+      // 900-second periodic worker. It reads only local state, so unlike the
+      // sync steps it needs no server config — but it does need a signed-in
+      // user, which cannot exist without one anyway.
+      onMaintenance: () async {
+        final userId = prefs.loggedInUserId;
+        if (userId == null) return;
+        final user = await container.read(userDaoProvider).getById(userId);
+        if (user == null) return;
+        await container.read(taskDeadlineNotifierProvider).run(user: user);
+      },
       recordRun: (record) => prefs.recordBackgroundRun(
         taskName: record.taskName,
         attemptedAt: record.attemptedAt,

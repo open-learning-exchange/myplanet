@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/server_config.dart';
+import '../core/notifications/notification_presenter.dart';
+import '../core/notifications/task_deadline_notifier.dart';
 import '../core/prefs/planet_prefs.dart';
 import '../core/sync/server_url_mapper.dart';
 import '../core/system/device_stats.dart';
@@ -49,6 +51,7 @@ import '../repository/team_tasks_repository.dart';
 import '../repository/team_tasks_uploader.dart';
 import '../repository/feedback_uploader.dart';
 import '../repository/teams_uploader.dart';
+import 'resources_providers.dart' show diskStatsProvider;
 
 /// The dependency graph, replacing the Hilt modules in `di/`.
 ///
@@ -356,6 +359,23 @@ final notificationsRepositoryProvider = Provider<NotificationsRepository>(
 
 final lifeRepositoryProvider = Provider<LifeRepository>(
   (ref) => LifeRepository(ref.watch(myLifeDaoProvider)),
+);
+
+/// The OS notification surface. Overridden with a fake in tests, the same way
+/// [diskStatsProvider] is — a real one would need a platform channel.
+final notificationPresenterProvider = Provider<NotificationPresenter>(
+  (ref) => LocalNotificationsPresenter(),
+);
+
+/// Port of `TaskNotificationWorker`'s dependencies. Read from the background
+/// isolate's own container, so everything it needs is constructed there.
+final taskDeadlineNotifierProvider = Provider<TaskDeadlineNotifier>(
+  (ref) => TaskDeadlineNotifier(
+    tasks: ref.watch(teamTasksRepositoryProvider),
+    notifications: ref.watch(notificationsRepositoryProvider),
+    presenter: ref.watch(notificationPresenterProvider),
+    diskStats: ref.watch(diskStatsProvider),
+  ),
 );
 
 final personalsRepositoryProvider = Provider<PersonalsRepository>(

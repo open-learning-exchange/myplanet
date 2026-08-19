@@ -731,6 +731,15 @@ class TeamTasks extends Table {
   BoolColumn get completed => boolean().withDefault(const Constant(false))();
   BoolColumn get isUpdated => boolean().withDefault(const Constant(false))();
 
+  /// Whether the deadline notification for this task has already been shown.
+  ///
+  /// `TeamTask.isNotified` in the Kotlin, and the reason its deadline worker can
+  /// run every 15 minutes without re-notifying: the flag, not the OS, is what
+  /// makes a notification once-only. It is never uploaded — the column exists on
+  /// neither the CouchDB document nor `TeamTask.serialize` — so a synced row
+  /// arrives with it false and each device notifies its own assignee once.
+  BoolColumn get isNotified => boolean().withDefault(const Constant(false))();
+
   @override
   Set<Column> get primaryKey => {id};
 }

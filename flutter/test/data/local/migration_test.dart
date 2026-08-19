@@ -512,6 +512,33 @@ void main() {
     },
   );
 
+  test('a team task survives v32 and starts out un-notified', () async {
+    // `team_tasks` is preserved too, so v32's `isNotified` column needs the same
+    // hand-written `_addColumnIfMissing` step. Two things matter here: the task
+    // itself must survive (it may be a locally-created row the outbox has not
+    // pushed yet), and it must land with `isNotified` false so the deadline
+    // reminder still fires. Defaulting to true would silently swallow the first
+    // reminder for every task already on the device.
+    await database.teamTaskDao.upsert(
+      TeamTasksCompanion.insert(
+        id: 'task-1',
+        teamId: 'team-1',
+        title: const Value('Submit the report'),
+        assignee: const Value('user-1'),
+        deadline: const Value(1770000000000),
+        isUpdated: const Value(true),
+      ),
+    );
+
+    await runUpgrade(from: 31);
+
+    final survivor = await database.teamTaskDao.getById('task-1');
+    expect(survivor?.title, 'Submit the report');
+    expect(survivor?.deadline, 1770000000000);
+    expect(survivor?.isUpdated, isTrue, reason: 'still owed to the server');
+    expect(survivor?.isNotified, isFalse);
+  });
+
   test('feedback indexes are present after an upgrade', () async {
     // The Kotlin `all: smoother model database indexing` commit (8f993472e)
     // added `openTime` and `isUploaded` indices to the feedback table. Both

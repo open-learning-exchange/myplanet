@@ -44,6 +44,7 @@ class BackgroundTaskRunner {
     required this.syncSteps,
     required this.recordLastSync,
     this.onSyncComplete,
+    this.onMaintenance,
     this.recordRun,
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now;
@@ -64,6 +65,16 @@ class BackgroundTaskRunner {
   /// [failedSteps]); losing telemetry must not request an OS retry the way a
   /// failed table pull would.
   final BackgroundStep? onSyncComplete;
+
+  /// Fires on every [BackgroundTaskNames.maintenance] run — the hook
+  /// `TaskDeadlineNotifier` hangs off, standing in for Kotlin's separate
+  /// 900-second `TaskNotificationWorker`. Maintenance is this port's job with
+  /// the same cadence and the same independence from whether a sync was due, so
+  /// the reminder arrives on the schedule the Kotlin gives it.
+  ///
+  /// Swallowed like [onSyncComplete] and for the same reason: the Kotlin worker
+  /// wraps every step in `runCatching` and always returns `Result.success()`.
+  final BackgroundStep? onMaintenance;
   final Future<void> Function(BackgroundRunRecord record)? recordRun;
   final DateTime Function() _now;
 
@@ -89,6 +100,16 @@ class BackgroundTaskRunner {
     if (!await _attempt(drainOutbox)) failed.add('outboxDrain');
 
     if (taskName == BackgroundTaskNames.maintenance) {
+      // Deadline reminders — see [onMaintenance]. Runs whether or not the
+      // outbox steps above succeeded, since it reads only local state.
+      final maintenance = onMaintenance;
+      if (maintenance != null) {
+        try {
+          await maintenance();
+        } catch (_) {
+          // Deliberately ignored — see [onMaintenance].
+        }
+      }
       return _complete(taskName, failed);
     }
     if (!autoSyncEnabled) {

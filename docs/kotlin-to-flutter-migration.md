@@ -17,9 +17,9 @@ working. Counted honestly:
   the shape Kotlin has.
 
 Known gaps:
-- `TaskNotificationWorker`'s deadline notifications and `DownloadWorker`'s background queue are
-  still unported. Timed background *sync* landed in Phase 38 — see below — so the WorkManager
-  gap is now partial rather than total.
+- `DownloadWorker`'s background queue is the last unported `WorkManager` job. Timed background
+  *sync* landed in Phase 38 and `TaskNotificationWorker`'s deadline notifications in Phase 42,
+  both on the `workmanager` plugin, so what remains is one job rather than the whole category.
 - Team attachments are ported as of Phase 39: a receipt image on a finance transaction or a
   report is written under `team_attachments/<docId>/<imageName>`, the document POSTs, then the
   bytes PUT as a CouchDB attachment — best-effort and in that order, the same shape the
@@ -547,8 +547,8 @@ plugin rather than app code.
 Also fixed here: 16 raw CP1252 `0x97` bytes in this document, left by the Phase 37 docs commits,
 which made it invalid UTF-8 and broke any tool that reads it as such.
 
-Still unported from `WorkManager`: `TaskNotificationWorker`'s deadline notifications and
-`DownloadWorker`'s background queue.
+Still unported from `WorkManager` at the time of this phase: `TaskNotificationWorker`'s deadline
+notifications (since ported — Phase 42) and `DownloadWorker`'s background queue.
 
 ## Phase 39 — harvesting `flutter-openhands7`
 
@@ -1194,10 +1194,10 @@ flutter pub get 2>&1 | grep -i discontinued
   storage sheet landed in this slice: `ResourcesRepository.freeUpSpace` (the
   `FreeSpaceWorker.doWork` delete-and-mark-not-offline pass) plus a `DiskStats` seam over a
   `disk_stats` method channel (`StorageStatsManager`) for the available/total figures.
-- `dashboard` -- the home dashboard's OS-scheduled background sync (the
-  `AutoSyncWorker` half landed in Phase 38 through the `workmanager` plugin;
-  `TaskNotificationWorker`'s deadline notifications and `DownloadWorker`'s
-  queue remain open).
+- `dashboard` -- nothing open on the OS-scheduled side except downloads: the `AutoSyncWorker` half
+  landed in Phase 38 through the `workmanager` plugin and `TaskNotificationWorker`'s deadline
+  notifications in Phase 42 on the same plugin's `maintenance` cadence. `DownloadWorker`'s queue
+  remains open.
 - `sync` -- OS-scheduled background work, a platform gap rather than a screen.
 
 Earlier revisions of this list also named team voices, team/public survey sharing, personal
@@ -1906,11 +1906,73 @@ Two tests were added or corrected: the pinned assertion now expects the composit
 covers the `customDeviceName` half at both the doc level and the row level so the two cannot drift
 apart again.
 
+## Phase 42 — task deadline notifications (`TaskNotificationWorker`)
+
+The second of the three `WorkManager` jobs, and the one whose *point* is running with nobody
+present: a deadline reminder that only arrives while you have the app open is not a reminder. The
+scheduling seam from Phase 38 is what made it tractable — there was nowhere to put this before.
+
+**Where it runs.** Kotlin schedules `TaskNotificationWorker` as its own 900-second periodic worker,
+independent of whether a sync was due. This port already has a job with exactly that cadence and
+independence: the `maintenance` task. `BackgroundTaskRunner` gained an `onMaintenance` hook next to
+Phase 41's `onSyncComplete`, fired on the maintenance run only — firing on both would run the pass
+twice a quarter hour — and swallowed like its neighbour, because the Kotlin worker wraps every step
+in `runCatching` and always returns `Result.success()`. A missed reminder is not worth an OS retry.
+
+**The once-only guarantee is a column, not the OS.** `team_tasks.isNotified` is what lets a
+15-minute worker run forever without re-notifying, so the schema went 31 → 32. `team_tasks` is a
+preserved table, so the column needs the hand-written `_addColumnIfMissing` step. Existing rows
+default to false, which can re-notify a task the *Kotlin* app already notified about on the same
+handset; the alternative — defaulting to true — would swallow the first reminder for every task
+already on the device, and a duplicate reminder is the cheaper mistake. The flag is never uploaded
+(it is on neither the CouchDB document nor `TeamTask.serialize`), so `markNotified` writes only
+`isNotified` and deliberately leaves `isUpdated` alone: marking a row notified must not make it
+look like it has an edit to push.
+
+**The split.** `TaskDeadlineNotifier` is the policy as ordinary Dart — order of steps, the window,
+the once-only guarantee — with the platform pieces injected: a `NotificationPresenter`, the
+existing `DiskStats`, and a clock. `LocalNotificationsPresenter` is the only part that touches
+`flutter_local_notifications`. This is the same split `BackgroundTaskRunner` uses and for the same
+reason: the contract is invisible from a widget test and impossible from inside an isolate.
+
+**Two quirks reproduced, one of them load-bearing.**
+
+- *The window starts at `now`*, so an **already-overdue** task is outside it and never notified.
+  That reads like a bug, but the dashboard's team task badge queries the same window, and the badge
+  and the notification disagreeing would be worse than both being narrow.
+- *`isTaskUrgent` compares against the deadline day's **midnight***. Kotlin formats the deadline to
+  `"EEE dd, MMMM yyyy"` and parses it straight back with `TimeUtils.parseDate` — same pattern, then
+  `atStartOfDay` — so the time of day is discarded. The port truncates directly instead of
+  round-tripping a display string: same arithmetic, no locale dependency. Note this *widens* the
+  urgent band rather than narrowing it, which the test pins with a worked example. It is also
+  unreachable-by-one: the window is a day wide and the threshold is two days, so every task this
+  path selects is `PRIORITY_HIGH` and the default branch cannot be reached from `run`. The branch is
+  kept because it is the Kotlin's, with a test that will start failing if a caller widens the
+  window.
+
+**What was deliberately not ported.** `NotificationUtils` also builds survey, join-request,
+storage, resource and summary configs, and gates every type behind a `notification_preferences`
+`SharedPreferences` file. None of that is here: no ported path calls those factories, and the port
+has no UI to toggle the gates, so both would be library code with no caller — the thing this
+document keeps recording as a failure mode. The notification titles stay the Kotlin's hardcoded
+English (`NotificationUtils` reads no `strings.xml` for them, and a background isolate has no
+`BuildContext` to resolve `.arb` against), which is parity rather than a regression but is worth
+listing as an open localisation item.
+
+**Two build facts the APK gate caught, both invisible to `analyze` and the 1044 tests:**
+
+- `flutter_local_notifications` fails at `checkDebugAarMetadata` unless **core library desugaring**
+  is enabled, because it compiles against `java.time`. `android/app/build.gradle.kts` now sets
+  `isCoreLibraryDesugaringEnabled` and adds `desugar_jdk_libs`. Worth remembering as the general
+  shape: a plugin can be perfectly happy in Dart and still refuse to link.
+- The KGP deprecation warning now names its plugins: `file_picker`, `pdfx`,
+  `shared_preferences_android`, `workmanager_android`. It builds today and will not forever.
+
 ---
 
-**Last updated**: 2026-08-19 (Phase 41 complete — device/tablet usage telemetry
-(`myplanet_activities` upload) ported; `DeviceStats` seam + `MyPlanetActivitiesUploader` +
-dashboard/background wiring + device fields on activity serializers; the usage rows' `androidId`
-and `customDeviceName` fixed on merge)
-**Phase**: 41 of N (27 of 28 UI packages have a screen — see Status for what that does and
+**Last updated**: 2026-08-19 (Phase 42 complete — `TaskNotificationWorker`'s deadline notifications
+ported on the `maintenance` cadence: `TaskDeadlineNotifier` policy + `NotificationPresenter` seam +
+`team_tasks.isNotified` at schema v32. `DownloadWorker`'s queue is the last unported WorkManager
+job)
+**Phase**: 42 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

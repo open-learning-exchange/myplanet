@@ -12,6 +12,10 @@
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions"/>
+    <!-- Task deadline reminders (`TaskNotificationWorker`). Runtime-granted from
+         Android 13; the reminder path runs either way and the in-app
+         notification row is still written when the grant is missing. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
         android:label="myplanet"

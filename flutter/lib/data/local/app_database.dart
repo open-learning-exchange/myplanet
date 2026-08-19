@@ -95,7 +95,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 31;
+  int get schemaVersion => 32;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -248,6 +248,16 @@ class AppDatabase extends _$AppDatabase {
       if (from < 31) {
         await _addColumnIfMissing(m, teams, teams.imageName);
       }
+
+      // `team_tasks` is preserved too. v32 adds `isNotified`, the once-only flag
+      // behind the deadline notifications. Defaulting existing rows to false is
+      // the right migration even though it can re-notify a task the Kotlin app
+      // already notified about on the same device: the alternative — defaulting
+      // to true — would silently swallow the first notification for every task
+      // already on the device, and a duplicate reminder is the cheaper mistake.
+      if (from < 32) {
+        await _addColumnIfMissing(m, teamTasks, teamTasks.isNotified);
+      }
     },
   );
 
@@ -329,6 +339,36 @@ class TeamTaskDao extends DatabaseAccessor<AppDatabase>
                 t.deadline.isBetweenValues(start, end),
           ))
           .get();
+
+  /// Port of `TeamTaskDao.getPendingTasksForUser` — the deadline-notification
+  /// query. Narrower than [tasksForUserBetween] in two ways that matter:
+  /// `completed = 0` skips a task the user already finished, and
+  /// `isNotified = 0` is what makes the notification once-only.
+  Future<List<TeamTaskRow>> pendingDeadlineTasks(
+    String userId,
+    int start,
+    int end,
+  ) =>
+      (select(teamTasks)..where(
+            (t) =>
+                t.completed.equals(false) &
+                t.assignee.equals(userId) &
+                t.isNotified.equals(false) &
+                t.deadline.isBetweenValues(start, end),
+          ))
+          .get();
+
+  /// Port of `TeamTaskDao.markTasksNotified`.
+  ///
+  /// Writes only `isNotified`, deliberately leaving `isUpdated` alone: the flag
+  /// is device-local and never uploaded, so marking it must not make the row
+  /// look like it has an edit to push.
+  Future<void> markNotified(List<String> taskIds) async {
+    if (taskIds.isEmpty) return;
+    await (update(teamTasks)..where((t) => t.id.isIn(taskIds))).write(
+      const TeamTasksCompanion(isNotified: Value(true)),
+    );
+  }
 }
 
 /// Port of the team catalog queries in `data/room/dao/MyTeamDao.kt`.

@@ -24,6 +24,7 @@ void main() {
     Future<void> Function()? drain,
     List<BackgroundSyncStep>? syncs,
     Future<void> Function()? onSyncComplete,
+    Future<void> Function()? onMaintenance,
   }) => BackgroundTaskRunner(
     configured: configured,
     autoSyncEnabled: enabled,
@@ -49,6 +50,7 @@ void main() {
         ],
     recordLastSync: (value) async => recorded.add(value),
     onSyncComplete: onSyncComplete,
+    onMaintenance: onMaintenance,
     recordRun: (record) async => runs.add(record),
     now: () => now,
   );
@@ -248,6 +250,59 @@ void main() {
     expect(await subject.run(BackgroundTaskNames.autoSync), isFalse);
     expect(runs.single.failedSteps, ['lastSyncWrite']);
     expect(runs.single.status, BackgroundRunStatus.retryRequested);
+  });
+
+  test('onMaintenance fires on the maintenance run', () async {
+    // Stands in for Kotlin's separate 900-second `TaskNotificationWorker`, so it
+    // has to run on the maintenance cadence rather than the sync one.
+    await runner(
+      onMaintenance: () async {
+        calls.add('deadlines');
+      },
+    ).run(BackgroundTaskNames.maintenance);
+
+    expect(calls, ['recover', 'drain', 'deadlines']);
+    expect(runs.single.status, BackgroundRunStatus.succeeded);
+  });
+
+  test('onMaintenance fires even when the outbox steps fail', () async {
+    // Deadline reminders read only local state, so a dead network must not cost
+    // the user their reminders.
+    await runner(
+      recover: () async => throw Exception('offline'),
+      drain: () async => throw Exception('offline'),
+      onMaintenance: () async {
+        calls.add('deadlines');
+      },
+    ).run(BackgroundTaskNames.maintenance);
+
+    expect(calls, ['deadlines']);
+    expect(runs.single.status, BackgroundRunStatus.retryRequested);
+    expect(runs.single.failedSteps, ['outboxRecovery', 'outboxDrain']);
+  });
+
+  test('a throwing onMaintenance does not flip the run', () async {
+    await runner(
+      onMaintenance: () async {
+        calls.add('deadlines');
+        throw Exception('no notification channel');
+      },
+    ).run(BackgroundTaskNames.maintenance);
+
+    expect(calls, ['recover', 'drain', 'deadlines']);
+    expect(runs.single.status, BackgroundRunStatus.succeeded);
+    expect(runs.single.failedSteps, isEmpty);
+  });
+
+  test('onMaintenance does not fire on the sync run', () async {
+    // Otherwise the reminder pass would run twice per quarter hour.
+    await runner(
+      onMaintenance: () async {
+        calls.add('deadlines');
+      },
+    ).run(BackgroundTaskNames.autoSync);
+
+    expect(calls, ['recover', 'drain', 'sync']);
   });
 
   test('onSyncComplete fires after a clean sync', () async {

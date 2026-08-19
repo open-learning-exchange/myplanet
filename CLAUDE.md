@@ -36,7 +36,8 @@ answer sheet they collect, and profile photos with the `login_activities` sync-i
 `flutter-openhands4`), and — harvested from `flutter-openhands7` — the About and Disclaimer
 screens, team finance/report receipt attachments in both directions, free-up-space storage
 management over a `disk_stats` method channel, and debounced username validation, have landed —
-plus voices share-to-community with the upstream `f4adebf` visibility/un-share parity.
+plus voices share-to-community with the upstream `f4adebf` visibility/un-share parity, device and
+tablet-usage telemetry (`myplanet_activities`), and task deadline notifications.
 Everything below in this document describes the Kotlin app and still applies to it.
 
 See **`docs/kotlin-to-flutter-migration.md`** for scope, the technology mapping (Hilt→Riverpod,
@@ -45,8 +46,11 @@ resolved for write-back: `RetryQueue`'s durability was always the SQLite table r
 worker, so the queue ported directly and only the drain trigger needed replacing (`outbox` table
 + `OutboxDrainer`, drained on app resume). What remains open is background work with no user
 present — `AutoSyncWorker`'s timed sync landed in Phase 38 through the `workmanager` plugin behind
-a testable Dart seam, though that plugin's own Android side is Kotlin.
-`TaskNotificationWorker`'s deadline notifications and `DownloadWorker`'s queue remain open.
+a testable Dart seam, though that plugin's own Android side is Kotlin, and
+`TaskNotificationWorker`'s deadline notifications landed in Phase 42 on the same plugin's
+`maintenance` cadence (`TaskDeadlineNotifier` policy behind a `NotificationPresenter` seam, with
+`team_tasks.isNotified` making the reminder once-only). `DownloadWorker`'s queue is the last
+unported `WorkManager` job.
 
 ### Documentation Map
 
