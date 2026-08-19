@@ -4,6 +4,7 @@ import 'package:workmanager/workmanager.dart';
 
 import 'core/background/background_task_runner.dart';
 import 'core/background/background_task_names.dart';
+import 'core/background/background_download_queue.dart';
 import 'core/network/network_result.dart';
 import 'core/prefs/planet_prefs.dart';
 import 'core/sync/sync_result.dart';
@@ -33,10 +34,14 @@ Future<bool> executeBackgroundTask(String taskName) async {
       if (config == null) return true;
       var succeeded = true;
       final downloader = container.read(resourceDownloaderProvider);
-      for (final id in prefs.pendingResourceDownloads) {
+      final queue = BackgroundDownloadQueue(
+        container.read(downloadQueueDaoProvider),
+        container.read(backgroundSchedulerProvider),
+      );
+      for (final id in await queue.pending()) {
         final resource = await container.read(myLibraryDaoProvider).getById(id);
         if (resource == null) {
-          await prefs.removePendingResourceDownload(id);
+          await queue.complete(id);
           continue;
         }
         final result = await downloader.download(

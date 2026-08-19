@@ -52,7 +52,6 @@ class PlanetPrefs {
   static const String _keyAutoSync = 'autoSync';
   static const String _keyAutoSyncInterval = 'autoSyncInterval';
   static const String _keyBackgroundRun = 'backgroundRun';
-  static const String _keyPendingResourceDownloads = 'pendingResourceDownloads';
 
   /// Prefix of the per-reminder keys, matching the Kotlin's
   /// `reminder_time_<surveyIds>` in its `survey_reminders` preferences file.
@@ -76,6 +75,8 @@ class PlanetPrefs {
   /// blob, cached so `MyPlanet.getNormalMyPlanetActivities` can echo
   /// `planetVersion` back. `null` until the first server handshake reports it.
   static const String _keyVersionDetail = 'versionDetail';
+  static const String _keyDeviceUniqueIdentifier = 'deviceUniqueIdentifier';
+  static const String _keyDeviceModelName = 'deviceModelName';
 
   /// `libraryViewMode` / `courseViewMode` — port of
   /// `SharedPrefManager.getLibraryViewMode` / `getCourseViewMode`.
@@ -225,23 +226,6 @@ class PlanetPrefs {
     await _secureStorage.delete(key: _secureKeyPassword);
   }
 
-  /// Resource ids waiting for the one-shot background download worker.
-  /// SharedPreferences mirrors Kotlin's persisted URL set: an OS restart may
-  /// postpone the work, but cannot forget what the user asked to download.
-  List<String> get pendingResourceDownloads => List.unmodifiable(
-    _prefs.getStringList(_keyPendingResourceDownloads) ?? const [],
-  );
-
-  Future<void> addPendingResourceDownload(String resourceId) async {
-    final pending = pendingResourceDownloads.toSet()..add(resourceId);
-    await _prefs.setStringList(_keyPendingResourceDownloads, pending.toList());
-  }
-
-  Future<void> removePendingResourceDownload(String resourceId) async {
-    final pending = pendingResourceDownloads.toSet()..remove(resourceId);
-    await _prefs.setStringList(_keyPendingResourceDownloads, pending.toList());
-  }
-
   /// JSON string of community leaders fetched from the server.
   /// Port of `SharedPrefManager.getCommunityLeaders` / `setCommunityLeaders`.
   String get communityLeaders => _prefs.getString(_keyCommunityLeaders) ?? '';
@@ -282,6 +266,20 @@ class PlanetPrefs {
   /// Port of `SharedPrefManager.getCustomDeviceName` /
   /// `setCustomDeviceName`. Empty by default.
   String get customDeviceName => _prefs.getString(_keyCustomDeviceName) ?? '';
+
+  /// Cached for headless WorkManager engines, where MainActivity's custom
+  /// method-channel handler is not necessarily registered.
+  String? get deviceUniqueIdentifier =>
+      _prefs.getString(_keyDeviceUniqueIdentifier);
+  String? get deviceModelName => _prefs.getString(_keyDeviceModelName);
+
+  Future<void> cacheDeviceIdentity({
+    required String uniqueIdentifier,
+    required String deviceName,
+  }) async {
+    await _prefs.setString(_keyDeviceUniqueIdentifier, uniqueIdentifier);
+    await _prefs.setString(_keyDeviceModelName, deviceName);
+  }
 
   Future<void> setCustomDeviceName(String name) =>
       _prefs.setString(_keyCustomDeviceName, name);

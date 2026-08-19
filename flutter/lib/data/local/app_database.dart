@@ -55,6 +55,7 @@ part 'app_database.g.dart';
     ResourceActivities,
     CourseActivities,
     TeamNotifications,
+    DownloadQueueEntries,
   ],
   daos: [
     UserDao,
@@ -83,6 +84,7 @@ part 'app_database.g.dart';
     ResourceActivityDao,
     CourseActivityDao,
     TeamNotificationDao,
+    DownloadQueueDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -95,7 +97,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 32;
+  int get schemaVersion => 33;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -185,6 +187,9 @@ class AppDatabase extends _$AppDatabase {
     // write-only from this app's side — no sync pulls them back.
     'resource_activity',
     'course_activity',
+    // Resource ids awaiting a network-constrained one-shot worker. This is
+    // local intent, not a server cache; dropping it silently loses downloads.
+    'download_queue',
   };
 
   @override
@@ -2928,4 +2933,26 @@ class TeamNotificationDao extends DatabaseAccessor<AppDatabase>
 
   Future<void> upsert(TeamNotificationsCompanion row) =>
       into(teamNotifications).insertOnConflictUpdate(row);
+}
+
+@DriftAccessor(tables: [DownloadQueueEntries])
+class DownloadQueueDao extends DatabaseAccessor<AppDatabase>
+    with _$DownloadQueueDaoMixin {
+  DownloadQueueDao(super.db);
+
+  Future<void> enqueue(String resourceId, {int? createdAt}) =>
+      into(downloadQueueEntries).insertOnConflictUpdate(
+        DownloadQueueEntriesCompanion.insert(
+          resourceId: resourceId,
+          createdAt: createdAt ?? DateTime.now().millisecondsSinceEpoch,
+        ),
+      );
+
+  Future<List<DownloadQueueRow>> pending() => (select(
+    downloadQueueEntries,
+  )..orderBy([(row) => OrderingTerm.asc(row.createdAt)])).get();
+
+  Future<int> complete(String resourceId) => (delete(
+    downloadQueueEntries,
+  )..where((row) => row.resourceId.equals(resourceId))).go();
 }

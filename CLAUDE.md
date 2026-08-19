@@ -53,6 +53,8 @@ a testable Dart seam, though that plugin's own Android side is Kotlin, and
 resource requests are persisted before the foreground attempt and handed to a network-constrained
 one-shot worker for retry and process-death recovery. Phase 44 then closed the device-identity
 serializer gap for personal, rating, submission and team uploads using the Phase 41 platform seam.
+Phase 45 hardened both: the download queue moved from a preference list to a preserved Drift table
+at schema v33, and device identity gained a UI-primed cache for headless WorkManager engines.
 
 ### Documentation Map
 

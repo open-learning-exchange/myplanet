@@ -43,10 +43,29 @@ class PlatformDeviceIdentitySource implements DeviceIdentitySource {
   final PlanetPrefs _prefs;
 
   @override
-  Future<DeviceIdentity> read() async => DeviceIdentity(
-    // Kotlin calls NetworkUtils.getUniqueIdentifier(), not bare ANDROID_ID.
-    androidId: await _stats.uniqueIdentifier(),
-    deviceName: await _stats.deviceName(),
-    customDeviceName: _prefs.customDeviceName,
-  );
+  Future<DeviceIdentity> read() async {
+    String androidId;
+    String deviceName;
+    try {
+      // Kotlin calls NetworkUtils.getUniqueIdentifier(), not bare ANDROID_ID.
+      androidId = await _stats.uniqueIdentifier();
+      deviceName = await _stats.deviceName();
+      await _prefs.cacheDeviceIdentity(
+        uniqueIdentifier: androidId,
+        deviceName: deviceName,
+      );
+    } catch (_) {
+      // WorkManager may launch a Flutter engine without MainActivity, which is
+      // where this app registers its custom channel. Bootstrap primes these
+      // values from the UI engine so headless outbox drains retain parity.
+      androidId = _prefs.deviceUniqueIdentifier ?? '';
+      deviceName = _prefs.deviceModelName ?? '';
+      if (androidId.isEmpty && deviceName.isEmpty) rethrow;
+    }
+    return DeviceIdentity(
+      androidId: androidId,
+      deviceName: deviceName,
+      customDeviceName: _prefs.customDeviceName,
+    );
+  }
 }

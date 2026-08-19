@@ -81,6 +81,10 @@ final appDatabaseProvider = Provider<AppDatabase>((ref) {
   return database;
 });
 
+final downloadQueueDaoProvider = Provider<DownloadQueueDao>(
+  (ref) => ref.watch(appDatabaseProvider).downloadQueueDao,
+);
+
 final userDaoProvider = Provider<UserDao>(
   (ref) => ref.watch(appDatabaseProvider).userDao,
 );
@@ -250,7 +254,7 @@ final resourceDownloaderProvider = Provider<ResourceDownloader>(
     ref.watch(planetApiProvider),
     ref.watch(myLibraryDaoProvider),
     queue: BackgroundDownloadQueue(
-      ref.watch(planetPrefsProvider),
+      ref.watch(downloadQueueDaoProvider),
       ref.watch(backgroundSchedulerProvider),
     ),
   ),

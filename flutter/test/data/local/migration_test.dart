@@ -50,6 +50,18 @@ void main() {
     );
   });
 
+  test('a queued resource download survives a schema upgrade', () async {
+    await database.downloadQueueDao.enqueue('resource-1', createdAt: 1000);
+
+    await runUpgrade();
+
+    expect(
+      (await database.downloadQueueDao.pending()).map((row) => row.resourceId),
+      ['resource-1'],
+      reason: 'the server cannot reconstruct a download the user requested',
+    );
+  });
+
   test('an un-uploaded personal note survives a schema upgrade', () async {
     await database.personalDao.upsert(
       PersonalEntriesCompanion.insert(
@@ -591,6 +603,7 @@ void main() {
       'offline_activity',
       'resource_activity',
       'course_activity',
+      'download_queue',
     };
     expect(
       AppDatabase.localAuthorityTables,

@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 44 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 45 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -2012,7 +2012,28 @@ outbox payload. Teams have several enqueue sites, so their shared handler adds t
 time before POSTing. A fixed source keeps repository tests platform-independent, and each uploader
 now asserts all three values on the actual queued or posted document.
 
-**Last updated**: 2026-08-19 (Phase 44 complete — device identity parity for personal, rating,
-submission and team uploads)
-**Phase**: 44 of N (27 of 28 UI packages have a screen — see Status for what that does and
+## Phase 45 — hardening process-death work and headless identity
+
+The first download-queue pass used a `SharedPreferences` string list. That was durable but not
+transactional: the UI and WorkManager isolates could each read an old list and overwrite the
+other's update. It also used `ExistingWorkPolicy.keep`, which can strand a request added after the
+running worker snapshots the list—the new registration is ignored and the running worker never
+saw the late id.
+
+The queue is now a preserved Drift table at schema v33, one primary-keyed row per resource. SQLite
+serializes cross-isolate inserts/deletes, deduplicates by construction and participates in the
+database's local-authority migration contract. Its migration test proves a requested download
+survives an upgrade. One-shot work uses `append`, so every enqueue while another worker is active
+has a successor rather than depending on snapshot timing.
+
+Phase 44 also exposed a headless-engine edge: the device-stats channel is registered by
+`MainActivity`, which may not exist when WorkManager starts Flutter. App bootstrap now caches the
+stable composite id and model name from the UI engine. `PlatformDeviceIdentitySource` refreshes
+that cache whenever the channel is available and falls back to it when headless, while continuing
+to read the user-editable custom name live. Tests cover platform refresh, headless fallback and the
+fail-closed no-platform/no-cache case.
+
+**Last updated**: 2026-08-19 (Phase 45 complete — transactional download queue, race-free one-shot
+chaining and headless-safe device identity)
+**Phase**: 45 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

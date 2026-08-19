@@ -1,13 +1,8 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/background/background_download_queue.dart';
 import 'package:myplanet/core/background/background_scheduler.dart';
 import 'package:myplanet/core/background/background_task_names.dart';
-import 'package:myplanet/core/prefs/planet_prefs.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-class _MockSecureStorage extends Mock implements FlutterSecureStorage {}
+import 'package:myplanet/data/local/app_database.dart';
 
 class _Scheduler implements BackgroundScheduler {
   final oneOff = <String>[];
@@ -40,24 +35,22 @@ class _Scheduler implements BackgroundScheduler {
 }
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  late AppDatabase database;
+
+  setUp(() => database = AppDatabase.memory());
+  tearDown(() => database.close());
 
   test('persists unique downloads and schedules one-shot work', () async {
-    SharedPreferences.setMockInitialValues({});
-    final prefs = PlanetPrefs(
-      await SharedPreferences.getInstance(),
-      secureStorage: _MockSecureStorage(),
-    );
     final scheduler = _Scheduler();
-    final queue = BackgroundDownloadQueue(prefs, scheduler);
+    final queue = BackgroundDownloadQueue(database.downloadQueueDao, scheduler);
 
     await queue.enqueue('resource-1');
     await queue.enqueue('resource-1');
 
-    expect(prefs.pendingResourceDownloads, ['resource-1']);
+    expect(await queue.pending(), ['resource-1']);
     expect(scheduler.oneOff, hasLength(2));
 
     await queue.complete('resource-1');
-    expect(prefs.pendingResourceDownloads, isEmpty);
+    expect(await queue.pending(), isEmpty);
   });
 }

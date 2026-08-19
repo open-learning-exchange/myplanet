@@ -8,6 +8,7 @@ import 'core/background/background_scheduler.dart';
 import 'core/background/background_work_coordinator.dart';
 import 'core/notifications/notification_presenter.dart';
 import 'core/prefs/planet_prefs.dart';
+import 'core/system/device_stats.dart';
 import 'providers/app_providers.dart';
 
 /// Entry point, replacing `MainApplication.kt` and the launcher Activity.
@@ -32,6 +33,7 @@ Future<void> main() async {
   // failed request must not block launch, and the reminder path tolerates the
   // permission being absent.
   unawaited(_requestNotificationPermission());
+  unawaited(_primeDeviceIdentity(prefs));
 
   runApp(
     ProviderScope(
@@ -39,6 +41,23 @@ Future<void> main() async {
       child: const MyPlanetApp(),
     ),
   );
+}
+
+Future<void> _primeDeviceIdentity(PlanetPrefs prefs) async {
+  try {
+    await prefs.cacheDeviceIdentity(
+      uniqueIdentifier: await DeviceStats.instance.uniqueIdentifier(),
+      deviceName: await DeviceStats.instance.deviceName(),
+    );
+  } catch (error, stack) {
+    FlutterError.reportError(
+      FlutterErrorDetails(
+        exception: error,
+        stack: stack,
+        library: 'device identity bootstrap',
+      ),
+    );
+  }
 }
 
 Future<void> _requestNotificationPermission() async {

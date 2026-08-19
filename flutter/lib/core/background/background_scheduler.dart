@@ -59,7 +59,10 @@ class WorkmanagerScheduler implements BackgroundScheduler {
   }) => Workmanager().registerOneOffTask(
     uniqueName,
     taskName,
-    existingWorkPolicy: ExistingWorkPolicy.keep,
+    // Every enqueue gets a successor. `keep` can strand an id inserted after
+    // the running worker took its snapshot because that registration is
+    // ignored and the current worker never sees the late row.
+    existingWorkPolicy: ExistingWorkPolicy.append,
     constraints: Constraints(
       networkType: requiresNetwork
           ? NetworkType.connected

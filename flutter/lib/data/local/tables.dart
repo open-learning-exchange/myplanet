@@ -1071,3 +1071,19 @@ class Certifications extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Durable resource-file work owned by this device.
+///
+/// This is intentionally separate from the upload outbox: a download has no
+/// JSON payload or CouchDB write, but needs the same process-death guarantee.
+@DataClassName('DownloadQueueRow')
+class DownloadQueueEntries extends Table {
+  @override
+  String get tableName => 'download_queue';
+
+  TextColumn get resourceId => text()();
+  IntColumn get createdAt => integer()();
+
+  @override
+  Set<Column> get primaryKey => {resourceId};
+}
