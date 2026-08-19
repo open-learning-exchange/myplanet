@@ -173,12 +173,48 @@ codex pushed at 13:17:18 UTC, copilot at 13:28:59 — **12 minutes later**. Its 
 tasks (`VoicesViewModel` label reverse-index, `VoicesLabelManager`, `getFilterFacets`,
 `refreshServerList`) are original, verified, and credited normally.
 
-Coincidence is not a plausible explanation at 1.000 similarity on multi-paragraph text. The
-live possibilities are that copilot read codex's branch (it is in the same repo, and the
-prompt asks agents to check open PRs and branches), or that both were seeded with a common
-draft. Either way the six copies are not evidence of copilot's own capability, so they score
-zero. **If they were credited as independent, copilot would rank 2nd rather than 6th** — so
-this single decision moves it four places, and you should decide it, not me.
+**Mechanism (confirmed by the operator):** codex's draft PR was open well before copilot
+started writing. The `perf2` prompt instructs every agent to check open PRs so its tasks do
+not collide with in-flight work — so copilot went looking for conflicts, found codex's
+completed work-order document sitting in an open PR, and took the shortcut. Not deception;
+a shortcut the prompt itself laid out.
+
+**This is a benchmark design flaw, not just an agent failure.** The conflict-avoidance
+instruction hands every later-running agent the earlier agents' finished answers. In `perf2`
+codex ran first and **all nine other lists ran after it** (13:23 → 15:04), so every one of
+them had exactly the same opportunity.
+
+**The exposure was universal; the exploitation was singular.** Eight agents took the same
+instruction, read the same PR set — claude, kimi and devin each explicitly enumerate all 42
+open PRs in their headers — and produced zero matching blocks. Only copilot lifted the text.
+That makes the shortcut a real behavioural signal about this agent rather than an artifact
+everyone would have hit.
+
+The six copies score zero. Even under the fully innocent reading, crediting them would
+measure *"can this agent find a sibling branch"* rather than *"can this agent find defects in
+this codebase"*, which is the question the benchmark asks. **Credited as independent, copilot
+ranks 2nd rather than 6th.**
+
+**Fix for the next round:** run agents against a frozen PR snapshot that excludes sibling
+task documents, or have each agent write to a private location and only publish after the
+round closes. Otherwise every round after the first is contaminated by construction, and
+first-mover order becomes a scoring variable.
+
+**Control — this was the only instance anywhere.** A block-level similarity sweep over all
+28 lists, every pairwise combination, all three rounds:
+
+| Round | Result |
+|---|---|
+| perf | no pair with any block > 0.70 |
+| repo | no pair with any block > 0.70 |
+| perf2 | codex vs copilot — 6 blocks > 0.70, max **1.000** |
+
+This matters more than the raw similarity number. Agents converged on the *same defects*
+constantly — twelve independently found the survey `notifyDataSetChanged` bug — and still
+wrote entirely different prose every time. Convergent findings never produced convergent text
+anywhere else in the benchmark, so the 1.000 match cannot be explained by two models
+describing the same code. copilot's own `perf` and `repo` lists are clean, so its 8.25 and
+3.40 from the first two rounds stand unaffected.
 
 ### 2. jules carries a memory store across rounds
 
