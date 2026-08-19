@@ -3,13 +3,13 @@ package org.ole.planet.myplanet.ui.enterprises
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
+import androidx.appcompat.R as AppCompatR
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import androidx.appcompat.R as AppCompatR
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
 import org.ole.planet.myplanet.model.MyTeam
