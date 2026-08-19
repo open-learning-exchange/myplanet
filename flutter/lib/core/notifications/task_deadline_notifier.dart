@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../../data/local/app_database.dart';
 import '../../repository/notifications_repository.dart';
 import '../../repository/team_tasks_repository.dart';
+import '../prefs/planet_prefs.dart';
 import '../system/disk_stats.dart';
 import 'notification_config.dart';
 import 'notification_presenter.dart';
@@ -37,17 +38,20 @@ class TaskDeadlineNotifier {
     required NotificationsRepository notifications,
     required NotificationPresenter presenter,
     DiskStats? diskStats,
+    PlanetPrefs? prefs,
     DateTime Function()? now,
   }) : _tasks = tasks,
        _notifications = notifications,
        _presenter = presenter,
        _diskStats = diskStats,
+       _prefs = prefs,
        _now = now ?? DateTime.now;
 
   final TeamTasksRepository _tasks;
   final NotificationsRepository _notifications;
   final NotificationPresenter _presenter;
   final DiskStats? _diskStats;
+  final PlanetPrefs? _prefs;
   final DateTime Function() _now;
 
   /// `TimeUtils.dateOnlyFormatter` — `"EEE dd, MMMM yyyy"` in the device zone,
@@ -105,22 +109,52 @@ class TaskDeadlineNotifier {
   }
 
   /// Step 2. `FileUtils.totalAvailableMemoryRatio` rounded to a percentage, fed
-  /// to the same `updateStorageNotification` the dashboard already calls.
+  /// to `updateStorageNotification`.
   ///
-  /// Skipped entirely when no [DiskStats] was supplied, which is how a test — or
-  /// a platform without the channel — opts out without a fake.
+  /// This is the only caller of that method, and it runs where the live read
+  /// usually cannot work: `disk_stats` is registered by `MainActivity`, so a
+  /// headless WorkManager engine has no handler for it and `invokeMethod`
+  /// throws `MissingPluginException`. Swallowing that — which the Kotlin's
+  /// `runCatching` shape invites — made the whole step silently do nothing in
+  /// the background, which is the only place it runs.
+  ///
+  /// So the live read is attempted first and [PlanetPrefs.storageAvailablePercent]
+  /// is the fallback, primed from the UI isolate at launch. The same mechanism
+  /// `PlatformDeviceIdentitySource` uses, with the same caveat: the figure is as
+  /// old as the last app launch, where Kotlin's `FileUtils` reads it live
+  /// because it needs no Activity. A warning that is a few hours stale still
+  /// tells the user their device is filling up; no warning at all does not.
   Future<void> _refreshStorageNotification(String userId) async {
-    final diskStats = _diskStats;
-    if (diskStats == null) return;
+    final percent = await _availableStoragePercent();
+    if (percent == null) return;
     try {
-      final stats = await diskStats.storageStats();
-      if (stats.totalBytes <= 0) return;
-      final percent = (stats.availableBytes / stats.totalBytes * 100).round();
       await _notifications.updateStorageNotification(userId, percent);
     } catch (_) {
-      // Kotlin: `runCatching { … }` with the result discarded. A storage read
+      // Kotlin: `runCatching { … }` with the result discarded. A storage write
       // failure must not cost the user their task reminders.
     }
+  }
+
+  /// Live figure where the channel exists, cached figure where it does not,
+  /// `null` when neither is available.
+  Future<int?> _availableStoragePercent() async {
+    final diskStats = _diskStats;
+    if (diskStats != null) {
+      try {
+        final stats = await diskStats.storageStats();
+        if (stats.totalBytes > 0) {
+          final percent = (stats.availableBytes / stats.totalBytes * 100)
+              .round();
+          // Refresh the cache while a live reading is in hand, so a later
+          // headless run has something recent to fall back to.
+          await _prefs?.cacheStorageAvailablePercent(percent);
+          return percent;
+        }
+      } catch (_) {
+        // Fall through to the cache — see [_refreshStorageNotification].
+      }
+    }
+    return _prefs?.storageAvailablePercent;
   }
 
   /// `TimeUtils.formatDate(deadline)`. A zero deadline formats as the epoch in

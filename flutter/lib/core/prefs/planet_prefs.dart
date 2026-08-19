@@ -77,6 +77,7 @@ class PlanetPrefs {
   static const String _keyVersionDetail = 'versionDetail';
   static const String _keyDeviceUniqueIdentifier = 'deviceUniqueIdentifier';
   static const String _keyDeviceModelName = 'deviceModelName';
+  static const String _keyStorageAvailablePercent = 'storageAvailablePercent';
 
   /// `libraryViewMode` / `courseViewMode` — port of
   /// `SharedPrefManager.getLibraryViewMode` / `getCourseViewMode`.
@@ -283,6 +284,19 @@ class PlanetPrefs {
 
   Future<void> setCustomDeviceName(String name) =>
       _prefs.setString(_keyCustomDeviceName, name);
+
+  /// Available-storage percentage, cached for the same reason the device
+  /// identity above is: the `disk_stats` channel is registered by
+  /// `MainActivity`, so a headless WorkManager engine cannot read it live.
+  ///
+  /// `null` means "never measured" — before the first UI launch there is no
+  /// figure, and writing a storage warning from a guessed number would be worse
+  /// than not writing one.
+  int? get storageAvailablePercent =>
+      _prefs.getInt(_keyStorageAvailablePercent);
+
+  Future<void> cacheStorageAvailablePercent(int percent) =>
+      _prefs.setInt(_keyStorageAvailablePercent, percent);
 
   /// Port of `SharedPrefManager.getLastUsageUploaded` /
   /// `setLastUsageUploaded`. Epoch millis; `0` means "from the epoch", which

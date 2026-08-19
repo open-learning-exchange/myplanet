@@ -401,6 +401,9 @@ final taskDeadlineNotifierProvider = Provider<TaskDeadlineNotifier>(
     notifications: ref.watch(notificationsRepositoryProvider),
     presenter: ref.watch(notificationPresenterProvider),
     diskStats: ref.watch(diskStatsProvider),
+    // Supplies the cached available-storage figure for the headless case, where
+    // the `disk_stats` channel does not exist.
+    prefs: ref.watch(planetPrefsProvider),
   ),
 );
 

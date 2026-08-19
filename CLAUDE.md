@@ -55,6 +55,11 @@ one-shot worker for retry and process-death recovery. Phase 44 then closed the d
 serializer gap for personal, rating, submission and team uploads using the Phase 41 platform seam.
 Phase 45 hardened both: the download queue moved from a preference list to a preserved Drift table
 at schema v33, and device identity gained a UI-primed cache for headless WorkManager engines.
+Phase 46 applied that same cache to `disk_stats`, where the missing headless channel had been
+silently disabling the deadline notifier's storage-warning step — the only caller of
+`updateStorageNotification`, so the row was never written at all. Both channels still live in
+`MainActivity`; moving them into a `FlutterPlugin` registered for every engine is the real fix and
+is not done.
 
 ### Documentation Map
 

@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 45 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 46 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -90,7 +90,7 @@ Known gaps:
   and CSV, reached by tapping a resource. Backed by a new foreground download path
   (`ResourceDownloader` + `ResourceFiles`) -- the port synced resource *metadata* only, so before
   this every resource reported itself as not downloaded and there was no way to get the file.
-  `DownloadWorker`'s background queue still needs OS scheduling and is not ported.
+  `DownloadWorker`'s background queue was still unported at this point; it landed in Phase 43.
 - **Phase 24** -- health: My health, the health profile form and the examination form, reached
   from My life. Three things had to be added around the screens for them to be safe. The
   examination `data` blob is AES-256-CBC encrypted with the user's key exactly as
@@ -1207,11 +1207,11 @@ flutter pub get 2>&1 | grep -i discontinued
   storage sheet landed in this slice: `ResourcesRepository.freeUpSpace` (the
   `FreeSpaceWorker.doWork` delete-and-mark-not-offline pass) plus a `DiskStats` seam over a
   `disk_stats` method channel (`StorageStatsManager`) for the available/total figures.
-- `dashboard` -- nothing open on the OS-scheduled side except downloads: the `AutoSyncWorker` half
-  landed in Phase 38 through the `workmanager` plugin and `TaskNotificationWorker`'s deadline
-  notifications in Phase 42 on the same plugin's `maintenance` cadence. `DownloadWorker`'s queue
-  remains open.
-- `sync` -- OS-scheduled background work, a platform gap rather than a screen.
+- `dashboard` -- nothing open on the OS-scheduled side: `AutoSyncWorker` landed in Phase 38
+  through the `workmanager` plugin, `TaskNotificationWorker`'s deadline notifications in Phase 42
+  on the same plugin's `maintenance` cadence, and `DownloadWorker`'s queue in Phase 43 as a
+  durable one-shot.
+- `sync` -- nothing open; see `dashboard` above. All three WorkManager jobs now have a home.
 
 Earlier revisions of this list also named team voices, team/public survey sharing, personal
 attachments, and team attachments; team attachments (receipt images on finance transactions and
@@ -2033,7 +2033,37 @@ that cache whenever the channel is available and falls back to it when headless,
 to read the user-editable custom name live. Tests cover platform refresh, headless fallback and the
 fail-closed no-platform/no-cache case.
 
-**Last updated**: 2026-08-19 (Phase 45 complete — transactional download queue, race-free one-shot
-chaining and headless-safe device identity)
-**Phase**: 45 of N (27 of 28 UI packages have a screen — see Status for what that does and
+### Phase 46 — the same headless-engine edge, on the storage warning
+
+Phase 45's headless-channel finding applies to `disk_stats` too, and there it was not an edge case
+but the whole feature. `TaskDeadlineNotifier`'s storage-warning step (Phase 42) read
+`DiskStats.instance` — the `MainActivity`-registered channel — from inside the WorkManager engine,
+so every call raised `MissingPluginException`, the step's `runCatching`-shaped `catch` swallowed it,
+and nothing was written. Since that step is the *only* caller of
+`NotificationsRepository.updateStorageNotification`, the storage notification row was never written
+at all. A dead write path behind a caught exception, which is the quietest version of the failure
+this document keeps recording.
+
+The fix follows Phase 45's mechanism exactly: app bootstrap primes
+`PlanetPrefs.storageAvailablePercent` from the UI engine, and the notifier tries the live read
+first, refreshes the cache when it succeeds, and falls back to the primed figure when it cannot.
+Where nothing has ever been measured it still writes nothing — a guessed percentage would be worse
+than silence.
+
+The cost is staleness: the figure is as old as the last app launch, where Kotlin's `FileUtils`
+reads it live because it needs no Activity. A warning a few hours stale still tells the user their
+device is filling up; no warning at all does not. Closing that gap properly means moving the two
+channels out of `MainActivity` into a `FlutterPlugin` registered for every engine, which is the
+real fix for both channels and is not done.
+
+Also corrected here: a comment in `task_deadline_notifier.dart` claiming the dashboard already
+called `updateStorageNotification` (nothing did), and two places still describing
+`DownloadWorker`'s queue as open after Phase 43 ported it.
+
+---
+
+**Last updated**: 2026-08-19 (Phase 46 complete — the storage-warning step made to work headless,
+after the same channel-registration edge Phase 45 found for device identity; all three WorkManager
+jobs ported)
+**Phase**: 46 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

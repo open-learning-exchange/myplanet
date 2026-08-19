@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:myplanet/core/prefs/planet_prefs.dart';
 import 'package:myplanet/core/notifications/notification_config.dart';
 import 'package:myplanet/core/notifications/notification_presenter.dart';
 import 'package:myplanet/core/notifications/task_deadline_notifier.dart';
@@ -7,6 +8,7 @@ import 'package:myplanet/core/system/disk_stats.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/notifications_repository.dart';
 import 'package:myplanet/repository/team_tasks_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Port coverage for `TaskNotificationWorker.doWork`. The whole reason the
 /// policy is a plain Dart class is that the worker's contract — notify once,
@@ -17,11 +19,14 @@ void main() {
   late TeamTasksRepository tasks;
   late NotificationsRepository notifications;
   late _RecordingPresenter presenter;
+  late PlanetPrefs prefs;
 
   /// A fixed "now" so the window arithmetic is not clock-dependent.
   final now = DateTime(2026, 8, 19, 9);
 
-  setUp(() {
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    prefs = PlanetPrefs(await SharedPreferences.getInstance());
     db = AppDatabase.memory();
     tasks = TeamTasksRepository(db.teamTaskDao);
     notifications = NotificationsRepository(
@@ -68,6 +73,7 @@ void main() {
     notifications: notifications,
     presenter: presenter,
     diskStats: diskStats,
+    prefs: prefs,
     now: () => now,
   );
 
@@ -199,6 +205,41 @@ void main() {
       // Kotlin wraps the storage half in its own `runCatching`; the task half
       // is what the worker exists for.
       expect(shown, 1);
+    });
+
+    test('the headless case falls back to the primed figure', () async {
+      // The real headless case: `disk_stats` is registered by `MainActivity`, so
+      // a WorkManager engine gets `MissingPluginException` on every call. This
+      // step used to swallow that and write nothing — and since it is the only
+      // caller of `updateStorageNotification`, the row was never written at all.
+      await prefs.cacheStorageAvailablePercent(4);
+
+      await notifier(diskStats: _ThrowingDiskStats()).run(user: user());
+
+      final row = await db.notificationDao.getById('user-1:storage');
+      expect(row, isNotNull);
+      expect(row!.message, '4%');
+    });
+
+    test('a live reading refreshes the primed figure', () async {
+      await prefs.cacheStorageAvailablePercent(90);
+
+      await notifier(
+        diskStats: _FakeDiskStats(total: 1000, available: 70),
+      ).run(user: user());
+
+      // So the next headless run falls back to something recent rather than to
+      // whatever was true at first launch.
+      expect(prefs.storageAvailablePercent, 7);
+    });
+
+    test('nothing is written when there is no figure at all', () async {
+      await notifier(diskStats: _ThrowingDiskStats()).run(user: user());
+
+      // Never measured — guessing a percentage would be worse than staying
+      // quiet.
+      expect(prefs.storageAvailablePercent, isNull);
+      expect(await db.notificationDao.getById('user-1:storage'), isNull);
     });
 
     test('a zero total is not divided by', () async {

@@ -9,6 +9,7 @@ import 'core/background/background_work_coordinator.dart';
 import 'core/notifications/notification_presenter.dart';
 import 'core/prefs/planet_prefs.dart';
 import 'core/system/device_stats.dart';
+import 'core/system/disk_stats.dart';
 import 'providers/app_providers.dart';
 
 /// Entry point, replacing `MainApplication.kt` and the launcher Activity.
@@ -49,6 +50,15 @@ Future<void> _primeDeviceIdentity(PlanetPrefs prefs) async {
       uniqueIdentifier: await DeviceStats.instance.uniqueIdentifier(),
       deviceName: await DeviceStats.instance.deviceName(),
     );
+    // Same reason, different channel: the deadline notifier's storage-warning
+    // step runs headless, where `disk_stats` is unreachable. Priming it here is
+    // what makes that step do anything at all.
+    final stats = await DiskStats.instance.storageStats();
+    if (stats.totalBytes > 0) {
+      await prefs.cacheStorageAvailablePercent(
+        (stats.availableBytes / stats.totalBytes * 100).round(),
+      );
+    }
   } catch (error, stack) {
     FlutterError.reportError(
       FlutterErrorDetails(
