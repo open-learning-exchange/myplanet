@@ -75,7 +75,7 @@ permissions:
   pull-requests: write
   checks: read
   statuses: read
-  actions: write   # re-running a failed workflow on the base needs write
+  actions: write
 
 env:
   DEFAULT_BASE: master
@@ -85,7 +85,6 @@ jobs:
   automerge:
     name: myPlanet automerge
     runs-on: ubuntu-24.04
-    # GitHub caps a job at 6h; stay under it and re-dispatch to continue.
     timeout-minutes: 350
     steps:
       - name: checkout repository code
