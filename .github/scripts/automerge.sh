@@ -100,15 +100,26 @@ runs_for() {
     local raw
     raw=$(gh api "repos/$REPO/actions/runs?head_sha=$1&per_page=100" 2>/dev/null) \
         || { echo '[]'; return 0; }
-    jq -c --arg self "$SELF_WORKFLOW_PATH" --arg run "$SELF_RUN_ID" '
+    jq -c --arg self "$SELF_WORKFLOW_PATH" --arg run "$SELF_RUN_ID" --arg branch "${2:-}" '
         [ .workflow_runs[]?
           | select(.path | startswith(".github/workflows/"))
           | select(.path != $self)
           | select(($run | length == 0) or ((.id | tostring) != $run))
+          | select(($branch | length == 0) or (.head_branch == $branch))
           | {id, name, status, conclusion} ]' <<<"$raw" 2>/dev/null || echo '[]'
 }
 
-runs_failed()  { jq '[.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")] | length' <<<"$1"; }
+runs_bad() {
+    jq -c '
+        ([ .[] | select(.status == "completed" and .conclusion == "success") | .name ] | unique) as $green
+        | [ .[]
+            | select(.status == "completed")
+            | select(.conclusion != "success" and .conclusion != "skipped"
+                     and .conclusion != "neutral" and .conclusion != "cancelled")
+            | select(.name as $n | $green | index($n) | not) ]' <<<"$1"
+}
+
+runs_green()   { jq '[.[] | select(.conclusion == "success")] | length' <<<"$1"; }
 runs_pending() { jq '[.[] | select(.status != "completed")] | length' <<<"$1"; }
 
 runs_missing() {
@@ -121,20 +132,21 @@ runs_missing() {
 }
 
 wait_for_runs() {
-    local sha=$1 need=$2 absent=$3
+    local sha=$1 need=$2 absent=$3 branch=${4:-}
     local deadline=$(( SECONDS + WAIT_TIMEOUT_MIN * 60 ))
     local appear_deadline=$(( SECONDS + RUN_APPEAR_TIMEOUT_SEC ))
-    local runs total pending failed missing announced=0
+    local runs total bad pending failed green missing announced=0
 
-    log "  waiting for workflows on ${sha:0:7} (timeout ${WAIT_TIMEOUT_MIN}m)"
+    log "  waiting for workflows on ${sha:0:7}${branch:+ ($branch)} (timeout ${WAIT_TIMEOUT_MIN}m)"
     while :; do
-        runs=$(runs_for "$sha")
+        runs=$(runs_for "$sha" "$branch")
         total=$(jq 'length' <<<"$runs")
 
         if [ "$total" -gt 0 ]; then
-            failed=$(runs_failed "$runs")
+            bad=$(runs_bad "$runs")
+            failed=$(jq 'length' <<<"$bad")
             if [ "$failed" -ne 0 ]; then
-                jq -r '.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral") | "    \(.conclusion)\t\(.name)"' <<<"$runs"
+                jq -r '.[] | "    \(.conclusion)\t\(.name)"' <<<"$bad"
                 log "  $failed workflow(s) failed on ${sha:0:7}"
                 return 2
             fi
@@ -144,7 +156,8 @@ wait_for_runs() {
 
             if [ "$pending" -eq 0 ] && [ -z "$missing" ]; then
                 jq -r '.[] | "    \(.conclusion)\t\(.name)"' <<<"$runs"
-                log "  all $total workflow(s) green on ${sha:0:7}"
+                green=$(runs_green "$runs")
+                log "  $green of $total workflow(s) green on ${sha:0:7}, none red"
                 return 0
             fi
 
@@ -202,7 +215,7 @@ wait_run_restarted() {
 }
 
 rerun_failed_runs() {
-    local sha=$1 id name triggered=0
+    local sha=$1 branch=${2:-} id name triggered=0
     [ "$BASE_RERUN_ATTEMPTS" -gt 0 ] || return 1
 
     while IFS=$'\t' read -r id name; do
@@ -220,7 +233,7 @@ rerun_failed_runs() {
         else
             log "  could not re-run $name (run $id) -- does the token have actions: write?"
         fi
-    done < <(jq -r '.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral") | "\(.id)\t\(.name)"' <<<"$(runs_for "$sha")")
+    done < <(jq -r '.[] | "\(.id)\t\(.name)"' <<<"$(runs_bad "$(runs_for "$sha" "$branch")")")
 
     [ "$triggered" -eq 1 ]
 }
@@ -228,12 +241,12 @@ rerun_failed_runs() {
 wait_base_green() {
     local sha=$1 rc=0
     while :; do
-        wait_for_runs "$sha" '' pass && return 0
+        wait_for_runs "$sha" '' pass "$BASE" && return 0
         rc=$?
         [ "$rc" -eq 2 ] || return 1
         [ "$BASE_RERUN_ATTEMPTS" -gt 0 ] \
             && log "  ${sha:0:7} passed build and test as a PR head minutes ago -- treating this as flaky"
-        rerun_failed_runs "$sha" || return 1
+        rerun_failed_runs "$sha" "$BASE" || return 1
     done
 }
 
@@ -257,8 +270,8 @@ publish_failed() {
 
 base_already_failed() {
     local sha=$1 runs bad
-    runs=$(runs_for "$sha")
-    bad=$(jq -r '.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral") | "\(.conclusion)\t\(.name)"' <<<"$runs")
+    runs=$(runs_for "$sha" "$BASE")
+    bad=$(jq -r '.[] | "\(.conclusion)\t\(.name)"' <<<"$(runs_bad "$runs")")
     [ -n "$bad" ] || return 1
     printf '%s\n' "$bad" | sed 's/^/    /'
     log "the last merge has already failed on $BASE (${sha:0:7})"
@@ -442,7 +455,7 @@ while :; do
     fi
 
     if [ "$REQUIRE_CHECKS" = 'true' ]; then
-        wait_for_runs "$merge_sha" "$REQUIRED_WORKFLOWS" fail \
+        wait_for_runs "$merge_sha" "$REQUIRED_WORKFLOWS" fail "$HEAD" \
             || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: prepared commit not green |"; exit 1; }
     else
         log "  require_checks is off -- merging ${merge_sha:0:7} unverified"
