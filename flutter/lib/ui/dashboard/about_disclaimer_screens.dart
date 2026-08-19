@@ -18,8 +18,9 @@ class AboutScreen extends StatelessWidget {
     // The Kotlin reads `BuildConfig.VERSION_NAME`; the port has no
     // `package_info_plus` dependency, so the same constant the configuration
     // flow uses stands in here.
-    final versionLine =
-        l10n.appVersion(ConfigurationsRepository.defaultAppVersion);
+    final versionLine = l10n.appVersion(
+      ConfigurationsRepository.defaultAppVersion,
+    );
     final body = '${l10n.aboutContent}\n\n#### $versionLine';
     return Scaffold(
       appBar: AppBar(title: Text(l10n.about)),

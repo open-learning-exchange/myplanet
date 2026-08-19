@@ -91,10 +91,12 @@ class TeamsRepository {
       final row = await _dao.getById(id);
       if (row != null) {
         await _dao.upsert(
-          row.toCompanion(false).copyWith(
-            imageName: Value(imageName),
-            isUpdated: const Value(true),
-          ),
+          row
+              .toCompanion(false)
+              .copyWith(
+                imageName: Value(imageName),
+                isUpdated: const Value(true),
+              ),
         );
       }
     }
@@ -152,10 +154,12 @@ class TeamsRepository {
       final row = await _dao.getById(docId);
       if (row != null) {
         await _dao.upsert(
-          row.toCompanion(false).copyWith(
-            imageName: Value(imageName),
-            isUpdated: const Value(true),
-          ),
+          row
+              .toCompanion(false)
+              .copyWith(
+                imageName: Value(imageName),
+                isUpdated: const Value(true),
+              ),
         );
       }
     }
@@ -488,11 +492,7 @@ class TeamsRepository {
       );
       final bytes = result is NetworkSuccess<List<int>> ? result.data : null;
       if (bytes != null && bytes.isNotEmpty) {
-        await TeamAttachments.write(
-          docId: docId,
-          filename: name,
-          bytes: bytes,
-        );
+        await TeamAttachments.write(docId: docId, filename: name, bytes: bytes);
       }
     }
   }

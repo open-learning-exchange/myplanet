@@ -325,9 +325,9 @@ class _TeamFinancesScreenState extends ConsumerState<TeamFinancesScreen> {
                     imageBytes = await selectedImage!.readAsBytes();
                   } on Exception {
                     if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(l10n.unavailable)),
-                    );
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(l10n.unavailable)));
                     return;
                   }
                 }
@@ -525,10 +525,7 @@ class _ReceiptThumb extends StatelessWidget {
     return FutureBuilder<File?>(
       future: imageName == null || imageName.isEmpty || docId.isEmpty
           ? Future.value(null)
-          : TeamAttachments.existingFileFor(
-              docId: docId,
-              filename: imageName,
-            ),
+          : TeamAttachments.existingFileFor(docId: docId, filename: imageName),
       builder: (context, snapshot) {
         final file = snapshot.data;
         if (file == null) {
@@ -568,16 +565,19 @@ class _ReceiptThumb extends StatelessWidget {
           ),
           body: Center(
             child: InteractiveViewer(
-              child: Image.file(file, errorBuilder: (context, error, stack) {
-                final l = AppLocalizations.of(context);
-                return Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(
-                    l.unavailable,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                );
-              }),
+              child: Image.file(
+                file,
+                errorBuilder: (context, error, stack) {
+                  final l = AppLocalizations.of(context);
+                  return Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      l.unavailable,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ),

@@ -299,8 +299,7 @@ void main() {
   });
 
   group('username live validation', () {
-    final usernameField =
-        find.widgetWithText(TextFormField, 'Enter username');
+    final usernameField = find.widgetWithText(TextFormField, 'Enter username');
 
     testWidgets('debounces the check 300 ms before showing an error', (
       tester,

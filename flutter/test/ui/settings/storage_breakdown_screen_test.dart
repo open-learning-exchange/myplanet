@@ -29,12 +29,14 @@ void main() {
     // The breakdown screen sizes each category through the repository seam —
     // a real `ole/` walk hangs under the test binding's fake clock, so an empty
     // answer (no offline files) is what an empty device looks like.
-    registerFallbackValue(const OfflineResourceItem(
-      resourceId: '_',
-      title: '_',
-      filePaths: [],
-      totalSizeBytes: 0,
-    ));
+    registerFallbackValue(
+      const OfflineResourceItem(
+        resourceId: '_',
+        title: '_',
+        filePaths: [],
+        totalSizeBytes: 0,
+      ),
+    );
     when(
       () => repo.getOfflineResourceItems(
         extensions: any(named: 'extensions'),
@@ -44,41 +46,40 @@ void main() {
     ).thenAnswer((_) async => const []);
   });
 
-  testWidgets(
-    'shows available/total space and a free-up-space button',
-    (tester) async {
-      final disk = _FakeDiskStats((totalBytes: 1000, availableBytes: 400));
-      when(() => repo.freeUpSpace()).thenAnswer(
-        (_) async => (deletedFiles: 0, freedBytes: 0),
-      );
+  testWidgets('shows available/total space and a free-up-space button', (
+    tester,
+  ) async {
+    final disk = _FakeDiskStats((totalBytes: 1000, availableBytes: 400));
+    when(
+      () => repo.freeUpSpace(),
+    ).thenAnswer((_) async => (deletedFiles: 0, freedBytes: 0));
 
-      await tester.pumpWidget(
-        wrapScreen(
-          const StorageBreakdownScreen(),
-          overrides: [
-            diskStatsProvider.overrideWithValue(disk),
-            resourcesRepositoryProvider.overrideWithValue(repo),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      wrapScreen(
+        const StorageBreakdownScreen(),
+        overrides: [
+          diskStatsProvider.overrideWithValue(disk),
+          resourcesRepositoryProvider.overrideWithValue(repo),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      // The available/total line is rendered from the disk-stats seam — the
-      // exact byte formatting is `formatFileSize`'s concern (covered by its
-      // own tests), so here we only assert the label and that both figures
-      // appear, not the compact-number form `NumberFormat.compact` picks.
-      expect(find.textContaining('Available space'), findsOneWidget);
-      expect(find.textContaining('400'), findsOneWidget);
-      expect(find.textContaining('1K'), findsOneWidget);
-      expect(find.text('Free up space'), findsOneWidget);
-    },
-  );
+    // The available/total line is rendered from the disk-stats seam — the
+    // exact byte formatting is `formatFileSize`'s concern (covered by its
+    // own tests), so here we only assert the label and that both figures
+    // appear, not the compact-number form `NumberFormat.compact` picks.
+    expect(find.textContaining('Available space'), findsOneWidget);
+    expect(find.textContaining('400'), findsOneWidget);
+    expect(find.textContaining('1K'), findsOneWidget);
+    expect(find.text('Free up space'), findsOneWidget);
+  });
 
   testWidgets('free up space confirms before clearing', (tester) async {
     final disk = _FakeDiskStats((totalBytes: 1000, availableBytes: 400));
-    when(() => repo.freeUpSpace()).thenAnswer(
-      (_) async => (deletedFiles: 2, freedBytes: 7),
-    );
+    when(
+      () => repo.freeUpSpace(),
+    ).thenAnswer((_) async => (deletedFiles: 2, freedBytes: 7));
 
     await tester.pumpWidget(
       wrapScreen(

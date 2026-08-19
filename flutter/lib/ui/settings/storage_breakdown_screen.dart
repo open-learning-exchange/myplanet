@@ -19,7 +19,8 @@ class StorageBreakdownScreen extends ConsumerStatefulWidget {
       _StorageBreakdownScreenState();
 }
 
-class _StorageBreakdownScreenState extends ConsumerState<StorageBreakdownScreen> {
+class _StorageBreakdownScreenState
+    extends ConsumerState<StorageBreakdownScreen> {
   bool _isLoading = true;
   bool _isFreeing = false;
   bool _loaded = false;
@@ -179,9 +180,7 @@ class _StorageBreakdownScreenState extends ConsumerState<StorageBreakdownScreen>
   Future<void> _freeUpSpace(AppLocalizations l10n) async {
     setState(() => _isFreeing = true);
     try {
-      final result = await ref
-          .read(resourcesRepositoryProvider)
-          .freeUpSpace();
+      final result = await ref.read(resourcesRepositoryProvider).freeUpSpace();
       ref.read(freeSpaceResultProvider.notifier).state = result;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -497,14 +497,8 @@ void main() {
 
         expect(result.deletedFiles, 2);
         expect(result.freedBytes, 6);
-        expect(
-          Directory('${tempDir.path}/ole/res-1').existsSync(),
-          isFalse,
-        );
-        expect(
-          Directory('${tempDir.path}/ole/res-2').existsSync(),
-          isFalse,
-        );
+        expect(Directory('${tempDir.path}/ole/res-1').existsSync(), isFalse);
+        expect(Directory('${tempDir.path}/ole/res-2').existsSync(), isFalse);
         expect(
           (await db.myLibraryDao.getById('res-1'))!.resourceOffline,
           isFalse,
@@ -536,10 +530,7 @@ void main() {
 
         expect(result.deletedFiles, 1);
         expect(result.freedBytes, 3);
-        expect(
-          File('${tempDir.path}/ole/cv/resume.pdf').existsSync(),
-          isTrue,
-        );
+        expect(File('${tempDir.path}/ole/cv/resume.pdf').existsSync(), isTrue);
         expect(
           (await db.myLibraryDao.getById('res-1'))!.resourceOffline,
           isFalse,
@@ -547,13 +538,15 @@ void main() {
       },
     );
 
-    test('freeUpSpace is a no-op when the ole directory does not exist',
-        () async {
-      final result = await repository.freeUpSpace();
+    test(
+      'freeUpSpace is a no-op when the ole directory does not exist',
+      () async {
+        final result = await repository.freeUpSpace();
 
-      expect(result.deletedFiles, 0);
-      expect(result.freedBytes, 0);
-    });
+        expect(result.deletedFiles, 0);
+        expect(result.freedBytes, 0);
+      },
+    );
   });
 }
 

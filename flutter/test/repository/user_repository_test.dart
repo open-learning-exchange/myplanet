@@ -892,9 +892,18 @@ void main() {
     });
 
     test('rejects characters outside a-z, 0-9, _, ., -', () async {
-      expect(await repository.validateUsername('café', messages), 'only-letters');
-      expect(await repository.validateUsername('a@b', messages), 'only-letters');
-      expect(await repository.validateUsername('a*b', messages), 'only-letters');
+      expect(
+        await repository.validateUsername('café', messages),
+        'only-letters',
+      );
+      expect(
+        await repository.validateUsername('a@b', messages),
+        'only-letters',
+      );
+      expect(
+        await repository.validateUsername('a*b', messages),
+        'only-letters',
+      );
     });
 
     test('accepts a free username with allowed characters', () async {

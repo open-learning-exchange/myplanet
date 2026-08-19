@@ -35,7 +35,12 @@ class TeamAttachments {
   }) async {
     final base = await baseDirectory();
     return File(
-      p.join(base.path, 'team_attachments', _segment(docId), _segment(filename)),
+      p.join(
+        base.path,
+        'team_attachments',
+        _segment(docId),
+        _segment(filename),
+      ),
     );
   }
 

@@ -479,35 +479,38 @@ void main() {
     );
   });
 
-  test('a team finance document keeps its attachment name across v31', () async {
-    // `teams` is preserved, so v31's `imageName` column is added by a
-    // hand-written `_addColumnIfMissing` step rather than `createAll`. A
-    // pending transaction that already carries a receipt name must keep it —
-    // losing the name would orphan the local file and stop the upload
-    // write-back from finding the bytes to PUT.
-    await database.teamDao.upsert(
-      TeamsCompanion.insert(
-        id: 'tx-1',
-        teamId: const Value('team-1'),
-        docType: const Value('transaction'),
-        type: const Value('credit'),
-        description: const Value('sale'),
-        amount: const Value(100),
-        isUpdated: const Value(true),
-      ),
-    );
-    // The v30 schema has no `image_name` column, so the name is written
-    // directly after the upgrade lands — the row itself survives from before.
-    await runUpgrade(from: 30);
-    await database.customStatement(
-      "UPDATE teams SET image_name = 'receipt.jpg' WHERE _id = 'tx-1'",
-    );
+  test(
+    'a team finance document keeps its attachment name across v31',
+    () async {
+      // `teams` is preserved, so v31's `imageName` column is added by a
+      // hand-written `_addColumnIfMissing` step rather than `createAll`. A
+      // pending transaction that already carries a receipt name must keep it —
+      // losing the name would orphan the local file and stop the upload
+      // write-back from finding the bytes to PUT.
+      await database.teamDao.upsert(
+        TeamsCompanion.insert(
+          id: 'tx-1',
+          teamId: const Value('team-1'),
+          docType: const Value('transaction'),
+          type: const Value('credit'),
+          description: const Value('sale'),
+          amount: const Value(100),
+          isUpdated: const Value(true),
+        ),
+      );
+      // The v30 schema has no `image_name` column, so the name is written
+      // directly after the upgrade lands — the row itself survives from before.
+      await runUpgrade(from: 30);
+      await database.customStatement(
+        "UPDATE teams SET image_name = 'receipt.jpg' WHERE _id = 'tx-1'",
+      );
 
-    final survivor = await database.teamDao.getById('tx-1');
-    expect(survivor?.description, 'sale');
-    expect(survivor?.imageName, 'receipt.jpg');
-    expect(survivor?.isUpdated, isTrue);
-  });
+      final survivor = await database.teamDao.getById('tx-1');
+      expect(survivor?.description, 'sale');
+      expect(survivor?.imageName, 'receipt.jpg');
+      expect(survivor?.isUpdated, isTrue);
+    },
+  );
 
   test('feedback indexes are present after an upgrade', () async {
     // The Kotlin `all: smoother model database indexing` commit (8f993472e)

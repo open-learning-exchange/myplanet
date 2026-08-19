@@ -108,7 +108,8 @@ class TeamsUploader {
     }
 
     final encodedName = Uri.encodeComponent(imageName);
-    final attachmentUrl = '${row.endpoint}/${Uri.encodeComponent(docId)}/$encodedName';
+    final attachmentUrl =
+        '${row.endpoint}/${Uri.encodeComponent(docId)}/$encodedName';
     final contentType = _contentTypeFor(imageName);
 
     final attachResult = await _api.uploadAttachment(

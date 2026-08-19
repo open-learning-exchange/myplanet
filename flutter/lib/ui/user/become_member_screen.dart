@@ -133,12 +133,15 @@ class _BecomeMemberScreenState extends ConsumerState<BecomeMemberScreen> {
 
   Future<void> _validateUsername(String input) async {
     final l10n = AppLocalizations.of(context);
-    final error = await ref.read(userRepositoryProvider).validateUsername(
+    final error = await ref
+        .read(userRepositoryProvider)
+        .validateUsername(
           input,
           UsernameValidationMessages(
             cannotBeEmpty: l10n.usernameCannotBeEmpty,
             invalid: l10n.invalidUsername,
-            mustStartWithLetterOrNumber: l10n.usernameMustStartWithLetterOrNumber,
+            mustStartWithLetterOrNumber:
+                l10n.usernameMustStartWithLetterOrNumber,
             onlyLettersNumbers: l10n.usernameOnlyLettersNumbers,
             taken: l10n.usernameTaken,
           ),
@@ -327,7 +330,9 @@ class _BecomeMemberScreenState extends ConsumerState<BecomeMemberScreen> {
                                 height: 18,
                                 child: Padding(
                                   padding: EdgeInsets.all(12),
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 ),
                               )
                             : null,

@@ -329,16 +329,19 @@ class _ReportReceiptThumb extends StatelessWidget {
           ),
           body: Center(
             child: InteractiveViewer(
-              child: Image.file(file, errorBuilder: (context, error, stack) {
-                final l = AppLocalizations.of(context);
-                return Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(
-                    l.unavailable,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                );
-              }),
+              child: Image.file(
+                file,
+                errorBuilder: (context, error, stack) {
+                  final l = AppLocalizations.of(context);
+                  return Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      l.unavailable,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ),

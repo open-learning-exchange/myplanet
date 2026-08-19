@@ -210,8 +210,8 @@ class UserRepository {
     }
 
     final existing = await _userDao.getByName(username);
-    final taken = existing != null &&
-        !(existing.couchId?.startsWith('guest') ?? false);
+    final taken =
+        existing != null && !(existing.couchId?.startsWith('guest') ?? false);
     return taken ? messages.taken : null;
   }
 
@@ -222,7 +222,7 @@ class UserRepository {
 
   static bool _isAllowed(int rune) =>
       _isLetterOrDigit(rune) || rune == 0x5F || rune == 0x2E || rune == 0x2D;
-      // `_` (0x5F), `.` (0x2E), `-` (0x2D)
+  // `_` (0x5F), `.` (0x2E), `-` (0x2D)
 
   static LoginFailureReason _reasonForStatus(int? code) {
     switch (code) {
