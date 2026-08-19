@@ -7,16 +7,11 @@ import android.os.Build
 import android.os.Bundle
 import androidx.core.text.HtmlCompat
 import androidx.lifecycle.lifecycleScope
-import com.google.gson.JsonArray
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
-import org.ole.planet.myplanet.data.room.dao.DictionaryDao
-import org.ole.planet.myplanet.data.room.entity.DictionaryEntity
 import org.ole.planet.myplanet.databinding.FragmentDictionaryBinding
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.services.BroadcastService
@@ -24,15 +19,15 @@ import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
+
+import org.ole.planet.myplanet.repository.DictionaryRepository
 
 @AndroidEntryPoint
 class DictionaryActivity : BaseActivity() {
     @Inject
-    lateinit var dictionaryDao: DictionaryDao
+    lateinit var dictionaryRepository: DictionaryRepository
 
     @Inject
     override lateinit var dispatcherProvider: DispatcherProvider
@@ -71,15 +66,17 @@ class DictionaryActivity : BaseActivity() {
             fragmentDictionaryBinding.tvResult.text = getString(R.string.list_size, count)
         }
 
-        if (FileUtils.checkFileExist(this, Constants.DICTIONARY_URL)) {
-            lifecycleScope.launch {
-                loadDictionaryIfNeeded()
+        lifecycleScope.launch {
+            if (dictionaryRepository.insertDictionaryData()) {
+                val count = dictionaryRepository.count()
+                fragmentDictionaryBinding.tvResult.text = getString(R.string.list_size, count)
+                setClickListener()
+            } else {
+                val list = ArrayList<String>()
+                list.add(Constants.DICTIONARY_URL)
+                Utilities.toast(this@DictionaryActivity, getString(R.string.downloading_started_please_check_notificati))
+                DownloadUtils.openDownloadService(this@DictionaryActivity, list, false)
             }
-        } else {
-            val list = ArrayList<String>()
-            list.add(Constants.DICTIONARY_URL)
-            Utilities.toast(this, getString(R.string.downloading_started_please_check_notificati))
-            DownloadUtils.openDownloadService(this, list, false)
         }
 
         registerReceiver()
@@ -94,59 +91,21 @@ class DictionaryActivity : BaseActivity() {
     }
 
     private suspend fun loadDictionaryIfNeeded() {
-        val isEmpty = loadDictionaryCount() == 0L
-        if (isEmpty) {
-            val context = this@DictionaryActivity
-            val json = try {
-                val data = withContext(dispatcherProvider.io) {
-                    FileUtils.getStringFromFile(
-                        FileUtils.getSDPathFromUrl(context, Constants.DICTIONARY_URL)
-                    )
-                }
-                JsonUtils.gson.fromJson(data, JsonArray::class.java)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
-            json?.let { jsonArray ->
-                val entities = jsonArray.map { js ->
-                    val doc = js.asJsonObject
-                    DictionaryEntity(
-                        id = UUID.randomUUID().toString(),
-                        code = JsonUtils.getString("code", doc),
-                        language = JsonUtils.getString("language", doc),
-                        advanceCode = JsonUtils.getString("advance_code", doc),
-                        word = JsonUtils.getString("word", doc),
-                        meaning = JsonUtils.getString("meaning", doc),
-                        definition = JsonUtils.getString("definition", doc),
-                        synonym = JsonUtils.getString("synonym", doc),
-                        antonym = JsonUtils.getString("antonoym", doc)
-                    )
-                }
-                withContext(dispatcherProvider.io) {
-                    dictionaryDao.insertAll(entities)
-                }
-            }
-        }
-
-        val count = loadDictionaryCount()
+        dictionaryRepository.insertDictionaryData()
+        val count = dictionaryRepository.count()
         fragmentDictionaryBinding.tvResult.text = getString(R.string.list_size, count)
         setClickListener()
     }
 
     private suspend fun loadDictionaryCount(): Long {
-        return withContext(dispatcherProvider.io) {
-            dictionaryDao.count()
-        }
+        return dictionaryRepository.count()
     }
 
     private fun setClickListener() {
         fragmentDictionaryBinding.btnSearch.setOnClickListener {
             val query = fragmentDictionaryBinding.etSearch.text.toString()
             lifecycleScope.launch {
-                val dict = withContext(dispatcherProvider.io) {
-                    dictionaryDao.findByWord(query)
-                }
+                val dict = dictionaryRepository.findByWord(query)
                 if (dict != null) {
                     fragmentDictionaryBinding.tvResult.text = HtmlCompat.fromHtml(
                         "Definition of '<b>" + dict.word + "</b>'<br/><br/>\n " +
