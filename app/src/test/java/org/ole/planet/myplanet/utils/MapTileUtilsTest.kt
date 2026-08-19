@@ -50,24 +50,47 @@ class MapTileUtilsTest {
     }
 
     @Test
-    fun copyAssets_failsSilentlyWhenDirectoryDoesNotExist() {
+    fun copyAssets_createsDirectoryAndCopiesSuccessfully() {
         val dhulikhelContent = "dhulikhel content".toByteArray()
         val somaliaContent = "somalia content".toByteArray()
 
         every { assetManager.open("dhulikhel.mbtiles") } returns ByteArrayInputStream(dhulikhelContent)
         every { assetManager.open("somalia.mbtiles") } returns ByteArrayInputStream(somaliaContent)
 
-        // Ensure the directory does NOT exist to trigger the FileNotFoundException when creating FileOutputStream
         assertFalse(osmdroidDir.exists())
 
         MapTileUtils.copyAssets(context)
 
-        // Due to the try/catch around the entire loop, the exception is caught silently and no files are written
         val dhulikhelFile = File(osmdroidDir, "dhulikhel.mbtiles")
         val somaliaFile = File(osmdroidDir, "somalia.mbtiles")
 
-        assertFalse(dhulikhelFile.exists())
-        assertFalse(somaliaFile.exists())
+        assertTrue(dhulikhelFile.exists())
+        assertTrue(somaliaFile.exists())
+        assertArrayEquals(dhulikhelContent, dhulikhelFile.readBytes())
+        assertArrayEquals(somaliaContent, somaliaFile.readBytes())
+    }
+
+    @Test
+    fun copyAssets_skipsCopyIfDestinationExistsAndIsNonEmpty() {
+        val dhulikhelContent = "dhulikhel content".toByteArray()
+        val somaliaContent = "somalia content".toByteArray()
+
+        // Write existing content to the destination files
+        osmdroidDir.mkdirs()
+        val dhulikhelFile = File(osmdroidDir, "dhulikhel.mbtiles")
+        dhulikhelFile.writeBytes("existing dhulikhel content".toByteArray())
+        val somaliaFile = File(osmdroidDir, "somalia.mbtiles")
+        somaliaFile.writeBytes("existing somalia content".toByteArray())
+
+        // The mocked streams should never be read because the file already exists and is not empty
+        every { assetManager.open("dhulikhel.mbtiles") } returns ByteArrayInputStream(dhulikhelContent)
+        every { assetManager.open("somalia.mbtiles") } returns ByteArrayInputStream(somaliaContent)
+
+        MapTileUtils.copyAssets(context)
+
+        // The content should still be the old existing content
+        assertArrayEquals("existing dhulikhel content".toByteArray(), dhulikhelFile.readBytes())
+        assertArrayEquals("existing somalia content".toByteArray(), somaliaFile.readBytes())
     }
 
     @Test
@@ -93,7 +116,7 @@ class MapTileUtilsTest {
     }
 
     @Test
-    fun copyAssets_skipsRemainingFilesOnPartialFailure() {
+    fun copyAssets_continuesOnPartialFailure() {
         val dhulikhelContent = "dhulikhel content".toByteArray()
         val somaliaContent = "somalia content".toByteArray()
 
@@ -109,8 +132,9 @@ class MapTileUtilsTest {
         val dhulikhelFile = File(osmdroidDir, "dhulikhel.mbtiles")
         val somaliaFile = File(osmdroidDir, "somalia.mbtiles")
 
-        // Neither file should exist because the loop breaks on the first exception (caught outside the loop)
+        // First file should not exist, but second one should
         assertFalse(dhulikhelFile.exists())
-        assertFalse(somaliaFile.exists())
+        assertTrue(somaliaFile.exists())
+        assertArrayEquals(somaliaContent, somaliaFile.readBytes())
     }
 }
