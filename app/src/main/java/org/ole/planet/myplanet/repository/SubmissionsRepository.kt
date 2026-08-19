@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
@@ -57,9 +56,11 @@ interface SubmissionsRepository {
     suspend fun bulkInsertFromSync(jsonArray: JsonArray)
     suspend fun insertSubmission(submission: JsonObject)
     suspend fun getExamUploadPayload(submission: Submission): JsonObject
-    suspend fun serializeSubmission(submission: Submission, context: Context, source: String, parentCode: String): JsonObject
+    suspend fun serializeSubmission(submission: Submission, source: String, parentCode: String): JsonObject
     suspend fun generateSubmissionPdf(submissionId: String): File?
     suspend fun generateMultipleSubmissionsPdf(submissionIds: List<String>, examTitle: String): File?
     suspend fun getPendingExamResults(): List<Submission>
     suspend fun getPendingSubmissionsForUpload(): List<Submission>
+    suspend fun getPendingSubmitPhotosUploads(): List<SubmitPhotos>
+    suspend fun markSubmitPhotosUploaded(localId: String, remoteId: String, rev: String): Boolean
 }
