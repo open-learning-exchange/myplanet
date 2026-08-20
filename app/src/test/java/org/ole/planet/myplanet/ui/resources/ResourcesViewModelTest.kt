@@ -24,6 +24,7 @@ class ResourcesViewModelTest {
 
     private lateinit var viewModel: ResourcesViewModel
     private val resourcesRepository = mockk<ResourcesRepository>(relaxed = true)
+    private val userRepository = mockk<org.ole.planet.myplanet.repository.UserRepository>(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
@@ -32,6 +33,7 @@ class ResourcesViewModelTest {
         Dispatchers.setMain(testDispatcher)
         viewModel = ResourcesViewModel(
             resourcesRepository,
+            userRepository,
             dispatcherProvider
         )
     }
