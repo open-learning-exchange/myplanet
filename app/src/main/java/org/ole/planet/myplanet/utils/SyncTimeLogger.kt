@@ -36,13 +36,13 @@ class SyncTimeLogger @Inject constructor(
     private val processTimes = ConcurrentHashMap<String, Long>()
     private val processItemCounts = ConcurrentHashMap<String, Int>()
     private val apiCallTimes = ConcurrentHashMap<String, MutableList<ApiCallLog>>()
-    private val realmOperationTimes = ConcurrentHashMap<String, MutableList<RealmOperationLog>>()
+    private val dbOperationTimes = ConcurrentHashMap<String, MutableList<DbOperationLog>>()
     private val detailedLogs = ConcurrentHashMap<String, MutableList<String>>()
     private var startTime: Long = 0
     private var endTime: Long = 0
     private var isLogging = false
     private val apiCallCounter = AtomicInteger(0)
-    private val realmOpCounter = AtomicInteger(0)
+    private val dbOpCounter = AtomicInteger(0)
 
     data class ApiCallLog(
         val endpoint: String,
@@ -52,7 +52,7 @@ class SyncTimeLogger @Inject constructor(
         val itemsReturned: Int = 0
     )
 
-    data class RealmOperationLog(
+    data class DbOperationLog(
         val operation: String,
         val model: String,
         val duration: Long,
@@ -66,10 +66,10 @@ class SyncTimeLogger @Inject constructor(
         processTimes.clear()
         processItemCounts.clear()
         apiCallTimes.clear()
-        realmOperationTimes.clear()
+        dbOperationTimes.clear()
         detailedLogs.clear()
         apiCallCounter.set(0)
-        realmOpCounter.set(0)
+        dbOpCounter.set(0)
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
         Log.d("SyncPerf", "SYNC STARTED at ${formatTimestamp(startTime)}")
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
@@ -189,11 +189,11 @@ class SyncTimeLogger @Inject constructor(
         if (!isLogging) return
 
         val timestamp = timeProvider.now()
-        val opNum = realmOpCounter.incrementAndGet()
+        val opNum = dbOpCounter.incrementAndGet()
         val elapsed = timestamp - startTime
 
-        val log = RealmOperationLog(operation, model, duration, itemCount, timestamp)
-        realmOperationTimes.getOrPut(model) { mutableListOf() }.add(log)
+        val log = DbOperationLog(operation, model, duration, itemCount, timestamp)
+        dbOperationTimes.getOrPut(model) { mutableListOf() }.add(log)
 
         Log.d("SyncPerf", "[${formatElapsed(elapsed)}] 💾 DB #$opNum: $operation $model - ${formatTime(duration)}, $itemCount items")
     }
@@ -206,21 +206,6 @@ class SyncTimeLogger @Inject constructor(
         detailedLogs.getOrPut(context) { mutableListOf() }.add(message)
 
         Log.d("SyncPerf", "[${formatElapsed(elapsed)}] ℹ $context: $message")
-    }
-
-    internal fun extractProcessName(endpoint: String): String {
-        val segments = endpoint.split("/")
-
-        val lastValidSegment = segments.lastOrNull {
-            it.isNotEmpty() && !it.startsWith("?")
-        } ?: return "Unknown"
-
-        val withoutQuery = lastValidSegment.substringBefore("?")
-        if (withoutQuery.isEmpty()) return "Unknown"
-
-        return withoutQuery.replaceFirstChar {
-            if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString()
-        }
     }
 
     private fun shortenEndpoint(endpoint: String): String {
@@ -295,18 +280,18 @@ class SyncTimeLogger @Inject constructor(
         }
 
         // Realm operation statistics
-        if (realmOperationTimes.isNotEmpty()) {
-            summaryBuilder.append("\nREALM OPERATION STATISTICS:\n")
-            val totalRealmOps = realmOperationTimes.values.sumOf { it.size }
-            val totalRealmTime = realmOperationTimes.values.flatten().sumOf { it.duration }
-            val totalRealmItems = realmOperationTimes.values.flatten().sumOf { it.itemCount }
+        if (dbOperationTimes.isNotEmpty()) {
+            summaryBuilder.append("\nDB OPERATION STATISTICS:\n")
+            val totalRealmOps = dbOperationTimes.values.sumOf { it.size }
+            val totalRealmTime = dbOperationTimes.values.flatten().sumOf { it.duration }
+            val totalRealmItems = dbOperationTimes.values.flatten().sumOf { it.itemCount }
 
-            summaryBuilder.append(String.format(Locale.US, "  Total Realm operations: %d\n", totalRealmOps))
-            summaryBuilder.append(String.format(Locale.US, "  Total Realm time: %s (%.1f%% of total sync)\n",
+            summaryBuilder.append(String.format(Locale.US, "  Total Db operations: %d\n", totalRealmOps))
+            summaryBuilder.append(String.format(Locale.US, "  Total Db time: %s (%.1f%% of total sync)\n",
                 formatTime(totalRealmTime), (totalRealmTime.toDouble() / totalDuration * 100)))
             summaryBuilder.append(String.format(Locale.US, "  Total items processed: %d\n", totalRealmItems))
 
-            realmOperationTimes.entries.sortedByDescending { it.value.sumOf { log -> log.duration } }.forEach { (model, logs) ->
+            dbOperationTimes.entries.sortedByDescending { it.value.sumOf { log -> log.duration } }.forEach { (model, logs) ->
                 val totalTime = logs.sumOf { it.duration }
                 val avgTime = if (logs.isNotEmpty()) totalTime / logs.size else 0
                 val totalItems = logs.sumOf { it.itemCount }
@@ -320,8 +305,8 @@ class SyncTimeLogger @Inject constructor(
         val apiPercentage = if (apiCallTimes.isNotEmpty()) {
             (apiCallTimes.values.flatten().sumOf { it.duration }.toDouble() / totalDuration * 100)
         } else 0.0
-        val realmPercentage = if (realmOperationTimes.isNotEmpty()) {
-            (realmOperationTimes.values.flatten().sumOf { it.duration }.toDouble() / totalDuration * 100)
+        val realmPercentage = if (dbOperationTimes.isNotEmpty()) {
+            (dbOperationTimes.values.flatten().sumOf { it.duration }.toDouble() / totalDuration * 100)
         } else 0.0
 
         summaryBuilder.append(String.format(Locale.US, "  Network time: %.1f%%\n", apiPercentage))
@@ -345,4 +330,21 @@ class SyncTimeLogger @Inject constructor(
         }
     }
 
+
+    companion object {
+        internal fun extractProcessName(endpoint: String): String {
+            val segments = endpoint.split("/")
+
+            val lastValidSegment = segments.lastOrNull {
+                it.isNotEmpty() && !it.startsWith("?")
+            } ?: return "Unknown"
+
+            val withoutQuery = lastValidSegment.substringBefore("?")
+            if (withoutQuery.isEmpty()) return "Unknown"
+
+            return withoutQuery.replaceFirstChar {
+                if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString()
+            }
+        }
+    }
 }
