@@ -20,6 +20,7 @@ interface ConfigurationsRepository {
         fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean)
         fun onCheckingVersion() {}
         fun onError(msg: String, blockSync: Boolean)
+        fun onUpToDate() {}
     }
 
     sealed class ConfigurationResult {

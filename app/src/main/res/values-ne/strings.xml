@@ -720,6 +720,7 @@
     <string name="invalid_url">अमान्य URL</string>
     <string name="please_enter_valid_url_to_continue">कृपया जारी राख्नका लागि वैध URL लेख्नुहोस्।</string>
     <string name="uploading_data_to_server_please_wait">सर्भरमा डाटा अपलोड गर्दै, कृपया प्रतीक्षा गर्नुहोस्…</string>
+    <string name="upload_complete">अपलोड पूरा भयो</string>
     <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">कृपया पुन: सर्भर ठेगाना जाँच गर्नुहोस्। म जुन सर्भरसँग कनेक्ट गरें भनेर थिएन त्यो प्लानेट सर्भर थिएन</string>
     <string name="device_couldn_t_reach_local_server">डिभाइसले सर्भरसम्म पुग्न सकेन। स्थानीय सर्भर (समुदाय) को लागि तपाईं सही Wi-Fi नेटवर्कमा जडित हुनुहुन्छ कि छैन जाँच गर्नुहोस्।</string>
     <string name="device_couldn_t_reach_nation_server">डिभाइसले सर्भरसम्म पुग्न सकेन। इन्टरनेटमा जडित हुनुहुन्छ कि छैन जाँच गर्नुहोस् र पुन: प्रयास गर्नुहोस्।</string>

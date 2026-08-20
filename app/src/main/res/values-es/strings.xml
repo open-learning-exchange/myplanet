@@ -720,6 +720,7 @@
     <string name="invalid_url">URL inválida</string>
     <string name="please_enter_valid_url_to_continue">Por favor ingresa una URL válida para continuar.</string>
     <string name="uploading_data_to_server_please_wait">Cargando datos al servidor, por favor espera.....</string>
+    <string name="upload_complete">subida completada</string>
     <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">Verifica de nuevo la dirección del servidor. A lo que me conecté no fue el servidor de Planet</string>
     <string name="device_couldn_t_reach_local_server">El dispositivo no pudo alcanzar el servidor. Verifique si está conectado a la red Wi-Fi correcta para el servidor local (comunidad).</string>
     <string name="device_couldn_t_reach_nation_server">El dispositivo no pudo alcanzar el servidor. Verifique si está conectado a Internet e inténtelo de nuevo.</string>
