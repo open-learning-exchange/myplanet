@@ -52,7 +52,7 @@ class SurveysRepositoryImplTest {
     private val examDao: ExamDao = mockk(relaxed = true)
     private val questionDao: QuestionDao = mockk(relaxed = true)
     private val submissionDao: SubmissionDao = mockk(relaxed = true)
-    private val teamDao: TeamDao = mockk(relaxed = true)
+    private val teamsRepository: TeamsRepository = mockk(relaxed = true)
 
     @Before
     fun setup() {
@@ -81,7 +81,7 @@ class SurveysRepositoryImplTest {
             examDao,
             questionDao,
             submissionDao,
-            teamDao
+            { teamsRepository }
         )
     }
 
