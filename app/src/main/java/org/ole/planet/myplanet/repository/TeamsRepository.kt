@@ -69,7 +69,7 @@ data class TeamUploadData(
     val imageName: String? = null
 )
 
-interface TeamsRepository {
+interface TeamsRepository : TeamsInfoLookup {
     suspend fun getAllActiveTeams(): List<MyTeam>
     suspend fun getMyTeamsFlow(userId: String): Flow<List<MyTeam>>
     suspend fun getTeamSummaries(userId: String?): List<TeamSummary>
@@ -88,11 +88,6 @@ interface TeamsRepository {
     suspend fun getTeamSummaryById(teamId: String): TeamSummary?
     suspend fun getTaskTeamInfo(taskId: String): Triple<String, String, String>?
     suspend fun getJoinRequestTeamId(requestId: String): String?
-    suspend fun getTeamLabelInfo(teamId: String): TeamLabelInfo?
-    suspend fun getJoinRequestInfo(requestId: String?): JoinRequestInfo?
-    suspend fun getJoinRequestsInfo(requestIds: List<String>): List<JoinRequestInfo>
-
-    suspend fun getTeamNamesByIds(ids: List<String>): Map<String, String>
     fun getTasksFlow(userId: String?): Flow<List<TeamTask>>
     suspend fun isMember(userId: String?, teamId: String): Boolean
     suspend fun isTeamLeader(teamId: String, userId: String?): Boolean
