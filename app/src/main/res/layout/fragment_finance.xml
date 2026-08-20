@@ -12,7 +12,6 @@
         android:layout_height="match_parent"
         android:padding="@dimen/padding_normal"
         android:clipToPadding="false" />
-
     <TextView
         android:id="@+id/tv_nodata"
         android:layout_width="wrap_content"
@@ -22,7 +21,6 @@
         android:text="@string/no_data_available"
         android:visibility="gone"
         android:textColor="@color/daynight_textColor" />
-
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/add_transaction"
         android:layout_width="wrap_content"
