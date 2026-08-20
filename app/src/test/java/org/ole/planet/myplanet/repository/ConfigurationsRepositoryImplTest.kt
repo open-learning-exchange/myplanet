@@ -2,6 +2,9 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
+import android.net.Uri
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
@@ -9,6 +12,12 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkConstructor
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
+import io.mockk.unmockkConstructor
+import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -30,9 +39,11 @@ import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Sha256Utils
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -103,7 +114,7 @@ class ConfigurationsRepositoryImplTest {
     fun `clearAllData delegates to Room clearAllTables`() = runTest(testDispatcher) {
         repository.clearAllData()
 
-        io.mockk.verify(exactly = 1) { appDatabase.clearAllTables() }
+        verify(exactly = 1) { appDatabase.clearAllTables() }
     }
 
     @Test
@@ -145,22 +156,16 @@ class ConfigurationsRepositoryImplTest {
         every { context.packageName } returns "org.ole.planet.myplanet"
 
         // Mock getVersionCode from context
-        val pm = mockk<android.content.pm.PackageManager>()
-        val packageInfo = android.content.pm.PackageInfo().apply {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                longVersionCode = 1L
-            } else {
-                @Suppress("DEPRECATION")
-                versionCode = 1
-            }
+        val pm = mockk<PackageManager>()
+        val packageInfo = PackageInfo().apply {
+            @Suppress("DEPRECATION")
+            versionCode = 1
         }
         every { context.packageManager } returns pm
         every { pm.getPackageInfo("org.ole.planet.myplanet", 0) } returns packageInfo
 
-        every { context.getString(R.string.planet_is_up_to_date) } returns "Planet is up to date"
-
-        io.mockk.mockkObject(org.ole.planet.myplanet.utils.Constants)
-        every { org.ole.planet.myplanet.utils.Constants.showBetaFeature(any(), any()) } returns false
+        mockkObject(Constants)
+        every { Constants.showBetaFeature(any(), any()) } returns false
 
         UrlUtils.init(sharedPrefManager)
 
@@ -174,7 +179,7 @@ class ConfigurationsRepositoryImplTest {
         verify { callback.onCheckingVersion() }
         verify(exactly = 1) { callback.onUpdateAvailable(any(), any()) }
 
-        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.Constants)
+        unmockkObject(Constants)
     }
 
     @Test
@@ -207,27 +212,22 @@ class ConfigurationsRepositoryImplTest {
         coEvery { apiInterface.checkVersion(any()) } returns responsePlanet
         coEvery { apiInterface.getApkVersion(any()) } returns responseApk
 
-        every { context.getString(R.string.planet_is_up_to_date) } returns "Planet is up to date"
         every { context.packageName } returns "org.ole.planet.myplanet"
 
         // Mock getVersionCode from context
-        val pm = mockk<android.content.pm.PackageManager>()
-        val packageInfo = android.content.pm.PackageInfo().apply {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                longVersionCode = 1L
-            } else {
-                @Suppress("DEPRECATION")
-                versionCode = 1
-            }
+        val pm = mockk<PackageManager>()
+        val packageInfo = PackageInfo().apply {
+            @Suppress("DEPRECATION")
+            versionCode = 1
         }
         every { context.packageManager } returns pm
         every { pm.getPackageInfo("org.ole.planet.myplanet", 0) } returns packageInfo
 
-        io.mockk.mockkObject(org.ole.planet.myplanet.utils.Constants)
-        every { org.ole.planet.myplanet.utils.Constants.showBetaFeature(any(), any()) } returns false
+        mockkObject(Constants)
+        every { Constants.showBetaFeature(any(), any()) } returns false
 
-        io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
-        every { org.ole.planet.myplanet.utils.NetworkUtils.getCurrentNetworkId(context) } returns 1
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getCurrentNetworkId(context) } returns 1
 
         UrlUtils.init(sharedPrefManager)
 
@@ -242,8 +242,8 @@ class ConfigurationsRepositoryImplTest {
         coVerify(exactly = 1) { apiInterface.getApkVersion(any()) }
         verify(exactly = 1) { callback.onUpdateAvailable(any(), any()) }
 
-        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.Constants)
-        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
+        unmockkObject(Constants)
+        unmockkObject(NetworkUtils)
     }
 
     @Test
@@ -274,8 +274,8 @@ class ConfigurationsRepositoryImplTest {
         coEvery { apiInterface.checkVersion(any()) } returns responsePlanet
         coEvery { apiInterface.getApkVersion(any()) } returns responseApk
 
-        io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
-        every { org.ole.planet.myplanet.utils.NetworkUtils.getCurrentNetworkId(context) } returns 1
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getCurrentNetworkId(context) } returns 1
 
         UrlUtils.init(sharedPrefManager)
 
@@ -288,7 +288,7 @@ class ConfigurationsRepositoryImplTest {
         verify { callback.onUpToDate() }
         verify(exactly = 0) { callback.onError(any(), any()) }
 
-        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
+        unmockkObject(NetworkUtils)
     }
 
     @Test
@@ -320,23 +320,19 @@ class ConfigurationsRepositoryImplTest {
         coEvery { apiInterface.getApkVersion(any()) } returns responseApk
 
         every { context.packageName } returns "org.ole.planet.myplanet"
-        val pm = mockk<android.content.pm.PackageManager>()
-        val packageInfo = android.content.pm.PackageInfo().apply {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                longVersionCode = 2L
-            } else {
-                @Suppress("DEPRECATION")
-                versionCode = 2
-            }
+        val pm = mockk<PackageManager>()
+        val packageInfo = PackageInfo().apply {
+            @Suppress("DEPRECATION")
+            versionCode = 2
         }
         every { context.packageManager } returns pm
         every { pm.getPackageInfo("org.ole.planet.myplanet", 0) } returns packageInfo
 
-        io.mockk.mockkObject(org.ole.planet.myplanet.utils.Constants)
-        every { org.ole.planet.myplanet.utils.Constants.showBetaFeature(any(), any()) } returns false
+        mockkObject(Constants)
+        every { Constants.showBetaFeature(any(), any()) } returns false
 
-        io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
-        every { org.ole.planet.myplanet.utils.NetworkUtils.getCurrentNetworkId(context) } returns 1
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getCurrentNetworkId(context) } returns 1
 
         UrlUtils.init(sharedPrefManager)
 
@@ -349,8 +345,8 @@ class ConfigurationsRepositoryImplTest {
         verify { callback.onUpToDate() }
         verify(exactly = 0) { callback.onError(any(), any()) }
 
-        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.Constants)
-        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
+        unmockkObject(Constants)
+        unmockkObject(NetworkUtils)
     }
 
     @Test
@@ -448,16 +444,16 @@ class ConfigurationsRepositoryImplTest {
         every { sharedPrefManager.rawPreferences.edit() } returns editor
         every { serverUrlMapper.updateUrlPreferences(any(), any(), any(), any(), any()) } returns Unit
 
-        io.mockk.mockkStatic(android.net.Uri::class)
-        val mockUri = mockk<android.net.Uri>(relaxed = true)
-        every { android.net.Uri.parse(any()) } returns mockUri
+        mockkStatic(Uri::class)
+        val mockUri = mockk<Uri>(relaxed = true)
+        every { Uri.parse(any()) } returns mockUri
 
         val result = repository.checkServerAvailability()
 
         assertTrue(result)
         verify { serverUrlMapper.processUrl(updateUrl) }
         verify { serverUrlMapper.updateUrlPreferences(editor, any(), "http://alt.url", "http://primary.url", any()) }
-        io.mockk.unmockkStatic(android.net.Uri::class)
+        unmockkStatic(Uri::class)
     }
 
     @Test
@@ -476,20 +472,20 @@ class ConfigurationsRepositoryImplTest {
         val response = Response.success(200, mockBody)
         coEvery { apiInterface.getChecksum(any()) } returns response
 
-        io.mockk.mockkObject(FileUtils)
+        mockkObject(FileUtils)
         val mockFile = mockk<java.io.File>()
         every { FileUtils.getSDPathFromUrl(context, path) } returns mockFile
         every { mockFile.exists() } returns true
 
-        io.mockk.mockkConstructor(Sha256Utils::class)
+        mockkConstructor(Sha256Utils::class)
         every { anyConstructed<Sha256Utils>().getCheckSumFromFile(mockFile) } returns expectedChecksum
 
         val result = repository.checkCheckSum(path)
 
         assertTrue(result)
 
-        io.mockk.unmockkObject(FileUtils)
-        io.mockk.unmockkConstructor(Sha256Utils::class)
+        unmockkObject(FileUtils)
+        unmockkConstructor(Sha256Utils::class)
     }
 
     @Test
@@ -509,20 +505,20 @@ class ConfigurationsRepositoryImplTest {
         val response = Response.success(200, mockBody)
         coEvery { apiInterface.getChecksum(any()) } returns response
 
-        io.mockk.mockkObject(FileUtils)
+        mockkObject(FileUtils)
         val mockFile = mockk<java.io.File>()
         every { FileUtils.getSDPathFromUrl(context, path) } returns mockFile
         every { mockFile.exists() } returns true
 
-        io.mockk.mockkConstructor(Sha256Utils::class)
+        mockkConstructor(Sha256Utils::class)
         every { anyConstructed<Sha256Utils>().getCheckSumFromFile(mockFile) } returns fileChecksum
 
         val result = repository.checkCheckSum(path)
 
         assertFalse(result)
 
-        io.mockk.unmockkObject(FileUtils)
-        io.mockk.unmockkConstructor(Sha256Utils::class)
+        unmockkObject(FileUtils)
+        unmockkConstructor(Sha256Utils::class)
     }
 
     @Test
@@ -541,7 +537,7 @@ class ConfigurationsRepositoryImplTest {
         val response = Response.success(200, mockBody)
         coEvery { apiInterface.getChecksum(any()) } returns response
 
-        io.mockk.mockkObject(FileUtils)
+        mockkObject(FileUtils)
         val mockFile = mockk<java.io.File>()
         every { FileUtils.getSDPathFromUrl(context, path) } returns mockFile
         every { mockFile.exists() } returns false
@@ -550,7 +546,7 @@ class ConfigurationsRepositoryImplTest {
 
         assertFalse(result)
 
-        io.mockk.unmockkObject(FileUtils)
+        unmockkObject(FileUtils)
     }
 
     @Test
@@ -589,12 +585,12 @@ class ConfigurationsRepositoryImplTest {
         val versionsResponse = Response.success(200, versionsJson)
 
         // Mock fetchConfiguration response (configUrl)
-        io.mockk.mockkStatic(android.net.Uri::class)
-        val mockUri = mockk<android.net.Uri>(relaxed = true)
+        mockkStatic(Uri::class)
+        val mockUri = mockk<Uri>(relaxed = true)
         every { mockUri.scheme } returns "http"
         every { mockUri.host } returns "test.url"
         every { mockUri.port } returns 80
-        every { android.net.Uri.parse(url) } returns mockUri
+        every { Uri.parse(url) } returns mockUri
 
         val couchdbURL = "http://satellite:1234@test.url:80"
         val configUrl = "http://satellite:1234@test.url:80/configurations/_all_docs?include_docs=true"
@@ -616,7 +612,7 @@ class ConfigurationsRepositoryImplTest {
         coEvery { apiInterface.getConfiguration(versionsUrl) } returns versionsResponse
         coEvery { apiInterface.getConfiguration(configUrl) } returns configResponse
 
-        io.mockk.mockkObject(VersionUtils)
+        mockkObject(VersionUtils)
         every { VersionUtils.isVersionAllowed(any(), any()) } returns true
 
         every { sharedPrefManager.setParentCode("parent_code") } returns Unit
@@ -624,10 +620,10 @@ class ConfigurationsRepositoryImplTest {
         every { context.getString(R.string.http_protocol) } returns "http"
         every { context.getString(R.string.device_couldn_t_reach_local_server) } returns "Local server error"
 
-        io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
-        every { org.ole.planet.myplanet.utils.NetworkUtils.extractProtocol(url) } returns "http"
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.extractProtocol(url) } returns "http"
 
-        io.mockk.mockkObject(UrlUtils)
+        mockkObject(UrlUtils)
         every { UrlUtils.dbUrl(any<String>()) } returns "http://satellite:1234@test.url:80"
 
         val result = repository.getMinApk(url, pin)
@@ -640,10 +636,10 @@ class ConfigurationsRepositoryImplTest {
         assertEquals(url, successResult.defaultUrl)
         assertFalse(successResult.isAlternativeUrl)
 
-        io.mockk.unmockkObject(UrlUtils)
-        io.mockk.unmockkObject(VersionUtils)
-        io.mockk.unmockkStatic(android.net.Uri::class)
-        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
+        unmockkObject(UrlUtils)
+        unmockkObject(VersionUtils)
+        unmockkStatic(Uri::class)
+        unmockkObject(NetworkUtils)
     }
 
     @Test
@@ -665,14 +661,14 @@ class ConfigurationsRepositoryImplTest {
 
         coEvery { apiInterface.getConfiguration(versionsUrl) } returns versionsResponse
 
-        io.mockk.mockkObject(VersionUtils)
+        mockkObject(VersionUtils)
         every { VersionUtils.isVersionAllowed(any(), any()) } returns false
 
         every { context.getString(R.string.http_protocol) } returns "http"
         every { context.getString(R.string.device_couldn_t_reach_local_server) } returns "Local server error"
 
-        io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
-        every { org.ole.planet.myplanet.utils.NetworkUtils.extractProtocol(url) } returns "http"
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.extractProtocol(url) } returns "http"
 
         val result = repository.getMinApk(url, pin)
 
@@ -681,8 +677,8 @@ class ConfigurationsRepositoryImplTest {
         assertEquals("Local server error", failureResult.errorMessage)
         assertEquals(url, failureResult.url)
 
-        io.mockk.unmockkObject(VersionUtils)
-        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
+        unmockkObject(VersionUtils)
+        unmockkObject(NetworkUtils)
     }
 
     @Test
@@ -699,13 +695,13 @@ class ConfigurationsRepositoryImplTest {
         every { context.getString(R.string.http_protocol) } returns "http"
         every { context.getString(R.string.device_couldn_t_reach_local_server) } returns "Local server error"
 
-        io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
-        every { org.ole.planet.myplanet.utils.NetworkUtils.extractProtocol(url) } returns "http"
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.extractProtocol(url) } returns "http"
 
         val result = repository.getMinApk(url, pin)
 
         assertTrue(result is ConfigurationsRepository.ConfigurationResult.Failure)
 
-        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
+        unmockkObject(NetworkUtils)
     }
 }
