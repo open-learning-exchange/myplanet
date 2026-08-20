@@ -24,14 +24,8 @@ class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : Fragmen
             }
         }
 
-        val oldItems = object : kotlin.collections.AbstractList<String?>() {
-            override val size get() = steps.size + 1
-            override fun get(index: Int) = if (index == 0) null else steps[index - 1]
-        }
-        val newItems = object : kotlin.collections.AbstractList<String?>() {
-            override val size get() = newSteps.size + 1
-            override fun get(index: Int) = if (index == 0) null else newSteps[index - 1]
-        }
+        val oldItems = listOf(null) + steps
+        val newItems = listOf(null) + newSteps
         val diffResult = DiffUtils.calculateDiff(
             oldList = oldItems,
             newList = newItems,
