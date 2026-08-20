@@ -163,7 +163,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             } else {
                 val sysDia = "${binding.etBloodpressure.text}"
                     .trim { it <= ' ' }
-                    .split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                    .split("/").dropLastWhile { it.isEmpty() }.toTypedArray()
                 if (sysDia.size > 2 || sysDia.isEmpty()) {
                     binding.etBloodpressure.error = getString(R.string.blood_pressure_should_be_systolic_diastolic)
                     allowSubmission = false
