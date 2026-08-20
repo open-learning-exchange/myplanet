@@ -26,6 +26,14 @@ class TeamsAdapter(
     private var type: String? = ""
     private val dateCache = mutableMapOf<Long, String>()
 
+    init {
+        setHasStableIds(true)
+    }
+
+    override fun getItemId(position: Int): Long {
+        return org.ole.planet.myplanet.utils.StableIdGenerator.generateStringId(getItem(position)._id)
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TeamsViewHolder {
         val binding = ItemTeamListBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return TeamsViewHolder(binding)

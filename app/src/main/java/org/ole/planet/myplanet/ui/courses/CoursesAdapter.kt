@@ -121,6 +121,11 @@ class CoursesAdapter(
         if (context is OnHomeItemClickListener) {
             homeItemClickListener = context
         }
+        setHasStableIds(true)
+    }
+
+    override fun getItemId(position: Int): Long {
+        return org.ole.planet.myplanet.utils.StableIdGenerator.generateStringId(getItem(position).courseId)
     }
 
     fun setViewMode(mode: ListViewMode, onChanged: (() -> Unit)? = null) {

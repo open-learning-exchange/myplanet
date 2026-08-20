@@ -39,6 +39,11 @@ class SurveysAdapter(
         if (context is OnHomeItemClickListener) {
             listener = context
         }
+        setHasStableIds(true)
+    }
+
+    override fun getItemId(position: Int): Long {
+        return org.ole.planet.myplanet.utils.StableIdGenerator.generateStringId(getItem(position).id)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SurveysViewHolder {

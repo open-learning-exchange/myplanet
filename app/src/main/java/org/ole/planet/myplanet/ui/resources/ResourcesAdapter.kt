@@ -53,6 +53,14 @@ class ResourcesAdapter(
     private val externalFilesDir: File? by lazy { FileUtils.getExternalFilesDir(context) }
     private var adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
 
+    init {
+        setHasStableIds(true)
+    }
+
+    override fun getItemId(position: Int): Long {
+        return org.ole.planet.myplanet.utils.StableIdGenerator.generateStringId(getItem(position).item.id)
+    }
+
     companion object {
         const val PAYLOAD_SELECTION = "PAYLOAD_SELECTION"
         private const val VIEW_TYPE_GRID = 0

@@ -188,6 +188,11 @@ class VoicesAdapter(
     init {
         fetchTeamLeaderStatus()
         preParseNews(parentNews)
+        setHasStableIds(true)
+    }
+
+    override fun getItemId(position: Int): Long {
+        return org.ole.planet.myplanet.utils.StableIdGenerator.generateStringId(getItem(position).id)
     }
 
     private fun fetchTeamLeaderStatus() {
