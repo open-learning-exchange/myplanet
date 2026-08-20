@@ -2638,7 +2638,81 @@ Tests: 1139 → 1154 (15 new); `flutter analyze` clean; `dart format` clean.
 
 ---
 
-**Last updated**: 2026-08-20 (Phase 58 complete — last hardcoded UI strings
-localised; services/leaders/chat-history screens gain widget tests)
-**Phase**: 58 of N (27 of 28 UI packages have a screen — see Status for what that does and
+## Phase 59 — runtime app version through `package_info_plus`
+
+Phase 58 noted that `settings_screen.dart`'s `subtitle: const Text('Build
+6297')` was not a localisation gap but **stale version metadata** — and that
+the honest fix was `package_info_plus` reading the real build number at
+runtime. This phase lands that fix, the last correctness gap Phase 58
+flagged.
+
+### The problem
+
+Two screens rendered version metadata from hardcoded constants:
+
+- **`settings_screen.dart`** — `l10n.appVersion('0.62.97')` (a literal passed
+  to the localised `Version {version}` template) and `const Text('Build
+  6297')`. The pubspec version was already `0.62.98+6298`, so both lines were
+  wrong.
+- **`about_disclaimer_screens.dart`** — `l10n.appVersion(
+  ConfigurationsRepository.defaultAppVersion)`, where `defaultAppVersion` was
+  itself the stale `0.62.97` constant.
+
+Every release would have silently drifted these further.
+
+### The fix — a testable seam
+
+`package_info_plus` reads the values the build bakes into the Android
+manifest (`versionName` / `versionCode`), which is exactly what the Kotlin
+app's `BuildConfig.VERSION_NAME` / `VERSION_CODE` exposed. It is wrapped
+behind the same seam pattern as `DiskStats` and `DeviceIdentity`, so widget
+tests never touch the platform:
+
+- **`lib/core/system/app_version_info.dart`** — an `AppVersionInfo` typedef
+  (`({String version, String buildNumber})`) and `loadAppVersionInfo()`, a
+  top-level function that calls `PackageInfo.fromPlatform()` and normalises
+  the empty-string fallbacks (`package_info_plus` returns `''` under `flutter
+  test`) to `0.0.0` / `0`.
+- **`appVersionInfoProvider`** — a `FutureProvider<AppVersionInfo>` in
+  `app_providers.dart`, the runtime analogue of `diskStatsProvider`. Tests
+  override it with a `Future.value` to inject a known version; production
+  reads through the platform.
+
+### Wiring
+
+- **`settings_screen.dart`** watches `appVersionInfoProvider`; the version
+  tile renders `l10n.appVersion(versionInfo?.version ?? '…')` and a new
+  localised `buildNumber({number})` key (replacing the English-only
+  `'Build 6297'` literal). The `…` placeholder shows while the async value
+  resolves, which is a single frame in production.
+- **`about_disclaimer_screens.dart`** — `AboutScreen` is now a
+  `ConsumerWidget` reading the same provider, dropping its dependency on
+  `ConfigurationsRepository.defaultAppVersion` entirely.
+- **`configurations_repository.dart`** — `defaultAppVersion` bumped to
+  `0.62.98` to match pubspec. It is still the default for
+  `currentAppVersion` (the update-check comparator), which is the right
+  constant for that path until it too reads the runtime version.
+
+### New ARB key
+
+`buildNumber` (`"Build {number}"` in `app_en.arb`, `"Compilación {number}"`
+in `app_es.arb`). The other four locales fall back to the English form, the
+same as `appVersion` already does for them. `gen-l10n` clean.
+
+### Tests
+
+- `settings_screen_test.dart` gains a fifth test: scrolls to the version tile
+  and asserts `Version 0.62.98` / `Build 6298`, both injected through the
+  provider override.
+- `about_disclaimer_screens_test.dart` updated: the About test injects
+  `0.62.98` through the provider (was asserting the constant).
+
+The 1155-test suite passes, `flutter analyze` clean, `dart format` clean.
+
+---
+
+**Last updated**: 2026-08-20 (Phase 59 complete — app version/build read at
+runtime through package_info_plus behind a testable seam; the last
+correctness gap Phase 58 flagged is closed)
+**Phase**: 59 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)
