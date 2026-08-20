@@ -50,7 +50,6 @@ interface CoursesRepository {
     suspend fun isCourseCertified(courseId: String): Boolean
     suspend fun updateCourseProgress(courseId: String?, stepNum: Int, passed: Boolean)
     suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData
-    suspend fun getStepPrerequisites(stepId: String, courseId: String?, userId: String?): org.ole.planet.myplanet.model.StepPrerequisites
     suspend fun getMyCourseIds(userId: String): JsonArray
     suspend fun removeCourseFromShelf(courseId: String, userId: String)
     suspend fun removeCoursesFromShelf(courseIds: List<String>, userId: String)

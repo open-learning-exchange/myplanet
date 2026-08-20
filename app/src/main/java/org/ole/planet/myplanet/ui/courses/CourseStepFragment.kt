@@ -114,13 +114,12 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 stepExams = data.stepExams
                 stepSurvey = data.stepSurvey
 
-                val prerequisites = coursesRepository.getStepPrerequisites(stepId ?: "", step.courseId, user?.id)
-                courseTitle = prerequisites.courseTitle
-                userHasCourse = prerequisites.isMyCourse
+                courseTitle = step.courseId?.let { coursesRepository.getCourseTitleById(it) }
+                userHasCourse = data.userHasCourse
 
                 fragmentCourseStepBinding.btnResources.text =
                     getString(R.string.resources_size, resources.size)
-                hideTestIfNoQuestion(prerequisites.hasExam, prerequisites.hasSurvey)
+                hideTestIfNoQuestion(data.hasExam, data.hasSurvey)
                 fragmentCourseStepBinding.tvTitle.text = step.stepTitle
                 val markdownContentWithLocalPaths = prependBaseUrlToImages(
                     step.description,

@@ -518,36 +518,26 @@ class CoursesRepositoryImpl @Inject constructor(
         val resources = myLibraryDao.getByStepId(stepId)
         val stepExams = examDao.getByStepIdAndType(stepId, "courses").map { it }
         val stepSurvey = examDao.getByStepIdAndType(stepId, "surveys").map { it }
-        val intermediate = CourseStepData(step, resources, stepExams, stepSurvey, false)
-        val userHasCourse = isMyCourse(userId, intermediate.step.courseId)
-        return intermediate.copy(userHasCourse = userHasCourse)
-    }
+        val userHasCourse = isMyCourse(userId, step.courseId)
 
-    override suspend fun getStepPrerequisites(
-        stepId: String,
-        courseId: String?,
-        userId: String?
-    ): org.ole.planet.myplanet.model.StepPrerequisites {
-        val isMyCourse = isMyCourse(userId, courseId)
-        val courseTitle = courseId?.let { getCourseTitleById(it) }
-
-        val stepExams = examDao.getByStepIdAndType(stepId, "courses")
         val hasExam = if (stepExams.isNotEmpty()) {
             val firstStepId = stepExams[0].id
-            submissionsRepository.hasSubmission(firstStepId, courseId, userId, "exam")
+            submissionsRepository.hasSubmission(firstStepId, step.courseId, userId, "exam")
         } else false
 
-        val stepSurvey = examDao.getByStepIdAndType(stepId, "surveys")
         val hasSurvey = if (stepSurvey.isNotEmpty()) {
             val firstStepId = stepSurvey[0].id
-            submissionsRepository.hasSubmission(firstStepId, courseId, userId, "survey")
+            submissionsRepository.hasSubmission(firstStepId, step.courseId, userId, "survey")
         } else false
 
-        return org.ole.planet.myplanet.model.StepPrerequisites(
-            isMyCourse = isMyCourse,
+        return CourseStepData(
+            step = step,
+            resources = resources,
+            stepExams = stepExams,
+            stepSurvey = stepSurvey,
+            userHasCourse = userHasCourse,
             hasExam = hasExam,
-            hasSurvey = hasSurvey,
-            courseTitle = courseTitle
+            hasSurvey = hasSurvey
         )
     }
 
