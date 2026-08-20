@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.VoicesEditActions
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.Utilities

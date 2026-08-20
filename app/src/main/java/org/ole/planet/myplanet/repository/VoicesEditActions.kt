@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.voices
+package org.ole.planet.myplanet.repository
 
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity

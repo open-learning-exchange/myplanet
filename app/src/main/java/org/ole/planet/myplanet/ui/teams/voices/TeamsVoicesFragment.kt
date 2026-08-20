@@ -28,7 +28,6 @@ import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.ui.voices.VoicesAdapterHelper
-import org.ole.planet.myplanet.ui.voices.VoicesEditActions
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
@@ -250,17 +249,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     },
                     onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(viewLifecycleOwner.lifecycleScope, dispatcherProvider),
                     labelManager = labelManager,
-                    voicesEditActions = object : VoicesEditActions {
-                        override suspend fun editPost(newsId: String, message: String, imagesToRemove: Set<String>, newImages: List<String>?): News? {
-                            return voicesRepository.editPost(newsId, message, imagesToRemove, newImages)
-                        }
-                        override suspend fun postReply(message: String, news: News, currentUser: UserEntity, imageList: List<String>?) {
-                            voicesRepository.postReply(message, news, currentUser, imageList)
-                        }
-                        override suspend fun getNewsById(id: String): News? {
-                            return voicesRepository.getNewsById(id)
-                        }
-                    },
+                    voicesEditActions = voicesRepository,
                     leadersList = UserEntity.parseLeadersJson(sharedPrefManager.getCommunityLeaders()),
                     setRepliedNewsIdFn = { sharedPrefManager.setRepliedNewsId(it) }
                 )
