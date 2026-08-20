@@ -34,7 +34,8 @@ interface SubmissionsRepository {
     suspend fun createBulkSurveySubmissions(examId: String, userIds: List<String>)
     suspend fun saveSubmission(submission: Submission)
     suspend fun markSubmissionComplete(id: String, payload: JsonObject)
-    suspend fun getSubmissionDetail(submissionId: String): SubmissionDetail?
+    suspend fun getSubmissionDetail(submissionId: String, user: org.ole.planet.myplanet.model.UserEntity?): SubmissionDetail?
+    suspend fun getSubmissionByRemoteIdOrParentId(submissionId: String): Submission?
     fun getNormalizedSubmitterName(submission: Submission): String?
     suspend fun getSubmissionsByParentId(parentId: String?, userId: String?, status: String? = null): List<Submission>
     suspend fun getLatestSubmissionByParentId(parentId: String, status: String): Submission?
@@ -55,7 +56,7 @@ interface SubmissionsRepository {
     suspend fun getPhotosByIds(ids: Array<String>): List<SubmitPhotos>
     suspend fun bulkInsertFromSync(jsonArray: JsonArray)
     suspend fun insertSubmission(submission: JsonObject)
-    suspend fun getExamUploadPayload(submission: Submission): JsonObject
+    suspend fun getExamUploadPayload(submission: Submission, user: org.ole.planet.myplanet.model.UserEntity?): JsonObject
     suspend fun serializeSubmission(submission: Submission, source: String, parentCode: String): JsonObject
     suspend fun generateSubmissionPdf(submissionId: String): File?
     suspend fun generateMultipleSubmissionsPdf(submissionIds: List<String>, examTitle: String): File?

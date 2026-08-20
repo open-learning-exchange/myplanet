@@ -14,17 +14,21 @@ import kotlinx.coroutines.flow.stateIn
 import org.ole.planet.myplanet.model.QuestionAnswer
 import org.ole.planet.myplanet.model.SubmissionDetail
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.TimeUtils
 
 @HiltViewModel
 class SubmissionDetailViewModel @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
+    private val userRepository: UserRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private val submissionId: String = savedStateHandle["id"] ?: ""
 
     private val submissionDetailState: StateFlow<SubmissionDetail?> = flow {
-        emit(submissionsRepository.getSubmissionDetail(submissionId))
+        val submission = submissionsRepository.getSubmissionByRemoteIdOrParentId(submissionId)
+        val user = submission?.userId?.let { userRepository.getUserById(it) }
+        emit(submissionsRepository.getSubmissionDetail(submissionId, user))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val questionAnswers: StateFlow<List<QuestionAnswer>> = submissionDetailState

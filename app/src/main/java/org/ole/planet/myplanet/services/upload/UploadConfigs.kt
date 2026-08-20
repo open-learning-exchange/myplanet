@@ -241,7 +241,8 @@ class UploadConfigs @Inject constructor(
         endpoint = "submissions",
         fetchPendingItems = { submissionsRepository.getPendingExamResults() },
         serializer = UploadSerializer.Async { submission ->
-            submissionsRepository.getExamUploadPayload(submission)
+            val user = submission.userId?.let { userRepository.getUserById(it) }
+            submissionsRepository.getExamUploadPayload(submission, user)
         },
         idExtractor = { it.id },
         dbIdExtractor = { it._id },

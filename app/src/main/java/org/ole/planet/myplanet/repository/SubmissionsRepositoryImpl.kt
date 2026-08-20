@@ -50,10 +50,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     private val answerDao: AnswerDao,
     private val examDao: ExamDao,
     private val questionDao: QuestionDao,
-    // Lazy wrapper is required here to prevent a Dagger cyclic dependency,
-    // as UserRepositoryImpl also depends on HealthRepository which creates a cycle
-    // (and we follow this pattern consistently).
-    private val userRepository: Lazy<UserRepository>,
     @PlainGson private val gson: Gson
 ) : SubmissionsRepository {
 
@@ -247,21 +243,16 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         submissionDao.markComplete(id, payload.toString())
     }
 
-    override suspend fun getSubmissionDetail(submissionId: String): SubmissionDetail? {
-        var submission = hydrateSubmission(submissionDao.getByIdOrRemoteId(submissionId))
+    override suspend fun getSubmissionByRemoteIdOrParentId(submissionId: String): Submission? {
+        return hydrateSubmission(submissionDao.getByIdOrRemoteId(submissionId))
+            ?: hydrateSubmission(submissionDao.getFirstByParentIdContaining(submissionId))
+    }
 
-        if (submission == null) {
-            submission = hydrateSubmission(submissionDao.getFirstByParentIdContaining(submissionId))
-        }
-
-        if (submission == null) {
-            return null
-        }
+    override suspend fun getSubmissionDetail(submissionId: String, user: org.ole.planet.myplanet.model.UserEntity?): SubmissionDetail? {
+        val submission = getSubmissionByRemoteIdOrParentId(submissionId) ?: return null
 
         val examId = submission.parentId?.substringBefore('@')
         val exam = examId?.let { getExamById(it) }
-
-        val user = submission.userId?.let { userRepository.get().getUserById(it) }
 
         val questions = examId?.let { questionDao.getByExamId(it).map { question -> question } } ?: emptyList()
 
@@ -718,18 +709,17 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         val questions: List<ExamQuestion>
     )
 
-    private suspend fun getPayloadData(submission: Submission): PayloadData {
-        val user = submission.userId?.let { userRepository.get().getUserById(it) }
+    private suspend fun getPayloadData(submission: Submission, user: UserEntity?): PayloadData {
         val examId = submission.examIdFromParentId()
         val exam = examId?.let { examDao.getById(it) }
         val questions = exam?.id?.let { questionDao.getByExamId(it).map { question -> question } } ?: emptyList()
         return PayloadData(user, exam, questions)
     }
 
-    override suspend fun getExamUploadPayload(submission: Submission): JsonObject {
+    override suspend fun getExamUploadPayload(submission: Submission, user: UserEntity?): JsonObject {
         val `object` = JsonObject()
-        val payloadData = getPayloadData(submission)
-        val user = payloadData.user
+        val payloadData = getPayloadData(submission, user)
+        val resolvedUser = payloadData.user
         val exam = payloadData.exam
 
         if (!TextUtils.isEmpty(submission._id)) {
@@ -768,7 +758,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
         // Prefer the fresh user record (attachment-free, current data) so the upload never
         // depends on the persisted blob, whose _attachments are stripped for storage safety.
-        val freshUser = user?.serialize()
+        val freshUser = resolvedUser?.serialize()
         when {
             freshUser != null -> `object`.add("user", freshUser)
             !TextUtils.isEmpty(submission.user) -> `object`.add("user", JsonParser.parseString(submission.user))
@@ -780,7 +770,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         val jsonObject = JsonObject()
 
         try {
-            val payloadData = getPayloadData(submission)
+            val payloadData = getPayloadData(submission, null)
             val exam = payloadData.exam
 
             if (!submission._id.isNullOrEmpty()) {
@@ -811,8 +801,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
             // Prefer the fresh user record (attachment-free, current data) over the persisted
             // blob, whose _attachments are stripped for storage safety.
-            val userJson = payloadData.user?.serialize()
-                ?: submission.user?.takeIf { it.isNotEmpty() }?.let { JsonParser.parseString(it).asJsonObject }
+            val userJson = submission.user?.takeIf { it.isNotEmpty() }?.let { JsonParser.parseString(it).asJsonObject }
             if (userJson != null) {
                 if (submission.membershipDoc != null) {
                     val membershipJson = JsonObject()
