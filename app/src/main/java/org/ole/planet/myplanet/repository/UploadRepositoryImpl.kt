@@ -31,8 +31,7 @@ class UploadRepositoryImpl @Inject constructor(
     @Suppress("UNCHECKED_CAST")
     override suspend fun <T : Any> queryPending(config: UploadQueryContract<T>): List<T> {
         return when (config.queryType) {
-            UploadQueryType.AdoptedSurveys -> examDao.getPendingAdoptedSurveys()
-                .map { it } as List<T>
+            UploadQueryType.AdoptedSurveys -> examDao.getPendingAdoptedSurveys() as List<T>
 
             UploadQueryType.ExamResults -> hydrateSubmissions(submissionDao.getPendingExamResults()) as List<T>
 
@@ -102,7 +101,7 @@ class UploadRepositoryImpl @Inject constructor(
         }
 
         if (updated.isNotEmpty()) {
-            examDao.upsertAll(updated.mapNotNull { it })
+            examDao.upsertAll(updated)
         }
 
         return failed
