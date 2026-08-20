@@ -27,7 +27,11 @@ void main() {
     api = MockPlanetApi();
     registerFallbackValue(<String, dynamic>{});
     outbox = OutboxRepository(database.outboxDao);
-    submissions = SubmissionsRepository(api, database.submissionDao);
+    submissions = SubmissionsRepository(
+      api,
+      database.submissionDao,
+      database.submitPhotosDao,
+    );
     surveys = SurveysRepository(
       api,
       database.surveyDao,

@@ -17,7 +17,11 @@ void main() {
 
   setUp(() {
     db = AppDatabase.memory();
-    repository = SubmissionsRepository(MockPlanetApi(), db.submissionDao);
+    repository = SubmissionsRepository(
+      MockPlanetApi(),
+      db.submissionDao,
+      db.submitPhotosDao,
+    );
     exporter = SubmissionsExporter(repository);
   });
   tearDown(() => db.close());

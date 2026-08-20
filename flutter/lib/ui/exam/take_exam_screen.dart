@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/files/submit_photos_files.dart';
+import '../../core/system/photo_capture.dart';
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
@@ -300,7 +302,7 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
     // Persist before showing anything. The attempt is the deliverable — a
     // dialog the user dismisses is not a record of it.
     try {
-      await ref
+      final submissionId = await ref
           .read(submissionsRepositoryProvider)
           .createExamDraft(
             exam: exam,
@@ -309,11 +311,15 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
             answers: _answers,
             courseId: widget.courseId,
           );
+      await _captureVerificationPhoto(submissionId, exam, user.id);
       final config = ref.read(serverConfigProvider);
       if (config != null) {
         await ref
             .read(submissionsUploaderProvider)
             .queuePending(config: config, userId: user.id);
+        await ref
+            .read(submitPhotosUploaderProvider)
+            .queuePending(config: config);
       }
       if (!mounted) return;
       await _showResult(exam);
@@ -324,6 +330,50 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
       return;
     }
     if (mounted) setState(() => _isSubmitting = false);
+  }
+
+  /// Captures a verification photo for a certified course exam, the port of
+  /// `ExamTakingFragment.capturePhoto`.
+  ///
+  /// The Kotlin source captures on every `btn_submit` press when the course is
+  /// certified and the exam is not the user's own survey; this screen carries
+  /// only graded course exams (no `isMySurvey` analogue), so the gate is the
+  /// certification flag alone. A null capture — no camera, permission denied,
+  /// or the user backed out — is swallowed, matching `capturePhoto`'s own
+  /// try/catch; the submission still uploads, just without a photo.
+  Future<void> _captureVerificationPhoto(
+    String submissionId,
+    ExamRow exam,
+    String memberId,
+  ) async {
+    final courseId = widget.courseId ?? exam.courseId;
+    if (courseId == null || courseId.isEmpty) return;
+    final isCertified = await ref
+        .read(progressRepositoryProvider)
+        .isCourseCertified(courseId);
+    if (!isCertified) return;
+    try {
+      final photo = await PhotoCapture.instance.capture();
+      if (photo == null) return;
+      final file = await SubmitPhotosFiles.write(
+        photoId: submissionId,
+        filename: photo.filename,
+        bytes: photo.bytes,
+      );
+      await ref
+          .read(submissionsRepositoryProvider)
+          .addSubmissionPhoto(
+            submissionId: submissionId,
+            examId: exam.id,
+            courseId: courseId,
+            memberId: memberId,
+            photoLocation: file?.path,
+          );
+    } on Exception {
+      // The capture or the write can fail on a device with no camera or no
+      // free space. The submission is the deliverable; a missing photo is not
+      // grounds to throw the attempt away.
+    }
   }
 
   Future<void> _showResult(ExamRow exam) async {

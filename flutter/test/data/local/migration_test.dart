@@ -579,6 +579,32 @@ void main() {
     expect((await database.feedbackDao.getById('fb-1'))?.id, 'fb-1');
   });
 
+  // A captured exam-verification photo is local intent: it exists only on this
+  // device until the `SubmitPhotosUploader` delivers it, and the JPEG it
+  // points at lives only on this device's filesystem. Dropping the table on a
+  // schema bump would discard a photo the user was never warned had not
+  // reached the server, so the table is preserved and the row must survive.
+  test('a captured submit_photo survives a schema bump', () async {
+    await database.submitPhotosDao.insert(
+      SubmitPhotosTableCompanion.insert(
+        id: 'photo-1',
+        submissionId: const Value('sub-1'),
+        examId: const Value('exam-1'),
+        courseId: const Value('course-1'),
+        memberId: const Value('user-1'),
+        photoLocation: const Value('/tmp/capture.jpg'),
+        uploaded: const Value(false),
+      ),
+    );
+
+    await runUpgrade();
+
+    final survivor = await database.submitPhotosDao.getById('photo-1');
+    expect(survivor?.id, 'photo-1');
+    expect(survivor?.submissionId, 'sub-1');
+    expect(survivor?.uploaded, isFalse);
+  });
+
   test('every preserved table has a preservation test', () {
     // `my_life` and the submissions tables were added to the preserved set
     // without one. This fails the moment another name is added, so the next
@@ -604,6 +630,7 @@ void main() {
       'resource_activity',
       'course_activity',
       'download_queue',
+      'submit_photos',
     };
     expect(
       AppDatabase.localAuthorityTables,

@@ -13,12 +13,13 @@ import '../data/local/app_database.dart';
 
 /// Offline list portion of `repository/SubmissionsRepositoryImpl.kt`.
 class SubmissionsRepository {
-  const SubmissionsRepository(this._api, this._dao);
+  const SubmissionsRepository(this._api, this._dao, this._photosDao);
 
   static const int initialBatchSize = 100;
 
   final PlanetApi _api;
   final SubmissionDao _dao;
+  final SubmitPhotosDao _photosDao;
 
   Stream<List<SubmissionRow>> watchForUser(String userId) =>
       _dao.watchForUser(userId);
@@ -328,6 +329,87 @@ class SubmissionsRepository {
   /// A public-survey answer sheet that reached the public API. See
   /// `SubmissionDao.markPublicSubmitted` for why no revision is recorded.
   Future<void> markPublicSubmitted(String id) => _dao.markPublicSubmitted(id);
+
+  /// Port of `SubmissionsRepositoryImpl.addSubmissionPhoto`.
+  ///
+  /// The id is a sha1 of the row's identifying tuple so a re-capture after a
+  /// failed drain is idempotent: `insertOnConflictUpdate` re-stamps the same
+  /// row rather than cloning it, and `unuploaded` does not double-count it.
+  /// The Kotlin source generates a fresh UUID per capture; the device-identity
+  /// `uniqueId` Kotlin persists here is layered onto the document at upload
+  /// time instead (see [SubmitPhotosUploader]), the way [SubmissionsUploader]
+  /// layers telemetry onto a submission.
+  Future<String> addSubmissionPhoto({
+    required String submissionId,
+    String? examId,
+    String? courseId,
+    String? memberId,
+    String? photoLocation,
+    DateTime? now,
+  }) async {
+    final capturedAt = now ?? DateTime.now();
+    final id = sha1
+        .convert(
+          utf8.encode(
+            'photo:$submissionId:$examId:$courseId:${capturedAt.millisecondsSinceEpoch}',
+          ),
+        )
+        .toString();
+    await _photosDao.insert(
+      SubmitPhotosTableCompanion.insert(
+        id: id,
+        submissionId: Value(submissionId),
+        courseId: Value(courseId),
+        examId: Value(examId),
+        memberId: Value(memberId),
+        date: Value(capturedAt.toString()),
+        photoLocation: Value(photoLocation),
+        uploaded: const Value(false),
+      ),
+    );
+    return id;
+  }
+
+  /// Rows awaiting their document POST, each paired with the JSON the
+  /// uploader sends — the port of `SubmissionsRepositoryImpl.getUnuploadedPhotos`.
+  ///
+  /// The document is built here rather than in the uploader so the outbox
+  /// payload is self-contained: a drainer replay does not need to re-read the
+  /// row, and a row edited after the enqueue (there is no edit path yet, but
+  /// the contract is what matters) is sent as it was when queued.
+  Future<List<({String id, Map<String, dynamic> document})>>
+  unuploadedPhotos() async {
+    final rows = await _photosDao.unuploaded();
+    return rows
+        .map((row) => (id: row.id, document: serializePhoto(row)))
+        .toList();
+  }
+
+  Future<SubmitPhotosRow?> photoById(String id) => _photosDao.getById(id);
+  Future<List<SubmitPhotosRow>> photosByIds(Iterable<String> ids) =>
+      _photosDao.getByIds(ids);
+
+  Future<int> markPhotoUploaded(String id, String couchId, String rev) =>
+      _photosDao.markUploaded(id, couchId, rev);
+
+  /// Port of `SubmitPhotos.serialize`.
+  ///
+  /// Field-for-field with the Kotlin JSON. The device identity Kotlin writes
+  /// as `macAddress` is layered onto the document by [SubmitPhotosUploader],
+  /// the way every other uploader layers telemetry onto its doc, so it does
+  /// not appear here. The local `photoLocation` is sent so a server-side join
+  /// can resolve the bytes — the attachment itself is PUT separately after the
+  /// POST lands.
+  static Map<String, dynamic> serializePhoto(SubmitPhotosRow row) => {
+    'id': row.id,
+    'submissionId': row.submissionId,
+    'type': 'photo',
+    'courseId': row.courseId,
+    'examId': row.examId,
+    'memberId': row.memberId,
+    'date': row.date,
+    'photoLocation': row.photoLocation,
+  };
 
   /// Port of `SubmissionsRepositoryImpl.serializeSubmission`.
   ///

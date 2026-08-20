@@ -32,7 +32,11 @@ void main() {
       api,
       database.surveyDao,
       database.examDao,
-      SubmissionsRepository(api, database.submissionDao),
+      SubmissionsRepository(
+        api,
+        database.submissionDao,
+        database.submitPhotosDao,
+      ),
     );
   });
   tearDown(() => database.close());
@@ -265,7 +269,11 @@ void main() {
         api,
         database.surveyDao,
         database.examDao,
-        SubmissionsRepository(api, database.submissionDao),
+        SubmissionsRepository(
+          api,
+          database.submissionDao,
+          database.submitPhotosDao,
+        ),
         urlMapper: ServerUrlMapper(
           mappings: {'http://local.example': 'https://alt.example'},
         ),
@@ -352,6 +360,7 @@ void main() {
       await SubmissionsRepository(
         api,
         database.submissionDao,
+        database.submitPhotosDao,
       ).markSubmissionComplete(id!, {'birthYear': '2000', 'gender': 'male'});
 
       Map<String, dynamic>? capturedBody;
@@ -424,7 +433,11 @@ void main() {
           api,
           database.surveyDao,
           database.examDao,
-          SubmissionsRepository(api, database.submissionDao),
+          SubmissionsRepository(
+            api,
+            database.submissionDao,
+            database.submitPhotosDao,
+          ),
           urlMapper: ServerUrlMapper(
             mappings: {'http://local.example': 'https://alt.example'},
           ),

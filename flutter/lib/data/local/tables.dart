@@ -1087,3 +1087,38 @@ class DownloadQueueEntries extends Table {
   @override
   Set<Column> get primaryKey => {resourceId};
 }
+
+/// Port of `model/SubmitPhotos.kt` (`@Entity(tableName = "submit_photos")`).
+///
+/// A captured exam verification photo is authored on this device — it exists
+/// nowhere else until the `SubmitPhotosUploader` delivers it — so the table is
+/// locally authored and preserved across a schema bump. The row carries only
+/// the metadata CouchDB needs to file it (`submissionId`/`courseId`/`examId`)
+/// and the local path to the bytes, which are PUT separately as an attachment
+/// once the document is acknowledged — the same two-step shape as `teams`.
+/// Kotlin's `uniqueId` (the device identity it uploads as `macAddress`) is
+/// layered onto the document by the uploader at queue time rather than
+/// persisted here, matching how every other Flutter uploader adds telemetry.
+@DataClassName('SubmitPhotosRow')
+class SubmitPhotosTable extends Table {
+  @override
+  String get tableName => 'submit_photos';
+
+  TextColumn get id => text()();
+  TextColumn get couchId => text().named('_id').nullable()();
+  TextColumn get rev => text().named('_rev').nullable()();
+  TextColumn get submissionId => text().nullable()();
+  TextColumn get courseId => text().nullable()();
+  TextColumn get examId => text().nullable()();
+  TextColumn get memberId => text().nullable()();
+  TextColumn get date => text().nullable()();
+
+  /// Local path to the captured JPEG. The bytes are never serialized into the
+  /// document; they are PUT as a CouchDB attachment after the POST succeeds.
+  TextColumn get photoLocation => text().nullable()();
+
+  BoolColumn get uploaded => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

@@ -56,6 +56,7 @@ part 'app_database.g.dart';
     CourseActivities,
     TeamNotifications,
     DownloadQueueEntries,
+    SubmitPhotosTable,
   ],
   daos: [
     UserDao,
@@ -85,6 +86,7 @@ part 'app_database.g.dart';
     CourseActivityDao,
     TeamNotificationDao,
     DownloadQueueDao,
+    SubmitPhotosDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -97,7 +99,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 33;
+  int get schemaVersion => 34;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -190,6 +192,12 @@ class AppDatabase extends _$AppDatabase {
     // Resource ids awaiting a network-constrained one-shot worker. This is
     // local intent, not a server cache; dropping it silently loses downloads.
     'download_queue',
+    // A captured exam-verification photo exists only on this device until the
+    // `SubmitPhotosUploader` delivers it, and the bytes it points at live only
+    // on this device's filesystem. No sync refills either, so a schema bump
+    // would discard a photo (and orphan its file) the user was never warned
+    // had not reached the server.
+    'submit_photos',
   };
 
   @override
@@ -2955,4 +2963,43 @@ class DownloadQueueDao extends DatabaseAccessor<AppDatabase>
   Future<int> complete(String resourceId) => (delete(
     downloadQueueEntries,
   )..where((row) => row.resourceId.equals(resourceId))).go();
+}
+
+@DriftAccessor(tables: [SubmitPhotosTable])
+class SubmitPhotosDao extends DatabaseAccessor<AppDatabase>
+    with _$SubmitPhotosDaoMixin {
+  SubmitPhotosDao(super.db);
+
+  /// Rows whose document has not been acknowledged by CouchDB.
+  ///
+  /// Port of `SubmitPhotosDao.getUnuploaded` — `PhotoUploader` selects these,
+  /// serializes each, and POSTs it to the `submissions` database.
+  Future<List<SubmitPhotosRow>> unuploaded() => (select(
+    submitPhotosTable,
+  )..where((row) => row.uploaded.equals(false))).get();
+
+  Future<SubmitPhotosRow?> getById(String id) => (select(
+    submitPhotosTable,
+  )..where((row) => row.id.equals(id))).getSingleOrNull();
+
+  Future<List<SubmitPhotosRow>> getByIds(Iterable<String> ids) {
+    final list = ids.where((id) => id.isNotEmpty).toList();
+    if (list.isEmpty) return Future.value(const <SubmitPhotosRow>[]);
+    return (select(submitPhotosTable)..where((row) => row.id.isIn(list))).get();
+  }
+
+  Future<void> insert(SubmitPhotosTableCompanion row) =>
+      into(submitPhotosTable).insertOnConflictUpdate(row);
+
+  /// Records that the document POST landed, mirroring
+  /// `SubmitPhotosDao.markUploaded`. Returns the rows changed so a caller can
+  /// tell a stale outbox replay from a live write.
+  Future<int> markUploaded(String id, String couchId, String rev) =>
+      (update(submitPhotosTable)..where((row) => row.id.equals(id))).write(
+        SubmitPhotosTableCompanion(
+          couchId: Value(couchId),
+          rev: Value(rev),
+          uploaded: const Value(true),
+        ),
+      );
 }

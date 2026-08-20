@@ -27,6 +27,7 @@ void main() {
     submissions = SubmissionsRepository(
       MockPlanetApi(),
       database.submissionDao,
+      database.submitPhotosDao,
     );
   });
   tearDown(() => database.close());

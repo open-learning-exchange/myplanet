@@ -46,6 +46,7 @@ import '../repository/voices_repository.dart';
 import '../repository/voices_uploader.dart';
 import '../repository/submissions_repository.dart';
 import '../repository/submissions_uploader.dart';
+import '../repository/submit_photos_uploader.dart';
 import '../repository/user_uploader.dart';
 import '../repository/submissions_exporter.dart';
 import '../repository/surveys_repository.dart';
@@ -172,6 +173,10 @@ final ratingDaoProvider = Provider<RatingDao>(
 
 final submissionDaoProvider = Provider<SubmissionDao>(
   (ref) => ref.watch(appDatabaseProvider).submissionDao,
+);
+
+final submitPhotosDaoProvider = Provider<SubmitPhotosDao>(
+  (ref) => ref.watch(appDatabaseProvider).submitPhotosDao,
 );
 
 final surveyDaoProvider = Provider<SurveyDao>(
@@ -311,6 +316,7 @@ final submissionsRepositoryProvider = Provider<SubmissionsRepository>(
   (ref) => SubmissionsRepository(
     ref.watch(planetApiProvider),
     ref.watch(submissionDaoProvider),
+    ref.watch(submitPhotosDaoProvider),
   ),
 );
 
@@ -335,6 +341,15 @@ final submissionsUploaderProvider = Provider<SubmissionsUploader>(
 
 final submissionsExporterProvider = Provider<SubmissionsExporter>(
   (ref) => SubmissionsExporter(ref.watch(submissionsRepositoryProvider)),
+);
+
+final submitPhotosUploaderProvider = Provider<SubmitPhotosUploader>(
+  (ref) => SubmitPhotosUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(submissionsRepositoryProvider),
+    ref.watch(outboxRepositoryProvider),
+    ref.watch(deviceIdentitySourceProvider),
+  ),
 );
 
 /// Replaces `NetworkModule`.
@@ -472,6 +487,9 @@ final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
     handlers: {
       PersonalsUploader.type: ref.watch(personalsUploaderProvider).handler,
       SubmissionsUploader.type: ref.watch(submissionsUploaderProvider).handler,
+      SubmitPhotosUploader.type: ref
+          .watch(submitPhotosUploaderProvider)
+          .handler,
       EventsUploader.type: ref.watch(eventsUploaderProvider).handler,
       VoicesUploader.type: ref.watch(voicesUploaderProvider).handler,
       TeamTasksUploader.type: ref.watch(teamTasksUploaderProvider).handler,

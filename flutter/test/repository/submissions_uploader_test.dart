@@ -30,7 +30,11 @@ void main() {
   setUp(() {
     db = AppDatabase.memory();
     api = MockPlanetApi();
-    repository = SubmissionsRepository(api, db.submissionDao);
+    repository = SubmissionsRepository(
+      api,
+      db.submissionDao,
+      db.submitPhotosDao,
+    );
     outbox = OutboxRepository(db.outboxDao);
     uploader = SubmissionsUploader(api, repository, outbox, testDeviceIdentity);
   });

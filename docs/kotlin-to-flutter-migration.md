@@ -2248,11 +2248,37 @@ selection mode is inactive. Repository coverage pins the two-row atomic removal/
 and a widget test exercises long-press, multi-select, contextual add, selection clearing, and the
 success message. No binary assets or platform code were added.
 
+### Phase 51 — submission photo capture and write-back
+
+A certified course exam now captures a verification photo on submit, the port of
+`ExamTakingFragment.capturePhoto` and the `SubmitPhotos` / `PhotoUploader` pair. The gate is
+`ProgressRepository.isCourseCertified(courseId)` — the Kotlin source also excludes `isMySurvey`, but
+this screen carries only graded course exams, so the certification flag alone is the gate. Capture
+runs through a `PhotoCapture` seam (`lib/core/system/photo_capture.dart`) backed by `image_picker`
+in production and faked in tests, the same interface-not-static-helper shape `DiskStats` and
+`DeviceStats` use. A null capture (no camera, permission denied, or the user backed out) is
+swallowed, matching the Kotlin's own try/catch; the submission still uploads, just without a photo.
+
+The write-back is the durable two-step shape every other locally-authored upload uses. A new
+`submit_photos` Drift table (schema v34, preserved in `localAuthorityTables` because a captured
+photo exists nowhere else) holds the row; `SubmissionsRepository.addSubmissionPhoto` authors it,
+`unuploadedPhotos` pairs each row with its serialized document, and `SubmitPhotosUploader.queuePending`
+enqueues to the outbox with device identity layered on at queue time (not persisted on the row,
+matching every other Flutter uploader). The `OutboxDrainer` handler POSTs the document to
+`submissions`, records the CouchDB id/rev via `markPhotoUploaded`, then best-effort PUTs the JPEG
+bytes as an attachment to `submissions/<id>/<name>` — a missing file (cleared by storage management)
+succeeds as a document, the bytes being the only part that can be re-sent. `SubmitPhotosFiles`
+routes the bytes through `<docs>/submit_photos/<photoId>/<filename>`, the same keyed-on-row-id
+layout `TeamAttachments` and `ResourceFiles` use so the write-back and the upload read-back cannot
+drift. Coverage mirrors `teams_uploader_test.dart` (two-step, no-rev, failure, attachment-skip) and
+the migration preservation test.
+
 ---
 
-**Last updated**: 2026-08-20 (Phase 50 complete — the resource catalog now supports atomic
-multi-selection add/remove shelf actions in both list and grid layouts; the 2026-08-20
-upstream audit found no portable behavioural commits, and the stale "user profile photo
-upload" claim was corrected — that path landed in the Phase 36 harvest)
-**Phase**: 50 of N (27 of 28 UI packages have a screen — see Status for what that does and
+**Last updated**: 2026-08-20 (Phase 51 complete — certified course exams now capture a
+verification photo on submit, with the durable two-step `submit_photos` write-back the
+`SubmitPhotosUploader` delivers through the outbox; the 2026-08-20 upstream audit found no
+portable behavioural commits, and the stale "user profile photo upload" claim was corrected —
+that path landed in the Phase 36 harvest)
+**Phase**: 51 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

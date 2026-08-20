@@ -28,7 +28,11 @@ void main() {
   setUp(() {
     database = AppDatabase.memory();
     api = MockPlanetApi();
-    submissions = SubmissionsRepository(api, database.submissionDao);
+    submissions = SubmissionsRepository(
+      api,
+      database.submissionDao,
+      database.submitPhotosDao,
+    );
     surveys = SurveysRepository(
       api,
       database.surveyDao,

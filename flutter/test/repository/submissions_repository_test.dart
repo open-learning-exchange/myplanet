@@ -24,7 +24,11 @@ void main() {
   setUp(() {
     database = AppDatabase.memory();
     api = MockPlanetApi();
-    repository = SubmissionsRepository(api, database.submissionDao);
+    repository = SubmissionsRepository(
+      api,
+      database.submissionDao,
+      database.submitPhotosDao,
+    );
   });
 
   tearDown(() => database.close());
@@ -326,4 +330,50 @@ void main() {
 
     expect(payload['parent'], 'Broken projector');
   });
+
+  test(
+    'addSubmissionPhoto persists a row that the uploader can find',
+    () async {
+      final id = await repository.addSubmissionPhoto(
+        submissionId: 'sub-1',
+        examId: 'exam-1',
+        courseId: 'course-1',
+        memberId: 'user-1',
+        photoLocation: '/tmp/capture.jpg',
+        now: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+      );
+
+      final pending = await repository.unuploadedPhotos();
+      expect(pending, hasLength(1));
+      expect(pending.first.id, id);
+      final doc = pending.first.document;
+      expect(doc['submissionId'], 'sub-1');
+      expect(doc['type'], 'photo');
+      expect(doc['courseId'], 'course-1');
+      expect(doc['examId'], 'exam-1');
+      expect(doc['memberId'], 'user-1');
+      expect(doc['photoLocation'], '/tmp/capture.jpg');
+    },
+  );
+
+  test(
+    'markPhotoUploaded clears the pending set and records the rev',
+    () async {
+      final id = await repository.addSubmissionPhoto(
+        submissionId: 'sub-1',
+        examId: 'exam-1',
+        courseId: 'course-1',
+        memberId: 'user-1',
+        now: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+      );
+
+      await repository.markPhotoUploaded(id, 'server-id', '2-b');
+
+      expect(await repository.unuploadedPhotos(), isEmpty);
+      final survivor = await repository.photoById(id);
+      expect(survivor?.uploaded, isTrue);
+      expect(survivor?.couchId, 'server-id');
+      expect(survivor?.rev, '2-b');
+    },
+  );
 }
