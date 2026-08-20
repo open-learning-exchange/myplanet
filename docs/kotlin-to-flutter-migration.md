@@ -1755,8 +1755,9 @@ they land on unported features.
   creation/edit/archive. Deferred, as the Status note says.
 - `08e18ffdc` (dashboard library card my/call split) — distinguishes the "my
   shelf" resources filter from the full library in the dashboard card target.
-  The port's library card opens resources outright, like the rest of the
-  unported batch-resources/filter gap. Deferred.
+  The port's library card still opens resources outright: Phase 50 closed the
+  batch-selection half of this gap, but the my-shelf-versus-library filter it
+  turns on is still unported. Deferred.
 - `758a06f80` (teams submissions streamlining) — `ApkLog.serialize` drops its
   `Context` and `serializeSubmission` drops its `context` parameter; both sit
   on the apk-log/crash-diagnostics feature the port has never had. Deferred.
