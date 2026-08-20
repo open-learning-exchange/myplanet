@@ -12,13 +12,20 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.Transaction
-import org.ole.planet.myplanet.repository.TeamsRepository
+import android.content.Context
+import org.ole.planet.myplanet.repository.TeamsFinancesRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EnterprisesFinancesViewModelTest {
 
-    private lateinit var teamsRepository: TeamsRepository
+    private lateinit var teamsRepository: TeamsFinancesRepository
+    private lateinit var dispatcherProvider: DispatcherProvider
+    private lateinit var timeProvider: TimeProvider
+    private lateinit var context: Context
     private lateinit var viewModel: EnterprisesFinancesViewModel
     private val testDispatcher = StandardTestDispatcher()
 
@@ -28,7 +35,10 @@ class EnterprisesFinancesViewModelTest {
     @Before
     fun setup() {
         teamsRepository = mockk()
-        viewModel = EnterprisesFinancesViewModel(teamsRepository)
+        dispatcherProvider = TestDispatcherProvider(testDispatcher)
+        timeProvider = mockk()
+        context = mockk()
+        viewModel = EnterprisesFinancesViewModel(teamsRepository, dispatcherProvider, timeProvider, context)
     }
 
     @Test
@@ -53,5 +63,45 @@ class EnterprisesFinancesViewModelTest {
 
         val actualTransactions = viewModel.transactions.first()
         assertEquals(mockTransactions, actualTransactions)
+    }
+
+    @Test
+    fun `createTransaction updates transactionCreated channel`() = runTest {
+        val teamId = "test_team_id"
+        val type = "credit"
+        val note = "test note"
+        val amount = 100
+        val date = 1000L
+        val parentCode = "parent"
+        val planetCode = "planet"
+
+        coEvery {
+            teamsRepository.createTransaction(
+                teamId = teamId,
+                type = type,
+                note = note,
+                amount = amount,
+                date = date,
+                parentCode = parentCode,
+                planetCode = planetCode,
+                imageName = null,
+                imageData = null
+            )
+        } returns Result.success(Unit)
+
+        viewModel.createTransaction(
+            teamId = teamId,
+            type = type,
+            note = note,
+            amount = amount,
+            date = date,
+            parentCode = parentCode,
+            planetCode = planetCode,
+            imageUri = null
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val actualResult = viewModel.transactionCreated.first()
+        assertEquals(Result.success(Unit), actualResult)
     }
 }

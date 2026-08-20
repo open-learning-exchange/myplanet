@@ -312,8 +312,6 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
                         return@setPositiveButton
                     }
                     val imageUri = selectedImageUri
-                    val imageName = imageUri?.let { FileUtils.getDisplayName(requireContext(), it, timeProvider) }
-                    val imageData = imageUri?.let { FileUtils.readBytesFromUri(requireContext(), it) }
                     val capturedDate = date ?: return@setPositiveButton
 
                     viewModel.createTransaction(
@@ -324,8 +322,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
                         date = capturedDate.timeInMillis,
                         parentCode = user?.parentCode,
                         planetCode = user?.planetCode,
-                        imageName = imageName,
-                        imageData = imageData
+                        imageUri = imageUri
                     )
                 }
             }.setNegativeButton("Cancel", null).show()
