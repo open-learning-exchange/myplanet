@@ -69,12 +69,7 @@ jobs:
           staged=$(find build/robolectric-sdks -name '*.jar' 2>/dev/null | wc -l || true)
           size=$(du -sh build/robolectric-sdks 2>/dev/null | cut -f1 || true)
           echo "staged android-all jars: ${staged:-0} (${size:-0})" | tee -a "$GITHUB_STEP_SUMMARY"
-          # Nothing else writes here - the build declares no mavenLocal(), and under
-          # robolectric.offline a missing jar throws rather than being downloaded. So a jar in
-          # Robolectric's own runtime cache means -ProbolectricOffline never reached the forks (a
-          # dropped flag, or a Test task withType(Test) did not configure) and the fork race that
-          # cost a rerun every ~30 pushes is back. A missing SDK level cannot land here; it fails
-          # the staging task, or the test with "Path is not a file".
+          # Nothing else writes here, so a jar means -ProbolectricOffline missed the forks.
           fetched=$(find "$HOME/.m2/repository/org/robolectric" -name '*.jar' 2>/dev/null || true)
           if [ -n "$fetched" ]; then
             echo "offline mode did not take effect: a test fork resolved an android-all jar at runtime" | tee -a "$GITHUB_STEP_SUMMARY"

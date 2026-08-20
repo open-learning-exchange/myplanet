@@ -253,9 +253,7 @@ dependencies {
     implementation(libs.webkit)
     implementation(libs.pdfbox.android) { exclude group: 'org.bouncycastle' }
 }
-// Versions come from DefaultSdkProvider in the Robolectric named below, and dependabot cannot
-// bump them with it: the coordinate is built from a variable, so its parser never sees it. Keys
-// are every @Config(sdk) plus targetSdk; docs/TESTING.md covers adding a level.
+// From DefaultSdkProvider; dependabot cannot bump these. See docs/TESTING.md.
 def robolectricSdkJarsFrom = '4.16.1'
 def robolectricPinned = libs.versions.robolectric.get()
 def robolectricSdkJars = [
@@ -269,13 +267,12 @@ def robolectricSdkJars = [
     34: '14-robolectric-10818077-i7',
     36: '16-robolectric-13921718-i7',
 ]
-// One configuration per level: the same module at nine versions collapses to the newest in one.
+// One per level: nine versions of one module would collapse to the newest.
 robolectricSdkJars.each { apiLevel, jarVersion ->
     configurations.create("robolectricSdk$apiLevel")
     dependencies.add("robolectricSdk$apiLevel", "org.robolectric:android-all-instrumented:$jarVersion")
 }
-// Outside app/build, which the workflow's actions/cache step caches: setup-gradle already keeps
-// these ~1.2 GB in Gradle's dependency cache, so staging copies rather than re-downloads.
+// Outside app/build: that cache is keyed per commit, Gradle's dependency cache is not.
 def robolectricSdkDir = new File(rootDir, 'build/robolectric-sdks')
 def fetchRobolectricSdks = tasks.register('fetchRobolectricSdks', Sync) {
     description = 'Stages the android-all jars Robolectric would otherwise fetch inside the test forks'
@@ -285,7 +282,6 @@ def fetchRobolectricSdks = tasks.register('fetchRobolectricSdks', Sync) {
         if (robolectricPinned != robolectricSdkJarsFrom) {
             throw new GradleException("robolectricSdkJars was read from Robolectric $robolectricSdkJarsFrom, but the catalog now pins $robolectricPinned - refresh every version from its DefaultSdkProvider")
         }
-        // By name, not count: these are the filenames Robolectric's offline resolver looks for.
         def missing = robolectricSdkJars
             .collect { apiLevel, jarVersion -> "android-all-instrumented-${jarVersion}.jar" }
             .findAll { !new File(robolectricSdkDir, it).isFile() }
