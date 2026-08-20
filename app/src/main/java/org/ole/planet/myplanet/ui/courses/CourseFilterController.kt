@@ -10,8 +10,6 @@ import android.widget.Spinner
 import android.widget.TextView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,8 +17,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.TagEntity
-import org.ole.planet.myplanet.utils.DefaultDispatcherProvider
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 data class FilterState(
     val searchText: String,
@@ -35,6 +31,7 @@ data class FilterState(
 
 class CourseFilterController(
     private val rootView: View,
+    private val coroutineScope: CoroutineScope,
     private val onScrollToTop: () -> Unit
 ) {
     private val _filterState = MutableStateFlow(FilterState("", "", "", emptyList()))
@@ -44,19 +41,23 @@ class CourseFilterController(
     private lateinit var spnGrade: Spinner
     private lateinit var spnSubject: Spinner
     private lateinit var tvSelected: TextView
+    private var layoutSearch: View? = null
+    private var scrollChipFilter: View? = null
+    private var layoutViewToggle: View? = null
     private var progressFilter: String = ""
     val searchTags: MutableList<TagEntity> = ArrayList()
     private var searchTextWatcher: TextWatcher? = null
     private var spinnerListener: AdapterView.OnItemSelectedListener? = null
     private var searchJob: Job? = null
-    private val dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider()
-    private val coroutineScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
 
     fun setup() {
         etSearch = rootView.findViewById(R.id.et_search)
         spnGrade = rootView.findViewById(R.id.spn_grade)
         spnSubject = rootView.findViewById(R.id.spn_subject)
         tvSelected = rootView.findViewById(R.id.tv_selected)
+        layoutSearch = rootView.findViewById(R.id.layout_search) ?: (etSearch.parent as? View)
+        scrollChipFilter = rootView.findViewById(R.id.scroll_chip_filter) ?: (rootView.findViewById<View>(R.id.chip_filter_row)?.parent as? View)
+        layoutViewToggle = rootView.findViewById(R.id.layout_view_toggle) ?: (rootView.findViewById<View>(R.id.toggle_grid)?.parent as? View)
         setupSpinners()
         setupSearchWatcher()
         setupClearTagsButton()
@@ -166,8 +167,20 @@ class CourseFilterController(
 
     fun setListVisible(visible: Boolean) {
         val visibility = if (visible) View.VISIBLE else View.GONE
-        etSearch.visibility = visibility
-        rootView.findViewById<View>(R.id.filter).visibility = visibility
+        layoutSearch?.visibility = visibility
+        if (layoutSearch == null) {
+            etSearch.visibility = visibility
+        }
+        scrollChipFilter?.visibility = visibility
+        if (scrollChipFilter == null) {
+            rootView.findViewById<View>(R.id.chip_filter_row)?.visibility = visibility
+        }
+        layoutViewToggle?.visibility = visibility
+        if (layoutViewToggle == null) {
+            rootView.findViewById<View>(R.id.toggle_grid)?.visibility = visibility
+            rootView.findViewById<View>(R.id.toggle_list)?.visibility = visibility
+        }
+        rootView.findViewById<View>(R.id.filter)?.visibility = visibility
         if (!visible) tvSelected.visibility = View.GONE
     }
 
@@ -176,10 +189,6 @@ class CourseFilterController(
             separator = ",",
             prefix = tvSelected.context.getString(R.string.selected)
         ) { it.name.orEmpty() }
-    }
-
-    fun clear() {
-        coroutineScope.cancel()
     }
 
     fun detach() {

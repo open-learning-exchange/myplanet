@@ -27,8 +27,6 @@ fun MyTeam.toVoicePostingPolicy(): VoicePostingPolicy {
     )
 }
 
-
-
 data class TeamMemberStatus(
     val isMember: Boolean,
     val isLeader: Boolean,
@@ -107,7 +105,6 @@ interface TeamsRepository : TeamsFinancesRepository, TeamsMembershipRepository {
         teamType: String, isPublic: Boolean, createdBy: String
     ): Boolean
     suspend fun getTeamType(teamId: String): String?
-    suspend fun getAssignee(userId: String): UserEntity?
     suspend fun isTeamNameExists(name: String, type: String, excludeTeamId: String? = null): Boolean
     suspend fun getTeamCreator(teamId: String): String?
     suspend fun getAvailableResourcesToAdd(teamId: String): List<MyLibrary>

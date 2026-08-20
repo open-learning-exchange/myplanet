@@ -9,18 +9,24 @@ import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ActivitiesRepositoryImpl
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.ChatRepositoryImpl
+import org.ole.planet.myplanet.repository.ChatSyncWriter
 import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.CommunityRepositoryImpl
+import org.ole.planet.myplanet.repository.CommunitySyncWriter
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepositoryImpl
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.CoursesRepositoryImpl
+import org.ole.planet.myplanet.repository.DiagnosticsRepository
+import org.ole.planet.myplanet.repository.DiagnosticsRepositoryImpl
 import org.ole.planet.myplanet.repository.DownloadRepository
 import org.ole.planet.myplanet.repository.DownloadRepositoryImpl
 import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.EventsRepositoryImpl
+import org.ole.planet.myplanet.repository.EventsSyncWriter
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.repository.FeedbackRepositoryImpl
+import org.ole.planet.myplanet.repository.FeedbackSyncWriter
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.HealthRepositoryImpl
 import org.ole.planet.myplanet.repository.LifeRepository
@@ -64,11 +70,11 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindRetryRepository(impl: RetryRepositoryImpl): RetryRepository
+    abstract fun bindActivitiesRepository(impl: ActivitiesRepositoryImpl): ActivitiesRepository
 
     @Binds
     @Singleton
-    abstract fun bindActivitiesRepository(impl: ActivitiesRepositoryImpl): ActivitiesRepository
+    abstract fun bindDiagnosticsRepository(impl: DiagnosticsRepositoryImpl): DiagnosticsRepository
 
     @Binds
     @Singleton
@@ -80,7 +86,15 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindChatSyncWriter(impl: ChatRepositoryImpl): ChatSyncWriter
+
+    @Binds
+    @Singleton
     abstract fun bindCommunityRepository(impl: CommunityRepositoryImpl): CommunityRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCommunitySyncWriter(impl: CommunityRepositoryImpl): CommunitySyncWriter
 
     @Binds
     @Singleton
@@ -96,7 +110,15 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindEventsSyncWriter(impl: EventsRepositoryImpl): EventsSyncWriter
+
+    @Binds
+    @Singleton
     abstract fun bindFeedbackRepository(impl: FeedbackRepositoryImpl): FeedbackRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindFeedbackSyncWriter(impl: FeedbackRepositoryImpl): FeedbackSyncWriter
 
     @Binds
     @Singleton
@@ -128,6 +150,10 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindRetryRepository(impl: RetryRepositoryImpl): RetryRepository
+
+    @Binds
+    @Singleton
     abstract fun bindSubmissionsRepository(impl: SubmissionsRepositoryImpl): SubmissionsRepository
 
     @Binds
@@ -136,7 +162,19 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindSyncRepository(impl: SyncRepositoryImpl): SyncRepository
+
+    @Binds
+    @Singleton
     abstract fun bindTagsRepository(impl: TagsRepositoryImpl): TagsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTeamsFinancesRepository(impl: TeamsRepositoryImpl): TeamsFinancesRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTeamsMembershipRepository(impl: TeamsRepositoryImpl): TeamsMembershipRepository
 
     @Binds
     @Singleton
@@ -145,6 +183,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindTeamsSyncRepository(impl: TeamsRepositoryImpl): TeamsSyncRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindUploadRepository(impl: UploadRepositoryImpl): UploadRepository
 
     @Binds
     @Singleton
@@ -157,20 +199,4 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindVoicesRepository(impl: VoicesRepositoryImpl): VoicesRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindUploadRepository(impl: UploadRepositoryImpl): UploadRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindSyncRepository(impl: SyncRepositoryImpl): SyncRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindTeamsFinancesRepository(impl: TeamsRepositoryImpl): TeamsFinancesRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindTeamsMembershipRepository(impl: TeamsRepositoryImpl): TeamsMembershipRepository
 }

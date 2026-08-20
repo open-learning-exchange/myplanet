@@ -9,6 +9,7 @@ import androidx.room.withTransaction
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -20,6 +21,7 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -34,6 +36,7 @@ import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.FinanceReportParams
+import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.TeamDetails
@@ -45,7 +48,6 @@ import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -56,10 +58,12 @@ import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
 class TeamsRepositoryImpl @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val activitiesRepository: ActivitiesRepository,
     private val userSessionManager: UserSessionManager,
     private val uploadManager: UploadManager,
@@ -293,7 +297,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 }.map { it }
             }
             mapToTeamDetails(teams, userId)
-        }.flowOn(dispatcherProvider.default)
+        }.flowOn(dispatcherProvider.default).distinctUntilChanged()
     }
 
     override suspend fun getShareableEnterpriseDetails(userId: String?): List<TeamDetails> {
@@ -399,8 +403,9 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun getJoinRequestsInfo(requestIds: List<String>): List<JoinRequestInfo> {
         if (requestIds.isEmpty()) return emptyList()
-        return teamDao.getAll()
-            .filter { (it._id ?: it.id) in requestIds }
+        return requestIds.chunked(500)
+            .flatMap { chunk -> teamDao.getByIds(chunk) }
+            .distinctBy { it._id ?: it.id }
             .map { entity ->
                 JoinRequestInfo(
                     id = entity._id ?: entity.id,
@@ -416,8 +421,9 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun getTeamNamesByIds(ids: List<String>): Map<String, String> {
         if (ids.isEmpty()) return emptyMap()
-        return teamDao.getAll()
-            .filter { (it._id ?: it.id) in ids }
+        return ids.chunked(500)
+            .flatMap { chunk -> teamDao.getByIds(chunk) }
+            .distinctBy { it._id ?: it.id }
             .associateBy({ it._id ?: it.id }, { it.name ?: "Unknown Team" })
     }
 
@@ -794,14 +800,24 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun exportReportsAsCsv(reports: List<MyTeam>, teamName: String): String {
         val csvBuilder = StringBuilder()
-        csvBuilder.append("$teamName Financial Report Summary\n\n")
+        csvBuilder.append(teamName).append(" Financial Report Summary\n\n")
         csvBuilder.append("Start Date, End Date, Created Date, Updated Date, Beginning Balance, Sales, Other Income, Wages, Other Expenses, Profit/Loss, Ending Balance\n")
         for (report in reports) {
             val totalIncome = report.sales + report.otherIncome
             val totalExpenses = report.wages + report.otherExpenses
             val profitLoss = totalIncome - totalExpenses
             val endingBalance = profitLoss + report.beginningBalance
-            csvBuilder.append("${org.ole.planet.myplanet.utils.TimeUtils.formatDateForCsv(report.startDate)}, ${org.ole.planet.myplanet.utils.TimeUtils.formatDateForCsv(report.endDate)}, ${org.ole.planet.myplanet.utils.TimeUtils.formatDateForCsv(report.createdDate)}, ${org.ole.planet.myplanet.utils.TimeUtils.formatDateForCsv(report.updatedDate)}, ${report.beginningBalance}, ${report.sales}, ${report.otherIncome}, ${report.wages}, ${report.otherExpenses}, $profitLoss, $endingBalance\n")
+            csvBuilder.append(TimeUtils.formatDateForCsv(report.startDate)).append(", ")
+                .append(TimeUtils.formatDateForCsv(report.endDate)).append(", ")
+                .append(TimeUtils.formatDateForCsv(report.createdDate)).append(", ")
+                .append(TimeUtils.formatDateForCsv(report.updatedDate)).append(", ")
+                .append(report.beginningBalance).append(", ")
+                .append(report.sales).append(", ")
+                .append(report.otherIncome).append(", ")
+                .append(report.wages).append(", ")
+                .append(report.otherExpenses).append(", ")
+                .append(profitLoss).append(", ")
+                .append(endingBalance).append('\n')
         }
         return csvBuilder.toString()
     }
@@ -978,11 +994,7 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     private suspend fun getResourceIds(teamId: String): List<String> {
-        return teamDao.getAll().filter {
-            it.teamId == teamId &&
-                it.resourceId?.isNotBlank() == true &&
-                (it.docType.isNullOrBlank() || it.docType == "resourceLink" || it.docType == "link")
-        }.mapNotNull { it.resourceId }
+        return teamDao.getResourceIdsByTeamId(teamId)
     }
 
     override suspend fun getTeamType(teamId: String): String? {
@@ -1025,7 +1037,7 @@ class TeamsRepositoryImpl @Inject constructor(
         val communityLeadersJson = sharedPrefManager.getCommunityLeaders()
 
         if (communityLeadersJson.isNotEmpty()) {
-            val adminUsers = userRepository.parseLeadersJson(communityLeadersJson)
+            val adminUsers = UserEntity.parseLeadersJson(communityLeadersJson)
             val teamUserIds = teamDao.getAllByTeamId(teamId).mapNotNull { it.userId }.toSet()
             val memberNames = members.mapTo(HashSet()) { it.name }
             val validAdmins = adminUsers.filter { admin ->
@@ -1093,10 +1105,6 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun getJoinedMemberCount(teamId: String): Int {
         return teamDao.countByTeamIdAndDocType(teamId, "membership")
-    }
-
-    override suspend fun getAssignee(userId: String): UserEntity? {
-        return userRepository.getUserById(userId)
     }
 
     override suspend fun getRequestedMembers(teamId: String): List<UserEntity> {
@@ -1197,7 +1205,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun serializeTeamActivities(log: TeamLog, context: Context): JsonObject {
+    override fun serializeTeamActivities(log: TeamLog): JsonObject {
         val ob = JsonObject()
         ob.addProperty("user", log.user)
         ob.addProperty("type", log.type)

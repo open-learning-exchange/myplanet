@@ -19,26 +19,24 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.load.model.LazyHeaders
 import com.bumptech.glide.signature.ObjectKey
-import com.google.gson.JsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnCourseItemSelectedListener
-import org.ole.planet.myplanet.callback.OnDiffRefreshListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ItemCourseGridBinding
 import org.ole.planet.myplanet.databinding.ItemCourseListBinding
 import org.ole.planet.myplanet.model.Course
+import org.ole.planet.myplanet.model.CourseProgressState
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.utils.CourseSubject
 import org.ole.planet.myplanet.utils.CourseSubjectClassifier
 import org.ole.planet.myplanet.utils.DiffUtils
-import org.ole.planet.myplanet.utils.JsonUtils.getInt
 import org.ole.planet.myplanet.utils.ListViewMode
 import org.ole.planet.myplanet.utils.SelectionUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class CoursesAdapter(
     private val context: Context,
-    private val isGuest: Boolean,
+    private var isGuest: Boolean,
     var isMyCourseLib: Boolean = false,
     private var viewMode: ListViewMode = ListViewMode.GRID
 ) : ListAdapter<Course, RecyclerView.ViewHolder>(
@@ -75,24 +73,18 @@ class CoursesAdapter(
             }
         }
     )
-), OnDiffRefreshListener {
-    override fun refreshWithDiff() {
-        submitList(currentList.toList())
-    }
-
-    override fun refreshWithDiff(id: String) {
+) {
+    fun notifyItemChangedById(id: String) {
         val index = currentList.indexOfFirst { it.courseId == id }
         if (index != -1) {
             notifyItemChanged(index)
-            return
         }
-        submitList(currentList.toList())
     }
 
     private val selectedItems: MutableList<Course?> = ArrayList()
     private var listener: OnCourseItemSelectedListener? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
-    private var progressMap: HashMap<String?, JsonObject>? = null
+    private var progressMap: Map<String, CourseProgressState>? = null
 
     companion object {
         const val PAYLOAD_PROGRESS = "payload_progress"
@@ -132,10 +124,18 @@ class CoursesAdapter(
     }
 
     fun setViewMode(mode: ListViewMode, onChanged: (() -> Unit)? = null) {
-        if (viewMode == mode) return
-        viewMode = mode
-        notifyDataSetChanged()
+        if (viewMode != mode) {
+            viewMode = mode
+            notifyItemRangeChanged(0, itemCount)
+        }
         onChanged?.invoke()
+    }
+
+    fun updateIdentity(isGuest: Boolean) {
+        if (this.isGuest != isGuest) {
+            this.isGuest = isGuest
+            notifyItemRangeChanged(0, itemCount)
+        }
     }
 
     fun removeCourses(courseIds: List<String>, onComplete: (() -> Unit)? = null) {
@@ -145,7 +145,7 @@ class CoursesAdapter(
         }
     }
 
-    fun setProgressMap(progressMap: HashMap<String?, JsonObject>?) {
+    fun setProgressMap(progressMap: Map<String, CourseProgressState>?) {
         val oldMap = this.progressMap
         if (oldMap == progressMap) return
         this.progressMap = progressMap
@@ -232,6 +232,18 @@ class CoursesAdapter(
             }
         } else {
             super.onBindViewHolder(holder, position, payloads)
+        }
+    }
+
+    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
+        super.onViewRecycled(holder)
+        when (holder) {
+            is GridViewHolder -> {
+                Glide.with(context).clear(holder.binding.ivCover)
+            }
+            is ListViewHolder -> {
+                Glide.with(context).clear(holder.binding.ivCover)
+            }
         }
     }
 
@@ -330,8 +342,8 @@ class CoursesAdapter(
 
     private fun progressState(course: Course): Triple<Int, Int, Boolean> {
         val progress = progressMap?.get(course.courseId)
-        val current = getInt("current", progress)
-        val max = getInt("max", progress).takeIf { it > 0 } ?: course.numberOfSteps
+        val current = progress?.current ?: 0
+        val max = progress?.max?.takeIf { it > 0 } ?: course.numberOfSteps
         val hasProgress = progress != null && course.isMyCourse
         return Triple(current, max, hasProgress)
     }
@@ -360,7 +372,7 @@ class CoursesAdapter(
                         val course = getItem(position)
                         val progress = progressMap?.get(course.courseId)
                         if (progress != null) {
-                            val current = getInt("current", progress)
+                            val current = progress.current
                             if (fromUser && i <= current + 1) {
                                 openCourse(course, seekBar.progress)
                             }

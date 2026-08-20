@@ -8,9 +8,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -25,6 +23,7 @@ import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class MembersFragment : BaseTeamFragment() {
@@ -83,25 +82,18 @@ class MembersFragment : BaseTeamFragment() {
         loadMembers()
 
         requestsViewModel.fetchMembers(teamId)
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    requestsViewModel.uiState.collect { state ->
-                        requestsAdapter?.setData(state.members, state.isLeader, state.memberCount)
-                        val hasRequests = state.members.isNotEmpty()
-                        binding.llRequestsSection.visibility = if (hasRequests) View.VISIBLE else View.GONE
-                        if (hasRequests) {
-                            binding.tvRequestsHeader.text = getString(R.string.join_requests) + " (${state.members.size})"
-                        }
-                    }
-                }
-                launch {
-                    requestsViewModel.successAction.collect {
-                        onMemberChangeListener?.onMemberChanged()
-                        loadMembers()
-                    }
-                }
+
+        collectWhenStarted(requestsViewModel.uiState) { state ->
+            requestsAdapter?.setData(state.members, state.isLeader, state.memberCount)
+            val hasRequests = state.members.isNotEmpty()
+            binding.llRequestsSection.visibility = if (hasRequests) View.VISIBLE else View.GONE
+            if (hasRequests) {
+                binding.tvRequestsHeader.text = getString(R.string.join_requests) + " (${state.members.size})"
             }
+        }
+        collectWhenStarted(requestsViewModel.successAction) {
+            onMemberChangeListener?.onMemberChanged()
+            loadMembers()
         }
     }
 
