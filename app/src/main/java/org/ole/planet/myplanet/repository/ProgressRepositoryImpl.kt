@@ -73,12 +73,7 @@ class ProgressRepositoryImpl @Inject constructor(
                 val parentId = submission.parentId
                 if (parentId != null) {
                     val parts = parentId.split("@")
-                    // If exactly 2 parts, try fast-path lookup. Multiple '@' fall back to legacy substring check.
-                    if (parts.size == 2 && courseIdsSet.contains(parts[1])) {
-                        parts[1]
-                    } else {
-                        courseIds.firstOrNull { parentId.contains(it) }
-                    }
+                    parts.lastOrNull { courseIdsSet.contains(it) }
                 } else {
                     null
                 }
