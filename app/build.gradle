@@ -253,6 +253,8 @@ dependencies {
     implementation(libs.webkit)
     implementation(libs.pdfbox.android) { exclude group: 'org.bouncycastle' }
 }
+// Versions come from Robolectric 4.16.1's DefaultSdkProvider - all nine change on a Robolectric
+// bump, and docs/TESTING.md covers adding a level. Keys are every @Config(sdk) plus targetSdk.
 def robolectricSdkJars = [
     26: '8.0.0_r4-robolectric-r1-i7',
     27: '8.1.0-robolectric-4611349-i7',
@@ -269,7 +271,8 @@ robolectricSdkJars.each { apiLevel, jarVersion ->
     configurations.create("robolectricSdk$apiLevel")
     dependencies.add("robolectricSdk$apiLevel", "org.robolectric:android-all-instrumented:$jarVersion")
 }
-// Outside app/build: the test workflow caches that, and this is ~1.2 GB Gradle already holds.
+// Outside app/build, which the workflow's actions/cache step caches: setup-gradle already keeps
+// these ~1.2 GB in Gradle's dependency cache, so staging copies rather than re-downloads.
 def robolectricSdkDir = new File(rootDir, 'build/robolectric-sdks')
 def fetchRobolectricSdks = tasks.register('fetchRobolectricSdks', Sync) {
     description = 'Stages the android-all jars Robolectric would otherwise fetch inside the test forks'
