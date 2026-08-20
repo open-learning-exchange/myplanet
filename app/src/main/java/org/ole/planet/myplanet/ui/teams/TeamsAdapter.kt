@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.teams
 
+import android.content.res.ColorStateList
 import android.graphics.PorterDuff
 import android.graphics.Typeface
 import android.view.LayoutInflater
@@ -84,7 +85,9 @@ class TeamsAdapter(
                     contentDescription = "${context.getString(R.string.edit)} ${team.name}"
                     visibility = View.VISIBLE
                     setImageResource(R.drawable.ic_edit)
-                    clearColorFilter()
+                    imageTintList = ColorStateList.valueOf(
+                        ContextCompat.getColor(context, R.color.daynight_textColor)
+                    )
                 }
             }
 
@@ -94,7 +97,9 @@ class TeamsAdapter(
                     contentDescription = "${context.getString(R.string.leave)} ${team.name}"
                     visibility = View.VISIBLE
                     setImageResource(R.drawable.logout)
-                    clearColorFilter()
+                    imageTintList = ColorStateList.valueOf(
+                        ContextCompat.getColor(context, R.color.daynight_textColor)
+                    )
                 }
             }
 
@@ -104,7 +109,9 @@ class TeamsAdapter(
                     contentDescription = "${context.getString(R.string.requested)} ${team.name}"
                     visibility = View.VISIBLE
                     setImageResource(R.drawable.baseline_hourglass_top_24)
-                    setColorFilter(ContextCompat.getColor(context, R.color.pending_request_indicator), PorterDuff.Mode.SRC_IN)
+                    imageTintList = ColorStateList.valueOf(
+                        ContextCompat.getColor(context, R.color.pending_request_indicator)
+                    )
                 }
             }
 
@@ -114,7 +121,9 @@ class TeamsAdapter(
                     contentDescription = "${context.getString(R.string.request_to_join)} ${team.name}"
                     visibility = View.VISIBLE
                     setImageResource(R.drawable.ic_join_request)
-                    clearColorFilter()
+                    imageTintList = ColorStateList.valueOf(
+                        ContextCompat.getColor(context, R.color.daynight_textColor)
+                    )
                 }
             }
 
