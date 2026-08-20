@@ -267,6 +267,9 @@ class SyncManager @Inject constructor(
         logger.startProcess("resource_sync_main")
         var processedItems = 0
 
+        val url = UrlUtils.getUrl()
+        val header = UrlUtils.header
+
         try {
             val newIds: MutableList<String?> = ArrayList()
             var totalRows = 0
@@ -275,14 +278,14 @@ class SyncManager @Inject constructor(
             logger.startProcess("resource_get_total_count")
             val countApiStartTime = SystemClock.elapsedRealtime()
             ApiClient.executeWithRetryAndWrap {
-                apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/resources/_all_docs?limit=0")
+                apiInterface.getJsonObject(header, "$url/resources/_all_docs?limit=0")
             }?.let { response ->
                 response.body()?.let { body ->
                     totalRows = getInt("total_rows", body)
                 }
             }
             val countApiDuration = SystemClock.elapsedRealtime() - countApiStartTime
-            logger.logApiCall("${UrlUtils.getUrl()}/resources/_all_docs?limit=0", countApiDuration, true, totalRows)
+            logger.logApiCall("$url/resources/_all_docs?limit=0", countApiDuration, true, totalRows)
             logger.endProcess("resource_get_total_count")
 
             val batchSizer = AdaptiveBatchProcessor(initialSize = 100)
@@ -302,7 +305,7 @@ class SyncManager @Inject constructor(
                     val batchApiStartTime = SystemClock.elapsedRealtime()
                     var response: JsonObject? = null
                     ApiClient.executeWithRetryAndWrap {
-                        apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip")
+                        apiInterface.getJsonObject(header, "$url/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip")
                     }?.let {
                         response = it.body()
                     }
@@ -310,14 +313,14 @@ class SyncManager @Inject constructor(
 
                     if (response == null) {
                         batchSizer.recordFailure()
-                        logger.logApiCall("${UrlUtils.getUrl()}/resources/_all_docs (batch $batchCount)", batchApiDuration, false, 0)
+                        logger.logApiCall("$url/resources/_all_docs (batch $batchCount)", batchApiDuration, false, 0)
                         skip += batchSize
                         continue
                     }
                     batchSizer.recordSuccess(batchApiDuration)
 
                     val rows = getJsonArray("rows", response)
-                    logger.logApiCall("${UrlUtils.getUrl()}/resources/_all_docs (batch $batchCount)", batchApiDuration, true, rows.size())
+                    logger.logApiCall("$url/resources/_all_docs (batch $batchCount)", batchApiDuration, true, rows.size())
 
                     if (rows.size() == 0) {
                         break
@@ -433,8 +436,11 @@ class SyncManager @Inject constructor(
             return cachedShelves
         }
 
+        val url = UrlUtils.getUrl()
+        val header = UrlUtils.header
+
         val allShelves = ApiClient.executeWithRetryAndWrap {
-            apiInterface.getDocuments(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/_all_docs")
+            apiInterface.getDocuments(header, "$url/shelf/_all_docs")
         }?.body()?.rows ?: return emptyList()
 
         coroutineScope {
