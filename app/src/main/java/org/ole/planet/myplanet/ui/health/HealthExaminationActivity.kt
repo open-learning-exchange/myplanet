@@ -19,6 +19,7 @@ import fisk.chipcloud.ChipCloudConfig
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityHealthExaminationBinding
@@ -95,18 +96,17 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
 
         viewModel.loadData(userId, intent.getStringExtra("id"))
 
-        collectWhenStarted(viewModel.state) { state ->
-            if (!state.isLoading) {
-                user = state.user
-                pojo = state.pojo
-                health = state.health
-                examination = state.examination
-                conditionsMap = state.conditionsMap
+        lifecycleScope.launch {
+            val state = viewModel.state.first { !it.isLoading }
+            user = state.user
+            pojo = state.pojo
+            health = state.health
+            examination = state.examination
+            conditionsMap = state.conditionsMap
 
-                initExamination()
-                validateFields()
-                btnSave.isEnabled = true
-            }
+            initExamination()
+            validateFields()
+            btnSave.isEnabled = true
         }
 
         collectWhenStarted(viewModel.isSaving) { isSaving ->
