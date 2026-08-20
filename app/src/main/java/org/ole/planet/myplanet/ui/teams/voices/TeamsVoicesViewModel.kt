@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.MyLibrary
@@ -62,7 +64,7 @@ class TeamsVoicesViewModel @Inject constructor(
     fun observeDiscussions(teamId: String) {
         observeJob?.cancel()
         observeJob = viewModelScope.launch {
-            voicesRepository.getDiscussionsByTeamIdFlow(teamId).collect {
+            voicesRepository.getDiscussionsByTeamIdFlow(teamId).distinctUntilChanged { old, new -> old.map { it.id to it._rev } == new.map { it.id to it._rev } }.collectLatest {
                 _discussions.value = it
             }
         }
