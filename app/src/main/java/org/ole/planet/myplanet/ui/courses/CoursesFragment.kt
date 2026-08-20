@@ -540,7 +540,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         if (!::filterController.isInitialized || !filterController.filterApplied()) return
         val state = filterController.currentState()
         val tags = filterController.searchTags.toList()
-        viewLifecycleOwner.lifecycleScope.launch {
+        lifecycleScope.launch {
             coursesRepository.saveSearchActivity(
                 state.searchText,
                 "${model?.name}",

@@ -85,7 +85,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         val userId = user?.id
         val planetCode = user?.planetCode
         val parentCode = user?.parentCode
-        saveInProgress = viewLifecycleOwner.lifecycleScope.launch {
+        saveInProgress = lifecycleScope.launch {
             progressRepository.saveCourseProgress(
                 userId,
                 planetCode,
@@ -264,7 +264,8 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     override fun setMenuVisibility(visible: Boolean) {
         super.setMenuVisibility(visible)
         if (!isAdded || !::step.isInitialized) return
-        viewLifecycleOwner.lifecycleScope.launch {
+        val owner = view?.let { viewLifecycleOwner } ?: return
+        owner.lifecycleScope.launch {
             try {
                 if (visible) {
                     val userHasCourse = coursesRepository.isMyCourse(user?.id, step.courseId)
