@@ -10,10 +10,13 @@ import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.ceil
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
@@ -27,12 +30,9 @@ import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.TagEntity
-import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
@@ -326,7 +326,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         return myLibraryDao.getRecentForUserPatternFlow(userIdPattern(userId))
     }
 
-    override fun getPendingDownloads(userId: String): Flow<List<MyLibrary>> {
+    override fun getPendingDownloads(userId: String): Flow<List<String>> {
         return myLibraryDao.getPendingDownloadsForUserPatternFlow(userIdPattern(userId))
     }
 
@@ -422,7 +422,7 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
             if (libraryItems.isNotEmpty()) {
                 myLibraryDao.upsertAll(libraryItems)
             }
-            removedLogDao.deleteByTypeUserAndDocs("resources", userId, resourceIds)
+            removedLogDao.deleteByTypeUserAndDocsChunked("resources", userId, resourceIds)
         }
     }
 
@@ -498,15 +498,17 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
         val resource = getLibraryItemByResourceId(resourceId) ?: return ResourceUrlsResponse.ResourceNotFound
         if (resource.attachments.isNullOrEmpty()) return ResourceUrlsResponse.NoAttachments
 
-        val urls = resource.attachments?.mapNotNull { attachment ->
-            attachment.name?.let { name ->
-                val baseDir = File(context.getExternalFilesDir(null), "ole/$resourceId")
-                val lastSlashIndex = name.lastIndexOf('/')
-                if (lastSlashIndex > 0) {
-                    val dirPath = name.substring(0, lastSlashIndex)
-                    File(baseDir, dirPath).mkdirs()
+        val urls = withContext(dispatcherProvider.io) {
+            resource.attachments?.mapNotNull { attachment ->
+                attachment.name?.let { name ->
+                    val baseDir = File(context.getExternalFilesDir(null), "ole/$resourceId")
+                    val lastSlashIndex = name.lastIndexOf('/')
+                    if (lastSlashIndex > 0) {
+                        val dirPath = name.substring(0, lastSlashIndex)
+                        File(baseDir, dirPath).mkdirs()
+                    }
+                    UrlUtils.getUrl(resourceId, name)
                 }
-                UrlUtils.getUrl(resourceId, name)
             }
         }
 
@@ -537,6 +539,7 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
             }
         }
 
+        val librariesToUpsert = mutableListOf<MyLibrary>()
         documents.forEach { doc ->
             try {
                 val resourceId = JsonUtils.getString("_id", doc)
@@ -551,12 +554,15 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
                 )
                 if (library != null) {
                     existingItems[resourceId] = library
-                    myLibraryDao.upsert(library)
+                    librariesToUpsert.add(library)
                     processedCount++
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
+        if (librariesToUpsert.isNotEmpty()) {
+            myLibraryDao.upsertAll(librariesToUpsert)
         }
         return processedCount
     }
@@ -576,6 +582,7 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
             }
         }
 
+        val librariesToUpsert = mutableListOf<MyLibrary>()
         validDocs.forEach { doc ->
             try {
                 val _id = JsonUtils.getString("_id", doc)
@@ -589,12 +596,15 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
                 )
                 if (library != null) {
                     existingItems[_id] = library
-                    myLibraryDao.upsert(library)
+                    librariesToUpsert.add(library)
                     savedIds.add(_id)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
+        if (librariesToUpsert.isNotEmpty()) {
+            myLibraryDao.upsertAll(librariesToUpsert)
         }
         return savedIds
     }

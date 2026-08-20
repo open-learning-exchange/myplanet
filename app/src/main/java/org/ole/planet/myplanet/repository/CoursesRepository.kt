@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import java.util.HashMap
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.CourseDetailModel
 import org.ole.planet.myplanet.model.CourseProgressData

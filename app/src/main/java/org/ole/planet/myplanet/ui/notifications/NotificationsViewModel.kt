@@ -36,6 +36,7 @@ class NotificationsViewModel @Inject constructor(
 
     private val _selectedIds = MutableStateFlow<Set<String>>(emptySet())
     private val _collapsedGroups = MutableStateFlow<Set<String>>(emptySet())
+    private val _expandedGroups = MutableStateFlow<Set<String>>(emptySet())
 
     val isSelectionMode: StateFlow<Boolean> = _selectedIds
         .map { it.isNotEmpty() }
@@ -46,9 +47,9 @@ class NotificationsViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     val groupedItems: StateFlow<List<NotificationListItem>> = combine(
-        _notifications, _selectedIds, _collapsedGroups
-    ) { notifs, selected, collapsed ->
-        buildGroupedList(notifs, selected, collapsed)
+        _notifications, _selectedIds, _collapsedGroups, _expandedGroups
+    ) { notifs, selected, collapsed, expanded ->
+        buildGroupedList(notifs, selected, collapsed, expanded)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private var currentFilter: String = "all"
@@ -104,8 +105,20 @@ class NotificationsViewModel @Inject constructor(
     }
 
     fun toggleGroupExpansion(type: String) {
-        _collapsedGroups.update { current ->
-            if (type in current) current - type else current + type
+        val isCurrentlyExpanded = when {
+            type in _expandedGroups.value -> true
+            type in _collapsedGroups.value -> false
+            else -> isGroupDefaultExpanded(type, notifications.value)  // If at least one notification is not read in the group, expand
+        }
+
+        if (isCurrentlyExpanded) {
+            // It's expanded, collapse it
+            _expandedGroups.update { it - type }
+            _collapsedGroups.update { it + type }
+        } else {
+            // It's collapsed, expand it
+            _collapsedGroups.update { it - type }
+            _expandedGroups.update { it + type }
         }
     }
 
@@ -180,6 +193,8 @@ class NotificationsViewModel @Inject constructor(
                     }
                 }
                 _unreadCount.value = 0
+                _expandedGroups.value = emptySet()
+                _collapsedGroups.value = emptySet()
             }
         }
     }
@@ -187,15 +202,19 @@ class NotificationsViewModel @Inject constructor(
     private fun List<Notification>.markAsRead(id: String): List<Notification> {
         return map { if (it.id == id && !it.isRead) it.copy(isRead = true) else it }
     }
-
     private fun List<Notification>.markAsRead(ids: Set<String>): List<Notification> {
         return map { if (it.id in ids && !it.isRead) it.copy(isRead = true) else it }
+    }
+
+    private fun isGroupDefaultExpanded(type: String, notifications: List<Notification>): Boolean {
+        return notifications.any { it.type == type && !it.isRead }
     }
 
     private fun buildGroupedList(
         notifications: List<Notification>,
         selectedIds: Set<String>,
-        collapsedGroups: Set<String>
+        collapsedGroups: Set<String>,
+        expandedGroups: Set<String>
     ): List<NotificationListItem> {
         if (notifications.isEmpty()) return emptyList()
         val typeOrder = listOf("join_request", "team_join", "task", "chat", "voice_reply", "resource", "storage")
@@ -211,7 +230,11 @@ class NotificationsViewModel @Inject constructor(
             for (type in orderedTypes) {
                 val items = grouped[type] ?: continue
                 val unreadCount = items.count { !it.isRead }
-                val isExpanded = type !in collapsedGroups
+                val isExpanded = when {
+                    type in expandedGroups -> true
+                    type in collapsedGroups -> false
+                    else -> unreadCount > 0
+                }
                 add(NotificationListItem.Header(type, typeLabelFor(type), unreadCount, isExpanded))
                 if (isExpanded) {
                     items.forEach { notification ->
@@ -222,9 +245,24 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
-    private fun resolveType(type: String, message: String): String {
+    private fun resolveType(type: String, message: String, subType: String? = null): String {
         if (type.lowercase() in KNOWN_TYPES) return type.lowercase()
         val lower = message.lowercase()
+        // Raw server type "team" covers every team-related event (message/request/added/rejected/removed) in
+        // whatever language the server rendered the message in, so classify structurally first and only fall
+        // back to English message-sniffing to pick a more specific sub-bucket when it's recognizable.
+        if (type == "team") {
+            if (subType != null) return subType
+            return when {
+                lower.contains("requested to join") || lower.contains("wants to join") ||
+                    lower.contains("solicitado unirse") -> "join_request"
+                lower.contains("posted a message on") || lower.contains("posted a new voice") ||
+                    lower.contains("new voice in") || lower.contains("posted in") -> "chat"
+                else -> "team_join"
+            }
+        }
+        if (type == "newTask") return "task"
+        if (type == "newResource") return "resource"
         return when {
             lower.contains("requested to join") || lower.contains("wants to join") -> "join_request"
             lower.contains("added you to") || lower.contains("you've been added") || lower.contains("you have been added") -> "team_join"
@@ -288,7 +326,7 @@ class NotificationsViewModel @Inject constructor(
         taskTeamNames: Map<String, String> = emptyMap(),
         joinRequestDetails: Map<String, Pair<String, String>> = emptyMap()
     ): Notification {
-        val resolvedType = resolveType(notification.type, notification.message)
+        val resolvedType = resolveType(notification.type, notification.message, notification.subType)
         val formattedText = when (resolvedType) {
             "task" -> {
                 val parsedDate = parseTaskDate(notification.message)

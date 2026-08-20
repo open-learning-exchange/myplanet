@@ -4,7 +4,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.HashMap
 import kotlinx.coroutines.flow.Flow
-import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 
@@ -26,7 +25,6 @@ data class NewsUpdateData(
 interface VoicesRepository {
     suspend fun getNewsForUpload(): List<NewsUploadData>
     suspend fun markNewsUploaded(updates: List<NewsUpdateData>)
-    suspend fun getLibraryResource(resourceId: String): MyLibrary?
     suspend fun getCommunityNews(userIdentifier: String): Flow<List<News>>
     suspend fun getNewsWithReplies(newsId: String): Pair<News?, List<News>>
     suspend fun getCommunityVisibleNews(userIdentifier: String): List<News>
@@ -38,7 +36,6 @@ interface VoicesRepository {
     suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit>
     suspend fun updateTeamNotification(teamId: String, count: Int)
     suspend fun getFilteredNews(teamId: String): List<News>
-    suspend fun getUserById(userId: String): UserEntity?
     suspend fun getReplyCount(newsId: String?): Int
     suspend fun deleteNews(newsId: String)
     suspend fun deletePost(newsId: String, teamName: String)
@@ -53,4 +50,6 @@ interface VoicesRepository {
     suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String>
     suspend fun countTeamChats(teamId: String): Long
     suspend fun getTeamChatViewableIds(teamIds: List<String>): List<String>
+    suspend fun getPendingNewsLogUploads(): List<org.ole.planet.myplanet.model.NewsLog>
+    suspend fun markNewsLogUploaded(localId: String, remoteId: String, rev: String): Boolean
 }

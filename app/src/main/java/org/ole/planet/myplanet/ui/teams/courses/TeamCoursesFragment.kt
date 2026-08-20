@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.utils.Utilities
 
 class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
+    override val shouldShowDownloadDialog = false
     private var _binding: FragmentTeamCourseBinding? = null
     private val binding get() = _binding!!
     private var adapterTeamCourse: TeamCoursesAdapter? = null
@@ -179,4 +180,5 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
         _binding = null
         super.onDestroyView()
     }
+
 }

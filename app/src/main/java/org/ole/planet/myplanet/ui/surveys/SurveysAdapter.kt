@@ -7,7 +7,6 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnDiffRefreshListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnSurveyAdoptListener
 import org.ole.planet.myplanet.databinding.RowSurveyBinding
@@ -27,12 +26,13 @@ class SurveysAdapter(
     private val bindingDataMap: Map<String, SurveyFormState>
 ) : ListAdapter<StepExam, SurveysAdapter.SurveysViewHolder>(DiffUtils.itemCallback(
     { oldItem, newItem -> oldItem.id == newItem.id },
-    { oldItem, newItem -> oldItem == newItem }
-)), OnDiffRefreshListener {
-    override fun refreshWithDiff() {
-        submitList(currentList.toList())
+    { oldItem, newItem ->
+        oldItem.name == newItem.name &&
+                oldItem.description == newItem.description &&
+                oldItem.isTeamShareAllowed == newItem.isTeamShareAllowed &&
+                oldItem.isFromNation == newItem.isFromNation
     }
-
+)) {
     private var listener: OnHomeItemClickListener? = null
 
     init {

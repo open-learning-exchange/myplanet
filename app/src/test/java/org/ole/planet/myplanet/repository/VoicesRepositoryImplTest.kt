@@ -41,17 +41,19 @@ class VoicesRepositoryImplTest {
     private val teamNotificationDao: TeamNotificationDao = mockk(relaxed = true)
     private val newsDao: NewsDao = mockk(relaxed = true)
     private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
+    private val newsLogDao: org.ole.planet.myplanet.data.room.dao.NewsLogDao = mockk(relaxed = true)
 
     private fun newRepository(gsonInstance: Gson): VoicesRepositoryImpl {
         return spyk(
             VoicesRepositoryImpl(
                 dispatcherProvider,
                 gsonInstance,
+                Gson(),
                 sharedPrefManager,
-                dagger.Lazy { userRepository },
                 teamNotificationDao,
                 newsDao,
-                myLibraryDao
+                myLibraryDao,
+                newsLogDao
             ),
             recordPrivateCalls = true
         )
@@ -125,11 +127,11 @@ class VoicesRepositoryImplTest {
         }
         val news2 = News().apply {
             viewableBy = "other"
-            viewIn = "[{\"_id\":\"user1\"}]"
+            viewIn = "[{\"_id\":\"user1\",\"section\":\"community\"}]"
         }
         val news3 = News().apply {
             viewableBy = "other"
-            viewIn = "[{\"_id\":\"user2\"}]"
+            viewIn = "[{\"_id\":\"user2\",\"section\":\"community\"}]"
         }
         coEvery { newsDao.getTopLevelMessages() } returns listOf(news1, news2, news3)
 
@@ -137,7 +139,7 @@ class VoicesRepositoryImplTest {
 
         assertEquals(2, result.size)
         assertEquals("community", result[0].viewableBy)
-        assertEquals("[{\"_id\":\"user1\"}]", result[1].viewIn)
+        assertEquals("[{\"_id\":\"user1\",\"section\":\"community\"}]", result[1].viewIn)
     }
 
     @Test
@@ -183,12 +185,7 @@ class VoicesRepositoryImplTest {
 
     @Test
     fun `deleteNews recursively deletes replies`() = testScope.runTest {
-        val reply1 = News().apply { id = "reply1_id" }
-        val reply2 = News().apply { id = "reply2_id" }
-
-        coEvery { newsDao.getDirectReplies("newsId") } returns listOf(reply1)
-        coEvery { newsDao.getDirectReplies("reply1_id") } returns listOf(reply2)
-        coEvery { newsDao.getDirectReplies("reply2_id") } returns emptyList()
+        coEvery { newsDao.getNewsAndRepliesIds("newsId") } returns listOf("newsId", "reply1_id", "reply2_id")
 
         repository.deleteNews("newsId")
 
@@ -229,14 +226,75 @@ class VoicesRepositoryImplTest {
     }
 
     @Test
-    fun `getUserById delegates to userRepository`() = testScope.runTest {
-        val testUserId = "test_user_123"
-        val mockUser = mockk<UserEntity>()
+    fun `postReply sets replyTo to the parent's local id, not its server _id`() = testScope.runTest {
+        val repoWithRealGson = newRepository(Gson())
+        val parentNews = News().apply {
+            id = "local-uuid-1234"
+            _id = "server-doc-id-5678"
+        }
+        val currentUser = UserEntity()
 
-        coEvery { userRepository.getUserById(testUserId) } returns mockUser
+        repoWithRealGson.postReply("Hello reply", parentNews, currentUser, null)
 
-        val result = repository.getUserById(testUserId)
+        val slot = slot<News>()
+        coVerify(exactly = 1) { newsDao.upsert(capture(slot)) }
+        assertEquals("local-uuid-1234", slot.captured.replyTo)
+    }
 
-        assertEquals(mockUser, result)
+    @Test
+    fun `deletePost from community unshares shared enterprise post without deleting row`() = testScope.runTest {
+        val repoWithRealGson = newRepository(Gson())
+        val sharedNews = News().apply {
+            id = "shared_news_123"
+            sharedBy = "user_1"
+            viewIn = "[{\"_id\":\"team_123\",\"section\":\"teams\",\"name\":\"Enterprise A\"},{\"section\":\"community\",\"_id\":\"planet@parent\",\"sharedDate\":123456789}]"
+        }
+        coEvery { newsDao.getById("shared_news_123") } returns sharedNews
+
+        repoWithRealGson.deletePost("shared_news_123", "")
+
+        val slot = slot<News>()
+        coVerify(exactly = 1) { newsDao.upsert(capture(slot)) }
+        coVerify(exactly = 0) { newsDao.deleteByIds(any()) }
+
+        val updatedNews = slot.captured
+        assertEquals("", updatedNews.sharedBy)
+        assertEquals("[{\"_id\":\"team_123\",\"section\":\"teams\",\"name\":\"Enterprise A\"}]", updatedNews.viewIn)
+    }
+
+    @Test
+    fun `deletePost from team deletes post and replies completely`() = testScope.runTest {
+        val repoWithRealGson = newRepository(Gson())
+        val teamNews = News().apply {
+            id = "team_news_123"
+            viewIn = "[{\"_id\":\"team_123\",\"section\":\"teams\",\"name\":\"Enterprise A\"},{\"section\":\"community\",\"_id\":\"planet@parent\",\"sharedDate\":123456789}]"
+        }
+        coEvery { newsDao.getById("team_news_123") } returns teamNews
+        coEvery { newsDao.getNewsAndRepliesIds("team_news_123") } returns listOf("team_news_123")
+
+        repoWithRealGson.deletePost("team_news_123", "Enterprise A")
+
+        val idsSlot = slot<List<String>>()
+        coVerify(exactly = 1) { newsDao.deleteByIds(capture(idsSlot)) }
+        assertEquals(listOf("team_news_123"), idsSlot.captured)
+        coVerify(exactly = 0) { newsDao.upsert(any()) }
+    }
+
+    @Test
+    fun `deletePost from community deletes direct community post`() = testScope.runTest {
+        val repoWithRealGson = newRepository(Gson())
+        val communityNews = News().apply {
+            id = "comm_news_123"
+            viewIn = "[{\"_id\":\"planet@parent\",\"section\":\"community\",\"name\":\"\"}]"
+        }
+        coEvery { newsDao.getById("comm_news_123") } returns communityNews
+        coEvery { newsDao.getNewsAndRepliesIds("comm_news_123") } returns listOf("comm_news_123")
+
+        repoWithRealGson.deletePost("comm_news_123", "")
+
+        val idsSlot = slot<List<String>>()
+        coVerify(exactly = 1) { newsDao.deleteByIds(capture(idsSlot)) }
+        assertEquals(listOf("comm_news_123"), idsSlot.captured)
+        coVerify(exactly = 0) { newsDao.upsert(any()) }
     }
 }

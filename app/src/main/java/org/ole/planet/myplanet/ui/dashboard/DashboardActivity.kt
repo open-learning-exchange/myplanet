@@ -126,6 +126,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var systemNotificationReceiver: BroadcastReceiver? = null
     private var onGlobalLayoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
     private var exitSnackbar: Snackbar? = null
+    private var lastSyncStatus: SyncManager.SyncStatus? = null
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleUtils.onAttach(base))
@@ -242,6 +243,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
 
         collectWhenStarted(syncManager.syncStatus) { status ->
+            if (status == lastSyncStatus) return@collectWhenStarted
+            lastSyncStatus = status
             if (status is SyncManager.SyncStatus.Success) {
                 updateLastSyncStatus()
             }
@@ -266,6 +269,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         binding.root.viewTreeObserver.addOnGlobalLayoutListener(onGlobalLayoutListener)
         binding.appBarBell.ivSetting.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
+        }
+        binding.dashboardSyncNow.setOnClickListener {
+            logSyncInSharedPrefs()
         }
     }
 
@@ -578,13 +584,17 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun updateLastSyncStatus() {
+        val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        binding.dashboardSyncBanner.visibility = if (isLandscape) View.GONE else View.VISIBLE
+        if (isLandscape) return
+
         val lastSyncMillis = prefData.getLastSync()
-        val statusText = if (lastSyncMillis <= 0L) {
-            getString(R.string.last_synced_colon) + getString(R.string.last_synced_never)
+        val timeText = if (lastSyncMillis <= 0L) {
+            getString(R.string.last_synced_never)
         } else {
-            getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSyncMillis, timeProvider)
+            TimeUtils.getRelativeTime(lastSyncMillis, timeProvider)
         }
-        binding.dashboardLastSyncStatus.text = statusText
+        binding.dashboardLastSyncStatus.text = getString(R.string.dashboard_sync_status, timeText)
     }
 
     private fun onRealmDataChange() {

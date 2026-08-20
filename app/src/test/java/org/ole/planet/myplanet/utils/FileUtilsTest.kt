@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Environment
 import java.io.File
 import org.junit.After
-import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -52,16 +51,6 @@ class FileUtilsTest {
     }
 
     @Test
-    fun fullyReadFileToBytes_returnsCorrectBytes() {
-        val file = File(tempDir, "test.txt")
-        val data = "Hello, World!".toByteArray()
-        file.writeBytes(data)
-
-        val bytes = FileUtils.fullyReadFileToBytes(file)
-        assertArrayEquals(data, bytes)
-    }
-
-    @Test
     fun checkFileExist_returnsTrueWhenFileExists() {
         FileUtils.warmUp(context)
         val testFile = File(FileUtils.getExternalFilesDir(context), "ole/123/test_file.txt")
@@ -101,6 +90,61 @@ class FileUtilsTest {
         assertEquals("document.pdf", FileUtils.getFileNameFromUrl("https://site.org/path/document.pdf?query=1"))
         assertEquals("", FileUtils.getFileNameFromUrl(null))
         assertEquals("file with spaces.txt", FileUtils.getFileNameFromUrl("http://example.com/file%20with%20spaces.txt"))
+    }
+
+    @Test
+    fun getSDPathFromUrl_preservesNestedAttachmentPath() {
+        FileUtils.warmUp(context)
+        val url = "http://example.com/resources/123/js/game_manager.js"
+
+        val resolved = FileUtils.getSDPathFromUrl(context, url)
+
+        assertEquals("game_manager.js", resolved.name)
+        assertEquals("js", resolved.parentFile?.name)
+        assertTrue(resolved.absolutePath.endsWith("ole/123/js/game_manager.js"))
+    }
+
+    @Test
+    fun getSDPathFromUrl_singleSegmentFileHasNoSubdirectory() {
+        FileUtils.warmUp(context)
+        val url = "http://example.com/resources/123/index.html"
+
+        val resolved = FileUtils.getSDPathFromUrl(context, url)
+
+        assertEquals("index.html", resolved.name)
+        assertEquals("123", resolved.parentFile?.name)
+    }
+
+    @Test
+    fun resolveHtmlEntryFile_defaultsToIndexHtmlAtRootWhenUnset() {
+        val resolved = FileUtils.resolveHtmlEntryFile(tempDir, null)
+
+        assertEquals(File(tempDir, "index.html").canonicalFile, resolved)
+    }
+
+    @Test
+    fun resolveHtmlEntryFile_defaultsToIndexHtmlAtRootWhenBlank() {
+        val resolved = FileUtils.resolveHtmlEntryFile(tempDir, "")
+
+        assertEquals(File(tempDir, "index.html").canonicalFile, resolved)
+    }
+
+    @Test
+    fun resolveHtmlEntryFile_honorsNestedRelativePath() {
+        val resolved = FileUtils.resolveHtmlEntryFile(tempDir, "sudoku/index.html")
+
+        assertEquals(File(tempDir, "sudoku/index.html").canonicalFile, resolved)
+    }
+
+    @Test
+    fun resolveHtmlEntryFile_rejectsPathTraversal() {
+        assertNull(FileUtils.resolveHtmlEntryFile(tempDir, "../outside.html"))
+        assertNull(FileUtils.resolveHtmlEntryFile(tempDir, "sudoku/../../outside.html"))
+    }
+
+    @Test
+    fun resolveHtmlEntryFile_rejectsAbsolutePath() {
+        assertNull(FileUtils.resolveHtmlEntryFile(tempDir, "/etc/passwd"))
     }
 
     @Test

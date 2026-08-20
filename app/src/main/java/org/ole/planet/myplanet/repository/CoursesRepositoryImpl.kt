@@ -4,12 +4,12 @@ import android.util.Base64
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Calendar
-import java.util.HashMap
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.CourseDao
@@ -102,7 +102,11 @@ class CoursesRepositoryImpl @Inject constructor(
     override suspend fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>> {
         return courseDao.observeAll().map { courses ->
             mapCourses(courses).filter { it.userId?.contains(userId) == true }
-        }
+        }.distinctUntilChanged { old, new ->
+            old.size == new.size && old.zip(new).all { (a, b) ->
+                a.id == b.id && a.courseRev == b.courseRev && a.userId == b.userId
+            }
+        }.flowOn(dispatcherProvider.default)
     }
 
     override suspend fun getCourseById(courseId: String): MyCourse? {
@@ -114,46 +118,44 @@ class CoursesRepositoryImpl @Inject constructor(
         return getCourseByCourseIdFlow(courseId).map { course ->
             if (course == null) return@map null
 
-            withContext(dispatcherProvider.io) {
-                val user = userRepository.get().getUserModel()
-                val examCount = getCourseExamCount(courseId)
-                val resources = getCourseOnlineResources(courseId)
-                val downloadedResources = getCourseOfflineResources(courseId)
-                val rawSteps = getCourseSteps(courseId)
+            val user = userRepository.get().getUserModel()
+            val examCount = getCourseExamCount(courseId)
+            val resources = getCourseOnlineResources(courseId)
+            val downloadedResources = getCourseOfflineResources(courseId)
+            val rawSteps = getCourseSteps(courseId)
 
-                val steps = rawSteps.map { step ->
-                    val count = step.id?.let { submissionsRepository.getExamQuestionCount(it) } ?: 0
-                    StepItem(
-                        id = step.id,
-                        stepTitle = step.stepTitle,
-                        questionCount = count
-                    )
-                }
-
-                val userId = user?.id
-                val ratingSummary = if (userId != null) {
-                    ratingsRepository.getRatingSummary("course", courseId, userId)
-                } else {
-                    null
-                }
-
-                CourseDetailModel(
-                    course = course,
-                    user = user,
-                    ratingSummary = ratingSummary,
-                    examCount = examCount,
-                    resources = resources,
-                    downloadedResources = downloadedResources,
-                    steps = steps
+            val steps = rawSteps.map { step ->
+                val count = step.id.let { submissionsRepository.getExamQuestionCount(it) }
+                StepItem(
+                    id = step.id,
+                    stepTitle = step.stepTitle,
+                    questionCount = count
                 )
             }
-        }
+
+            val userId = user?.id
+            val ratingSummary = if (userId != null) {
+                ratingsRepository.getRatingSummary("course", courseId, userId)
+            } else {
+                null
+            }
+
+            CourseDetailModel(
+                course = course,
+                user = user,
+                ratingSummary = ratingSummary,
+                examCount = examCount,
+                resources = resources,
+                downloadedResources = downloadedResources,
+                steps = steps
+            )
+        }.flowOn(dispatcherProvider.io)
     }
 
     override fun getCourseByCourseIdFlow(courseId: String): Flow<MyCourse?> {
         return courseDao.observeByCourseId(courseId).map { course ->
             mapCourse(course)
-        }
+        }.flowOn(dispatcherProvider.default)
     }
 
     override suspend fun getCoursesByIds(courseIds: List<String>): List<MyCourse> {
@@ -217,9 +219,7 @@ class CoursesRepositoryImpl @Inject constructor(
                     course.id.takeIf { it.isNotBlank() }?.let { idsToDelete.add(it) }
                     course._id?.takeIf { it.isNotBlank() }?.let { idsToDelete.add(it) }
                 }
-                idsToDelete.toList().chunked(1000).forEach { chunk ->
-                    removedLogDao.deleteByTypeUserAndDocs("courses", userId, chunk)
-                }
+                removedLogDao.deleteByTypeUserAndDocsChunked("courses", userId, idsToDelete.toList())
             }
 
             realtimeSyncManager.notifyTableUpdated(TableDataUpdate("courses", 0, courses.size))
@@ -235,12 +235,7 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     internal fun matchesAllParts(title: String, parts: List<String>): Boolean {
-        for (part in parts) {
-            if (!title.contains(part)) {
-                return false
-            }
-        }
-        return true
+        return parts.all { title.contains(it) }
     }
 
     override suspend fun search(query: String): List<MyCourse> {
@@ -342,9 +337,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 course.id.takeIf { it.isNotBlank() }?.let { idsToDelete.add(it) }
                 course._id?.takeIf { it.isNotBlank() }?.let { idsToDelete.add(it) }
             }
-            idsToDelete.toList().chunked(1000).forEach { chunk ->
-                removedLogDao.deleteByTypeUserAndDocs("courses", userId, chunk)
-            }
+            removedLogDao.deleteByTypeUserAndDocsChunked("courses", userId, idsToDelete.toList())
             realtimeSyncManager.notifyTableUpdated(TableDataUpdate("courses", 0, 1))
         }
     }
@@ -421,13 +414,12 @@ class CoursesRepositoryImpl @Inject constructor(
         val stepsList = getCourseSteps(courseId)
         val current = progressRepository.getCurrentProgress(stepsList, userId, courseId)
         val courseTitle = getCourseById(courseId)?.courseTitle
-        val stepIds = stepsList.mapNotNull { it.id }
-        val allExams = if (stepIds.isEmpty()) emptyList() else examDao.getByStepIds(stepIds).map { it }
+        val stepIds = stepsList.map { it.id }
+        val allExams = if (stepIds.isEmpty()) emptyList() else examDao.getByStepIds(stepIds)
         val max = stepsList.size
-        val title = courseTitle
         val examsByStepId = allExams.groupBy { it.stepId }
 
-        val examIds = allExams.mapNotNull { it.id }
+        val examIds = allExams.map { it.id }
         val questionsByExamId = if (examIds.isEmpty()) {
             emptyMap()
         } else {
@@ -446,7 +438,7 @@ class CoursesRepositoryImpl @Inject constructor(
             getParentBaseId(sub.parentId).orEmpty()
         }.filterKeys { it.isNotEmpty() }
 
-        val submissionIds = relevantSubmissions.mapNotNull { it.id }
+        val submissionIds = relevantSubmissions.map { it.id }
         val answersBySubmissionId = if (submissionIds.isEmpty()) {
             emptyMap()
         } else {
@@ -464,7 +456,7 @@ class CoursesRepositoryImpl @Inject constructor(
             getExamObject(exams, ob, questionsByExamId, submissionsByExamId, answersBySubmissionId)
             array.add(ob)
         }
-        return CourseProgressData(title, current, max, array)
+        return CourseProgressData(courseTitle, current, max, array)
     }
 
     private fun getParentBaseId(parentId: String?): String? {
@@ -479,10 +471,10 @@ class CoursesRepositoryImpl @Inject constructor(
         answersBySubmissionId: Map<String, List<Answer>>
     ) {
         exams.forEach { exam ->
-            exam.id?.let { examId ->
+            exam.id.let { examId ->
                 val submissionsForExam = submissionsByExamId[examId] ?: emptyList()
                 submissionsForExam.forEach { submission ->
-                    val answers = submission.id?.let { answersBySubmissionId[it] } ?: emptyList()
+                    val answers = submission.id.let { answersBySubmissionId[it] } ?: emptyList()
                     val questions = questionsByExamId[examId] ?: emptyList()
                     val questionCount = questions.size
                     if (questionCount == 0) {
@@ -568,7 +560,7 @@ class CoursesRepositoryImpl @Inject constructor(
     override suspend fun deleteCourseProgress(courseId: String?) {
         val examIds = courseId?.let { examDao.getByCourseId(it).map { exam -> exam.id } }.orEmpty()
         if (examIds.isNotEmpty()) {
-            val submissions = submissionDao.getUnuploadedNonSurveyByParentIds(examIds.mapNotNull { it })
+            val submissions = submissionDao.getUnuploadedNonSurveyByParentIds(examIds)
             val submissionIds = submissions.map { it.id }
             if (submissionIds.isNotEmpty()) {
                 answerDao.deleteBySubmissionIds(submissionIds)
@@ -806,9 +798,20 @@ class CoursesRepositoryImpl @Inject constructor(
             batch = ArrayList(pendingCourseResources)
             pendingCourseResources.clear()
         }
+
+        val resourceIds = batch.map { JsonUtils.getString("_id", it.doc) }.filter { it.isNotBlank() }
+        val existingMap = if (resourceIds.isNotEmpty()) {
+            resourceIds.distinct()
+                .chunked(300)
+                .flatMap { myLibraryDao.getByIds(it) }
+                .associateBy { it.id }
+        } else {
+            emptyMap()
+        }
+
         val libraries = batch.mapNotNull { pending ->
             val resourceId = JsonUtils.getString("_id", pending.doc)
-            val existing = myLibraryDao.getById(resourceId)
+            val existing = existingMap[resourceId]
             MyLibrary.insertMyLibrary(
                 MyLibrary.Companion.InsertParams(
                     doc = pending.doc,
@@ -826,7 +829,7 @@ class CoursesRepositoryImpl @Inject constructor(
 
     private suspend fun mapCourses(courses: List<MyCourse>): List<MyCourse> {
         if (courses.isEmpty()) return emptyList()
-        val courseIds = courses.mapNotNull { it.courseId ?: it.id }.distinct()
+        val courseIds = courses.map { it.courseId ?: it.id }.distinct()
         val stepsByCourseId = if (courseIds.isEmpty()) {
             emptyMap()
         } else {

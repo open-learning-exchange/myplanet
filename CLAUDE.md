@@ -79,8 +79,8 @@ myplanet/
 |---------|---------|-------|-----------|
 | `base/` | Base classes for common functionality | 13 | BaseActivity, BaseRecyclerFragment, BasePermissionActivity, BaseContainerFragment, BaseDashboardFragment, BaseResourceFragment, BaseTeamFragment, BaseExamFragment, BaseMemberFragment, BaseDialogFragment, BaseVoicesFragment, BaseRecyclerParentFragment |
 | `callback/` | Event listeners and interfaces | 28 | OnLibraryItemSelectedListener, OnSyncListener, OnTeamUpdateListener, OnChatItemClickListener, OnNewsItemClickListener, and more |
-| `data/` | Data access, Room persistence, and API | 40 | DatabaseService.kt, NetworkResult.kt; `room/` (AppDatabase, Converters, 37 DAO interfaces in 30 files — several share `LegacyEntityDaos.kt`), `api/` (ApiInterface, ApiClient, ChatApiService, RetryInterceptor), `auth/` (AuthSessionUpdater) |
-| `di/` | Hilt dependency injection | 10 | Modules (NetworkModule, DatabaseModule, RoomModule, RepositoryModule, ServiceModule, SharedPreferencesModule, DispatcherModule, TimeModule) + entry points (CoreDependenciesEntryPoint, ServiceDependenciesEntryPoint) |
+| `data/` | Data access, Room persistence, and API | 40 | NetworkResult.kt; `room/` (AppDatabase, Converters, 37 DAO interfaces in 30 files — several share `LegacyEntityDaos.kt`), `api/` (ApiInterface, ApiClient, ChatApiService, RetryInterceptor), `auth/` (AuthSessionUpdater) |
+| `di/` | Hilt dependency injection | 10 | Modules (NetworkModule, RoomModule, RepositoryModule, ServiceModule, SharedPreferencesModule, DispatcherModule, TimeModule) + entry points (CoreDependenciesEntryPoint, ServiceDependenciesEntryPoint) |
 | `model/` | Room `@Entity` models and DTOs | 92 | 37 `@Entity` classes (MyCourse, MyLibrary, News, Submission, TeamTask, UserEntity, …) + DTOs (ChatMessage, ChatRequest, ChatResponse, CourseProgressData, Download, ServerAddress, User) |
 | `repository/` | Repository pattern implementations | 50 | 23 domain Interface + Impl pairs + sync-facing interfaces (SyncRepository, TeamsSyncRepository, UserSyncRepository) + SubmissionsRepositoryExporter |
 | `services/` | Background services and workers | 39 | 22 root-level + `sync/` (7), `upload/` (8), `retry/` (2) |
@@ -215,7 +215,7 @@ Data Sources (Room local DB via DAOs, REST API, SharedPreferences)
 
 ### 2. Repository Pattern
 
-**Convention**: Each data domain has an interface and implementation. Implementations inject the **Room DAOs** they need (plus `ApiInterface`, `DispatcherProvider`, other repositories as needed) and return plain `@Entity`/data-class instances. `DatabaseService` still exists (`data/DatabaseService.kt`) but is essentially vestigial — no repository injects it anymore; multi-DAO atomic work uses Room's `withTransaction` on the `AppDatabase`.
+**Convention**: Each data domain has an interface and implementation. Implementations inject the **Room DAOs** they need (plus `ApiInterface`, `DispatcherProvider`, other repositories as needed) and return plain `@Entity`/data-class instances. Multi-DAO atomic work uses Room's `withTransaction` on the `AppDatabase`.
 
 ```kotlin
 // Real example — repository/CommunityRepositoryImpl.kt
@@ -253,7 +253,6 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 **Module Structure (8 modules):**
 - `NetworkModule.kt` - Provides Retrofit, OkHttp
 - `RoomModule.kt` - Builds the `AppDatabase` (with `fallbackToDestructiveMigration`) and provides every DAO
-- `DatabaseModule.kt` - Provides `DatabaseService` (wraps `AppDatabase` + dispatcher helpers)
 - `RepositoryModule.kt` - Binds repository interfaces to implementations
 - `ServiceModule.kt` - Provides service dependencies
 - `SharedPreferencesModule.kt` - Provides SharedPreferences
@@ -380,7 +379,10 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 **Test Workflow** (`.github/workflows/test.yml`)
 - Triggers: every push (all branches) + manual dispatch; `permissions: contents: read`
 - Runs `./gradlew testDefaultDebugUnitTest` — **fails the build on any unit-test failure**
+- **Two shards, prioritizing wall clock.** `app/build.gradle` `testOptions` implements `-PtestShardTotal=N -PtestShardIndex=I` (each top-level test class is hashed by class-file path into a shard; inner classes follow their outer class; an out-of-range index aborts at configuration time; shards verified disjoint and exactly covering — 174 classes = 86 + 88). CI runs `shard: [1, 2]`: measured on this branch, shards were equal-or-faster in every cache regime (warm source change ~3:03–3:37 vs ~3:57–4:14 unsharded; cold ~4:53 vs ~6:25; no-change ties at ~0:45) at the cost of a second runner per push. Drop the matrix entry to fall back to one job if runner budget outranks wall time
 - `default` flavor only (the `lite` flavor's unit tests are not run in CI)
+- Both `test.yml` and `build.yml` cache `app/build` + `.gradle` per job (`actions/cache`, keyed on the SHA and falling back to the newest earlier run) and pass `cache-read-only: false` to `setup-gradle` — without the latter, `setup-gradle` keeps the Gradle home (and its local build cache) read-only off master, so no branch run could seed it and every push started cold. Measured on one branch: 6m25s cold → ~4m for a push that touches one source file → ~45s for a push that touches no Gradle inputs (workflow/doc-only), where every task, including the test task, is `FROM-CACHE`
+- `GRADLE_BUILD_CACHE_URL/USER/PASS` are currently **empty secrets**, so `settings.gradle` disables the remote cache and `GRADLE_BUILD_CACHE_PUSH` is inert; all cache hits today come from the Actions-cached Gradle home
 - No instrumented (`androidTest`) execution in CI
 
 **Release Workflow** (`.github/workflows/release.yml`)
@@ -396,6 +398,7 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 - Manually dispatched (`workflow_dispatch`) queue drainer for PRs labelled `automerge`
 - For each labelled PR: merges the base branch in, bumps the version, waits for build + test to pass, then squash-merges
 - Logic lives in `.github/scripts/automerge.sh`; requires `AUTOMERGE_TOKEN` (the default `GITHUB_TOKEN` can't push to the protected base branch)
+- A red workflow on the base is re-run before the drain gives up (`base_rerun_attempts`, default 1): every base commit is a PR head that build + test passed on just before the squash merge, so a failure there is treated as flaky until it reproduces
 
 **Dependabot** (`.github/dependabot.yml`)
 - Daily checks for GitHub Actions updates (max 10 open PRs)
@@ -487,7 +490,7 @@ suspend fun upsertAll(items: List<Rating>)
 ```
 
 **Rules:**
-- Inject the specific DAO into a repository. For an atomic multi-DAO transaction, use Room's `withTransaction` on the `AppDatabase`. (`DatabaseService.withRoomAsync`/`executeRoomTransactionAsync` still exist but no repository uses them anymore.)
+- Inject the specific DAO into a repository. For an atomic multi-DAO transaction, use Room's `withTransaction` on the `AppDatabase`.
 - DAO methods are `suspend` (Room runs the query off the main thread via its own executors, so they're safe to call from any dispatcher) or `Flow`-returning — never block the main thread with DB work. `DictionaryActivity` also uses a DAO (`DictionaryDao`) now; there is no raw-DB escape hatch.
 - Use `IS` (not `=`) in DAO `@Query` predicates when a `null` argument should match `NULL` rows (`=` never matches `NULL` in SQL).
 - **Migration strategy is drop-and-resync**: `RoomModule` builds the DB with `fallbackToDestructiveMigration(true)`. On any schema change bump `version` in `AppDatabase`; there are **no** hand-written `Migration` objects — data is re-pulled from the Planet/CouchDB server on the **next sync** (login-triggered or scheduled auto-sync; the rebuild itself does not start one). ⚠️ The rebuild also discards **unsynced local writes** (pending uploads, drafts) — a schema bump ships that loss to any device that hasn't synced, so treat version bumps as releases that need pending data uploaded first.
@@ -662,7 +665,6 @@ When making changes, verify:
 | Upload handling | `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt` | ~615 |
 | Upload orchestration | `app/src/main/java/org/ole/planet/myplanet/services/upload/UploadCoordinator.kt` | ~478 |
 | Team management | `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt` | ~1437 |
-| DB service wrapper | `app/src/main/java/org/ole/planet/myplanet/data/DatabaseService.kt` | ~33 |
 | Build configuration | `app/build.gradle` | ~231 |
 | Dependency versions | `gradle/libs.versions.toml` | ~132 |
 

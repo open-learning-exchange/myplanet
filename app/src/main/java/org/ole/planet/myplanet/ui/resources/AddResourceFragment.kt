@@ -43,8 +43,8 @@ import org.ole.planet.myplanet.databinding.FragmentAddResourceBinding
 import org.ole.planet.myplanet.services.AudioRecorder
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class AddResourceFragment : BottomSheetDialogFragment() {

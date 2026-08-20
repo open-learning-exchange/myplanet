@@ -33,12 +33,11 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
@@ -53,8 +52,6 @@ class VoicesFragment : BaseVoicesFragment() {
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var voicesRepository: VoicesRepository
-    @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var etSearch: EditText
 
     private var isSpinnerUpdating = false
@@ -98,6 +95,7 @@ class VoicesFragment : BaseVoicesFragment() {
             if (user?.id?.startsWith("guest") == true) {
                 binding.btnNewVoice.visibility = View.GONE
             }
+            (binding.rvNews.adapter as? VoicesAdapter)?.setCurrentUser(user)
 
             voicesViewModel.observeCommunityNews(getUserIdentifier())
         }
@@ -173,20 +171,20 @@ class VoicesFragment : BaseVoicesFragment() {
     override fun setData(list: List<News?>?) {
         if (!isAdded || list == null) return
 
+        val sortedList = sortNews(list)
         if (binding.rvNews.adapter == null) {
             changeLayoutManager(resources.configuration.orientation, binding.rvNews)
-            downloadResourcesForNews(list)
-            val sortedList = sortNews(list)
+            downloadResourcesForNews(sortedList)
             setupVoicesAdapter(sortedList.filterNotNull())
         } else {
-            (binding.rvNews.adapter as? VoicesAdapter)?.submitList(list.filterNotNull()) {
+            (binding.rvNews.adapter as? VoicesAdapter)?.submitList(sortedList.filterNotNull()) {
                 if (shouldScrollToTopNextUpdate) {
                     scrollToTop()
                     shouldScrollToTopNextUpdate = false
                 }
             }
         }
-        showNoData(binding.tvMessage, list.filterNotNull().size, currentEmptyStateSource)
+        showNoData(binding.tvMessage, sortedList.filterNotNull().size, currentEmptyStateSource)
     }
 
     private fun downloadResourcesForNews(list: List<News?>) {
@@ -270,8 +268,7 @@ class VoicesFragment : BaseVoicesFragment() {
             onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(viewLifecycleOwner.lifecycleScope, dispatcherProvider),
             labelManager = labelManager,
             voicesRepository = voicesRepository,
-            userRepository = userRepository,
-            getCommunityLeadersFn = { sharedPrefManager.getCommunityLeaders() },
+            leadersList = UserEntity.parseLeadersJson(sharedPrefManager.getCommunityLeaders()),
             setRepliedNewsIdFn = { sharedPrefManager.setRepliedNewsId(it) }
         )
         adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))

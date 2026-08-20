@@ -12,6 +12,8 @@ internal fun MyCourse.toCourse(): Course {
         subjectLevel = this.subjectLevel ?: "",
         createdDate = this.createdDate,
         numberOfSteps = this.getNumberOfSteps(),
-        isMyCourse = this.isMyCourse
+        isMyCourse = this.isMyCourse,
+        coverFileName = this.coverFileName,
+        courseRev = this.courseRev
     )
 }

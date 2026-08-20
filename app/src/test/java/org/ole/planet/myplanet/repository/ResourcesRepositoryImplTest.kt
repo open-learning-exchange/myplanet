@@ -283,7 +283,7 @@ class ResourcesRepositoryImplTest {
     fun `getPendingDownloads returns flow from dao with correct pattern`() = runTest {
         val userId = "testUser123"
         val expectedPattern = "%\"testUser123\"%"
-        val expectedList = listOf(mockk<MyLibrary>())
+        val expectedList = listOf("lib1")
 
         every { myLibraryDao.getPendingDownloadsForUserPatternFlow(expectedPattern) } returns flowOf(expectedList)
 
@@ -416,6 +416,44 @@ class ResourcesRepositoryImplTest {
 
         assertEquals(expectedList, result)
         coVerify(exactly = 1) { myLibraryDao.getByStepId(stepId) }
+    }
+
+    @Test
+    fun `batchInsertResources avoids N plus one queries`() = runTest {
+        val documents = (1..5).map {
+            val doc = com.google.gson.JsonObject()
+            doc.addProperty("_id", "id_$it")
+            doc.addProperty("_rev", "1-abc")
+            doc.addProperty("title", "Title $it")
+            doc
+        }
+
+        coEvery { myLibraryDao.getByIds(any()) } returns emptyList()
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+
+        repository.batchInsertResources(documents)
+
+        coVerify(exactly = 1) { myLibraryDao.upsertAll(match { it.size == 5 }) }
+        coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+    }
+
+    @Test
+    fun `batchInsertMyLibrary avoids N plus one queries`() = runTest {
+        val documents = (1..5).map {
+            val doc = com.google.gson.JsonObject()
+            doc.addProperty("_id", "id_$it")
+            doc.addProperty("_rev", "1-abc")
+            doc.addProperty("title", "Title $it")
+            doc
+        }
+
+        coEvery { myLibraryDao.getByIds(any()) } returns emptyList()
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+
+        repository.batchInsertMyLibrary("shelfUserA", documents)
+
+        coVerify(exactly = 1) { myLibraryDao.upsertAll(match { it.size == 5 }) }
+        coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
     }
 
     @Test
