@@ -123,19 +123,13 @@ fun SyncActivity.refreshServerList() {
     val pinnedUrl = prefData.getServerUrl()
     val urlWithoutProtocol = pinnedUrl.replace(httpsPrefixRegex, "")
 
+    val candidates = filteredList.map { it to it.url.replace(httpsPrefixRegex, "") }
+    val pinnedEntry = candidates.find { it.second == urlWithoutProtocol }
+
     // build the final list — if showing more, still pin selected server at top
-    val finalList = if (showAdditionalServers && urlWithoutProtocol.isNotEmpty()) {
-        val pinnedServer = filteredList.find {
-            it.url.replace(httpsPrefixRegex, "") == urlWithoutProtocol
-        }
-        if (pinnedServer != null) {
-            // pinned server at top, then everyone else without the duplicate
-            listOf(pinnedServer) + filteredList.filter {
-                it.url.replace(httpsPrefixRegex, "") != urlWithoutProtocol
-            }
-        } else {
-            filteredList
-        }
+    val finalList = if (showAdditionalServers && urlWithoutProtocol.isNotEmpty() && pinnedEntry != null) {
+        // pinned server at top, then everyone else without the duplicate
+        listOf(pinnedEntry.first) + candidates.filter { it.second != urlWithoutProtocol }.map { it.first }
     } else {
         filteredList
     }
@@ -143,8 +137,10 @@ fun SyncActivity.refreshServerList() {
     // submitList is async, so pass a callback for when it's done
     serverAddressAdapter?.submitList(finalList) {
         // this runs AFTER the list diff is done and views are updated
-        val pinnedIndex = finalList.indexOfFirst {
-            it.url.replace(httpsPrefixRegex, "") == urlWithoutProtocol
+        val pinnedIndex = if (showAdditionalServers && urlWithoutProtocol.isNotEmpty() && pinnedEntry != null) {
+            0
+        } else {
+            candidates.indexOfFirst { it.second == urlWithoutProtocol }
         }
         if (pinnedIndex != -1) {
             serverAddressAdapter?.setSelectedPosition(pinnedIndex)
