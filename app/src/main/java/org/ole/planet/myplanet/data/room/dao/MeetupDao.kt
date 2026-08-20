@@ -37,4 +37,13 @@ interface MeetupDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<Meetup>)
+
+    @Query("SELECT * FROM meetup WHERE startDate BETWEEN :start AND :end ORDER BY startDate ASC")
+    suspend fun getUpcomingMeetups(start: Long, end: Long): List<Meetup>
+
+    @Query("SELECT * FROM meetup WHERE (teamId IN (:teamIds) OR userId = :userId) AND startDate BETWEEN :start AND :end ORDER BY startDate ASC")
+    suspend fun getUpcomingMeetupsForTeamsOrUser(teamIds: List<String>, userId: String, start: Long, end: Long): List<Meetup>
+
+    @Query("SELECT * FROM meetup WHERE startDate >= :currentTime ORDER BY startDate ASC")
+    suspend fun getAllFutureMeetups(currentTime: Long): List<Meetup>
 }
