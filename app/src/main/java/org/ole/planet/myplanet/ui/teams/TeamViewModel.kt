@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.teams
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -150,7 +151,8 @@ class TeamViewModel @Inject constructor(
         teamType: String,
         isPublic: Boolean,
         category: String?,
-        userModel: UserEntity
+        userModel: UserEntity,
+        profileImage: String? = null
     ): TeamActionResult {
         val teamTypeForValidation = if (category == "enterprise") "enterprise" else "team"
         if (teamsRepository.isTeamNameExists(name, teamTypeForValidation, null)) {
@@ -164,7 +166,8 @@ class TeamViewModel @Inject constructor(
             rules = rules,
             teamType = teamType,
             isPublic = isPublic,
-            category = category
+            category = category,
+            profileImage = profileImage
         )
 
         return teamsRepository.createTeamAndAddMember(request, userModel)
@@ -174,6 +177,14 @@ class TeamViewModel @Inject constructor(
             )
     }
 
+    suspend fun uploadTeamImage(uri: Uri): String? {
+        return try {
+            teamsRepository.uploadTeamImage(uri)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     suspend fun updateExistingTeam(
         teamId: String,
         name: String,
@@ -181,7 +192,8 @@ class TeamViewModel @Inject constructor(
         services: String,
         rules: String,
         category: String?,
-        updatedBy: String?
+        updatedBy: String?,
+        profileImage: String? = null
     ): TeamActionResult {
         val teamTypeForValidation = if (category == "enterprise") "enterprise" else "team"
         if (teamsRepository.isTeamNameExists(name, teamTypeForValidation, teamId)) {
@@ -195,6 +207,7 @@ class TeamViewModel @Inject constructor(
             services = services,
             rules = rules,
             updatedBy = updatedBy,
+            profileImage = profileImage
         ).fold(
             onSuccess = { updated ->
                 if (updated) {

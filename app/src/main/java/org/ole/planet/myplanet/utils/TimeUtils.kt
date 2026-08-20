@@ -12,14 +12,13 @@ import java.util.Locale
 
 object TimeUtils {
     const val DATE_FORMAT = "dd MMM yyyy"
-
     private val defaultLocale: Locale
         get() = Locale.getDefault()
 
     private val utcZone: ZoneId = ZoneId.of("UTC")
 
     private val defaultDateFormatter by lazy {
-        DateTimeFormatter.ofPattern("EEEE, MMM dd, yyyy", defaultLocale).withZone(utcZone)
+        DateTimeFormatter.ofPattern("MM/dd/yyyy", defaultLocale).withZone(utcZone)
     }
 
     private val dateTimeFormatter by lazy {

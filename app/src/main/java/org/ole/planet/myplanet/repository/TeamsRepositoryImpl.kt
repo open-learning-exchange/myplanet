@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.net.Uri
 import android.os.Build
 import android.text.TextUtils
 import androidx.core.net.toUri
@@ -55,11 +56,13 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import java.io.File
 
 @Singleton
 class TeamsRepositoryImpl @Inject constructor(
@@ -169,6 +172,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 parentCode = user.parentCode
                 teamPlanetCode = user.planetCode
                 updated = true
+                profileImage = request.profileImage
             }
             val membership = MyTeam().apply {
                 _id = AndroidDecrypter.generateIv()
@@ -184,6 +188,25 @@ class TeamsRepositoryImpl @Inject constructor(
             teamDao.upsertAll(listOf(team.requireRoomEntity(), membership.requireRoomEntity()))
             teamId
         }
+    }
+
+    override suspend fun uploadTeamImage(uri: Uri): String {
+        val context = MainApplication.context
+        val imageData = withContext(dispatcherProvider.io) {
+            FileUtils.readBytesFromUri(context, uri)
+        } ?: return ""
+
+        val imageName = uri.lastPathSegment
+            ?.takeIf { it.isNotBlank() && it.contains('.') }
+            ?: "team_image_${timeProvider.now()}.jpg"
+
+        val stagingFile =
+            File("${FileUtils.getOlePath(context)}team_attachments/_staging/$imageName")
+        withContext(dispatcherProvider.io) {
+            stagingFile.parentFile?.mkdirs()
+            stagingFile.writeBytes(imageData)
+        }
+        return stagingFile.absolutePath
     }
 
     override suspend fun getAllActiveTeams(): List<MyTeam> {
@@ -268,7 +291,8 @@ class TeamsRepositoryImpl @Inject constructor(
                 description = team.description,
                 services = team.services,
                 rules = team.rules,
-                teamId = team.teamId
+                teamId = team.teamId,
+                profileImage = team.profileImage,
             )
         }.sortedWith(
             compareByDescending<TeamDetails> {
@@ -923,6 +947,7 @@ class TeamsRepositoryImpl @Inject constructor(
         services: String,
         rules: String,
         updatedBy: String?,
+        profileImage: String?
     ): Result<Boolean> {
         return runCatching {
             val team = getTeamEntityByAnyId(teamId) ?: return@runCatching false
@@ -933,6 +958,7 @@ class TeamsRepositoryImpl @Inject constructor(
             updatedBy?.let { team.createdBy = it }
             team.limit = 12
             team.updated = true
+            team.profileImage = profileImage
             teamDao.upsert(team.requireRoomEntity())
             true
         }
@@ -947,6 +973,7 @@ class TeamsRepositoryImpl @Inject constructor(
         teamType: String,
         isPublic: Boolean,
         createdBy: String,
+        profileImage: String?
     ): Boolean {
         if (teamId.isBlank()) return false
         val team = getTeamEntityByAnyId(teamId) ?: return false
@@ -958,6 +985,7 @@ class TeamsRepositoryImpl @Inject constructor(
         team.isPublic = isPublic
         team.createdBy = createdBy.takeIf { it.isNotBlank() } ?: team.createdBy
         team.updated = true
+        team.profileImage = profileImage
         teamDao.upsert(team.requireRoomEntity())
         return true
     }

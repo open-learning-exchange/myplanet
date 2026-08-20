@@ -51,7 +51,8 @@ open class MyTeam(
     var startDate: Long = 0,
     var endDate: Long = 0,
     var updatedDate: Long = 0,
-    var imageName: String? = null
+    var imageName: String? = null,
+    var profileImage: String? = null
 ) {
     @get:androidx.room.Ignore
     var id: String
