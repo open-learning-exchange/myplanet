@@ -281,21 +281,26 @@ def robolectricSdkJars = [
     34: '14-robolectric-10818077-i7',
     36: '16-robolectric-13921718-i7',
 ]
-configurations {
-    robolectricSdks
-}
-dependencies {
-    robolectricSdkJars.each { apiLevel, jarVersion ->
-        robolectricSdks "org.robolectric:android-all-instrumented:$jarVersion"
-    }
+// One configuration per level, not one holding all nine: they are the same module at different
+// versions, so a single configuration resolves the conflict down to the newest jar and every test
+// pinning an older level then fails with "Path is not a file".
+robolectricSdkJars.each { apiLevel, jarVersion ->
+    configurations.create("robolectricSdk$apiLevel")
+    dependencies.add("robolectricSdk$apiLevel", "org.robolectric:android-all-instrumented:$jarVersion")
 }
 // Deliberately outside app/build: the test workflow caches app/build, and these jars are ~1.2 GB
 // that Gradle can hand over again for free.
 def robolectricSdkDir = new File(rootDir, 'build/robolectric-sdks')
 def fetchRobolectricSdks = tasks.register('fetchRobolectricSdks', Sync) {
     description = 'Stages the android-all jars Robolectric would otherwise fetch from inside the test forks'
-    from configurations.robolectricSdks
+    robolectricSdkJars.keySet().each { apiLevel -> from configurations.getByName("robolectricSdk$apiLevel") }
     into robolectricSdkDir
+    doLast {
+        def staged = robolectricSdkDir.list({ dir, name -> name.endsWith('.jar') } as FilenameFilter)?.length ?: 0
+        if (staged != robolectricSdkJars.size()) {
+            throw new GradleException("Staged $staged android-all jars for ${robolectricSdkJars.size()} pinned SDK levels in $robolectricSdkDir - the tests would fail one by one on the missing ones")
+        }
+    }
 }
 if ((project.findProperty('robolectricOffline') ?: 'false').toString().toBoolean()) {
     tasks.withType(Test).configureEach {
