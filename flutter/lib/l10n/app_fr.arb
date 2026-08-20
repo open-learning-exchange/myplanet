@@ -197,5 +197,9 @@
   "shareWithCommunity": "Partager avec la communaut\u00e9",
   "pleaseCompleteSurvey": "veuillez compléter le sondage pour terminer le cours",
 
-  "confirmShareCommunity": "\u00cates-vous s\u00fbr de vouloir partager ce contenu avec la communaut\u00e9 ?"
+  "confirmShareCommunity": "\u00cates-vous s\u00fbr de vouloir partager ce contenu avec la communaut\u00e9 ?",
+  "exportCsv": "Exporter CSV",
+  "csvFileSavedSuccessfully": "fichier CSV enregistré avec succès.",
+  "failedToSaveCsvFile": "échec de l'enregistrement du fichier CSV.",
+  "exportCancelled": "exportation annulée."
 }

@@ -1113,5 +1113,9 @@
   "shareWithCommunity": "Share with community",
   "confirmShareCommunity": "Are you sure you want to share this content with the community?",
   "voiceShared": "Post shared with community",
-  "voiceUnshared": "Removed from community"
+  "voiceUnshared": "Removed from community",
+  "exportCsv": "Export CSV",
+  "csvFileSavedSuccessfully": "CSV file saved successfully.",
+  "failedToSaveCsvFile": "Failed to save CSV file.",
+  "exportCancelled": "Export cancelled."
 }

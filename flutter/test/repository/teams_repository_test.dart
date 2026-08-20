@@ -517,6 +517,64 @@ void main() {
     expect(row?.imageName, isNull);
     expect(row?.isUpdated, isTrue);
   });
+
+  test('exportReportsAsCsv builds a summary with derived totals', () async {
+    await repository.saveReport(
+      teamId: 'team-1',
+      description: 'Q1',
+      startDate: 1700000000000,
+      endDate: 1702500000000,
+      beginningBalance: 1000,
+      sales: 500,
+      otherIncome: 200,
+      wages: 300,
+      otherExpenses: 100,
+    );
+    await repository.saveReport(
+      teamId: 'team-1',
+      description: 'Q2',
+      startDate: 1702500000000,
+      endDate: 1705000000000,
+      beginningBalance: 1300,
+      sales: 600,
+      otherIncome: 0,
+      wages: 200,
+      otherExpenses: 50,
+    );
+
+    final reports = await database.teamDao.watchReports('team-1').first;
+    final csv = repository.exportReportsAsCsv(reports, 'My Enterprise');
+
+    expect(csv, startsWith('My Enterprise Financial Report Summary\n\n'));
+    expect(
+      csv,
+      contains(
+        'Start Date, End Date, Created Date, Updated Date, Beginning Balance,'
+        ' Sales, Other Income, Wages, Other Expenses, Profit/Loss,'
+        ' Ending Balance',
+      ),
+    );
+    // Q1: totalIncome=700, totalExpenses=400, profitLoss=300, ending=1300
+    expect(csv, contains(', 1000, 500, 200, 300, 100, 300, 1300'));
+    // Q2: totalIncome=600, totalExpenses=250, profitLoss=350, ending=1650
+    expect(csv, contains(', 1300, 600, 0, 200, 50, 350, 1650'));
+    // Both report rows are present (data lines start with a weekday abbrev).
+    final dataLines = csv
+        .split('\n')
+        .where((l) => l.contains(', 1') && l.contains('GMT'))
+        .toList();
+    expect(dataLines.length, 2);
+  });
+
+  test('formatDateForCsv renders a US-locale timezone-aware timestamp', () {
+    // 2026-08-20 12:00:00 UTC → in UTC this is 12:00 with +0000 offset.
+    final utc = DateTime.utc(2026, 8, 20, 12, 0, 0);
+    final local = utc.toLocal();
+    final formatted = formatDateForCsv(local.millisecondsSinceEpoch);
+    // The weekday and month abbreviations are locale-independent English.
+    expect(formatted, matches(RegExp(r'^\w{3} \w{3} \d{2} 2026 \d{2}:00:00')));
+    expect(formatted, contains('GMT'));
+  });
 }
 
 class MockPlanetApi extends Mock implements PlanetApi {}

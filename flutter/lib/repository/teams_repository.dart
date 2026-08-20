@@ -180,6 +180,50 @@ class TeamsRepository {
     return _dao.getById(id);
   }
 
+  /// Port of `TeamsRepositoryImpl.exportReportsAsCsv`: builds a CSV string of
+  /// the financial report summary. [teamName] heads the report. Date columns
+  /// use [formatDateForCsv]; the derived totals are computed inline to match
+  /// the Kotlin column order exactly.
+  String exportReportsAsCsv(List<TeamRow> reports, String teamName) {
+    final b = StringBuffer()
+      ..write(teamName)
+      ..write(' Financial Report Summary\n\n')
+      ..writeln(
+        'Start Date, End Date, Created Date, Updated Date, Beginning Balance,'
+        ' Sales, Other Income, Wages, Other Expenses, Profit/Loss,'
+        ' Ending Balance',
+      );
+    for (final r in reports) {
+      final totalIncome = r.sales + r.otherIncome;
+      final totalExpenses = r.wages + r.otherExpenses;
+      final profitLoss = totalIncome - totalExpenses;
+      final endingBalance = profitLoss + r.beginningBalance;
+      b
+        ..write(formatDateForCsv(r.startDate))
+        ..write(', ')
+        ..write(formatDateForCsv(r.endDate))
+        ..write(', ')
+        ..write(formatDateForCsv(r.createdDate))
+        ..write(', ')
+        ..write(formatDateForCsv(r.updatedDate))
+        ..write(', ')
+        ..write(r.beginningBalance)
+        ..write(', ')
+        ..write(r.sales)
+        ..write(', ')
+        ..write(r.otherIncome)
+        ..write(', ')
+        ..write(r.wages)
+        ..write(', ')
+        ..write(r.otherExpenses)
+        ..write(', ')
+        ..write(profitLoss)
+        ..write(', ')
+        ..writeln(endingBalance);
+    }
+    return b.toString();
+  }
+
   Future<TeamRow?> addResourceLink({
     required String teamId,
     required String resourceId,
@@ -503,6 +547,46 @@ extension TeamReportTotals on TeamRow {
   int get totalExpenses => wages + otherExpenses;
   int get profitLoss => totalIncome - totalExpenses;
   int get endingBalance => beginningBalance + profitLoss;
+}
+
+/// Port of `TimeUtils.formatDateForCsv` — a US-locale, timezone-aware
+/// timestamp matching the Kotlin CSV export's date column exactly.
+String formatDateForCsv(int millis) {
+  final dt = DateTime.fromMillisecondsSinceEpoch(millis, isUtc: false);
+  final weekday = const [
+    'Mon',
+    'Tue',
+    'Wed',
+    'Thu',
+    'Fri',
+    'Sat',
+    'Sun',
+  ][dt.weekday - 1];
+  final month = const [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ][dt.month - 1];
+  final off = dt.timeZoneOffset;
+  final sign = off.isNegative ? '-' : '+';
+  final abs = off.abs();
+  final tzHours = abs.inHours.toString().padLeft(2, '0');
+  final tzMins = (abs.inMinutes % 60).toString().padLeft(2, '0');
+  final day = dt.day.toString().padLeft(2, '0');
+  final hour = dt.hour.toString().padLeft(2, '0');
+  final minute = dt.minute.toString().padLeft(2, '0');
+  final second = dt.second.toString().padLeft(2, '0');
+  return '$weekday $month $day ${dt.year} '
+      '$hour:$minute:$second GMT$sign$tzHours$tzMins (${dt.timeZoneName})';
 }
 
 String _randomId() =>

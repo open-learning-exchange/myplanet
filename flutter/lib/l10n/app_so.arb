@@ -196,5 +196,9 @@
   "shareWithCommunity": "Waxbaridii Bulshada la Wadaag",
   "pleaseCompleteSurvey": "fadlan dhameystir sahanka si aad u dhameystirto koorsada",
 
-  "confirmShareCommunity": "Ma hubtaa inaad rabto inaad la wadaagto macluumaadkan bulshada?"
+  "confirmShareCommunity": "Ma hubtaa inaad rabto inaad la wadaagto macluumaadkan bulshada?",
+  "exportCsv": "Dhoofinta CSV",
+  "csvFileSavedSuccessfully": "faylka CSV si guul leh ayaa loo keydiyay.",
+  "failedToSaveCsvFile": "waa lagu guuldareystay in la badbaadiyo faylka CSV.",
+  "exportCancelled": "dhoofinta waa la joojiyay."
 }

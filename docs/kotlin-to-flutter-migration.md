@@ -2414,13 +2414,44 @@ port now does the same via a `hasData` guard on the AppBar `bottom` (search)
 and the `ViewModeToggle`/filter `IconButton`s. A test verifies the three
 controls are absent and the sync button remains.
 
+### Phase 55 — team financial report CSV export
+
+The team financial-report screen (`TeamReportsScreen`) lacked the Kotlin
+`EnterprisesReportsFragment`'s "Export CSV" button (`473a9c032`, #15785).
+The Kotlin flow: the button opens a Storage Access Framework
+`ACTION_CREATE_DOCUMENT` picker for a `.csv` filename, then writes the output
+of `TeamsRepositoryImpl.exportReportsAsCsv()` — a per-report row of start/end/
+created/updated dates (via `TimeUtils.formatDateForCsv`), the five raw
+financial fields, and the derived profit/loss and ending balance.
+
+The port adds:
+
+- `TeamsRepository.exportReportsAsCsv(List<TeamRow>, String teamName)` — a
+  pure function that builds the CSV string. The derived totals
+  (`totalIncome`, `totalExpenses`, `profitLoss`, `endingBalance`) are
+  computed inline to match the Kotlin column order exactly.
+- `formatDateForCsv(int millis)` — a top-level function porting
+  `TimeUtils.formatDateForCsv`'s `"EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)"`
+  format (US-locale weekday/month abbreviations, timezone offset and name).
+- An "Export CSV" `OutlinedButton` in the reports list header, visible only
+  when reports exist (matching the Kotlin `View.GONE` when empty). It calls
+  `FilePicker.saveFile()` (the `file_picker` 11.x equivalent of SAF
+  `ACTION_CREATE_DOCUMENT`), passing the CSV as UTF-8 bytes. The default
+  filename follows the Kotlin pattern:
+  `Report_of_<Team>_Financial_Report_Summary_on_<EEE_MMM_dd_yyyy>.csv`.
+- Four l10n keys (`exportCsv`, `csvFileSavedSuccessfully`,
+  `failedToSaveCsvFile`, `exportCancelled`) across all six arb files, with
+  translations taken from the Kotlin `values-*/strings.xml`.
+
+Tests: `exportReportsAsCsv` verifies the header, two report rows with correct
+derived totals, and row count; `formatDateForCsv` verifies the format
+pattern.
+
 ---
 
-**Last updated**: 2026-08-20 (Phase 54 complete — the `96a04b138`
-server-url alt-credential bug is fixed in `UrlUtils.authHeader`; the
-`authHeader` helper deduplicates 20 `basicAuthHeader('satellite', …)` call
-sites; the HTML resource viewer (`webview_flutter` + `resolveHtmlEntryFile`)
-closes the last resource-type gap; and the resources empty-state hides its
-search/toggle/filter controls per #15572)
-**Phase**: 54 of N (27 of 28 UI packages have a screen — see Status for what that does and
+**Last updated**: 2026-08-20 (Phase 55 complete — team financial report CSV
+export ported from `473a9c032`/#15785: `exportReportsAsCsv` +
+`formatDateForCsv` + `FilePicker.saveFile` UI, with l10n for all six
+languages)
+**Phase**: 55 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

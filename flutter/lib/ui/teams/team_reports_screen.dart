@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +11,7 @@ import 'package:path/path.dart' as p;
 import '../../core/files/team_attachments.dart';
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/app_providers.dart';
 import '../../providers/teams_provider.dart';
 import '../../repository/teams_repository.dart';
 
@@ -30,18 +33,48 @@ class TeamReportsScreen extends ConsumerWidget {
         error: (_, _) => Center(child: Text(l10n.reportsUnavailable)),
         data: (rows) => rows.isEmpty
             ? Center(child: Text(l10n.noReports))
-            : ListView.separated(
-                padding: const EdgeInsets.all(12),
-                itemCount: rows.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 8),
-                itemBuilder: (context, index) => _ReportCard(
-                  report: rows[index],
-                  canManage: canManage,
-                  onEdit: () => _editReport(context, ref, report: rows[index]),
-                  onArchive: () => ref
-                      .read(teamReportActionsProvider)
-                      .archive(rows[index].id),
-                ),
+            : Column(
+                children: [
+                  // Port of `EnterprisesReportsFragment`'s `exportCSV` button:
+                  // a toolbar action that opens the platform save-file
+                  // picker (the SAF `ACTION_CREATE_DOCUMENT` equivalent) and
+                  // writes the CSV produced by `exportReportsAsCsv` to the
+                  // chosen location. The Kotlin hides the button when the list
+                  // is empty; the port does the same by only rendering the
+                  // list (this row) when `rows` is non-empty.
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: () => _exportCsv(context, ref, rows),
+                          icon: const Icon(Icons.download),
+                          label: Text(l10n.exportCsv),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                      itemCount: rows.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) => _ReportCard(
+                        report: rows[index],
+                        canManage: canManage,
+                        onEdit: () =>
+                            _editReport(context, ref, report: rows[index]),
+                        onArchive: () => ref
+                            .read(teamReportActionsProvider)
+                            .archive(rows[index].id),
+                      ),
+                    ),
+                  ),
+                ],
               ),
       ),
       floatingActionButton: canManage
@@ -52,6 +85,65 @@ class TeamReportsScreen extends ConsumerWidget {
             )
           : null,
     );
+  }
+
+  Future<void> _exportCsv(
+    BuildContext context,
+    WidgetRef ref,
+    List<TeamRow> rows,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final repo = ref.read(teamsRepositoryProvider);
+    final team = await repo.getById(teamId);
+    final teamName = (team?.name ?? '').replaceAll(' ', '_');
+    final csv = repo.exportReportsAsCsv(rows, team?.name ?? '');
+    final formattedDate = _formatDateForFilename(DateTime.now());
+    final defaultName =
+        'Report_of_${teamName}_Financial_Report_Summary_on_$formattedDate.csv';
+    if (!context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final path = await FilePicker.saveFile(
+        dialogTitle: l10n.exportCsv,
+        fileName: defaultName,
+        bytes: Uint8List.fromList(utf8.encode(csv)),
+        type: FileType.custom,
+        allowedExtensions: ['csv'],
+      );
+      if (path == null) {
+        messenger.showSnackBar(SnackBar(content: Text(l10n.exportCancelled)));
+        return;
+      }
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.csvFileSavedSuccessfully)),
+      );
+    } on Exception {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.failedToSaveCsvFile)));
+    }
+  }
+
+  /// `LocalDate.now().format(dateFormatter)` in the Kotlin source, where
+  /// `dateFormatter` is `"EEE_MMM_dd_yyyy"` (e.g. `Wed_Aug_20_2026`).
+  String _formatDateForFilename(DateTime dt) {
+    final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final weekday = weekdays[dt.weekday - 1];
+    final month = months[dt.month - 1];
+    final day = dt.day.toString().padLeft(2, '0');
+    return '${weekday}_$month}_${day}_${dt.year}';
   }
 
   Future<void> _editReport(
