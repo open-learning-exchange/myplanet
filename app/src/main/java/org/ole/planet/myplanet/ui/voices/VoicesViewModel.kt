@@ -105,10 +105,9 @@ class VoicesViewModel @Inject constructor(
             Constants.LABELS.forEach { (labelName, labelValue) ->
                 labelDisplayToValue[labelName] = labelValue
             }
-            val labelValueToName = Constants.LABELS.entries.associate { it.value to it.key }
             list.forEach { news ->
                 news?.labels?.forEach { label ->
-                    val labelName = labelValueToName[label]
+                    val labelName = Constants.LABEL_VALUE_TO_NAME[label]
                         ?: VoicesLabelManager.formatLabelValue(label)
                     labelDisplayToValue.putIfAbsent(labelName, label)
                 }
@@ -197,7 +196,6 @@ class VoicesViewModel @Inject constructor(
 
         allLabels.add("Shared Chat")
 
-        val labelValueToName = Constants.LABELS.entries.associate { it.value to it.key }
         newsList.forEach { news ->
             val sharedTeamName = JsonUtils.extractSharedTeamName(news)
             if (sharedTeamName.isNotEmpty()) {
@@ -205,7 +203,7 @@ class VoicesViewModel @Inject constructor(
             }
 
             news?.labels?.forEach { label ->
-                val labelName = labelValueToName[label]
+                val labelName = Constants.LABEL_VALUE_TO_NAME[label]
                     ?: VoicesLabelManager.formatLabelValue(label)
                 allLabels.add(labelName)
             }
