@@ -200,7 +200,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override fun getMyLibraryFlow(userId: String?): Flow<List<MyLibrary>> {
-        if (userId.isNullOrBlank()) return kotlinx.coroutines.flow.emptyFlow()
+        if (userId.isNullOrBlank()) return flowOf(emptyList())
         return myLibraryDao.getForUserPatternFlow(userIdPattern(userId))
     }
 
