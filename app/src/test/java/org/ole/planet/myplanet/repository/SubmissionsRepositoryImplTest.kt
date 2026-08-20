@@ -451,11 +451,12 @@ class SubmissionsRepositoryImplTest {
 
         coEvery { submissionDao.upsertAll(any<List<Submission>>()) } throws RuntimeException("SQLite constraint")
 
-        try {
-            repository.startExamSession("exam_id", "parentId", "user", request, recreate = true)
-        } catch (e: IllegalStateException) {
-            assertTrue(e.message?.contains("Failed to start exam session after 3 attempts") == true)
+        val exception = org.junit.Assert.assertThrows(IllegalStateException::class.java) {
+            kotlinx.coroutines.runBlocking {
+                repository.startExamSession("exam_id", "parentId", "user", request, recreate = true)
+            }
         }
+        assertTrue(exception.message?.contains("Failed to start exam session after 3 attempts") == true)
 
         coVerify(exactly = 3) { submissionDao.upsertAll(any<List<Submission>>()) }
     }
