@@ -6,12 +6,10 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.unmockkAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -41,11 +39,11 @@ class DictionaryRepositoryImplTest {
 
     @After
     fun teardown() {
-        unmockkAll()
+        io.mockk.unmockkObject(FileUtils)
     }
 
     @Test
-    fun `insertDictionaryData returns false if file does not exist`() = runTest(testDispatcher) {
+    fun `insertDictionaryData returns FileMissing if file does not exist`() = runTest(testDispatcher) {
         every { FileUtils.checkFileExist(context, Constants.DICTIONARY_URL) } returns false
 
         val result = dictionaryRepository.insertDictionaryData()
@@ -55,7 +53,7 @@ class DictionaryRepositoryImplTest {
     }
 
     @Test
-    fun `insertDictionaryData returns true if data is already populated`() = runTest(testDispatcher) {
+    fun `insertDictionaryData returns AlreadyPopulated if data is already populated`() = runTest(testDispatcher) {
         every { FileUtils.checkFileExist(context, Constants.DICTIONARY_URL) } returns true
         coEvery { dictionaryDao.count() } returns 100L
 
@@ -66,7 +64,7 @@ class DictionaryRepositoryImplTest {
     }
 
     @Test
-    fun `insertDictionaryData returns false if json parsing fails`() = runTest(testDispatcher) {
+    fun `insertDictionaryData returns Failed if json parsing fails`() = runTest(testDispatcher) {
         every { FileUtils.checkFileExist(context, Constants.DICTIONARY_URL) } returns true
         coEvery { dictionaryDao.count() } returns 0L
         every { FileUtils.getSDPathFromUrl(context, Constants.DICTIONARY_URL) } throws Exception("Forced exception for testing")
@@ -78,7 +76,7 @@ class DictionaryRepositoryImplTest {
     }
 
     @Test
-    fun `insertDictionaryData returns true and inserts entities on success`() = runTest(testDispatcher) {
+    fun `insertDictionaryData returns Inserted and inserts entities on success`() = runTest(testDispatcher) {
         every { FileUtils.checkFileExist(context, Constants.DICTIONARY_URL) } returns true
         coEvery { dictionaryDao.count() } returns 0L
         every { FileUtils.getSDPathFromUrl(context, Constants.DICTIONARY_URL) } returns mockk()

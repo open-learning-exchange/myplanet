@@ -14,10 +14,10 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.FragmentDictionaryBinding
 import org.ole.planet.myplanet.model.Download
-import org.ole.planet.myplanet.services.BroadcastService
-import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.repository.DictionaryLoad
 import org.ole.planet.myplanet.repository.DictionaryRepository
+import org.ole.planet.myplanet.services.BroadcastService
+import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
