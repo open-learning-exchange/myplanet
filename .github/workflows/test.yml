@@ -66,12 +66,13 @@ jobs:
         if: always()
         shell: bash
         run: |
-          staged=$(ls build/robolectric-sdks/*.jar 2>/dev/null | wc -l)
-          echo "staged android-all jars: $staged ($(du -sh build/robolectric-sdks 2>/dev/null | cut -f1))" | tee -a "$GITHUB_STEP_SUMMARY"
-          fetched=$(find "$HOME/.m2/repository/org/robolectric" -name '*.jar' 2>/dev/null | wc -l)
-          if [ "$fetched" -gt 0 ]; then
-            echo ":warning: $fetched android-all jar(s) were fetched at test time, so a fork raced for them - add the missing SDK to robolectricSdkJars in app/build.gradle" | tee -a "$GITHUB_STEP_SUMMARY"
-            find "$HOME/.m2/repository/org/robolectric" -name '*.jar' -printf '  - %f\n' | tee -a "$GITHUB_STEP_SUMMARY"
+          staged=$(find build/robolectric-sdks -name '*.jar' 2>/dev/null | wc -l || true)
+          size=$(du -sh build/robolectric-sdks 2>/dev/null | cut -f1 || true)
+          echo "staged android-all jars: ${staged:-0} (${size:-0})" | tee -a "$GITHUB_STEP_SUMMARY"
+          fetched=$(find "$HOME/.m2/repository/org/robolectric" -name '*.jar' 2>/dev/null || true)
+          if [ -n "$fetched" ]; then
+            echo ":warning: a test fork fetched an android-all jar at runtime, so it raced for it - add the SDK to robolectricSdkJars in app/build.gradle:" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "$fetched" | sed 's|.*/|  - |' | tee -a "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: summarise slowest tests
