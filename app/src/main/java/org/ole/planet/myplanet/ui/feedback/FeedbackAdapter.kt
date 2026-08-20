@@ -31,7 +31,15 @@ class FeedbackAdapter :
         )
     ) {
 
+    private var primaryColorStateList: ColorStateList? = null
+    private var greyColorStateList: ColorStateList? = null
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FeedbackViewHolder {
+        if (primaryColorStateList == null || greyColorStateList == null) {
+            val context = parent.context
+            primaryColorStateList = ColorStateList.valueOf(ContextCompat.getColor(context, R.color.mainColor))
+            greyColorStateList = ColorStateList.valueOf(ContextCompat.getColor(context, R.color.md_amber_500))
+        }
         val binding = RowFeedbackBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return FeedbackViewHolder(binding)
     }
@@ -50,19 +58,13 @@ class FeedbackAdapter :
                 "${context.getString(R.string.open_date)}: ${getFormattedDate(feedback.openTime)}"
         binding.feedbackCardView.contentDescription = contentDescription
 
-        val primaryColor = ContextCompat.getColor(context, R.color.mainColor)
-        val greyColor = ContextCompat.getColor(context, R.color.md_amber_500)
-
-        binding.tvPriority.background = ContextCompat.getDrawable(context, R.drawable.bg_primary)
-        binding.tvStatus.background = ContextCompat.getDrawable(context, R.drawable.bg_primary)
-
         ViewCompat.setBackgroundTintList(
             binding.tvPriority,
-            ColorStateList.valueOf(if ("yes".equals(feedback.priority, ignoreCase = true)) primaryColor else greyColor)
+            if ("yes".equals(feedback.priority, ignoreCase = true)) primaryColorStateList else greyColorStateList
         )
         ViewCompat.setBackgroundTintList(
             binding.tvStatus,
-            ColorStateList.valueOf(if ("open".equals(feedback.status, ignoreCase = true)) primaryColor else greyColor)
+            if ("open".equals(feedback.status, ignoreCase = true)) primaryColorStateList else greyColorStateList
         )
         binding.tvOpenDate.text = getFormattedDate(feedback.openTime)
         binding.root.setOnClickListener {
@@ -75,5 +77,11 @@ class FeedbackAdapter :
     }
 
     class FeedbackViewHolder(val rowFeedbackBinding: RowFeedbackBinding) :
-        RecyclerView.ViewHolder(rowFeedbackBinding.root)
+        RecyclerView.ViewHolder(rowFeedbackBinding.root) {
+        init {
+            val context = rowFeedbackBinding.root.context
+            rowFeedbackBinding.tvPriority.background = ContextCompat.getDrawable(context, R.drawable.bg_primary)
+            rowFeedbackBinding.tvStatus.background = ContextCompat.getDrawable(context, R.drawable.bg_primary)
+        }
+    }
 }
