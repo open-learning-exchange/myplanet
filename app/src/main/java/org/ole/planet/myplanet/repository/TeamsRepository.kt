@@ -7,9 +7,12 @@ import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.TeamDetails
+import org.ole.planet.myplanet.model.TeamDetailsUpdateRequest
 import org.ole.planet.myplanet.model.TeamResourceDto
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.TeamTask
+import org.ole.planet.myplanet.model.TeamUpdateRequest
+import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.model.UserEntity
 
 data class VoicePostingPolicy(
@@ -81,14 +84,19 @@ interface TeamsRepository : TeamsFinancesRepository, TeamsMembersRepository, Tea
         userParentCode: String?, teamType: String?
     )
     suspend fun createTeamAndAddMember(request: CreateTeamRequest, user: UserEntity): Result<String>
-    suspend fun updateTeam(teamId: String, name: String, description: String, services: String,
-        rules: String, updatedBy: String?, profileImage: String? = null
-    ): Result<Boolean>
+    suspend fun updateTeam(request: TeamUpdateRequest): Result<Boolean>
     suspend fun uploadTeamImage(uri: Uri): String
-    suspend fun updateTeamDetails(
-        teamId: String, name: String, description: String, services: String, rules: String,
-        teamType: String, isPublic: Boolean, createdBy: String, profileImage: String? = null
-    ): Boolean
+    suspend fun updateTeamDetails(request: TeamDetailsUpdateRequest): Boolean
+    suspend fun getTeamTransactionsWithBalance(
+        teamId: String, startDate: Long? = null,
+        endDate: Long? = null, sortAscending: Boolean = false
+    ): Flow<List<Transaction>>
+    suspend fun createTransaction(
+        teamId: String, type: String, note: String, amount: Int, date: Long,
+        parentCode: String?, planetCode: String?,
+        imageName: String? = null, imageData: ByteArray? = null
+    ): Result<Unit>
+    suspend fun respondToMemberRequest(teamId: String, userId: String, accept: Boolean): Result<Unit>
     suspend fun getTeamType(teamId: String): String?
     suspend fun isTeamNameExists(name: String, type: String, excludeTeamId: String? = null): Boolean
     suspend fun getTeamCreator(teamId: String): String?

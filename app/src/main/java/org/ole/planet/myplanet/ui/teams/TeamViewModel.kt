@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.model.TeamTask
+import org.ole.planet.myplanet.model.TeamUpdateRequest
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
@@ -152,30 +153,23 @@ class TeamViewModel @Inject constructor(
     }
 
     suspend fun createTeam(
-        name: String,
-        description: String,
-        services: String,
-        rules: String,
-        teamType: String,
-        isPublic: Boolean,
-        category: String?,
-        userModel: UserEntity,
-        profileImage: String? = null
+        request: CreateTeamRequest,
+        userModel: UserEntity
     ): TeamActionResult {
-        val teamTypeForValidation = if (category == "enterprise") "enterprise" else "team"
-        if (teamsRepository.isTeamNameExists(name, teamTypeForValidation, null)) {
+        val teamTypeForValidation = if (request.category == "enterprise") "enterprise" else "team"
+        if (teamsRepository.isTeamNameExists(request.name, teamTypeForValidation, null)) {
             return TeamActionResult.NameExists
         }
 
         val request = CreateTeamRequest(
-            name = name,
-            description = description,
-            services = services,
-            rules = rules,
-            teamType = teamType,
-            isPublic = isPublic,
-            category = category,
-            profileImage = profileImage
+            name = request.name,
+            description = request.description,
+            services = request.services,
+            rules = request.rules,
+            teamType = request.teamType,
+            isPublic = request.isPublic,
+            category = request.category,
+            profileImage = request.profileImage
         )
 
         return teamsRepository.createTeamAndAddMember(request, userModel)
@@ -194,29 +188,25 @@ class TeamViewModel @Inject constructor(
     }
 
     suspend fun updateExistingTeam(
-        teamId: String,
-        name: String,
-        description: String,
-        services: String,
-        rules: String,
-        category: String?,
-        updatedBy: String?,
-        profileImage: String? = null
+        request: TeamUpdateRequest,
+        category: String?
     ): TeamActionResult {
         val teamTypeForValidation = if (category == "enterprise") "enterprise" else "team"
-        if (teamsRepository.isTeamNameExists(name, teamTypeForValidation, teamId)) {
+        if (teamsRepository.isTeamNameExists(request.name, teamTypeForValidation, request.teamId)) {
             return TeamActionResult.NameExists
         }
 
-        return teamsRepository.updateTeam(
-            teamId = teamId,
-            name = name,
-            description = description,
-            services = services,
-            rules = rules,
-            updatedBy = updatedBy,
-            profileImage = profileImage
-        ).fold(
+        val request = TeamUpdateRequest(
+            teamId = request.teamId,
+            name = request.name,
+            description = request.description,
+            services = request.services,
+            rules = request.rules,
+            updatedBy = request.updatedBy,
+            profileImage = request.profileImage
+        )
+        return teamsRepository.updateTeam(request)
+            .fold(
             onSuccess = { updated ->
                 if (updated) {
                     TeamActionResult.Success

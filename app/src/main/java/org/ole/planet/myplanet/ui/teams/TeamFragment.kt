@@ -28,7 +28,9 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
+import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.TeamDetails
+import org.ole.planet.myplanet.model.TeamUpdateRequest
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -173,43 +175,57 @@ class TeamFragment : Fragment() {
             name.isEmpty() -> {
                 Utilities.toast(activity, getString(R.string.name_is_required))
                 alertCreateTeamBinding.etName.error = getString(R.string.please_enter_a_name)
-            } else -> {
-            val failureMessage = getString(R.string.request_failed_please_retry)
-            val userModel = currentUser ?: run {
-                Utilities.toast(activity, failureMessage)
-                return
             }
-            viewLifecycleOwner.lifecycleScope.launch {
-                if (team == null) {
-                    createNewTeam(name, description, services, rules, selectedTeamType, userModel, dialog, failureMessage)
-                } else {
-                    updateExistingTeam(team, name, description, services, rules, userModel, dialog, failureMessage)
+
+            else -> {
+                val failureMessage = getString(R.string.request_failed_please_retry)
+                val userModel = currentUser ?: run {
+                    Utilities.toast(activity, failureMessage)
+                    return
+                }
+                viewLifecycleOwner.lifecycleScope.launch {
+                    if (team == null) {
+                        val request = CreateTeamRequest(
+                            name = name,
+                            description = description,
+                            services = services,
+                            rules = rules,
+                            teamType = selectedTeamType,
+                            isPublic = alertCreateTeamBinding.switchPublic.isChecked,
+                            category = type,
+                            profileImage = null
+                        )
+                        createNewTeam(request, userModel, dialog, failureMessage)
+                    } else {
+                        val request = TeamUpdateRequest(
+                            teamId = team._id ?: "",
+                            name = name,
+                            description = description,
+                            services = services,
+                            rules = rules,
+                            updatedBy = userModel._id,
+                            profileImage = team.profileImage
+                        )
+                        updateExistingTeam(request, dialog, failureMessage)
+                    }
                 }
             }
-        }
         }
     }
 
     private suspend fun createNewTeam(
-        name: String, description: String, services: String, rules: String,
-        selectedTeamType: String, userModel: UserEntity, dialog: AlertDialog, failureMessage: String
+        request: CreateTeamRequest,
+        userModel: UserEntity,
+        dialog: AlertDialog,
+        failureMessage: String
     ) {
         var imageUrl: String? = null
         if (selectedImageUri != null) {
             imageUrl = viewModel.uploadTeamImage(selectedImageUri!!)
             selectedImageUri = null
         }
-        val result = viewModel.createTeam(
-            name = name,
-            description = description,
-            services = services,
-            rules = rules,
-            teamType = selectedTeamType,
-            isPublic = alertCreateTeamBinding.switchPublic.isChecked,
-            category = type,
-            userModel = userModel,
-            profileImage = imageUrl
-        )
+        val finalRequest = request.copy(profileImage = imageUrl)
+        val result = viewModel.createTeam(finalRequest, userModel)
         when (result) {
             is TeamActionResult.NameExists -> {
                 val duplicateMessage = if (type == "enterprise") {
@@ -238,29 +254,21 @@ class TeamFragment : Fragment() {
     }
 
     private suspend fun updateExistingTeam(
-        team: TeamDetails, name: String, description: String, services: String, rules: String,
-        userModel: UserEntity, dialog: AlertDialog, failureMessage: String
+        request: TeamUpdateRequest,
+        dialog: AlertDialog,
+        failureMessage: String
     ) {
         var imageUrl: String? = null
         if (selectedImageUri != null) {
             imageUrl = viewModel.uploadTeamImage(selectedImageUri!!)
             selectedImageUri = null
         }
-        val targetTeamId = team._id ?: team.teamId
-        if (targetTeamId.isNullOrBlank()) {
+        if (request.teamId.isBlank()) {
             Utilities.toast(activity, failureMessage)
             return
         }
-        val result = viewModel.updateExistingTeam(
-            teamId = targetTeamId,
-            name = name,
-            description = description,
-            services = services,
-            rules = rules,
-            category = type,
-            updatedBy = userModel._id,
-            profileImage = imageUrl ?: team.profileImage
-        )
+        val finalRequest = request.copy(profileImage = imageUrl ?: request.profileImage)
+        val result = viewModel.updateExistingTeam(finalRequest, category = type)
         when (result) {
             is TeamActionResult.NameExists -> {
                 val duplicateMessage = if (type == "enterprise") {
