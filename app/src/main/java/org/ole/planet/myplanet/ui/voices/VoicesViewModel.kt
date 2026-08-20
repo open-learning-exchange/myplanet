@@ -11,8 +11,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -68,10 +66,13 @@ class VoicesViewModel @Inject constructor(
     fun observeCommunityNews(userIdentifier: String) {
         observeJob?.cancel()
         observeJob = viewModelScope.launch {
-            voicesRepository.getCommunityNews(userIdentifier).distinctUntilChanged { old, new -> old.map { it.id to it._rev } == new.map { it.id to it._rev } }.collectLatest { newsList ->
+            voicesRepository.getCommunityNews(userIdentifier).collect { newsList ->
                 val filtered = newsList.map { it as News? }
                 _baseNewsList.value = filtered
-                _labels.value = collectLabels(filtered)
+                val newLabels = collectLabels(filtered)
+                if (_labels.value != newLabels) {
+                    _labels.value = newLabels
+                }
             }
         }
     }
