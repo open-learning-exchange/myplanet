@@ -9,7 +9,10 @@ name: myPlanet automerge
 #
 # A commit on the base was already built and tested green as a PR head, so a
 # red workflow there is treated as flaky first: it is re-run (base_rerun_attempts
-# times) and only a second failure stops the drain.
+# times) and only a second failure stops the drain. Only the base's own runs
+# count -- a sha is shared with every branch sitting on it -- and a `cancelled`
+# run is read as absent, not as red, since `cancel-in-progress` retires runs by
+# the dozen.
 
 on:
   workflow_dispatch:

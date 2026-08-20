@@ -4,9 +4,9 @@ import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.OfflineActivity
-import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.ResourceActivity
+import org.ole.planet.myplanet.model.SearchActivity
+import org.ole.planet.myplanet.model.UserEntity
 
 interface ActivitiesRepository {
     suspend fun getOfflineVisitCount(userId: String): Int
