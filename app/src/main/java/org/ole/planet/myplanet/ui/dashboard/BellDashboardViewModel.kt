@@ -20,7 +20,9 @@ import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utils.TimeProvider
 
@@ -32,7 +34,8 @@ class BellDashboardViewModel @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val userRepository: UserRepository,
     private val coursesRepository: CoursesRepository,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     companion object {
@@ -66,17 +69,25 @@ class BellDashboardViewModel @Inject constructor(
     }
 
     private suspend fun handleDueReminders(remindersToShow: List<String>) {
-        val allSurveyIds = remindersToShow.flatMap { it.split(",") }.filter { it.isNotBlank() }.distinct()
+        val allSurveyIds = withContext(dispatcherProvider.default) {
+            remindersToShow.flatMap { it.split(",") }.filter { it.isNotBlank() }.distinct()
+        }
         if (allSurveyIds.isEmpty()) return
 
         val allSubmissions = submissionsRepository.getSubmissionsByIds(allSurveyIds)
-        val submissionsById = allSubmissions.associateBy { it.id }
+        val submissionsById = withContext(dispatcherProvider.default) {
+            allSubmissions.associateBy { it.id }
+        }
 
         for (surveyIds in remindersToShow) {
-            val surveyIdList = surveyIds.split(",").filter { it.isNotBlank() }
+            val surveyIdList = withContext(dispatcherProvider.default) {
+                surveyIds.split(",").filter { it.isNotBlank() }
+            }
             if (surveyIdList.isEmpty()) continue
 
-            val pendingSurveys = surveyIdList.mapNotNull { submissionsById[it] }.filter { it.status == "pending" }
+            val pendingSurveys = withContext(dispatcherProvider.default) {
+                surveyIdList.mapNotNull { submissionsById[it] }.filter { it.status == "pending" }
+            }
 
             if (pendingSurveys.isNotEmpty()) {
                 val surveyTitles = submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)

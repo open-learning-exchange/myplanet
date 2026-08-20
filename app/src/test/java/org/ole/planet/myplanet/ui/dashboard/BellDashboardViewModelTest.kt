@@ -51,7 +51,8 @@ class BellDashboardViewModelTest {
 
         viewModel = BellDashboardViewModel(
             progressRepository, teamsRepository, surveysRepository,
-            submissionsRepository, userRepository, coursesRepository, timeProvider
+            submissionsRepository, userRepository, coursesRepository, timeProvider,
+            org.ole.planet.myplanet.utils.TestDispatcherProvider(testDispatcher)
         )
     }
 
@@ -123,7 +124,8 @@ class BellDashboardViewModelTest {
 
         viewModel = BellDashboardViewModel(
             progressRepository, teamsRepository, surveysRepository,
-            submissionsRepository, userRepository, coursesRepository, timeProvider
+            submissionsRepository, userRepository, coursesRepository, timeProvider,
+            org.ole.planet.myplanet.utils.TestDispatcherProvider(testDispatcher)
         )
 
         val emitted = mutableListOf<SurveyPrompt?>()
