@@ -160,18 +160,6 @@ class TeamViewModel @Inject constructor(
         if (teamsRepository.isTeamNameExists(request.name, teamTypeForValidation, null)) {
             return TeamActionResult.NameExists
         }
-
-        val request = CreateTeamRequest(
-            name = request.name,
-            description = request.description,
-            services = request.services,
-            rules = request.rules,
-            teamType = request.teamType,
-            isPublic = request.isPublic,
-            category = request.category,
-            profileImage = request.profileImage
-        )
-
         return teamsRepository.createTeamAndAddMember(request, userModel)
             .fold(
                 onSuccess = { TeamActionResult.Success },
@@ -196,15 +184,6 @@ class TeamViewModel @Inject constructor(
             return TeamActionResult.NameExists
         }
 
-        val request = TeamUpdateRequest(
-            teamId = request.teamId,
-            name = request.name,
-            description = request.description,
-            services = request.services,
-            rules = request.rules,
-            updatedBy = request.updatedBy,
-            profileImage = request.profileImage
-        )
         return teamsRepository.updateTeam(request)
             .fold(
             onSuccess = { updated ->
