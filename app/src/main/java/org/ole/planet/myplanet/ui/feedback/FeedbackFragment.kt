@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.RadioButton
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -14,21 +15,15 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnFeedbackSubmittedListener
 import org.ole.planet.myplanet.databinding.FragmentFeedbackBinding
-import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.FeedbackRepository
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class FeedbackFragment : DialogFragment(), View.OnClickListener {
     private var _binding: FragmentFeedbackBinding? = null
     private val binding get() = _binding!!
-    @Inject
-    lateinit var feedbackRepository: FeedbackRepository
-    @Inject
-    lateinit var userSessionManager: UserSessionManager
-    private var model: UserEntity ?= null
-    var user: String? = ""
+
+    private val viewModel: FeedbackComposerViewModel by viewModels()
 
     private var mListener: OnFeedbackSubmittedListener? = null
     fun setOnFeedbackSubmittedListener(listener: OnFeedbackSubmittedListener?) {
@@ -50,9 +45,27 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        viewLifecycleOwner.lifecycleScope.launch {
-            model = userSessionManager.getUserModel()
-            user = model?.name
+        collectLatestWhenStarted(viewModel.uiState) { state ->
+            when (state) {
+                is FeedbackComposerViewModel.SubmitState.Idle -> {
+                    binding.btnSubmit.isEnabled = true
+                    binding.btnCancel.isEnabled = true
+                }
+                is FeedbackComposerViewModel.SubmitState.Submitting -> {
+                    binding.btnSubmit.isEnabled = false
+                    binding.btnCancel.isEnabled = false
+                }
+                is FeedbackComposerViewModel.SubmitState.Saved -> {
+                    Utilities.toast(activity, getString(R.string.feedback_saved))
+                    mListener?.onFeedbackSubmitted()
+                    dismiss()
+                }
+                is FeedbackComposerViewModel.SubmitState.Error -> {
+                    Utilities.toast(activity, state.message)
+                    binding.btnSubmit.isEnabled = true
+                    binding.btnCancel.isEnabled = true
+                }
+            }
         }
     }
 
@@ -108,12 +121,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
         val type = rbType.text.toString()
         val item = arguments?.getString("item")
         val state = arguments?.getString("state")
-        viewLifecycleOwner.lifecycleScope.launch {
-            feedbackRepository.createAndSaveFeedback(user, urgent, type, message, item, state)
-            Utilities.toast(activity, getString(R.string.feedback_saved))
-            mListener?.onFeedbackSubmitted()
-            dismiss()
-        }
+        viewModel.submitFeedback(urgent, type, message, item, state)
     }
 
     private fun clearError() {
