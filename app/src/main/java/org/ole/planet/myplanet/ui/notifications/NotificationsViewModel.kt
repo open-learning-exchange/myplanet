@@ -162,16 +162,18 @@ class NotificationsViewModel @Inject constructor(
             if (markedIds.contains(notificationId)) {
                 var wasUnread = false
                 _notifications.update { currentList ->
-                    val targetNotification = currentList.find { it.id == notificationId }
-                    if (targetNotification != null && !targetNotification.isRead) {
-                        wasUnread = true
-                        if (currentFilter == "unread") {
-                            currentList.filter { it.id != notificationId }
+                    currentList.mapNotNull { notif ->
+                        if (notif.id == notificationId) {
+                            if (!notif.isRead) {
+                                wasUnread = true
+                                if (currentFilter == "unread") null
+                                else notif.copy(isRead = true)
+                            } else {
+                                notif
+                            }
                         } else {
-                            currentList.markAsRead(notificationId)
+                            notif
                         }
-                    } else {
-                        currentList
                     }
                 }
                 if (wasUnread && _unreadCount.value > 0) {
