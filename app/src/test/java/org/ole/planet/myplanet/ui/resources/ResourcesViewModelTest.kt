@@ -16,7 +16,9 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.TagEntity
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -24,7 +26,7 @@ class ResourcesViewModelTest {
 
     private lateinit var viewModel: ResourcesViewModel
     private val resourcesRepository = mockk<ResourcesRepository>(relaxed = true)
-    private val userRepository = mockk<org.ole.planet.myplanet.repository.UserRepository>(relaxed = true)
+    private val userRepository = mockk<UserRepository>(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
@@ -41,6 +43,18 @@ class ResourcesViewModelTest {
     @After
     fun tearDown() {
         Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `currentUser is populated on init and getCurrentUser returns it`() = runTest {
+        val mockUser = UserEntity().apply { id = "user123" }
+        coEvery { userRepository.getUserModel() } returns mockUser
+
+        viewModel = ResourcesViewModel(resourcesRepository, userRepository, dispatcherProvider)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(mockUser, viewModel.currentUser.value)
+        assertEquals(mockUser, viewModel.getCurrentUser())
     }
 
     @Test
