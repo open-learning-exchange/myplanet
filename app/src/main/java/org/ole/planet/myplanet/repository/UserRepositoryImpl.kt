@@ -882,6 +882,11 @@ class UserRepositoryImpl @Inject constructor(
         return activitiesRepositoryLazy.get().hasUserSyncAction(userId)
     }
 
+    override suspend fun hasActiveUserSyncAction(): Boolean {
+        val userId = getActiveUserIdSuspending()
+        return if (userId.isNotEmpty()) hasUserSyncAction(userId) else false
+    }
+
     override suspend fun initializeAchievement(achievementId: String): Achievement? {
         val existing = achievementDao.getById(achievementId)
         if (existing != null) return existing
