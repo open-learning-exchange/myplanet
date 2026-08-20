@@ -20,6 +20,7 @@ class TTSManager @Inject constructor(
 
     @Volatile
     private var isInitialized = false
+    @Volatile
     private var pendingText: String? = null
 
     private val _state = MutableStateFlow(State.IDLE)
@@ -38,10 +39,11 @@ class TTSManager @Inject constructor(
         }
 
         pendingText = text
-        tts = TextToSpeech(context) { status ->
+        var instance: TextToSpeech? = null
+        instance = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 isInitialized = true
-                tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                instance?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String?) {
                         _state.value = State.SPEAKING
                     }
@@ -56,13 +58,15 @@ class TTSManager @Inject constructor(
                         _state.value = State.IDLE
                     }
                 })
-                pendingText?.let { tts?.speak(it, TextToSpeech.QUEUE_FLUSH, null, UTTERANCE_ID) }
+                pendingText?.let { instance?.speak(it, TextToSpeech.QUEUE_FLUSH, null, UTTERANCE_ID) }
                 pendingText = null
             } else {
+                instance?.shutdown()
                 tts = null
                 pendingText = null
             }
         }
+        tts = instance
     }
 
     fun speak(text: String) {
@@ -71,6 +75,7 @@ class TTSManager @Inject constructor(
     }
 
     fun stop() {
+        pendingText = null
         tts?.let {
             it.stop()
             _state.value = State.IDLE
