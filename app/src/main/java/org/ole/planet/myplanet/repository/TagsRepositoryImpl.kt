@@ -55,19 +55,22 @@ class TagsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getLinkIdsForTagNames(dbType: String, tagNames: List<String>): List<String> {
-        val matchingTagIds = tagDao.getByNames(tagNames).map { it.id }
+        val matchingTagIds = chunkedIn(tagNames) { tagDao.getByNames(it) }.map { it.id }
         if (matchingTagIds.isEmpty()) {
             return emptyList()
         }
-        return tagDao.getByDbAndTagIds(dbType, matchingTagIds).mapNotNull { it.linkId }
+        return chunkedIn(matchingTagIds) { tagDao.getByDbAndTagIds(dbType, it) }.mapNotNull { it.linkId }
     }
+
+    private suspend fun <T> chunkedIn(ids: List<String>, query: suspend (List<String>) -> List<T>): List<T> =
+        if (ids.size <= 900) query(ids) else ids.chunked(900).flatMap { query(it) }
 
     private suspend fun getLinkedTagsBulk(db: String, linkIds: List<String>): Map<String, List<TagEntity>> {
         if (linkIds.isEmpty()) {
             return emptyMap()
         }
 
-        val links = tagDao.getByDbAndLinkIds(db, linkIds)
+        val links = chunkedIn(linkIds) { tagDao.getByDbAndLinkIds(db, it) }
         if (links.isEmpty()) {
             return emptyMap()
         }
@@ -77,7 +80,7 @@ class TagsRepositoryImpl @Inject constructor(
             return emptyMap()
         }
 
-        val parentTagsById = allTagIds.chunked(900).flatMap { tagDao.getByIds(it) }.associateBy { it.id }
+        val parentTagsById = chunkedIn(allTagIds) { tagDao.getByIds(it) }.associateBy { it.id }
 
         val tagsByLinkId = mutableMapOf<String, MutableList<TagEntity>>()
         val tagsSetByLinkId = mutableMapOf<String, MutableSet<String>>()
@@ -107,7 +110,7 @@ class TagsRepositoryImpl @Inject constructor(
             return emptyList()
         }
 
-        val parents = tagIds.chunked(900).flatMap { tagDao.getByIds(it) }
+        val parents = chunkedIn(tagIds) { tagDao.getByIds(it) }
         if (parents.isEmpty()) {
             return emptyList()
         }
