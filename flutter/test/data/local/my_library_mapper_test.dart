@@ -112,6 +112,22 @@ void main() {
       expect(row.resourceRemoteAddress.value, isNull);
     });
 
+    test('maps openWhichFile and nulls out a whitespace-only value', () {
+      final nested = MyLibraryMapper.fromDoc({
+        '_id': 'res-1',
+        'openWhichFile': 'sudoku/index.html',
+      }, couchDbUrl: couchDbUrl);
+      expect(nested!.openWhichFile.value, 'sudoku/index.html');
+
+      // Kotlin's `.takeIf { it.isNotBlank() }`: a blank string reads as unset
+      // so the viewer falls through to the `index.html` default.
+      final blank = MyLibraryMapper.fromDoc({
+        '_id': 'res-2',
+        'openWhichFile': '   ',
+      }, couchDbUrl: couchDbUrl);
+      expect(blank!.openWhichFile.value, isNull);
+    });
+
     test('has no attachment address when the CouchDB URL is unknown', () {
       final row = MyLibraryMapper.fromDoc({
         '_id': 'res-1',

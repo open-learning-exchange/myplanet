@@ -679,4 +679,47 @@ void main() {
       );
     },
   );
+
+  test(
+    'the resource cache gains the openWhichFile column after the upgrade',
+    () async {
+      // v36 adds `openWhichFile`, the nested HTML entry-file field. The table is
+      // a cache so it is dropped and recreated — the column appears on the new
+      // table, and a row synced after the upgrade carries the value through.
+      await runUpgrade();
+      await database.myLibraryDao.upsertAll([
+        MyLibraryTableCompanion.insert(
+          id: 'html-1',
+          title: const Value('Sudoku'),
+          openWhichFile: const Value('sudoku/index.html'),
+        ),
+      ]);
+      final row = await database.myLibraryDao.getById('html-1');
+      expect(row, isNot(equals(null)));
+      expect(row!.openWhichFile, 'sudoku/index.html');
+    },
+  );
+
+  test(
+    'the notifications cache gains the subType column after the upgrade',
+    () async {
+      // v37 adds `subType`, the locale-independent join-request signal the
+      // server sends in `linkParams.activeTab`. The table is a cache so it is
+      // dropped and recreated — the column appears on the new table, and a row
+      // synced after the upgrade carries the value through.
+      await runUpgrade();
+      await database.notificationDao.upsert(
+        NotificationsCompanion.insert(
+          id: 'team-1',
+          userId: 'user-1',
+          type: const Value('team'),
+          subType: const Value('join_request'),
+          createdAt: 0,
+        ),
+      );
+      final row = await database.notificationDao.getById('team-1');
+      expect(row, isNot(equals(null)));
+      expect(row!.subType, 'join_request');
+    },
+  );
 }

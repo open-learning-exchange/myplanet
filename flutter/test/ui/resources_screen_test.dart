@@ -170,4 +170,37 @@ void main() {
     expect(find.text('Recursos'), findsOneWidget);
     expect(find.text('No hay datos disponibles.'), findsOneWidget);
   });
+
+  testWidgets('shelf toggle switches the resourceShelfOnlyProvider state', (
+    tester,
+  ) async {
+    late WidgetRef capturedRef;
+
+    await tester.pumpWidget(
+      wrapScreen(
+        Consumer(
+          builder: (context, ref, _) {
+            capturedRef = ref;
+            return const ResourcesScreen();
+          },
+        ),
+        overrides: [
+          resourcesStreamProvider.overrideWith(
+            (ref) => Stream.value(const <MyLibraryRow>[]),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Default is the full catalog.
+    expect(capturedRef.read(resourceShelfOnlyProvider), isFalse);
+    expect(find.byTooltip('My Library'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('My Library'));
+    await tester.pumpAndSettle();
+
+    expect(capturedRef.read(resourceShelfOnlyProvider), isTrue);
+    expect(find.byTooltip('All Resources'), findsOneWidget);
+  });
 }

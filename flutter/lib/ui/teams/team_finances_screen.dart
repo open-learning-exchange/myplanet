@@ -83,6 +83,7 @@ class _TeamFinancesScreenState extends ConsumerState<TeamFinancesScreen> {
                   onPressed: () => setState(() {
                     _startDate = null;
                     _endDate = null;
+                    _ascending = false;
                   }),
                   child: Text(l10n.reset),
                 ),
@@ -149,7 +150,8 @@ class _TeamFinancesScreenState extends ConsumerState<TeamFinancesScreen> {
     final date = await showDatePicker(
       context: context,
       firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+      // #15766: don't let the user pick a future date.
+      lastDate: now,
       initialDate: isStart
           ? (_startDate != null
                 ? DateTime.fromMillisecondsSinceEpoch(_startDate!)

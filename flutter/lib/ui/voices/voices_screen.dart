@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/utils/json_utils.dart';
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/session_provider.dart';
@@ -135,7 +136,7 @@ class VoiceCard extends ConsumerWidget {
                           style: theme.textTheme.titleSmall,
                         ),
                         Text(
-                          formatVoiceTime(row.time),
+                          _formatDateWithSharedTeam(row, teamName),
                           style: theme.textTheme.bodySmall,
                         ),
                       ],
@@ -296,4 +297,16 @@ String formatVoiceTime(int millis) {
   String two(int value) => value.toString().padLeft(2, '0');
   return '${date.year}-${two(date.month)}-${two(date.day)} '
       '${two(date.hour)}:${two(date.minute)}';
+}
+
+/// Port of `VoicesAdapter.setMessageAndDate`'s shared-team suffix: when the
+/// card is on the community feed (no team context) and the post's `viewIn`
+/// array carries a source team name, append "| Shared from {name}" to the
+/// date — the same label the Kotlin adapter derives from `viewIn[0].name`.
+String _formatDateWithSharedTeam(NewsRow row, String teamName) {
+  final date = formatVoiceTime(row.time);
+  if (teamName.isNotEmpty) return date;
+  final sharedTeamName = JsonUtils.extractSharedTeamName(row.viewIn);
+  if (sharedTeamName.isEmpty) return date;
+  return '$date | Shared from $sharedTeamName';
 }

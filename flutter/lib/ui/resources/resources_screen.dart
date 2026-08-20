@@ -39,6 +39,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     final syncState = ref.watch(resourceSyncProvider);
     final filter = ref.watch(resourceFilterProvider);
     final viewMode = ref.watch(libraryViewModeProvider);
+    final shelfOnly = ref.watch(resourceShelfOnlyProvider);
 
     ref.listen<SyncUiState>(resourceSyncProvider, (previous, next) {
       final messenger = ScaffoldMessenger.of(context);
@@ -84,6 +85,15 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
               onPressed: () => _setSelectedMembership(joined: false),
             ),
           ] else ...[
+            IconButton(
+              tooltip: shelfOnly ? l10n.allResources : l10n.myLibrary,
+              icon: Icon(
+                shelfOnly ? Icons.folder_outlined : Icons.bookmark_border,
+              ),
+              onPressed: () =>
+                  ref.read(resourceShelfOnlyProvider.notifier).state =
+                      !shelfOnly,
+            ),
             ViewModeToggle(
               mode: viewMode,
               onChanged: ref.read(libraryViewModeProvider.notifier).set,

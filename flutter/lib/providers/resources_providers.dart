@@ -12,14 +12,32 @@ import 'sync_state.dart';
 /// `BaseRecyclerFragment` keeps as fields.
 final resourceSearchQueryProvider = StateProvider<String>((ref) => '');
 
+/// Whether the resources screen shows only the user's shelf (joined resources)
+/// or the full catalog. Mirrors the Kotlin `isMyCourseLib` argument that
+/// `ResourcesFragment` reads (`08e18ffdc`): the dashboard library card sets
+/// this to `true` when the user has shelf items and `false` when they do not,
+/// so the card lands on the shelf or the catalog respectively.
+final resourceShelfOnlyProvider = StateProvider<bool>((ref) => false);
+
 /// Offline-first resource list.
 ///
 /// Reads only from SQLite, so it emits immediately with whatever was last
 /// synced and never blocks on the network. Rebuilding on
 /// [resourceSearchQueryProvider] re-runs the query; a background sync writing to
-/// `my_library` pushes a fresh list into the same stream.
+/// `my_library` pushes a fresh list into the same stream. When
+/// [resourceShelfOnlyProvider] is on, the list is scoped to the signed-in
+/// user's shelf (`watchResources(shelfUserId:)`), the `isMyCourseLib` view.
 final resourcesStreamProvider = StreamProvider<List<MyLibraryRow>>((ref) {
   final query = ref.watch(resourceSearchQueryProvider);
+  final shelfOnly = ref.watch(resourceShelfOnlyProvider);
+  if (shelfOnly) {
+    final userId = ref.watch(sessionProvider).valueOrNull?.id;
+    if (userId != null && userId.isNotEmpty) {
+      return ref
+          .watch(resourcesRepositoryProvider)
+          .watchResources(query: query, shelfUserId: userId);
+    }
+  }
   return ref.watch(resourcesRepositoryProvider).watchResources(query: query);
 });
 

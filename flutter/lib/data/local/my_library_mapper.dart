@@ -52,6 +52,12 @@ class MyLibraryMapper {
       publisher: Value(JsonUtils.getStringOrNull('publisher', doc)),
       linkToLicense: Value(JsonUtils.getStringOrNull('linkToLicense', doc)),
       openWith: Value(JsonUtils.getStringOrNull('openWith', doc)),
+      // Kotlin uses `.takeIf { it.isNotBlank() }`: a whitespace-only value
+      // reads as "no entry file set", so it must null out rather than fall
+      // through to the `index.html` default as a non-blank-looking override.
+      openWhichFile: Value(
+        _takeIfNonBlank(JsonUtils.getStringOrNull('openWhichFile', doc)),
+      ),
       articleDate: Value(JsonUtils.getStringOrNull('articleDate', doc)),
       kind: Value(JsonUtils.getStringOrNull('kind', doc)),
       createdDate: Value(JsonUtils.getLong('createdDate', doc)),
@@ -154,4 +160,11 @@ class _Attachment {
 
   final String remoteAddress;
   final String localAddress;
+}
+
+/// Kotlin's `String?.takeIf { it.isNotBlank() }` — nulls out a whitespace-only
+/// string so it does not masquerade as a set value.
+String? _takeIfNonBlank(String? value) {
+  if (value == null || value.trim().isEmpty) return null;
+  return value;
 }

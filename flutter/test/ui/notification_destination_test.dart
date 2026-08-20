@@ -101,4 +101,42 @@ void main() {
       expect(await resolver.resolve(_notification('other')), isNull);
     },
   );
+
+  test('team_join carries the team id directly', () async {
+    expect(
+      await resolver.resolve(_notification('team_join', relatedId: 'team-3')),
+      const NotificationDestination(
+        NotificationDestinationKind.teamJoin,
+        teamId: 'team-3',
+      ),
+    );
+  });
+
+  test('chat carries the team id directly', () async {
+    expect(
+      await resolver.resolve(_notification('chat', relatedId: 'team-4')),
+      const NotificationDestination(
+        NotificationDestinationKind.teamChat,
+        teamId: 'team-4',
+      ),
+    );
+  });
+
+  test('voice_reply carries the news id directly', () async {
+    expect(
+      await resolver.resolve(_notification('voice_reply', relatedId: 'news-5')),
+      const NotificationDestination(
+        NotificationDestinationKind.voiceReply,
+        voiceId: 'news-5',
+      ),
+    );
+  });
+
+  test('team_join and voice_reply with blank ids resolve to nothing', () async {
+    expect(
+      await resolver.resolve(_notification('team_join', relatedId: '  ')),
+      isNull,
+    );
+    expect(await resolver.resolve(_notification('voice_reply')), isNull);
+  });
 }

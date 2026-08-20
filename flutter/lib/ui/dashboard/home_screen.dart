@@ -10,6 +10,7 @@ import '../../providers/dashboard_providers.dart';
 import '../../providers/life_provider.dart';
 import '../../providers/network_status_provider.dart';
 import '../../providers/notifications_provider.dart';
+import '../../providers/resources_providers.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/sync_state.dart';
@@ -224,6 +225,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         .scheduleSurveyReminder(_reminderKeyFor(pending), selection);
   }
 
+  /// Port of `BellDashboardFragment`'s library-card navigation (`08e18ffdc`):
+  /// if the user has shelf items, open the "My Library" (shelf) view; if not,
+  /// open the full catalog so they can browse and join resources.
+  void _openLibraryCard(BuildContext context, String userId) {
+    final shelf =
+        ref.read(myLibraryStreamProvider(userId)).valueOrNull ?? const [];
+    ref.read(resourceShelfOnlyProvider.notifier).state = shelf.isNotEmpty;
+    context.go(Routes.resources);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -360,7 +371,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ?.length,
                     onHeaderTap: () => isGuest
                         ? showGuestDialog(context)
-                        : context.go(Routes.resources),
+                        : _openLibraryCard(context, session.id),
                     child: _LibraryTiles(userId: session.id, isGuest: isGuest),
                   ),
                 ),

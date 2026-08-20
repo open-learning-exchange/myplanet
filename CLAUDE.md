@@ -87,6 +87,26 @@ the JPEG bytes as a CouchDB attachment). Capture runs through a `PhotoCapture` s
 (`image_picker` in production, faked in tests), wired into `take_exam_screen` behind
 `ProgressRepository.isCourseCertified(courseId)`; a null capture is swallowed, matching Kotlin.
 
+Phase 52 ported the mandatory-survey toast (the deferred second half of `c5141b658`): on
+finishing the MyPlanet Onboarding course, the screen checks
+`SubmissionsRepository.hasUnfinishedSurveys(courseId, userId)` — a port of the Kotlin
+`hasUnfinishedSurveys`/`hasSubmission` pair — and blocks the pop with a toast when an attached
+survey is outstanding. The `courseId`/`stepId` columns on `Surveys` (schema v35) make
+course-attached surveys queryable. The resource-sync `deleteNotIn` bug (`2ec7e3187`, #15831) is
+the second fix: a mid-walk batch failure now sets a `hadBatchFailure` flag and skips the cleanup
+(returns `SyncComplete`, not `SyncFailed`), so valid resources survive an incomplete walk.
+
+Phase 53 closed five deferred/audit items. The dashboard library-card my/call split
+(`08e18ffdc`, #15728) ships a `resourceShelfOnlyProvider` shelf toggle and a `shelfUserId`-scoped
+`watchResources` (the `isMyCourseLib` view): the card opens the user's shelf when it has items
+and the full catalog otherwise. The notification sub-destination work (`a08fc5662`) adds a
+`subType` column to `Notifications` (schema v37) and a `NotificationParser` that splits a raw
+`"team"` type (via `linkParams.activeTab` or message sniffing) into `team_join`, `chat`, and
+`voice_reply` destination kinds. Nested HTML entry files land via the `openWhichFile` column on
+`MyLibraryTable` (schema v36) and `ResourceFiles.resolveHtmlEntryFile` (path-traversal-safe).
+The voices shared-team suffix (`"| Shared from {name}"`) and the team-finances future-date cap
+(#15766) round out the batch.
+
 ### Documentation Map
 
 | Document | Read it when… |

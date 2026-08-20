@@ -105,6 +105,7 @@ class MyLibraryTable extends Table {
   TextColumn get publisher => text().nullable()();
   TextColumn get linkToLicense => text().nullable()();
   TextColumn get openWith => text().nullable()();
+  TextColumn get openWhichFile => text().nullable()();
   TextColumn get articleDate => text().nullable()();
   TextColumn get kind => text().nullable()();
   IntColumn get createdDate => integer().withDefault(const Constant(0))();
@@ -246,6 +247,7 @@ class Notifications extends Table {
   TextColumn get userId => text()();
   TextColumn get message => text().withDefault(const Constant(''))();
   TextColumn get type => text().withDefault(const Constant('notification'))();
+  TextColumn get subType => text().nullable()();
   TextColumn get relatedId => text().nullable()();
   TextColumn get title => text().nullable()();
   TextColumn get link => text().nullable()();

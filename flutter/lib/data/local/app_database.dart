@@ -99,7 +99,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 35;
+  int get schemaVersion => 37;
 
   /// Tables holding local intent the server cannot give back.
   ///

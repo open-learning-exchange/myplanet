@@ -1032,6 +1032,8 @@
   "removeFromMyLibrary": "Remove from My Library",
   "addedToMyLibrary": "Added to My Library",
   "removedFromMyLibrary": "Removed from My Library",
+  "myLibrary": "My Library",
+  "allResources": "All Resources",
   "viewResource": "View Resource",
   "noRatings": "No ratings yet",
   "@noRatings": {

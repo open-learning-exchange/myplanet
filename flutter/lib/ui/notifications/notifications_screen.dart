@@ -269,6 +269,14 @@ class _NotificationTile extends ConsumerWidget {
         '${Routes.teams}/${destination.teamId}/tasks',
       NotificationDestinationKind.teamMembers =>
         '${Routes.teams}/${destination.teamId}/members?tab=requests',
+      NotificationDestinationKind.teamJoin =>
+        '${Routes.teams}/${destination.teamId}',
+      // The Flutter port has no team-chat tab yet (the upstream opens the
+      // team's ChatPage), so the team detail is the closest destination.
+      NotificationDestinationKind.teamChat =>
+        '${Routes.teams}/${destination.teamId}',
+      NotificationDestinationKind.voiceReply =>
+        '${Routes.voices}/${destination.voiceId}',
     };
     context.go(path);
   }

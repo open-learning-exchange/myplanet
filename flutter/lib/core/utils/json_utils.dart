@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 /// Port of `utils/JsonUtils.kt`.
 ///
 /// CouchDB documents arrive as loosely-typed maps, and the Kotlin readers all
@@ -56,5 +58,22 @@ class JsonUtils {
   ) {
     final value = json?[key];
     return value is Map<String, dynamic> ? value : null;
+  }
+
+  /// Port of `JsonUtils.extractSharedTeamName` — reads the first entry's
+  /// `name` from a news document's `viewIn` JSON array. Returns `''` when the
+  /// array is missing, empty, or its first element has no `name`.
+  static String extractSharedTeamName(String? viewInJson) {
+    if (viewInJson == null || viewInJson.isEmpty) return '';
+    List<dynamic>? parsed;
+    try {
+      parsed = jsonDecode(viewInJson) as List<dynamic>?;
+    } catch (_) {
+      return '';
+    }
+    if (parsed == null || parsed.length <= 1) return '';
+    final first = parsed.first;
+    if (first is! Map<String, dynamic>) return '';
+    return getString('name', first);
   }
 }

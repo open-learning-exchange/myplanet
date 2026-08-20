@@ -65,4 +65,51 @@ class ResourceFiles {
     final name = p.basename(raw.replaceAll(r'\', '/'));
     return (name.isEmpty || name == '.' || name == '..') ? '_' : name;
   }
+
+  /// Resolves an HTML resource's entry file against its download directory,
+  /// defaulting to `index.html` when [relativePath] is unset.
+  ///
+  /// Port of `FileUtils.resolveHtmlEntryFile`. An HTML resource's
+  /// `openWhichFile` may nest the entry point in a subfolder
+  /// (`sudoku/index.html` rather than `index.html`); this resolves that path
+  /// against [baseDirectory] and refuses to return anything outside it, so a
+  /// malicious `openWhichFile` cannot read an arbitrary file off the device.
+  static File? resolveHtmlEntryFile(
+    Directory baseDirectory,
+    String? relativePath,
+  ) {
+    final candidate = (relativePath == null || relativePath.trim().isEmpty)
+        ? 'index.html'
+        : relativePath.trim();
+    if (candidate.startsWith('/') ||
+        candidate.startsWith('\\') ||
+        candidate.contains('..')) {
+      return null;
+    }
+    final basePath = baseDirectory.absolute.path;
+    final resolved = p.normalize(p.absolute(p.join(basePath, candidate)));
+    if (resolved == basePath || p.isWithin(basePath, resolved)) {
+      return File(resolved);
+    }
+    return null;
+  }
+
+  /// Extracts a resource's nested relative path from its attachment URL.
+  ///
+  /// Port of `FileUtils.getResourceRelativePathFromUrl`. A resource whose
+  /// attachment lives at `/resources/<id>/sudoku/index.html` is stored under
+  /// `ole/<id>/sudoku/index.html`, not flattened to `ole/<id>/index.html` —
+  /// otherwise a multi-file HTML bundle loses its subfolder structure and the
+  /// entry file's relative links break. Falls back to the plain filename when
+  /// the URL does not carry the expected `/resources/<id>/…` shape.
+  static String resourceRelativePathFromUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    final parsed = Uri.tryParse(url);
+    final segments = parsed?.pathSegments;
+    if (segments == null || segments.isEmpty) return p.basename(url);
+    final idx = segments.indexOf('resources');
+    if (idx == -1 || idx + 2 >= segments.length) return p.basename(url);
+    final nested = segments.sublist(idx + 2);
+    return nested.map((s) => Uri.decodeComponent(s)).join('/');
+  }
 }

@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 52 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 53 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -1503,8 +1503,10 @@ features (deferred):
   blank-string nav arg as absent (`.takeIf { isNotBlank() }`). The port reads
   `teamName` from the watched `TeamRow`, not a blank-string nav arg, so the
   edge case does not arise. (2) Adds `subType` to `AppNotification` for
-  finer-grained destination-view routing — basic type/related-id routing is
-  now Phase 49; `subType` remains deferred below.
+  finer-grained destination-view routing — **harvested**: the `Notifications`
+  cache table gained a `subType` column at schema v37, and `NotificationParser`
+  ports the server-notification parsing (see the deferred-section update
+  below).
 - `d5f9998e1` (database service module removal) — deletes the vestigial
   `DatabaseService`/`DatabaseModule` and updates docs. The port has no
   `DatabaseService` equivalent (drift `AppDatabase` is used directly).
@@ -1579,11 +1581,15 @@ features (deferred):
 
 **Deferred (lands on unported features).**
 
-- `a08fc5662`'s `subType` on `AppNotification` — enables finer destination
-  selection within a feature. Phase 49 now routes the four notification types
-  Kotlin handles (`resource`, `storage`, `task`, and `join_request`) from the
-  existing `type`/`relatedId` fields. `subType` is still absent, so any newer
-  course/resource sub-destination that depends on it remains deferred.
+- `a08fc5662`'s `subType` on `AppNotification` — **harvested.** The
+  `Notifications` cache table gained a `subType` column at schema v37, and
+  `NotificationParser` ports the server-notification parsing: a raw `"team"`
+  type is split (via `linkParams.activeTab == "applicantTab"` or message
+  sniffing) into `team_join`, `chat`, and `voice_reply`, each carrying its
+  `relatedId` straight to a destination kind. The four Phase-49 routes
+  (`resource`, `storage`, `task`, `join_request`) are unchanged; the new
+  `teamJoin`, `teamChat`, and `voiceReply` kinds open the team detail or the
+  voices thread.
 - `437a3d28a` (enterprises finances date picking) — carried over from the
   prior batch; enterprises is not ported.
 
@@ -1761,13 +1767,16 @@ they land on unported features.
 **Deferred — lands on an unported feature.**
 
 - `beb4696d6`, `55e3d833e` (enterprises finances date filters/reset) — the
-  port has no enterprises screens of its own; the teams slice covers
-  creation/edit/archive. Deferred, as the Status note says.
-- `08e18ffdc` (dashboard library card my/call split) — distinguishes the "my
-  shelf" resources filter from the full library in the dashboard card target.
-  The port's library card still opens resources outright: Phase 50 closed the
-  batch-selection half of this gap, but the my-shelf-versus-library filter it
-  turns on is still unported. Deferred.
+  port's team finances screen already carries the date picker and reset; the
+  `maxDate` cap (`beb4696d6`) and the sort-order reset on date clear
+  (`55e3d833e`) are now ported in `team_finances_screen.dart`.
+- `08e18ffdc` (dashboard library card my/call split) — **harvested.** The
+  dashboard library card now sets a `resourceShelfOnlyProvider` flag before
+  navigating: when the user has shelf items it opens the "My Library"
+  (shelf-only) view, and when the shelf is empty it opens the full catalog.
+  The resources screen gained a shelf/catalog toggle in its AppBar, backed by
+  the same provider, which scopes `watchResources` to `shelfUserId` (the
+  `isMyCourseLib` view).
 - `758a06f80` (teams submissions streamlining) — `ApkLog.serialize` drops its
   `Context` and `serializeSubmission` drops its `context` parameter; both sit
   on the apk-log/crash-diagnostics feature the port has never had. Deferred.
@@ -2309,13 +2318,62 @@ failed second batch, and verifies the 50 resources in that batch survive; the
 old "fails when a page request fails mid-walk" test is rewritten to expect the
 new resilient completion.
 
+### Phase 53 — dashboard shelf/library split, notification sub-destinations, nested HTML entry files
+
+Five upstream fixes from the deferred/audit backlog are now closed.
+
+The dashboard library-card my/call split (`08e18ffdc`, fixes #15728) is the
+first. The Kotlin `BellDashboardFragment` passes an `isMyCourseLib` flag so the
+library card opens the user's shelf when it has items and the full catalog
+otherwise. The port gained a `resourceShelfOnlyProvider` state flag:
+`watchResources` now takes a `shelfUserId` (the `isMyCourseLib` view), the
+resources screen carries a shelf/catalog toggle in its AppBar backed by that
+provider, and the dashboard library card sets the flag from the shelf's size
+before navigating — shelf items open "My Library", an empty shelf opens the
+catalog. A widget test locks in the toggle.
+
+The notification sub-destination work (`a08fc5662`) is the second. The
+`Notifications` cache table gained a `subType` column at schema v37, and a new
+`NotificationParser` ports the server-notification parsing the Kotlin
+`NotificationsViewModel` does: a raw `"team"` type covers join requests,
+membership changes, and chat posts alike, and the server renders `message` in
+the recipient's locale so it cannot be classified by phrase-sniffing alone.
+The parser splits `"team"` via the locale-independent `linkParams.activeTab ==
+"applicantTab"` signal (falling back to message sniffing) into `team_join`,
+`chat`, and `voice_reply`, each carrying its `relatedId` straight to a new
+destination kind (`teamJoin`, `teamChat`, `voiceReply`). The four Phase-49
+routes are unchanged; the new kinds open the team detail or the voices thread.
+Four destination tests and the parser tests cover the new paths.
+
+The nested HTML entry-file resolution is the third. An HTML resource's
+`openWhichFile` may nest the entry point in a subfolder
+(`sudoku/index.html`), and the port's viewer flattened that to
+`ole/<id>/index.html`, breaking multi-file bundles. Schema v36 adds
+`openWhichFile` to `MyLibraryTable`; `MyLibraryMapper` reads it (nulling out a
+whitespace-only value, the Kotlin `.takeIf { isNotBlank() }`); and
+`ResourceFiles` gains `resolveHtmlEntryFile` (path-traversal-safe resolution
+against the download directory) and `resourceRelativePathFromUrl` (preserves
+the subfolder structure when storing the attachment). A mapper test and a
+`resource_files_test.dart` cover both the resolution and the traversal guard.
+
+The voices shared-team suffix is the fourth. The Kotlin `VoicesAdapter` appends
+"| Shared from {name}" to a community-feed card's date when the post was shared
+from a team, derived from `viewIn[0].name`. `JsonUtils.extractSharedTeamName`
+ports the read, and `voices_screen.dart`'s `VoiceCard` appends the suffix on
+the community feed (no team context).
+
+The team-finances date-filter hardening (`beb4696d6`/`55e3d833e`, #15766) is
+the fifth. The date picker now caps `lastDate` at `now` (no future picks), and
+the reset button also restores the default descending sort.
+
 ---
 
-**Last updated**: 2026-08-20 (Phase 52 complete — the mandatory-survey toast,
-the deferred second half of `c5141b658`, now blocks the MyPlanet Onboarding
-course's finish when an attached survey is outstanding, with the `courseId`
-column on `Surveys` (schema v35) that makes course-attached surveys queryable;
-the resilient resource-cleanup fix from `2ec7e3187` ports the `hadBatchFailure`
-flag so a mid-walk batch failure no longer deletes valid resources)
-**Phase**: 52 of N (27 of 28 UI packages have a screen — see Status for what that does and
+**Last updated**: 2026-08-20 (Phase 53 complete — the dashboard library-card
+my/call split from `08e18ffdc` ships the `resourceShelfOnlyProvider` shelf
+toggle and `shelfUserId`-scoped `watchResources`; the notification
+sub-destination work from `a08fc5662` adds the `subType` column (schema v37)
+and `NotificationParser`; nested HTML entry files land via the `openWhichFile`
+column (schema v36) and `ResourceFiles.resolveHtmlEntryFile`; the voices
+shared-team suffix and the team-finances future-date cap round out the batch)
+**Phase**: 53 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

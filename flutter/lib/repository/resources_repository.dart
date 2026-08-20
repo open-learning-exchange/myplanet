@@ -31,9 +31,12 @@ class ResourcesRepository {
   final MyLibraryDao _dao;
   final RemovedLogDao _removedLogDao;
 
-  /// Reactive, offline-first resource list.
-  Stream<List<MyLibraryRow>> watchResources({String? query}) =>
-      _dao.watchResources(query: query);
+  /// Reactive, offline-first resource list. Pass [shelfUserId] to scope the
+  /// stream to the user's shelf (joined resources), the `isMyCourseLib` view.
+  Stream<List<MyLibraryRow>> watchResources({
+    String? query,
+    String? shelfUserId,
+  }) => _dao.watchResources(query: query, shelfUserId: shelfUserId);
 
   Future<int> localCount() => _dao.count();
 

@@ -1,21 +1,31 @@
 import '../../data/local/app_database.dart';
 
-enum NotificationDestinationKind { resources, storage, teamTasks, teamMembers }
+enum NotificationDestinationKind {
+  resources,
+  storage,
+  teamTasks,
+  teamMembers,
+  teamJoin,
+  teamChat,
+  voiceReply,
+}
 
 class NotificationDestination {
-  const NotificationDestination(this.kind, {this.teamId});
+  const NotificationDestination(this.kind, {this.teamId, this.voiceId});
 
   final NotificationDestinationKind kind;
   final String? teamId;
+  final String? voiceId;
 
   @override
   bool operator ==(Object other) =>
       other is NotificationDestination &&
       other.kind == kind &&
-      other.teamId == teamId;
+      other.teamId == teamId &&
+      other.voiceId == voiceId;
 
   @override
-  int get hashCode => Object.hash(kind, teamId);
+  int get hashCode => Object.hash(kind, teamId, voiceId);
 }
 
 /// Resolves an in-app notification to the screen the Kotlin app opens from
@@ -25,6 +35,10 @@ class NotificationDestination {
 /// independently testable. Task notifications carry a task id and therefore
 /// need the cached task to discover their team; join requests carry the id of
 /// the request document, whose `teamId` identifies the destination team.
+///
+/// `team_join` and `chat` carry the team id directly as `relatedId` (server
+/// notifications set `item` to the team id), so no lookup is needed.
+/// `voice_reply` carries the news/voice id as `relatedId`.
 class NotificationDestinationResolver {
   const NotificationDestinationResolver({
     required TeamTaskDao taskDao,
@@ -45,6 +59,30 @@ class NotificationDestinationResolver {
         return const NotificationDestination(
           NotificationDestinationKind.resources,
         );
+      case 'team_join':
+        final teamId = _nonBlank(notification.relatedId);
+        return teamId == null
+            ? null
+            : NotificationDestination(
+                NotificationDestinationKind.teamJoin,
+                teamId: teamId,
+              );
+      case 'chat':
+        final teamId = _nonBlank(notification.relatedId);
+        return teamId == null
+            ? null
+            : NotificationDestination(
+                NotificationDestinationKind.teamChat,
+                teamId: teamId,
+              );
+      case 'voice_reply':
+        final voiceId = _nonBlank(notification.relatedId);
+        return voiceId == null
+            ? null
+            : NotificationDestination(
+                NotificationDestinationKind.voiceReply,
+                voiceId: voiceId,
+              );
       case 'task':
         final relatedId = _nonBlank(notification.relatedId);
         if (relatedId == null) return null;
