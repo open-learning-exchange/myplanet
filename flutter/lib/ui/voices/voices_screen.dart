@@ -158,7 +158,7 @@ class VoiceCard extends ConsumerWidget {
                   // server; the outbox will deliver it on the next drain.
                   if (row.docId == null || row.docId!.isEmpty)
                     const Padding(
-                      padding: EdgeInsets.only(left: 6),
+                      padding: EdgeInsetsDirectional.only(start: 6),
                       child: Icon(Icons.cloud_upload_outlined, size: 18),
                     ),
                 ],
@@ -180,7 +180,7 @@ class VoiceCard extends ConsumerWidget {
               ],
               const SizedBox(height: 4),
               Align(
-                alignment: Alignment.centerLeft,
+                alignment: AlignmentDirectional.centerStart,
                 child: TextButton.icon(
                   onPressed: () => context.push('${Routes.voices}/${row.id}'),
                   icon: const Icon(Icons.mode_comment_outlined, size: 18),

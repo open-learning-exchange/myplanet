@@ -95,6 +95,9 @@ dev_dependencies:
   drift_dev: ^2.28.2
   build_runner: ^2.4.13
   mocktail: ^1.0.4
+  # Used only by tool/arb_from_strings_xml.dart, which reads the Kotlin app's
+  # res/values-*/strings.xml to derive the locale .arb files.
+  xml: ^7.0.1
 
 flutter:
   uses-material-design: true

@@ -178,7 +178,7 @@ class TeamDetailScreen extends ConsumerWidget {
                 children: [
                   if (membership != null)
                     Align(
-                      alignment: Alignment.centerLeft,
+                      alignment: AlignmentDirectional.centerStart,
                       child: Chip(
                         label: Text(
                           membership.isLeader

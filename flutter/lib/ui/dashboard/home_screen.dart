@@ -761,7 +761,7 @@ class _CompletedCourseStars extends ConsumerWidget {
 
     return completed.when(
       loading: () => const Padding(
-        padding: EdgeInsets.only(top: 6, left: 4),
+        padding: EdgeInsetsDirectional.only(top: 6, start: 4),
         child: SizedBox(
           height: 16,
           width: 16,

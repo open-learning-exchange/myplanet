@@ -84,7 +84,7 @@ class _FeedbackCreateScreenState extends ConsumerState<FeedbackCreateScreen> {
             ),
             if (_priorityError != null)
               Padding(
-                padding: const EdgeInsets.only(left: 16),
+                padding: const EdgeInsetsDirectional.only(start: 16),
                 child: Text(
                   _priorityError!,
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
@@ -136,7 +136,7 @@ class _FeedbackCreateScreenState extends ConsumerState<FeedbackCreateScreen> {
             ),
             if (_typeError != null)
               Padding(
-                padding: const EdgeInsets.only(left: 16, top: 8),
+                padding: const EdgeInsetsDirectional.only(start: 16, top: 8),
                 child: Text(
                   _typeError!,
                   style: TextStyle(color: Theme.of(context).colorScheme.error),

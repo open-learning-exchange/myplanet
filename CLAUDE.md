@@ -61,6 +61,14 @@ silently disabling the deadline notifier's storage-warning step — the only cal
 `MainActivity`; moving them into a `FlutterPlugin` registered for every engine is the real fix and
 is not done.
 
+Phase 47 localised the other four languages: `tool/arb_from_strings_xml.dart` derives `app_ar.arb`,
+`app_fr.arb`, `app_ne.arb` and `app_so.arb` from the Kotlin `values-*/strings.xml` (195–196 of 727
+keys each, nothing machine-translated), which also made the language picker's four dead entries
+real — they had been setting a locale with no `.arb` to resolve to. Somali needed
+`framework_fallback_delegates.dart`, because `flutter_localizations` does not translate it and the
+locale would otherwise resolve with no `MaterialLocalizations` and crash. Directional padding and
+alignment are done; a visual RTL review in Arabic is not.
+
 ### Documentation Map
 
 | Document | Read it when… |

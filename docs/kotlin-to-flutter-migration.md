@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 46 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 47 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -934,11 +934,10 @@ Ordered by risk, highest first.
    between this port and a shippable replacement, and they grow with every phase that authors a
    new screen.
 
-   The other four locales are worse off than that number suggests: there is no `app_ar.arb`,
-   `app_fr.arb`, `app_ne.arb` or `app_so.arb` at all, so Arabic, French, Nepali and Somali users
-   get English for **everything**, where the Kotlin app has real `values-{ar,fr,ne,so}` files to
-   carry over. That conversion is the mechanical, scriptable part described above and remains
-   undone.
+   **Phase 47 ran that conversion.** `tool/arb_from_strings_xml.dart` now derives `app_ar.arb`,
+   `app_fr.arb`, `app_ne.arb` and `app_so.arb` from the Kotlin `values-{ar,fr,ne,so}` files, giving
+   each 195-196 strings by the same two matching rules `app_es.arb` was built with — see Phase 47
+   below for what that turned up.
 
    Two quirks are reproduced rather than corrected, because they are what Spanish users see in
    the shipping app today: `myCourses`/`myLife`/`myHealth`/`myPersonals`/`achievements` resolve to
@@ -2060,10 +2059,56 @@ Also corrected here: a comment in `task_deadline_notifier.dart` claiming the das
 called `updateStorageNotification` (nothing did), and two places still describing
 `DownloadWorker`'s queue as open after Phase 43 ported it.
 
+## Phase 47 — the other four locales
+
+The mechanical conversion this document had been listing as undone. `tool/arb_from_strings_xml.dart`
+derives `app_ar.arb`, `app_fr.arb`, `app_ne.arb` and `app_so.arb` from the Kotlin app's
+`values-{ar,fr,ne,so}/strings.xml`, by the same two rules `app_es.arb` was built with: a Kotlin
+string name that normalises to the ARB key *with* matching English, or an exact English-text match
+where every candidate sharing that English agrees on one translation. Each locale lands 195-196 of
+727 keys, alongside Spanish's 205.
+
+Nothing is machine-translated; these are the translations the Kotlin app already ships. Keys with
+ICU placeholders or plurals are skipped outright — Kotlin writes `%1$s`, and where a namesake
+exists its wording is usually a different phrasing, so deriving from it would attach a translation
+to text that says something else. The script is committed rather than run once, because the template
+grows with every phase and the same pass will want re-running.
+
+**The picker had four dead entries.** `LocaleNotifier.supportedLanguageCodes` has offered all six
+languages since the language action landed in Phase 33, but `supportedLocales` comes from the `.arb`
+files, which were `en` and `es`. So choosing Arabic, French, Nepali or Somali set the locale, failed
+resolution, and silently rendered English. No test could have caught it: every string still
+appeared, just in the wrong language. There is now a test asserting every code the picker offers has
+a locale to resolve to.
+
+**Somali would have crashed rather than fallen back.** `flutter_localizations` does not translate
+Somali — all three global delegates answer `isSupported(Locale('so'))` with false, where `ar`, `fr`,
+`ne` and `es` are all covered. Shipping `app_so.arb` therefore made the locale *resolve* with no
+delegate to supply `MaterialLocalizations`, and the first widget to ask for one throws. Adding the
+translations would have turned a quietly-English menu entry into a crashing one. This is a genuine
+platform difference rather than a porting gap: Android resources need no framework support, Flutter
+widgets do.
+
+`lib/l10n/framework_fallback_delegates.dart` serves English framework labels for any locale the
+global delegates decline. It must be listed **last**, because `Localizations` uses the first
+delegate that claims a type — a fallback placed first would silently revert every locale's framework
+strings to English. Both halves are pinned by tests: Somali renders English framework labels with
+Somali app strings and no exception, and Spanish still gets Spanish `MaterialLocalizations`.
+
+**The RTL pass, partially.** Arabic actually resolving makes `Directionality` flip for the first
+time, which turns 11 hard-coded sites into real bugs. `EdgeInsets.only(left:/right:)` became
+`EdgeInsetsDirectional.only(start:/end:)` and `Alignment.centerLeft/Right` became
+`AlignmentDirectional.centerStart/End`, including the chat bubbles — where the sender-side asymmetry
+*should* mirror in RTL. What this does **not** cover is a visual review: icons that imply direction,
+`Row` orders that read as sequences, and anything positioned with a `Stack`. Those need eyes on a
+screen in Arabic, which is still open.
+
+Also fixed: `l10n.yaml`'s header still pointed at `../crowdin.yml`, deleted from master.
+
 ---
 
-**Last updated**: 2026-08-19 (Phase 46 complete — the storage-warning step made to work headless,
-after the same channel-registration edge Phase 45 found for device identity; all three WorkManager
-jobs ported)
-**Phase**: 46 of N (27 of 28 UI packages have a screen — see Status for what that does and
+**Last updated**: 2026-08-20 (Phase 47 complete — Arabic, French, Nepali and Somali derived from the
+Kotlin `strings.xml`, the four dead language-picker entries made real, framework fallback delegates
+added for Somali, and the directional-layout half of the RTL pass done)
+**Phase**: 47 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

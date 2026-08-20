@@ -120,8 +120,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
                       return Align(
                         alignment: isUser
-                            ? Alignment.centerRight
-                            : Alignment.centerLeft,
+                            ? AlignmentDirectional.centerEnd
+                            : AlignmentDirectional.centerStart,
                         child: Container(
                           constraints: BoxConstraints(
                             maxWidth: MediaQuery.of(context).size.width * 0.75,

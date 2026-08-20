@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'l10n/app_localizations.dart';
+import 'l10n/framework_fallback_delegates.dart';
 import 'providers/settings_provider.dart';
 import 'ui/deep_link_scope.dart';
 import 'ui/outbox_drain_scope.dart';
@@ -32,6 +33,9 @@ class MyPlanetApp extends ConsumerWidget {
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
+        // Last, so they only answer for locales the global delegates decline —
+        // Somali, which Flutter does not translate. See the file's header.
+        ...frameworkFallbackDelegates,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       theme: ThemeData(

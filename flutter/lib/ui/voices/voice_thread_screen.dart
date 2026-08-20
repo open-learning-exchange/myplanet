@@ -47,7 +47,10 @@ class VoiceThreadScreen extends ConsumerWidget {
                 const SizedBox(height: 8),
                 ...?replies.valueOrNull?.map(
                   (reply) => Padding(
-                    padding: const EdgeInsets.only(left: 16, bottom: 8),
+                    padding: const EdgeInsetsDirectional.only(
+                      start: 16,
+                      bottom: 8,
+                    ),
                     child: VoiceCard(row: reply),
                   ),
                 ),

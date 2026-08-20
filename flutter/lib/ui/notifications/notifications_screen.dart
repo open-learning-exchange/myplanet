@@ -172,7 +172,7 @@ class _GroupHeader extends ConsumerWidget {
             ),
             if (header.unreadCount > 0)
               Padding(
-                padding: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsetsDirectional.only(end: 8),
                 child: Badge(
                   isLabelVisible: true,
                   label: Text('${header.unreadCount}'),
@@ -207,7 +207,7 @@ class _NotificationTile extends ConsumerWidget {
           ref.read(notificationActionsProvider).delete(notification.id),
       background: Container(
         color: colors.errorContainer,
-        alignment: Alignment.centerRight,
+        alignment: AlignmentDirectional.centerEnd,
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Icon(Icons.delete_outline, color: colors.onErrorContainer),
       ),
