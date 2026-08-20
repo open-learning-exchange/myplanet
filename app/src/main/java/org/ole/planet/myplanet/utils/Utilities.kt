@@ -18,6 +18,7 @@ import java.text.Normalizer
 import java.util.Locale
 
 object Utilities {
+    private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
     private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
 
     fun isValidEmail(target: CharSequence): Boolean {
@@ -44,7 +45,7 @@ object Utilities {
         if (Looper.myLooper() == Looper.getMainLooper()) {
             showToastIfValid(context, message, duration)
         } else {
-            Handler(Looper.getMainLooper()).post {
+            mainHandler.post {
                 showToastIfValid(context, message, duration)
             }
         }
