@@ -120,4 +120,24 @@ class ResourcesRepositoryLibrarySyncTest {
         // Still a single row for the resource.
         assertEquals(1, myLibraryDao.getAll().size)
     }
+
+    @Test
+    fun `batchInsertResources captures openWhichFile for nested HTML app entry points`() = runBlocking {
+        val doc = resourceDoc("sudoku", "Sudoku").apply {
+            addProperty("mediaType", "HTML")
+            addProperty("openWith", "HTML")
+            addProperty("openWhichFile", "sudoku/index.html")
+        }
+
+        repository.batchInsertResources(listOf(doc))
+
+        assertEquals("sudoku/index.html", myLibraryDao.getById("sudoku")?.openWhichFile)
+    }
+
+    @Test
+    fun `batchInsertResources leaves openWhichFile null when doc omits it`() = runBlocking {
+        repository.batchInsertResources(listOf(resourceDoc("res1", "Algebra")))
+
+        assertNull(myLibraryDao.getById("res1")?.openWhichFile)
+    }
 }
