@@ -137,8 +137,6 @@ interface MyLibraryDao {
     @Query("DELETE FROM my_library WHERE id IN (:ids)")
     suspend fun deleteByIds(ids: List<String>)
 
-    @Query("UPDATE my_library SET resourceOffline = :isOffline")
-    suspend fun setAllOffline(isOffline: Boolean)
 
     // removeDeletedResources: server-known public resources whose id fell out of the current set.
     @Query(
