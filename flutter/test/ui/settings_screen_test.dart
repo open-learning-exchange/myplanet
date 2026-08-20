@@ -168,6 +168,32 @@ void main() {
     );
     expect(find.textContaining('preference was saved'), findsOneWidget);
   });
+
+  testWidgets('renders the app version and build number from package_info', (
+    tester,
+  ) async {
+    final prefs = await _prefs();
+    const version = (version: '0.62.98', buildNumber: '6298');
+    await tester.pumpWidget(
+      wrapScreen(
+        const SettingsScreen(),
+        overrides: [
+          planetPrefsProvider.overrideWithValue(prefs),
+          appVersionInfoProvider.overrideWith((ref) async => version),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.byIcon(Icons.new_releases_outlined),
+      300,
+      scrollable: _settingsScrollable(),
+    );
+    // The version line tracks the running app, not a hardcoded constant.
+    expect(find.text('Version 0.62.98'), findsOneWidget);
+    expect(find.text('Build 6298'), findsOneWidget);
+  });
 }
 
 Finder _settingsScrollable() => find

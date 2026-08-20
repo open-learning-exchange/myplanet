@@ -90,6 +90,11 @@ dependencies:
   # task deadlines while the app is not running. Only the Android side is used;
   # the shipping app is Android-only.
   flutter_local_notifications: ^22.3.0
+  # Runtime app version/build number — replaces `BuildConfig.VERSION_NAME` /
+  # `BuildConfig.VERSION_CODE` for the About and Settings version lines. The
+  # port had been hardcoding `0.62.97` / `Build 6297`, which drifts from the
+  # pubspec version on every release.
+  package_info_plus: ^8.1.1
 
 dev_dependencies:
   flutter_test:

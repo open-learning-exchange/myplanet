@@ -64,7 +64,7 @@ class ConfigurationsRepository {
   });
 
   /// Matches `versionName` in `app/build.gradle` and `version:` in pubspec.yaml.
-  static const String defaultAppVersion = '0.62.97';
+  static const String defaultAppVersion = '0.62.98';
 
   final PlanetApi _api;
   final ServerUrlMapper _urlMapper;

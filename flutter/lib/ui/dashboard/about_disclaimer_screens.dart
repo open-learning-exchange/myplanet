@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/app_localizations.dart';
-import '../../repository/configurations_repository.dart';
+import '../../providers/app_providers.dart';
 
 /// Port of `ui/dashboard/AboutFragment.kt` -- renders the static `about`
 /// body as markdown, with the app version injected after the `### MyPlanet`
 /// heading, matching the Kotlin's `<h3>MyPlanet</h3>` ->
 /// `<h3>MyPlanet</h3>\n<h4>...</h4>` replacement.
-class AboutScreen extends StatelessWidget {
+class AboutScreen extends ConsumerWidget {
   const AboutScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    // The Kotlin reads `BuildConfig.VERSION_NAME`; the port has no
-    // `package_info_plus` dependency, so the same constant the configuration
-    // flow uses stands in here.
-    final versionLine = l10n.appVersion(
-      ConfigurationsRepository.defaultAppVersion,
-    );
+    // The Kotlin reads `BuildConfig.VERSION_NAME`; the port reads the same
+    // value at runtime through `package_info_plus` so the line tracks pubspec
+    // rather than a hardcoded constant.
+    final versionInfo = ref.watch(appVersionInfoProvider).valueOrNull;
+    final versionLine = l10n.appVersion(versionInfo?.version ?? '…');
     final body = '${l10n.aboutContent}\n\n#### $versionLine';
     return Scaffold(
       appBar: AppBar(title: Text(l10n.about)),

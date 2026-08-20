@@ -24,6 +24,7 @@ class SettingsScreen extends ConsumerWidget {
     final server = ref.watch(serverConfigProvider);
     final background = ref.watch(backgroundSettingsProvider);
     final backgroundRun = ref.watch(planetPrefsProvider).lastBackgroundRun;
+    final versionInfo = ref.watch(appVersionInfoProvider).valueOrNull;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settings)),
@@ -178,8 +179,8 @@ class SettingsScreen extends ConsumerWidget {
           ),
           ListTile(
             leading: const Icon(Icons.new_releases_outlined),
-            title: Text(l10n.appVersion('0.62.97')),
-            subtitle: const Text('Build 6297'),
+            title: Text(l10n.appVersion(versionInfo?.version ?? '…')),
+            subtitle: Text(l10n.buildNumber(versionInfo?.buildNumber ?? '…')),
           ),
         ],
       ),

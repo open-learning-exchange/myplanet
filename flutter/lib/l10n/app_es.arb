@@ -54,6 +54,7 @@
   "logOut": "Cerrar sesi\u00f3n",
   "about": "Acerca de",
   "appVersion": "Versión {version}",
+  "buildNumber": "Compilación {number}",
   "@appVersion": {
     "placeholders": {
       "version": {

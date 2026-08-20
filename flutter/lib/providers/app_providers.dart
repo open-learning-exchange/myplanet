@@ -7,6 +7,7 @@ import '../core/notifications/notification_presenter.dart';
 import '../core/notifications/task_deadline_notifier.dart';
 import '../core/prefs/planet_prefs.dart';
 import '../core/sync/server_url_mapper.dart';
+import '../core/system/app_version_info.dart';
 import '../core/system/device_stats.dart';
 import '../core/system/device_identity.dart';
 import '../core/utils/url_utils.dart';
@@ -626,4 +627,14 @@ final healthUploaderProvider = Provider<HealthUploader>(
     ref.watch(healthExaminationDaoProvider),
     ref.watch(outboxRepositoryProvider),
   ),
+);
+
+/// The running app's version name and build number, read through
+/// `package_info_plus` — the runtime equivalent of the Kotlin app's
+/// `BuildConfig.VERSION_NAME` / `VERSION_CODE`. The About and Settings
+/// screens watch this instead of a hardcoded constant, so the version line
+/// tracks pubspec rather than drifting on each release. Tests override it
+/// to inject a fixed `AppVersionInfo`.
+final appVersionInfoProvider = FutureProvider<AppVersionInfo>(
+  (ref) => loadAppVersionInfo(),
 );

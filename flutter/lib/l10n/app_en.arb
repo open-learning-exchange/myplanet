@@ -245,6 +245,14 @@
       }
     }
   },
+  "buildNumber": "Build {number}",
+  "@buildNumber": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
   "learningTools": "Learning tools",
   "dictionary": "Dictionary",
   "dictionaryDescription": "Search downloaded definitions offline",
