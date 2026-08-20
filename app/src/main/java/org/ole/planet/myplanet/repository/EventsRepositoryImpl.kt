@@ -74,7 +74,7 @@ class EventsRepositoryImpl @Inject constructor(
             return emptyList()
         }
 
-        return memberIds.chunked(900)
+        return memberIds.chunked(400)
             .flatMap { chunk -> userDao.getUsersByAnyIds(chunk) }
             .distinctBy { it.id }
     }

@@ -72,16 +72,14 @@ class EventsRepositoryImplTest {
         )
         coEvery { userDao.getUsersByAnyIds(any()) } returns listOf(
             UserEntity(id = "user1"),
-            UserEntity(id = "user2", _id = "remote-user2"),
-            UserEntity(id = "user3")
+            UserEntity(id = "user2", _id = "remote-user2")
         )
 
         val result = repository.getJoinedMembers("meetup1")
 
-        assertEquals(3, result.size) // The distinctBy will filter out duplicates but mock returns 3 unique entities. Wait, we need to assert the chunking behavior. Let's just assert 3 returned items.
+        assertEquals(2, result.size)
         assertEquals("user1", result[0].id)
         assertEquals("user2", result[1].id)
-        assertEquals("user3", result[2].id)
 
         val emptyResult = repository.getJoinedMembers("")
         assertTrue(emptyResult.isEmpty())
