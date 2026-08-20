@@ -253,6 +253,11 @@ class SharedPrefManager @Inject constructor(
         return defaultPreferences.getBoolean("beta_auto_download", false)
     }
 
+    fun setBetaAutoDownload(enabled: Boolean) {
+        val defaultPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        defaultPreferences.edit { putBoolean("beta_auto_download", enabled) }
+    }
+
     fun getVersionDetail(): String? = pref.getString(VERSION_DETAIL, null)
     fun setVersionDetail(json: String) = pref.edit { putString(VERSION_DETAIL, json) }
 
