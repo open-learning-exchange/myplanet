@@ -253,8 +253,11 @@ dependencies {
     implementation(libs.webkit)
     implementation(libs.pdfbox.android) { exclude group: 'org.bouncycastle' }
 }
-// Versions come from Robolectric 4.16.1's DefaultSdkProvider - all nine change on a Robolectric
-// bump, and docs/TESTING.md covers adding a level. Keys are every @Config(sdk) plus targetSdk.
+// Versions come from DefaultSdkProvider in the Robolectric named below, and dependabot cannot
+// bump them with it: the coordinate is built from a variable, so its parser never sees it. Keys
+// are every @Config(sdk) plus targetSdk; docs/TESTING.md covers adding a level.
+def robolectricSdkJarsFrom = '4.16.1'
+def robolectricPinned = libs.versions.robolectric.get()
 def robolectricSdkJars = [
     26: '8.0.0_r4-robolectric-r1-i7',
     27: '8.1.0-robolectric-4611349-i7',
@@ -279,6 +282,9 @@ def fetchRobolectricSdks = tasks.register('fetchRobolectricSdks', Sync) {
     robolectricSdkJars.keySet().each { apiLevel -> from configurations.getByName("robolectricSdk$apiLevel") }
     into robolectricSdkDir
     doLast {
+        if (robolectricPinned != robolectricSdkJarsFrom) {
+            throw new GradleException("robolectricSdkJars was read from Robolectric $robolectricSdkJarsFrom, but the catalog now pins $robolectricPinned - refresh every version from its DefaultSdkProvider")
+        }
         // By name, not count: these are the filenames Robolectric's offline resolver looks for.
         def missing = robolectricSdkJars
             .collect { apiLevel, jarVersion -> "android-all-instrumented-${jarVersion}.jar" }
