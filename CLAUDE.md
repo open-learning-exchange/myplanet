@@ -79,6 +79,14 @@ Phase 50 closed the resource-catalog batch-selection gap. Long-press enters sele
 list and grid layouts, further taps build a multi-selection, and one add/remove action atomically
 updates every resource plus its `removed_log` entry before attempting the derived shelf upload.
 
+Phase 51 ported the certified-course-exam verification photo. A new `submit_photos` Drift table
+(schema v34, preserved in `localAuthorityTables`) holds the row; `SubmissionsRepository` authors
+and serializes it with device identity layered on at queue time; `SubmitPhotosUploader` delivers
+the durable two-step write-back through the outbox (POST doc, record id/rev, then best-effort PUT
+the JPEG bytes as a CouchDB attachment). Capture runs through a `PhotoCapture` seam
+(`image_picker` in production, faked in tests), wired into `take_exam_screen` behind
+`ProgressRepository.isCourseCertified(courseId)`; a null capture is swallowed, matching Kotlin.
+
 ### Documentation Map
 
 | Document | Read it when… |
@@ -770,6 +778,6 @@ Note: SYSTEM_ALERT_WINDOW is **not** declared (removed at some point; older docs
 
 ---
 
-**Last Updated**: 2026-08-07
+**Last Updated**: 2026-08-20
 **Version**: 0.63.42
 **Maintainer**: Open Learning Exchange
