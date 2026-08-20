@@ -1199,11 +1199,26 @@ flutter pub get 2>&1 | grep -i discontinued
 ## Remaining UI packages (2 of 28)
 
 `components` and `enterprises` are the two packages with no screen of their own. What remains
-*within* ported packages, as of Phase 39:
+*within* ported packages (updated through Phase 50):
 
-- `user` -- profile photo *upload* (`PhotoUploader`, `updateUserImage`); displaying the photo
-  landed in Phase 36. Membership registration landed in Phase 27, and `BecomeMemberActivity`'s
-  debounced username validation landed in Phase 39.
+- `user` -- nothing open. Profile photo *upload* landed in the Phase 36
+  harvest (`54790d605`): `UserUploader` carries a `_users` document with the
+  photo embedded as a base64 `_attachments` blob, reading the picker's local
+  file at queue time; `UserMapper.toDoc` serializes the row, `readImageBytes`
+  harvests the bytes, and `UserDao.pendingSyncUsers`/`markUploaded` drive the
+  dirty-flag cycle (the `isUpdated` column landed with it as schema v30).
+  Displaying the photo also landed in Phase 36. Membership registration landed
+  in Phase 27, and `BecomeMemberActivity`'s debounced username validation
+  landed in Phase 39.
+  - Still unported, but exam-domain rather than `user`: the **submission
+    photo** path — `SubmitPhotos` rows captured during a certified exam
+    (`ExamTakingFragment.capturePhoto` via `CameraUtils`) and uploaded by
+    `PhotoUploader` as `/submissions` documents with the image bytes PUT as a
+    CouchDB attachment afterwards. The port's `take_exam_screen.dart` has no
+    camera capture, and no `submit_photos` drift table exists (see the
+    schema-harvest note). The earlier "Remaining UI packages" list conflated
+    this `PhotoUploader` with `updateUserImage`; the profile half is done, the
+    exam-proctoring half is the open item.
 - `settings` -- nothing open. The free-up-space button and available-space text inside the
   storage sheet landed in this slice: `ResourcesRepository.freeUpSpace` (the
   `FreeSpaceWorker.doWork` delete-and-mark-not-offline pass) plus a `DiskStats` seam over a
@@ -1845,6 +1860,68 @@ they land on unported features.
 
 ---
 
+## Harvest audit — the 2026-08-20 commit batch
+
+The six commits after `9c54a03` (up to `96a04b138`, the new tip of `master`)
+were audited. None changes behaviour the Flutter port lacks: two land on
+unported features, two are already safe by construction, and two are
+CI/importing with no app impact. Each also bumps `versionCode`/`versionName`
+(6546→6551) in lockstep, the usual "smoother" cadence.
+
+**Deferred — lands on an unported feature.**
+
+- `815e5bcee` (resources web view nested entry pathing) — adds an
+  `openWhichFile` field to `MyLibrary` and a `FileUtils.resolveHtmlEntryFile`
+  resolver so an HTML resource whose entry point nests in a subfolder (e.g.
+  `sudoku/index.html`) opens from there instead of a bare `index.html`, with a
+  path-traversal guard refusing to escape the resource directory. The whole
+  change sits on the HTML-resource-as-extracted-directory feature: the
+  downloader unzips into `ole/<resourceId>/`, `BaseContainerFragment` checks
+  the entry file's existence to decide "downloaded", and `WebViewActivity`
+  loads it. The port has none of that — `ResourceFiles` stores a flat
+  `ole/<docId>/<filename>`, `ResourceType` has no `html` case, and no
+  `webview_flutter` dependency or extraction path exists. Adding
+  `openWhichFile` + the resolver with no HTML download or viewer would be
+  library code waiting for a caller (the anti-pattern Phase 39's
+  `ChallengeDialog`/`CustomDropdown` warn against), so the whole commit
+  defers with the viewers hard problem (see "The hard part"). The
+  download-path naming change (`getResourceRelativePathFromUrl`, which keys
+  the stored file on the nested attachment path) is the same: it only matters
+  once a nested HTML resource is downloaded as a directory.
+- `96a04b138` (server url alternative credentials mapping) — fixes
+  `ServerUrlMapper.updateUrlPreferences` to extract `url_user`/`url_pwd` from
+  the *alternative* URL's embedded `user:pwd@host` userinfo rather than the
+  primary `uri`'s. The port's `ServerUrlMapper` only ports `processUrl`/
+  `extractBaseUrl`; it does not port `updateUrlPreferences` at all, and the
+  `ConfigurationsRepository` config handshake uses a single `pin` uniformly
+  for both primary and mirror rather than per-URL `url_user`/`url_pwd`
+  SharedPreferences. The embedded-credentials-in-alternative-URL case is an
+  edge the port's deliberately different config model does not open. No-op
+  for the port as it stands; flagged here so a future port of the credentials
+  path does not re-introduce the bug.
+
+**Already safe by construction.**
+
+- `2ec7e3187` (sync manager resources cleaning) — sets a `hadBatchFailure`
+  flag during the resources `_all_docs` walk and, when any batch failed,
+  skips `removeDeletedResources` so an incomplete id list does not evict
+  server rows the device still has. The port's `ResourcesRepository.sync`
+  returns `SyncFailed` on the *first* failed page and never reaches the
+  `deleteNotIn` cleanup with a partial id list, so it is already safe
+  against this — more conservative than the Kotlin fix. No-op.
+- `a372000df` (courses progress scrolling) — re-layouts
+  `activity_course_progress.xml` (NestedScrollView/RecyclerView nesting) to
+  fix scroll-jank. Pure Android-layout XML; the port's course-progress
+  screen is its own widget tree. No-op.
+
+**CI / build / importing (no app impact).**
+
+- `41d89f46c` (automerge base judging) and `f6bf012bb` (Kotlin importing) —
+  `automerge.sh`/`automerge.yml` workflow edits and a Kotlin import cleanup
+  across `MainApplication`/`build.gradle`. No-op.
+
+---
+
 ## Phase 41 — device/tablet usage telemetry (`myplanet_activities` upload)
 
 The one telemetry path explicitly unported in `ActivitiesRepositoryImpl` — the
@@ -2174,6 +2251,8 @@ success message. No binary assets or platform code were added.
 ---
 
 **Last updated**: 2026-08-20 (Phase 50 complete — the resource catalog now supports atomic
-multi-selection add/remove shelf actions in both list and grid layouts)
+multi-selection add/remove shelf actions in both list and grid layouts; the 2026-08-20
+upstream audit found no portable behavioural commits, and the stale "user profile photo
+upload" claim was corrected — that path landed in the Phase 36 harvest)
 **Phase**: 50 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)
