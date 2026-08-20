@@ -212,11 +212,7 @@ class ResourcesAdapter(
         val model = getItem(position) ?: return
         val flatPayloads = payloads.flatMap { it as? List<*> ?: listOf(it) }
 
-        if (flatPayloads.contains(PAYLOAD_VIEW_MODE)) {
-            super.onBindViewHolder(holder, position, payloads)
-            return
-        }
-
+        var partialHandled = false
         if (flatPayloads.contains(PAYLOAD_SELECTION) || flatPayloads.contains(PAYLOAD_IDENTITY)) {
             when (holder) {
                 is GridViewHolder -> {
@@ -228,7 +224,10 @@ class ResourcesAdapter(
                     if (flatPayloads.contains(PAYLOAD_IDENTITY)) bindClicks(holder.itemView, holder.binding.checkbox, model)
                 }
             }
-        } else {
+            partialHandled = true
+        }
+
+        if (flatPayloads.contains(PAYLOAD_VIEW_MODE) || !partialHandled) {
             super.onBindViewHolder(holder, position, payloads)
         }
     }
