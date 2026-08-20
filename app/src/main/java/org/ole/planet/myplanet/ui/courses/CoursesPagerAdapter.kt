@@ -7,7 +7,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
 
 class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : FragmentStateAdapter(fm) {
-    private val steps = mutableListOf<String>()
+    private var steps: List<String> = emptyList()
     private val itemIds = mutableMapOf<String, Long>()
     private var nextId = 1L
 
@@ -24,8 +24,14 @@ class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : Fragmen
             }
         }
 
-        val oldItems = listOf(null) + steps
-        val newItems = listOf(null) + newSteps
+        val oldItems = object : kotlin.collections.AbstractList<String?>() {
+            override val size get() = steps.size + 1
+            override fun get(index: Int) = if (index == 0) null else steps[index - 1]
+        }
+        val newItems = object : kotlin.collections.AbstractList<String?>() {
+            override val size get() = newSteps.size + 1
+            override fun get(index: Int) = if (index == 0) null else newSteps[index - 1]
+        }
         val diffResult = DiffUtils.calculateDiff(
             oldList = oldItems,
             newList = newItems,
@@ -33,8 +39,7 @@ class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : Fragmen
             areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
         )
 
-        steps.clear()
-        steps.addAll(newSteps)
+        steps = newSteps
         diffResult.dispatchUpdatesTo(this)
     }
 
