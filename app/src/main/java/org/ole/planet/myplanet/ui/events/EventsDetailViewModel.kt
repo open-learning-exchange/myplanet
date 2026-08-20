@@ -39,9 +39,8 @@ class EventsDetailViewModel @Inject constructor(
                 val userDeferred = async { userRepository.getUserModel() }
 
                 if (!meetUpId.isNullOrBlank()) {
-                    val allUsers = userRepository.getAllUsers()
                     val meetupDeferred = async { eventsRepository.getMeetupByLocalId(meetUpId) }
-                    val membersDeferred = async { eventsRepository.getJoinedMembers(meetUpId, allUsers) }
+                    val membersDeferred = async { eventsRepository.getJoinedMembers(meetUpId) }
 
                     _user.value = userDeferred.await()
                     _meetup.value = meetupDeferred.await()
@@ -92,11 +91,9 @@ class EventsDetailViewModel @Inject constructor(
 
     fun toggleAttendance(meetupId: String) {
         viewModelScope.launch {
-            val currentUserId = _user.value?.id
-            if (currentUserId.isNullOrBlank()) return@launch
+            val currentUserId = _user.value?.id ?: ""
             _meetup.value = eventsRepository.toggleAttendance(meetupId, currentUserId)
-            val allUsers = userRepository.getAllUsers()
-            _members.value = eventsRepository.getJoinedMembers(meetupId, allUsers)
+            _members.value = eventsRepository.getJoinedMembers(meetupId)
         }
     }
 }
