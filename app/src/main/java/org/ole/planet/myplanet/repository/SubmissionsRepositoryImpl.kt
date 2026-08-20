@@ -416,6 +416,26 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         )
     }
 
+    override suspend fun startExamSession(examId: String, parentId: String?, userId: String?, request: CreateExamSubmissionRequest): Submission? {
+        val submissions = getSubmissionsByParentId(parentId, userId, "pending")
+        var submission = submissions.firstOrNull()
+
+        if (request.type == "exam") {
+            var retries = 0
+            while (retries < 3) {
+                try {
+                    deleteExamSubmissions(examId, request.exam.courseId, userId)
+                    submission = createExamSubmission(request)
+                    break
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    retries++
+                }
+            }
+        }
+        return submission
+    }
+
     override suspend fun createExamSubmission(request: CreateExamSubmissionRequest): Submission {
         val (userId, userDob, userGender, exam, type, teamId) = request
         val team = if (!teamId.isNullOrEmpty()) {
@@ -470,10 +490,17 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun saveExamAnswer(answerData: ExamAnswerData): Boolean {
-        val (submission, question, ans, listAns, otherText, otherVisible, type, index, total, isExplicitSubmission) = answerData
+        val (submission, question, ans, listAns, otherText, otherVisible, type, index, total, isExplicitSubmission, userId) = answerData
+
+        val parentId = question.examId?.let { eId ->
+            val exam = examDao.getById(eId)
+            if (!exam?.courseId.isNullOrEmpty()) "$eId@${exam?.courseId}" else eId
+        }
+
         val submissionRow = submission?.id?.let { submissionDao.getByIdOrRemoteId(it) }
             ?: submission
-            ?: submissionDao.getLatestPendingByUser(submission?.userId)
+            ?: (if (parentId != null) getSubmissionsByParentId(parentId, userId ?: submission?.userId, "pending").firstOrNull() else null)
+            ?: submissionDao.getLatestPendingByUser(userId ?: submission?.userId)
         val submissionId = submissionRow?.id
         val questionId = question.id
         
