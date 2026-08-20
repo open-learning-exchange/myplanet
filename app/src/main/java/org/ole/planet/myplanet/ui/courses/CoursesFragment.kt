@@ -56,12 +56,12 @@ import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedListener, OnTagClickListener, RealtimeSyncMixin {
     override val shouldShowDownloadDialog = false
     private lateinit var adapterCourses: CoursesAdapter
-    private lateinit var orderByDate: Button
-    private lateinit var orderByTitle: Button
+    private var orderByDate: Button? = null
+    private var orderByTitle: Button? = null
     private lateinit var filterController: CourseFilterController
     private lateinit var selectionController: CourseSelectionController
-    private lateinit var toggleGridButton: ImageButton
-    private lateinit var toggleListButton: ImageButton
+    private var toggleGridButton: ImageButton? = null
+    private var toggleListButton: ImageButton? = null
     var userModel: UserEntity? = null
     private lateinit var confirmation: AlertDialog
     private var selectionJob: Job? = null
@@ -326,15 +326,15 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         }
         orderByDate = requireView().findViewById(R.id.order_by_date_button)
         orderByTitle = requireView().findViewById(R.id.order_by_title_button)
-        orderByDate.isEnabled = false
-        orderByTitle.isEnabled = false
-        orderByDate.setOnClickListener {
+        orderByDate?.isEnabled = false
+        orderByTitle?.isEnabled = false
+        orderByDate?.setOnClickListener {
             bottomSheet.visibility = View.GONE
             if (!::adapterCourses.isInitialized) return@setOnClickListener
             viewModel.toggleDateSort()
             scrollToTop()
         }
-        orderByTitle.setOnClickListener {
+        orderByTitle?.setOnClickListener {
             bottomSheet.visibility = View.GONE
             if (!::adapterCourses.isInitialized) return@setOnClickListener
             viewModel.toggleTitleSort()
@@ -343,14 +343,14 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     }
 
     private fun enableSortButtons() {
-        if (::orderByDate.isInitialized) orderByDate.isEnabled = true
-        if (::orderByTitle.isInitialized) orderByTitle.isEnabled = true
+        orderByDate?.isEnabled = true
+        orderByTitle?.isEnabled = true
     }
 
     private fun setupViewModeToggle() {
         updateToggleUi(sharedPrefManager.getCourseViewMode())
-        toggleGridButton.setOnClickListener { setViewMode(ListViewMode.GRID) }
-        toggleListButton.setOnClickListener { setViewMode(ListViewMode.LIST) }
+        toggleGridButton?.setOnClickListener { setViewMode(ListViewMode.GRID) }
+        toggleListButton?.setOnClickListener { setViewMode(ListViewMode.LIST) }
         recyclerView.addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
             if (right - left != oldRight - oldLeft) {
                 recyclerView.post { updateGridSpanIfNeeded() }
@@ -375,9 +375,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
                 recyclerView.layoutManager = GridLayoutManager(requireContext(), currentSpanCount())
             }
         } else {
-            if (currentLayoutManager is LinearLayoutManager && currentLayoutManager !is GridLayoutManager) {
-                // Already a LinearLayoutManager, do nothing to preserve state
-            } else {
+            if (currentLayoutManager !is LinearLayoutManager || currentLayoutManager is GridLayoutManager) {
                 recyclerView.layoutManager = LinearLayoutManager(requireContext())
             }
         }
@@ -401,10 +399,10 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         val isGrid = mode == ListViewMode.GRID
         val activeColor = ContextCompat.getColor(requireContext(), android.R.color.white)
         val inactiveColor = ContextCompat.getColor(requireContext(), R.color.daynight_textColor)
-        toggleGridButton.setBackgroundResource(if (isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
-        toggleListButton.setBackgroundResource(if (!isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
-        ImageViewCompat.setImageTintList(toggleGridButton, ColorStateList.valueOf(if (isGrid) activeColor else inactiveColor))
-        ImageViewCompat.setImageTintList(toggleListButton, ColorStateList.valueOf(if (!isGrid) activeColor else inactiveColor))
+        toggleGridButton?.setBackgroundResource(if (isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
+        toggleListButton?.setBackgroundResource(if (!isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
+        toggleGridButton?.let { ImageViewCompat.setImageTintList(it, ColorStateList.valueOf(if (isGrid) activeColor else inactiveColor)) }
+        toggleListButton?.let { ImageViewCompat.setImageTintList(it, ColorStateList.valueOf(if (!isGrid) activeColor else inactiveColor)) }
         applyRecyclerLayoutManager(mode)
     }
 
@@ -600,6 +598,10 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         if (::adapterCourses.isInitialized) {
             adapterCourses.setListener(null)
         }
+        toggleGridButton = null
+        toggleListButton = null
+        orderByDate = null
+        orderByTitle = null
         super.onDestroyView()
     }
 
