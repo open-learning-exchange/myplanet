@@ -8,10 +8,7 @@ import android.widget.RadioButton
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnFeedbackSubmittedListener
 import org.ole.planet.myplanet.databinding.FragmentFeedbackBinding
@@ -45,25 +42,20 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        collectLatestWhenStarted(viewModel.uiState) { state ->
-            when (state) {
-                is FeedbackComposerViewModel.SubmitState.Idle -> {
-                    binding.btnSubmit.isEnabled = true
-                    binding.btnCancel.isEnabled = true
-                }
-                is FeedbackComposerViewModel.SubmitState.Submitting -> {
-                    binding.btnSubmit.isEnabled = false
-                    binding.btnCancel.isEnabled = false
-                }
-                is FeedbackComposerViewModel.SubmitState.Saved -> {
+        collectLatestWhenStarted(viewModel.isSubmitting) { isSubmitting ->
+            binding.btnSubmit.isEnabled = !isSubmitting
+            binding.btnCancel.isEnabled = !isSubmitting
+        }
+        collectLatestWhenStarted(viewModel.events) { event ->
+            when (event) {
+                is FeedbackComposerViewModel.SubmitEvent.Saved -> {
                     Utilities.toast(activity, getString(R.string.feedback_saved))
                     mListener?.onFeedbackSubmitted()
                     dismiss()
                 }
-                is FeedbackComposerViewModel.SubmitState.Error -> {
-                    Utilities.toast(activity, state.message)
-                    binding.btnSubmit.isEnabled = true
-                    binding.btnCancel.isEnabled = true
+                is FeedbackComposerViewModel.SubmitEvent.Error -> {
+                    val msg = event.message ?: "An error occurred"
+                    Utilities.toast(activity, getString(R.string.error, msg))
                 }
             }
         }
