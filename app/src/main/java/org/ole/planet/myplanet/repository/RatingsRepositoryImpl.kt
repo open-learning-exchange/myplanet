@@ -30,10 +30,9 @@ class RatingsRepositoryImpl @Inject constructor(
         return map
     }
 
-    override suspend fun getRatingsById(type: String, resourceId: String?, userId: String?): JsonObject? {
-        val ratings = ratingDao.getByTypeAndItem(type, resourceId)
-        val aggregated = aggregateRatings(ratings, userId)[resourceId]
-        return aggregated?.toJson()
+    override suspend fun getRatingsById(type: String, resourceId: String?, userId: String?): RatingSummary? {
+        if (resourceId == null) return null
+        return getRatingSummary(type, resourceId, userId)
     }
 
 
@@ -61,7 +60,7 @@ class RatingsRepositoryImpl @Inject constructor(
     override suspend fun getRatingSummary(
         type: String,
         itemId: String,
-        userId: String,
+        userId: String?,
     ): RatingSummary {
         val results = ratingDao.getByTypeAndItem(type, itemId)
         val totalRatings = results.size
@@ -70,7 +69,7 @@ class RatingsRepositoryImpl @Inject constructor(
         } else {
             0f
         }
-        val existingRating = results.firstOrNull { it.userId == userId }
+        val existingRating = if (userId != null) results.firstOrNull { it.userId == userId } else null
         return RatingSummary(
             existingRating = existingRating?.toRatingEntry(),
             averageRating = averageRating,

@@ -32,7 +32,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var _binding: FragmentLibraryDetailBinding? = null
     private val binding get() = _binding!!
     private var libraryId: String? = null
-    private var lastKnownRating: JsonObject? = null
+    private var lastKnownRating: org.ole.planet.myplanet.repository.RatingSummary? = null
     private lateinit var library: MyLibrary
     var userModel: UserEntity? = null
     private suspend fun fetchLibrary(libraryId: String): MyLibrary? {
