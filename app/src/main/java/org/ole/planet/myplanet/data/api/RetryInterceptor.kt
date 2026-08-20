@@ -75,17 +75,20 @@ class RetryInterceptor @Inject constructor(
     }
 
     private fun backoff(chain: Interceptor.Chain, delayMillis: Long) {
+        if (chain.call().isCanceled()) {
+            throw IOException("Call cancelled during retry delay")
+        }
         val deadline = timeProvider.now() + delayMillis
         try {
             while (true) {
-                if (chain.call().isCanceled()) {
-                    throw IOException("Call cancelled during retry delay")
-                }
                 val remaining = deadline - timeProvider.now()
                 if (remaining <= 0) {
                     return
                 }
                 Thread.sleep(minOf(remaining, MAX_BACKOFF_SLICE_MS))
+                if (chain.call().isCanceled()) {
+                    throw IOException("Call cancelled during retry delay")
+                }
             }
         } catch (e: InterruptedException) {
             Thread.currentThread().interrupt()
