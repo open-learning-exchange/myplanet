@@ -211,5 +211,7 @@
   "imageFileNotFound": "Image introuvable",
   "noContent": "Aucun contenu",
   "emptyFile": "Fichier vide",
-  "htmlEntryNotFound": "Fichier d'entrée HTML introuvable"
+  "htmlEntryNotFound": "Fichier d'entrée HTML introuvable",
+  "errorOccurred": "Erreur : {error}",
+  "openingResource": "Ouverture : {title}"
 }

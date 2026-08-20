@@ -796,6 +796,22 @@
   "noContent": "No content",
   "emptyFile": "Empty file",
   "htmlEntryNotFound": "HTML entry file not found",
+  "errorOccurred": "Error: {error}",
+  "@errorOccurred": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "openingResource": "Opening: {title}",
+  "@openingResource": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "loadingMedia": "Loading...",
   "resourceUnavailable": "This resource is not available for offline viewing",
   "healthRecordNotAvailable": "Health record not available",

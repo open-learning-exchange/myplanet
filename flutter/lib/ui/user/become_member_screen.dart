@@ -237,9 +237,11 @@ class _BecomeMemberScreenState extends ConsumerState<BecomeMemberScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).errorOccurred(e)),
+          ),
+        );
       }
     } finally {
       if (mounted) {

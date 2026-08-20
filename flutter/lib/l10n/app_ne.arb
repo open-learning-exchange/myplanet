@@ -210,5 +210,7 @@
   "imageFileNotFound": "तस्वीर फेला परेन",
   "noContent": "कुनै सामग्री छैन",
   "emptyFile": "खाली फाइल",
-  "htmlEntryNotFound": "HTML प्रविष्टि फाइल फेला परेन"
+  "htmlEntryNotFound": "HTML प्रविष्टि फाइल फेला परेन",
+  "errorOccurred": "त्रुटि: {error}",
+  "openingResource": "खोल्दै: {title}"
 }

@@ -210,5 +210,7 @@
   "imageFileNotFound": "الصورة غير موجودة",
   "noContent": "لا يوجد محتوى",
   "emptyFile": "ملف فارغ",
-  "htmlEntryNotFound": "ملف إدخال HTML غير موجود"
+  "htmlEntryNotFound": "ملف إدخال HTML غير موجود",
+  "errorOccurred": "خطأ: {error}",
+  "openingResource": "فتح: {title}"
 }

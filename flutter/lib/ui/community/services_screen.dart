@@ -56,11 +56,12 @@ class ServicesScreen extends ConsumerWidget {
     String route,
     String title,
   ) {
+    final l10n = AppLocalizations.of(context);
     if (route.startsWith('http://') || route.startsWith('https://')) {
       // External URL - would open in WebView
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Opening: $title')));
+      ).showSnackBar(SnackBar(content: Text(l10n.openingResource(title))));
       return;
     }
 
@@ -73,7 +74,7 @@ class ServicesScreen extends ConsumerWidget {
       // Fallback: try opening as external URL
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Opening: $title')));
+      ).showSnackBar(SnackBar(content: Text(l10n.openingResource(title))));
     }
   }
 }

@@ -210,5 +210,7 @@
   "imageFileNotFound": "Sawirka lama helin",
   "noContent": "Wax ma jiro",
   "emptyFile": "Fayl maran",
-  "htmlEntryNotFound": "Faylka gelinta HTML lama helin"
+  "htmlEntryNotFound": "Faylka gelinta HTML lama helin",
+  "errorOccurred": "Khalad: {error}",
+  "openingResource": "Furaya: {title}"
 }
