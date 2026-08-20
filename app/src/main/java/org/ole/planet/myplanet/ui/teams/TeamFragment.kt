@@ -1,10 +1,12 @@
 package org.ole.planet.myplanet.ui.teams
 
+import android.net.Uri
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
@@ -12,6 +14,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.SimpleItemAnimator
+import com.bumptech.glide.Glide
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.OptIn
@@ -32,6 +35,7 @@ import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
+import java.io.File
 
 @AndroidEntryPoint
 class TeamFragment : Fragment() {
@@ -48,6 +52,7 @@ class TeamFragment : Fragment() {
     var user: UserEntity? = null
     private lateinit var teamListAdapter: TeamsAdapter
     private var conditionApplied: Boolean = false
+    private var selectedImageUri: Uri? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,7 +78,12 @@ class TeamFragment : Fragment() {
 
     fun createTeamAlert(team: TeamDetails?) {
         alertCreateTeamBinding = AlertCreateTeamBinding.inflate(LayoutInflater.from(context))
+        selectedImageUri = null
+        alertCreateTeamBinding.teamProfilePhoto.setImageResource(R.drawable.profile)
         setupTeamAlertUI(team)
+        alertCreateTeamBinding.teamProfilePhoto.setOnClickListener {
+            pickImageLauncher.launch("image/*")
+        }
 
         val builder = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
             .setTitle(String.format(getString(R.string.enter) + "%s " + getString(R.string.detail), if (type == null) getString(R.string.team) else type))
@@ -87,6 +97,15 @@ class TeamFragment : Fragment() {
             }
         }
         dialog.show()
+    }
+
+    private val pickImageLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            selectedImageUri = it
+            alertCreateTeamBinding.teamProfilePhoto.setImageURI(it)
+        }
     }
 
     private fun setupTeamAlertUI(team: TeamDetails?) {
@@ -105,6 +124,32 @@ class TeamFragment : Fragment() {
             alertCreateTeamBinding.etRules.setText(team.rules)
             alertCreateTeamBinding.etDescription.setText(team.description)
             alertCreateTeamBinding.etName.setText(team.name)
+        }
+
+        if (!team?.profileImage.isNullOrBlank()) {
+            val file = File(team.profileImage)
+            if (file.exists()) {
+                Glide.with(requireContext())
+                    .load(file)
+                    .placeholder(R.drawable.profile)
+                    .error(R.drawable.profile)
+                    .circleCrop()
+                    .into(alertCreateTeamBinding.teamProfilePhoto)
+            } else {
+                try {
+                    val uri = Uri.parse(team.profileImage)
+                    Glide.with(requireContext())
+                        .load(uri)
+                        .placeholder(R.drawable.profile)
+                        .error(R.drawable.profile)
+                        .circleCrop()
+                        .into(alertCreateTeamBinding.teamProfilePhoto)
+                } catch (e: Exception) {
+                    alertCreateTeamBinding.teamProfilePhoto.setImageResource(R.drawable.profile)
+                }
+            }
+        } else {
+            alertCreateTeamBinding.teamProfilePhoto.setImageResource(R.drawable.profile)
         }
     }
 
@@ -145,6 +190,11 @@ class TeamFragment : Fragment() {
         name: String, description: String, services: String, rules: String,
         selectedTeamType: String, userModel: UserEntity, dialog: AlertDialog, failureMessage: String
     ) {
+        var imageUrl: String? = null
+        if (selectedImageUri != null) {
+            imageUrl = viewModel.uploadTeamImage(selectedImageUri!!)
+            selectedImageUri = null
+        }
         val result = viewModel.createTeam(
             name = name,
             description = description,
@@ -153,7 +203,8 @@ class TeamFragment : Fragment() {
             teamType = selectedTeamType,
             isPublic = alertCreateTeamBinding.switchPublic.isChecked,
             category = type,
-            userModel = userModel
+            userModel = userModel,
+            profileImage = imageUrl
         )
         when (result) {
             is TeamActionResult.NameExists -> {
@@ -167,7 +218,6 @@ class TeamFragment : Fragment() {
             }
             is TeamActionResult.Success -> {
                 binding.etSearch.visibility = View.VISIBLE
-                binding.tableTitle.visibility = View.VISIBLE
                 val successMessage = if (type == "enterprise") {
                     getString(R.string.enterprise_created)
                 } else {
@@ -187,6 +237,11 @@ class TeamFragment : Fragment() {
         team: TeamDetails, name: String, description: String, services: String, rules: String,
         userModel: UserEntity, dialog: AlertDialog, failureMessage: String
     ) {
+        var imageUrl: String? = null
+        if (selectedImageUri != null) {
+            imageUrl = viewModel.uploadTeamImage(selectedImageUri!!)
+            selectedImageUri = null
+        }
         val targetTeamId = team._id ?: team.teamId
         if (targetTeamId.isNullOrBlank()) {
             Utilities.toast(activity, failureMessage)
@@ -199,7 +254,8 @@ class TeamFragment : Fragment() {
             services = services,
             rules = rules,
             category = type,
-            updatedBy = userModel._id
+            updatedBy = userModel._id,
+            profileImage = imageUrl ?: team.profileImage
         )
         when (result) {
             is TeamActionResult.NameExists -> {
@@ -213,7 +269,6 @@ class TeamFragment : Fragment() {
             }
             is TeamActionResult.Success -> {
                 binding.etSearch.visibility = View.VISIBLE
-                binding.tableTitle.visibility = View.VISIBLE
                 Utilities.toast(activity, getString(R.string.team_created))
                 viewModel.loadTeams(fromDashboard, type, user?.id)
                 dialog.dismiss()
@@ -345,11 +400,9 @@ class TeamFragment : Fragment() {
             }
             binding.tvMessage.visibility = View.VISIBLE
             binding.etSearch.visibility = View.VISIBLE
-            binding.tableTitle.visibility = View.GONE
         } else {
             binding.tvMessage.visibility = View.GONE
             binding.etSearch.visibility = View.VISIBLE
-            binding.tableTitle.visibility = View.VISIBLE
         }
     }
 

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import android.net.Uri
 import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.CreateTeamRequest
@@ -77,7 +78,6 @@ interface TeamsRepository {
     fun getMyTeamDetailsFlow(userId: String): Flow<List<TeamDetails>>
     suspend fun getShareableEnterpriseDetails(userId: String?): List<TeamDetails>
     suspend fun getTeamDetails(userId: String?): List<TeamDetails>
-
     suspend fun getTeamResources(teamId: String): List<MyLibrary>
     suspend fun getTeamCourseIds(teamId: String): List<String>
     suspend fun addCoursesToTeam(teamId: String, courseIds: List<String>): Result<Unit>
@@ -91,7 +91,6 @@ interface TeamsRepository {
     suspend fun getTeamLabelInfo(teamId: String): TeamLabelInfo?
     suspend fun getJoinRequestInfo(requestId: String?): JoinRequestInfo?
     suspend fun getJoinRequestsInfo(requestIds: List<String>): List<JoinRequestInfo>
-
     suspend fun getTeamNamesByIds(ids: List<String>): Map<String, String>
     fun getTasksFlow(userId: String?): Flow<List<TeamTask>>
     suspend fun isMember(userId: String?, teamId: String): Boolean
@@ -120,11 +119,12 @@ interface TeamsRepository {
     )
     suspend fun createTeamAndAddMember(request: CreateTeamRequest, user: UserEntity): Result<String>
     suspend fun updateTeam(teamId: String, name: String, description: String, services: String,
-        rules: String, updatedBy: String?
+        rules: String, updatedBy: String?, profileImage: String? = null
     ): Result<Boolean>
+    suspend fun uploadTeamImage(uri: Uri): String
     suspend fun updateTeamDetails(
         teamId: String, name: String, description: String, services: String, rules: String,
-        teamType: String, isPublic: Boolean, createdBy: String
+        teamType: String, isPublic: Boolean, createdBy: String, profileImage: String? = null
     ): Boolean
     suspend fun getTeamTransactionsWithBalance(
         teamId: String, startDate: Long? = null,
@@ -148,7 +148,6 @@ interface TeamsRepository {
     suspend fun getNextLeaderCandidate(teamId: String, excludeUserId: String?): UserEntity?
     suspend fun getTeamCreator(teamId: String): String?
     suspend fun getAvailableResourcesToAdd(teamId: String): List<MyLibrary>
-
     suspend fun getLastVisit(userName: String?, teamId: String?): Long?
     fun getTeamNameFromPrefs(): String?
 }

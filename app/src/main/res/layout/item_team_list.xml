@@ -3,67 +3,135 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="2dp"
-    android:background="?attr/selectableItemBackground"
-    android:padding="8dp">
+    android:clipToPadding="false"
+    android:clipChildren="false"
+    android:padding="4dp">
 
-    <TextView
-        android:id="@+id/name"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:textColor="@color/daynight_textColor"
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="110dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintWidth_percent="0.2" />
-    <TextView
-        android:id="@+id/created"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="@dimen/_2dp"
-        android:gravity="center"
-        android:textColor="@color/daynight_textColor"
-        app:layout_constraintStart_toEndOf="@id/name"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintWidth_percent="0.2" />
-    <TextView
-        android:id="@+id/type"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:textColor="@color/daynight_textColor"
-        app:layout_constraintStart_toEndOf="@id/created"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintWidth_percent="0.2" />
-    <TextView
-        android:id="@+id/no_of_visits"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:alpha="0.8"
-        android:gravity="center"
-        android:textColor="@color/daynight_textColor"
-        app:layout_constraintStart_toEndOf="@id/type"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintWidth_percent="0.2" />
-    <ImageView
-        android:id="@+id/join_leave"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginEnd="8dp"
-        android:background="?attr/selectableItemBackground"
-        android:padding="8dp"
-        android:src="@drawable/ic_join_request"
-        app:layout_constraintEnd_toStartOf="@id/btn_feedback"
-        app:layout_constraintTop_toTopOf="parent"
-        app:tint="@color/daynight_textColor" />
-    <ImageView
-        android:id="@+id/btn_feedback"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginStart="8dp"
-        android:background="?attr/selectableItemBackground"
-        android:padding="8dp"
-        android:src="@drawable/ic_feedback"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:tint="@color/daynight_textColor" />
+        app:cardCornerRadius="20dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginStart="15dp"
+        android:layout_marginEnd="15dp"
+        android:elevation="20dp"
+        app:cardBackgroundColor="@color/card_bg">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
+            android:padding="8dp">
+
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:id="@+id/teamPhoto"
+                android:scaleType="centerCrop"
+                android:layout_width="0dp"
+                app:layout_constraintWidth_percent="0.15"
+                android:layout_height="0dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/teamInfo"
+                android:src="@drawable/ole_logo"/>
+
+            <LinearLayout
+                android:id="@+id/teamInfo"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="15dp"
+                android:orientation="vertical"
+                app:layout_constraintWidth_percent="0.55"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toEndOf="@id/teamPhoto"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <TextView
+                    android:id="@+id/name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Title"
+                    android:textColor="@color/daynight_textColor"
+                    android:textSize="18sp"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:textStyle="bold"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/created"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="@dimen/_2dp"
+                        android:text="06/01/2009"
+                        android:textColor="@color/daynight_textColor"
+                        app:layout_constraintTop_toBottomOf="@id/name" />
+
+                    <TextView
+                        android:id="@+id/type"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="5dp"
+                        android:text="Local"
+                        android:textColor="@color/daynight_textColor" />
+
+                    <TextView
+                        android:id="@+id/no_of_visits"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="5dp"
+                        android:gravity="center"
+                        android:text="3 visits"
+                        android:textColor="@color/daynight_textColor"
+                        app:layout_constraintStart_toEndOf="@id/type" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/description"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Description"
+                    android:maxLines="2"
+                    android:minLines="1"
+                    android:ellipsize="end"
+                    android:textColor="@color/daynight_textColor" />
+
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/join_leave"
+                android:layout_width="30dp"
+                android:layout_height="25dp"
+                app:cornerRadius="25dp"
+                android:backgroundTint="@color/daynight_white_grey"
+                app:layout_constraintStart_toStartOf="@id/btn_feedback"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="@id/btn_feedback"
+                app:tint="@color/daynight_textColor" />
+
+            <ImageView
+                android:id="@+id/btn_feedback"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:background="?attr/selectableItemBackground"
+                android:padding="8dp"
+                android:src="@drawable/ic_feedback"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toTopOf="@id/join_leave"
+                app:tint="@color/daynight_textColor" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.cardview.widget.CardView>
 </androidx.constraintlayout.widget.ConstraintLayout>
