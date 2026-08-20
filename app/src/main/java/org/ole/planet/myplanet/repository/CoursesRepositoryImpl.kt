@@ -523,6 +523,34 @@ class CoursesRepositoryImpl @Inject constructor(
         return intermediate.copy(userHasCourse = userHasCourse)
     }
 
+    override suspend fun getStepPrerequisites(
+        stepId: String,
+        courseId: String?,
+        userId: String?
+    ): org.ole.planet.myplanet.model.StepPrerequisites {
+        val isMyCourse = isMyCourse(userId, courseId)
+        val courseTitle = courseId?.let { getCourseTitleById(it) }
+
+        val stepExams = examDao.getByStepIdAndType(stepId, "courses")
+        val hasExam = if (stepExams.isNotEmpty()) {
+            val firstStepId = stepExams[0].id
+            submissionsRepository.hasSubmission(firstStepId, courseId, userId, "exam")
+        } else false
+
+        val stepSurvey = examDao.getByStepIdAndType(stepId, "surveys")
+        val hasSurvey = if (stepSurvey.isNotEmpty()) {
+            val firstStepId = stepSurvey[0].id
+            submissionsRepository.hasSubmission(firstStepId, courseId, userId, "survey")
+        } else false
+
+        return org.ole.planet.myplanet.model.StepPrerequisites(
+            isMyCourse = isMyCourse,
+            hasExam = hasExam,
+            hasSurvey = hasSurvey,
+            courseTitle = courseTitle
+        )
+    }
+
     override suspend fun getMyCourseIds(userId: String): JsonArray {
         val ids = JsonArray()
         getMyCourses(userId).mapNotNull { it.courseId }.forEach { ids.add(it) }
