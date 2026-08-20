@@ -58,13 +58,15 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             val id = libraryId ?: return@launch
             try {
-                if (resourcesRepository.setUserLibrary(id, true)) {
-                    val fetched = fetchLibrary(id)
-                    if (fetched != null) {
-                        library = fetched
+                val updated = resourcesRepository.setUserLibrary(id, true)
+                if (updated != null) {
+                    val changed = library.userId?.size != updated.userId?.size
+                    library = updated
+                    if (changed) {
+                        Utilities.toast(activity, getString(R.string.added_to_my_library))
+                        binding.btnRemove.setImageResource(R.drawable.close_x)
+                        binding.btnRemove.contentDescription = getString(R.string.remove)
                     }
-                    Utilities.toast(activity, getString(R.string.added_to_my_library))
-                    binding.btnRemove.setImageResource(R.drawable.close_x)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -234,14 +236,11 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                     return@launch
                 }
                 try {
-                    if (resourcesRepository.setUserLibrary(id, isAdd)) {
-                        val fetched = fetchLibrary(id)
-                        if (fetched != null) {
-                            library = fetched
-                        }
-                        Utilities.toast(activity, getString(R.string.resources) + " " +
-                                if (isAdd) getString(R.string.added_to_my_library)
-                                else getString(R.string.removed_from_mylibrary))
+                    val updated = resourcesRepository.setUserLibrary(id, isAdd)
+                    if (updated != null) {
+                        library = updated
+                        val formatRes = if (isAdd) R.string.format_added_to_mylibrary else R.string.format_removed_from_mylibrary
+                        Utilities.toast(activity, getString(formatRes, getString(R.string.resources)))
                         setLibraryData()
                     }
                 } catch (e: Exception) {
