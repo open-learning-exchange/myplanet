@@ -68,16 +68,17 @@ class RatingsRepositoryImplTest {
     }
 
     @Test
-    fun `getRatingsById returns specific aggregated rating`() = runTest {
-        val rating = Rating().apply { type = "course"; item = "course1"; rate = 5; userId = "user1" }
+    fun `getRatingsById returns specific aggregated rating summary`() = runTest {
+        val rating = Rating().apply { id = "rating1"; type = "course"; item = "course1"; rate = 5; userId = "user1"; comment = "Great" }
         coEvery { ratingDao.getByTypeAndItem("course", "course1") } returns listOf(rating)
 
         val result = repository.getRatingsById("course", "course1", "user1")
 
         assertNotNull(result)
-        assertEquals(5, result!!.get("ratingByUser").asInt)
-        assertEquals(1, result.get("total").asInt)
-        assertEquals(5.0f, result.get("averageRating").asFloat)
+        assertEquals(5, result!!.userRating)
+        assertEquals(1, result.totalRatings)
+        assertEquals(5.0f, result.averageRating)
+        assertEquals("Great", result.existingRating?.comment)
     }
 
     @Test
