@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.ChatResult
+import org.ole.planet.myplanet.repository.ChatSearchMode
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
@@ -34,7 +35,6 @@ import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.RetryUtils
-import org.ole.planet.myplanet.utils.Utilities
 
 data class ChatUiState(
     val selectedChatHistory: List<Conversation>? = null,
@@ -54,12 +54,6 @@ class ChatViewModel @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val realtimeSyncManager: RealtimeSyncManager
 ) : ViewModel() {
-    private data class PrecomputedChat(
-        val chat: ChatHistory,
-        val normalizedTitle: String?,
-        val normalizedQueries: List<String?>,
-        val normalizedResponses: List<String?>
-    )
     companion object {
         const val PAGE_SIZE = 20
     }
@@ -68,7 +62,6 @@ class ChatViewModel @Inject constructor(
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal var loadedCount = 0
     private var allChats: List<ChatHistory> = emptyList()
-    private var precomputedChats: List<PrecomputedChat> = emptyList()
     private val _refreshChatSignal = MutableSharedFlow<Unit>()
     val refreshChatSignal: SharedFlow<Unit> = _refreshChatSignal.asSharedFlow()
     init {
@@ -142,33 +135,13 @@ class ChatViewModel @Inject constructor(
                 val newsMessages = voicesRepository.getPlanetNewsMessages(currentUser?.planetCode)
                 val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
                 val targets = cachedShareTargets ?: loadShareTargets(parentCode, communityName, currentUser?._id).also { cachedShareTargets = it }
-                withContext(dispatcherProvider.default) {
-                    allChats = sortChats(chatHistory)
-                    precomputedChats = buildPrecomputedChats(allChats)
-                }
+                allChats = chatHistory
                 ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets, chatRepository.extractSharedViewInIds(newsMessages))
             }
             result?.let { data ->
                 _screenData.value = data
                 _filteredChats.value = allChats
             }
-        }
-    }
-    private fun sortChats(chats: List<ChatHistory>): List<ChatHistory> {
-        return chats.sortedByDescending { chat ->
-            maxOf(chat.createdDate?.toLongOrNull() ?: 0L, chat.updatedDate?.toLongOrNull() ?: 0L)
-        }
-    }
-    private fun buildPrecomputedChats(chats: List<ChatHistory>): List<PrecomputedChat> {
-        return chats.map { chat ->
-            val title = if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
-                chat.conversations?.get(0)?.query?.let { Utilities.normalizeText(it) }
-            } else {
-                chat.title?.let { Utilities.normalizeText(it) }
-            }
-            val queries = chat.conversations?.map { it?.query?.let { q -> Utilities.normalizeText(q) } } ?: emptyList()
-            val responses = chat.conversations?.map { it?.response?.let { r -> Utilities.normalizeText(r) } } ?: emptyList()
-            PrecomputedChat(chat, title, queries, responses)
         }
     }
     fun searchChats(query: String, isFullSearch: Boolean, isQuestion: Boolean) {
@@ -178,62 +151,16 @@ class ChatViewModel @Inject constructor(
         }
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
-            val results = if (isFullSearch) {
-                fullConvoSearch(query, isQuestion)
+            val mode = if (!isFullSearch) {
+                ChatSearchMode.TITLE
+            } else if (isQuestion) {
+                ChatSearchMode.QUESTION
             } else {
-                searchByTitle(query)
+                ChatSearchMode.RESPONSE
             }
+            val results = chatRepository.searchChats(query, mode)
             _filteredChats.value = results
         }
-    }
-    private suspend fun fullConvoSearch(s: String, isQuestion: Boolean): List<ChatHistory> = withContext(dispatcherProvider.default) {
-        var conversation: String?
-        val queryParts = s.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
-        val normalizedQuery = Utilities.normalizeText(s)
-        val inTitleStartQuery = mutableListOf<ChatHistory>()
-        val inTitleContainsQuery = mutableListOf<ChatHistory>()
-        val startsWithQuery = mutableListOf<ChatHistory>()
-        val containsQuery = mutableListOf<ChatHistory>()
-        for (pChat in precomputedChats) {
-            val conversations = pChat.chat.conversations
-            if (!conversations.isNullOrEmpty()) {
-                for (i in 0 until conversations.size) {
-                    conversation = if (isQuestion) {
-                        pChat.normalizedQueries[i]
-                    } else {
-                        pChat.normalizedResponses[i]
-                    }
-                    if (conversation == null) continue
-                    if (conversation.startsWith(normalizedQuery, ignoreCase = true)) {
-                        if (i == 0) inTitleStartQuery.add(pChat.chat) else startsWithQuery.add(pChat.chat)
-                        break
-                    } else if (normalizedQueryParts.all { conversation.contains(it, ignoreCase = true) }) {
-                        if (i == 0) inTitleContainsQuery.add(pChat.chat) else containsQuery.add(pChat.chat)
-                        break
-                    }
-                }
-            }
-        }
-        inTitleStartQuery + inTitleContainsQuery + startsWithQuery + containsQuery
-    }
-    private suspend fun searchByTitle(s: String): List<ChatHistory> = withContext(dispatcherProvider.default) {
-        var title: String?
-        val queryParts = s.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
-        val normalizedQuery = Utilities.normalizeText(s)
-        val startsWithQuery = mutableListOf<ChatHistory>()
-        val containsQuery = mutableListOf<ChatHistory>()
-        for (pChat in precomputedChats) {
-            title = pChat.normalizedTitle
-            if (title == null) continue
-            if (title.startsWith(normalizedQuery, ignoreCase = true)) {
-                startsWithQuery.add(pChat.chat)
-            } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
-                containsQuery.add(pChat.chat)
-            }
-        }
-        startsWithQuery + containsQuery
     }
     private suspend fun loadCurrentUser(userId: String?): UserEntity? {
         if (userId.isNullOrEmpty()) {

@@ -10,11 +10,18 @@ sealed class ChatResult {
     data class Error(val message: String) : ChatResult()
 }
 
+enum class ChatSearchMode {
+    TITLE,
+    QUESTION,
+    RESPONSE
+}
+
 interface ChatRepository {
     suspend fun sendNewChatRequest(query: String, user: String?, aiProvider: AiProvider): ChatResult
     suspend fun sendContinueChatRequest(message: String, user: String?, aiProvider: AiProvider, id: String, rev: String): ChatResult
     suspend fun fetchAiProviders(serverUrl: String): Map<String, Boolean>?
     suspend fun getChatHistoryForUser(userName: String?): List<ChatHistory>
+    suspend fun searchChats(query: String, mode: ChatSearchMode): List<ChatHistory>
     suspend fun getLatestRev(id: String): String?
     suspend fun insertChatHistoryList(chats: List<JsonObject>)
     fun extractSharedViewInIds(sharedNews: List<News>): Map<String, Set<String>>
