@@ -20,7 +20,6 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.model.News
@@ -40,7 +39,6 @@ class VoicesRepositoryImplTest {
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val teamNotificationDao: TeamNotificationDao = mockk(relaxed = true)
     private val newsDao: NewsDao = mockk(relaxed = true)
-    private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
     private val newsLogDao: org.ole.planet.myplanet.data.room.dao.NewsLogDao = mockk(relaxed = true)
 
     private fun newRepository(gsonInstance: Gson): VoicesRepositoryImpl {
@@ -52,7 +50,6 @@ class VoicesRepositoryImplTest {
                 sharedPrefManager,
                 teamNotificationDao,
                 newsDao,
-                myLibraryDao,
                 newsLogDao
             ),
             recordPrivateCalls = true
