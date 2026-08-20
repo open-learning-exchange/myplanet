@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.repository
 import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.UserEntity
 
-interface TeamsMembershipRepository {
+interface TeamsMembersRepository {
     suspend fun isMember(userId: String?, teamId: String): Boolean
     suspend fun isTeamLeader(teamId: String, userId: String?): Boolean
     suspend fun hasPendingRequest(teamId: String, userId: String?): Boolean
