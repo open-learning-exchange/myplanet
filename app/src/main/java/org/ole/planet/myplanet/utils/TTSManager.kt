@@ -24,7 +24,11 @@ class TTSManager @Inject constructor(
 
     val isSpeaking get() = _state.value == State.SPEAKING
 
-    init {
+    private fun ensureTts(onInit: () -> Unit) {
+        if (tts != null) {
+            if (isInitialized) onInit()
+            return
+        }
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 isInitialized = true
@@ -43,18 +47,23 @@ class TTSManager @Inject constructor(
                         _state.value = State.IDLE
                     }
                 })
+                onInit()
             }
         }
     }
 
     fun speak(text: String) {
-        if (!isInitialized || text.isBlank()) return
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, UTTERANCE_ID)
+        if (text.isBlank()) return
+        ensureTts {
+            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, UTTERANCE_ID)
+        }
     }
 
     fun stop() {
-        tts?.stop()
-        _state.value = State.IDLE
+        if (tts != null) {
+            tts?.stop()
+            _state.value = State.IDLE
+        }
     }
 
     companion object {
