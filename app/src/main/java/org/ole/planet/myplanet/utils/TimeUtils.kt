@@ -13,7 +13,6 @@ import java.util.concurrent.ConcurrentHashMap
 
 object TimeUtils {
     const val DATE_FORMAT = "dd MMM yyyy"
-
     private val defaultLocale: Locale
         get() = Locale.getDefault()
 
@@ -44,7 +43,7 @@ object TimeUtils {
     }
 
     private val defaultDateFormatter by lazy {
-        DateTimeFormatter.ofPattern("EEEE, MMM dd, yyyy", defaultLocale).withZone(utcZone)
+        DateTimeFormatter.ofPattern("MM/dd/yyyy", defaultLocale).withZone(utcZone)
     }
 
     private val dateTimeFormatter by lazy {

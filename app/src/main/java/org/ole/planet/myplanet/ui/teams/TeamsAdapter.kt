@@ -1,13 +1,15 @@
 package org.ole.planet.myplanet.ui.teams
 
-import android.graphics.PorterDuff
+import android.content.res.ColorStateList
 import android.graphics.Typeface
+import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemTeamListBinding
 import org.ole.planet.myplanet.model.TeamDetails
@@ -15,6 +17,7 @@ import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.StableIdGenerator
 import org.ole.planet.myplanet.utils.TimeUtils
+import java.io.File
 
 class TeamsAdapter(
     private val isGuestUser: Boolean,
@@ -60,10 +63,37 @@ class TeamsAdapter(
 
         with(holder.binding) {
             created.text = dateCache.getOrPut(team.createdDate ?: 0L) { TimeUtils.getFormattedDate(team.createdDate ?: 0) }
+            description.text = team.description
             type.text = team.teamType
             type.visibility = if (team.teamType == null) View.GONE else View.VISIBLE
             name.text = team.name
             noOfVisits.text = root.context.getString(R.string.number_placeholder, team.visitCount)
+
+            if (!team.profileImage.isNullOrBlank()) {
+                val file = File(team.profileImage)
+                if (file.exists()) {
+                    Glide.with(root.context)
+                        .load(file)
+                        .placeholder(R.drawable.ole_logo)
+                        .error(R.drawable.ole_logo)
+                        .circleCrop()
+                        .into(teamPhoto)
+                } else {
+                    try {
+                        val uri = Uri.parse(team.profileImage)
+                        Glide.with(root.context)
+                            .load(uri)
+                            .placeholder(R.drawable.ole_logo)
+                            .error(R.drawable.ole_logo)
+                            .circleCrop()
+                            .into(teamPhoto)
+                    } catch (e: Exception) {
+                        teamPhoto.setImageResource(R.drawable.ole_logo)
+                    }
+                }
+            } else {
+                teamPhoto.setImageResource(R.drawable.ole_logo)
+            }
 
             val teamStatus = team.teamStatus ?: TeamStatus(
                 isMember = false,
@@ -107,7 +137,7 @@ class TeamsAdapter(
                     contentDescription = "$actionEditString ${team.name}"
                     visibility = View.VISIBLE
                     setImageResource(R.drawable.ic_edit)
-                    clearColorFilter()
+                    imageTintList = ContextCompat.getColorStateList(context, R.color.daynight_textColor)
                 }
             }
 
@@ -117,7 +147,7 @@ class TeamsAdapter(
                     contentDescription = "$actionLeaveString ${team.name}"
                     visibility = View.VISIBLE
                     setImageResource(R.drawable.logout)
-                    clearColorFilter()
+                    imageTintList = ContextCompat.getColorStateList(context, R.color.daynight_textColor)
                 }
             }
 
@@ -137,7 +167,7 @@ class TeamsAdapter(
                     contentDescription = "$actionRequestToJoinString ${team.name}"
                     visibility = View.VISIBLE
                     setImageResource(R.drawable.ic_join_request)
-                    clearColorFilter()
+                    imageTintList = ContextCompat.getColorStateList(context, R.color.daynight_textColor)
                 }
             }
 

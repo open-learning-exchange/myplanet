@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/secondary_bg"
-    tools:context=".ui.team.TeamFragment">
+    tools:context=".ui.teams.TeamFragment">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -52,75 +52,75 @@
                 android:textColor="@color/daynight_textColor" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/tableTitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="@dimen/padding_normal"
-            android:layout_marginStart="8dp">
+<!--        <androidx.constraintlayout.widget.ConstraintLayout-->
+<!--            android:id="@+id/tableTitle"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:padding="@dimen/padding_normal"-->
+<!--            android:layout_marginStart="8dp">-->
 
-            <TextView
-                android:id="@+id/name"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:text="@string/name"
-                android:textColor="@color/teams_heading"
-                android:textStyle="bold"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintWidth_percent="0.2" />
-            <TextView
-                android:id="@+id/created"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:text="@string/created_on"
-                android:textColor="@color/teams_heading"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toStartOf="@id/type"
-                app:layout_constraintStart_toEndOf="@id/name"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintWidth_percent="0.2" />
-            <TextView
-                android:id="@+id/type"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:padding="@dimen/padding_small"
-                android:text="@string/type_nodots"
-                android:textColor="@color/teams_heading"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toStartOf="@id/no_of_visits"
-                app:layout_constraintStart_toEndOf="@id/created"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintWidth_percent="0.2" />
-            <TextView
-                android:id="@+id/no_of_visits"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="@string/total_visits"
-                android:textColor="@color/teams_heading"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toStartOf="@id/ltButtons"
-                app:layout_constraintHorizontal_weight="1"
-                app:layout_constraintStart_toEndOf="@id/type"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintWidth_percent="0.2" />
-            <TextView
-                android:id="@+id/ltButtons"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:paddingStart="0dp"
-                android:paddingEnd="12dp"
-                android:text="@string/action"
-                android:textColor="@color/teams_heading"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@id/no_of_visits"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintWidth_percent="0.3" />
-        </androidx.constraintlayout.widget.ConstraintLayout>
+<!--            <TextView-->
+<!--                android:id="@+id/name"-->
+<!--                android:layout_width="0dp"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="@string/name"-->
+<!--                android:textColor="@color/teams_heading"-->
+<!--                android:textStyle="bold"-->
+<!--                app:layout_constraintStart_toStartOf="parent"-->
+<!--                app:layout_constraintTop_toTopOf="parent"-->
+<!--                app:layout_constraintWidth_percent="0.2" />-->
+<!--            <TextView-->
+<!--                android:id="@+id/created"-->
+<!--                android:layout_width="0dp"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="@string/created_on"-->
+<!--                android:textColor="@color/teams_heading"-->
+<!--                android:textStyle="bold"-->
+<!--                app:layout_constraintEnd_toStartOf="@id/type"-->
+<!--                app:layout_constraintStart_toEndOf="@id/name"-->
+<!--                app:layout_constraintTop_toTopOf="parent"-->
+<!--                app:layout_constraintWidth_percent="0.2" />-->
+<!--            <TextView-->
+<!--                android:id="@+id/type"-->
+<!--                android:layout_width="0dp"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:gravity="center"-->
+<!--                android:padding="@dimen/padding_small"-->
+<!--                android:text="@string/type_nodots"-->
+<!--                android:textColor="@color/teams_heading"-->
+<!--                android:textStyle="bold"-->
+<!--                app:layout_constraintEnd_toStartOf="@id/no_of_visits"-->
+<!--                app:layout_constraintStart_toEndOf="@id/created"-->
+<!--                app:layout_constraintTop_toTopOf="parent"-->
+<!--                app:layout_constraintWidth_percent="0.2" />-->
+<!--            <TextView-->
+<!--                android:id="@+id/no_of_visits"-->
+<!--                android:layout_width="0dp"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_gravity="center"-->
+<!--                android:text="@string/total_visits"-->
+<!--                android:textColor="@color/teams_heading"-->
+<!--                android:textStyle="bold"-->
+<!--                app:layout_constraintEnd_toStartOf="@id/ltButtons"-->
+<!--                app:layout_constraintHorizontal_weight="1"-->
+<!--                app:layout_constraintStart_toEndOf="@id/type"-->
+<!--                app:layout_constraintTop_toTopOf="parent"-->
+<!--                app:layout_constraintWidth_percent="0.2" />-->
+<!--            <TextView-->
+<!--                android:id="@+id/ltButtons"-->
+<!--                android:layout_width="0dp"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:gravity="center"-->
+<!--                android:paddingStart="0dp"-->
+<!--                android:paddingEnd="12dp"-->
+<!--                android:text="@string/action"-->
+<!--                android:textColor="@color/teams_heading"-->
+<!--                android:textStyle="bold"-->
+<!--                app:layout_constraintEnd_toEndOf="parent"-->
+<!--                app:layout_constraintStart_toEndOf="@id/no_of_visits"-->
+<!--                app:layout_constraintTop_toTopOf="parent"-->
+<!--                app:layout_constraintWidth_percent="0.3" />-->
+<!--        </androidx.constraintlayout.widget.ConstraintLayout>-->
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_team_list"
@@ -140,7 +140,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/padding_large"
+        android:layout_margin="15dp"
         android:contentDescription="@string/add"
         app:srcCompat="@drawable/ic_add_white"
         app:tint="@color/md_white_1000" />
