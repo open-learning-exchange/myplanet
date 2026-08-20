@@ -125,11 +125,11 @@ object JsonUtils {
         if (el is JsonObject) el else JsonObject()
     }
 
-    private fun getJsonElement(fieldName: String, jsonObject: JsonObject, type: Class<*>): JsonElement = safeGet({
-        if (type == JsonObject::class.java) JsonObject() else JsonArray()
-    }) {
-        if (jsonObject.has(fieldName)) jsonObject.get(fieldName)
-        else if (type == JsonObject::class.java) JsonObject() else JsonArray()
+    private fun getJsonElement(fieldName: String, jsonObject: JsonObject, type: Class<*>): JsonElement {
+        if (!jsonObject.has(fieldName)) return if (type == JsonObject::class.java) JsonObject() else JsonArray()
+        return safeGet({ if (type == JsonObject::class.java) JsonObject() else JsonArray() }) {
+            jsonObject.get(fieldName)
+        }
     }
 
     fun getLong(fieldName: String, jsonObject: JsonObject?): Long = safeGet({ 0L }) {
