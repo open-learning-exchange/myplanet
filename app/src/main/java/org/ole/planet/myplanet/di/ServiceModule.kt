@@ -87,8 +87,9 @@ object ServiceModule {
         progressRepository: ProgressRepository,
         surveysRepository: SurveysRepository,
         dispatcherProvider: DispatcherProvider,
-        userSessionManager: UserSessionManager
+        userSessionManager: UserSessionManager,
+        syncTimeLogger: org.ole.planet.myplanet.utils.SyncTimeLogger
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, dispatcherProvider, userSessionManager)
+        return TransactionSyncManager(apiInterface, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, dispatcherProvider, userSessionManager, syncTimeLogger)
     }
 }

@@ -2,28 +2,36 @@ package org.ole.planet.myplanet.utils
 
 import android.util.Log
 import androidx.core.net.toUri
-import dagger.hilt.android.EntryPointAccessors
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.net.URL
+import java.net.HttpURLConnection
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlin.math.roundToInt
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.repository.DiagnosticsRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
+import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 
-object SyncTimeLogger {
-    private val timeProvider by lazy {
-        coreEntryPoint.timeProvider()
-    }
-
-    private val coreEntryPoint by lazy {
-        EntryPointAccessors.fromApplication(MainApplication.context, CoreDependenciesEntryPoint::class.java)
-    }
+@Singleton
+class SyncTimeLogger @Inject constructor(
+    private val timeProvider: TimeProvider,
+    @ApplicationScope private val appScope: CoroutineScope,
+    private val dispatcherProvider: DispatcherProvider,
+    private val sharedPrefManager: SharedPrefManager,
+    private val serverUrlMapper: ServerUrlMapper,
+    private val diagnosticsRepository: DiagnosticsRepository
+) {
 
     private val processTimes = ConcurrentHashMap<String, Long>()
     private val processItemCounts = ConcurrentHashMap<String, Int>()
@@ -81,22 +89,37 @@ object SyncTimeLogger {
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
     }
 
-    private fun saveSummaryToRealm(summary: String, uploadManager: UploadManager? = null) {
-        val dispatcherProvider = coreEntryPoint.dispatcherProvider()
+    private suspend fun isServerReachable(urlString: String): Boolean = withContext(dispatcherProvider.io) {
+        try {
+            val formattedUrl = if (!urlString.startsWith("http://") && !urlString.startsWith("https://")) {
+                "http://$urlString"
+            } else {
+                urlString
+            }
+            val url = URL(formattedUrl)
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.connectTimeout = 5000
+            conn.readTimeout = 5000
+            conn.connect()
+            conn.responseCode in 200..299
+        } catch (e: Exception) {
+            false
+        }
+    }
 
-        MainApplication.applicationScope.launch(dispatcherProvider.io) {
-            val spm = coreEntryPoint.sharedPrefManager()
-            MainApplication.createLog("sync summary", summary)
-            val updateUrl = spm.getServerUrl()
-            val serverUrlMapper = coreEntryPoint.serverUrlMapper()
+    private fun saveSummaryToRealm(summary: String, uploadManager: UploadManager? = null) {
+        appScope.launch(dispatcherProvider.io) {
+            diagnosticsRepository.saveLogToRoom("sync summary", summary, "${timeProvider.now()}")
+            val updateUrl = sharedPrefManager.getServerUrl()
             val mapping = serverUrlMapper.processUrl(updateUrl)
 
-            val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
+            val primaryAvailable = isServerReachable(mapping.primaryUrl)
             val alternativeUrl = mapping.alternativeUrl
 
-            if (!primaryAvailable && alternativeUrl != null && MainApplication.isServerReachable(alternativeUrl)) {
+            if (!primaryAvailable && alternativeUrl != null && isServerReachable(alternativeUrl)) {
                 val uri = updateUrl.toUri()
-                val prefs = spm.rawPreferences
+                val prefs = sharedPrefManager.rawPreferences
                 val editor = prefs.edit()
 
                 serverUrlMapper.updateUrlPreferences(
