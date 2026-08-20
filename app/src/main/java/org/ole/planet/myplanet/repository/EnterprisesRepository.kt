@@ -8,6 +8,6 @@ interface EnterprisesRepository {
     suspend fun addReport(report: FinanceReportParams)
     suspend fun updateReport(reportId: String, payload: FinanceReportParams)
     suspend fun archiveReport(reportId: String)
-    suspend fun getReportsFlow(teamId: String): Flow<List<MyTeam>>
+    fun getReportsFlow(teamId: String): Flow<List<MyTeam>>
     suspend fun exportReportsAsCsv(reports: List<MyTeam>, teamName: String): String
 }

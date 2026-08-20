@@ -21,10 +21,10 @@ import org.ole.planet.myplanet.repository.DiagnosticsRepository
 import org.ole.planet.myplanet.repository.DiagnosticsRepositoryImpl
 import org.ole.planet.myplanet.repository.DownloadRepository
 import org.ole.planet.myplanet.repository.DownloadRepositoryImpl
-import org.ole.planet.myplanet.repository.EventsRepository
-import org.ole.planet.myplanet.repository.EventsRepositoryImpl
 import org.ole.planet.myplanet.repository.EnterprisesRepository
 import org.ole.planet.myplanet.repository.EnterprisesRepositoryImpl
+import org.ole.planet.myplanet.repository.EventsRepository
+import org.ole.planet.myplanet.repository.EventsRepositoryImpl
 import org.ole.planet.myplanet.repository.EventsSyncWriter
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.repository.FeedbackRepositoryImpl
@@ -106,11 +106,11 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindEventsRepository(impl: EventsRepositoryImpl): EventsRepository
+    abstract fun bindEnterprisesRepository(impl: EnterprisesRepositoryImpl): EnterprisesRepository
 
     @Binds
     @Singleton
-    abstract fun bindEnterprisesRepository(impl: EnterprisesRepositoryImpl): EnterprisesRepository
+    abstract fun bindEventsRepository(impl: EventsRepositoryImpl): EventsRepository
 
     @Binds
     @Singleton

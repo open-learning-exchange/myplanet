@@ -17,7 +17,8 @@ import org.ole.planet.myplanet.utils.TimeUtils
 class EnterprisesRepositoryImpl @Inject constructor(
     private val teamDao: TeamDao,
     private val timeProvider: TimeProvider,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val teamsRepository: TeamsRepository
 ) : EnterprisesRepository {
 
     override suspend fun addReport(report: FinanceReportParams) {
@@ -42,9 +43,9 @@ class EnterprisesRepositoryImpl @Inject constructor(
         }
         val reportEntry = MyTeam().apply { _id = reportId }
         MyTeam.populateTeamFields(doc, reportEntry)
-        teamDao.upsert(reportEntry.requireRoomEntity())
+        teamDao.upsert(with(teamsRepository) { reportEntry.requireRoomEntity() })
         if (report.imageName != null && report.imageData != null) {
-            attachTeamImage(reportId, report.imageName, report.imageData)
+            teamsRepository.attachTeamImage(reportId, report.imageName, report.imageData)
         }
     }
 
@@ -62,7 +63,7 @@ class EnterprisesRepositoryImpl @Inject constructor(
             addProperty("updatedDate", timeProvider.now())
             addProperty("updated", true)
         }
-        updateTeamEntityById(reportId) { report ->
+        teamsRepository.updateTeamEntityById(reportId) { report ->
             MyTeam.populateReportFields(doc, report)
             report.updated = true
             if (report.updatedDate == 0L) {
@@ -70,26 +71,25 @@ class EnterprisesRepositoryImpl @Inject constructor(
             }
         }
         if (payload.imageName != null && payload.imageData != null) {
-            attachTeamImage(reportId, payload.imageName, payload.imageData)
+            teamsRepository.attachTeamImage(reportId, payload.imageName, payload.imageData)
         }
     }
 
     override suspend fun archiveReport(reportId: String) {
         if (reportId.isBlank()) return
-        updateTeamEntityById(reportId) { report ->
+        teamsRepository.updateTeamEntityById(reportId) { report ->
             report.status = "archived"
             report.updated = true
         }
     }
 
-    override suspend fun getReportsFlow(teamId: String): Flow<List<MyTeam>> {
+    override fun getReportsFlow(teamId: String): Flow<List<MyTeam>> {
         return teamDao.observeAll().map { entities ->
             entities.filter {
                 it.teamId == teamId &&
                     it.docType == "report" &&
                     it.status != "archived"
             }.sortedByDescending { it.createdDate }
-                .map { it }
         }
     }
 
@@ -112,33 +112,8 @@ class EnterprisesRepositoryImpl @Inject constructor(
                 .append(report.wages).append(", ")
                 .append(report.otherExpenses).append(", ")
                 .append(profitLoss).append(", ")
-                .append(endingBalance).append("\n")
+                .append(endingBalance).append('\n')
         }
         return csvBuilder.toString()
-    }
-
-    private suspend fun attachTeamImage(teamId: String, imageName: String, imageData: ByteArray) {
-        if (teamId.isBlank()) return
-        val destFile = MyTeam.getAttachmentFile(MainApplication.context, teamId, imageName) ?: return
-        withContext(dispatcherProvider.io) {
-            destFile.parentFile?.mkdirs()
-            destFile.writeBytes(imageData)
-        }
-        updateTeamEntityById(teamId) { team ->
-            team.imageName = imageName
-            team.updated = true
-        }
-    }
-
-    private suspend fun updateTeamEntityById(id: String, updater: (MyTeam) -> Unit): Boolean {
-        val entity = teamDao.getById(id) ?: return false
-        val model = entity
-        updater(model)
-        teamDao.upsert(model)
-        return true
-    }
-
-    private fun MyTeam.requireRoomEntity(): MyTeam {
-        return this
     }
 }
