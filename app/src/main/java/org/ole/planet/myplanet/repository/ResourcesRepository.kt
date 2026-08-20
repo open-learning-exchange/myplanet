@@ -44,6 +44,7 @@ interface ResourcesRepository {
     suspend fun getLibraryItemsByLocalAddress(localAddress: String): List<MyLibrary>
     suspend fun getLibraryListForUser(userId: String?): List<MyLibrary>
     suspend fun getMyLibrary(userId: String?): List<MyLibrary>
+    fun getMyLibraryFlow(userId: String?): Flow<List<MyLibrary>>
     suspend fun getAllStepResources(stepId: String?): List<MyLibrary>
     fun getRecentResources(userId: String): Flow<List<MyLibrary>>
     fun getPendingDownloads(userId: String): Flow<List<String>>

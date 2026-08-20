@@ -96,6 +96,9 @@ interface MyLibraryDao {
     @Query("SELECT * FROM my_library WHERE userId LIKE :userPattern ESCAPE '\\'")
     suspend fun getForUserPattern(userPattern: String): List<MyLibrary>
 
+    @Query("SELECT * FROM my_library WHERE userId LIKE :userPattern ESCAPE '\\'")
+    fun getForUserPatternFlow(userPattern: String): Flow<List<MyLibrary>>
+
     @Query("SELECT * FROM my_library WHERE isPrivate = 0 AND userId LIKE :userPattern ESCAPE '\\'")
     suspend fun getPublicForUserPattern(userPattern: String): List<MyLibrary>
 
