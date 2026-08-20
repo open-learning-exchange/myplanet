@@ -91,7 +91,8 @@ class EventsDetailViewModel @Inject constructor(
 
     fun toggleAttendance(meetupId: String) {
         viewModelScope.launch {
-            _meetup.value = eventsRepository.toggleCurrentUserAttendance(meetupId)
+            val currentUserId = _user.value?.id ?: return@launch
+            _meetup.value = eventsRepository.toggleAttendance(meetupId, currentUserId)
             _members.value = eventsRepository.getJoinedMembers(meetupId)
         }
     }
