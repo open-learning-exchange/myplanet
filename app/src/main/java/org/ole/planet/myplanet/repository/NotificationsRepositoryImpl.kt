@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import dagger.Lazy
 import java.util.Calendar
 import java.util.Date
+import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
@@ -275,6 +276,22 @@ class NotificationsRepositoryImpl @Inject constructor(
             }
         }
         return map
+    }
+
+    override suspend fun updateTeamNotification(teamId: String, count: Int) {
+        val existing = teamNotificationDao.findByParentAndType(teamId, "chat")
+        if (existing != null) {
+            existing.lastCount = count
+            teamNotificationDao.update(existing)
+        } else {
+            val notification = TeamNotification().apply {
+                id = UUID.randomUUID().toString()
+                parentId = teamId
+                type = "chat"
+                lastCount = count
+            }
+            teamNotificationDao.insert(notification)
+        }
     }
 
     override suspend fun getTeamNotifications(teamIds: List<String>, userId: String): Map<String, TeamNotificationInfo> {
