@@ -16,8 +16,9 @@ import org.ole.planet.myplanet.databinding.FragmentDictionaryBinding
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.utils.Constants
-import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.repository.DictionaryLoad
 import org.ole.planet.myplanet.repository.DictionaryRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -81,18 +82,27 @@ class DictionaryActivity : BaseActivity() {
     }
 
     private suspend fun loadDictionaryIfNeeded() {
-        if (dictionaryRepository.insertDictionaryData()) {
-            val count = dictionaryRepository.count()
-            fragmentDictionaryBinding.tvResult.text = getString(R.string.list_size, count)
-            setClickListener()
-        } else {
-            val list = ArrayList<String>()
-            list.add(Constants.DICTIONARY_URL)
-            Utilities.toast(
-                this@DictionaryActivity,
-                getString(R.string.downloading_started_please_check_notificati)
-            )
-            DownloadUtils.openDownloadService(this@DictionaryActivity, list, false)
+        when (dictionaryRepository.insertDictionaryData()) {
+            DictionaryLoad.Inserted, DictionaryLoad.AlreadyPopulated -> {
+                val count = dictionaryRepository.count()
+                fragmentDictionaryBinding.tvResult.text = getString(R.string.list_size, count)
+                setClickListener()
+            }
+            DictionaryLoad.FileMissing -> {
+                val list = ArrayList<String>()
+                list.add(Constants.DICTIONARY_URL)
+                Utilities.toast(
+                    this@DictionaryActivity,
+                    getString(R.string.downloading_started_please_check_notificati)
+                )
+                DownloadUtils.openDownloadService(this@DictionaryActivity, list, false)
+            }
+            is DictionaryLoad.Failed -> {
+                Utilities.toast(
+                    this@DictionaryActivity,
+                    getString(R.string.dictionary_parsing_failed)
+                )
+            }
         }
     }
 

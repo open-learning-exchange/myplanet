@@ -27,16 +27,16 @@ class DictionaryRepositoryImpl @Inject constructor(
         return dictionaryDao.findByWord(word)
     }
 
-    override suspend fun insertDictionaryData(): Boolean {
-        if (!FileUtils.checkFileExist(context, Constants.DICTIONARY_URL)) {
-            return false
-        }
-
-        if (count() > 0) {
-            return true
-        }
-
+    override suspend fun insertDictionaryData(): DictionaryLoad {
         return withContext(dispatcherProvider.io) {
+            if (!FileUtils.checkFileExist(context, Constants.DICTIONARY_URL)) {
+                return@withContext DictionaryLoad.FileMissing
+            }
+
+            if (dictionaryDao.count() > 0) {
+                return@withContext DictionaryLoad.AlreadyPopulated
+            }
+
             try {
                 val data = FileUtils.getStringFromFile(
                     FileUtils.getSDPathFromUrl(context, Constants.DICTIONARY_URL)
@@ -58,13 +58,13 @@ class DictionaryRepositoryImpl @Inject constructor(
                         )
                     }
                     dictionaryDao.insertAll(entities)
-                    true
+                    DictionaryLoad.Inserted
                 } else {
-                    false
+                    DictionaryLoad.Failed(null)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                false
+                DictionaryLoad.Failed(e)
             }
         }
     }

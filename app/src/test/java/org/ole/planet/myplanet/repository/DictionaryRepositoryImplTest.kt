@@ -46,43 +46,35 @@ class DictionaryRepositoryImplTest {
 
     @Test
     fun `insertDictionaryData returns false if file does not exist`() = runTest(testDispatcher) {
-        coEvery { FileUtils.checkFileExist(context, Constants.DICTIONARY_URL) } returns false
+        every { FileUtils.checkFileExist(context, Constants.DICTIONARY_URL) } returns false
 
         val result = dictionaryRepository.insertDictionaryData()
 
-        println("Result of parse fail test: $result")
-        assertFalse(result)
+        assertTrue(result is DictionaryLoad.FileMissing)
         coVerify(exactly = 0) { dictionaryDao.insertAll(any()) }
     }
 
     @Test
     fun `insertDictionaryData returns true if data is already populated`() = runTest(testDispatcher) {
-        coEvery { FileUtils.checkFileExist(context, Constants.DICTIONARY_URL) } returns true
+        every { FileUtils.checkFileExist(context, Constants.DICTIONARY_URL) } returns true
         coEvery { dictionaryDao.count() } returns 100L
 
         val result = dictionaryRepository.insertDictionaryData()
 
-        assertTrue(result)
+        assertTrue(result is DictionaryLoad.AlreadyPopulated)
         coVerify(exactly = 0) { dictionaryDao.insertAll(any()) }
     }
 
     @Test
     fun `insertDictionaryData returns false if json parsing fails`() = runTest(testDispatcher) {
-        try {
-            every { FileUtils.checkFileExist(context, Constants.DICTIONARY_URL) } returns true
-            coEvery { dictionaryDao.count() } returns 0L
-            every { FileUtils.getSDPathFromUrl(context, Constants.DICTIONARY_URL) } throws Exception("Forced exception for testing")
+        every { FileUtils.checkFileExist(context, Constants.DICTIONARY_URL) } returns true
+        coEvery { dictionaryDao.count() } returns 0L
+        every { FileUtils.getSDPathFromUrl(context, Constants.DICTIONARY_URL) } throws Exception("Forced exception for testing")
 
-            val result = dictionaryRepository.insertDictionaryData()
+        val result = dictionaryRepository.insertDictionaryData()
 
-            println("PARSE FAIL RESULT IS: $result")
-
-            assertFalse(result)
-            coVerify(exactly = 0) { dictionaryDao.insertAll(any()) }
-        } catch (e: Throwable) {
-            e.printStackTrace()
-            throw e
-        }
+        assertTrue(result is DictionaryLoad.Failed)
+        coVerify(exactly = 0) { dictionaryDao.insertAll(any()) }
     }
 
     @Test
@@ -96,7 +88,7 @@ class DictionaryRepositoryImplTest {
 
         val result = dictionaryRepository.insertDictionaryData()
 
-        assertTrue(result)
+        assertTrue(result is DictionaryLoad.Inserted)
         coVerify(exactly = 1) { dictionaryDao.insertAll(any()) }
     }
 }
