@@ -17,6 +17,10 @@ void main() {
     String? couchId,
     bool isUpdated = false,
     bool isArchived = false,
+    String? passwordScheme,
+    String? derivedKey,
+    String? salt,
+    String? iterations,
   }) => db.userDao.upsert(
     UsersCompanion.insert(
       id: id,
@@ -27,6 +31,12 @@ void main() {
       joinDate: const Value(0),
       isUpdated: Value(isUpdated),
       isArchived: Value(isArchived),
+      passwordScheme: passwordScheme == null
+          ? const Value.absent()
+          : Value(passwordScheme),
+      derivedKey: derivedKey == null ? const Value.absent() : Value(derivedKey),
+      salt: salt == null ? const Value.absent() : Value(salt),
+      iterations: iterations == null ? const Value.absent() : Value(iterations),
     ),
   );
 
@@ -362,8 +372,17 @@ void main() {
       expect(saved?.iterations, '10');
     });
 
-    test('preserves null fields as null', () async {
-      await seedUser(id: 'u1');
+    test('preserves existing credentials when the server omits them', () async {
+      // #15836: a failed/incomplete server fetch used to write `null` over a
+      // previously stored `derived_key`/`salt`, locking the user out of
+      // offline PBKDF2 verification. The null fields must be left untouched.
+      await seedUser(
+        id: 'u1',
+        derivedKey: 'oldDerivedKey',
+        salt: 'oldSalt',
+        passwordScheme: 'oldScheme',
+        iterations: '10000',
+      );
 
       await db.userDao.updateUserSecurityData(
         localId: 'u1',
@@ -377,8 +396,11 @@ void main() {
 
       final saved = await db.userDao.getById('u1');
       expect(saved?.couchId, 'org.couchdb.user:ada');
-      expect(saved?.derivedKey, isNull);
-      expect(saved?.salt, isNull);
+      expect(saved?.rev, '1-abc');
+      expect(saved?.derivedKey, 'oldDerivedKey');
+      expect(saved?.salt, 'oldSalt');
+      expect(saved?.passwordScheme, 'oldScheme');
+      expect(saved?.iterations, '10000');
     });
   });
 

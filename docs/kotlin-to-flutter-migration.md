@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 53 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 56 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -2470,9 +2470,70 @@ pattern.
 
 ---
 
-**Last updated**: 2026-08-20 (Phase 55 complete — team financial report CSV
-export ported from `473a9c032`/#15785: `exportReportsAsCsv` +
-`formatDateForCsv` + `FilePicker.saveFile` UI, with l10n for all six
-languages)
-**Phase**: 55 of N (27 of 28 UI packages have a screen — see Status for what that does and
+## Phase 56 — security-data preservation; harvest audit of the 2026-08-20 batch
+
+The three commits after `96a04b138` (up to `373420b6f`, the new tip of
+`master`) were audited. One is a real bug the port shared and now fixes; the
+other two are no-ops. Each also bumps `versionCode`/`versionName`
+(6551→6555) in lockstep, the usual "smoother" cadence.
+
+**Ported — the bug the port shared.**
+
+- `aa24dfa6c` (sync: user repository security data preserving, #15836) —
+  `UserRepositoryImpl.updateSecurityData` wrote `derived_key`/`salt`/
+  `password_scheme`/`iterations` unconditionally, so a server response that
+  omitted them (a failed/incomplete follow-up GET after a successful PUT)
+  overwrote the existing credentials with `null`, locking the user out of
+  offline PBKDF2 verification. The Kotlin fix guards each assignment with
+  `?.let {}`. **The port had the same bug.** `UserDao.updateUserSecurityData`
+  built a `UsersCompanion` with `Value(passwordScheme)` etc., and Drift's
+  `Value(null)` is an explicit "set this column to NULL" — distinct from
+  `Value.absent()`, which leaves the row untouched. So the moment the
+  security-data fetch in `UserRepository.uploadNewUser` returned
+  `NetworkError`, the subsequent `updateUserSecurityData` call wiped any
+  previously stored `derived_key`/`salt` the row already carried. The fix
+  mirrors the Kotlin guard exactly: each nullable credential is written only
+  when non-null, otherwise `Value.absent()` is emitted so the column is left
+  alone. (`couchId`/`rev` are still written unconditionally — the PUT
+  succeeded and the server *did* assign them, so they are never null here,
+  matching the Kotlin which assigns `_id`/`_rev` outside the `?.let` guards.)
+  The previous DAO test "preserves null fields as null" codified the buggy
+  behaviour (it asserted that a null argument *writes* null over the row);
+  it is replaced by "preserves existing credentials when the server omits
+  them", which seeds a row with real credentials and asserts they survive a
+  null-argument call. The `uploadNewUser` repository test that exercises a
+  failed security-data GET on a freshly seeded (credential-less) user still
+  passes — `Value.absent()` correctly leaves the absent fields null.
+
+**No-op — DI/UI refactoring the port does not mirror.**
+
+- `373420b6f` (teams: finances members repositories splitting, #15840) —
+  extracts `TeamsFinancesRepository` and `TeamsMembersRepository` interfaces
+  out of `TeamsRepository`, makes `TeamsRepositoryImpl` `@Singleton`, and
+  moves `JoinedMemberData` to its own file. Pure Kotlin-DI restructuring:
+  the method set and behaviour are unchanged, only the Hilt graph is
+  reorganised. The port's `TeamsRepository` is a single plain Dart class
+  with no DI container, so there is nothing to split and nothing the split
+  changes. The `@Singleton` annotation has no Flutter equivalent either
+  (Riverpod providers are already singletons). No-op.
+- `563fcf73b` (enterprises: finances landscaping, #15577) — restructures
+  `EnterprisesFinancesFragment`'s UI: a `ConcatAdapter` with a sticky
+  `FinanceHeaderAdapter` holding the date filter + summary + sort toggle, a
+  `HeaderState` replacing scattered fields, and the add-transaction form
+  moves from `add_transaction.xml` to `dialog_add_transaction.xml`. It is a
+  layout/visual reorganisation, not a behaviour change — the date-filter,
+  reset, sort-ascending toggle, debit/credit/balance summary, and
+  add-transaction flow are all unchanged. The port's `TeamFinancesScreen`
+  already has every one of those (date filter with the `#15766` future-date
+  cap, reset, sort toggle, summary, add-transaction FAB); its widget tree is
+  its own and the Kotlin's XML/header-adapter split has no analogue to
+  mirror. No-op.
+
+---
+
+**Last updated**: 2026-08-20 (Phase 56 complete — security-data preservation
+ported from `aa24dfa6c`/#15836: `UserDao.updateUserSecurityData` now emits
+`Value.absent()` for null credentials instead of `Value(null)`; two further
+master commits audited as no-ops)
+**Phase**: 56 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

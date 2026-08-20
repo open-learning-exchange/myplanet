@@ -648,6 +648,12 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
   /// the PBKDF2 security data (`password_scheme`, `derived_key`, `salt`,
   /// `iterations`) so subsequent logins can verify the password with PBKDF2
   /// rather than requiring a server fetch.
+  ///
+  /// When the server response omits a credential (it is `null`), the existing
+  /// value is preserved rather than overwritten -- porting `aa24dfa6c` (#15836),
+  /// which guards each assignment with `?.let {}`. Writing `Value(null)` here
+  /// would clear a previously stored `derived_key`/`salt` the moment the fetch
+  /// failed, locking the user out of offline PBKDF2 verification.
   Future<void> updateUserSecurityData({
     required String localId,
     required String couchId,
@@ -661,10 +667,16 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
       UsersCompanion(
         couchId: Value(couchId),
         rev: Value(rev),
-        passwordScheme: Value(passwordScheme),
-        derivedKey: Value(derivedKey),
-        salt: Value(salt),
-        iterations: Value(iterations),
+        passwordScheme: passwordScheme == null
+            ? const Value.absent()
+            : Value(passwordScheme),
+        derivedKey: derivedKey == null
+            ? const Value.absent()
+            : Value(derivedKey),
+        salt: salt == null ? const Value.absent() : Value(salt),
+        iterations: iterations == null
+            ? const Value.absent()
+            : Value(iterations),
       ),
     );
   }
