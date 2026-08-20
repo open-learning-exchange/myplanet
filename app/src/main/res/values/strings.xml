@@ -990,7 +990,7 @@
     <string name="empty_text" />
     <string name="message_placeholder">%s</string>
     <string name="reports">Reports</string>
-    <string name="number_placeholder">%d</string>
+    <string name="number_placeholder">%d visits</string>
     <string name="float_placeholder">%.1f</string>
     <string name="string_range">%1$s - %2$s</string>
     <string name="team_financial_report">%s Financial Report</string>
@@ -1357,5 +1357,4 @@
     <string name="failed_to_update_resource">Failed to update resource</string>
     <string name="join_team_first">Please join a Team to share this chat</string>
     <string name="join_enterprise_first">Please join an Enterprise to share this chat</string>
-
 </resources>

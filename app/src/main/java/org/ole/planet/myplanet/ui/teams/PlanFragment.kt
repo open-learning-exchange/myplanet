@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentPlanBinding
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.TeamDetailsUpdateRequest
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -165,8 +166,7 @@ class PlanFragment : BaseTeamFragment() {
             val isPublic = binding.switchPublic.isChecked
 
             try {
-                val teamTypeForValidation = team.type ?: "team"
-                val wasUpdated = teamsRepository.updateTeamDetails(
+                val request = TeamDetailsUpdateRequest(
                     teamId = teamIdentifier,
                     name = name,
                     description = descriptionToSave,
@@ -175,7 +175,9 @@ class PlanFragment : BaseTeamFragment() {
                     teamType = teamType,
                     isPublic = isPublic,
                     createdBy = createdBy,
+                    profileImage = null
                 )
+                val wasUpdated = teamsRepository.updateTeamDetails(request)
 
                 if (wasUpdated) {
                     val refreshedTeam = teamsRepository.getTeamByIdOrTeamId(teamIdentifier)
