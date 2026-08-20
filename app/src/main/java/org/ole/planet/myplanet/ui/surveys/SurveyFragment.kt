@@ -110,11 +110,6 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
         setupObservers()
     }
 
-    override fun onResume() {
-        super.onResume()
-        viewModel.loadSurveys(isTeam, teamId, viewModel.isTeamShareAllowed.value)
-    }
-
     private fun showHideRadioButton() {
         if (isTeam) {
             binding.rgSurvey.visibility = View.VISIBLE
