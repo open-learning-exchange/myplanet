@@ -71,32 +71,47 @@ class ResourcesRepository {
     String resourceId,
     String userId, {
     required bool joined,
+  }) => setShelfMemberships([resourceId], userId, joined: joined);
+
+  /// Applies a catalog multi-selection as one atomic shelf mutation.
+  Future<void> setShelfMemberships(
+    Iterable<String> resourceIds,
+    String userId, {
+    required bool joined,
   }) async {
+    final ids = resourceIds.where((id) => id.trim().isNotEmpty).toSet();
+    if (ids.isEmpty) return;
     // Both writes together: if only one landed, the local shelf and the
     // removal log would disagree and the next upload would push the wrong
     // document.
     await _dao.transaction(() async {
-      final row = await _dao.getById(resourceId);
-      if (row != null) {
-        final userIds = {
-          ...row.userId.where((id) => id.isNotEmpty && id != userId),
-          if (joined) userId,
-        }.toList(growable: false);
-        await _dao.upsertAll([row.copyWith(userId: userIds).toCompanion(true)]);
-      }
+      final rows = await _dao.getByIds(ids.toList(growable: false));
+      await _dao.upsertAll([
+        for (final row in rows)
+          row
+              .copyWith(
+                userId: {
+                  ...row.userId.where((id) => id.isNotEmpty && id != userId),
+                  if (joined) userId,
+                }.toList(growable: false),
+              )
+              .toCompanion(true),
+      ]);
 
-      if (joined) {
-        await _removedLogDao.clear(
-          type: ShelfRepository.resourcesType,
-          userId: userId,
-          docId: resourceId,
-        );
-      } else {
-        await _removedLogDao.record(
-          type: ShelfRepository.resourcesType,
-          userId: userId,
-          docId: resourceId,
-        );
+      for (final resourceId in ids) {
+        if (joined) {
+          await _removedLogDao.clear(
+            type: ShelfRepository.resourcesType,
+            userId: userId,
+            docId: resourceId,
+          );
+        } else {
+          await _removedLogDao.record(
+            type: ShelfRepository.resourcesType,
+            userId: userId,
+            docId: resourceId,
+          );
+        }
       }
     });
   }

@@ -303,6 +303,30 @@ void main() {
   });
 
   group('setShelfMembership', () {
+    test('batch removal updates every row and removal log', () async {
+      stubCount(2);
+      stubPage(0, 100, [row('res-1', 'Algebra'), row('res-2', 'Biology')]);
+      await repository.sync(config: config);
+      await repository.setShelfMemberships(
+        ['res-1', 'res-2'],
+        'user-1',
+        joined: true,
+      );
+
+      await repository.setShelfMemberships(
+        ['res-1', 'res-2'],
+        'user-1',
+        joined: false,
+      );
+
+      expect((await db.myLibraryDao.getById('res-1'))!.userId, isEmpty);
+      expect((await db.myLibraryDao.getById('res-2'))!.userId, isEmpty);
+      expect(
+        await db.removedLogDao.removedDocIds('resources', 'user-1'),
+        containsAll(['res-1', 'res-2']),
+      );
+    });
+
     test(
       'leaving records the removal so the shelf push cannot re-add',
       () async {

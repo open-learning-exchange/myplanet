@@ -69,6 +69,16 @@ real — they had been setting a locale with no `.arb` to resolve to. Somali nee
 locale would otherwise resolve with no `MaterialLocalizations` and crash. Directional padding and
 alignment are done; a visual RTL review in Arabic is not.
 
+Phase 48 fixed the team-finance summary so it is derived from the filtered transaction stream.
+Phase 49 made notification rows actionable rather than read-only: resources and storage warnings
+open their matching screens, while task and join-request notifications resolve their cached team
+documents before opening that team's tasks or join-requests tab. Already-read notifications remain
+actionable, matching Kotlin's click behaviour.
+
+Phase 50 closed the resource-catalog batch-selection gap. Long-press enters selection mode in both
+list and grid layouts, further taps build a multi-selection, and one add/remove action atomically
+updates every resource plus its `removed_log` entry before attempting the derived shelf upload.
+
 ### Documentation Map
 
 | Document | Read it when… |

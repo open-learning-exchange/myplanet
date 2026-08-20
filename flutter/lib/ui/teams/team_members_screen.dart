@@ -6,8 +6,13 @@ import '../../providers/teams_provider.dart';
 import '../../data/local/app_database.dart';
 
 class TeamMembersScreen extends ConsumerWidget {
-  const TeamMembersScreen({required this.teamId, super.key});
+  const TeamMembersScreen({
+    required this.teamId,
+    this.openJoinRequests = false,
+    super.key,
+  });
   final String teamId;
+  final bool openJoinRequests;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -19,6 +24,7 @@ class TeamMembersScreen extends ConsumerWidget {
     final canManage = (memberships[teamId]?.isLeader ?? false);
     return DefaultTabController(
       length: canManage ? 2 : 1,
+      initialIndex: canManage && openJoinRequests ? 1 : 0,
       child: Scaffold(
         appBar: AppBar(
           title: Text(l10n.teamMembers),

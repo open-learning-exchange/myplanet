@@ -44,10 +44,6 @@ class _TeamFinancesScreenState extends ConsumerState<TeamFinancesScreen> {
             ?.isLeader ??
         false;
 
-    int totalDebit = 0;
-    int totalCredit = 0;
-    int balance = 0;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.finances),
@@ -93,26 +89,13 @@ class _TeamFinancesScreenState extends ConsumerState<TeamFinancesScreen> {
               ],
             ),
           ),
-          // Summary row
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _SummaryItem(label: l10n.debit, value: totalDebit),
-                _SummaryItem(label: l10n.credit, value: totalCredit),
-                _SummaryItem(label: l10n.balance, value: balance, bold: true),
-              ],
-            ),
-          ),
-          // Transaction list
           Expanded(
             child: transactions.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, s) => Center(child: Text(l10n.unavailable)),
               data: (rows) {
-                // Calculate totals
+                var totalDebit = 0;
+                var totalCredit = 0;
                 for (final tx in rows) {
                   if (tx.row.type?.toLowerCase() == 'debit') {
                     totalDebit += tx.row.amount;
@@ -120,18 +103,28 @@ class _TeamFinancesScreenState extends ConsumerState<TeamFinancesScreen> {
                     totalCredit += tx.row.amount;
                   }
                 }
-                balance = totalCredit - totalDebit;
+                final balance = totalCredit - totalDebit;
 
-                if (rows.isEmpty) {
-                  return Center(child: Text(l10n.noTransactions));
-                }
-                return ListView.separated(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: rows.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 8),
-                  itemBuilder: (context, index) =>
-                      _TransactionCard(transaction: rows[index]),
+                return Column(
+                  children: [
+                    _FinanceSummary(
+                      debit: totalDebit,
+                      credit: totalCredit,
+                      balance: balance,
+                    ),
+                    Expanded(
+                      child: rows.isEmpty
+                          ? Center(child: Text(l10n.noTransactions))
+                          : ListView.separated(
+                              padding: const EdgeInsets.all(12),
+                              itemCount: rows.length,
+                              separatorBuilder: (context, index) =>
+                                  const SizedBox(height: 8),
+                              itemBuilder: (context, index) =>
+                                  _TransactionCard(transaction: rows[index]),
+                            ),
+                    ),
+                  ],
                 );
               },
             ),
@@ -354,6 +347,35 @@ class _TeamFinancesScreenState extends ConsumerState<TeamFinancesScreen> {
     );
     noteController.dispose();
     amountController.dispose();
+  }
+}
+
+class _FinanceSummary extends StatelessWidget {
+  const _FinanceSummary({
+    required this.debit,
+    required this.credit,
+    required this.balance,
+  });
+
+  final int debit;
+  final int credit;
+  final int balance;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _SummaryItem(label: l10n.debit, value: debit),
+          _SummaryItem(label: l10n.credit, value: credit),
+          _SummaryItem(label: l10n.balance, value: balance, bold: true),
+        ],
+      ),
+    );
   }
 }
 

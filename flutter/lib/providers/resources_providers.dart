@@ -5,6 +5,7 @@ import '../core/system/disk_stats.dart';
 import '../core/sync/sync_result.dart';
 import '../data/local/app_database.dart';
 import 'app_providers.dart';
+import 'session_provider.dart';
 import 'sync_state.dart';
 
 /// The resource-list search box. Replaces the `searchTags`/`etSearch` state that
@@ -21,6 +22,31 @@ final resourcesStreamProvider = StreamProvider<List<MyLibraryRow>>((ref) {
   final query = ref.watch(resourceSearchQueryProvider);
   return ref.watch(resourcesRepositoryProvider).watchResources(query: query);
 });
+
+class ResourceShelfActions {
+  const ResourceShelfActions(this.ref);
+  final Ref ref;
+
+  Future<void> setMemberships(
+    Iterable<String> resourceIds, {
+    required bool joined,
+  }) async {
+    final user = ref.read(sessionProvider).valueOrNull;
+    if (user == null) return;
+    await ref
+        .read(resourcesRepositoryProvider)
+        .setShelfMemberships(resourceIds, user.id, joined: joined);
+
+    final config = ref.read(serverConfigProvider);
+    final couchId = user.couchId;
+    if (config == null || couchId == null || couchId.isEmpty) return;
+    await ref
+        .read(shelfRepositoryProvider)
+        .upload(config: config, userId: user.id, shelfDocId: couchId);
+  }
+}
+
+final resourceShelfActionsProvider = Provider(ResourceShelfActions.new);
 
 class ResourceSyncNotifier extends SyncNotifier {
   @override

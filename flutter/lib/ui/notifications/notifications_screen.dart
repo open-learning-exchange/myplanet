@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/app_providers.dart';
 import '../../providers/notifications_provider.dart';
+import '../router.dart';
+import 'notification_destination.dart';
 import 'notification_grouping.dart';
 
 /// Port of `ui/notifications/NotificationsFragment.kt`.
@@ -239,13 +243,34 @@ class _NotificationTile extends ConsumerWidget {
             ),
           ],
         ),
-        onTap: notification.isRead
-            ? null
-            : () => ref
-                  .read(notificationActionsProvider)
-                  .markAsRead(notification.id),
+        // Read notifications remain actionable. Kotlin marks an unread row and
+        // navigates on the same tap; making `onTap` null after that first tap
+        // prevented learners from ever reopening its destination in Flutter.
+        onTap: () => _openNotification(context, ref),
       ),
     );
+  }
+
+  Future<void> _openNotification(BuildContext context, WidgetRef ref) async {
+    if (!notification.isRead) {
+      await ref.read(notificationActionsProvider).markAsRead(notification.id);
+    }
+
+    final database = ref.read(appDatabaseProvider);
+    final destination = await NotificationDestinationResolver(
+      taskDao: database.teamTaskDao,
+      teamDao: database.teamDao,
+    ).resolve(notification);
+    if (destination == null || !context.mounted) return;
+    final path = switch (destination.kind) {
+      NotificationDestinationKind.resources => Routes.resources,
+      NotificationDestinationKind.storage => Routes.storageManagement,
+      NotificationDestinationKind.teamTasks =>
+        '${Routes.teams}/${destination.teamId}/tasks',
+      NotificationDestinationKind.teamMembers =>
+        '${Routes.teams}/${destination.teamId}/members?tab=requests',
+    };
+    context.go(path);
   }
 
   Future<bool> _confirmDelete(BuildContext context) async {

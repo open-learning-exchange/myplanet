@@ -464,6 +464,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                             path: 'members',
                             builder: (context, state) => TeamMembersScreen(
                               teamId: state.pathParameters['teamId']!,
+                              openJoinRequests:
+                                  state.uri.queryParameters['tab'] ==
+                                  'requests',
                             ),
                           ),
                           GoRoute(

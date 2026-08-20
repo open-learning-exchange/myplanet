@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 47 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 50 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -34,6 +34,8 @@ Known gaps:
   Phase 44 carries the same `androidId`/`deviceName`/`customDeviceName` identity onto personal,
   rating, submission and team uploads. Challenge actions (`user_challenge_actions`) remain
   unported because the challenge feature has no screen here.
+- Notification destination routing landed in Phase 49. Resource and storage rows open their
+  feature screens; task and join-request rows resolve cached team data before navigating.
 
 - **Phase 1** -- skeleton plus the server configuration → login → resources slice.
 - **Phase 2** -- dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -1486,7 +1488,8 @@ features (deferred):
   blank-string nav arg as absent (`.takeIf { isNotBlank() }`). The port reads
   `teamName` from the watched `TeamRow`, not a blank-string nav arg, so the
   edge case does not arise. (2) Adds `subType` to `AppNotification` for
-  destination-view routing — see **deferred** below.
+  finer-grained destination-view routing — basic type/related-id routing is
+  now Phase 49; `subType` remains deferred below.
 - `d5f9998e1` (database service module removal) — deletes the vestigial
   `DatabaseService`/`DatabaseModule` and updates docs. The port has no
   `DatabaseService` equivalent (drift `AppDatabase` is used directly).
@@ -1566,10 +1569,11 @@ features (deferred):
   submitted. The port's `Surveys` table has no `courseId`, so
   course-attached surveys are not modeled; the toast is not portable to the
   current schema.
-- `a08fc5662`'s `subType` on `AppNotification` — enables notification
-  destination-view routing the port does not yet have (the port's
-  notification `onTap` only marks-as-read; there is no navigation to a team/
-  course/resource destination). The field would land with that routing.
+- `a08fc5662`'s `subType` on `AppNotification` — enables finer destination
+  selection within a feature. Phase 49 now routes the four notification types
+  Kotlin handles (`resource`, `storage`, `task`, and `join_request`) from the
+  existing `type`/`relatedId` fields. `subType` is still absent, so any newer
+  course/resource sub-destination that depends on it remains deferred.
 - `437a3d28a` (enterprises finances date picking) — carried over from the
   prior batch; enterprises is not ported.
 
@@ -1698,12 +1702,10 @@ already carries the equivalent behaviour where one exists.
 - `dd16b4d6b` (resources search view modelling) — wraps
   `saveSearchActivity`, `removeResourcesFromShelf`, and `getFilterFacets` in
   `ResourcesViewModel` methods and makes `removeResourcesFromShelf` surface
-  its `Result.onFailure` as an error toast. The port has no batch resource
-  selection / removal screen and no `saveSearchActivity` / `getFilterFacets`
-  (search-activity logging is unported), and its single-resource shelf removal
-  in `resource_detail_screen.dart` already shows a failure snackbar. Deferred
-  (lands on the unported batch-resources path); the error-surfacing half is
-  already present.
+  its `Result.onFailure` as an error toast. Phase 50 now carries batch resource
+  selection/removal and its failure snackbar. `saveSearchActivity` remains
+  unported; filter facets are computed locally from the cached catalog rather
+  than through a repository method.
 
 **RecyclerView / adapter-internal refactors (no Flutter equivalent).**
 
@@ -2107,8 +2109,70 @@ Also fixed: `l10n.yaml`'s header still pointed at `../crowdin.yml`, deleted from
 
 ---
 
-**Last updated**: 2026-08-20 (Phase 47 complete — Arabic, French, Nepali and Somali derived from the
-Kotlin `strings.xml`, the four dead language-picker entries made real, framework fallback delegates
-added for Somali, and the directional-layout half of the RTL pass done)
-**Phase**: 47 of N (27 of 28 UI packages have a screen — see Status for what that does and
+### Phase 48 -- make the finance summary reflect its transactions
+
+The team-finances screen already had the Kotlin enterprises date filters, sort control, receipt
+attachments, and debit/credit list, but its summary was calculated too late. The summary widgets
+were built with zeroes before the `AsyncValue.data` branch iterated the loaded transactions. The
+correct totals only changed local variables after those widgets had been created, so every team
+always displayed debit `0`, credit `0`, and balance `0` above an otherwise-correct ledger.
+
+The summary now lives in the same data branch as the transaction list. Debit and credit are reduced
+from the filtered rows, balance is derived from those totals, and all three values are built together
+for each stream emission. This also means a date-filter or sort-driven provider refresh cannot show
+a stale summary from an earlier result. A widget test pins a 125-credit/40-debit ledger to the
+expected 85 balance. No image, font, or other binary asset was added.
+
+---
+
+### Phase 49 -- restore notification destination routing
+
+The Flutter notification list had copied the grouped presentation and read/delete actions, but not
+`NotificationsFragment.handleNotificationClick`. Tapping an unread row only marked it read, after
+which Flutter set `onTap` to null. Resource, storage, task, and join-request notifications were all
+dead ends, and even that one mark-read action could not be repeated to revisit a destination.
+
+Notification rows now remain actionable whether read or unread. The first tap still marks an unread
+row, then a Dart resolver applies Kotlin's destination policy:
+
+- `resource` opens the resources catalog;
+- `storage` opens Flutter's storage-management screen;
+- `task` resolves `relatedId` through the cached task and opens that team's task screen; and
+- `join_request` resolves the cached request document and opens the join-requests tab on that
+  team's members screen.
+
+Resolution deliberately fails closed when a related id is blank, its cached document is missing, or
+the type is unknown; the row is still marked read, but the app does not invent a team or malformed
+route. The resolver is separate from the widget and covered for all four destinations plus missing,
+blank, and unknown inputs. This is entirely Dart/Drift/go_router work with no platform code or binary
+assets.
+
+---
+
+### Phase 50 -- batch resource shelf actions
+
+The resource catalog now ports the Kotlin adapter's multi-selection path instead of forcing a
+learner through one detail screen per resource. Long-pressing a list row or grid card enters a
+contextual selection mode; subsequent taps toggle more resources, selected tiles are visibly
+highlighted, and the app bar offers add-to-library and remove-from-library actions. Closing the
+contextual bar clears the selection without changing data.
+
+The write is more than a visual shortcut. `ResourcesRepository.setShelfMemberships` loads all
+selected rows and updates their `userId` membership arrays in one Drift transaction. In that same
+transaction it clears stale removal records for additions or records every removal, so the shelf
+merge cannot resurrect only part of a batch. Once the local write commits,
+`ResourceShelfActions` attempts the derived CouchDB shelf upload when server configuration and a
+CouchDB user id are available; offline and local-only accounts keep the durable local truth for a
+later push.
+
+Selection works in list and grid layouts and preserves the existing ordinary-tap navigation when
+selection mode is inactive. Repository coverage pins the two-row atomic removal/removal-log result,
+and a widget test exercises long-press, multi-select, contextual add, selection clearing, and the
+success message. No binary assets or platform code were added.
+
+---
+
+**Last updated**: 2026-08-20 (Phase 50 complete — the resource catalog now supports atomic
+multi-selection add/remove shelf actions in both list and grid layouts)
+**Phase**: 50 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/resources_providers.dart';
 import 'package:myplanet/ui/resources/resources_screen.dart';
 
 import '../support/widget_harness.dart';
+
+class MockResourceShelfActions extends Mock implements ResourceShelfActions {}
 
 void main() {
   testWidgets('renders the resources returned by the stream', (tester) async {
@@ -63,6 +66,47 @@ void main() {
 
     expect(find.byType(ListTile), findsNWidgets(2));
     expect(find.byType(GridView), findsNothing);
+  });
+
+  testWidgets('long press selects multiple resources for one shelf action', (
+    tester,
+  ) async {
+    final actions = MockResourceShelfActions();
+    when(
+      () => actions.setMemberships(any(), joined: true),
+    ).thenAnswer((_) async {});
+    await tester.pumpWidget(
+      wrapScreen(
+        const ResourcesScreen(),
+        overrides: [
+          resourcesStreamProvider.overrideWith(
+            (ref) => Stream.value([
+              buildLibraryRow(id: 'r1', title: 'Algebra'),
+              buildLibraryRow(id: 'r2', title: 'Biology'),
+            ]),
+          ),
+          resourceShelfActionsProvider.overrideWithValue(actions),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.longPress(find.text('Algebra'));
+    await tester.tap(find.text('Biology'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('2 selected'), findsOneWidget);
+    expect(find.byIcon(Icons.check_circle), findsNWidgets(2));
+    await tester.tap(find.byTooltip('Add to My Library'));
+    await tester.pumpAndSettle();
+
+    final captured =
+        verify(
+              () => actions.setMemberships(captureAny(), joined: true),
+            ).captured.single
+            as Iterable<String>;
+    expect(captured, containsAll(['r1', 'r2']));
+    expect(find.text('Added to My Library'), findsOneWidget);
   });
 
   testWidgets('shows the empty state when nothing is synced', (tester) async {

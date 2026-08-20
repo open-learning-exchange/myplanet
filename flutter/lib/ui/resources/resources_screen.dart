@@ -20,11 +20,20 @@ import 'resources_filter_sheet.dart';
 /// Here the list is a `ListView.builder` / `GridView.builder` fed by a Drift
 /// stream, so a sync writing to `my_library` repaints the list with no callback
 /// plumbing.
-class ResourcesScreen extends ConsumerWidget {
+class ResourcesScreen extends ConsumerStatefulWidget {
   const ResourcesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ResourcesScreen> createState() => _ResourcesScreenState();
+}
+
+class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
+  final Set<String> _selectedIds = {};
+
+  bool get _selecting => _selectedIds.isNotEmpty;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final resources = ref.watch(resourcesStreamProvider);
     final syncState = ref.watch(resourceSyncProvider);
@@ -50,58 +59,88 @@ class ResourcesScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.resources),
+        leading: _selecting
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                tooltip: l10n.cancel,
+                onPressed: () => setState(_selectedIds.clear),
+              )
+            : null,
+        title: Text(
+          _selecting
+              ? l10n.storageSelectedCount(_selectedIds.length)
+              : l10n.resources,
+        ),
         actions: [
-          ViewModeToggle(
-            mode: viewMode,
-            onChanged: ref.read(libraryViewModeProvider.notifier).set,
-          ),
-          IconButton(
-            tooltip: l10n.filterResources,
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                builder: (context) => const ResourcesFilterSheet(),
-              );
-            },
-            icon: Badge(
-              isLabelVisible: !filter.isEmpty,
-              child: const Icon(Icons.filter_list),
+          if (_selecting) ...[
+            IconButton(
+              tooltip: l10n.addToMyLibrary,
+              icon: const Icon(Icons.bookmark_add_outlined),
+              onPressed: () => _setSelectedMembership(joined: true),
             ),
-          ),
-          IconButton(
-            tooltip: l10n.sync,
-            onPressed: syncState is SyncRunning
-                ? null
-                : () => ref.read(resourceSyncProvider.notifier).sync(),
-            icon: const Icon(Icons.sync),
-          ),
-          const LogoutAction(),
+            IconButton(
+              tooltip: l10n.removeFromMyLibrary,
+              icon: const Icon(Icons.bookmark_remove_outlined),
+              onPressed: () => _setSelectedMembership(joined: false),
+            ),
+          ] else ...[
+            ViewModeToggle(
+              mode: viewMode,
+              onChanged: ref.read(libraryViewModeProvider.notifier).set,
+            ),
+            IconButton(
+              tooltip: l10n.filterResources,
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (context) => const ResourcesFilterSheet(),
+                );
+              },
+              icon: Badge(
+                isLabelVisible: !filter.isEmpty,
+                child: const Icon(Icons.filter_list),
+              ),
+            ),
+            IconButton(
+              tooltip: l10n.sync,
+              onPressed: syncState is SyncRunning
+                  ? null
+                  : () => ref.read(resourceSyncProvider.notifier).sync(),
+              icon: const Icon(Icons.sync),
+            ),
+            const LogoutAction(),
+          ],
         ],
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(syncState is SyncRunning ? 68 : 64),
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: SearchBar(
-                  hintText: l10n.search,
-                  leading: const Icon(Icons.search),
-                  onChanged: (value) =>
-                      ref.read(resourceSearchQueryProvider.notifier).state =
-                          value,
+        bottom: _selecting
+            ? null
+            : PreferredSize(
+                preferredSize: Size.fromHeight(
+                  syncState is SyncRunning ? 68 : 64,
+                ),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: SearchBar(
+                        hintText: l10n.search,
+                        leading: const Icon(Icons.search),
+                        onChanged: (value) =>
+                            ref
+                                    .read(resourceSearchQueryProvider.notifier)
+                                    .state =
+                                value,
+                      ),
+                    ),
+                    if (syncState is SyncRunning)
+                      LinearProgressIndicator(
+                        value: syncState.progress.total == 0
+                            ? null
+                            : syncState.progress.fraction,
+                      ),
+                  ],
                 ),
               ),
-              if (syncState is SyncRunning)
-                LinearProgressIndicator(
-                  value: syncState.progress.total == 0
-                      ? null
-                      : syncState.progress.fraction,
-                ),
-            ],
-          ),
-        ),
       ),
       body: resources.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -144,8 +183,13 @@ class ResourcesScreen extends ConsumerWidget {
                   ),
                   padding: const EdgeInsets.all(8),
                   itemCount: filteredItems.length,
-                  itemBuilder: (context, index) =>
-                      _ResourceGridTile(filteredItems[index]),
+                  itemBuilder: (context, index) => _ResourceGridTile(
+                    filteredItems[index],
+                    selected: _selectedIds.contains(filteredItems[index].id),
+                    onTap: () => _tapResource(filteredItems[index]),
+                    onLongPress: () =>
+                        _toggleSelection(filteredItems[index].id),
+                  ),
                 );
               },
             );
@@ -153,19 +197,69 @@ class ResourcesScreen extends ConsumerWidget {
           return ListView.separated(
             itemCount: filteredItems.length,
             separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (context, index) =>
-                _ResourceTile(filteredItems[index]),
+            itemBuilder: (context, index) => _ResourceTile(
+              filteredItems[index],
+              selected: _selectedIds.contains(filteredItems[index].id),
+              onTap: () => _tapResource(filteredItems[index]),
+              onLongPress: () => _toggleSelection(filteredItems[index].id),
+            ),
           );
         },
       ),
     );
   }
+
+  void _tapResource(MyLibraryRow resource) {
+    if (_selecting) {
+      _toggleSelection(resource.id);
+    } else {
+      context.push('/resources/detail/${resource.id}');
+    }
+  }
+
+  void _toggleSelection(String id) {
+    setState(() {
+      if (!_selectedIds.add(id)) _selectedIds.remove(id);
+    });
+  }
+
+  Future<void> _setSelectedMembership({required bool joined}) async {
+    final l10n = AppLocalizations.of(context);
+    final selected = Set<String>.from(_selectedIds);
+    try {
+      await ref
+          .read(resourceShelfActionsProvider)
+          .setMemberships(selected, joined: joined);
+      if (!mounted) return;
+      setState(_selectedIds.clear);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            joined ? l10n.addedToMyLibrary : l10n.removedFromMyLibrary,
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.operationFailed)));
+    }
+  }
 }
 
 class _ResourceTile extends StatelessWidget {
-  const _ResourceTile(this.resource);
+  const _ResourceTile(
+    this.resource, {
+    required this.selected,
+    required this.onTap,
+    required this.onLongPress,
+  });
 
   final MyLibraryRow resource;
+  final bool selected;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -178,6 +272,8 @@ class _ResourceTile extends StatelessWidget {
     ];
 
     return ListTile(
+      selected: selected,
+      selectedTileColor: Theme.of(context).colorScheme.secondaryContainer,
       leading: Icon(_iconFor(resource.mediaType)),
       title: Text(
         resource.title ?? '',
@@ -191,15 +287,16 @@ class _ResourceTile extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-      trailing: resource.resourceOffline
+      trailing: selected
+          ? const Icon(Icons.check_circle)
+          : resource.resourceOffline
           ? Tooltip(
               message: l10n.availableOffline,
               child: const Icon(Icons.offline_pin_outlined),
             )
           : null,
-      onTap: () {
-        context.push('/resources/detail/${resource.id}');
-      },
+      onTap: onTap,
+      onLongPress: onLongPress,
     );
   }
 
@@ -219,9 +316,17 @@ class _ResourceTile extends StatelessWidget {
 /// `item_library_grid.xml` layout the Kotlin `ResourcesAdapter` inflates in
 /// grid mode — a card with the media-type icon, title, and a subtitle.
 class _ResourceGridTile extends StatelessWidget {
-  const _ResourceGridTile(this.resource);
+  const _ResourceGridTile(
+    this.resource, {
+    required this.selected,
+    required this.onTap,
+    required this.onLongPress,
+  });
 
   final MyLibraryRow resource;
+  final bool selected;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -234,9 +339,11 @@ class _ResourceGridTile extends StatelessWidget {
     ];
 
     return Card(
+      color: selected ? theme.colorScheme.secondaryContainer : null,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.push('/resources/detail/${resource.id}'),
+        onTap: onTap,
+        onLongPress: onLongPress,
         child: Padding(
           padding: const EdgeInsets.all(8),
           child: Column(
@@ -252,7 +359,13 @@ class _ResourceGridTile extends StatelessWidget {
                         size: 40,
                         color: theme.colorScheme.primary.withValues(alpha: 0.6),
                       ),
-                      if (resource.resourceOffline)
+                      if (selected)
+                        Icon(
+                          Icons.check_circle,
+                          size: 28,
+                          color: theme.colorScheme.primary,
+                        )
+                      else if (resource.resourceOffline)
                         Positioned(
                           bottom: 0,
                           right: 0,
