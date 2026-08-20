@@ -20,15 +20,11 @@ class DictionaryRepositoryImpl @Inject constructor(
 ) : DictionaryRepository {
 
     override suspend fun count(): Long {
-        return withContext(dispatcherProvider.io) {
-            dictionaryDao.count()
-        }
+        return dictionaryDao.count()
     }
 
     override suspend fun findByWord(word: String): DictionaryEntity? {
-        return withContext(dispatcherProvider.io) {
-            dictionaryDao.findByWord(word)
-        }
+        return dictionaryDao.findByWord(word)
     }
 
     override suspend fun insertDictionaryData(): Boolean {
@@ -40,38 +36,36 @@ class DictionaryRepositoryImpl @Inject constructor(
             return true
         }
 
-        val json = try {
-            val data = withContext(dispatcherProvider.io) {
-                FileUtils.getStringFromFile(
+        return withContext(dispatcherProvider.io) {
+            try {
+                val data = FileUtils.getStringFromFile(
                     FileUtils.getSDPathFromUrl(context, Constants.DICTIONARY_URL)
                 )
+                val json = JsonUtils.gson.fromJson(data, JsonArray::class.java)
+                if (json != null) {
+                    val entities = json.map { js ->
+                        val doc = js.asJsonObject
+                        DictionaryEntity(
+                            id = UUID.randomUUID().toString(),
+                            code = JsonUtils.getString("code", doc),
+                            language = JsonUtils.getString("language", doc),
+                            advanceCode = JsonUtils.getString("advance_code", doc),
+                            word = JsonUtils.getString("word", doc),
+                            meaning = JsonUtils.getString("meaning", doc),
+                            definition = JsonUtils.getString("definition", doc),
+                            synonym = JsonUtils.getString("synonym", doc),
+                            antonym = JsonUtils.getString("antonoym", doc)
+                        )
+                    }
+                    dictionaryDao.insertAll(entities)
+                    true
+                } else {
+                    false
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
             }
-            JsonUtils.gson.fromJson(data, JsonArray::class.java)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
         }
-
-        json?.let { jsonArray ->
-            val entities = jsonArray.map { js ->
-                val doc = js.asJsonObject
-                DictionaryEntity(
-                    id = UUID.randomUUID().toString(),
-                    code = JsonUtils.getString("code", doc),
-                    language = JsonUtils.getString("language", doc),
-                    advanceCode = JsonUtils.getString("advance_code", doc),
-                    word = JsonUtils.getString("word", doc),
-                    meaning = JsonUtils.getString("meaning", doc),
-                    definition = JsonUtils.getString("definition", doc),
-                    synonym = JsonUtils.getString("synonym", doc),
-                    antonym = JsonUtils.getString("antonoym", doc)
-                )
-            }
-            withContext(dispatcherProvider.io) {
-                dictionaryDao.insertAll(entities)
-            }
-        }
-
-        return true
     }
 }

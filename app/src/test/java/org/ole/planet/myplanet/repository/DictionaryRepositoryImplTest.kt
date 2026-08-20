@@ -1,0 +1,102 @@
+package org.ole.planet.myplanet.repository
+
+import android.content.Context
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkAll
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.ole.planet.myplanet.data.room.dao.DictionaryDao
+import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
+
+@ExperimentalCoroutinesApi
+class DictionaryRepositoryImplTest {
+
+    private lateinit var dictionaryDao: DictionaryDao
+    private lateinit var context: Context
+    private lateinit var dispatcherProvider: TestDispatcherProvider
+    private lateinit var dictionaryRepository: DictionaryRepositoryImpl
+    private val testDispatcher = UnconfinedTestDispatcher()
+
+    @Before
+    fun setup() {
+        dictionaryDao = mockk(relaxed = true)
+        context = mockk(relaxed = true)
+        dispatcherProvider = TestDispatcherProvider(testDispatcher)
+        dictionaryRepository = DictionaryRepositoryImpl(dictionaryDao, dispatcherProvider, context)
+
+        mockkObject(FileUtils)
+    }
+
+    @After
+    fun teardown() {
+        unmockkAll()
+    }
+
+    @Test
+    fun `insertDictionaryData returns false if file does not exist`() = runTest(testDispatcher) {
+        coEvery { FileUtils.checkFileExist(context, Constants.DICTIONARY_URL) } returns false
+
+        val result = dictionaryRepository.insertDictionaryData()
+
+        println("Result of parse fail test: $result")
+        assertFalse(result)
+        coVerify(exactly = 0) { dictionaryDao.insertAll(any()) }
+    }
+
+    @Test
+    fun `insertDictionaryData returns true if data is already populated`() = runTest(testDispatcher) {
+        coEvery { FileUtils.checkFileExist(context, Constants.DICTIONARY_URL) } returns true
+        coEvery { dictionaryDao.count() } returns 100L
+
+        val result = dictionaryRepository.insertDictionaryData()
+
+        assertTrue(result)
+        coVerify(exactly = 0) { dictionaryDao.insertAll(any()) }
+    }
+
+    @Test
+    fun `insertDictionaryData returns false if json parsing fails`() = runTest(testDispatcher) {
+        try {
+            every { FileUtils.checkFileExist(context, Constants.DICTIONARY_URL) } returns true
+            coEvery { dictionaryDao.count() } returns 0L
+            every { FileUtils.getSDPathFromUrl(context, Constants.DICTIONARY_URL) } throws Exception("Forced exception for testing")
+
+            val result = dictionaryRepository.insertDictionaryData()
+
+            println("PARSE FAIL RESULT IS: $result")
+
+            assertFalse(result)
+            coVerify(exactly = 0) { dictionaryDao.insertAll(any()) }
+        } catch (e: Throwable) {
+            e.printStackTrace()
+            throw e
+        }
+    }
+
+    @Test
+    fun `insertDictionaryData returns true and inserts entities on success`() = runTest(testDispatcher) {
+        every { FileUtils.checkFileExist(context, Constants.DICTIONARY_URL) } returns true
+        coEvery { dictionaryDao.count() } returns 0L
+        every { FileUtils.getSDPathFromUrl(context, Constants.DICTIONARY_URL) } returns mockk()
+
+        val validJson = """[{"code": "1", "language": "en", "advance_code": "2", "word": "hello", "meaning": "greeting", "definition": "A greeting", "synonym": "hi", "antonoym": "bye"}]"""
+        every { FileUtils.getStringFromFile(any()) } returns validJson
+
+        val result = dictionaryRepository.insertDictionaryData()
+
+        assertTrue(result)
+        coVerify(exactly = 1) { dictionaryDao.insertAll(any()) }
+    }
+}

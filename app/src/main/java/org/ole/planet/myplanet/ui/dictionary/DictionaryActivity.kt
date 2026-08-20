@@ -17,12 +17,11 @@ import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.repository.DictionaryRepository
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
-
-import org.ole.planet.myplanet.repository.DictionaryRepository
 
 @AndroidEntryPoint
 class DictionaryActivity : BaseActivity() {
@@ -67,16 +66,7 @@ class DictionaryActivity : BaseActivity() {
         }
 
         lifecycleScope.launch {
-            if (dictionaryRepository.insertDictionaryData()) {
-                val count = dictionaryRepository.count()
-                fragmentDictionaryBinding.tvResult.text = getString(R.string.list_size, count)
-                setClickListener()
-            } else {
-                val list = ArrayList<String>()
-                list.add(Constants.DICTIONARY_URL)
-                Utilities.toast(this@DictionaryActivity, getString(R.string.downloading_started_please_check_notificati))
-                DownloadUtils.openDownloadService(this@DictionaryActivity, list, false)
-            }
+            loadDictionaryIfNeeded()
         }
 
         registerReceiver()
@@ -91,10 +81,19 @@ class DictionaryActivity : BaseActivity() {
     }
 
     private suspend fun loadDictionaryIfNeeded() {
-        dictionaryRepository.insertDictionaryData()
-        val count = dictionaryRepository.count()
-        fragmentDictionaryBinding.tvResult.text = getString(R.string.list_size, count)
-        setClickListener()
+        if (dictionaryRepository.insertDictionaryData()) {
+            val count = dictionaryRepository.count()
+            fragmentDictionaryBinding.tvResult.text = getString(R.string.list_size, count)
+            setClickListener()
+        } else {
+            val list = ArrayList<String>()
+            list.add(Constants.DICTIONARY_URL)
+            Utilities.toast(
+                this@DictionaryActivity,
+                getString(R.string.downloading_started_please_check_notificati)
+            )
+            DownloadUtils.openDownloadService(this@DictionaryActivity, list, false)
+        }
     }
 
     private suspend fun loadDictionaryCount(): Long {
