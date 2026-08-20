@@ -2403,9 +2403,30 @@ Phase 54 adds the `html` enum value, detects it from `mediaType`/
 `resourceType`/filename, and routes `_getLocalFilePath` through
 `ResourceFiles.resolveHtmlEntryFile` + `directoryFor` (new) so the entry
 file is found in its subfolder rather than as a flat filename. The viewer
-itself is a `WebViewWidget` from `webview_flutter` — the faithful port of
-`WebViewActivity`, loading the local entry file via `loadFile`. Two
-`directoryFor` tests cover path resolution and traversal sanitisation.
+itself is a `WebViewWidget` from `webview_flutter`, loading the local entry
+file via `loadFile`. Two `directoryFor` tests cover path resolution and
+traversal sanitisation.
+
+**Fixed on merge: JavaScript was off.** `WebViewActivity` sets
+`javaScriptEnabled = isLocalResource` — on for exactly the local-file case this
+viewer implements — while `webview_flutter` defaults to
+`JavaScriptMode.disabled`. So an interactive HTML resource (a lesson with a
+quiz, anything scripted) rendered inert here and worked in the Kotlin app. The
+controller now sets `JavaScriptMode.unrestricted`. The permission is as narrow
+as the Kotlin's: this viewer only ever calls `loadFile` on a path under the
+app's own resource directory and never `loadRequest`, so scripts run against
+downloaded Planet content, never a remote page. Note this is verified by
+compilation and by reading the Kotlin, **not** by a test — `resource_viewer_screen`
+has no widget test at all, because a `WebViewController` (like the video and PDF
+controllers beside it) cannot be constructed without platform bindings. That
+absence is worth closing with platform mocks at some point; it is the largest
+screen in the port with no coverage.
+
+While reading it: the viewer carries eight hardcoded English strings ("Video
+file not found locally", "Unable to load PDF", and so on) that predate this
+phase, alongside an unused `fileNotFound` ARB key. Not fixed here — one of eight
+would be worse than none — but it is the only screen that opted out of `.arb`
+wholesale.
 
 The resources empty-state control hiding (#15572, `06c7d5398`) is the UI
 fix: when the shelf has zero rows the Kotlin hides the search bar, the

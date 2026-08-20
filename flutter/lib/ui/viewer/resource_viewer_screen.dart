@@ -958,7 +958,17 @@ class _HtmlViewerState extends State<_HtmlViewer> {
   @override
   void initState() {
     super.initState();
-    _controller = WebViewController();
+    _controller = WebViewController()
+      // Port of `WebViewActivity`'s `javaScriptEnabled = isLocalResource`.
+      // `webview_flutter` defaults to `JavaScriptMode.disabled`, so without this
+      // an interactive HTML resource — a lesson with a quiz, anything scripted —
+      // renders inert here while working in the Kotlin app.
+      //
+      // The permission is as narrow as the Kotlin's: this viewer only ever calls
+      // `loadFile` on a path under the app's own resource directory, and never
+      // `loadRequest`, so scripts run against downloaded Planet content and
+      // never against a remote page.
+      ..setJavaScriptMode(JavaScriptMode.unrestricted);
     _load();
   }
 
