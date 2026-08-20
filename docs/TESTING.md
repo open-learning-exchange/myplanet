@@ -375,6 +375,8 @@ Robolectric doesn't ship the Android framework it runs your test against — it 
 
 So CI passes `-ProbolectricOffline=true`: Gradle resolves the jars into `build/robolectric-sdks` before the test task starts and Robolectric is told to look there and fetch nothing (`robolectric.offline`, `robolectric.dependency.dir`). The list of levels lives in `robolectricSdkJars` in `app/build.gradle`.
 
+The workflow also fails the job if a jar turns up in Robolectric's own runtime cache (`~/.m2/repository/org/robolectric`), which can only happen if `-ProbolectricOffline=true` stopped reaching the test forks — the one regression whose other symptom is just the flake coming back.
+
 **If you add `@Config(sdk = [N])` for a level nothing else uses**, add the matching jar version to that map, or the CI run fails with `Path is not a file: build/robolectric-sdks/android-all-instrumented-<version>.jar`. The version strings come from Robolectric's `DefaultSdkProvider` and all of them change when Robolectric is bumped. Prefer reusing a level the suite already pins — every extra level is another jar to download, and one more Robolectric sandbox to build per fork.
 
 ---
