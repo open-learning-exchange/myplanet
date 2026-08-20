@@ -63,20 +63,26 @@ class VoicesLabelManager(
     fun showChips(binding: RowNewsBinding, voice: News, canManageLabels: Boolean) {
         binding.fbChips.removeAllViews()
 
-        for (label in voice.labels ?: emptyList()) {
+        val labels = voice.labels ?: emptyList()
+        val reverseLabels = Constants.LABELS.entries.associate { it.value to it.key }
+
+        if (labels.isNotEmpty()) {
             val chipConfig = Utilities.getCloudConfig().apply {
                 selectMode(if (canManageLabels) ChipCloud.SelectMode.close else ChipCloud.SelectMode.none)
             }
-
             val chipCloud = ChipCloud(context, binding.fbChips, chipConfig)
-            chipCloud.addChip(getLabel(label))
+
+            for (label in labels) {
+                val displayLabel = reverseLabels[label] ?: formatLabelValue(label)
+                chipCloud.addChip(displayLabel)
+            }
 
             if (canManageLabels) {
                 chipCloud.setDeleteListener { _: Int, labelText: String? ->
                     val selectedLabel = when {
                         labelText == null -> null
                         Constants.LABELS.containsKey(labelText) -> Constants.LABELS[labelText]
-                        else -> voice.labels?.firstOrNull { getLabel(it) == labelText }
+                        else -> labels.firstOrNull { (reverseLabels[it] ?: formatLabelValue(it)) == labelText }
                     }
                     val voiceId = voice.id
                     if (selectedLabel != null && voiceId != null) {
@@ -91,6 +97,7 @@ class VoicesLabelManager(
                 }
             }
         }
+
         updateAddLabelVisibility(binding, voice, canManageLabels)
     }
 
@@ -108,15 +115,6 @@ class VoicesLabelManager(
         val labels = Constants.LABELS.values.toSet()
         binding.btnAddLabel.visibility =
             if (usedLabels.containsAll(labels)) View.GONE else View.VISIBLE
-    }
-
-    private fun getLabel(s: String): String {
-        for (key in Constants.LABELS.keys) {
-            if (s == Constants.LABELS[key]) {
-                return key
-            }
-        }
-        return formatLabelValue(s)
     }
 
     companion object {
