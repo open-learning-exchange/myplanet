@@ -264,7 +264,8 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     override fun setMenuVisibility(visible: Boolean) {
         super.setMenuVisibility(visible)
         if (!isAdded || !::step.isInitialized) return
-        lifecycleScope.launch {
+        val owner = view?.let { viewLifecycleOwner } ?: return
+        owner.lifecycleScope.launch {
             try {
                 if (visible) {
                     val userHasCourse = coursesRepository.isMyCourse(user?.id, step.courseId)

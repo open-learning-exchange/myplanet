@@ -112,7 +112,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             Utilities.toast(requireContext(), getString(R.string.recording_stopped))
             NotificationUtils.cancelAll(requireContext())
             if (::library.isInitialized) {
-                lifecycleScope.launch {
+                viewLifecycleOwner.lifecycleScope.launch {
                     val id = library.id ?: return@launch
                     viewModel.updateLibraryItemTranslationAudioPath(id, outputFile)
                 }
