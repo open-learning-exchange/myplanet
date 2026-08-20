@@ -13,7 +13,6 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFinanceBinding
 import org.ole.planet.myplanet.model.MyTeam
@@ -31,6 +30,16 @@ class EnterprisesFinancesAdapter(
     )
 ) {
 
+    private val alternateColor: Drawable by lazy {
+        val border = GradientDrawable()
+        border.setColor(-0x1) //white background
+        border.setStroke(1, ContextCompat.getColor(context, R.color.black_overlay))
+        border.gradientType = GradientDrawable.LINEAR_GRADIENT
+        val layerDrawable = LayerDrawable(arrayOf<Drawable>(border))
+        layerDrawable.setLayerInset(0, -10, 0, -10, 0)
+        layerDrawable.mutate()
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FinanceViewHolder {
         val binding = RowFinanceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return FinanceViewHolder(binding)
@@ -41,7 +50,7 @@ class EnterprisesFinancesAdapter(
         val binding = holder.binding
         binding.date.text = item.date?.let { formatDate(it, "MMM dd, yyyy") } ?: ""
         binding.note.text = item.description
-        if (TextUtils.equals(item.type?.lowercase(Locale.getDefault()), "debit")) {
+        if (item.type.equals("debit", ignoreCase = true)) {
             binding.debit.text = context.getString(R.string.number_placeholder, item.amount)
             binding.credit.text = context.getString(R.string.message_placeholder, " -")
         } else {
@@ -79,14 +88,9 @@ class EnterprisesFinancesAdapter(
 
     private fun updateBackgroundColor(layout: LinearLayout, position: Int) {
         if (position % 2 < 1) {
-            val border = GradientDrawable()
-            border.setColor(-0x1) //white background
-            border.setStroke(1, ContextCompat.getColor(context, R.color.black_overlay))
-            border.gradientType = GradientDrawable.LINEAR_GRADIENT
-            val layers = arrayOf<Drawable>(border)
-            val layerDrawable = LayerDrawable(layers)
-            layerDrawable.setLayerInset(0, -10, 0, -10, 0)
-            layout.background = layerDrawable
+            layout.background = alternateColor
+        } else {
+            layout.background = null
         }
     }
 
