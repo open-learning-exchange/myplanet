@@ -767,4 +767,9 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
         val deletedIds = items.map { it.resourceId }.toSet()
         markResourcesAsNotOffline(deletedIds)
     }
+
+    override suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String> {
+        return myLibraryDao.getPrivateImagesCreatedAfter(timestamp)
+            .mapNotNull { it.resourceRemoteAddress }
+    }
 }
