@@ -367,6 +367,8 @@ git push -u origin claude/feature-name-sessionid
 
 See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message and PR conventions.
 
+**Session opened on a branch that isn't `master`?** That's a takeover of someone else's PR branch: the web UI binds its PR panel to this session's auto-minted `claude/…` outcome branch instead, and the PR's CI failures and review comments never arrive. Call `get_session` first, then follow the `overtaking` skill ([dogi/branch-overtaking](https://github.com/dogi/branch-overtaking) — clone it and read `SKILL.md` if the plugin isn't installed) to bind a session to the branch and subscribe to the PR.
+
 ### CI/CD Pipeline
 
 **Build Workflow** (`.github/workflows/build.yml`)
