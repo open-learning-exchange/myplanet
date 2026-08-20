@@ -60,7 +60,19 @@ jobs:
         run: |
           FLAVOR=${{ matrix.build }}
           SHARD=${{ matrix.shard }}
-          ./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=${{ strategy.job-total }} -PtestShardIndex=$((SHARD - 1)) --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
+          ./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=${{ strategy.job-total }} -PtestShardIndex=$((SHARD - 1)) -ProbolectricOffline=true --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
+
+      - name: check no test fork fetched a robolectric sdk
+        if: always()
+        shell: bash
+        run: |
+          staged=$(du -sh build/robolectric-sdks 2>/dev/null | cut -f1)
+          echo "staged android-all jars: ${staged:-none} in $(ls build/robolectric-sdks 2>/dev/null | wc -l) files" >> "$GITHUB_STEP_SUMMARY"
+          fetched=$(find "$HOME/.m2/repository/org/robolectric" -name '*.jar' 2>/dev/null | wc -l)
+          if [ "$fetched" -gt 0 ]; then
+            echo ":warning: $fetched android-all jar(s) were still fetched at test time, so a fork raced for them - add the missing SDK to robolectricSdkJars in app/build.gradle" >> "$GITHUB_STEP_SUMMARY"
+            find "$HOME/.m2/repository/org/robolectric" -name '*.jar' -printf '  - %f\n' >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: summarise slowest tests
         if: always()

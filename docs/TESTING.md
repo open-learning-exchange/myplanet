@@ -367,7 +367,15 @@ Test class names always match `{ClassUnderTest}Test.kt` (e.g. `CoursesRepository
 ./gradlew testLiteDebugUnitTest
 ```
 
-CI (`.github/workflows/test.yml`, "myPlanet test") runs on every push to every branch (no `pull_request` trigger — the push itself triggers it) plus manual dispatch: `./gradlew test${FLAVOR^}DebugUnitTest --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4` (matrix is `default` only) on `ubuntu-24.04`. On failure it uploads `app/build/reports/tests/` as the `test-reports-default` artifact (7-day retention); a timing summary always runs. There is no separate lint or coverage gate — passing `testDefaultDebugUnitTest` is the bar.
+CI (`.github/workflows/test.yml`, "myPlanet test") runs on every push to every branch (no `pull_request` trigger — the push itself triggers it) plus manual dispatch: `./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=2 -PtestShardIndex=<0|1> -ProbolectricOffline=true --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4` (matrix is `default` only) on `ubuntu-24.04`, split across two shards that each run half the test classes (`app/build.gradle` `testOptions` hashes each top-level class into a shard). On failure each shard uploads `app/build/reports/tests/` as `test-reports-default-shard-<n>` (7-day retention); a timing summary always runs. There is no separate lint or coverage gate — passing `testDefaultDebugUnitTest` is the bar.
+
+### The Robolectric `android-all` runtime
+
+Robolectric doesn't ship the Android framework it runs your test against — it downloads an `android-all-instrumented` jar (95–215 MB, one per API level) the first time a test fork needs that level. Left to itself it does that *from inside the test fork*, and because tests run in four parallel forks two of them can fetch the same jar at once; the loser reads a half-written file and every Robolectric test that follows in that JVM fails (`AndroidVersions.CURRENT` is null, then `NoSuchFieldError` on framework fields) while the other forks stay green. A rerun passes, which is what makes it costly.
+
+So CI passes `-ProbolectricOffline=true`: Gradle resolves the jars into `build/robolectric-sdks` before the test task starts and Robolectric is told to look there and fetch nothing (`robolectric.offline`, `robolectric.dependency.dir`). The list of levels lives in `robolectricSdkJars` in `app/build.gradle`.
+
+**If you add `@Config(sdk = [N])` for a level nothing else uses**, add the matching jar version to that map, or the CI run fails with `Path is not a file: build/robolectric-sdks/android-all-instrumented-<version>.jar`. The version strings come from Robolectric's `DefaultSdkProvider` and all of them change when Robolectric is bumped. Prefer reusing a level the suite already pins — every extra level is another jar to download, and one more Robolectric sandbox to build per fork.
 
 ---
 

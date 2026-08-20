@@ -253,3 +253,54 @@ dependencies {
     implementation(libs.webkit)
     implementation(libs.pdfbox.android) { exclude group: 'org.bouncycastle' }
 }
+
+// Robolectric downloads the `android-all-instrumented` jar for whatever SDK a test's @Config asks
+// for from inside the test fork that first needs it, into ~/.m2. The fetch is guarded by a lock
+// file that the fetcher deletes when it releases it, so with maxParallelForks > 1 two forks can
+// end up fetching the same jar at once and one of them reads a half-written file. That poisons
+// that fork's Robolectric sandbox for the life of the JVM: the first test dies on
+// `AndroidVersions.CURRENT` being null (the jar has no readable `build.prop`) and every later
+// Robolectric test in the same fork on `NoSuchFieldError: Class android.util.DisplayMetrics does
+// not have member field 'int noncompatWidthPixels'`, while the other forks pass. It rerun-fixes
+// itself, which is exactly what makes it expensive — see run 32324996152.
+//
+// With -ProbolectricOffline=true (CI passes it) Gradle resolves those jars up front instead and
+// Robolectric is pointed at the result, so no test fork resolves anything at runtime.
+// API level -> `org.robolectric:android-all-instrumented` version, from Robolectric 4.16.1's
+// DefaultSdkProvider: every level the suite pins with @Config(sdk = ...) plus the default, which
+// is `targetSdk`. Add a line when a test pins a new level and refresh all of them when bumping
+// Robolectric — a missing entry fails the test with "Path is not a file: <dir>/<jar>".
+def robolectricSdkJars = [
+    26: '8.0.0_r4-robolectric-r1-i7',
+    27: '8.1.0-robolectric-4611349-i7',
+    28: '9-robolectric-4913185-2-i7',
+    30: '11-robolectric-6757853-i7',
+    31: '12-robolectric-7732740-i7',
+    32: '12.1-robolectric-8229987-i7',
+    33: '13-robolectric-9030017-i7',
+    34: '14-robolectric-10818077-i7',
+    36: '16-robolectric-13921718-i7',
+]
+configurations {
+    robolectricSdks
+}
+dependencies {
+    robolectricSdkJars.each { apiLevel, jarVersion ->
+        robolectricSdks "org.robolectric:android-all-instrumented:$jarVersion"
+    }
+}
+// Deliberately outside app/build: the test workflow caches app/build, and these jars are ~1.2 GB
+// that Gradle can hand over again for free.
+def robolectricSdkDir = new File(rootDir, 'build/robolectric-sdks')
+def fetchRobolectricSdks = tasks.register('fetchRobolectricSdks', Sync) {
+    description = 'Stages the android-all jars Robolectric would otherwise fetch from inside the test forks'
+    from configurations.robolectricSdks
+    into robolectricSdkDir
+}
+if ((project.findProperty('robolectricOffline') ?: 'false').toString().toBoolean()) {
+    tasks.withType(Test).configureEach {
+        dependsOn fetchRobolectricSdks
+        systemProperty 'robolectric.offline', 'true'
+        systemProperty 'robolectric.dependency.dir', robolectricSdkDir.absolutePath
+    }
+}
