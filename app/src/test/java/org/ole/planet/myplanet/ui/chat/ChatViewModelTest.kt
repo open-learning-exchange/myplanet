@@ -54,7 +54,7 @@ class ChatViewModelTest {
         voicesRepository = mockk(relaxed = true)
         dispatcherProvider = TestDispatcherProvider(testDispatcher)
         realtimeSyncManager = mockk(relaxed = true)
-        io.mockk.every { realtimeSyncManager.dataUpdateFlow } returns dataUpdateFlow
+        io.mockk.every { realtimeSyncManager.updatesFor("chats") } returns dataUpdateFlow
         viewModel = ChatViewModel(chatRepository, userRepository, teamsRepository, voicesRepository, dispatcherProvider, realtimeSyncManager)
     }
 
