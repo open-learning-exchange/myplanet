@@ -103,16 +103,22 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
     private fun buildTagDataList(parents: List<TagEntity>): List<TagData> {
         val tagDataList = mutableListOf<TagData>()
         val isSelectMultiple = MainApplication.isCollectionSwitchOn
+        val selectedIds = selectedItemsList.mapNotNull { it.id }.toHashSet()
+        val parentMap = HashMap<String, TagData.Parent>()
+        currentTagDataList.forEach {
+            if (it is TagData.Parent && !parentMap.containsKey(it.tag.id)) {
+                parentMap[it.tag.id] = it
+            }
+        }
         for (parentTag in parents) {
-            val isSelected = selectedItemsList.any { it.id == parentTag.id }
-            val parent = (currentTagDataList.find { it is TagData.Parent && it.tag.id == parentTag.id } as? TagData.Parent)
-                ?: TagData.Parent(parentTag, false, isSelected, isSelectMultiple)
+            val isSelected = selectedIds.contains(parentTag.id)
+            val parent = parentMap[parentTag.id] ?: TagData.Parent(parentTag, false, isSelected, isSelectMultiple)
 
             tagDataList.add(parent.copy(isSelected = isSelected, isSelectMultiple = isSelectMultiple))
 
             if (parent.isExpanded) {
                 childMap[parent.tag.id]?.forEach { childTag ->
-                    val isChildSelected = selectedItemsList.any { it.id == childTag.id }
+                    val isChildSelected = selectedIds.contains(childTag.id)
                     tagDataList.add(TagData.Child(childTag, isChildSelected, isSelectMultiple))
                 }
             }
