@@ -17,18 +17,27 @@ class TTSManager @Inject constructor(
     enum class State { IDLE, SPEAKING }
 
     private var tts: TextToSpeech? = null
+
+    @Volatile
     private var isInitialized = false
+    private var pendingText: String? = null
 
     private val _state = MutableStateFlow(State.IDLE)
     val state: StateFlow<State> = _state.asStateFlow()
 
     val isSpeaking get() = _state.value == State.SPEAKING
 
-    private fun ensureTts(onInit: () -> Unit) {
+    private fun ensureTts(text: String) {
         if (tts != null) {
-            if (isInitialized) onInit()
+            if (isInitialized) {
+                tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, UTTERANCE_ID)
+            } else {
+                pendingText = text
+            }
             return
         }
+
+        pendingText = text
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 isInitialized = true
@@ -47,21 +56,23 @@ class TTSManager @Inject constructor(
                         _state.value = State.IDLE
                     }
                 })
-                onInit()
+                pendingText?.let { tts?.speak(it, TextToSpeech.QUEUE_FLUSH, null, UTTERANCE_ID) }
+                pendingText = null
+            } else {
+                tts = null
+                pendingText = null
             }
         }
     }
 
     fun speak(text: String) {
         if (text.isBlank()) return
-        ensureTts {
-            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, UTTERANCE_ID)
-        }
+        ensureTts(text)
     }
 
     fun stop() {
-        if (tts != null) {
-            tts?.stop()
+        tts?.let {
+            it.stop()
             _state.value = State.IDLE
         }
     }
