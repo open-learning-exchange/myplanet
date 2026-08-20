@@ -97,6 +97,8 @@ A controllable `TimeProvider`: `TestTimeProvider(var currentTime: Long = 0L)` wi
 
 Omit `sdk` and the test runs on the default, which Robolectric takes from `targetSdk` (36). Keep the rest of `@Config` (`application = ...`, `manifest = Config.NONE`) as needed — omitting `sdk` only drops the pin.
 
+One consequence worth knowing: Robolectric keys a sandbox by SDK level (plus the instrumentation config and the `LooperMode`/`GraphicsMode`/`SQLiteMode` settings), **not** by test class, so every class on the same level shares one classloader and therefore one copy of your `object` statics. Meanwhile each test *method* gets a fresh temp directory. A `File` or `Context` cached in an `object` and never reset will outlive the directory it points at, and unpinning a class changes which other classes can leave that cache dirty — see the note in [Things to Avoid](#things-to-avoid).
+
 Pin only when the assertion depends on the level, and say why in a comment so the next reader doesn't fold it away:
 
 | Test | Pin | Why |
@@ -407,6 +409,8 @@ CI (`.github/workflows/test.yml`, "myPlanet test") runs on every push to every b
 ---
 
 ## Things to Avoid
+
+**Don't let a production `object` cache leak across tests.** `FileUtils.cachedExternalFilesDir`, `LocaleUtils.cachedLanguage`, `UrlUtils`' state — these live for the whole sandbox, which is shared by every test class on the same SDK level. Reset them in `@Before` (reflection on the private field, as `FileUtilsTest` and `LocaleUtilsTest` do, or a purpose-built `internal fun resetForTesting()` like `UrlUtils` has), otherwise the test passes only as long as nothing else happens to run first.
 
 **Don't pin `@Config(sdk = [...])` out of habit.** A pin the assertions don't need still costs a per-fork sandbox build and an `android-all` jar download; see [Robolectric SDK levels](#robolectric-sdk-levels).
 
