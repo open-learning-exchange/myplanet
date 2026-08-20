@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:video_player/video_player.dart';
 import 'package:pdfx/pdfx.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../core/files/resource_files.dart';
 import '../../core/network/network_result.dart';
@@ -86,6 +87,9 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
     final resourceType = _resource?.resourceType?.toLowerCase() ?? '';
     final filename = _resource?.filename?.toLowerCase() ?? '';
 
+    if (mediaType == 'html' || resourceType == 'html') {
+      return ResourceType.html;
+    }
     if (mediaType == 'video' || resourceType == 'video') {
       return ResourceType.video;
     }
@@ -120,9 +124,27 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
 
   /// Resolved through [ResourceFiles] so the viewer reads exactly where
   /// [ResourceDownloader] writes.
+  ///
+  /// For HTML resources the entry file may be nested in a subfolder
+  /// (`openWhichFile = "sudoku/index.html"`), so [ResourceFiles.resolveHtmlEntryFile]
+  /// resolves it against the resource's download directory rather than looking
+  /// up a flat filename.
   Future<String?> _getLocalFilePath() async {
     final resource = _resource;
     if (resource == null) return null;
+    if (_getResourceType() == ResourceType.html) {
+      final dir = await ResourceFiles.directoryFor(
+        docId: resource.couchId ?? resource.id,
+      );
+      final entry = ResourceFiles.resolveHtmlEntryFile(
+        dir,
+        resource.openWhichFile,
+      );
+      if (entry == null || !await entry.exists() || await entry.length() <= 0) {
+        return null;
+      }
+      return entry.path;
+    }
     final file = await ResourceFiles.existingFileFor(
       docId: resource.couchId ?? resource.id,
       filename: resource.filename ?? '',
@@ -294,6 +316,11 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
           resource: _resource!,
           getLocalFilePath: _getLocalFilePath,
         );
+      case ResourceType.html:
+        return _HtmlViewer(
+          resource: _resource!,
+          getLocalFilePath: _getLocalFilePath,
+        );
       case ResourceType.unknown:
         return Center(
           child: Column(
@@ -309,7 +336,17 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
   }
 }
 
-enum ResourceType { video, audio, pdf, image, text, markdown, csv, unknown }
+enum ResourceType {
+  video,
+  audio,
+  pdf,
+  image,
+  text,
+  markdown,
+  csv,
+  html,
+  unknown,
+}
 
 class _VideoViewer extends StatefulWidget {
   const _VideoViewer({required this.resource, required this.getLocalFilePath});
@@ -894,5 +931,63 @@ class _MarkdownViewerState extends State<_MarkdownViewer> {
         Expanded(child: Markdown(data: _content!, selectable: true)),
       ],
     );
+  }
+}
+
+/// Port of `ui/viewer/WebViewActivity.kt`.
+///
+/// Loads the entry file of a downloaded HTML resource bundle in a platform
+/// WebView. The entry file is resolved through [ResourceFiles.resolveHtmlEntryFile],
+/// which honours `openWhichFile`'s subfolder nesting and refuses to serve a
+/// path outside the resource directory.
+class _HtmlViewer extends StatefulWidget {
+  const _HtmlViewer({required this.resource, required this.getLocalFilePath});
+
+  final MyLibraryRow resource;
+  final Future<String?> Function() getLocalFilePath;
+
+  @override
+  State<_HtmlViewer> createState() => _HtmlViewerState();
+}
+
+class _HtmlViewerState extends State<_HtmlViewer> {
+  late final WebViewController _controller;
+  String? _filePath;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = WebViewController();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final path = await widget.getLocalFilePath();
+    if (path == null) {
+      if (mounted) {
+        setState(() => _error = 'HTML entry file not found');
+      }
+      return;
+    }
+    _filePath = path;
+    try {
+      await _controller.loadFile(path);
+    } on Exception catch (e) {
+      if (mounted) {
+        setState(() => _error = e.toString());
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_error != null) {
+      return Center(child: Text(_error!));
+    }
+    if (_filePath == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return WebViewWidget(controller: _controller);
   }
 }

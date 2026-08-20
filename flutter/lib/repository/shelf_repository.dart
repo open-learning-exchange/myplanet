@@ -57,7 +57,7 @@ class ShelfRepository {
     }
 
     final dbUrl = UrlUtils.dbUrl(config);
-    final authHeader = UrlUtils.basicAuthHeader('satellite', config.pin);
+    final authHeader = UrlUtils.authHeader(config);
     final shelfUrl = '$dbUrl/shelf/$shelfDocId';
 
     // A 404 is normal for a user who has never had a shelf document.

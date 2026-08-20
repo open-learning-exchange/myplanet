@@ -391,7 +391,7 @@ class HealthRepository {
 
     final config = _config;
     final dbUrl = UrlUtils.dbUrl(config);
-    final auth = UrlUtils.basicAuthHeader('satellite', config.pin);
+    final auth = UrlUtils.authHeader(config);
 
     final countResult = await _api.getJsonObject(
       '$dbUrl/health/_all_docs?limit=0',

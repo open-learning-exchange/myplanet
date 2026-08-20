@@ -219,7 +219,7 @@ class SurveysRepository {
     void Function(SyncProgress)? onProgress,
   }) async {
     final dbUrl = UrlUtils.dbUrl(config);
-    final auth = UrlUtils.basicAuthHeader('satellite', config.pin);
+    final auth = UrlUtils.authHeader(config);
     final count = await _api.getJsonObject(
       '$dbUrl/exams/_all_docs?limit=0',
       authHeader: auth,

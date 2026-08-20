@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/resources_providers.dart';
+import 'package:myplanet/ui/components/view_mode_toggle.dart';
 import 'package:myplanet/ui/resources/resources_screen.dart';
 
 import '../support/widget_harness.dart';
@@ -125,6 +126,30 @@ void main() {
     expect(find.text('No data available'), findsOneWidget);
   });
 
+  // #15572: when the shelf is empty, the search bar, view-mode toggle, and
+  // filter button are hidden — only the sync button remains.
+  testWidgets('hides search and view toggle when shelf is empty', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wrapScreen(
+        const ResourcesScreen(),
+        overrides: [
+          resourcesStreamProvider.overrideWith(
+            (ref) => Stream.value(const <MyLibraryRow>[]),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SearchBar), findsNothing);
+    expect(find.byType(ViewModeToggle), findsNothing);
+    expect(find.byTooltip('Filter Resources'), findsNothing);
+    // Sync stays available.
+    expect(find.byIcon(Icons.sync), findsOneWidget);
+  });
+
   testWidgets('typing in the search box updates the query provider', (
     tester,
   ) async {
@@ -140,7 +165,8 @@ void main() {
         ),
         overrides: [
           resourcesStreamProvider.overrideWith(
-            (ref) => Stream.value(const <MyLibraryRow>[]),
+            (ref) =>
+                Stream.value([buildLibraryRow(id: 'r1', title: 'Algebra')]),
           ),
         ],
       ),

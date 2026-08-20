@@ -54,7 +54,7 @@ class MyPlanetActivitiesUploader {
 
   /// The `satellite:PIN` Basic auth header, port of `UrlUtils.header`.
   static String authHeaderFor(ServerConfig config) =>
-      UrlUtils.basicAuthHeader('satellite', config.pin);
+      UrlUtils.authHeader(config);
 
   /// The document id of the per-device "usages" doc:
   /// `<androidId>@<uniqueIdentifier>`, matching `MyPlanet.getMyPlanetActivities`.

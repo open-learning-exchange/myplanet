@@ -110,5 +110,5 @@ class ChatUploader {
   }
 
   static String authHeaderFor(ServerConfig config) =>
-      UrlUtils.basicAuthHeader('satellite', config.pin);
+      UrlUtils.authHeader(config);
 }

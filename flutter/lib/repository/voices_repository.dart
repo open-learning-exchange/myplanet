@@ -605,7 +605,7 @@ class VoicesRepository {
     void Function(SyncProgress)? onProgress,
   }) async {
     final dbUrl = UrlUtils.dbUrl(config);
-    final auth = UrlUtils.basicAuthHeader('satellite', config.pin);
+    final auth = UrlUtils.authHeader(config);
     final countResult = await _api.getJsonObject(
       '$dbUrl/news/_all_docs?limit=0',
       authHeader: auth,

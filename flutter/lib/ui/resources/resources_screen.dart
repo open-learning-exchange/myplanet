@@ -41,6 +41,11 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     final viewMode = ref.watch(libraryViewModeProvider);
     final shelfOnly = ref.watch(resourceShelfOnlyProvider);
 
+    // #15572: when the shelf has no rows at all, the search bar, the list/grid
+    // toggle, and the filter button offer nothing to act on. Hiding them
+    // leaves only the sync button, which is the one thing the user can do.
+    final hasData = resources.valueOrNull?.isNotEmpty ?? false;
+
     ref.listen<SyncUiState>(resourceSyncProvider, (previous, next) {
       final messenger = ScaffoldMessenger.of(context);
       switch (next) {
@@ -94,24 +99,26 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                   ref.read(resourceShelfOnlyProvider.notifier).state =
                       !shelfOnly,
             ),
-            ViewModeToggle(
-              mode: viewMode,
-              onChanged: ref.read(libraryViewModeProvider.notifier).set,
-            ),
-            IconButton(
-              tooltip: l10n.filterResources,
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  builder: (context) => const ResourcesFilterSheet(),
-                );
-              },
-              icon: Badge(
-                isLabelVisible: !filter.isEmpty,
-                child: const Icon(Icons.filter_list),
+            if (hasData) ...[
+              ViewModeToggle(
+                mode: viewMode,
+                onChanged: ref.read(libraryViewModeProvider.notifier).set,
               ),
-            ),
+              IconButton(
+                tooltip: l10n.filterResources,
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (context) => const ResourcesFilterSheet(),
+                  );
+                },
+                icon: Badge(
+                  isLabelVisible: !filter.isEmpty,
+                  child: const Icon(Icons.filter_list),
+                ),
+              ),
+            ],
             IconButton(
               tooltip: l10n.sync,
               onPressed: syncState is SyncRunning
@@ -122,7 +129,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
             const LogoutAction(),
           ],
         ],
-        bottom: _selecting
+        bottom: _selecting || !hasData
             ? null
             : PreferredSize(
                 preferredSize: Size.fromHeight(

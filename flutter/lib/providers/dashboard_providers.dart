@@ -297,7 +297,7 @@ final profileImageProvider =
       if (config == null) return null;
       final url = UrlUtils.userImageUrl(config, key.userId, key.imageName);
       if (url == null) return null;
-      final authHeader = UrlUtils.basicAuthHeader('satellite', config.pin);
+      final authHeader = UrlUtils.authHeader(config);
       final result = await ref
           .watch(planetApiProvider)
           .getBytes(url, authHeader: authHeader);

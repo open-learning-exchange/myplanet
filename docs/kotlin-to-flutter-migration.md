@@ -2368,12 +2368,59 @@ the reset button also restores the default descending sort.
 
 ---
 
-**Last updated**: 2026-08-20 (Phase 53 complete — the dashboard library-card
-my/call split from `08e18ffdc` ships the `resourceShelfOnlyProvider` shelf
-toggle and `shelfUserId`-scoped `watchResources`; the notification
-sub-destination work from `a08fc5662` adds the `subType` column (schema v37)
-and `NotificationParser`; nested HTML entry files land via the `openWhichFile`
-column (schema v36) and `ResourceFiles.resolveHtmlEntryFile`; the voices
-shared-team suffix and the team-finances future-date cap round out the batch)
-**Phase**: 53 of N (27 of 28 UI packages have a screen — see Status for what that does and
+### Phase 54 — server-url alt-credential fix, HTML resource viewer, resources empty-state controls
+
+Five upstream commits since `9c54a0341` were audited. Four are Kotlin-only
+refactors with no behavioural change the port lacks (`2ec7e3187`'s
+`hadBatchFailure` cleanup-skip was already ported in Phase 52; `27b638c5b`,
+`76616dd29`, `9d6ece3f9` move method calls between Activity/ViewModel/Adapter
+without changing behaviour; `a372000df` is a layout-only XML change). The one
+real bug is `96a04b138` ("sync: server url alt credentials mapping",
+#15781): `ServerUrlMapper.mapUrl` extracted the credentials from the *primary*
+URL's userinfo rather than the *alternative* URL it was building, so a server
+with different credentials on its clone sent an empty password. The port's
+credential extraction lives in `UrlUtils.authHeader` (see below) rather than
+in `ServerUrlMapper`, so the mapper was already correct — but `authHeader`
+was not reading the alternative URL's userinfo either. Fixed to extract user
+and password from the alternative URL itself; a `url_utils_test.dart` case
+covers the cross-credential case.
+
+The `authHeader(ServerConfig)` helper deduplicates the
+`basicAuthHeader('satellite', config.pin)` pattern that appeared in 20 call
+sites across the repositories, uploaders, and providers. The helper lives in
+`UrlUtils` alongside `basicAuthHeader`; all 20 sites were replaced, and the
+helper is also the seam where the alternative-URL credential extraction
+happens (the port's `ServerUrlMapper` does not extract credentials — it only
+maps the URL, so the extraction belongs at the header boundary). Three new
+tests cover the encoding edge cases (primary server, credential-bearing
+alternative URL, alternative without userinfo).
+
+The HTML resource viewer is the long-standing gap: the data layer
+(`resolveHtmlEntryFile`, `resourceRelativePathFromUrl`, `openWhichFile`
+column) was prepped in Phase 53 but the viewer had no `ResourceType.html`
+case, so an HTML resource downloaded fine and then showed "unknown type."
+Phase 54 adds the `html` enum value, detects it from `mediaType`/
+`resourceType`/filename, and routes `_getLocalFilePath` through
+`ResourceFiles.resolveHtmlEntryFile` + `directoryFor` (new) so the entry
+file is found in its subfolder rather than as a flat filename. The viewer
+itself is a `WebViewWidget` from `webview_flutter` — the faithful port of
+`WebViewActivity`, loading the local entry file via `loadFile`. Two
+`directoryFor` tests cover path resolution and traversal sanitisation.
+
+The resources empty-state control hiding (#15572, `06c7d5398`) is the UI
+fix: when the shelf has zero rows the Kotlin hides the search bar, the
+list/grid toggle, and the filter button, leaving only the sync button. The
+port now does the same via a `hasData` guard on the AppBar `bottom` (search)
+and the `ViewModeToggle`/filter `IconButton`s. A test verifies the three
+controls are absent and the sync button remains.
+
+---
+
+**Last updated**: 2026-08-20 (Phase 54 complete — the `96a04b138`
+server-url alt-credential bug is fixed in `UrlUtils.authHeader`; the
+`authHeader` helper deduplicates 20 `basicAuthHeader('satellite', …)` call
+sites; the HTML resource viewer (`webview_flutter` + `resolveHtmlEntryFile`)
+closes the last resource-type gap; and the resources empty-state hides its
+search/toggle/filter controls per #15572)
+**Phase**: 54 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

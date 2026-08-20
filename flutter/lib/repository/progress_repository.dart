@@ -469,7 +469,7 @@ class ProgressRepository {
     void Function(SyncProgress)? onProgress,
   }) async {
     final dbUrl = UrlUtils.dbUrl(config);
-    final authHeader = UrlUtils.basicAuthHeader('satellite', config.pin);
+    final authHeader = UrlUtils.authHeader(config);
 
     final countResult = await _api.getJsonObject(
       '$dbUrl/certifications/_all_docs?limit=0',
@@ -556,7 +556,7 @@ class ProgressRepository {
     required Future<int> Function(List<Map<String, dynamic>> docs) insert,
   }) async {
     final dbUrl = UrlUtils.dbUrl(config);
-    final authHeader = UrlUtils.basicAuthHeader('satellite', config.pin);
+    final authHeader = UrlUtils.authHeader(config);
 
     final countResult = await _api.getJsonObject(
       '$dbUrl/$table/_all_docs?limit=0',

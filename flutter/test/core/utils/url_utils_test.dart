@@ -26,6 +26,50 @@ void main() {
     });
   });
 
+  group('authHeader', () {
+    test('uses satellite:pin for the primary server', () {
+      expect(
+        UrlUtils.authHeader(config),
+        UrlUtils.basicAuthHeader('satellite', '1234'),
+      );
+    });
+
+    test('uses satellite:pin when the alternative URL has no userinfo', () {
+      final alt = config.copyWith(
+        alternativeUrl: 'https://clone.example.org:443',
+        isAlternativeUrl: true,
+      );
+      expect(
+        UrlUtils.authHeader(alt),
+        UrlUtils.basicAuthHeader('satellite', '1234'),
+      );
+    });
+
+    test('extracts credentials from a credential-bearing alternative URL', () {
+      // Upstream #15834: the auth header must carry the alternative URL's
+      // embedded credentials, not the primary's satellite:pin.
+      final alt = config.copyWith(
+        alternativeUrl: 'http://clone_user:clone_pass@alternative.com:5984',
+        isAlternativeUrl: true,
+      );
+      expect(
+        UrlUtils.authHeader(alt),
+        UrlUtils.basicAuthHeader('clone_user', 'clone_pass'),
+      );
+    });
+
+    test('ignores the alternative URL when isAlternativeUrl is false', () {
+      final alt = config.copyWith(
+        alternativeUrl: 'http://clone_user:clone_pass@alternative.com:5984',
+        isAlternativeUrl: false,
+      );
+      expect(
+        UrlUtils.authHeader(alt),
+        UrlUtils.basicAuthHeader('satellite', '1234'),
+      );
+    });
+  });
+
   group('baseUrl / dbUrl', () {
     test('baseUrl returns the CouchDB URL without a /db suffix', () {
       expect(

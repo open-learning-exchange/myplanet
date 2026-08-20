@@ -449,7 +449,7 @@ final courseCoverImageProvider =
         key.coverFileName,
       );
       if (url == null) return null;
-      final authHeader = UrlUtils.basicAuthHeader('satellite', config.pin);
+      final authHeader = UrlUtils.authHeader(config);
       final result = await ref
           .watch(planetApiProvider)
           .getBytes(url, authHeader: authHeader);

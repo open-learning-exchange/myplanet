@@ -144,5 +144,5 @@ class UserUploader {
 
   /// The `satellite:PIN` Basic credential the outbox drainer attaches.
   static String authHeaderFor(ServerConfig config) =>
-      UrlUtils.basicAuthHeader('satellite', config.pin);
+      UrlUtils.authHeader(config);
 }

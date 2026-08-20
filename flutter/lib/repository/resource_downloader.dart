@@ -42,7 +42,7 @@ class ResourceDownloader {
 
     final result = await _api.getBytes(
       url,
-      authHeader: UrlUtils.basicAuthHeader('satellite', config.pin),
+      authHeader: UrlUtils.authHeader(config),
       onProgress: onProgress,
     );
     if (result is! NetworkSuccess<List<int>>) {

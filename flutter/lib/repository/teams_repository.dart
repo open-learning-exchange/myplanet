@@ -388,7 +388,7 @@ class TeamsRepository {
     void Function(SyncProgress)? onProgress,
   }) async {
     final url = '${UrlUtils.dbUrl(config)}/teams/_all_docs';
-    final auth = UrlUtils.basicAuthHeader('satellite', config.pin);
+    final auth = UrlUtils.authHeader(config);
     final countResult = await _api.getJsonObject(
       '$url?limit=0',
       authHeader: auth,

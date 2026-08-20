@@ -15,6 +15,34 @@ class UrlUtils {
   static String basicAuthHeader(String username, String password) =>
       'Basic ${base64.encode(utf8.encode('$username:$password'))}';
 
+  /// Port of `UrlUtils.header` — the auth header for the active server.
+  ///
+  /// When the app is pointed at an alternative URL that embeds its own
+  /// credentials (`http://clone_user:clone_pass@host`), those credentials
+  /// must reach the `Authorization` header, not the primary server's
+  /// `satellite:pin`. This is the fix for upstream #15834: the Kotlin
+  /// `ServerUrlMapper.updateUrlPreferences` was extracting the userinfo from
+  /// the *primary* `uri` instead of the alternative, so a credential-bearing
+  /// alternative authenticated as an empty user. The port has no separate
+  /// credential-extraction step (credentials live in [ServerConfig]), so the
+  /// fix is a single read at the header boundary.
+  static String authHeader(ServerConfig config) {
+    if (config.isAlternativeUrl && config.alternativeUrl != null) {
+      final altUri = Uri.tryParse(config.alternativeUrl!);
+      final userInfo = altUri?.userInfo;
+      if (userInfo != null && userInfo.isNotEmpty) {
+        final colon = userInfo.indexOf(':');
+        if (colon > 0) {
+          return basicAuthHeader(
+            userInfo.substring(0, colon),
+            userInfo.substring(colon + 1),
+          );
+        }
+      }
+    }
+    return basicAuthHeader('satellite', config.pin);
+  }
+
   /// Port of `UrlUtils.baseUrl(spm)`: the active server root, without `/db`.
   static String baseUrl(ServerConfig config) {
     final url = config.isAlternativeUrl && config.alternativeUrl != null

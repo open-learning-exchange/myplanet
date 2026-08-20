@@ -103,4 +103,30 @@ void main() {
       expect(ResourceFiles.resourceRelativePathFromUrl(url), 'doc-1');
     });
   });
+
+  group('directoryFor', () {
+    test('resolves under <base>/ole/<docId>', () async {
+      final original = ResourceFiles.baseDirectory;
+      final tmp = await Directory.systemTemp.createTemp('rf_dir_');
+      ResourceFiles.baseDirectory = () async => tmp;
+      addTearDown(() {
+        ResourceFiles.baseDirectory = original;
+        tmp.deleteSync(recursive: true);
+      });
+      final dir = await ResourceFiles.directoryFor(docId: 'abc123');
+      expect(dir.path, p.join(tmp.path, 'ole', 'abc123'));
+    });
+
+    test('sanitizes a docId that tries to escape', () async {
+      final original = ResourceFiles.baseDirectory;
+      final tmp = await Directory.systemTemp.createTemp('rf_dir_esc_');
+      ResourceFiles.baseDirectory = () async => tmp;
+      addTearDown(() {
+        ResourceFiles.baseDirectory = original;
+        tmp.deleteSync(recursive: true);
+      });
+      final dir = await ResourceFiles.directoryFor(docId: '../../etc');
+      expect(dir.path, p.join(tmp.path, 'ole', 'etc'));
+    });
+  });
 }

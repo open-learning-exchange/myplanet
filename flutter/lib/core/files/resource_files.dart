@@ -47,6 +47,16 @@ class ResourceFiles {
     return file;
   }
 
+  /// The `<base>/ole/<docId>` directory a resource's files live under.
+  ///
+  /// Used by the HTML viewer to resolve the entry file via
+  /// [resolveHtmlEntryFile], and by storage management to walk a resource's
+  /// attachments.
+  static Future<Directory> directoryFor({required String docId}) async {
+    final base = await baseDirectory();
+    return Directory(p.join(base.path, 'ole', _segment(docId)));
+  }
+
   /// The `<base>/ole` directory every downloaded resource lives under.
   ///
   /// Storage management scans this tree; the downloader and viewer resolve

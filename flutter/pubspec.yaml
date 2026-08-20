@@ -68,6 +68,10 @@ dependencies:
   pdfx: ^2.6.0
   # Markdown rendering — replaces Markwon. `flutter_markdown` is discontinued.
   flutter_markdown_plus: ^1.0.3
+  # HTML resource rendering — replaces `WebViewActivity`, which loads a
+  # downloaded HTML bundle's entry file in an Android WebView. The port loads
+  # the same local file via `WebViewController.loadFile`.
+  webview_flutter: ^4.10.0
   # Offline maps — replaces OSMDroid.
   flutter_map: ^7.0.2
   latlong2: ^0.9.1

@@ -328,7 +328,7 @@ class ChatRepositoryImpl implements ChatRepository {
     void Function(SyncProgress)? onProgress,
   }) async {
     final dbUrl = UrlUtils.dbUrl(config);
-    final authHeader = UrlUtils.basicAuthHeader('satellite', config.pin);
+    final authHeader = UrlUtils.authHeader(config);
 
     final countResult = await planetApi.getJsonObject(
       '$dbUrl/chat_history/_all_docs?limit=0',
