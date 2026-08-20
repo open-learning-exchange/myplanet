@@ -64,7 +64,6 @@ class VoicesLabelManager(
         binding.fbChips.removeAllViews()
 
         val labels = voice.labels ?: emptyList()
-        val reverseLabels = Constants.LABELS.entries.associate { it.value to it.key }
 
         if (labels.isNotEmpty()) {
             val chipConfig = Utilities.getCloudConfig().apply {
@@ -73,8 +72,7 @@ class VoicesLabelManager(
             val chipCloud = ChipCloud(context, binding.fbChips, chipConfig)
 
             for (label in labels) {
-                val displayLabel = reverseLabels[label] ?: formatLabelValue(label)
-                chipCloud.addChip(displayLabel)
+                chipCloud.addChip(getLabel(label))
             }
 
             if (canManageLabels) {
@@ -82,7 +80,7 @@ class VoicesLabelManager(
                     val selectedLabel = when {
                         labelText == null -> null
                         Constants.LABELS.containsKey(labelText) -> Constants.LABELS[labelText]
-                        else -> labels.firstOrNull { (reverseLabels[it] ?: formatLabelValue(it)) == labelText }
+                        else -> labels.firstOrNull { getLabel(it) == labelText }
                     }
                     val voiceId = voice.id
                     if (selectedLabel != null && voiceId != null) {
@@ -117,7 +115,13 @@ class VoicesLabelManager(
             if (usedLabels.containsAll(labels)) View.GONE else View.VISIBLE
     }
 
+    private fun getLabel(s: String): String {
+        return reverseLabels[s] ?: formatLabelValue(s)
+    }
+
     companion object {
+        private val reverseLabels by lazy { Constants.LABELS.entries.associate { it.value to it.key } }
+
         internal fun formatLabelValue(raw: String): String {
             val cleaned = raw.replace("_", " ").replace("-", " ")
             if (cleaned.isBlank()) {
