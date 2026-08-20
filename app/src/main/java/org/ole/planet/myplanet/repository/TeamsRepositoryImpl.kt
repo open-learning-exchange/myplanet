@@ -1135,11 +1135,7 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getNextLeaderCandidate(teamId: String, excludeUserId: String?): UserEntity? {
-        val members = teamDao.getByTeamIdAndDocType(teamId, "membership").filter {
-            !it.isLeader &&
-                it.status != "archived" &&
-                (excludeUserId == null || it.userId != excludeUserId)
-        }
+        val members = teamDao.getEligibleNextLeaderCandidates(teamId, excludeUserId)
         if (members.isEmpty()) return null
 
         val users = members.mapNotNull { member ->
