@@ -77,7 +77,7 @@ class TagsRepositoryImpl @Inject constructor(
             return emptyMap()
         }
 
-        val parentTagsById = tagDao.getByIds(allTagIds).associateBy { it.id }
+        val parentTagsById = allTagIds.chunked(900).flatMap { tagDao.getByIds(it) }.associateBy { it.id }
 
         val tagsByLinkId = mutableMapOf<String, MutableList<TagEntity>>()
         val tagsSetByLinkId = mutableMapOf<String, MutableSet<String>>()
@@ -107,7 +107,7 @@ class TagsRepositoryImpl @Inject constructor(
             return emptyList()
         }
 
-        val parents = tagDao.getByIds(tagIds)
+        val parents = tagIds.chunked(900).flatMap { tagDao.getByIds(it) }
         if (parents.isEmpty()) {
             return emptyList()
         }
