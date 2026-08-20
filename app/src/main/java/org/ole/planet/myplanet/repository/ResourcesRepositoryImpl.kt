@@ -21,9 +21,7 @@ import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
-import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.MyLibrary
-import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.ResourceItem
@@ -52,7 +50,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val teamsSyncRepositoryLazy: dagger.Lazy<TeamsSyncRepository>,
     private val myLibraryDao: MyLibraryDao,
     private val userRepository: UserRepository,
-    private val teamDao: TeamDao,
+    private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository>,
     private val userSessionManager: UserSessionManager,
     private val configurationsRepository: ConfigurationsRepository,
     private val dispatcherProvider: DispatcherProvider
@@ -699,22 +697,13 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
         library._rev = remoteRev
         myLibraryDao.upsert(library)
 
-        // Private resources also create a local team-resource link (still a Realm model).
+        // Private resources also create a local team-resource link.
         if (library.isPrivate && !library.privateFor.isNullOrBlank()) {
-            val resolvedPlanetCode = planetCode?.takeIf { it.isNotBlank() }
-                ?: sharedPrefManager.getPlanetCode()
-            teamDao.upsert(
-                MyTeam(
-                    _id = UUID.randomUUID().toString(),
-                    teamId = library.privateFor,
-                    title = library.title,
-                    resourceId = remoteId,
-                    sourcePlanet = resolvedPlanetCode,
-                    teamType = "local",
-                    teamPlanetCode = resolvedPlanetCode,
-                    docType = "resourceLink",
-                    updated = true,
-                )
+            teamsRepositoryLazy.get().createLocalResourceLink(
+                teamId = library.privateFor!!,
+                resourceId = remoteId,
+                title = library.title,
+                planetCode = planetCode
             )
         }
         return true

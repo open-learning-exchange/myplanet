@@ -331,4 +331,29 @@ class TeamsRepositoryImplTest {
         io.mockk.unmockkObject(NetworkUtils)
         io.mockk.unmockkObject(org.ole.planet.myplanet.MainApplication.Companion)
     }
+
+    @Test
+    fun `createLocalResourceLink upserts resourceLink MyTeam row`() = runTest(testDispatcher) {
+        val teamId = "team_1"
+        val resourceId = "res_1"
+        val title = "Test Resource"
+        val planetCode = "planet_code"
+
+        coEvery { teamDao.upsert(any()) } returns Unit
+
+        teamsRepository.createLocalResourceLink(teamId, resourceId, title, planetCode)
+
+        val slot = io.mockk.slot<MyTeam>()
+        coVerify { teamDao.upsert(capture(slot)) }
+
+        val captured = slot.captured
+        assertEquals(teamId, captured.teamId)
+        assertEquals(resourceId, captured.resourceId)
+        assertEquals(title, captured.title)
+        assertEquals("resourceLink", captured.docType)
+        assertEquals("local", captured.teamType)
+        assertEquals(planetCode, captured.sourcePlanet)
+        assertEquals(planetCode, captured.teamPlanetCode)
+        assertEquals(true, captured.updated)
+    }
 }
