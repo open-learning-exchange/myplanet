@@ -11,6 +11,7 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -289,32 +290,34 @@ class DashboardViewModel @Inject constructor(
                     val courseName = courseNameDeferred.await()
                     val hasUnfinishedSurvey = hasUnfinishedSurveyDeferred.await()
 
-                    val progress = progressRepository.findProgressForCourse(courseData, courseId)
+                    withContext(dispatcherProvider.default) {
+                        val progress = progressRepository.findProgressForCourse(courseData, courseId)
 
-                    val today = LocalDate.now()
-                    val endDate = LocalDate.of(2025, 1, 16)
-                    val shouldPrompt = today.isAfter(LocalDate.of(2024, 11, 30)) &&
-                            today.isBefore(endDate) &&
-                            serverUrl in validUrls
+                        val today = LocalDate.now()
+                        val endDate = LocalDate.of(2025, 1, 16)
+                        val shouldPrompt = today.isAfter(LocalDate.of(2024, 11, 30)) &&
+                                today.isBefore(endDate) &&
+                                serverUrl in validUrls
 
-                    if (!isGuest && shouldPrompt) {
-                        val courseStatus = getCourseStatusString(progress, courseName)
-                        val voiceCount = uniqueDates.size
-                        val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
-                        var hasValidSync = false
-                        if (prereqsMet) {
-                            hasValidSync = progressRepository.hasUserCompletedSync(userId ?: "")
+                        if (!isGuest && shouldPrompt) {
+                            val courseStatus = getCourseStatusString(progress, courseName)
+                            val voiceCount = uniqueDates.size
+                            val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
+                            var hasValidSync = false
+                            if (prereqsMet) {
+                                hasValidSync = progressRepository.hasUserCompletedSync(userId ?: "")
+                            }
+
+                            ChallengeDialogData(
+                                voiceCount = uniqueDates.size,
+                                courseStatus = courseStatus,
+                                allVoiceCount = allUniqueDates.size,
+                                hasUnfinishedSurvey = hasUnfinishedSurvey,
+                                hasValidSync = hasValidSync
+                            )
+                        } else {
+                            null
                         }
-
-                        ChallengeDialogData(
-                            voiceCount = uniqueDates.size,
-                            courseStatus = courseStatus,
-                            allVoiceCount = allUniqueDates.size,
-                            hasUnfinishedSurvey = hasUnfinishedSurvey,
-                            hasValidSync = hasValidSync
-                        )
-                    } else {
-                        null
                     }
                 }
 
