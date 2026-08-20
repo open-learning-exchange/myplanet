@@ -174,21 +174,14 @@ class PersonalsRepositoryImplTest {
 
     @Test
     fun `updatePersonalAfterSync updates fields properly`() = runTest {
-        val personal = Personal()
-        coEvery { personalDao.findById("test-id") } returns personal
-
         repository.updatePersonalAfterSync("test-id", "new-id", "rev-1")
 
-        assertTrue(personal.isUploaded)
-        assertEquals("new-id", personal._id)
-        assertEquals("rev-1", personal._rev)
-        coVerify { personalDao.update(personal) }
+        coVerify { personalDao.updateUploadedStatus("test-id", "new-id", "rev-1") }
     }
 
     @Test
     fun `uploadPersonalDocument returns Pair of id and rev on success`() = runTest {
         val personal = Personal().apply { id = "test-id" }
-        coEvery { personalDao.findById("test-id") } returns personal
 
         val responseJson = JsonObject().apply {
             addProperty("id", "new-id")
@@ -200,10 +193,7 @@ class PersonalsRepositoryImplTest {
 
         assertEquals("new-id", result?.first)
         assertEquals("rev-1", result?.second)
-        assertTrue(personal.isUploaded)
-        assertEquals("new-id", personal._id)
-        assertEquals("rev-1", personal._rev)
-        coVerify { personalDao.update(personal) }
+        coVerify { personalDao.updateUploadedStatus("test-id", "new-id", "rev-1") }
     }
 
     @Test
