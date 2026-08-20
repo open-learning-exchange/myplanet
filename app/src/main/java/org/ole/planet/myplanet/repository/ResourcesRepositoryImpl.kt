@@ -276,6 +276,18 @@ class ResourcesRepositoryImpl @Inject constructor(
         activitiesRepository.markResourceAdded(userId, resourceId)
     }
 
+    override suspend fun setUserLibrary(resourceId: String, add: Boolean): Boolean {
+        val userId = userRepository.getUserModel()?.id ?: return false
+        val library = getLibraryItemByResourceId(resourceId) ?: getLibraryItemById(resourceId)
+        if (library != null) {
+            val contains = library.userId?.contains(userId) == true
+            if (add && contains) return false
+            if (!add && !contains) return false
+        }
+        updateUserLibrary(resourceId, userId, add)
+        return true
+    }
+
     override suspend fun updateUserLibrary(
         resourceId: String,
         userId: String,

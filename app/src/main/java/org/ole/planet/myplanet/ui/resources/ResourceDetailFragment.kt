@@ -57,27 +57,19 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 return@launch
             }
             val id = libraryId ?: return@launch
-            val userId = userRepository.getUserModel()?.id
             try {
-                val backgroundLibrary = fetchLibrary(id)
-                val updatedLibrary = when {
-                    backgroundLibrary == null -> null
-                    backgroundLibrary.userId?.contains(userId) != true && userId != null ->
-                        resourcesRepository.updateUserLibrary(id, userId, true)
-                    else -> backgroundLibrary
-                }
-                if (updatedLibrary != null) {
-                    library = updatedLibrary
+                if (resourcesRepository.setUserLibrary(id, true)) {
+                    val fetched = fetchLibrary(id)
+                    if (fetched != null) {
+                        library = fetched
+                    }
+                    Utilities.toast(activity, getString(R.string.added_to_my_library))
+                    binding.btnRemove.setImageResource(R.drawable.close_x)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
             updateDownloadButtonState()
-            val currentUserId = userRepository.getUserModel()?.id
-            if (currentUserId != null && library.userId?.contains(currentUserId) != true) {
-                Utilities.toast(activity, getString(R.string.added_to_my_library))
-                binding.btnRemove.setImageResource(R.drawable.close_x)
-            }
         }
     }
 
@@ -238,31 +230,23 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         binding.btnRemove.setOnClickListener {
             viewLifecycleOwner.lifecycleScope.launch {
                 val id = libraryId ?: return@launch
-                val userId = userRepository.getUserModel()?.id
                 if (!isAdded) {
                     return@launch
                 }
-                val updatedLibrary = try {
-                    if (userId != null) {
-                        resourcesRepository.updateUserLibrary(id, userId, isAdd)
-                    } else {
-                        null
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    null
-                }
                 try {
-                    if (updatedLibrary != null) {
-                        library = updatedLibrary
+                    if (resourcesRepository.setUserLibrary(id, isAdd)) {
+                        val fetched = fetchLibrary(id)
+                        if (fetched != null) {
+                            library = fetched
+                        }
+                        Utilities.toast(activity, getString(R.string.resources) + " " +
+                                if (isAdd) getString(R.string.added_to_my_library)
+                                else getString(R.string.removed_from_mylibrary))
+                        setLibraryData()
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
-                Utilities.toast(activity, getString(R.string.resources) + " " +
-                        if (isAdd) getString(R.string.added_to_my_library)
-                        else getString(R.string.removed_from_mylibrary))
-                setLibraryData()
             }
         }
         binding.btnBack.setOnClickListener {

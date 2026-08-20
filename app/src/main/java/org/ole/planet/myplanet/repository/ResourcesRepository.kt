@@ -52,6 +52,7 @@ interface ResourcesRepository {
     suspend fun saveLocalResource(request: LocalResourceRequest): Result<Unit>
     suspend fun markResourceAdded(userId: String?, resourceId: String)
     suspend fun updateUserLibrary(resourceId: String, userId: String, isAdd: Boolean): MyLibrary?
+    suspend fun setUserLibrary(resourceId: String, add: Boolean): Boolean
     suspend fun updateLibraryItem(id: String, updater: (MyLibrary) -> Unit)
     suspend fun markResourceOfflineByUrl(url: String)
     suspend fun markAllResourcesOffline(isOffline: Boolean)
