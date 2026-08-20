@@ -21,6 +21,7 @@ void main() {
       MockPlanetApi(),
       db.submissionDao,
       db.submitPhotosDao,
+      db.surveyDao,
     );
     exporter = SubmissionsExporter(repository);
   });

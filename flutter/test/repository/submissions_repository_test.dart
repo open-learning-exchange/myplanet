@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/network/network_result.dart';
 import 'package:myplanet/core/sync/sync_result.dart';
@@ -28,6 +29,7 @@ void main() {
       api,
       database.submissionDao,
       database.submitPhotosDao,
+      database.surveyDao,
     );
   });
 
@@ -376,4 +378,59 @@ void main() {
       expect(survivor?.rev, '2-b');
     },
   );
+
+  group('hasUnfinishedSurveys', () {
+    test('returns false when the course has no attached surveys', () async {
+      final result = await repository.hasUnfinishedSurveys(
+        'course-1',
+        'user-1',
+      );
+      expect(result, isFalse);
+    });
+
+    test('returns true when a course survey has no submission', () async {
+      await database.surveyDao.upsertAll([
+        SurveysCompanion.insert(
+          id: 'survey-a',
+          courseId: const Value('course-1'),
+          name: const Value('Onboarding survey'),
+        ),
+      ], {});
+      final result = await repository.hasUnfinishedSurveys(
+        'course-1',
+        'user-1',
+      );
+      expect(result, isTrue);
+    });
+
+    test('returns false when every course survey has a submission', () async {
+      await database.surveyDao.upsertAll([
+        SurveysCompanion.insert(
+          id: 'survey-a',
+          courseId: const Value('course-1'),
+          name: const Value('Onboarding survey'),
+        ),
+      ], {});
+      await repository.upsertDocuments([
+        {
+          '_id': 'sub-1',
+          'userId': 'user-1',
+          'type': 'survey',
+          'parentId': 'survey-a@course-1',
+          'lastUpdateTime': 100,
+          'status': 'complete',
+        },
+      ]);
+      final result = await repository.hasUnfinishedSurveys(
+        'course-1',
+        'user-1',
+      );
+      expect(result, isFalse);
+    });
+
+    test('returns false for a blank course id or null user', () async {
+      expect(await repository.hasUnfinishedSurveys('', 'user-1'), isFalse);
+      expect(await repository.hasUnfinishedSurveys('course-1', null), isFalse);
+    });
+  });
 }

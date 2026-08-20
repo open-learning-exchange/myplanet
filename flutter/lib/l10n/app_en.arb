@@ -989,6 +989,7 @@
   "courseDetails": "Course Details",
   "addedToCourse": "Added to your courses",
   "removedFromCourse": "Removed from your courses",
+  "pleaseCompleteSurvey": "please complete the survey to finish the course",
   "takeCourse": "Take Course",
   "teamCalendar": "Team Calendar",
   "noMeetupsOnDate": "No meetups on this date",

@@ -486,6 +486,7 @@ class Meetups extends Table {
 /// Port of survey-shaped rows from `model/StepExam.kt` (`exams` database).
 @DataClassName('SurveyRow')
 @TableIndex(name: 'surveys_created_date', columns: {#createdDate})
+@TableIndex(name: 'surveys_course_id', columns: {#courseId})
 class Surveys extends Table {
   TextColumn get id => text()();
   TextColumn get rev => text().named('_rev').nullable()();
@@ -503,6 +504,8 @@ class Surveys extends Table {
   BoolColumn get teamShareAllowed =>
       boolean().withDefault(const Constant(false))();
   TextColumn get sourceSurveyId => text().nullable()();
+  TextColumn get courseId => text().nullable()();
+  TextColumn get stepId => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

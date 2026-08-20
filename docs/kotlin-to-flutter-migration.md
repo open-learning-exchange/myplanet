@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 50 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 52 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -1451,7 +1451,7 @@ features (deferred):
   now mirrors the Kotlin: unrated → `RatingDialog` then pop, rated → pop. Three
   widget tests cover the unrated/rated/dismissed paths; a repository test
   locks in the `summary()` one-shot. The mandatory-survey-toast half of the
-  Kotlin commit is **deferred** (see below).
+  Kotlin commit is **also harvested** — see Phase 52.
 
 **Already correct (the port's design sidesteps the bug).**
 
@@ -1579,11 +1579,6 @@ features (deferred):
 
 **Deferred (lands on unported features).**
 
-- `c5141b658`'s mandatory-survey toast — the Kotlin, on finish, also shows a
-  toast if the course has an attached mandatory survey the user has not yet
-  submitted. The port's `Surveys` table has no `courseId`, so
-  course-attached surveys are not modeled; the toast is not portable to the
-  current schema.
 - `a08fc5662`'s `subType` on `AppNotification` — enables finer destination
   selection within a feature. Phase 49 now routes the four notification types
   Kotlin handles (`resource`, `storage`, `task`, and `join_request`) from the
@@ -1906,9 +1901,12 @@ CI/importing with no app impact. Each also bumps `versionCode`/`versionName`
   flag during the resources `_all_docs` walk and, when any batch failed,
   skips `removeDeletedResources` so an incomplete id list does not evict
   server rows the device still has. The port's `ResourcesRepository.sync`
-  returns `SyncFailed` on the *first* failed page and never reaches the
-  `deleteNotIn` cleanup with a partial id list, so it is already safe
-  against this — more conservative than the Kotlin fix. No-op.
+  previously returned `SyncFailed` on the *first* failed page, more
+  conservative than the Kotlin fix but also less resilient — it abandoned
+  the whole walk. **Phase 52 now ports the Kotlin's resilient approach**:
+  a failed batch advances `skip`, sets the `hadBatchFailure` flag, and the
+  cleanup is skipped, so the sync saves what it can and returns
+  `SyncComplete` (see Phase 52).
 - `a372000df` (courses progress scrolling) — re-layouts
   `activity_course_progress.xml` (NestedScrollView/RecyclerView nesting) to
   fix scroll-jank. Pure Android-layout XML; the port's course-progress
@@ -2275,10 +2273,49 @@ the migration preservation test.
 
 ---
 
-**Last updated**: 2026-08-20 (Phase 51 complete — certified course exams now capture a
-verification photo on submit, with the durable two-step `submit_photos` write-back the
-`SubmitPhotosUploader` delivers through the outbox; the 2026-08-20 upstream audit found no
-portable behavioural commits, and the stale "user profile photo upload" claim was corrected —
-that path landed in the Phase 36 harvest)
-**Phase**: 51 of N (27 of 28 UI packages have a screen — see Status for what that does and
+### Phase 52 — mandatory survey toast and resilient resource cleanup
+
+Two upstream fixes that were deferred or noted as buggy in the prior audit are
+now closed.
+
+The mandatory-survey toast, the second half of `c5141b658`, is the last piece
+of the Kotlin's course-finish gate. The Kotlin, on finish, also checks whether
+the course has an attached survey the user has not yet submitted and, if so,
+shows a toast and blocks the pop. The blocker was schema: the port's `Surveys`
+table had no `courseId`, so course-attached surveys were not modelled. Schema v35
+adds `courseId` (and `stepId`) to `Surveys` with an index on `courseId`;
+`SurveyMapper.fromDoc` now reads both from the CouchDB document. The check is a
+new `SubmissionsRepository.hasUnfinishedSurveys(courseId, userId)` — a port of
+the Kotlin `hasUnfinishedSurveys` / `hasSubmission` pair: it pulls every survey
+attached to the course (`SurveyDao.getByCourseId`), builds the Kotlin
+`parentId` (`"$surveyId@$courseId"`), and counts submissions matching that
+parent and user via the new `SubmissionDao.countByUserParentAndType`. The finish
+handler in `take_course_screen.dart` now calls it before the rating dialog for
+the one course the Kotlin gates (`MANDATORY_SURVEY_COURSE_ID`), showing the
+`pleaseCompleteSurvey` toast and returning early when the user has an
+outstanding survey. Four repository tests cover the no-surveys / unfinished /
+complete / blank-input paths; a widget test locks in the toast; a mapper test
+locks in the new columns.
+
+The resource-sync `deleteNotIn` bug (`2ec7e3187`, fixes #15831) is the second
+fix. The prior port returned `SyncFailed` on the first batch failure, which
+abandoned the whole walk. The Kotlin fix is more resilient: continue past the
+failed batch, track a `hadBatchFailure` flag, and skip the cleanup at the end
+— the id list is then incomplete and `deleteNotIn` would delete valid
+resources. The port now matches that: a failed batch advances `skip`, sets the
+flag, and the cleanup is skipped, so the sync saves what it can and returns
+`SyncComplete` (not `SyncFailed`). A test seeds a full library, re-syncs with a
+failed second batch, and verifies the 50 resources in that batch survive; the
+old "fails when a page request fails mid-walk" test is rewritten to expect the
+new resilient completion.
+
+---
+
+**Last updated**: 2026-08-20 (Phase 52 complete — the mandatory-survey toast,
+the deferred second half of `c5141b658`, now blocks the MyPlanet Onboarding
+course's finish when an attached survey is outstanding, with the `courseId`
+column on `Surveys` (schema v35) that makes course-attached surveys queryable;
+the resilient resource-cleanup fix from `2ec7e3187` ports the `hadBatchFailure`
+flag so a mid-walk batch failure no longer deletes valid resources)
+**Phase**: 52 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

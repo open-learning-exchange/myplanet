@@ -99,7 +99,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 34;
+  int get schemaVersion => 35;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -1655,6 +1655,27 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
           ))
           .get();
 
+  /// Port of `SubmissionDao.countByUserParentAndType` — whether the user has
+  /// any submission (of any status) for the given parent and type. Used by
+  /// the mandatory-survey check on course finish.
+  Future<int> countByUserParentAndType(
+    String userId,
+    String parentId,
+    String type,
+  ) async {
+    final count = submissions.id.count();
+    final row =
+        await (selectOnly(submissions)
+              ..addColumns([count])
+              ..where(
+                submissions.userId.equals(userId) &
+                    submissions.parentId.equals(parentId) &
+                    submissions.type.equals(type),
+              ))
+            .getSingle();
+    return row.read(count) ?? 0;
+  }
+
   /// Port of `AnswerDao.getBySubmissionIds` — every answer for [submissionIds]
   /// in one read, so the progress calc totalises mistakes without N queries.
   Future<List<SubmissionAnswerRow>> answersForSubmissions(
@@ -1895,6 +1916,12 @@ class SurveyDao extends DatabaseAccessor<AppDatabase> with _$SurveyDaoMixin {
             )
             ..limit(1))
           .getSingleOrNull();
+
+  /// Port of `ExamDao.getByCourseIdAndType(courseId, "survey")` — every
+  /// course-attached survey. Used by the mandatory-survey check on course
+  /// finish.
+  Future<List<SurveyRow>> getByCourseId(String courseId) =>
+      (select(surveys)..where((row) => row.courseId.equals(courseId))).get();
 
   Future<List<SurveyQuestionRow>> questionsFor(String surveyId) =>
       (select(surveyQuestions)

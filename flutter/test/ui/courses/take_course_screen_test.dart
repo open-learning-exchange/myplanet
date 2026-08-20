@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/courses_providers.dart';
@@ -188,5 +189,84 @@ void main() {
     expect(find.byType(AlertDialog), findsNothing);
     expect(find.byType(TakeCourseScreen), findsNothing);
     expect(find.text('ROOT_PAGE'), findsOneWidget);
+  });
+
+  /// The mandatory-survey gate: finishing the MyPlanet Onboarding course
+  /// (course id `4e6b…`) with an unsubmitted course-attached survey shows a
+  /// toast and blocks the finish — a port of `TakeCourseFragment`'s
+  /// `MANDATORY_SURVEY_COURSE_ID` check.
+  const mandatoryCourseId = '4e6b78800b6ad18b4e8b0e1e38a98cac';
+
+  testWidgets('mandatory survey blocks finish with a toast', (tester) async {
+    final db = AppDatabase.memory();
+    addTearDown(db.close);
+
+    // Attach an unsubmitted survey to the mandatory course.
+    await db.surveyDao.upsertAll([
+      SurveysCompanion.insert(
+        id: 'survey-mandatory',
+        courseId: const Value(mandatoryCourseId),
+        name: const Value('Onboarding survey'),
+      ),
+    ], {});
+
+    await tester.pumpWidget(
+      wrapScreen(
+        Builder(
+          builder: (context) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final router = GoRouter.of(context);
+              final location = router
+                  .routerDelegate
+                  .currentConfiguration
+                  .last
+                  .matchedLocation;
+              if (location != '/take') {
+                router.push('/take');
+              }
+            });
+            return const Scaffold(body: Text('ROOT_PAGE'));
+          },
+        ),
+        pushTargets: {
+          '/take': (context) =>
+              const TakeCourseScreen(courseId: mandatoryCourseId),
+        },
+        overrides: [
+          sessionProvider.overrideWith(() => _TestSessionNotifier(_user())),
+          courseProvider(mandatoryCourseId).overrideWith(
+            (ref) => Stream.value(
+              buildCourseRow(id: mandatoryCourseId, courseTitle: 'Onboarding'),
+            ),
+          ),
+          courseStepsProvider(mandatoryCourseId).overrideWith(
+            (ref) => Stream.value([buildStepRow(id: 's1', stepTitle: 'First')]),
+          ),
+          appDatabaseProvider.overrideWith((ref) {
+            ref.onDispose(db.close);
+            return db;
+          }),
+          ratingSummaryProvider((
+            type: 'course',
+            itemId: mandatoryCourseId,
+          )).overrideWith(
+            (ref) => Stream.value(
+              const RatingSummary(average: 0, total: 0, userRating: null),
+            ),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Finish'));
+    await tester.pumpAndSettle();
+
+    // The toast appeared and the rating dialog did not — the finish was blocked.
+    expect(
+      find.text('please complete the survey to finish the course'),
+      findsOneWidget,
+    );
+    expect(find.byType(AlertDialog), findsNothing);
   });
 }

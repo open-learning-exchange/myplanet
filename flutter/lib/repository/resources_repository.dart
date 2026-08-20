@@ -150,6 +150,10 @@ class ResourcesRepository {
     // then only a prefix of what exists, so the cleanup below must not run —
     // it would delete local rows the server still has.
     var walkedEveryPage = true;
+    // A failed batch leaves a gap in `savedIds`, so the cleanup must not run
+    // either — the id list is incomplete and would delete valid resources.
+    // Port of `SyncManager`'s `hadBatchFailure` flag (commit 2ec7e3187).
+    var hadBatchFailure = false;
 
     while (skip < totalRows) {
       final batchSize = batchSizer.currentSize;
@@ -163,7 +167,9 @@ class ResourcesRepository {
 
       if (pageResult is! NetworkSuccess<Map<String, dynamic>>) {
         batchSizer.recordFailure();
-        return SyncFailed(describeNetworkFailure(pageResult));
+        hadBatchFailure = true;
+        skip += batchSize;
+        continue;
       }
       batchSizer.recordSuccess(stopwatch.elapsedMilliseconds);
 
@@ -202,8 +208,10 @@ class ResourcesRepository {
       );
     }
 
-    // Port of `ResourcesRepositoryImpl.removeDeletedResources`.
-    if (walkedEveryPage && savedIds.isNotEmpty) {
+    // Port of `ResourcesRepositoryImpl.removeDeletedResources`. Skipped when a
+    // batch failed mid-walk — the id list is then incomplete and would delete
+    // valid resources (commit 2ec7e3187).
+    if (walkedEveryPage && savedIds.isNotEmpty && !hadBatchFailure) {
       await _dao.deleteNotIn(savedIds);
     }
 

@@ -228,5 +228,7 @@
   "shareWithCommunity": "Compartir con la comunidad",
   "confirmShareCommunity": "¿Estás seguro de que quieres compartir este contenido con la comunidad?",
   "voiceShared": "Publicación compartida con la comunidad",
+  "pleaseCompleteSurvey": "por favor completa la encuesta para terminar el curso",
+
   "voiceUnshared": "Eliminado de la comunidad"
 }

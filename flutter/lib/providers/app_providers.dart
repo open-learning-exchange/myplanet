@@ -317,6 +317,7 @@ final submissionsRepositoryProvider = Provider<SubmissionsRepository>(
     ref.watch(planetApiProvider),
     ref.watch(submissionDaoProvider),
     ref.watch(submitPhotosDaoProvider),
+    ref.watch(surveyDaoProvider),
   ),
 );
 

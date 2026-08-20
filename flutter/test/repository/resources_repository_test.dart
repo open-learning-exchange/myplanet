@@ -174,7 +174,7 @@ void main() {
       },
     );
 
-    test('fails when a page request fails mid-walk', () async {
+    test('continues past a failed batch and skips cleanup', () async {
       stubCount(150);
       stubPage(0, 100, List.generate(100, (i) => row('res-$i', 'Title')));
       when(
@@ -189,8 +189,10 @@ void main() {
 
       final result = await repository.sync(config: config);
 
-      expect(result, isA<SyncFailed>());
-      // The first page is still persisted — a partial sync is not rolled back.
+      // The sync completes (not fails) — the first batch is saved and the
+      // failed batch is skipped rather than aborting the whole walk.
+      expect(result, isA<SyncComplete>());
+      expect((result as SyncComplete).savedCount, 100);
       expect(await repository.localCount(), 100);
     });
 
@@ -230,6 +232,42 @@ void main() {
       // throw away rows the server still has.
       expect(await repository.localCount(), 150);
     });
+  });
+
+  group('sync — batch failure', () {
+    test(
+      'skips cleanup so a failed batch does not delete valid rows',
+      () async {
+        // Seed a full library of 150 resources.
+        stubCount(150);
+        stubPage(0, 100, List.generate(100, (i) => row('res-$i', 'T')));
+        stubPage(
+          100,
+          100,
+          List.generate(50, (i) => row('res-${100 + i}', 'T')),
+        );
+        await repository.sync(config: config);
+        expect(await repository.localCount(), 150);
+
+        // Re-sync, but the second batch fails. The id list is then incomplete.
+        stubCount(150);
+        stubPage(0, 100, List.generate(100, (i) => row('res-$i', 'T')));
+        when(
+          () => api.getJsonObject(
+            '$dbUrl/resources/_all_docs?include_docs=true&limit=100&skip=100',
+            authHeader: any(named: 'authHeader'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              NetworkException<Map<String, dynamic>>(Exception('dropped')),
+        );
+        await repository.sync(config: config);
+
+        // Cleanup must be skipped — the 50 resources in the failed batch are
+        // still on the server and must not be deleted locally.
+        expect(await repository.localCount(), 150);
+      },
+    );
   });
 
   group('sync — large libraries', () {

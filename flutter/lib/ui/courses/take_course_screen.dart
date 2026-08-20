@@ -194,14 +194,29 @@ class _CourseContent extends ConsumerWidget {
   /// dismiss (submit or cancel) pops the course, matching the Kotlin's
   /// `setOnDismissListener`.
   ///
-  /// The Kotlin also gates one specific course (the MyPlanet Onboarding course)
-  /// behind an unfinished-survey toast before reaching here. That half is
-  /// not ported: course-attached surveys are not modelled yet (the `Surveys`
-  /// table carries no `courseId`, and the exam mapper drops `type != 'exam'`
-  /// docs), so `hasUnfinishedSurveys` has nothing to query. See the migration
-  /// doc's spec-debt note for commit `c5141b658`.
+  /// One specific course (the MyPlanet Onboarding course) is gated behind an
+  /// unfinished-survey toast before reaching the rating dialog — matching the
+  /// Kotlin's `MANDATORY_SURVEY_COURSE_ID` check in `onFinishStep`.
+  static const String _mandatorySurveyCourseId =
+      '4e6b78800b6ad18b4e8b0e1e38a98cac';
+
   Future<void> _onFinish(BuildContext context, WidgetRef ref) async {
     final userId = this.userId;
+
+    if (course.id == _mandatorySurveyCourseId && userId != null) {
+      final hasUnfinished = await ref
+          .read(submissionsRepositoryProvider)
+          .hasUnfinishedSurveys(course.id, userId);
+      if (!context.mounted) return;
+      if (hasUnfinished) {
+        final l10n = AppLocalizations.of(context);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.pleaseCompleteSurvey)));
+        return;
+      }
+    }
+
     final summary = await ref
         .read(ratingsRepositoryProvider)
         .summary('course', course.id, userId);

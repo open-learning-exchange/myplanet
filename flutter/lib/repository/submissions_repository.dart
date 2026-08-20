@@ -13,13 +13,19 @@ import '../data/local/app_database.dart';
 
 /// Offline list portion of `repository/SubmissionsRepositoryImpl.kt`.
 class SubmissionsRepository {
-  const SubmissionsRepository(this._api, this._dao, this._photosDao);
+  const SubmissionsRepository(
+    this._api,
+    this._dao,
+    this._photosDao,
+    this._surveyDao,
+  );
 
   static const int initialBatchSize = 100;
 
   final PlanetApi _api;
   final SubmissionDao _dao;
   final SubmitPhotosDao _photosDao;
+  final SurveyDao _surveyDao;
 
   Stream<List<SubmissionRow>> watchForUser(String userId) =>
       _dao.watchForUser(userId);
@@ -321,6 +327,23 @@ class SubmissionsRepository {
 
   Future<List<SubmissionRow>> pendingUploads(String userId) =>
       _dao.pendingUploads(userId);
+
+  /// Port of `SubmissionsRepositoryImpl.hasUnfinishedSurveys`. Returns true
+  /// if the course has any attached survey the user has not yet submitted.
+  Future<bool> hasUnfinishedSurveys(String courseId, String? userId) async {
+    if (courseId.isEmpty || (userId ?? '').isEmpty) return false;
+    final surveys = await _surveyDao.getByCourseId(courseId);
+    for (final survey in surveys) {
+      final parentId = '${survey.id}@$courseId';
+      final count = await _dao.countByUserParentAndType(
+        userId!,
+        parentId,
+        'survey',
+      );
+      if (count == 0) return true;
+    }
+    return false;
+  }
 
   Future<void> markUploaded(String id, String couchId, String rev) async {
     await _dao.markUploaded(id, couchId, rev);

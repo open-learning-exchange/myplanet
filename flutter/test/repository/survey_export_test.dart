@@ -28,6 +28,7 @@ void main() {
       MockPlanetApi(),
       database.submissionDao,
       database.submitPhotosDao,
+      database.surveyDao,
     );
   });
   tearDown(() => database.close());

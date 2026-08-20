@@ -57,6 +57,8 @@ class SurveyMapper {
         teamId: Value(JsonUtils.getStringOrNull('teamId', doc)),
         teamShareAllowed: Value(JsonUtils.getBool('teamShareAllowed', doc)),
         sourceSurveyId: Value(JsonUtils.getStringOrNull('sourceSurveyId', doc)),
+        courseId: Value(JsonUtils.getStringOrNull('courseId', doc)),
+        stepId: Value(JsonUtils.getStringOrNull('stepId', doc)),
       ),
       questions: questions,
     );
