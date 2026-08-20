@@ -255,7 +255,8 @@ class UploadConfigs @Inject constructor(
         endpoint = "submissions",
         fetchPendingItems = { submissionsRepository.getPendingSubmissionsForUpload() },
         serializer = UploadSerializer.Async { submission ->
-            submissionsRepository.serializeSubmission(submission, sharedPrefManager.getPlanetCode(), sharedPrefManager.getParentCode())
+            val user = submission.userId?.let { userRepository.getUserById(it) }
+            submissionsRepository.serializeSubmission(submission, sharedPrefManager.getPlanetCode(), sharedPrefManager.getParentCode(), user)
         },
         idExtractor = { it.id },
         dbIdExtractor = { it._id },

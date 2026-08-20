@@ -27,8 +27,12 @@ class SubmissionDetailViewModel @Inject constructor(
 
     private val submissionDetailState: StateFlow<SubmissionDetail?> = flow {
         val submission = submissionsRepository.getSubmissionByRemoteIdOrParentId(submissionId)
-        val user = submission?.userId?.let { userRepository.getUserById(it) }
-        emit(submissionsRepository.getSubmissionDetail(submissionId, user))
+        if (submission != null) {
+            val user = submission.userId?.let { userRepository.getUserById(it) }
+            emit(submissionsRepository.getSubmissionDetail(submission, user))
+        } else {
+            emit(null)
+        }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val questionAnswers: StateFlow<List<QuestionAnswer>> = submissionDetailState

@@ -248,9 +248,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             ?: hydrateSubmission(submissionDao.getFirstByParentIdContaining(submissionId))
     }
 
-    override suspend fun getSubmissionDetail(submissionId: String, user: org.ole.planet.myplanet.model.UserEntity?): SubmissionDetail? {
-        val submission = getSubmissionByRemoteIdOrParentId(submissionId) ?: return null
-
+    override suspend fun getSubmissionDetail(submission: Submission, user: UserEntity?): SubmissionDetail? {
         val examId = submission.parentId?.substringBefore('@')
         val exam = examId?.let { getExamById(it) }
 
@@ -766,11 +764,11 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return `object`
     }
 
-    override suspend fun serializeSubmission(submission: Submission, source: String, parentCode: String): JsonObject {
+    override suspend fun serializeSubmission(submission: Submission, source: String, parentCode: String, user: UserEntity?): JsonObject {
         val jsonObject = JsonObject()
 
         try {
-            val payloadData = getPayloadData(submission, null)
+            val payloadData = getPayloadData(submission, user)
             val exam = payloadData.exam
 
             if (!submission._id.isNullOrEmpty()) {
@@ -801,7 +799,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
             // Prefer the fresh user record (attachment-free, current data) over the persisted
             // blob, whose _attachments are stripped for storage safety.
-            val userJson = submission.user?.takeIf { it.isNotEmpty() }?.let { JsonParser.parseString(it).asJsonObject }
+            val userJson = payloadData.user?.serialize()
+                ?: submission.user?.takeIf { it.isNotEmpty() }?.let { JsonParser.parseString(it).asJsonObject }
             if (userJson != null) {
                 if (submission.membershipDoc != null) {
                     val membershipJson = JsonObject()
