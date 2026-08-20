@@ -523,7 +523,7 @@ class ProgressRepositoryImplTest {
             Submission().apply {
                 id = "sub2"
                 userId = "user1"
-                parentId = "course1_legacy"
+                parentId = "course1"
                 type = "exam"
             },
             // Missing parent -> sub3
