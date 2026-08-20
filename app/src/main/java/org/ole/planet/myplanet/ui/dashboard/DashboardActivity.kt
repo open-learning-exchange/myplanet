@@ -58,7 +58,6 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.services.ChallengePrompter
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.SyncManager
@@ -116,9 +115,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     @Inject
     override lateinit var resourcesRepository: ResourcesRepository
-    private val challengeManager: ChallengePrompter by lazy {
-        ChallengePrompter(this, prefData, dashboardViewModel)
-    }
     private var notificationManager: NotificationUtils.NotificationManager? = null
     private var notificationsShownThisSession = false
     private var lastNotificationCheckTime = 0L
@@ -189,13 +185,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
             val validUrls = ServerConfigUtils.getChallengeServerUrls()
             val isGuest = user?.id?.startsWith("guest") == true
-            dashboardViewModel.evaluateChallengeDialog(
-                user?.id,
-                isGuest,
-                validUrls,
-                prefData.getServerUrl()
-            )
-
             reportFullyDrawn()
         }
     }
@@ -236,10 +225,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 f.arguments = b
                 openCallFragment(f)
             }
-        }
-
-        collectWhenStarted(dashboardViewModel.challengeDialogEvent) { data ->
-            challengeManager.showChallengeDialog(data)
         }
 
         collectWhenStarted(syncManager.syncStatus) { status ->
