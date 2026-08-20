@@ -2579,9 +2579,66 @@ Tests: the existing 1139-test suite passes unchanged; `flutter analyze` clean;
 
 ---
 
-**Last updated**: 2026-08-20 (Phase 57 complete — resource viewer localised:
-all sub-screens wired to `.arb`, 10 new keys + translations composed from
-existing Kotlin terms across all five locales; the last screen that opted out
-of localisation wholesale is no longer)
-**Phase**: 57 of N (27 of 28 UI packages have a screen — see Status for what that does and
+## Phase 58 — the last hardcoded UI strings, and screen-test backfill
+
+Phase 57 localised the resource viewer, but a sweep for `Text('…')` literals
+with a leading capital turned up four more hardcoded English strings outside
+it — the tail of the per-screen localisation pass. Three of the four are
+genuine user-facing strings; the fourth is version metadata.
+
+- **`services_screen.dart`** — two `ScaffoldMessenger` snackbars that read
+  `Text('Opening: $title')` when a community service's route is an external
+  URL or a malformed internal one. `_handleServiceTap` is a method (not a
+  `build`), so it now resolves `AppLocalizations.of(context)` at the call
+  site and calls `l10n.openingResource(title)`. The new key takes a `{title}`
+  placeholder of type `String`.
+
+- **`become_member_screen.dart`** — the `catch (e)` block's
+  `Text('Error: $e')` snackbar. `AppLocalizations` was already imported for
+  the success path; the catch now calls `l10n.errorOccurred(e)`. The new key
+  takes an `{error}` placeholder of type `Object`, matching the existing
+  `failedToDelete` pattern.
+
+- **`settings_screen.dart`** — `subtitle: const Text('Build 6297')`. This is
+  not a localisation gap: it is version metadata (the same number in every
+  locale) and, worse, it is **stale** — `pubspec.yaml` is `0.62.98+6298` and
+  `ConfigurationsRepository.defaultAppVersion` still pins `0.62.97`. The
+  honest fix is `package_info_plus` reading the real build number at runtime,
+  which is a separate task; this phase leaves it.
+
+Two new ARB keys (`errorOccurred`, `openingResource`) with placeholders,
+translated across all five locales from the same Kotlin translators'
+vocabulary (`error_occurred` / `opening` patterns). ARB files verified
+valid JSON + UTF-8.
+
+### Screen-test backfill
+
+Three previously-untested `ConsumerWidget` screens gained widget tests this
+phase, each mirroring an existing test's override pattern:
+
+- **`services_screen_test.dart`** (5 tests) — empty state, listing with
+  titles, the title-less "Untitled team" fallback, an internal route pushing
+  the team screen, and an external route showing the localised "Opening:"
+  snackbar. Overrides `teamLinksStreamProvider` with a `Stream.value`, the
+  pattern from `team_finances_screen_test.dart`.
+- **`leaders_screen_test.dart`** (5 tests) — empty state, per-leader cards
+  with the composed display name, the no-email case, the tap-to-open details
+  bottom sheet, and the malformed-JSON fallback. Seeds `PlanetPrefs` via
+  `SharedPreferences.setMockInitialValues`, the pattern from
+  `home_screen_test.dart`'s `_prefs()` helper.
+- **`chat_history_screen_test.dart`** (5 tests) — empty state, listing with
+  title/last-message/avatar and the "Untitled chat" fallback, the
+  malformed-conversation-JSON no-subtitle case, title-based search filtering,
+  and the no-matches message. Overrides `chatHistoryProvider` with a
+  `Future.value`.
+
+The resource viewer remains untested (platform controllers), as in Phase 57.
+
+Tests: 1139 → 1154 (15 new); `flutter analyze` clean; `dart format` clean.
+
+---
+
+**Last updated**: 2026-08-20 (Phase 58 complete — last hardcoded UI strings
+localised; services/leaders/chat-history screens gain widget tests)
+**Phase**: 58 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)
