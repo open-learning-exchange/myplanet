@@ -41,7 +41,8 @@ class SyncRepositoryImpl @Inject constructor(
     private val coursesRepository: CoursesRepository,
     private val eventsRepository: EventsSyncWriter,
     private val teamsSyncRepository: TeamsSyncRepository,
-    private val transactionSyncManager: dagger.Lazy<TransactionSyncManager>
+    private val transactionSyncManager: dagger.Lazy<TransactionSyncManager>,
+    private val syncTimeLogger: SyncTimeLogger
 ) : SyncRepository {
     override fun uploadLoginData(): Flow<SyncUiState> {
         val workRequest = OneTimeWorkRequest.Builder(UserDataWorker::class.java)
@@ -129,7 +130,7 @@ class SyncRepositoryImpl @Inject constructor(
 
     private suspend fun processShelfDataOptimizedSync(shelfId: String?, shelfData: Constants.ShelfData, shelfDoc: JsonObject?): Int {
         var processedCount = 0
-        val logger = SyncTimeLogger
+        val logger = syncTimeLogger
 
         try {
             val array = getJsonArray(shelfData.key, shelfDoc)
