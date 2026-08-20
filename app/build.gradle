@@ -264,31 +264,24 @@ def robolectricSdkJars = [
     34: '14-robolectric-10818077-i7',
     36: '16-robolectric-13921718-i7',
 ]
-// One configuration per level, not one holding all nine: they are the same module at nine
-// different versions, so a single configuration conflict-resolves down to the newest jar and every
-// test pinning an older level then fails with "Path is not a file". Nor can the typed factories
-// help: dependencies do not belong on a `resolvable`, and a shared `dependencyScope` puts all nine
-// back in one graph.
+// One configuration per level: the same module at nine versions collapses to the newest in one.
 robolectricSdkJars.each { apiLevel, jarVersion ->
     configurations.create("robolectricSdk$apiLevel")
     dependencies.add("robolectricSdk$apiLevel", "org.robolectric:android-all-instrumented:$jarVersion")
 }
-// Outside app/build on purpose: the test workflow caches app/build, and this is ~1.2 GB that
-// Gradle can hand over again for free.
+// Outside app/build: the test workflow caches that, and this is ~1.2 GB Gradle already holds.
 def robolectricSdkDir = new File(rootDir, 'build/robolectric-sdks')
 def fetchRobolectricSdks = tasks.register('fetchRobolectricSdks', Sync) {
-    description = 'Stages the android-all jars Robolectric would otherwise fetch from inside the test forks'
+    description = 'Stages the android-all jars Robolectric would otherwise fetch inside the test forks'
     robolectricSdkJars.keySet().each { apiLevel -> from configurations.getByName("robolectricSdk$apiLevel") }
     into robolectricSdkDir
     doLast {
-        // Robolectric asks the offline resolver for `<artifactId>-<version>.jar` by name, so check
-        // names rather than count: a level that collides or stages under an unexpected name fails
-        // here, where the message can say which one, instead of one test class at a time.
+        // By name, not count: these are the filenames Robolectric's offline resolver looks for.
         def missing = robolectricSdkJars
             .collect { apiLevel, jarVersion -> "android-all-instrumented-${jarVersion}.jar" }
             .findAll { !new File(robolectricSdkDir, it).isFile() }
         if (missing) {
-            throw new GradleException("Missing from $robolectricSdkDir: ${missing.join(', ')} - every SDK level in robolectricSdkJars needs its own configuration to survive conflict resolution")
+            throw new GradleException("Missing from $robolectricSdkDir: ${missing.join(', ')}")
         }
     }
 }
