@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.CourseDao
@@ -109,9 +110,9 @@ class CoursesRepositoryImpl @Inject constructor(
         }.flowOn(dispatcherProvider.default)
     }
 
-    override suspend fun getCourseById(courseId: String): MyCourse? {
-        if (courseId.isBlank()) return null
-        return mapCourse(courseDao.getByCourseId(courseId))
+    override suspend fun getCourseById(courseId: String): MyCourse? = withContext(dispatcherProvider.io) {
+        if (courseId.isBlank()) return@withContext null
+        mapCourse(courseDao.getByCourseId(courseId))
     }
 
     override fun getCourseDetailModel(courseId: String): Flow<CourseDetailModel?> {
@@ -185,11 +186,11 @@ class CoursesRepositoryImpl @Inject constructor(
         return examDao.countByCourseIdAndType(courseId, "courses")
     }
 
-    override suspend fun getCourseSteps(courseId: String): List<CourseStep> {
+    override suspend fun getCourseSteps(courseId: String): List<CourseStep> = withContext(dispatcherProvider.io) {
         if (courseId.isBlank()) {
-            return emptyList()
+            return@withContext emptyList()
         }
-        return courseStepDao.getByCourseId(courseId).map { it }
+        courseStepDao.getByCourseId(courseId).map { it }
     }
 
     override suspend fun markCoursesAdded(courseIds: List<String>, userId: String?): Result<Boolean> {

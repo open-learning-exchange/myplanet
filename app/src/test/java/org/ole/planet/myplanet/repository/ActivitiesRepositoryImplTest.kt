@@ -4,6 +4,7 @@ import android.content.Context
 import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import java.util.logging.Level
@@ -31,6 +32,7 @@ import org.ole.planet.myplanet.model.UserChallengeActions
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -47,6 +49,7 @@ class ActivitiesRepositoryImplTest {
     private lateinit var offlineActivityDao: OfflineActivityDao
     private lateinit var removedLogDao: RemovedLogDao
     private lateinit var searchActivityDao: org.ole.planet.myplanet.data.room.dao.SearchActivityDao
+    private lateinit var dispatcherProvider: DispatcherProvider
 
     private lateinit var repository: ActivitiesRepositoryImpl
 
@@ -65,9 +68,15 @@ class ActivitiesRepositoryImplTest {
         offlineActivityDao = mockk(relaxed = true)
         removedLogDao = mockk(relaxed = true)
         searchActivityDao = mockk(relaxed = true)
+        dispatcherProvider = mockk(relaxed = true) {
+            every { io } returns kotlinx.coroutines.Dispatchers.Unconfined
+            every { default } returns kotlinx.coroutines.Dispatchers.Unconfined
+            every { main } returns kotlinx.coroutines.Dispatchers.Unconfined
+        }
 
         repository = ActivitiesRepositoryImpl(
             context,
+            dispatcherProvider,
             lazyUserRepository,
             apiInterface,
             sharedPrefManager,

@@ -15,6 +15,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
@@ -40,6 +42,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 class ActivitiesRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val dispatcherProvider: DispatcherProvider,
     private val userRepository: Lazy<UserRepository>,
     private val apiInterface: ApiInterface,
     private val sharedPrefManager: SharedPrefManager,
@@ -162,10 +165,10 @@ class ActivitiesRepositoryImpl @Inject constructor(
         return resourceActivityDao.countByUserAndType(userName, type)
     }
 
-    override suspend fun getMostOpenedResource(userName: String, type: String): Pair<String, Int>? {
+    override suspend fun getMostOpenedResource(userName: String, type: String): Pair<String, Int>? = withContext(dispatcherProvider.io) {
         val activities = resourceActivityDao.getByUserAndType(userName, type)
         if (activities.isEmpty()) {
-            return null
+            return@withContext null
         }
 
         val resourceCounts = activities
@@ -179,7 +182,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
 
         val maxEntry = resourceCounts.maxByOrNull { it.value.first }
 
-        return if (maxEntry == null || maxEntry.value.first == 0) {
+        if (maxEntry == null || maxEntry.value.first == 0) {
             null
         } else {
             Pair(maxEntry.value.second ?: "", maxEntry.value.first)

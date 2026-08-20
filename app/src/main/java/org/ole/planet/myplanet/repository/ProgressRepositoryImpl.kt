@@ -31,7 +31,7 @@ class ProgressRepositoryImpl @Inject constructor(
     private val answerDao: AnswerDao,
     private val questionDao: QuestionDao
 ) : ProgressRepository {
-    override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): Map<String, CourseProgressState> {
+    override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): Map<String, CourseProgressState> = withContext(dispatcherProvider.io) {
         val allSteps = if (courseIds.isEmpty()) {
             emptyList()
         } else {
@@ -51,7 +51,7 @@ class ProgressRepositoryImpl @Inject constructor(
                 current = calculateCurrentProgress(steps, progresses)
             )
         }
-        return map
+        map
     }
 
     override suspend fun fetchCourseData(userId: String?): JsonArray {
