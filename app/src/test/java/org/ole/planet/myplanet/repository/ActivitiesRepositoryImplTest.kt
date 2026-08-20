@@ -4,6 +4,7 @@ import android.content.Context
 import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import java.util.logging.Level
@@ -98,7 +99,7 @@ class ActivitiesRepositoryImplTest {
     @Test
     fun `getOfflineLogins returns flow of activities`() = runTest {
         val mockActivities = listOf(OfflineActivity().apply { userName = "john" })
-        coEvery { offlineActivityDao.observeByUserNameAndType("john", UserSessionManager.KEY_LOGIN) } returns flowOf(mockActivities)
+        every { offlineActivityDao.observeByUserNameAndType("john", UserSessionManager.KEY_LOGIN) } returns flowOf(mockActivities)
 
         repository.getOfflineLogins("john").collect {
             assertEquals(mockActivities, it)

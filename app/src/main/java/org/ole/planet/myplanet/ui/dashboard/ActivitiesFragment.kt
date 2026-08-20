@@ -17,11 +17,14 @@ import java.text.DateFormatSymbols
 import java.util.Calendar
 import javax.inject.Inject
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentActivitiesBinding
 import org.ole.planet.myplanet.model.OfflineActivity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
@@ -32,6 +35,10 @@ class ActivitiesFragment : Fragment() {
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var activitiesRepository: ActivitiesRepository
+    @Inject
+    lateinit var sharedPrefManager: SharedPrefManager
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentActivitiesBinding.inflate(inflater, container, false)
@@ -45,11 +52,13 @@ class ActivitiesFragment : Fragment() {
         val endMillis = Calendar.getInstance().timeInMillis
         val startMillis = Calendar.getInstance().apply { add(Calendar.YEAR, -1) }.timeInMillis
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val userName = userSessionManager.getUserModel()?.name ?: return@launch
+        val userName = sharedPrefManager.getUserName()
+        if (userName.isNotEmpty()) {
             val loginsFlow = activitiesRepository.getOfflineLogins(userName)
             collectLatestWhenStarted(loginsFlow) { logins ->
-                val monthlyCounts = computeMonthlyCounts(logins, startMillis, endMillis)
+                val monthlyCounts = withContext(dispatcherProvider.default) {
+                    computeMonthlyCounts(logins, startMillis, endMillis)
+                }
                 renderChart(monthlyCounts, daynightTextColor)
             }
         }
