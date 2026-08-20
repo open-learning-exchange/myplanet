@@ -132,16 +132,6 @@ class SharedPrefManagerTest {
     }
 
     @Test
-    fun testGetAndSetSyncStatusDismissed() {
-        every { mockSharedPreferences.getBoolean("syncStatusDismissed", false) } returns true
-        assertTrue(sharedPrefManager.isSyncStatusDismissed())
-
-        sharedPrefManager.setSyncStatusDismissed(true)
-        verify { mockEditor.putBoolean("syncStatusDismissed", true) }
-        verify { mockEditor.apply() }
-    }
-
-    @Test
     fun testGetAndSetUrlHost() {
         every { mockSharedPreferences.getString("url_Host", "") } returns "example.com"
         assertEquals("example.com", sharedPrefManager.getUrlHost())

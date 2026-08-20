@@ -66,7 +66,6 @@ class SharedPrefManager @Inject constructor(
         private const val CONCATENATED_LINKS = "concatenated_links"
         private const val LIBRARY_VIEW_MODE = "libraryViewMode"
         private const val COURSE_VIEW_MODE = "courseViewMode"
-        private const val SYNC_STATUS_DISMISSED = "syncStatusDismissed"
     }
 
     fun getSavedUsers(): List<User> {
@@ -233,9 +232,6 @@ class SharedPrefManager @Inject constructor(
 
     fun getLastSync(): Long = pref.getLong(LAST_SYNC, 0L)
     fun setLastSync(time: Long) = pref.edit { putLong(LAST_SYNC, time) }
-
-    fun isSyncStatusDismissed(): Boolean = pref.getBoolean(SYNC_STATUS_DISMISSED, false)
-    fun setSyncStatusDismissed(dismissed: Boolean) = pref.edit { putBoolean(SYNC_STATUS_DISMISSED, dismissed) }
 
     fun getLastWifiId(): Int = pref.getInt(LAST_WIFI_ID, -1)
     fun setLastWifiId(id: Int) = pref.edit { putInt(LAST_WIFI_ID, id) }
