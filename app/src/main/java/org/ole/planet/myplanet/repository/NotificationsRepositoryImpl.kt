@@ -22,7 +22,7 @@ private const val STORAGE_WARNING_AVAILABLE_PERCENT = 10
 
 class NotificationsRepositoryImpl @Inject constructor(
     private val userRepository: Lazy<UserRepository>,
-    private val teamsRepository: Lazy<TeamsRepository>,
+    private val teamsRepository: Lazy<TeamsInfoLookup>,
     private val timeProvider: TimeProvider,
     private val teamNotificationDao: TeamNotificationDao,
     private val notificationDao: NotificationDao,

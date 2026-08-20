@@ -51,6 +51,7 @@ import org.ole.planet.myplanet.repository.SyncRepository
 import org.ole.planet.myplanet.repository.SyncRepositoryImpl
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.repository.TagsRepositoryImpl
+import org.ole.planet.myplanet.repository.TeamsInfoLookup
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsRepositoryImpl
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
@@ -165,6 +166,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindTagsRepository(impl: TagsRepositoryImpl): TagsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTeamsInfoLookup(impl: TeamsRepositoryImpl): TeamsInfoLookup
 
     @Binds
     @Singleton
