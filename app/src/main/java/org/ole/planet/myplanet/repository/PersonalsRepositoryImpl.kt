@@ -7,7 +7,6 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
@@ -15,6 +14,7 @@ import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.distinctByContent
 
 class PersonalsRepositoryImpl @Inject constructor(
     private val personalDao: PersonalDao,
@@ -51,10 +51,10 @@ class PersonalsRepositoryImpl @Inject constructor(
         if (userId.isNullOrBlank()) {
             return flowOf(emptyList())
         }
-        return personalDao.getByUserIdFlow(userId).distinctUntilChanged { old, new ->
-            old.size == new.size && old.zip(new).all { (a, b) ->
-                a.id == b.id && a._rev == b._rev && a.isUploaded == b.isUploaded
-            }
+        return personalDao.getByUserIdFlow(userId).distinctByContent { a, b ->
+            // Compare CouchDB sync markers alongside fields editable locally via updatePersonalResource
+            a.id == b.id && a._rev == b._rev && a.isUploaded == b.isUploaded &&
+                a.title == b.title && a.description == b.description && a.path == b.path
         }
     }
 

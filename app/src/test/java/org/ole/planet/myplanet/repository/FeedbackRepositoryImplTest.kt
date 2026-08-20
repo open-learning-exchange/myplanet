@@ -18,6 +18,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.model.Feedback
+import org.ole.planet.myplanet.model.UserEntity
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FeedbackRepositoryImplTest {
@@ -109,7 +110,7 @@ class FeedbackRepositoryImplTest {
 
     @Test
     fun `getFeedback deduplicates byte-identical flow emissions for manager`() = runTest {
-        val user = mockk<org.ole.planet.myplanet.model.UserEntity> {
+        val user = mockk<UserEntity> {
             every { isManager() } returns true
         }
         val f1 = Feedback().apply { id = "f1"; _rev = "rev1"; status = "Open"; isUploaded = true; messages = "[]" }
@@ -124,7 +125,7 @@ class FeedbackRepositoryImplTest {
 
     @Test
     fun `getFeedback deduplicates byte-identical flow emissions for owner`() = runTest {
-        val user = mockk<org.ole.planet.myplanet.model.UserEntity> {
+        val user = mockk<UserEntity> {
             every { isManager() } returns false
             every { name } returns "ownerName"
         }

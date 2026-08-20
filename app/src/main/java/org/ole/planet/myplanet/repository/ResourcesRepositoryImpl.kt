@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.distinctByContent
 
 class ResourcesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -324,10 +325,11 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override fun getRecentResources(userId: String): Flow<List<MyLibrary>> {
-        return myLibraryDao.getRecentForUserPatternFlow(userIdPattern(userId)).distinctUntilChanged { old, new ->
-            old.size == new.size && old.zip(new).all { (a, b) ->
-                a.id == b.id && a._rev == b._rev && a.resourceOffline == b.resourceOffline && a.userId == b.userId
-            }
+        return myLibraryDao.getRecentForUserPatternFlow(userIdPattern(userId)).distinctByContent { a, b ->
+            // Compare CouchDB sync markers alongside fields editable/mutable locally (title, description, offline state, local path)
+            a.id == b.id && a._rev == b._rev && a.title == b.title && a.description == b.description &&
+                a.resourceOffline == b.resourceOffline && a.downloadedRev == b.downloadedRev &&
+                a.resourceLocalAddress == b.resourceLocalAddress && a.userId == b.userId
         }
     }
 
