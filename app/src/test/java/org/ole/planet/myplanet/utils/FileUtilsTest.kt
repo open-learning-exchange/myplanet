@@ -30,6 +30,11 @@ class FileUtilsTest {
     fun setUp() {
         // We use a generic Application class to avoid MainApplication initialization that calls Realm.init()
         context = RuntimeEnvironment.getApplication()
+        // FileUtils caches externalFilesDir in an object-level field, and Robolectric hands every test
+        // method a fresh temp directory while re-using one sandbox (so one set of statics) for every
+        // class on this SDK level. Without this reset, a cache warmed by an earlier test — in this
+        // class or another one in the same sandbox — points at a temp directory that no longer exists.
+        resetExternalFilesDirCache()
         tempDir = File(context.cacheDir, "test_dir")
         if (!tempDir.exists()) {
             tempDir.mkdirs()
@@ -38,8 +43,16 @@ class FileUtilsTest {
 
     @After
     fun tearDown() {
+        resetExternalFilesDirCache()
         if (tempDir.exists()) {
             tempDir.deleteRecursively()
+        }
+    }
+
+    private fun resetExternalFilesDirCache() {
+        FileUtils::class.java.getDeclaredField("cachedExternalFilesDir").apply {
+            isAccessible = true
+            set(FileUtils, null)
         }
     }
 
