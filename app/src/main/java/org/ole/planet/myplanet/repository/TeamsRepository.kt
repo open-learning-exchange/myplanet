@@ -110,11 +110,6 @@ interface TeamsRepository {
     suspend fun getPendingTasksForUser(userId: String, start: Long, end: Long): List<TeamTask>
     suspend fun markTasksNotified(taskIds: Collection<String>)
     suspend fun getTasksByTeamId(teamId: String): Flow<List<TeamTask>>
-    suspend fun getReportsFlow(teamId: String): Flow<List<MyTeam>>
-    suspend fun exportReportsAsCsv(reports: List<MyTeam>, teamName: String): String
-    suspend fun addReport(report: FinanceReportParams)
-    suspend fun updateReport(reportId: String, payload: FinanceReportParams)
-    suspend fun archiveReport(reportId: String)
     suspend fun logTeamVisit(teamId: String, userName: String?, userPlanetCode: String?,
         userParentCode: String?, teamType: String?
     )
