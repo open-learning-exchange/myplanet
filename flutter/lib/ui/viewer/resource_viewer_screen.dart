@@ -362,6 +362,7 @@ class _VideoViewerState extends State<_VideoViewer> {
   VideoPlayerController? _controller;
   bool _loading = true;
   String? _error;
+  bool _fileMissing = false;
 
   @override
   void initState() {
@@ -373,10 +374,12 @@ class _VideoViewerState extends State<_VideoViewer> {
     try {
       final path = await widget.getLocalFilePath();
       if (path == null) {
-        setState(() {
-          _error = 'Video file not found locally';
-          _loading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _fileMissing = true;
+            _loading = false;
+          });
+        }
         return;
       }
 
@@ -407,8 +410,13 @@ class _VideoViewerState extends State<_VideoViewer> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_fileMissing) {
+      return Center(child: Text(l10n.videoFileNotFound));
     }
 
     if (_error != null) {
@@ -416,7 +424,7 @@ class _VideoViewerState extends State<_VideoViewer> {
     }
 
     if (_controller == null || !_controller!.value.isInitialized) {
-      return const Center(child: Text('Unable to load video'));
+      return Center(child: Text(l10n.unableToLoadVideo));
     }
 
     return AspectRatio(
@@ -497,6 +505,7 @@ class _AudioViewerState extends State<_AudioViewer> {
   VideoPlayerController? _controller;
   bool _loading = true;
   String? _error;
+  bool _fileMissing = false;
 
   @override
   void initState() {
@@ -508,10 +517,12 @@ class _AudioViewerState extends State<_AudioViewer> {
     try {
       final path = await widget.getLocalFilePath();
       if (path == null) {
-        setState(() {
-          _error = 'Audio file not found locally';
-          _loading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _fileMissing = true;
+            _loading = false;
+          });
+        }
         return;
       }
 
@@ -543,8 +554,13 @@ class _AudioViewerState extends State<_AudioViewer> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_fileMissing) {
+      return Center(child: Text(l10n.audioFileNotFound));
     }
 
     if (_error != null) {
@@ -552,7 +568,7 @@ class _AudioViewerState extends State<_AudioViewer> {
     }
 
     if (_controller == null || !_controller!.value.isInitialized) {
-      return const Center(child: Text('Unable to load audio'));
+      return Center(child: Text(l10n.unableToLoadAudio));
     }
 
     return Center(
@@ -562,7 +578,7 @@ class _AudioViewerState extends State<_AudioViewer> {
           const Icon(Icons.audiotrack, size: 80),
           const SizedBox(height: 16),
           Text(
-            widget.resource.title ?? 'Untitled',
+            widget.resource.title ?? l10n.untitledResource,
             style: Theme.of(context).textTheme.titleLarge,
           ),
           if (widget.resource.author != null) ...[
@@ -609,6 +625,7 @@ class _PdfViewerState extends State<_PdfViewer> {
   PdfControllerPinch? _controller;
   bool _loading = true;
   String? _error;
+  bool _fileMissing = false;
 
   @override
   void initState() {
@@ -620,10 +637,12 @@ class _PdfViewerState extends State<_PdfViewer> {
     try {
       final path = await widget.getLocalFilePath();
       if (path == null) {
-        setState(() {
-          _error = 'PDF file not found locally';
-          _loading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _fileMissing = true;
+            _loading = false;
+          });
+        }
         return;
       }
 
@@ -652,8 +671,13 @@ class _PdfViewerState extends State<_PdfViewer> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_fileMissing) {
+      return Center(child: Text(l10n.pdfFileNotFound));
     }
 
     if (_error != null) {
@@ -661,7 +685,7 @@ class _PdfViewerState extends State<_PdfViewer> {
     }
 
     if (_controller == null) {
-      return const Center(child: Text('Unable to load PDF'));
+      return Center(child: Text(l10n.unableToLoadPdf));
     }
 
     return Column(
@@ -669,7 +693,7 @@ class _PdfViewerState extends State<_PdfViewer> {
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: Text(
-            widget.resource.title ?? 'Untitled',
+            widget.resource.title ?? l10n.untitledResource,
             style: Theme.of(context).textTheme.titleMedium,
           ),
         ),
@@ -699,11 +723,12 @@ class _ImageViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return FutureBuilder<String?>(
       future: getLocalFilePath(),
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data == null) {
-          return const Center(child: Text('Image file not found'));
+          return Center(child: Text(l10n.imageFileNotFound));
         }
 
         return Column(
@@ -711,7 +736,7 @@ class _ImageViewer extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
-                resource.title ?? 'Untitled',
+                resource.title ?? l10n.untitledResource,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
@@ -743,6 +768,7 @@ class _TextViewerState extends State<_TextViewer> {
   String? _content;
   bool _loading = true;
   String? _error;
+  bool _fileMissing = false;
 
   @override
   void initState() {
@@ -754,10 +780,12 @@ class _TextViewerState extends State<_TextViewer> {
     try {
       final path = await widget.getLocalFilePath();
       if (path == null) {
-        setState(() {
-          _error = 'File not found locally';
-          _loading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _fileMissing = true;
+            _loading = false;
+          });
+        }
         return;
       }
 
@@ -782,8 +810,13 @@ class _TextViewerState extends State<_TextViewer> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_fileMissing) {
+      return Center(child: Text(l10n.fileNotFound));
     }
 
     if (_error != null) {
@@ -798,13 +831,13 @@ class _TextViewerState extends State<_TextViewer> {
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: Text(
-            widget.resource.title ?? 'Untitled',
+            widget.resource.title ?? l10n.untitledResource,
             style: Theme.of(context).textTheme.titleMedium,
           ),
         ),
         Expanded(
           child: _content == null
-              ? const Center(child: Text('No content'))
+              ? Center(child: Text(l10n.noContent))
               : isCsv
               ? _CsvContent(content: _content!)
               : SingleChildScrollView(
@@ -824,8 +857,9 @@ class _CsvContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final lines = content.split('\n');
-    if (lines.isEmpty) return const Center(child: Text('Empty file'));
+    if (lines.isEmpty) return Center(child: Text(l10n.emptyFile));
 
     final headers = lines.first.split(',').map((h) => h.trim()).toList();
 
@@ -868,6 +902,7 @@ class _MarkdownViewerState extends State<_MarkdownViewer> {
   String? _content;
   bool _loading = true;
   String? _error;
+  bool _fileMissing = false;
 
   @override
   void initState() {
@@ -879,10 +914,12 @@ class _MarkdownViewerState extends State<_MarkdownViewer> {
     try {
       final path = await widget.getLocalFilePath();
       if (path == null) {
-        setState(() {
-          _error = 'File not found locally';
-          _loading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _fileMissing = true;
+            _loading = false;
+          });
+        }
         return;
       }
 
@@ -907,8 +944,13 @@ class _MarkdownViewerState extends State<_MarkdownViewer> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_fileMissing) {
+      return Center(child: Text(l10n.fileNotFound));
     }
 
     if (_error != null) {
@@ -916,7 +958,7 @@ class _MarkdownViewerState extends State<_MarkdownViewer> {
     }
 
     if (_content == null) {
-      return const Center(child: Text('No content'));
+      return Center(child: Text(l10n.noContent));
     }
 
     return Column(
@@ -924,7 +966,7 @@ class _MarkdownViewerState extends State<_MarkdownViewer> {
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: Text(
-            widget.resource.title ?? 'Untitled',
+            widget.resource.title ?? l10n.untitledResource,
             style: Theme.of(context).textTheme.titleMedium,
           ),
         ),
@@ -954,6 +996,7 @@ class _HtmlViewerState extends State<_HtmlViewer> {
   late final WebViewController _controller;
   String? _filePath;
   String? _error;
+  bool _fileMissing = false;
 
   @override
   void initState() {
@@ -976,7 +1019,7 @@ class _HtmlViewerState extends State<_HtmlViewer> {
     final path = await widget.getLocalFilePath();
     if (path == null) {
       if (mounted) {
-        setState(() => _error = 'HTML entry file not found');
+        setState(() => _fileMissing = true);
       }
       return;
     }
@@ -992,6 +1035,10 @@ class _HtmlViewerState extends State<_HtmlViewer> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    if (_fileMissing) {
+      return Center(child: Text(l10n.htmlEntryNotFound));
+    }
     if (_error != null) {
       return Center(child: Text(_error!));
     }

@@ -200,5 +200,15 @@
   "exportCsv": "Dhoofinta CSV",
   "csvFileSavedSuccessfully": "faylka CSV si guul leh ayaa loo keydiyay.",
   "failedToSaveCsvFile": "waa lagu guuldareystay in la badbaadiyo faylka CSV.",
-  "exportCancelled": "dhoofinta waa la joojiyay."
+  "exportCancelled": "dhoofinta waa la joojiyay.",
+  "videoFileNotFound": "Faylka fiidyowga lama helin gudaha",
+  "unableToLoadVideo": "Lama helin fiidyowga",
+  "audioFileNotFound": "Faylka maqalka lama helin gudaha",
+  "unableToLoadAudio": "Lama helin maqalka",
+  "pdfFileNotFound": "Faylka PDF lama helin gudaha",
+  "unableToLoadPdf": "Lama helin PDF-ga",
+  "imageFileNotFound": "Sawirka lama helin",
+  "noContent": "Wax ma jiro",
+  "emptyFile": "Fayl maran",
+  "htmlEntryNotFound": "Faylka gelinta HTML lama helin"
 }

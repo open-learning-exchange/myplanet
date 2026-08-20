@@ -200,5 +200,15 @@
   "exportCsv": "تصدير CSV",
   "csvFileSavedSuccessfully": "تم حفظ ملف CSV بنجاح.",
   "failedToSaveCsvFile": "فشل في حفظ ملف CSV.",
-  "exportCancelled": "تم إلغاء التصدير."
+  "exportCancelled": "تم إلغاء التصدير.",
+  "videoFileNotFound": "ملف الفيديو غير موجود محليًا",
+  "unableToLoadVideo": "تعذر تحميل الفيديو",
+  "audioFileNotFound": "ملف الصوت غير موجود محليًا",
+  "unableToLoadAudio": "تعذر تحميل الصوت",
+  "pdfFileNotFound": "ملف PDF غير موجود محليًا",
+  "unableToLoadPdf": "تعذر تحميل PDF",
+  "imageFileNotFound": "الصورة غير موجودة",
+  "noContent": "لا يوجد محتوى",
+  "emptyFile": "ملف فارغ",
+  "htmlEntryNotFound": "ملف إدخال HTML غير موجود"
 }

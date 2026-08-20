@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 56 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 57 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -2422,11 +2422,11 @@ controllers beside it) cannot be constructed without platform bindings. That
 absence is worth closing with platform mocks at some point; it is the largest
 screen in the port with no coverage.
 
-While reading it: the viewer carries eight hardcoded English strings ("Video
-file not found locally", "Unable to load PDF", and so on) that predate this
-phase, alongside an unused `fileNotFound` ARB key. Not fixed here — one of eight
-would be worse than none — but it is the only screen that opted out of `.arb`
-wholesale.
+While reading it: the viewer carried eight hardcoded English strings ("Video
+file not found locally", "Unable to load PDF", and so on) that predated that
+phase, alongside an unused `fileNotFound` ARB key. That is now closed — see
+Phase 57, which wires every viewer sub-screen to `.arb` and removes the last
+screen that opted out of localisation wholesale.
 
 The resources empty-state control hiding (#15572, `06c7d5398`) is the UI
 fix: when the shelf has zero rows the Kotlin hides the search bar, the
@@ -2531,9 +2531,57 @@ other two are no-ops. Each also bumps `versionCode`/`versionName`
 
 ---
 
-**Last updated**: 2026-08-20 (Phase 56 complete — security-data preservation
-ported from `aa24dfa6c`/#15836: `UserDao.updateUserSecurityData` now emits
-`Value.absent()` for null credentials instead of `Value(null)`; two further
-master commits audited as no-ops)
-**Phase**: 56 of N (27 of 28 UI packages have a screen — see Status for what that does and
+## Phase 57 — resource viewer localisation
+
+Phase 54 landed the resource viewer with every sub-screen (video, audio, PDF,
+image, text/CSV, markdown, HTML) carrying hardcoded English strings — "Video
+file not found locally", "Unable to load PDF", "No content", "Empty file",
+"Untitled", "HTML entry file not found" — making it the only screen in the port
+that had opted out of `.arb` wholesale. (Phase 54 noted this as an open debt;
+an unused `fileNotFound` key even sat in `app_en.arb` waiting to be wired.)
+
+This phase closes that. Every sub-screen now resolves its strings through
+`AppLocalizations.of(context)`:
+
+- **New keys** in `app_en.arb`: `videoFileNotFound`, `unableToLoadVideo`,
+  `audioFileNotFound`, `unableToLoadAudio`, `pdfFileNotFound`,
+  `unableToLoadPdf`, `imageFileNotFound`, `noContent`, `emptyFile`,
+  `htmlEntryNotFound`. The two pre-existing keys are reused where they fit:
+  `fileNotFound` ("File not found locally") for the text and markdown
+  "file not found" paths, and `untitledResource` for the `title ?? 'Untitled'`
+  fallbacks (the viewer shows resource titles, so the resource-specific key is
+  the right one).
+
+- **Translations** across all five locales (ar, es, fr, ne, so) are composed
+  from the vocabulary the Kotlin human translators already chose for
+  `unable_to_load`, `unable_to_play_video`, and `file_not_found` in each
+  `values-<lang>/strings.xml` — the same words, applied to the type-specific
+  English the viewer authors. This is not machine translation; it reuses
+  paid-for terms. (Spanish's existing `fileNotFound` = "Archivo no encontrado
+  localmente" already followed this composition.)
+
+- **Mechanism**: the sub-viewers run their file lookups in `initState`'s
+  async callback, before `build` runs — so `AppLocalizations.of(context)`
+  cannot be resolved at the lookup site (the `l10n/initState` trap). Each
+  sub-viewer now sets a `_fileMissing` bool on a null path (rather than
+  overloading `_error` with a literal), and `build` resolves the localized
+  message through `AppLocalizations.of(context)`. The "unable to load" path
+  (controller null/uninitialized) likewise moves to `build`, where l10n is
+  available.
+
+The viewer still has no widget test: `WebViewController`, `VideoPlayerController`,
+and `PdfControllerPinch` cannot be constructed under the test binding without
+platform bindings, so the largest screen in the port remains untested. That
+gap is unchanged by this phase and flagged in Phase 54.
+
+Tests: the existing 1139-test suite passes unchanged; `flutter analyze` clean;
+`dart format` clean.
+
+---
+
+**Last updated**: 2026-08-20 (Phase 57 complete — resource viewer localised:
+all sub-screens wired to `.arb`, 10 new keys + translations composed from
+existing Kotlin terms across all five locales; the last screen that opted out
+of localisation wholesale is no longer)
+**Phase**: 57 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

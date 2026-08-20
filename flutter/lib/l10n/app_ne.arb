@@ -200,5 +200,15 @@
   "exportCsv": "CSV निर्यात गर्नुहोस्",
   "csvFileSavedSuccessfully": "CSV फाइल सफलतापूर्वक सुरक्षित गरियो।",
   "failedToSaveCsvFile": "CSV फाइल सुरक्षित गर्न असफल।",
-  "exportCancelled": "निर्यात रद्द गरियो।"
+  "exportCancelled": "निर्यात रद्द गरियो।",
+  "videoFileNotFound": "भिडियो फाइल स्थानीय रूपमा फेला परेन",
+  "unableToLoadVideo": "भिडियो लोड गर्न असमर्थ",
+  "audioFileNotFound": "अडियो फाइल स्थानीय रूपमा फेला परेन",
+  "unableToLoadAudio": "अडियो लोड गर्न असमर्थ",
+  "pdfFileNotFound": "PDF फाइल स्थानीय रूपमा फेला परेन",
+  "unableToLoadPdf": "PDF लोड गर्न असमर्थ",
+  "imageFileNotFound": "तस्वीर फेला परेन",
+  "noContent": "कुनै सामग्री छैन",
+  "emptyFile": "खाली फाइल",
+  "htmlEntryNotFound": "HTML प्रविष्टि फाइल फेला परेन"
 }

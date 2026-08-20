@@ -201,5 +201,15 @@
   "exportCsv": "Exporter CSV",
   "csvFileSavedSuccessfully": "fichier CSV enregistré avec succès.",
   "failedToSaveCsvFile": "échec de l'enregistrement du fichier CSV.",
-  "exportCancelled": "exportation annulée."
+  "exportCancelled": "exportation annulée.",
+  "videoFileNotFound": "Fichier vidéo introuvable localement",
+  "unableToLoadVideo": "Impossible de charger la vidéo",
+  "audioFileNotFound": "Fichier audio introuvable localement",
+  "unableToLoadAudio": "Impossible de charger l'audio",
+  "pdfFileNotFound": "Fichier PDF introuvable localement",
+  "unableToLoadPdf": "Impossible de charger le PDF",
+  "imageFileNotFound": "Image introuvable",
+  "noContent": "Aucun contenu",
+  "emptyFile": "Fichier vide",
+  "htmlEntryNotFound": "Fichier d'entrée HTML introuvable"
 }
