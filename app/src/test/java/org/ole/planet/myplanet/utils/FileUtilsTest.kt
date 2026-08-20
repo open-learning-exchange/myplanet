@@ -93,6 +93,61 @@ class FileUtilsTest {
     }
 
     @Test
+    fun getSDPathFromUrl_preservesNestedAttachmentPath() {
+        FileUtils.warmUp(context)
+        val url = "http://example.com/resources/123/js/game_manager.js"
+
+        val resolved = FileUtils.getSDPathFromUrl(context, url)
+
+        assertEquals("game_manager.js", resolved.name)
+        assertEquals("js", resolved.parentFile?.name)
+        assertTrue(resolved.absolutePath.endsWith("ole/123/js/game_manager.js"))
+    }
+
+    @Test
+    fun getSDPathFromUrl_singleSegmentFileHasNoSubdirectory() {
+        FileUtils.warmUp(context)
+        val url = "http://example.com/resources/123/index.html"
+
+        val resolved = FileUtils.getSDPathFromUrl(context, url)
+
+        assertEquals("index.html", resolved.name)
+        assertEquals("123", resolved.parentFile?.name)
+    }
+
+    @Test
+    fun resolveHtmlEntryFile_defaultsToIndexHtmlAtRootWhenUnset() {
+        val resolved = FileUtils.resolveHtmlEntryFile(tempDir, null)
+
+        assertEquals(File(tempDir, "index.html").canonicalFile, resolved)
+    }
+
+    @Test
+    fun resolveHtmlEntryFile_defaultsToIndexHtmlAtRootWhenBlank() {
+        val resolved = FileUtils.resolveHtmlEntryFile(tempDir, "")
+
+        assertEquals(File(tempDir, "index.html").canonicalFile, resolved)
+    }
+
+    @Test
+    fun resolveHtmlEntryFile_honorsNestedRelativePath() {
+        val resolved = FileUtils.resolveHtmlEntryFile(tempDir, "sudoku/index.html")
+
+        assertEquals(File(tempDir, "sudoku/index.html").canonicalFile, resolved)
+    }
+
+    @Test
+    fun resolveHtmlEntryFile_rejectsPathTraversal() {
+        assertNull(FileUtils.resolveHtmlEntryFile(tempDir, "../outside.html"))
+        assertNull(FileUtils.resolveHtmlEntryFile(tempDir, "sudoku/../../outside.html"))
+    }
+
+    @Test
+    fun resolveHtmlEntryFile_rejectsAbsolutePath() {
+        assertNull(FileUtils.resolveHtmlEntryFile(tempDir, "/etc/passwd"))
+    }
+
+    @Test
     fun getIdFromUrl_returnsCorrectId() {
         assertEquals("123", FileUtils.getIdFromUrl("http://example.com/resources/123/file.txt"))
         assertEquals("abc", FileUtils.getIdFromUrl("https://test.com/api/resources/abc/data"))
