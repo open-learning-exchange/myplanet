@@ -416,24 +416,30 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         )
     }
 
-    override suspend fun startExamSession(examId: String, parentId: String?, userId: String?, request: CreateExamSubmissionRequest): Submission? {
-        val submissions = getSubmissionsByParentId(parentId, userId, "pending")
-        var submission = submissions.firstOrNull()
-
-        if (request.type == "exam") {
-            var retries = 0
-            while (retries < 3) {
-                try {
-                    deleteExamSubmissions(examId, request.exam.courseId, userId)
-                    submission = createExamSubmission(request)
-                    break
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    retries++
-                }
+    override suspend fun startExamSession(examId: String, parentId: String?, userId: String?, request: CreateExamSubmissionRequest, recreate: Boolean): Submission {
+        if (!recreate) {
+            val submission = getSubmissionsByParentId(parentId, userId, "pending").firstOrNull()
+            if (submission != null) {
+                return submission
             }
         }
-        return submission
+
+        var retries = 0
+        var lastException: Exception? = null
+        while (retries < 3) {
+            try {
+                if (recreate) {
+                    deleteExamSubmissions(examId, request.exam.courseId, userId)
+                }
+                return createExamSubmission(request)
+            } catch (e: Exception) {
+                // Retry local Room writes to handle potential transient SQLite constraints during rapid operations
+                e.printStackTrace()
+                lastException = e
+                retries++
+            }
+        }
+        throw IllegalStateException("Failed to start exam session after 3 attempts", lastException)
     }
 
     override suspend fun createExamSubmission(request: CreateExamSubmissionRequest): Submission {
@@ -492,14 +498,17 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     override suspend fun saveExamAnswer(answerData: ExamAnswerData): Boolean {
         val (submission, question, ans, listAns, otherText, otherVisible, type, index, total, isExplicitSubmission, userId) = answerData
 
-        val parentId = question.examId?.let { eId ->
-            val exam = examDao.getById(eId)
-            if (!exam?.courseId.isNullOrEmpty()) "$eId@${exam?.courseId}" else eId
-        }
-
         val submissionRow = submission?.id?.let { submissionDao.getByIdOrRemoteId(it) }
             ?: submission
-            ?: (if (parentId != null) getSubmissionsByParentId(parentId, userId ?: submission?.userId, "pending").firstOrNull() else null)
+            ?: run {
+                val parentId = question.examId?.let { eId ->
+                    val exam = examDao.getById(eId)
+                    if (!exam?.courseId.isNullOrEmpty()) "$eId@${exam?.courseId}" else eId
+                }
+                if (parentId != null) {
+                    getSubmissionsByParentId(parentId, userId ?: submission?.userId, "pending").firstOrNull()
+                } else null
+            }
             ?: submissionDao.getLatestPendingByUser(userId ?: submission?.userId)
         val submissionId = submissionRow?.id
         val questionId = question.id
