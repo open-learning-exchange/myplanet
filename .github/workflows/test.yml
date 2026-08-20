@@ -62,17 +62,24 @@ jobs:
           SHARD=${{ matrix.shard }}
           ./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=${{ strategy.job-total }} -PtestShardIndex=$((SHARD - 1)) -ProbolectricOffline=true --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
 
-      - name: check no test fork fetched a robolectric sdk
+      - name: check the offline robolectric runtime took effect
         if: always()
         shell: bash
         run: |
           staged=$(find build/robolectric-sdks -name '*.jar' 2>/dev/null | wc -l || true)
           size=$(du -sh build/robolectric-sdks 2>/dev/null | cut -f1 || true)
           echo "staged android-all jars: ${staged:-0} (${size:-0})" | tee -a "$GITHUB_STEP_SUMMARY"
+          # Nothing else writes here - the build declares no mavenLocal(), and under
+          # robolectric.offline a missing jar throws rather than being downloaded. So a jar in
+          # Robolectric's own runtime cache means -ProbolectricOffline never reached the forks (a
+          # dropped flag, or a Test task withType(Test) did not configure) and the fork race that
+          # cost a rerun every ~30 pushes is back. A missing SDK level cannot land here; it fails
+          # the staging task, or the test with "Path is not a file".
           fetched=$(find "$HOME/.m2/repository/org/robolectric" -name '*.jar' 2>/dev/null || true)
           if [ -n "$fetched" ]; then
-            echo ":warning: a test fork fetched an android-all jar at runtime, so it raced for it - add the SDK to robolectricSdkJars in app/build.gradle:" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "offline mode did not take effect: a test fork resolved an android-all jar at runtime" | tee -a "$GITHUB_STEP_SUMMARY"
             echo "$fetched" | sed 's|.*/|  - |' | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
           fi
 
       - name: summarise slowest tests
