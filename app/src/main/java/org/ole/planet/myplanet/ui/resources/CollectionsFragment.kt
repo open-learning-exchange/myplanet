@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.model.TagData
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.utils.KeyboardUtils
+import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
@@ -74,17 +75,16 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
                     adapter.submitList(currentTagDataList)
                     binding.btnOk.visibility = View.VISIBLE
                 }
-                is CollectionsState.Loading -> {
-                    // Could show loading indicator
-                }
                 is CollectionsState.Empty -> {
-                    // Could show empty state
+                    Utilities.toast(requireContext(), getString(R.string.no_data_available))
+                    dismiss()
                 }
                 is CollectionsState.Error -> {
-                    // Could show error state
+                    Utilities.toast(requireContext(), state.message)
+                    dismiss()
                 }
-                CollectionsState.Idle -> {
-                    // Idle
+                is CollectionsState.Loading, CollectionsState.Idle -> {
+                    // Ignore transient states without UI representation
                 }
             }
         }

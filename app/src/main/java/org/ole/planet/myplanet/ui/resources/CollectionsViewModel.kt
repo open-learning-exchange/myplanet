@@ -8,8 +8,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.TagEntity
-import org.ole.planet.myplanet.repository.TagsRepository
 import javax.inject.Inject
+import org.ole.planet.myplanet.repository.TagsRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 sealed class CollectionsState {
     object Idle : CollectionsState()
@@ -24,7 +25,8 @@ sealed class CollectionsState {
 
 @HiltViewModel
 class CollectionsViewModel @Inject constructor(
-    private val tagsRepository: TagsRepository
+    private val tagsRepository: TagsRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<CollectionsState>(CollectionsState.Idle)
@@ -40,7 +42,7 @@ class CollectionsViewModel @Inject constructor(
         currentDbType = dbType
         _state.value = CollectionsState.Loading
 
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             try {
                 val tagsWithChildren = tagsRepository.getTagsWithChildren(dbType)
                 val list = tagsWithChildren.keys.toList()
