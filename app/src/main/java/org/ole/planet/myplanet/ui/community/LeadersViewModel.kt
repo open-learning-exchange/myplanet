@@ -18,8 +18,8 @@ class LeadersViewModel @Inject constructor(
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
-    private val _leaders = MutableStateFlow<List<UserEntity>>(emptyList())
-    val leaders: StateFlow<List<UserEntity>> = _leaders.asStateFlow()
+    private val _leaders = MutableStateFlow<List<UserEntity>?>(null)
+    val leaders: StateFlow<List<UserEntity>?> = _leaders.asStateFlow()
 
     init {
         loadLeaders()
