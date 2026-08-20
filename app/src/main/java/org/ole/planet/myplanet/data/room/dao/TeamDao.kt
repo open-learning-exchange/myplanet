@@ -19,6 +19,7 @@ interface TeamDao {
     @Query("SELECT * FROM teams WHERE docType = :docType") suspend fun getByDocType(docType: String): List<MyTeam>
     @Query("SELECT * FROM teams WHERE docType = :docType") fun observeByDocType(docType: String): Flow<List<MyTeam>>
     @Query("SELECT * FROM teams WHERE teamId = :teamId AND docType = :docType") suspend fun getByTeamIdAndDocType(teamId: String, docType: String): List<MyTeam>
+    @Query("SELECT * FROM teams WHERE teamId = :teamId AND docType = :docType") fun observeByTeamIdAndDocType(teamId: String, docType: String): Flow<List<MyTeam>>
     @Query("SELECT * FROM teams WHERE teamId = :teamId AND userId = :userId AND docType = :docType LIMIT 1") suspend fun getByTeamIdUserIdAndDocType(teamId: String, userId: String, docType: String): MyTeam?
     @Query("SELECT COUNT(*) FROM teams WHERE teamId = :teamId AND userId = :userId AND docType = :docType") suspend fun countByTeamIdUserIdAndDocType(teamId: String, userId: String, docType: String): Int
     @Query("SELECT COUNT(*) FROM teams WHERE teamId = :teamId AND docType = :docType") suspend fun countByTeamIdAndDocType(teamId: String, docType: String): Int
