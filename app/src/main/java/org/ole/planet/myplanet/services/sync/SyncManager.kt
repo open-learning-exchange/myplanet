@@ -70,7 +70,8 @@ class SyncManager @Inject constructor(
     private val timeProvider: TimeProvider,
     private val teamsRepository: TeamsRepository,
     private val userSyncRepository: UserSyncRepository,
-    private val syncRepository: SyncRepository
+    private val syncRepository: SyncRepository,
+    private val syncTimeLogger: SyncTimeLogger
 ) {
     private val timestampFormat = DateTimeFormatter.ofPattern("HH:mm:ss.SSS").withZone(ZoneId.systemDefault())
     private val isSyncing = AtomicBoolean(false)
@@ -133,7 +134,7 @@ class SyncManager @Inject constructor(
 
     private suspend fun startFullSync() {
         val syncStartTime = SystemClock.elapsedRealtime()
-        val logger = SyncTimeLogger
+        val logger = this.syncTimeLogger
         logger.startLogging()
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
         Log.d("SyncPerf", "FULL SYNC STARTED at ${timestampFormat.format(Instant.now())}")
@@ -263,7 +264,7 @@ class SyncManager @Inject constructor(
         val resourceSyncStartTime = SystemClock.elapsedRealtime()
         Log.d("SyncPerf", "  ▶ Starting resource sync")
 
-        val logger = SyncTimeLogger
+        val logger = this.syncTimeLogger
         logger.startProcess("resource_sync_main")
         var processedItems = 0
 
@@ -491,7 +492,7 @@ class SyncManager @Inject constructor(
     }
 
     private suspend fun myLibraryTransactionSync() {
-        val logger = SyncTimeLogger
+        val logger = this.syncTimeLogger
         val librarySyncStartTime = SystemClock.elapsedRealtime()
         Log.d("SyncPerf", "  ▶ Starting library sync")
 

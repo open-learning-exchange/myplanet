@@ -2,39 +2,47 @@ package org.ole.planet.myplanet.utils
 
 import android.util.Log
 import androidx.core.net.toUri
-import dagger.hilt.android.EntryPointAccessors
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.net.URL
+import java.net.HttpURLConnection
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlin.math.roundToInt
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.repository.DiagnosticsRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
+import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 
-object SyncTimeLogger {
-    private val timeProvider by lazy {
-        coreEntryPoint.timeProvider()
-    }
-
-    private val coreEntryPoint by lazy {
-        EntryPointAccessors.fromApplication(MainApplication.context, CoreDependenciesEntryPoint::class.java)
-    }
+@Singleton
+class SyncTimeLogger @Inject constructor(
+    private val timeProvider: TimeProvider,
+    @ApplicationScope private val appScope: CoroutineScope,
+    private val dispatcherProvider: DispatcherProvider,
+    private val sharedPrefManager: SharedPrefManager,
+    private val serverUrlMapper: ServerUrlMapper,
+    private val diagnosticsRepository: DiagnosticsRepository
+) {
 
     private val processTimes = ConcurrentHashMap<String, Long>()
     private val processItemCounts = ConcurrentHashMap<String, Int>()
     private val apiCallTimes = ConcurrentHashMap<String, MutableList<ApiCallLog>>()
-    private val realmOperationTimes = ConcurrentHashMap<String, MutableList<RealmOperationLog>>()
+    private val dbOperationTimes = ConcurrentHashMap<String, MutableList<DbOperationLog>>()
     private val detailedLogs = ConcurrentHashMap<String, MutableList<String>>()
     private var startTime: Long = 0
     private var endTime: Long = 0
     private var isLogging = false
     private val apiCallCounter = AtomicInteger(0)
-    private val realmOpCounter = AtomicInteger(0)
+    private val dbOpCounter = AtomicInteger(0)
 
     data class ApiCallLog(
         val endpoint: String,
@@ -44,7 +52,7 @@ object SyncTimeLogger {
         val itemsReturned: Int = 0
     )
 
-    data class RealmOperationLog(
+    data class DbOperationLog(
         val operation: String,
         val model: String,
         val duration: Long,
@@ -58,10 +66,10 @@ object SyncTimeLogger {
         processTimes.clear()
         processItemCounts.clear()
         apiCallTimes.clear()
-        realmOperationTimes.clear()
+        dbOperationTimes.clear()
         detailedLogs.clear()
         apiCallCounter.set(0)
-        realmOpCounter.set(0)
+        dbOpCounter.set(0)
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
         Log.d("SyncPerf", "SYNC STARTED at ${formatTimestamp(startTime)}")
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
@@ -81,22 +89,37 @@ object SyncTimeLogger {
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
     }
 
-    private fun saveSummaryToRealm(summary: String, uploadManager: UploadManager? = null) {
-        val dispatcherProvider = coreEntryPoint.dispatcherProvider()
+    private suspend fun isServerReachable(urlString: String): Boolean = withContext(dispatcherProvider.io) {
+        try {
+            val formattedUrl = if (!urlString.startsWith("http://") && !urlString.startsWith("https://")) {
+                "http://$urlString"
+            } else {
+                urlString
+            }
+            val url = URL(formattedUrl)
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.connectTimeout = 5000
+            conn.readTimeout = 5000
+            conn.connect()
+            conn.responseCode in 200..299
+        } catch (e: Exception) {
+            false
+        }
+    }
 
-        MainApplication.applicationScope.launch(dispatcherProvider.io) {
-            val spm = coreEntryPoint.sharedPrefManager()
-            MainApplication.createLog("sync summary", summary)
-            val updateUrl = spm.getServerUrl()
-            val serverUrlMapper = coreEntryPoint.serverUrlMapper()
+    private fun saveSummaryToRealm(summary: String, uploadManager: UploadManager? = null) {
+        appScope.launch(dispatcherProvider.io) {
+            diagnosticsRepository.saveLogToRoom("sync summary", summary, "${timeProvider.now()}")
+            val updateUrl = sharedPrefManager.getServerUrl()
             val mapping = serverUrlMapper.processUrl(updateUrl)
 
-            val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
+            val primaryAvailable = isServerReachable(mapping.primaryUrl)
             val alternativeUrl = mapping.alternativeUrl
 
-            if (!primaryAvailable && alternativeUrl != null && MainApplication.isServerReachable(alternativeUrl)) {
+            if (!primaryAvailable && alternativeUrl != null && isServerReachable(alternativeUrl)) {
                 val uri = updateUrl.toUri()
-                val prefs = spm.rawPreferences
+                val prefs = sharedPrefManager.rawPreferences
                 val editor = prefs.edit()
 
                 serverUrlMapper.updateUrlPreferences(
@@ -166,11 +189,11 @@ object SyncTimeLogger {
         if (!isLogging) return
 
         val timestamp = timeProvider.now()
-        val opNum = realmOpCounter.incrementAndGet()
+        val opNum = dbOpCounter.incrementAndGet()
         val elapsed = timestamp - startTime
 
-        val log = RealmOperationLog(operation, model, duration, itemCount, timestamp)
-        realmOperationTimes.getOrPut(model) { mutableListOf() }.add(log)
+        val log = DbOperationLog(operation, model, duration, itemCount, timestamp)
+        dbOperationTimes.getOrPut(model) { mutableListOf() }.add(log)
 
         Log.d("SyncPerf", "[${formatElapsed(elapsed)}] 💾 DB #$opNum: $operation $model - ${formatTime(duration)}, $itemCount items")
     }
@@ -183,21 +206,6 @@ object SyncTimeLogger {
         detailedLogs.getOrPut(context) { mutableListOf() }.add(message)
 
         Log.d("SyncPerf", "[${formatElapsed(elapsed)}] ℹ $context: $message")
-    }
-
-    internal fun extractProcessName(endpoint: String): String {
-        val segments = endpoint.split("/")
-
-        val lastValidSegment = segments.lastOrNull {
-            it.isNotEmpty() && !it.startsWith("?")
-        } ?: return "Unknown"
-
-        val withoutQuery = lastValidSegment.substringBefore("?")
-        if (withoutQuery.isEmpty()) return "Unknown"
-
-        return withoutQuery.replaceFirstChar {
-            if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString()
-        }
     }
 
     private fun shortenEndpoint(endpoint: String): String {
@@ -272,18 +280,18 @@ object SyncTimeLogger {
         }
 
         // Realm operation statistics
-        if (realmOperationTimes.isNotEmpty()) {
-            summaryBuilder.append("\nREALM OPERATION STATISTICS:\n")
-            val totalRealmOps = realmOperationTimes.values.sumOf { it.size }
-            val totalRealmTime = realmOperationTimes.values.flatten().sumOf { it.duration }
-            val totalRealmItems = realmOperationTimes.values.flatten().sumOf { it.itemCount }
+        if (dbOperationTimes.isNotEmpty()) {
+            summaryBuilder.append("\nDB OPERATION STATISTICS:\n")
+            val totalDbOps = dbOperationTimes.values.sumOf { it.size }
+            val totalDbTime = dbOperationTimes.values.flatten().sumOf { it.duration }
+            val totalDbItems = dbOperationTimes.values.flatten().sumOf { it.itemCount }
 
-            summaryBuilder.append(String.format(Locale.US, "  Total Realm operations: %d\n", totalRealmOps))
-            summaryBuilder.append(String.format(Locale.US, "  Total Realm time: %s (%.1f%% of total sync)\n",
-                formatTime(totalRealmTime), (totalRealmTime.toDouble() / totalDuration * 100)))
-            summaryBuilder.append(String.format(Locale.US, "  Total items processed: %d\n", totalRealmItems))
+            summaryBuilder.append(String.format(Locale.US, "  Total Db operations: %d\n", totalDbOps))
+            summaryBuilder.append(String.format(Locale.US, "  Total Db time: %s (%.1f%% of total sync)\n",
+                formatTime(totalDbTime), (totalDbTime.toDouble() / totalDuration * 100)))
+            summaryBuilder.append(String.format(Locale.US, "  Total items processed: %d\n", totalDbItems))
 
-            realmOperationTimes.entries.sortedByDescending { it.value.sumOf { log -> log.duration } }.forEach { (model, logs) ->
+            dbOperationTimes.entries.sortedByDescending { it.value.sumOf { log -> log.duration } }.forEach { (model, logs) ->
                 val totalTime = logs.sumOf { it.duration }
                 val avgTime = if (logs.isNotEmpty()) totalTime / logs.size else 0
                 val totalItems = logs.sumOf { it.itemCount }
@@ -297,13 +305,13 @@ object SyncTimeLogger {
         val apiPercentage = if (apiCallTimes.isNotEmpty()) {
             (apiCallTimes.values.flatten().sumOf { it.duration }.toDouble() / totalDuration * 100)
         } else 0.0
-        val realmPercentage = if (realmOperationTimes.isNotEmpty()) {
-            (realmOperationTimes.values.flatten().sumOf { it.duration }.toDouble() / totalDuration * 100)
+        val dbPercentage = if (dbOperationTimes.isNotEmpty()) {
+            (dbOperationTimes.values.flatten().sumOf { it.duration }.toDouble() / totalDuration * 100)
         } else 0.0
 
         summaryBuilder.append(String.format(Locale.US, "  Network time: %.1f%%\n", apiPercentage))
-        summaryBuilder.append(String.format(Locale.US, "  Database time: %.1f%%\n", realmPercentage))
-        summaryBuilder.append(String.format(Locale.US, "  Other processing: %.1f%%\n", 100 - apiPercentage - realmPercentage))
+        summaryBuilder.append(String.format(Locale.US, "  Database time: %.1f%%\n", dbPercentage))
+        summaryBuilder.append(String.format(Locale.US, "  Other processing: %.1f%%\n", 100 - apiPercentage - dbPercentage))
 
         summaryBuilder.append("=========================")
         return summaryBuilder.toString()
@@ -322,4 +330,21 @@ object SyncTimeLogger {
         }
     }
 
+
+    companion object {
+        internal fun extractProcessName(endpoint: String): String {
+            val segments = endpoint.split("/")
+
+            val lastValidSegment = segments.lastOrNull {
+                it.isNotEmpty() && !it.startsWith("?")
+            } ?: return "Unknown"
+
+            val withoutQuery = lastValidSegment.substringBefore("?")
+            if (withoutQuery.isEmpty()) return "Unknown"
+
+            return withoutQuery.replaceFirstChar {
+                if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString()
+            }
+        }
+    }
 }
