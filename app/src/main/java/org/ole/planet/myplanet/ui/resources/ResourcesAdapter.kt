@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.utils.LibraryType
 import org.ole.planet.myplanet.utils.LibraryTypeClassifier
 import org.ole.planet.myplanet.utils.ListViewMode
 import org.ole.planet.myplanet.utils.PdfThumbnailLoader
+import org.ole.planet.myplanet.utils.StableIdGenerator
 import org.ole.planet.myplanet.utils.Utilities
 
 class ResourcesAdapter(
@@ -58,7 +59,9 @@ class ResourcesAdapter(
     }
 
     override fun getItemId(position: Int): Long {
-        return org.ole.planet.myplanet.utils.StableIdGenerator.generateStringId(getItem(position).item.id)
+        val listModel = getItem(position)
+        val id = StableIdGenerator.generateStringId(listModel.item.id)
+        return if (id != RecyclerView.NO_ID) id else StableIdGenerator.generateFallbackId(listModel)
     }
 
     companion object {

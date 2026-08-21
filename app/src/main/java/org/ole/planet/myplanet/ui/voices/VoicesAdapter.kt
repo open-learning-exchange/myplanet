@@ -43,6 +43,7 @@ import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
+import org.ole.planet.myplanet.utils.StableIdGenerator
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.makeExpandable
 
@@ -192,7 +193,9 @@ class VoicesAdapter(
     }
 
     override fun getItemId(position: Int): Long {
-        return org.ole.planet.myplanet.utils.StableIdGenerator.generateStringId(getItem(position).id)
+        val item = getItem(position)
+        val id = StableIdGenerator.generateStringId(item.id)
+        return if (id != RecyclerView.NO_ID) id else StableIdGenerator.generateFallbackId(item)
     }
 
     private fun fetchTeamLeaderStatus() {
