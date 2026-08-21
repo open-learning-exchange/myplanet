@@ -282,14 +282,14 @@ class SyncTimeLogger @Inject constructor(
         // Realm operation statistics
         if (dbOperationTimes.isNotEmpty()) {
             summaryBuilder.append("\nDB OPERATION STATISTICS:\n")
-            val totalRealmOps = dbOperationTimes.values.sumOf { it.size }
-            val totalRealmTime = dbOperationTimes.values.flatten().sumOf { it.duration }
-            val totalRealmItems = dbOperationTimes.values.flatten().sumOf { it.itemCount }
+            val totalDbOps = dbOperationTimes.values.sumOf { it.size }
+            val totalDbTime = dbOperationTimes.values.flatten().sumOf { it.duration }
+            val totalDbItems = dbOperationTimes.values.flatten().sumOf { it.itemCount }
 
-            summaryBuilder.append(String.format(Locale.US, "  Total Db operations: %d\n", totalRealmOps))
+            summaryBuilder.append(String.format(Locale.US, "  Total Db operations: %d\n", totalDbOps))
             summaryBuilder.append(String.format(Locale.US, "  Total Db time: %s (%.1f%% of total sync)\n",
-                formatTime(totalRealmTime), (totalRealmTime.toDouble() / totalDuration * 100)))
-            summaryBuilder.append(String.format(Locale.US, "  Total items processed: %d\n", totalRealmItems))
+                formatTime(totalDbTime), (totalDbTime.toDouble() / totalDuration * 100)))
+            summaryBuilder.append(String.format(Locale.US, "  Total items processed: %d\n", totalDbItems))
 
             dbOperationTimes.entries.sortedByDescending { it.value.sumOf { log -> log.duration } }.forEach { (model, logs) ->
                 val totalTime = logs.sumOf { it.duration }
@@ -305,13 +305,13 @@ class SyncTimeLogger @Inject constructor(
         val apiPercentage = if (apiCallTimes.isNotEmpty()) {
             (apiCallTimes.values.flatten().sumOf { it.duration }.toDouble() / totalDuration * 100)
         } else 0.0
-        val realmPercentage = if (dbOperationTimes.isNotEmpty()) {
+        val dbPercentage = if (dbOperationTimes.isNotEmpty()) {
             (dbOperationTimes.values.flatten().sumOf { it.duration }.toDouble() / totalDuration * 100)
         } else 0.0
 
         summaryBuilder.append(String.format(Locale.US, "  Network time: %.1f%%\n", apiPercentage))
-        summaryBuilder.append(String.format(Locale.US, "  Database time: %.1f%%\n", realmPercentage))
-        summaryBuilder.append(String.format(Locale.US, "  Other processing: %.1f%%\n", 100 - apiPercentage - realmPercentage))
+        summaryBuilder.append(String.format(Locale.US, "  Database time: %.1f%%\n", dbPercentage))
+        summaryBuilder.append(String.format(Locale.US, "  Other processing: %.1f%%\n", 100 - apiPercentage - dbPercentage))
 
         summaryBuilder.append("=========================")
         return summaryBuilder.toString()
