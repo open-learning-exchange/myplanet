@@ -85,6 +85,11 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
     private var allResourceModels: List<ResourceListModel> = emptyList()
+        set(value) {
+            field = value
+            resourceModelsByResourceId = value.mapNotNull { model -> model.library.resourceId?.let { it to model } }.toMap()
+        }
+    private var resourceModelsByResourceId: Map<String, ResourceListModel> = emptyMap()
 
     private var lastSearchQuery: String? = null
     private var lastSearchTags: List<String>? = null
@@ -445,19 +450,20 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
     }
 
+    private fun isItemOffline(item: MyLibrary): Boolean {
+        val model = item.resourceId?.let { resourceModelsByResourceId[it] }
+        return if (::adapterLibrary.isInitialized && model != null) {
+            adapterLibrary.isItemOffline(model)
+        } else {
+            model?.item?.isOffline == true || model?.isLocallyOffline == true
+        }
+    }
+
     private fun downloadSelectedResources() {
         val selected = selectedItems?.filterNotNull() ?: emptyList()
         if (selected.isEmpty()) return
 
-        val notDownloaded = selected.filter { item ->
-            val model = allResourceModels.find { it.library.resourceId == item.resourceId || it.item.id == item.resourceId }
-            val isOffline = if (::adapterLibrary.isInitialized && model != null) {
-                adapterLibrary.isItemOffline(model)
-            } else {
-                model?.item?.isOffline == true || model?.isLocallyOffline == true
-            }
-            !isOffline
-        }
+        val notDownloaded = selected.filterNot { isItemOffline(it) }
 
         val targetList = if (notDownloaded.isNotEmpty()) notDownloaded else selected
 
@@ -488,15 +494,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                 tvDelete?.visibility = View.GONE
                 tvAddToLib.visibility = View.VISIBLE
             }
-            val hasNotDownloadedSelected = selected.any { item ->
-                val model = allResourceModels.find { it.library.resourceId == item.resourceId || it.item.id == item.resourceId }
-                val isOffline = if (::adapterLibrary.isInitialized && model != null) {
-                    adapterLibrary.isItemOffline(model)
-                } else {
-                    model?.item?.isOffline == true || model?.isLocallyOffline == true
-                }
-                !isOffline
-            }
+            val hasNotDownloadedSelected = selected.any { !isItemOffline(it) }
             tvDownload.visibility = if (hasNotDownloadedSelected) View.VISIBLE else View.GONE
             binding.layoutSearch.root.visibility = View.GONE
         } else {
