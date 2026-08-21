@@ -30,16 +30,6 @@ class EnterprisesFinancesAdapter(
     )
 ) {
 
-    private val alternateColor: Drawable by lazy {
-        val border = GradientDrawable()
-        border.setColor(-0x1) //white background
-        border.setStroke(1, ContextCompat.getColor(context, R.color.black_overlay))
-        border.gradientType = GradientDrawable.LINEAR_GRADIENT
-        val layerDrawable = LayerDrawable(arrayOf<Drawable>(border))
-        layerDrawable.setLayerInset(0, -10, 0, -10, 0)
-        layerDrawable.mutate()
-    }
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FinanceViewHolder {
         val binding = RowFinanceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return FinanceViewHolder(binding)
@@ -59,7 +49,7 @@ class EnterprisesFinancesAdapter(
         }
         binding.balance.text = item.balance.toString()
         bindFinanceImage(binding, item)
-        updateBackgroundColor(binding.llayout, position)
+        updateBackgroundColor(holder, position)
     }
 
     override fun onViewRecycled(holder: FinanceViewHolder) {
@@ -86,15 +76,25 @@ class EnterprisesFinancesAdapter(
         }
     }
 
-    private fun updateBackgroundColor(layout: LinearLayout, position: Int) {
+    private fun updateBackgroundColor(holder: FinanceViewHolder, position: Int) {
         if (position % 2 < 1) {
-            layout.background = alternateColor
+            holder.binding.llayout.background = holder.alternateColor
         } else {
-            layout.background = null
+            holder.binding.llayout.background = null
         }
     }
 
     class FinanceViewHolder(val binding: RowFinanceBinding) : RecyclerView.ViewHolder(
         binding.root
-    )
+    ) {
+        val alternateColor: Drawable by lazy {
+            val border = GradientDrawable()
+            border.setColor(-0x1) //white background
+            border.setStroke(1, ContextCompat.getColor(binding.root.context, R.color.black_overlay))
+            border.gradientType = GradientDrawable.LINEAR_GRADIENT
+            val layerDrawable = LayerDrawable(arrayOf<Drawable>(border))
+            layerDrawable.setLayerInset(0, -10, 0, -10, 0)
+            layerDrawable.mutate()
+        }
+    }
 }
