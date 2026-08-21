@@ -15,14 +15,26 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagEntity
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class ResourcesViewModel @Inject constructor(
     private val resourcesRepository: ResourcesRepository,
+    private val userRepository: UserRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
+
+    private val _currentUser = MutableStateFlow<UserEntity?>(null)
+    val currentUser: StateFlow<UserEntity?> = _currentUser.asStateFlow()
+
+    fun fetchCurrentUser() {
+        viewModelScope.launch {
+            _currentUser.value = userRepository.getUserModel()
+        }
+    }
 
     enum class SortMode { NONE, DATE, TITLE }
     private var sortMode = SortMode.NONE
