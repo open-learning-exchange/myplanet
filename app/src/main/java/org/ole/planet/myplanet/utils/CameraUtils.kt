@@ -52,11 +52,11 @@ object CameraUtils {
         imageReader?.setOnImageAvailableListener({ reader ->
             val image = reader.acquireLatestImage()
             if (image != null) {
-                val buffer = image.planes[0].buffer
-                val bytes = ByteArray(buffer.capacity())
-                buffer.get(bytes)
-                image.close()
-                scope.launch {
+                scope.launch(dispatcherProvider.io) {
+                    val buffer = image.planes[0].buffer
+                    val bytes = ByteArray(buffer.capacity())
+                    buffer.get(bytes)
+                    image.close()
                     savePicture(bytes, callback, dispatcherProvider)
                 }
             }
