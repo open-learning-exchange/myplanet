@@ -416,7 +416,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         )
     }
 
-    override suspend fun startExamSession(examId: String, parentId: String?, userId: String?, request: CreateExamSubmissionRequest, recreate: Boolean): Submission {
+    override suspend fun startExamSession(examId: String, parentId: String?, userId: String?, request: CreateExamSubmissionRequest, recreate: Boolean, deleteStale: Boolean): Submission {
         if (!recreate) {
             val submission = getSubmissionsByParentId(parentId, userId, "pending").firstOrNull()
             if (submission != null) {
@@ -428,7 +428,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         var lastException: Exception? = null
         while (retries < 3) {
             try {
-                if (recreate) {
+                if (deleteStale) {
                     deleteExamSubmissions(examId, request.exam.courseId, userId)
                 }
                 return createExamSubmission(request)

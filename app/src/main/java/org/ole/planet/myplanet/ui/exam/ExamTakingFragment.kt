@@ -151,7 +151,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                                 val request = CreateExamSubmissionRequest(
                                     user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
                                 )
-                                sub = submissionsRepository.startExamSession(currentExam.id, parentId, user?.id, request, recreate = false)
+                                sub = submissionsRepository.startExamSession(currentExam.id, parentId, user?.id, request, recreate = isTeam, deleteStale = false)
                             } else {
                                 val resume = askResumeOrRestart()
                                 if (resume) {

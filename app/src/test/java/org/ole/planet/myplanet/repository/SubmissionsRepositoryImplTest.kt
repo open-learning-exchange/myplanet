@@ -424,7 +424,7 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `startExamSession with recreate true deletes and creates new submission`() = runTest {
+    fun `startExamSession with deleteStale true deletes and creates new submission`() = runTest {
         val exam = StepExam().apply {
             id = "exam_id"
             courseId = "course_id"
@@ -434,7 +434,7 @@ class SubmissionsRepositoryImplTest {
         coEvery { submissionDao.getByParentUserAndStatus(any(), any(), any()) } returns emptyList()
         coEvery { answerDao.deleteBySubmissionIds(any()) } returns 1
 
-        val result = repository.startExamSession("exam_id", "parentId", "user", request, recreate = true)
+        val result = repository.startExamSession("exam_id", "parentId", "user", request, recreate = true, deleteStale = true)
 
         assertEquals("exam_id@course_id", result.parentId)
         coVerify { submissionDao.getByParentUserAndStatus("exam_id@course_id", "user", null) }
@@ -453,7 +453,7 @@ class SubmissionsRepositoryImplTest {
 
         val exception = org.junit.Assert.assertThrows(IllegalStateException::class.java) {
             kotlinx.coroutines.runBlocking {
-                repository.startExamSession("exam_id", "parentId", "user", request, recreate = true)
+                repository.startExamSession("exam_id", "parentId", "user", request, recreate = true, deleteStale = true)
             }
         }
         assertTrue(exception.message?.contains("Failed to start exam session after 3 attempts") == true)
@@ -492,6 +492,23 @@ class SubmissionsRepositoryImplTest {
         val result = repository.startExamSession("exam_id", "parentId", "user", request, recreate = false)
 
         assertEquals("exam_id@course_id", result.parentId)
+        coVerify { submissionDao.upsertAll(match { it.single().parentId == "exam_id@course_id" }) }
+    }
+
+    @Test
+    fun `startExamSession with recreate true and deleteStale false creates without deleting`() = runTest {
+        val exam = StepExam().apply {
+            id = "exam_id"
+            courseId = "course_id"
+        }
+        val request = CreateExamSubmissionRequest("user", "dob", "gender", exam, "survey", "team_id")
+
+        coEvery { submissionDao.getByParentUserAndStatus(any(), any(), any()) } returns emptyList()
+
+        val result = repository.startExamSession("exam_id", "parentId", "user", request, recreate = true, deleteStale = false)
+
+        assertEquals("exam_id@course_id", result.parentId)
+        coVerify(exactly = 0) { submissionDao.getByParentUserAndStatus("exam_id@course_id", "user", null) }
         coVerify { submissionDao.upsertAll(match { it.single().parentId == "exam_id@course_id" }) }
     }
 
