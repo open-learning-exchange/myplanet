@@ -127,16 +127,16 @@
                 android:id="@+id/selectAllCourse"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="10.5dp"
-                android:layout_gravity="center"
-                android:padding="8dp"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="@dimen/list_row_content_inset_start"
                 android:layout_weight="1"
+                android:buttonTint="@color/daynight_textColor"
+                android:checked="false"
+                android:maxWidth="0dp"
+                android:padding="@dimen/padding_normal"
                 android:text="@string/select_all"
                 android:textColor="@color/daynight_textColor"
-                android:textSize="@dimen/text_size_mid"
-                android:buttonTint="@color/daynight_textColor"
-                android:maxWidth="0dp"
-                android:checked="false" />
+                android:textSize="@dimen/text_size_mid" />
             <include
                 android:id="@+id/layout_search"
                 layout="@layout/layout_search_pill"

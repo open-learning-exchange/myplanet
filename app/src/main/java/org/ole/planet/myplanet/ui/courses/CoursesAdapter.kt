@@ -305,30 +305,30 @@ class CoursesAdapter(
         return parts.joinToString(" · ")
     }
 
-    private fun updateVisibilityForMyCourse(course: Course, isMyCourseView: View, checkbox: CheckBox) {
-        if (isMyCourseLib) {
-            isMyCourseView.visibility = View.GONE
-            checkbox.visibility = View.VISIBLE
-        } else if (course.isMyCourse) {
-            isMyCourseView.visibility = View.VISIBLE
-            checkbox.visibility = View.GONE
-        } else {
-            isMyCourseView.visibility = View.GONE
-            checkbox.visibility = View.VISIBLE
-        }
+    private fun updateVisibilityForMyCourse(course: Course, isMyCourseView: View) {
+        isMyCourseView.visibility = if (!isMyCourseLib && course.isMyCourse) View.VISIBLE else View.GONE
+    }
+
+    /**
+     * List rows lay the checkbox out first, so hiding it with [View.GONE] collapses the column and
+     * drags that row's cover, title and meta line to the left. Only the guest case - which hides
+     * the checkbox on every row at once - may collapse it; a per-row hide keeps the space reserved
+     * so the whole list stays aligned.
+     */
+    internal fun checkboxVisibility(course: Course): Int = when {
+        isGuest -> View.GONE
+        isMyCourseLib || !course.isMyCourse -> View.VISIBLE
+        else -> View.INVISIBLE
     }
 
     private fun setupCheckbox(course: Course, checkbox: CheckBox, adapterPositionProvider: () -> Int) {
-        if (isGuest) {
-            checkbox.visibility = View.GONE
+        val visibility = checkboxVisibility(course)
+        checkbox.visibility = visibility
+        if (visibility != View.VISIBLE) {
+            checkbox.setOnClickListener(null)
+            checkbox.isChecked = false
             return
         }
-        val showCheckbox = isMyCourseLib || !course.isMyCourse
-        if (!showCheckbox) {
-            checkbox.visibility = View.GONE
-            return
-        }
-        checkbox.visibility = View.VISIBLE
         checkbox.isChecked = selectedItems.any { it?.courseId == course.courseId }
         checkbox.setOnClickListener { view: View ->
             checkbox.contentDescription = context.getString(R.string.select_res_course, course.courseTitle)
@@ -391,7 +391,7 @@ class CoursesAdapter(
             binding.tvSubjectLabel.text = context.getString(subjectLabelRes(subject))
             binding.title.text = course.courseTitle
             binding.tvMeta.text = buildMetaLine(course)
-            updateVisibilityForMyCourse(course, binding.isMyCourse, binding.checkbox)
+            updateVisibilityForMyCourse(course, binding.isMyCourse)
             setupCheckbox(course, binding.checkbox) { bindingAdapterPosition }
             bindProgress(course)
         }
@@ -399,7 +399,7 @@ class CoursesAdapter(
         fun bindPayloads(course: Course, hasProgressPayload: Boolean, hasSelectionPayload: Boolean) {
             if (hasProgressPayload) bindProgress(course)
             if (hasSelectionPayload) {
-                updateVisibilityForMyCourse(course, binding.isMyCourse, binding.checkbox)
+                updateVisibilityForMyCourse(course, binding.isMyCourse)
                 setupCheckbox(course, binding.checkbox) { bindingAdapterPosition }
             }
         }
@@ -438,7 +438,7 @@ class CoursesAdapter(
             bindCover(course, subject, binding.coverContainer, binding.ivCover, binding.ivSubjectIcon)
             binding.title.text = course.courseTitle
             binding.tvMeta.text = buildMetaLine(course)
-            updateVisibilityForMyCourse(course, binding.isMyCourse, binding.checkbox)
+            updateVisibilityForMyCourse(course, binding.isMyCourse)
             setupCheckbox(course, binding.checkbox) { bindingAdapterPosition }
             bindStatus(course)
         }
@@ -446,7 +446,7 @@ class CoursesAdapter(
         fun bindPayloads(course: Course, hasProgressPayload: Boolean, hasSelectionPayload: Boolean) {
             if (hasProgressPayload) bindStatus(course)
             if (hasSelectionPayload) {
-                updateVisibilityForMyCourse(course, binding.isMyCourse, binding.checkbox)
+                updateVisibilityForMyCourse(course, binding.isMyCourse)
                 setupCheckbox(course, binding.checkbox) { bindingAdapterPosition }
             }
         }

@@ -31,6 +31,10 @@
     <dimen name="status_badge_padding_vertical">4dp</dimen>
     <dimen name="status_badge_margin_start">8dp</dimen>
     <dimen name="item_margin_standard">16dp</dimen>
+    <!-- Leading inset of a list row's first control: 8dp card side margin + 8dp row padding.
+         Header controls that sit above the list (e.g. "select all") use it so they line up
+         with the column of row checkboxes underneath. -->
+    <dimen name="list_row_content_inset_start">16dp</dimen>
     <dimen name="image_thumbnail_size_100">100dp</dimen>
     <dimen name="image_thumbnail_size_120">120dp</dimen>
     <dimen name="profile_image_size">150dp</dimen>

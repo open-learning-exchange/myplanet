@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.app.Application
 import android.content.Context
+import android.view.View
 import androidx.recyclerview.widget.RecyclerView
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -73,5 +74,37 @@ class CoursesAdapterTest {
         adapter.selectAllItems(true)
 
         assertEquals(false, adapter.areAllSelected())
+    }
+
+    @Test
+    fun `joined course keeps the checkbox laid out so list rows stay aligned`() {
+        val joined = Course("1", "A", "desc", "grade", "subject", 0, 10, isMyCourse = true)
+
+        assertEquals(View.INVISIBLE, adapter.checkboxVisibility(joined))
+    }
+
+    @Test
+    fun `selectable course shows the checkbox`() {
+        val selectable = Course("1", "A", "desc", "grade", "subject", 0, 10, isMyCourse = false)
+
+        assertEquals(View.VISIBLE, adapter.checkboxVisibility(selectable))
+    }
+
+    @Test
+    fun `my courses tab shows the checkbox for joined courses`() {
+        val myCoursesAdapter = CoursesAdapter(mockContext, false, true)
+        val joined = Course("1", "A", "desc", "grade", "subject", 0, 10, isMyCourse = true)
+
+        assertEquals(View.VISIBLE, myCoursesAdapter.checkboxVisibility(joined))
+    }
+
+    @Test
+    fun `guest collapses the checkbox on every row`() {
+        val guestAdapter = CoursesAdapter(mockContext, true, false)
+        val joined = Course("1", "A", "desc", "grade", "subject", 0, 10, isMyCourse = true)
+        val selectable = Course("2", "B", "desc", "grade", "subject", 0, 10, isMyCourse = false)
+
+        assertEquals(View.GONE, guestAdapter.checkboxVisibility(joined))
+        assertEquals(View.GONE, guestAdapter.checkboxVisibility(selectable))
     }
 }
