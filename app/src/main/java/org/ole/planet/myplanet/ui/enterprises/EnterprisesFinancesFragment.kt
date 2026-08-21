@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class EnterprisesFinancesFragment : BaseTeamFragment() {
@@ -256,7 +257,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             transactions = results
             updatedFinanceList(results)
         }
-        collectLatestWhenStarted(viewModel.transactionCreated) { result ->
+        collectWhenStarted(viewModel.transactionCreated) { result ->
             if (result.isSuccess) {
                 Utilities.toast(activity, getString(R.string.transaction_added))
             } else {

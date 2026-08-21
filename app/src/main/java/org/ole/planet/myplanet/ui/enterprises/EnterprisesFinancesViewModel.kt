@@ -24,7 +24,7 @@ class EnterprisesFinancesViewModel @Inject constructor(
     private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
     val transactions: StateFlow<List<Transaction>> = _transactions.asStateFlow()
 
-    private val _transactionCreated = MutableSharedFlow<Result<Unit>>()
+    private val _transactionCreated = MutableSharedFlow<Result<Unit>>(extraBufferCapacity = 1)
     val transactionCreated: SharedFlow<Result<Unit>> = _transactionCreated.asSharedFlow()
 
     private var transactionsJob: Job? = null
