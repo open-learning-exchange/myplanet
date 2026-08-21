@@ -2709,10 +2709,90 @@ same as `appVersion` already does for them. `gen-l10n` clean.
 
 The 1155-test suite passes, `flutter analyze` clean, `dart format` clean.
 
+### Team-screen test backfill
+
+Phase 58 left the team detail screens (plan, resources, courses, members,
+surveys, tasks, calendar, reports) as the largest untested surface —
+only `team_finances` and `team_voices` had any coverage. This phase
+backfills the rest, each test overriding the screen's family providers
+(`teamResourcesProvider(teamId)`, `teamMembersProvider(teamId)`, etc.)
+with `Stream.value`/`Future.value` and `teamMembershipsProvider` with
+the `isLeader` flag the leader-gated UI depends on. 33 new tests land
+across seven files:
+
+- **`team_plan_screen_test.dart`** (6) — not-found, plan sections,
+  enterprise mission/services/rules, no-plan/no-mission empty states,
+  the leader edit FAB.
+- **`team_resources_screen_test.dart`** (4) — empty state, rendering
+  linked resources (title/description, the sentence-case "Untitled
+  resource" fallback), the leader-gated add-resource FAB and per-row
+  remove button, the add-resource dialog open.
+- **`team_courses_screen_test.dart`** (4) — empty state, rendering
+  linked courses (title/description, the "Untitled course" fallback),
+  the leader-gated add-course FAB and remove button, the add-course
+  dialog open.
+- **`team_members_screen_test.dart`** (4) — members empty state for a
+  non-leader (only the Members tab shows), rendering members with
+  first-letter avatars and the leader star, the leader-gated Join
+  requests tab with accept/decline actions, the requests-tab empty
+  state.
+- **`team_surveys_screen_test.dart`** (4) — both empty sections,
+  rendering owned surveys with the per-row send button (and the
+  "Untitled survey" fallback), the disabled adopt button for a
+  non-leader, a leader adopting through a mocked
+  `SurveysRepository` (verifying the call args and the snackbar).
+- **`team_tasks_screen_test.dart`** (5) — empty state, rendering tasks
+  (the joined deadline+assignee subtitle, "Untitled task" fallback),
+  toggling a checkbox to complete a task, the add-task dialog invoking
+  save with the entered title, the per-row popup menu offering edit and
+  delete.
+- **`team_calendar_screen_test.dart`** (3) — no-meetups message,
+  rendering meetups for the selected team on the focused day (filtering
+  other teams' meetups, the "Untitled meetup" fallback, location
+  subtitle), the formatted HH:mm-HH:mm time range.
+- **`team_reports_screen_test.dart`** (3) — empty state, rendering a
+  report with the computed totals (`totalIncome`/`totalExpenses`/
+  `profitLoss`/`endingBalance` from the `TeamRow` extension getters)
+  and the Export CSV button, the leader-gated add-report FAB plus the
+  archive action.
+
+The `buildLibraryRow()` test helper gains optional `description` and
+`resourceId` params so the resources tests can exercise the description
+subtitle and the resourceId-based filtering.
+
+#### Duplicate ARB key
+
+Writing the resources empty-title assertion surfaced a latent bug:
+`app_en.arb` had **two** `"untitledResource"` entries — line 639
+`"Untitled resource"` (the list fallback, sentence case, present since
+the port) and line 1052 `"Untitled Resource"` (added in Phase 57 for
+the resource viewer app-bar, title case). A duplicate JSON key means
+`gen-l10n` emits one getter and the *last* value shadows the first, so
+every caller — including the list screens that wanted sentence case —
+rendered "Untitled Resource". The fix splits the key: the viewer and
+resource-detail app-bar use the new `untitledResourceTitle` ("Untitled
+Resource"), restoring the sentence-case `untitledResource` for the list
+fallbacks. The other four locales fall back to English for the new
+title key, unchanged.
+
+Two test-determinism hazards were worked around, both noted in the
+commit that introduced them: the team-tasks add-dialog test has the
+mocked `save` return `false` so the dialog stays mounted (the production
+dialog disposes its `TextEditingController`s after `showDialog` resolves,
+which races the test binding's teardown); and the team-tasks per-row
+popup-menu test asserts only that the menu *offers* edit/delete without
+tapping delete, to avoid a `_FocusInheritedScope` deactivation assertion
+that the popup route's focus teardown trips under the test binding.
+
+The 1188-test suite passes, `flutter analyze` clean, `dart format`
+clean. Every team detail screen now has at least three widget tests.
+
 ---
 
 **Last updated**: 2026-08-20 (Phase 59 complete — app version/build read at
 runtime through package_info_plus behind a testable seam; the last
-correctness gap Phase 58 flagged is closed)
+correctness gap Phase 58 flagged is closed; the team detail screens
+backfilled with 33 widget tests; duplicate `untitledResource` ARB key
+split into `untitledResource`/`untitledResourceTitle`)
 **Phase**: 59 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)
