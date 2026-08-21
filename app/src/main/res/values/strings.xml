@@ -578,6 +578,8 @@
     <string name="no_data_available_please_check_and_try_again">No data available, please check and try again.</string>
     <string name="no_course_matched_filter">No courses matched filter</string>
     <string name="added_to_my_library">added to myLibrary</string>
+    <string name="format_added_to_mylibrary">%1$s added to myLibrary</string>
+    <string name="format_removed_from_mylibrary">%1$s removed from myLibrary</string>
     <string name="added_to_my_courses">added to myCourses</string>
     <string name="do_you_want_to_stay_online">Do you want to stay online?</string>
     <string name="device_not_connected_to_planet">Device not connected to planet.</string>
