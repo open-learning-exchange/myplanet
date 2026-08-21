@@ -265,22 +265,20 @@ class RetryInterceptorTest {
         val request = Request.Builder().url("http://example.com").build()
         val errorResponse = createResponse(request, 500)
 
-        var cancelled = false
+        var callCount = 0
         val mockCall = mockk<Call> {
-            every { isCanceled() } answers { cancelled }
+            every { isCanceled() } answers {
+                callCount++
+                // Returns true on the second check, simulating cancellation after the first sleep slice.
+                callCount > 1
+            }
         }
         val chain = mockk<Interceptor.Chain>()
         every { chain.request() } returns request
         every { chain.proceed(request) } returns errorResponse
         every { chain.call() } returns mockCall
 
-        retryInterceptor.initialDelay = 5_000L
-
-        val thread = Thread {
-            Thread.sleep(300)
-            cancelled = true
-        }
-        thread.start()
+        retryInterceptor.initialDelay = 10L // Small delay to avoid burning real wall clock time
 
         try {
             retryInterceptor.intercept(chain)
