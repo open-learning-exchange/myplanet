@@ -5,8 +5,6 @@ import androidx.core.net.toUri
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.net.URL
-import java.net.HttpURLConnection
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
@@ -30,7 +28,8 @@ class SyncTimeLogger @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val sharedPrefManager: SharedPrefManager,
     private val serverUrlMapper: ServerUrlMapper,
-    private val diagnosticsRepository: DiagnosticsRepository
+    private val diagnosticsRepository: DiagnosticsRepository,
+    private val serverReachabilityProvider: ServerReachabilityProvider
 ) {
 
     private val processTimes = ConcurrentHashMap<String, Long>()
@@ -81,7 +80,7 @@ class SyncTimeLogger @Inject constructor(
         endTime = timeProvider.now()
         isLogging = false
         val summary = generateSummary()
-        saveSummaryToRealm(summary, uploadManager)
+        saveSummaryToRoom(summary, uploadManager)
 
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
         Log.d("SyncPerf", "SYNC COMPLETED at ${formatTimestamp(endTime)}")
@@ -89,35 +88,17 @@ class SyncTimeLogger @Inject constructor(
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
     }
 
-    private suspend fun isServerReachable(urlString: String): Boolean = withContext(dispatcherProvider.io) {
-        try {
-            val formattedUrl = if (!urlString.startsWith("http://") && !urlString.startsWith("https://")) {
-                "http://$urlString"
-            } else {
-                urlString
-            }
-            val url = URL(formattedUrl)
-            val conn = url.openConnection() as HttpURLConnection
-            conn.requestMethod = "GET"
-            conn.connectTimeout = 5000
-            conn.readTimeout = 5000
-            conn.connect()
-            conn.responseCode in 200..299
-        } catch (e: Exception) {
-            false
-        }
-    }
 
-    private fun saveSummaryToRealm(summary: String, uploadManager: UploadManager? = null) {
+    private fun saveSummaryToRoom(summary: String, uploadManager: UploadManager? = null) {
         appScope.launch(dispatcherProvider.io) {
             diagnosticsRepository.saveLogToRoom("sync summary", summary, "${timeProvider.now()}")
             val updateUrl = sharedPrefManager.getServerUrl()
             val mapping = serverUrlMapper.processUrl(updateUrl)
 
-            val primaryAvailable = isServerReachable(mapping.primaryUrl)
+            val primaryAvailable = serverReachabilityProvider.isServerReachable(mapping.primaryUrl)
             val alternativeUrl = mapping.alternativeUrl
 
-            if (!primaryAvailable && alternativeUrl != null && isServerReachable(alternativeUrl)) {
+            if (!primaryAvailable && alternativeUrl != null && serverReachabilityProvider.isServerReachable(alternativeUrl)) {
                 val uri = updateUrl.toUri()
                 val prefs = sharedPrefManager.rawPreferences
                 val editor = prefs.edit()
@@ -185,7 +166,7 @@ class SyncTimeLogger @Inject constructor(
         Log.d("SyncPerf", "[${formatElapsed(elapsed)}] $statusIcon API #$callNum: ${shortenEndpoint(endpoint)} - ${formatTime(duration)}$itemInfo")
     }
 
-    fun logRealmOperation(operation: String, model: String, duration: Long, itemCount: Int) {
+    fun logDbOperation(operation: String, model: String, duration: Long, itemCount: Int) {
         if (!isLogging) return
 
         val timestamp = timeProvider.now()

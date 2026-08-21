@@ -3,8 +3,6 @@ package org.ole.planet.myplanet.utils
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-import io.mockk.mockk
-
 class SyncTimeLoggerTest {
 
     @Test

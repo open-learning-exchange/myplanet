@@ -90,7 +90,7 @@ class TransactionSyncManagerCheckpointTest {
 
         val mockSyncTimeLogger = mockk<SyncTimeLogger>(relaxed = true)
         every { mockSyncTimeLogger.logApiCall(any(), any(), any(), any()) } returns Unit
-        every { mockSyncTimeLogger.logRealmOperation(any(), any(), any(), any()) } returns Unit
+        every { mockSyncTimeLogger.logDbOperation(any(), any(), any(), any()) } returns Unit
         every { mockSyncTimeLogger.logDetail(any(), any()) } returns Unit
 
         every { dispatcherProvider.io } returns Dispatchers.Unconfined
