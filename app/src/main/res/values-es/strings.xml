@@ -579,6 +579,8 @@
     <string name="no_data_available_please_check_and_try_again">No hay datos disponibles, por favor verifica e intenta de nuevo.</string>
     <string name="no_course_matched_filter">No hay cursos que coincidan con el filtro</string>
     <string name="added_to_my_library">agregado a myLibrary</string>
+    <string name="format_added_to_mylibrary">%1$s agregado a myLibrary</string>
+    <string name="format_removed_from_mylibrary">%1$s eliminado de myLibrary</string>
     <string name="added_to_my_courses">agregado a myCourses</string>
     <string name="do_you_want_to_stay_online">¿Deseas permanecer en línea?</string>
     <string name="device_not_connected_to_planet">Dispositivo no conectado a Planet.</string>
