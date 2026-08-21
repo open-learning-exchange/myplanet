@@ -42,7 +42,7 @@ object CsvTableRenderer {
                 cell.text = row.getOrNull(columnIndex).orEmpty()
                 cell.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSizePx)
                 cell.setTextColor(textColor)
-                cell.setTypeface(cell.typeface, if (isHeader) Typeface.BOLD else Typeface.NORMAL)
+                cell.typeface = if (isHeader) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
                 cell.maxLines = cellMaxLines
                 cell.ellipsize = TextUtils.TruncateAt.END
                 cell.maxWidth = maxCellWidth

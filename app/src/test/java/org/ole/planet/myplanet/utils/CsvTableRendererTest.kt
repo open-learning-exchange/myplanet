@@ -1,11 +1,12 @@
 package org.ole.planet.myplanet.utils
 
+import android.graphics.Typeface
 import android.widget.TableLayout
 import android.widget.TableRow
 import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -68,8 +69,8 @@ class CsvTableRendererTest {
         CsvTableRenderer.render(table, preview, compact = true)
 
         val rows = rows()
-        assertTrue((rows[0].getChildAt(0) as TextView).typeface.isBold)
-        assertFalse((rows[1].getChildAt(0) as TextView).typeface.isBold)
+        assertSame(Typeface.DEFAULT_BOLD, (rows[0].getChildAt(0) as TextView).typeface)
+        assertSame(Typeface.DEFAULT, (rows[1].getChildAt(0) as TextView).typeface)
     }
 
     @Test
