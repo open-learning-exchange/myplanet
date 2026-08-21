@@ -200,7 +200,7 @@ class SyncRepositoryImpl @Inject constructor(
                         "teams" -> processedCount += teamsSyncRepository.batchInsertMyTeams(documentsToProcess)
                     }
                     val realmDuration = SystemClock.elapsedRealtime() - realmStartTime
-                    logger.logRealmOperation("shelf_insert", shelfData.type, realmDuration, documentsToProcess.size)
+                    logger.logDbOperation("shelf_insert", shelfData.type, realmDuration, documentsToProcess.size)
                 }
 
                 val batchDuration = SystemClock.elapsedRealtime() - batchStartTime

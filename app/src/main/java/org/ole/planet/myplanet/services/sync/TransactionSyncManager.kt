@@ -280,7 +280,7 @@ class TransactionSyncManager @Inject constructor(
                             }
                         }
                         val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
-                        syncTimeLogger.logRealmOperation(
+                        syncTimeLogger.logDbOperation(
                             "insert_batch",
                             table,
                             insertDuration,
@@ -344,7 +344,7 @@ class TransactionSyncManager @Inject constructor(
         val insertStartTime = SystemClock.elapsedRealtime()
         dbWriteMutex.withLock { insert() }
         val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
-        syncTimeLogger.logRealmOperation(
+        syncTimeLogger.logDbOperation(
             "insert_batch",
             table,
             insertDuration,

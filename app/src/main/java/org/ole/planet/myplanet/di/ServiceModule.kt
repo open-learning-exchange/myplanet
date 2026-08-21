@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.SyncTimeLogger
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
@@ -88,7 +89,7 @@ object ServiceModule {
         surveysRepository: SurveysRepository,
         dispatcherProvider: DispatcherProvider,
         userSessionManager: UserSessionManager,
-        syncTimeLogger: org.ole.planet.myplanet.utils.SyncTimeLogger
+        syncTimeLogger: SyncTimeLogger
     ): TransactionSyncManager {
         return TransactionSyncManager(apiInterface, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, dispatcherProvider, userSessionManager, syncTimeLogger)
     }
