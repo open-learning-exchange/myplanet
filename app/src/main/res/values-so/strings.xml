@@ -1103,6 +1103,7 @@
     <string name="export_cancelled">dhoofinta waa la joojiyay.</string>
     <string name="failed_to_save_csv_file">waa lagu guuldareystay in la badbaadiyo faylka CSV.</string>
     <string name="csv_file_saved_successfully">faylka CSV si guul leh ayaa loo keydiyay.</string>
+    <string name="csv_showing_first_rows">Waxaa la tusayaa %1$d safafka ugu horreeya</string>
     <string name="share_with_team_enterprise">la wadaag kooxda/ganacsiga</string>
     <string name="teams">kooxo</string>
     <string name="community">bulsho</string>

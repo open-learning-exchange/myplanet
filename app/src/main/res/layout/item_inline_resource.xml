@@ -52,8 +52,23 @@
             android:maxLines="8"
             android:padding="@dimen/_10dp"
             android:textColor="@color/daynight_textColor"
-            android:textSize="10sp"
+            android:textSize="@dimen/resource_preview_text_size"
             android:visibility="gone" />
+        <HorizontalScrollView
+            android:id="@+id/csv_preview_scroll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/card_bg"
+            android:paddingHorizontal="@dimen/_4dp"
+            android:paddingVertical="@dimen/padding_normal"
+            android:scrollbars="horizontal"
+            android:visibility="gone">
+
+            <TableLayout
+                android:id="@+id/csv_preview_table"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </HorizontalScrollView>
         <LinearLayout
             android:id="@+id/audio_preview_container"
             android:layout_width="match_parent"

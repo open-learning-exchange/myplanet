@@ -1103,6 +1103,7 @@
     <string name="export_cancelled">निर्यात रद्द गरियो।</string>
     <string name="failed_to_save_csv_file">CSV फाइल सुरक्षित गर्न असफल।</string>
     <string name="csv_file_saved_successfully">CSV फाइल सफलतापूर्वक सुरक्षित गरियो।</string>
+    <string name="csv_showing_first_rows">पहिलो %1$d पङ्क्तिहरू देखाइँदै</string>
     <string name="share_with_team_enterprise">टोली/उद्यमसँग साझा गर्नुहोस्</string>
     <string name="teams">टोलीहरू</string>
     <string name="community">समुदाय</string>

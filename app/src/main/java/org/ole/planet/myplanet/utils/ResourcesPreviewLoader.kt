@@ -8,6 +8,13 @@ import java.io.FileReader
 import java.util.Locale
 import kotlinx.coroutines.withContext
 
+data class CsvPreview(
+    val rows: List<List<String>>,
+    val hasMoreRows: Boolean
+) {
+    val columnCount: Int = rows.maxOfOrNull { it.size } ?: 0
+}
+
 class ResourcesPreviewLoader(private val dispatcherProvider: DispatcherProvider) {
 
     suspend fun getAudioPreview(file: File): String {
@@ -26,21 +33,28 @@ class ResourcesPreviewLoader(private val dispatcherProvider: DispatcherProvider)
         }
     }
 
-    suspend fun getCsvPreview(file: File): String? {
+    suspend fun getCsvPreview(file: File, maxRows: Int = CARD_PREVIEW_ROWS): CsvPreview? {
         return withContext(dispatcherProvider.io) {
             try {
-                val sb = StringBuilder()
                 CSVReaderBuilder(FileReader(file))
                     .withCSVParser(CSVParserBuilder().withSeparator(',').withQuoteChar('"').build())
                     .build().use { reader ->
-                        var count = 0
+                        val rows = mutableListOf<List<String>>()
+                        var hasMoreRows = false
                         for (row in reader) {
-                            if (count >= 5) break
-                            sb.appendLine(row.joinToString("  |  "))
-                            count++
+                            if (row.all { it.isBlank() }) continue
+                            if (rows.size >= maxRows) {
+                                hasMoreRows = true
+                                break
+                            }
+                            rows.add(row.map { it.trim() })
+                        }
+                        if (rows.isEmpty()) {
+                            null
+                        } else {
+                            CsvPreview(rows, hasMoreRows)
                         }
                     }
-                sb.toString().trimEnd().takeIf { it.isNotEmpty() }
             } catch (e: Exception) {
                 null
             }
@@ -55,5 +69,10 @@ class ResourcesPreviewLoader(private val dispatcherProvider: DispatcherProvider)
                 null
             }
         }
+    }
+
+    companion object {
+        const val CARD_PREVIEW_ROWS = 6
+        const val VIEWER_ROWS = 200
     }
 }

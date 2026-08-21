@@ -19,6 +19,8 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemInlineResourceBinding
 import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.utils.CsvPreview
+import org.ole.planet.myplanet.utils.CsvTableRenderer
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
@@ -52,6 +54,7 @@ class InlineResourceAdapter(
 
     private var externalFilesDir: File? = null
     private val textCache = mutableMapOf<String, String>()
+    private val csvCache = mutableMapOf<String, CsvPreview>()
 
     private var adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
 
@@ -88,6 +91,7 @@ class InlineResourceAdapter(
                 val file = FileUtils.getLibraryFile(dir, prev.id, address)
                 val prefix = file.absolutePath
                 textCache.keys.filter { it.startsWith(prefix) }.forEach { textCache.remove(it) }
+                csvCache.keys.filter { it.startsWith(prefix) }.forEach { csvCache.remove(it) }
             }
         }
     }
@@ -104,6 +108,7 @@ class InlineResourceAdapter(
         super.onDetachedFromRecyclerView(recyclerView)
         adapterScope.cancel()
         textCache.clear()
+        csvCache.clear()
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
@@ -135,9 +140,7 @@ class InlineResourceAdapter(
             }
         }
 
-        holder.binding.cardResource.setOnClickListener {
-            onResourceClick(resource)
-        }
+        bindResourceClick(holder, resource)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -148,9 +151,14 @@ class InlineResourceAdapter(
         holder.binding.tvResourceTitle.text = resource.title ?: resource.resourceLocalAddress ?: ""
         updateStatusAndPreview(holder, context, resource)
 
-        holder.binding.cardResource.setOnClickListener {
-            onResourceClick(resource)
-        }
+        bindResourceClick(holder, resource)
+    }
+
+    private fun bindResourceClick(holder: ViewHolder, resource: MyLibrary) {
+        val openResource = View.OnClickListener { onResourceClick(resource) }
+        holder.binding.cardResource.setOnClickListener(openResource)
+        holder.binding.csvPreviewScroll.setOnClickListener(openResource)
+        holder.binding.csvPreviewTable.setOnClickListener(openResource)
     }
 
     private fun updateStatusAndPreview(holder: ViewHolder, context: Context, resource: MyLibrary) {
@@ -163,6 +171,7 @@ class InlineResourceAdapter(
         binding.ivResourcePreview.visibility = View.GONE
         binding.videoThumbnailContainer.visibility = View.GONE
         binding.tvTextPreview.visibility = View.GONE
+        binding.csvPreviewScroll.visibility = View.GONE
         binding.audioPreviewContainer.visibility = View.GONE
         binding.pbDownload.visibility = View.GONE
         binding.ivStatus.visibility = View.GONE
@@ -253,16 +262,12 @@ class InlineResourceAdapter(
     private suspend fun showCsvPreview(holder: ViewHolder, file: File) {
         if (!file.exists()) return
         val cacheKey = getCacheKey(file)
-        val cachedPreview = textCache[cacheKey]
-        val preview = if (cachedPreview != null) {
-            cachedPreview
-        } else {
-            previewLoader.getCsvPreview(file)?.also { textCache[cacheKey] = it }
-        }
-        if (!preview.isNullOrEmpty()) {
-            holder.binding.tvTextPreview.visibility = View.VISIBLE
-            holder.binding.tvTextPreview.text = preview
-        }
+        val preview = csvCache[cacheKey]
+            ?: previewLoader.getCsvPreview(file)?.also { csvCache[cacheKey] = it }
+            ?: return
+        holder.binding.csvPreviewScroll.visibility = View.VISIBLE
+        holder.binding.csvPreviewScroll.scrollX = 0
+        CsvTableRenderer.render(holder.binding.csvPreviewTable, preview, compact = true)
     }
 
     private suspend fun showTextPreview(holder: ViewHolder, file: File) {

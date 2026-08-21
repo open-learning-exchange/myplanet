@@ -17,6 +17,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.TableLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
@@ -58,11 +59,13 @@ import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
 import org.ole.planet.myplanet.databinding.FragmentResourceViewerBinding
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.AudioRecorder
+import org.ole.planet.myplanet.utils.CsvTableRenderer
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.IntentUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils
 import org.ole.planet.myplanet.utils.NotificationUtils
+import org.ole.planet.myplanet.utils.ResourcesPreviewLoader
 import org.ole.planet.myplanet.utils.TTSManager
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -452,21 +455,34 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             .into(imageViewer)
     }
 
-    private fun setupTextViewer() {
+    private suspend fun setupTextViewer() {
         binding.stubText.visibility = View.VISIBLE
         val textFileTitle = binding.root.findViewById<TextView>(R.id.textFileTitle)
         val textContent = binding.root.findViewById<TextView>(R.id.textContent)
         textFileTitle.text = title
 
         val file = File(externalFilesDir, "ole/$filePath")
-        if (file.exists()) {
-            val text = file.readText()
-            if (type == ResourceType.MARKDOWN) {
-                MarkdownUtils.setMarkdownText(textContent, text)
-            } else {
-                textContent.text = text
-            }
+        if (!file.exists()) return
+
+        if (type == ResourceType.CSV && showCsvTable(file, textContent)) return
+
+        val text = file.readText()
+        if (type == ResourceType.MARKDOWN) {
+            MarkdownUtils.setMarkdownText(textContent, text)
+        } else {
+            textContent.text = text
         }
+    }
+
+    private suspend fun showCsvTable(file: File, textContent: TextView): Boolean {
+        val preview = ResourcesPreviewLoader(dispatcherProvider)
+            .getCsvPreview(file, ResourcesPreviewLoader.VIEWER_ROWS) ?: return false
+        val csvScroll = binding.root.findViewById<View>(R.id.csvContentScroll)
+        val csvTable = binding.root.findViewById<TableLayout>(R.id.csvContentTable)
+        CsvTableRenderer.render(csvTable, preview, compact = false)
+        csvScroll.visibility = View.VISIBLE
+        textContent.visibility = View.GONE
+        return true
     }
 
     override fun setAuthSession(responseHeader: Map<String, List<String>>) {

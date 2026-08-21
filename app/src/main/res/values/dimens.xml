@@ -7,6 +7,15 @@
     <dimen name="text_size_large">18sp</dimen>
     <dimen name="text_size_mid">16sp</dimen>
     <dimen name="text_size_small">14sp</dimen>
+    <dimen name="csv_cell_text_size">15sp</dimen>
+    <dimen name="csv_cell_text_size_compact">13sp</dimen>
+    <dimen name="csv_cell_padding_horizontal">12dp</dimen>
+    <dimen name="csv_cell_padding_vertical">8dp</dimen>
+    <dimen name="csv_cell_max_width">260dp</dimen>
+    <dimen name="csv_cell_max_width_compact">180dp</dimen>
+    <dimen name="csv_row_divider_height">1dp</dimen>
+    <dimen name="csv_header_divider_height">2dp</dimen>
+    <dimen name="resource_preview_text_size">13sp</dimen>
     <dimen name="icon_size_mid">36dp</dimen>
     <dimen name="padding_small">4dp</dimen>
     <dimen name="image_size_home_card">40dp</dimen>
