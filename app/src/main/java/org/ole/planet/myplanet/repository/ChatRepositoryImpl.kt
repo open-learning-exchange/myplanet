@@ -20,9 +20,9 @@ import org.ole.planet.myplanet.model.ContentData
 import org.ole.planet.myplanet.model.ContinueChatRequest
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.Data
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.services.SharedPrefManager
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -44,9 +44,6 @@ class ChatRepositoryImpl @Inject constructor(
         val normalizedQueries: List<String?>,
         val normalizedResponses: List<String?>
     )
-
-    private var allChats: List<ChatHistory> = emptyList()
-    private var precomputedChats: List<PrecomputedChat> = emptyList()
 
     @VisibleForTesting
     internal var reachabilityCheck: suspend (String) -> Boolean = { url ->
@@ -132,14 +129,10 @@ class ChatRepositoryImpl @Inject constructor(
 
     override suspend fun getChatHistoryForUser(userName: String?): List<ChatHistory> {
         if (userName.isNullOrEmpty()) {
-            allChats = emptyList()
-            precomputedChats = emptyList()
             return emptyList()
         }
         val chats = chatDao.getByUser(userName)
-        allChats = sortChats(chats)
-        precomputedChats = buildPrecomputedChats(allChats)
-        return allChats
+        return sortChats(chats)
     }
 
     private fun sortChats(chats: List<ChatHistory>): List<ChatHistory> {
@@ -161,15 +154,16 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun searchChats(query: String, mode: ChatSearchMode): List<ChatHistory> {
+    override suspend fun searchChats(query: String, mode: ChatSearchMode, chats: List<ChatHistory>): List<ChatHistory> {
+        val precomputedChats = buildPrecomputedChats(chats)
         return if (mode == ChatSearchMode.TITLE) {
-            searchByTitle(query)
+            searchByTitle(query, precomputedChats)
         } else {
-            fullConvoSearch(query, isQuestion = (mode == ChatSearchMode.QUESTION))
+            fullConvoSearch(query, isQuestion = (mode == ChatSearchMode.QUESTION), precomputedChats)
         }
     }
 
-    private suspend fun fullConvoSearch(s: String, isQuestion: Boolean): List<ChatHistory> = withContext(dispatcherProvider.default) {
+    private suspend fun fullConvoSearch(s: String, isQuestion: Boolean, precomputedChats: List<PrecomputedChat>): List<ChatHistory> = withContext(dispatcherProvider.default) {
         var conversation: String?
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
@@ -201,7 +195,7 @@ class ChatRepositoryImpl @Inject constructor(
         inTitleStartQuery + inTitleContainsQuery + startsWithQuery + containsQuery
     }
 
-    private suspend fun searchByTitle(s: String): List<ChatHistory> = withContext(dispatcherProvider.default) {
+    private suspend fun searchByTitle(s: String, precomputedChats: List<PrecomputedChat>): List<ChatHistory> = withContext(dispatcherProvider.default) {
         var title: String?
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }

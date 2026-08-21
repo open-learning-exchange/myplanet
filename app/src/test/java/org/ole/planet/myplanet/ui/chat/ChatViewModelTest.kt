@@ -207,7 +207,7 @@ class ChatViewModelTest {
         val chat2 = ChatHistory().apply { title = "Chat 2" }
 
         coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2)
-        coEvery { chatRepository.searchChats("Chat 1", org.ole.planet.myplanet.repository.ChatSearchMode.TITLE) } returns listOf(chat1)
+        coEvery { chatRepository.searchChats("Chat 1", org.ole.planet.myplanet.repository.ChatSearchMode.TITLE, any()) } returns listOf(chat1)
 
         viewModel.loadChatHistoryScreenData("user123", null, null)
         testScheduler.advanceUntilIdle()
@@ -220,7 +220,7 @@ class ChatViewModelTest {
         testScheduler.advanceUntilIdle()
         assertEquals(2, viewModel.filteredChats.value.size)
 
-        coVerify { chatRepository.searchChats("Chat 1", org.ole.planet.myplanet.repository.ChatSearchMode.TITLE) }
+        coVerify { chatRepository.searchChats("Chat 1", org.ole.planet.myplanet.repository.ChatSearchMode.TITLE, any()) }
     }
 
     @Test

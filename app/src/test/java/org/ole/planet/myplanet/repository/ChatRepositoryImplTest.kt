@@ -26,10 +26,10 @@ import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.CouchDBResponse
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.News
+import kotlinx.coroutines.Dispatchers
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.utils.DispatcherProvider
-import kotlinx.coroutines.Dispatchers
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatRepositoryImplTest {
@@ -38,14 +38,12 @@ class ChatRepositoryImplTest {
     private val chatApiService: ChatApiService = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
-    private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
+    private val testDispatcher = kotlinx.coroutines.test.StandardTestDispatcher()
+    private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
     @Before
     fun setup() {
         every { sharedPrefManager.rawPreferences } returns mockk(relaxed = true)
-        every { dispatcherProvider.default } returns Dispatchers.Unconfined
-        every { dispatcherProvider.io } returns Dispatchers.Unconfined
-        every { dispatcherProvider.main } returns Dispatchers.Unconfined
         chatRepository = ChatRepositoryImpl(chatDao, chatApiService, serverUrlMapper, sharedPrefManager, dispatcherProvider, Gson())
     }
 
@@ -97,21 +95,19 @@ class ChatRepositoryImplTest {
     }
 
     @Test
-    fun `searchChats by title correctly filters list`() = runTest {
+    fun `searchChats by title correctly filters list`() = runTest(testDispatcher) {
         val chat1 = ChatHistory().apply { title = "First Chat" }
         val chat2 = ChatHistory().apply { title = "Second Discussion" }
+        val chats = listOf(chat1, chat2)
 
-        coEvery { chatDao.getByUser(any()) } returns listOf(chat1, chat2)
-        chatRepository.getChatHistoryForUser("user123")
-
-        val result = chatRepository.searchChats("First", ChatSearchMode.TITLE)
+        val result = chatRepository.searchChats("First", ChatSearchMode.TITLE, chats)
 
         assertEquals(1, result.size)
         assertEquals("First Chat", result[0].title)
     }
 
     @Test
-    fun `searchChats by full conversation filters by question`() = runTest {
+    fun `searchChats by full conversation filters by question`() = runTest(testDispatcher) {
         val chat1 = ChatHistory().apply {
             title = "Chat 1"
             conversations = listOf(Conversation().apply { query = "How is the weather?" })
@@ -120,33 +116,23 @@ class ChatRepositoryImplTest {
             title = "Chat 2"
             conversations = listOf(Conversation().apply { query = "Tell me a joke." })
         }
+        val chats = listOf(chat1, chat2)
 
-        coEvery { chatDao.getByUser(any()) } returns listOf(chat1, chat2)
-        chatRepository.getChatHistoryForUser("user123")
-
-        val result = chatRepository.searchChats("weather", ChatSearchMode.QUESTION)
+        val result = chatRepository.searchChats("weather", ChatSearchMode.QUESTION, chats)
 
         assertEquals(1, result.size)
         assertEquals("Chat 1", result[0].title)
     }
 
     @Test
-    fun `searchChats with empty query returns empty when filtered list logic is applied`() = runTest {
+    fun `searchChats with empty query returns empty when filtered list logic is applied`() = runTest(testDispatcher) {
         val chat1 = ChatHistory().apply { title = "Chat 1" }
         val chat2 = ChatHistory().apply { title = "Chat 2" }
+        val chats = listOf(chat1, chat2)
 
-        coEvery { chatDao.getByUser(any()) } returns listOf(chat1, chat2)
-        chatRepository.getChatHistoryForUser("user123")
+        val result = chatRepository.searchChats("", ChatSearchMode.TITLE, chats)
 
-        val result = chatRepository.searchChats("", ChatSearchMode.TITLE)
-
-        // Given searchByTitle splits by " " and filterNot isEmpty(), an empty string leads to empty queryParts
-        // Wait, actually, the repository search logic returns all if empty? No, searchByTitle returns startsWith + contains, which relies on query parts.
-        // It's the ViewModel that handles empty query by returning allChats. Here we just test the repo search.
-        // If query is empty, s.split(" ").filterNot { it.isEmpty() } is empty.
-        // normalizedQueryParts.all { title.contains... } is true for empty collection.
-        // Actually, let's just assert the result size.
-        assertTrue(result.isNotEmpty())
+        assertEquals(2, result.size)
     }
 
     @Test
