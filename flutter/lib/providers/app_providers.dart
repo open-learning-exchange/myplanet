@@ -368,6 +368,12 @@ final configurationsRepositoryProvider = Provider<ConfigurationsRepository>(
   (ref) => ConfigurationsRepository(
     ref.watch(planetApiProvider),
     ref.watch(serverUrlMapperProvider),
+    // The server's `minapk` is compared against the build's real version, not
+    // a constant somebody has to bump by hand — under-reporting it fails the
+    // whole configuration check. Read lazily, so this costs nothing until a
+    // configuration attempt actually happens.
+    appVersionLookup: () async =>
+        (await ref.read(appVersionInfoProvider.future)).version,
   ),
 );
 

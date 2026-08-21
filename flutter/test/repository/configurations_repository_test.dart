@@ -15,11 +15,13 @@ void main() {
   ConfigurationsRepository buildRepository({
     Map<String, String> mappings = const {},
     String appVersion = '0.62.97',
+    Future<String> Function()? appVersionLookup,
   }) {
     return ConfigurationsRepository(
       api,
       ServerUrlMapper(mappings: mappings),
       currentAppVersion: appVersion,
+      appVersionLookup: appVersionLookup,
     );
   }
 
@@ -191,6 +193,92 @@ void main() {
 
     test('returns null for an unknown language', () {
       expect(ConfigurationsRepository.languageCodeFromName('Klingon'), isNull);
+    });
+  });
+
+  group('app version resolution for the minapk gate', () {
+    // The comparison the whole configuration check hinges on: too low a version
+    // and `getMinApk` fails with a generic unreachable-server error that says
+    // nothing about the version being the cause.
+    const url = 'https://planet.example.org';
+    const couchDbUrl = 'https://satellite:1234@planet.example.org:443';
+
+    test('the runtime version is preferred over the constant', () async {
+      // The build is newer than the server minimum, the constant is older. Only
+      // reading the runtime value lets this configure at all.
+      stubVersions(url, minApk: '0.63.0');
+      stubConfigurations(couchDbUrl);
+
+      final result = await buildRepository(
+        appVersion: '0.62.98',
+        appVersionLookup: () async => '0.64.35',
+      ).getMinApk(url, '1234');
+
+      expect(result, isA<ConfigurationSuccess>());
+    });
+
+    test('the runtime version can also fail the gate', () async {
+      // The inverse, so the test above is not passing for the wrong reason:
+      // a genuinely too-old build is still rejected.
+      stubVersions(url, minApk: '0.63.0');
+      stubConfigurations(couchDbUrl);
+
+      final result = await buildRepository(
+        appVersion: '0.64.35',
+        appVersionLookup: () async => '0.62.98',
+      ).getMinApk(url, '1234');
+
+      expect(result, isA<ConfigurationFailure>());
+    });
+
+    test('the 0.0.0 placeholder falls back to the constant', () async {
+      // `package_info_plus` reports `0.0.0` when no manifest values are
+      // available. Comparing that against any real `minapk` would fail the
+      // check, so it must not displace the constant.
+      stubVersions(url, minApk: '0.62.0');
+      stubConfigurations(couchDbUrl);
+
+      final result = await buildRepository(
+        appVersion: '0.62.98',
+        appVersionLookup: () async => '0.0.0',
+      ).getMinApk(url, '1234');
+
+      expect(result, isA<ConfigurationSuccess>());
+    });
+
+    test('an empty runtime version falls back to the constant', () async {
+      stubVersions(url, minApk: '0.62.0');
+      stubConfigurations(couchDbUrl);
+
+      final result = await buildRepository(
+        appVersion: '0.62.98',
+        appVersionLookup: () async => '',
+      ).getMinApk(url, '1234');
+
+      expect(result, isA<ConfigurationSuccess>());
+    });
+
+    test('a throwing lookup falls back to the constant', () async {
+      // A plugin failure must not cost the user their server configuration.
+      stubVersions(url, minApk: '0.62.0');
+      stubConfigurations(couchDbUrl);
+
+      final result = await buildRepository(
+        appVersion: '0.62.98',
+        appVersionLookup: () async => throw StateError('no platform channel'),
+      ).getMinApk(url, '1234');
+
+      expect(result, isA<ConfigurationSuccess>());
+    });
+
+    test('no lookup at all uses the constant', () async {
+      stubVersions(url, minApk: '0.62.0');
+      stubConfigurations(couchDbUrl);
+
+      expect(
+        await buildRepository(appVersion: '0.62.98').getMinApk(url, '1234'),
+        isA<ConfigurationSuccess>(),
+      );
     });
   });
 }

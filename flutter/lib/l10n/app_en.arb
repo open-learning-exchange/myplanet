@@ -672,7 +672,6 @@
   "startConversation": "Start a new conversation",
   "typeMessage": "Type a message\u2026",
   "selectAiProvider": "Select AI provider",
-  "justNow": "Just now",
   "aiProviders": "AI providers",
   "aiProviderAvailable": "{name} (available)",
   "@aiProviderAvailable": {
@@ -1061,7 +1060,6 @@
   "subject": "Subject",
   "year": "Year",
   "timesRated": "Times Rated",
-  "description": "Description",
   "addToMyLibrary": "Add to My Library",
   "removeFromMyLibrary": "Remove from My Library",
   "addedToMyLibrary": "Added to My Library",
@@ -1084,7 +1082,6 @@
   "rating": "Rating",
   "operationFailed": "Operation failed",
   "filterResources": "Filter Resources",
-  "apply": "Apply",
   "teamSurveys": "Team surveys",
   "adoptableSurveys": "Surveys available to adopt",
   "noAdoptableSurveys": "No surveys available to adopt",

@@ -8,7 +8,7 @@
 - **Primary Language**: Kotlin (100% — no Java sources remain)
 - **Min SDK**: 26 (Android 8.0)
 - **Target SDK**: 36 (Android 16); **Compile SDK**: 37
-- **Current Version**: 0.63.42 (versionCode: 6342)
+- **Current Version**: 0.64.35 (versionCode: 6435)
 - **Build System**: Gradle 9.6.1 with Android Gradle Plugin 9.3.1
 - **Local Database**: Room (AndroidX) 2.8.4 — the only local persistence store
 - **License**: AGPL v3
@@ -106,6 +106,25 @@ and the full catalog otherwise. The notification sub-destination work (`a08fc566
 `MyLibraryTable` (schema v36) and `ResourceFiles.resolveHtmlEntryFile` (path-traversal-safe).
 The voices shared-team suffix (`"| Shared from {name}"`) and the team-finances future-date cap
 (#15766) round out the batch.
+
+Phases 54–60 shift from adding screens to hardening what exists. Phase 54 landed the HTML
+resource viewer (`webview_flutter`, local files only — `loadFile`, never `loadRequest`) and
+fixed a server-url alt-credential bug; Phase 55 added team financial report CSV export.
+Phase 56 ports `aa24dfa6c` (#15836): `updateUserSecurityData` now writes `Value.absent()`
+rather than `Value(null)` when the server omits a credential, so a null-returning fetch can no
+longer wipe a stored `derived_key`/`salt` and lock the user out of offline PBKDF2 verification.
+Phases 57–58 finished localising the UI, retiring the last hardcoded strings. Phase 59 replaced
+the hardcoded version/build line with `appVersionInfoProvider` (`package_info_plus`) and
+backfilled the team detail screens with 33 widget tests — the largest untested surface. Phase 60
+extends two Phase 59 fixes from one instance to the class: three further duplicate `app_en.arb`
+keys (`justNow`, `description`, `apply`) are removed and guarded by a test that reads the ARB
+source text, because `jsonDecode` collapses a duplicate pair before any assertion can see it;
+and the `minapk` comparator in `ConfigurationsRepository` now reads the runtime version too.
+That last one matters because a failed version check returns `_UrlCheckFailure`, which is
+indistinguishable from an unreachable server — a constant nobody remembered to bump presents as
+"cannot reach the server" on the first screen. The lookup falls back to the constant on anything
+unusable (throw, empty, or the `0.0.0` placeholder), since under-reporting the version would
+fail configuration outright.
 
 ### Documentation Map
 
@@ -798,6 +817,6 @@ Note: SYSTEM_ALERT_WINDOW is **not** declared (removed at some point; older docs
 
 ---
 
-**Last Updated**: 2026-08-20
-**Version**: 0.63.42
+**Last Updated**: 2026-08-21
+**Version**: 0.64.35
 **Maintainer**: Open Learning Exchange

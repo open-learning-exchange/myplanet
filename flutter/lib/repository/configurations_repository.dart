@@ -61,14 +61,52 @@ class ConfigurationsRepository {
     this._api,
     this._urlMapper, {
     this.currentAppVersion = defaultAppVersion,
-  });
+    Future<String> Function()? appVersionLookup,
+  }) : _appVersionLookup = appVersionLookup;
 
-  /// Matches `versionName` in `app/build.gradle` and `version:` in pubspec.yaml.
+  /// Fallback for [currentAppVersion] when no [appVersionLookup] is supplied
+  /// (every unit test) or when the lookup yields nothing usable.
+  ///
+  /// Kept in step with `version:` in pubspec.yaml by hand, which is exactly why
+  /// production reads the runtime value instead: see [_resolveAppVersion].
   static const String defaultAppVersion = '0.62.98';
+
+  /// The placeholder `package_info_plus` reports when no manifest values are
+  /// available — under `flutter test`, and on any platform that declines the
+  /// query. It must never reach the `minapk` comparison.
+  static const String _placeholderVersion = '0.0.0';
 
   final PlanetApi _api;
   final ServerUrlMapper _urlMapper;
   final String currentAppVersion;
+  final Future<String> Function()? _appVersionLookup;
+
+  /// The version to compare against the server's `minapk`.
+  ///
+  /// This is the one path where a stale version is not cosmetic: a failed
+  /// [VersionUtils.isVersionAllowed] makes `_checkConfigurationUrl` return
+  /// `_UrlCheckFailure`, so the whole server-configuration screen fails with no
+  /// hint that the version was the reason. A hardcoded constant has to be
+  /// remembered on every release bump, so production supplies the build's real
+  /// version instead.
+  ///
+  /// Anything unusable — a throwing lookup, an empty string, or the `0.0.0`
+  /// placeholder — falls back to [currentAppVersion]. Under-reporting the
+  /// version here would block configuration outright, which is a far worse
+  /// outcome than comparing a slightly stale constant.
+  Future<String> _resolveAppVersion() async {
+    final lookup = _appVersionLookup;
+    if (lookup == null) return currentAppVersion;
+    try {
+      final resolved = await lookup();
+      if (resolved.isEmpty || resolved == _placeholderVersion) {
+        return currentAppVersion;
+      }
+      return resolved;
+    } catch (_) {
+      return currentAppVersion;
+    }
+  }
 
   /// Port of `ConfigurationsRepositoryImpl.getMinApk`.
   Future<ConfigurationResult> getMinApk(String url, String pin) async {
@@ -123,7 +161,10 @@ class ConfigurationsRepository {
       versionsResult.data,
     );
     if (minApkVersion == null ||
-        !VersionUtils.isVersionAllowed(currentAppVersion, minApkVersion)) {
+        !VersionUtils.isVersionAllowed(
+          await _resolveAppVersion(),
+          minApkVersion,
+        )) {
       return _UrlCheckFailure(currentUrl);
     }
 

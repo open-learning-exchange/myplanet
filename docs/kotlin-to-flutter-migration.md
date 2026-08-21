@@ -2689,9 +2689,10 @@ tests never touch the platform:
   `ConsumerWidget` reading the same provider, dropping its dependency on
   `ConfigurationsRepository.defaultAppVersion` entirely.
 - **`configurations_repository.dart`** — `defaultAppVersion` bumped to
-  `0.62.98` to match pubspec. It is still the default for
-  `currentAppVersion` (the update-check comparator), which is the right
-  constant for that path until it too reads the runtime version.
+  `0.62.98` to match pubspec, and left as the default for `currentAppVersion`
+  (the update-check comparator). Phase 60 revisits that second half: the
+  comparator is the one caller where a stale version is not cosmetic, so it
+  now reads the runtime value too.
 
 ### New ARB key
 
@@ -2789,10 +2790,82 @@ clean. Every team detail screen now has at least three widget tests.
 
 ---
 
-**Last updated**: 2026-08-20 (Phase 59 complete — app version/build read at
+## Phase 60 — the rest of the duplicate-key class, and the version gate
+
+Two follow-ons from the Phase 59 harvest, both extending a fix that was
+applied to one instance of a problem rather than to the problem.
+
+### Three more duplicate ARB keys, and a test that will notice next time
+
+Phase 59 found `untitledResource` declared twice and split it. Sweeping
+`app_en.arb` for the same shape found **three more**: `justNow` (lines 121
+and 675), `description` (527 and 1064) and `apply` (716 and 1087). All three
+pairs happen to carry identical values, so unlike `untitledResource` nothing
+renders wrongly today — but that is luck, not safety. `untitledResource` was
+also harmless on the day its second entry was added; it became a bug when
+somebody edited one of the two copies. Each surviving pair is a silent
+override waiting for its first divergent edit.
+
+The keys are deduped, and the reason this went unnoticed is now closed off:
+
+- **`locale_coverage_test.dart`** gains `no locale file declares the same key
+  twice`, checked across all six locales. It deliberately does **not** use the
+  file's own `readArb` helper — `jsonDecode` collapses a duplicate pair before
+  any assertion can see it, which is precisely why every existing ARB test was
+  blind to this. The check counts keys in the source text instead, tracking
+  brace depth so that `@key` metadata blocks (which nest their own
+  `description`/`placeholders`/`type`) and repeated placeholder names like
+  `count` are not mistaken for top-level duplicates.
+
+The guard was verified in both directions: it fails on the pre-fix file,
+naming `justNow, description, apply`, and passes after the dedup. A guard test
+that has only ever been observed passing is not evidence of anything.
+
+### The `minapk` comparator reads the runtime version
+
+Phase 59 introduced `appVersionInfoProvider` and pointed the two screens that
+*display* a version at it, leaving `ConfigurationsRepository.currentAppVersion`
+— the value compared against the server's `minapk` — on the hand-bumped
+constant, described there as "the right constant for that path". It is the
+opposite: it is the one caller where a stale version is not cosmetic.
+
+`_checkConfigurationUrl` returns `_UrlCheckFailure` when
+`isVersionAllowed(currentAppVersion, minApk)` fails, and that failure is
+indistinguishable from an unreachable server — so a constant somebody forgot
+to bump presents as "cannot reach the server" on the app's *first* screen,
+with nothing pointing at the version. The display path drifting is a cosmetic
+bug; the comparator drifting locks users out of configuration.
+
+- **`configurations_repository.dart`** — the constructor takes an optional
+  `Future<String> Function()? appVersionLookup`, and `_resolveAppVersion()`
+  awaits it at the comparison site. `currentAppVersion` stays as the fallback,
+  so all existing tests and call sites are unaffected.
+- **`app_providers.dart`** — the production provider supplies the lookup off
+  `appVersionInfoProvider`, read lazily so it costs nothing until a
+  configuration attempt happens.
+- The fallback is deliberately generous: a throwing lookup, an empty string,
+  or the `0.0.0` placeholder `package_info_plus` reports when no manifest
+  values are available all fall back to the constant. Under-reporting the
+  version would fail the check outright, which is worse than comparing a
+  slightly stale constant — so the runtime value is only allowed to *replace*
+  the constant when it is real.
+
+Six tests cover the resolution: the runtime version passing a gate the
+constant would fail, the inverse (so the first is not passing for the wrong
+reason), and the placeholder/empty/throwing/absent fallbacks.
+
+The 1195-test suite passes, `flutter analyze` clean, `dart format` clean,
+`flutter build apk --debug` green.
+
+---
+
+**Last updated**: 2026-08-21 (Phase 60 complete — three further duplicate ARB
+keys removed and guarded by a test that reads the source text rather than the
+parsed map; the `minapk` comparator reads the runtime app version with a
+conservative fallback. Phase 59 — app version/build read at
 runtime through package_info_plus behind a testable seam; the last
 correctness gap Phase 58 flagged is closed; the team detail screens
 backfilled with 33 widget tests; duplicate `untitledResource` ARB key
 split into `untitledResource`/`untitledResourceTitle`)
-**Phase**: 59 of N (27 of 28 UI packages have a screen — see Status for what that does and
+**Phase**: 60 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

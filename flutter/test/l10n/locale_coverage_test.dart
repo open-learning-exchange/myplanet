@@ -207,4 +207,82 @@ void main() {
 
     expect(material.cancelButtonLabel, isNot('Cancel'));
   });
+
+  test('no locale file declares the same key twice', () {
+    // `gen-l10n` parses ARB as JSON, and a duplicate key is not an error there:
+    // the last value silently wins and one getter is emitted. That is how
+    // `untitledResource` came to render "Untitled Resource" everywhere after a
+    // second, title-case entry was appended 400 lines below the sentence-case
+    // original — every list screen that wanted the first value got the second.
+    // No existing test could see it, because they all read through `readArb`
+    // and `jsonDecode` collapses the pair before they look. So this one counts
+    // the keys in the source text instead.
+    for (final code in [...LocaleNotifier.supportedLanguageCodes, 'es']) {
+      final duplicates = _duplicateTopLevelKeys(
+        File('lib/l10n/app_$code.arb').readAsStringSync(),
+      );
+
+      expect(
+        duplicates,
+        isEmpty,
+        reason:
+            'app_$code.arb declares ${duplicates.join(", ")} more than once; '
+            'gen-l10n keeps only the last value of each',
+      );
+    }
+  });
+}
+
+/// Top-level ARB keys that appear more than once in [source].
+///
+/// Only depth-1 keys count: an `@key` metadata block nests its own
+/// `description`/`placeholders`/`type`, and placeholder names like `count`
+/// legitimately repeat across entries, so a naive scan reports all of those as
+/// duplicates. Tracking brace depth outside string literals is enough to tell
+/// the two apart.
+Set<String> _duplicateTopLevelKeys(String source) {
+  final seen = <String>{};
+  final duplicates = <String>{};
+
+  var depth = 0;
+  var inString = false;
+  var escaped = false;
+  final current = StringBuffer();
+  String? lastString;
+
+  for (final char in source.split('')) {
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (char == r'\') {
+        escaped = true;
+      } else if (char == '"') {
+        inString = false;
+        lastString = current.toString();
+      } else {
+        current.write(char);
+      }
+      continue;
+    }
+
+    switch (char) {
+      case '"':
+        inString = true;
+        current.clear();
+      case '{':
+      case '[':
+        depth++;
+      case '}':
+      case ']':
+        depth--;
+      case ':':
+        // A `key:` at depth 1 is an entry of the outermost object.
+        if (depth == 1 && lastString != null) {
+          if (!seen.add(lastString)) duplicates.add(lastString);
+          lastString = null;
+        }
+    }
+  }
+
+  return duplicates;
 }
