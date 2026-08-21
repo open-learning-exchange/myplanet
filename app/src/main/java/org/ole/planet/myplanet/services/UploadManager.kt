@@ -260,12 +260,8 @@ class UploadManager @Inject constructor(
                 val uploadedTeams = mutableMapOf<String, String>()
 
                 val bulkDocs = com.google.gson.JsonArray()
-                val teamMap = mutableMapOf<String, org.ole.planet.myplanet.repository.TeamUploadData>()
 
                 batch.forEach { teamData ->
-                    teamData.teamId?.let { id ->
-                        teamMap[id] = teamData
-                    }
                     bulkDocs.add(teamData.serialized)
                 }
 
@@ -285,7 +281,7 @@ class UploadManager @Inject constructor(
                         for (i in 0 until responseBody.size()) {
                             val element = responseBody.get(i).asJsonObject
                             val id = getString("id", element)
-                            val teamData = teamMap[id] ?: continue
+                            val teamData = batch.getOrNull(i) ?: continue
 
                             if (element.has("error")) {
                                 // 200 bulk response code prevents retry here, as per doc errors aren't retried
