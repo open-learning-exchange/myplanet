@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import java.util.Calendar
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -9,7 +9,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.OfflineActivity
-import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 class ActivitiesFragmentTest {
 
@@ -18,12 +18,7 @@ class ActivitiesFragmentTest {
     @Before
     fun setup() {
         fragment = ActivitiesFragment()
-        fragment.dispatcherProvider = object : DispatcherProvider {
-            override val main = Dispatchers.Unconfined
-            override val io = Dispatchers.Unconfined
-            override val default = Dispatchers.Unconfined
-            override val unconfined = Dispatchers.Unconfined
-        }
+        fragment.dispatcherProvider = TestDispatcherProvider(UnconfinedTestDispatcher())
     }
 
     @Test

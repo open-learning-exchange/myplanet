@@ -61,7 +61,10 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 
     override fun getOfflineLogins(userName: String): Flow<List<OfflineActivity>> {
-        return offlineActivityDao.observeByUserNameAndType(userName, UserSessionManager.KEY_LOGIN).distinctUntilChanged()
+        return offlineActivityDao.observeByUserNameAndType(userName, UserSessionManager.KEY_LOGIN)
+            .distinctUntilChanged { old, new ->
+                old.size == new.size && old.zip(new).all { (a, b) -> a.id == b.id && a.loginTime == b.loginTime }
+            }
     }
 
     override suspend fun markResourceAdded(userId: String?, resourceId: String) {

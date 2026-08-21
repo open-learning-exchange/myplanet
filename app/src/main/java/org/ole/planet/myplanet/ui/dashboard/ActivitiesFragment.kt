@@ -6,9 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
@@ -18,7 +16,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.text.DateFormatSymbols
 import java.util.Calendar
 import javax.inject.Inject
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -27,6 +24,7 @@ import org.ole.planet.myplanet.model.OfflineActivity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class ActivitiesFragment : Fragment() {
@@ -54,11 +52,9 @@ class ActivitiesFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             val userName = userSessionManager.getUserModel()?.name ?: return@launch
 
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                activitiesRepository.getOfflineLogins(userName).collectLatest { logins ->
-                    val monthlyCounts = computeMonthlyCounts(logins, startMillis, endMillis)
-                    renderChart(monthlyCounts, daynightTextColor)
-                }
+            collectLatestWhenStarted(activitiesRepository.getOfflineLogins(userName)) { logins ->
+                val monthlyCounts = computeMonthlyCounts(logins, startMillis, endMillis)
+                renderChart(monthlyCounts, daynightTextColor)
             }
         }
     }
