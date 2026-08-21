@@ -7,6 +7,7 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/courses_providers.dart';
 import '../../providers/dashboard_providers.dart';
+import '../../providers/health_provider.dart';
 import '../../providers/life_provider.dart';
 import '../../providers/network_status_provider.dart';
 import '../../providers/notifications_provider.dart';
@@ -69,6 +70,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         WidgetsBinding.instance.addPostFrameCallback(
           (_) => _checkPendingSurveys(user),
         );
+        // `syncKeyId()` from `BellDashboardFragment.onViewCreated`: a
+        // non-guest user with no local health key fetches the one their
+        // account published to its `userdb-*` database. The Kotlin gates on
+        // `TextUtils.isEmpty(user.key)`; the notifier's SyncRunning check is
+        // the `syncJob?.isActive` re-entrancy guard.
+        if (!user.id.startsWith('guest') && (user.key?.isEmpty ?? true)) {
+          ref
+              .read(healthKeyIvSyncProvider.notifier)
+              .sync(user.rolesList.join(','));
+        }
       }
     });
 

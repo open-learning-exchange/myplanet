@@ -418,6 +418,183 @@ void main() {
       },
     );
   });
+  // ── Dashboard key/IV sync — port of TransactionSyncManager ──────────────
+  //
+  // `syncDashboardKeyId` pulls the health AES key/IV a user published to
+  // `userdb-<hex(planetCode)>-<hex(name)>`, so records written on another
+  // device decrypt here. The expected table names below are pinned to the
+  // Kotlin `Utilities.toHex` output (see text_utils_test).
+
+  group('syncDashboardKeyIv', () {
+    const config = ServerConfig(
+      serverUrl: 'https://planet.example',
+      couchDbUrl: 'https://satellite:1234@planet.example:443',
+      pin: '1234',
+    );
+
+    Future<void> seedSyncedUser(String id, String name) =>
+        database.userDao.upsert(
+          UsersCompanion.insert(
+            id: id,
+            couchId: Value('org.couchdb.user:$name'),
+            name: Value(name),
+            planetCode: const Value('earth'),
+          ),
+        );
+
+    void stubKeyIvDoc({
+      required String table,
+      Map<String, dynamic>? doc,
+      bool allDocsFail = false,
+      List<String?>? capturedHeaders,
+    }) {
+      void capture(Invocation invocation) {
+        capturedHeaders?.add(invocation.namedArguments[#authHeader] as String?);
+      }
+
+      when(
+        () => api.getJsonObject(
+          'https://satellite:1234@planet.example:443/db/$table/_all_docs',
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer((invocation) async {
+        capture(invocation);
+        return allDocsFail
+            ? const NetworkError<Map<String, dynamic>>(503, 'down')
+            : NetworkSuccess<Map<String, dynamic>>({
+                'rows': [
+                  {'id': 'keydoc'},
+                ],
+              });
+      });
+      when(
+        () => api.getJsonObject(
+          'https://satellite:1234@planet.example:443/db/$table/keydoc',
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer((invocation) async {
+        capture(invocation);
+        return NetworkSuccess<Map<String, dynamic>>(doc ?? {});
+      });
+    }
+
+    test(
+      'a non-health role fetches only the signed-in user, with their own credentials',
+      () async {
+        await seedSyncedUser('user-1', 'alice');
+        await seedSyncedUser('user-2', 'bob');
+        final captured = <String?>[];
+        stubKeyIvDoc(
+          table: 'userdb-6561727468-616c696365',
+          doc: {'key': 'KEY', 'iv': 'IV'},
+          capturedHeaders: captured,
+        );
+
+        await createRepository(config: config).syncDashboardKeyIv(
+          userName: 'alice',
+          password: 'pw',
+          currentUserId: 'user-1',
+          role: 'learner',
+        );
+
+        final user = await database.userDao.getById('user-1');
+        expect(user?.key, 'KEY');
+        expect(user?.iv, 'IV');
+        // The header is the user's own basic auth, not the satellite PIN.
+        expect(captured, ['Basic YWxpY2U6cHc=', 'Basic YWxpY2U6cHc=']);
+        // Bob's userdb is never touched without a health role.
+        verifyNever(
+          () => api.getJsonObject(
+            any(that: contains('bob')),
+            authHeader: any(named: 'authHeader'),
+          ),
+        );
+      },
+    );
+
+    test('a health role syncs every synced account', () async {
+      await seedSyncedUser('user-1', 'alice');
+      await seedSyncedUser('user-2', 'bob');
+      // Not synced (blank couchId): excluded from the batch.
+      await database.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'local-only',
+          couchId: const Value(''),
+          name: const Value('carol'),
+        ),
+      );
+      stubKeyIvDoc(
+        table: 'userdb-6561727468-616c696365',
+        doc: {'key': 'AK', 'iv': 'AI'},
+      );
+      stubKeyIvDoc(
+        table: 'userdb-6561727468-626f62',
+        doc: {'key': 'BK', 'iv': 'BI'},
+      );
+
+      await createRepository(config: config).syncDashboardKeyIv(
+        userName: 'alice',
+        password: 'pw',
+        currentUserId: 'user-1',
+        role: 'learner,health',
+      );
+
+      expect((await database.userDao.getById('user-1'))?.key, 'AK');
+      expect((await database.userDao.getById('user-2'))?.key, 'BK');
+      expect((await database.userDao.getById('local-only'))?.key, isNull);
+    });
+
+    test('a document without key or iv leaves the row untouched', () async {
+      await seedSyncedUser('user-1', 'alice');
+      stubKeyIvDoc(table: 'userdb-6561727468-616c696365', doc: {});
+
+      await createRepository(config: config).syncDashboardKeyIv(
+        userName: 'alice',
+        password: 'pw',
+        currentUserId: 'user-1',
+        role: 'learner',
+      );
+
+      final user = await database.userDao.getById('user-1');
+      expect(user?.key, isNull);
+      expect(user?.iv, isNull);
+    });
+
+    test('one failing account does not fail the rest of the batch', () async {
+      await seedSyncedUser('user-1', 'alice');
+      await seedSyncedUser('user-2', 'bob');
+      stubKeyIvDoc(table: 'userdb-6561727468-616c696365', allDocsFail: true);
+      stubKeyIvDoc(
+        table: 'userdb-6561727468-626f62',
+        doc: {'key': 'BK', 'iv': 'BI'},
+      );
+
+      await createRepository(config: config).syncDashboardKeyIv(
+        userName: 'alice',
+        password: 'pw',
+        currentUserId: 'user-1',
+        role: 'health',
+      );
+
+      expect((await database.userDao.getById('user-1'))?.key, isNull);
+      expect((await database.userDao.getById('user-2'))?.key, 'BK');
+    });
+
+    test('no server config is a silent no-op', () async {
+      await seedSyncedUser('user-1', 'alice');
+
+      await createRepository().syncDashboardKeyIv(
+        userName: 'alice',
+        password: 'pw',
+        currentUserId: 'user-1',
+        role: 'learner',
+      );
+
+      verifyNever(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      );
+    });
+  });
 }
 
 class MockPlanetApi extends Mock implements PlanetApi {}

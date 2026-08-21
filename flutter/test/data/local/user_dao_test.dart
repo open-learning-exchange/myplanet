@@ -417,4 +417,38 @@ void main() {
       expect(await db.userDao.count(), 3);
     });
   });
+
+  group('UserDao.getUsersForHealthSync', () {
+    test('returns only users with a non-blank couch id', () async {
+      await seedUser(id: 'synced', couchId: 'org.couchdb.user:alice');
+      await seedUser(id: 'guest-1'); // null couchId
+      await seedUser(id: 'blank', couchId: '');
+      await seedUser(id: 'whitespace', couchId: '  ');
+
+      final users = await db.userDao.getUsersForHealthSync();
+
+      expect(users.map((u) => u.id), ['synced']);
+    });
+  });
+
+  group('UserDao.markUserKeyIvSaved', () {
+    test('writes the key and iv onto the named row only', () async {
+      await seedUser(id: 'user-1');
+      await seedUser(id: 'user-2');
+
+      await db.userDao.markUserKeyIvSaved('user-1', 'KEY', 'IV');
+
+      final updated = await db.userDao.getById('user-1');
+      expect(updated?.key, 'KEY');
+      expect(updated?.iv, 'IV');
+      final untouched = await db.userDao.getById('user-2');
+      expect(untouched?.key, isNull);
+      expect(untouched?.iv, isNull);
+    });
+
+    test('is a no-op for an unknown id', () async {
+      await db.userDao.markUserKeyIvSaved('missing', 'KEY', 'IV');
+      expect(await db.userDao.getById('missing'), isNull);
+    });
+  });
 }

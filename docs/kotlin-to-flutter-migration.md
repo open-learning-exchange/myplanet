@@ -694,10 +694,10 @@ not built, or needs a primitive the port lacks):
   `ResourcesRepository.getOfflineResourceItems` rather than an inline `ole/` walk, which both
   removes a duplicate of the repository's grouping logic and makes the screen testable under the
   fake clock (an inline walk hangs the way `storage_category_detail_screen_test` documents).
-- `b8e98c550` / `2b39eb329`: the courses progress filter and sort toggle are not ported; when
-  they are, implement the *new* semantics (progress filter over the whole library, `max`
-  falling back to the step count; sort state living in the provider so it survives stream
-  emissions).
+- `b8e98c550` / `2b39eb329`: the courses progress filter and sort toggle **are ported** (this
+  entry was stale): `courseProgressFilterProvider` filters over the whole library with the
+  `max`-as-step-count fallback, and `CourseSortState` lives in the provider so it survives
+  stream emissions — the new semantics this entry asked for.
 - `4fdc7fcb1` is **now ported** (was spec debt): `BecomeMemberActivity`'s username validation is
   debounced 300 ms with a stale-result guard. The Flutter `BecomeMemberScreen` owns a
   `_usernameValidationTimer` that supersedes the previous one on every keystroke, and a stale-result
@@ -708,8 +708,9 @@ not built, or needs a primitive the port lacks):
   ICU `Normalizer.NFD` pass to reject accented Latin, and Dart has no pure-Dart NFD normaliser, so
   the ASCII-only rule encodes the same intent the user-facing message advertises. The submit-time
   validator now also surfaces the live error so a fast tap cannot slip past it.
-- `9f3fac1d9`: the dashboard key/IV sync (not ported) gained an in-flight re-entrancy guard —
-  carry it when that flow is ported.
+- `9f3fac1d9`: the dashboard key/IV sync **is now ported** (Phase 61), guard included —
+  the `syncJob?.isActive` check is the `SyncRunning` state check in
+  `HealthKeyIvSyncNotifier.sync`.
 - `dc5659243`: if memberships ever gain a delete-pending state, the roster query must filter it.
 
 ## Strategy
@@ -2859,13 +2860,77 @@ The 1195-test suite passes, `flutter analyze` clean, `dart format` clean,
 
 ---
 
-**Last updated**: 2026-08-21 (Phase 60 complete — three further duplicate ARB
-keys removed and guarded by a test that reads the source text rather than the
-parsed map; the `minapk` comparator reads the runtime app version with a
-conservative fallback. Phase 59 — app version/build read at
+## Phase 61 — the dashboard key/IV sync-in
+
+The last `9f3fac1d9` spec-debt item: the Kotlin dashboard fetches the health
+AES key/IV a user published to their per-user CouchDB database when their
+local row has none — the path that lets health records written on another
+device decrypt here. Without it the port generated a fresh key via
+`ensureUserSecurityKeys` and could never read a sibling device's records.
+
+The chain, as `TransactionSyncManager` runs it:
+
+- `BellDashboardFragment.onViewCreated` calls `syncKeyId()` for a non-guest
+  user with `TextUtils.isEmpty(user.key)`. The home screen's session listener
+  is the same trigger (`!guest && key empty`), firing once per user load as
+  the Kotlin's `wasUserNull` gate does.
+- `DashboardViewModel.syncKeyId(role)` guards re-entrancy with
+  `syncJob?.isActive` and emits Loading/Success/Error. The port's
+  `HealthKeyIvSyncNotifier` mirrors both: the guard is the `SyncRunning`
+  state check, the events are the shared `SyncUiState`. It does **not** stamp
+  the last-sync preference — the Kotlin records that only for full syncs —
+  so it is a small dedicated notifier rather than another `SyncNotifier`
+  subclass.
+- A role containing "health" syncs **every** locally-known synced account
+  (`syncAllHealthData` over `getUsersForHealthSync` — couch id non-blank);
+  anything else syncs only the signed-in user (`syncKeyIv`). The request
+  authenticates as the user (`basicAuthHeader(name, password)` from the
+  session + secure storage), not the satellite PIN — the per-user database
+  accepts only its owner.
+- Per user the fetch is `_all_docs` → first row id → that document, and a
+  document with a non-empty key or iv lands via `markUserKeyIvSaved`.
+  Per-user failures are swallowed exactly as the Kotlin's
+  `catch (e: Exception)` — one unreachable account must not fail the batch,
+  and the dashboard never surfaces this sync.
+
+Two details that would have been wrong without reading the source:
+
+- The table name is `userdb-<hex(planetCode)>-<hex(name)>` where `toHex` is
+  `String.format("%x", BigInteger(1, bytes))` — one big-endian number, not
+  per-byte hex: leading zero bytes collapse and the empty string is `"0"`.
+  `toHexString` in `text_utils.dart` pins that (the empty and leading-zero
+  cases are the ones a per-byte port gets wrong), and the repository tests
+  hardcode the expected table names so a drift shows up as a red test.
+- Master's `di?.show()`/`di?.dismiss()` progress dialog is **not** ported:
+  `di` is never assigned on master, so those calls are no-ops and nothing
+  renders. Porting the dialog would have been porting a phantom.
+
+Still not ported (recorded here so it stops being implicit): the **upload**
+direction — `UserRepositoryImpl.saveKeyIv` posts the freshly generated key/IV
+to the user's `userdb-*` during member creation, which is what makes a key
+recoverable on a second device in the first place. Until that lands, a key
+generated by the Flutter app itself is device-local; the sync-in path only
+helps users whose key was published by the Kotlin app.
+
+Nineteen tests cover it: `toHexString` parity (including empty-string and
+leading-zero collapse), the DAO filter/write methods, the repository fan-out
+(non-health → self only with user credentials, health → all synced accounts,
+empty doc → no write, per-account failure isolation, no config → no-op), the
+notifier (credentials wiring, the re-entrancy guard, error state, no-op
+states), and the home-screen gate (triggers for a non-guest without a key,
+skips a stored key and guests).
+
+---
+
+**Last updated**: 2026-08-21 (Phase 61 complete — dashboard health key/IV
+sync-in ported with the 9f3fac1d9 re-entrancy guard; the stale
+courses-progress-filter spec-debt entry corrected. Phase 60 — three further
+duplicate ARB keys removed and guarded by a test that reads the source text
+rather than the parsed map; the `minapk` comparator reads the runtime app
+version with a conservative fallback. Phase 59 — app version/build read at
 runtime through package_info_plus behind a testable seam; the last
 correctness gap Phase 58 flagged is closed; the team detail screens
 backfilled with 33 widget tests; duplicate `untitledResource` ARB key
 split into `untitledResource`/`untitledResourceTitle`)
-**Phase**: 60 of N (27 of 28 UI packages have a screen — see Status for what that does and
+**Phase**: 61 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

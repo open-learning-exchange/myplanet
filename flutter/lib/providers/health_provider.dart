@@ -156,6 +156,52 @@ final healthSyncProvider = NotifierProvider<HealthSyncNotifier, SyncUiState>(
   HealthSyncNotifier.new,
 );
 
+/// Single-flight driver for [HealthRepository.syncDashboardKeyIv], fired from
+/// the home screen when a signed-in non-guest user has no local health key.
+///
+/// Port of `DashboardViewModel.syncKeyId`: the `syncJob?.isActive` re-entrancy
+/// guard (9f3fac1d9) is the `SyncRunning` check below, and the `SyncUiState`
+/// events mirror its `_syncKeyIdEvent` emissions. Unlike [SyncNotifier] this
+/// does not stamp the last-sync preference — the Kotlin records that only for
+/// full syncs, and a key fetch is not one. Master's `di?.show()`/`di?.dismiss()`
+/// progress dialog is deliberately not ported: `di` is never instantiated on
+/// master, so the calls are no-ops and nothing ever renders.
+class HealthKeyIvSyncNotifier extends Notifier<SyncUiState> {
+  @override
+  SyncUiState build() => const SyncIdle();
+
+  Future<void> sync(String? role) async {
+    if (state is SyncRunning) return;
+
+    final config = ref.read(serverConfigProvider);
+    final session = ref.read(sessionProvider).valueOrNull;
+    if (config == null || session == null) return;
+
+    state = const SyncRunning(SyncProgress(completed: 0, total: 0));
+    try {
+      // A missing password becomes "", as `SecurePrefs.getPassword(...) ?: ""`
+      // does; the per-user request then fails and is swallowed per account.
+      final password = await ref.read(planetPrefsProvider).readPassword() ?? '';
+      await ref
+          .read(healthRepositoryProvider)
+          .syncDashboardKeyIv(
+            userName: session.name ?? '',
+            password: password,
+            currentUserId: session.id,
+            role: role,
+          );
+      state = const SyncSucceeded(0);
+    } catch (error) {
+      state = SyncErrored('$error');
+    }
+  }
+}
+
+final healthKeyIvSyncProvider =
+    NotifierProvider<HealthKeyIvSyncNotifier, SyncUiState>(
+      HealthKeyIvSyncNotifier.new,
+    );
+
 /// Notifier for managing examination form state.
 class ExaminationNotifier extends StateNotifier<ExaminationState> {
   final HealthRepository _repo;

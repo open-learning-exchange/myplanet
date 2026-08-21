@@ -5,6 +5,7 @@ import 'package:myplanet/core/prefs/planet_prefs.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/dashboard_providers.dart';
+import 'package:myplanet/providers/health_provider.dart';
 import 'package:myplanet/providers/life_provider.dart';
 import 'package:myplanet/providers/network_status_provider.dart';
 import 'package:myplanet/providers/notifications_provider.dart';
@@ -84,6 +85,16 @@ class _TestNetworkStatusNotifier extends NetworkStatusNotifier {
   NetworkStatus build() => status;
 }
 
+/// Records `sync` calls instead of running the key/IV fetch. Overriding the
+/// provider in every harness below also keeps the real notifier from reading
+/// the (un-overridden) server config.
+class RecordingKeyIvSync extends HealthKeyIvSyncNotifier {
+  final calls = <String?>[];
+
+  @override
+  Future<void> sync(String? role) async => calls.add(role);
+}
+
 void main() {
   Future<List<Override>> homeOverrides({
     UserRow? user,
@@ -95,9 +106,13 @@ void main() {
     Map<String, TeamNotificationInfo> teamNotifications = const {},
     int offlineLogins = 0,
     NetworkStatus networkStatus = NetworkStatus.connected,
+    RecordingKeyIvSync? keyIvSync,
   }) async => [
     sessionProvider.overrideWith(() => _TestSessionNotifier(user)),
     planetPrefsProvider.overrideWithValue(prefs ?? await _prefs()),
+    healthKeyIvSyncProvider.overrideWith(
+      () => keyIvSync ?? RecordingKeyIvSync(),
+    ),
     unreadNotificationCountProvider.overrideWith((ref) => Stream.value(0)),
     myLibraryStreamProvider.overrideWith(
       (ref, userId) => Stream.value(library),
@@ -476,5 +491,70 @@ void main() {
     await tester.tap(find.text('Days'));
     await tester.pumpAndSettle();
     expect(find.text('30 Days'), findsOneWidget);
+  });
+
+  // Port of `BellDashboardFragment.onViewCreated`'s `syncKeyId()` gate:
+  // `!guest && TextUtils.isEmpty(user.key)`.
+  group('key/iv sync trigger', () {
+    testWidgets(
+      'a non-guest user without a health key triggers the key/iv sync',
+      (tester) async {
+        final keyIvSync = RecordingKeyIvSync();
+        await tester.pumpWidget(
+          wrapScreen(
+            const HomeScreen(),
+            overrides: await homeOverrides(
+              user: _user('user-1'),
+              keyIvSync: keyIvSync,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(keyIvSync.calls, ['learner']);
+      },
+    );
+
+    testWidgets('a user with a stored key does not trigger it', (tester) async {
+      final keyIvSync = RecordingKeyIvSync();
+      await tester.pumpWidget(
+        wrapScreen(
+          const HomeScreen(),
+          overrides: await homeOverrides(
+            user: UserRow(
+              id: 'user-1',
+              name: 'ada',
+              rolesList: const ['learner'],
+              userAdmin: false,
+              joinDate: 0,
+              key: 'stored-key',
+              iv: 'stored-iv',
+              isArchived: false,
+              isUpdated: false,
+            ),
+            keyIvSync: keyIvSync,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(keyIvSync.calls, isEmpty);
+    });
+
+    testWidgets('a guest never triggers it', (tester) async {
+      final keyIvSync = RecordingKeyIvSync();
+      await tester.pumpWidget(
+        wrapScreen(
+          const HomeScreen(),
+          overrides: await homeOverrides(
+            user: _user('guest-ada'),
+            keyIvSync: keyIvSync,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(keyIvSync.calls, isEmpty);
+    });
   });
 }

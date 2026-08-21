@@ -124,7 +124,15 @@ That last one matters because a failed version check returns `_UrlCheckFailure`,
 indistinguishable from an unreachable server — a constant nobody remembered to bump presents as
 "cannot reach the server" on the first screen. The lookup falls back to the constant on anything
 unusable (throw, empty, or the `0.0.0` placeholder), since under-reporting the version would
-fail configuration outright.
+fail configuration outright. Phase 61 ports the dashboard key/IV sync-in (`9f3fac1d9`): the home
+screen's session listener fires `HealthKeyIvSyncNotifier` for a non-guest user with no local
+health key, which pulls the key/IV from the user's `userdb-<hex(planetCode)>-<hex(name)>`
+database with the user's own basic-auth credentials (health-role users sweep every synced
+account), guarded against re-entry by its `SyncRunning` state. The `toHex` encoding is one
+big-endian number, not per-byte hex — `toHexString` pins the empty-string/leading-zero cases a
+naive port gets wrong. The master's progress dialog is deliberately not ported: `di` is never
+assigned there, so its show/dismiss calls are no-ops. Still open: the upload direction
+(`saveKeyIv` during member creation).
 
 ### Documentation Map
 

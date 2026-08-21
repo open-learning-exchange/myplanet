@@ -6,6 +6,7 @@ import '../core/config/server_config.dart';
 import '../core/network/network_result.dart';
 import '../core/sync/sync_result.dart';
 import '../core/utils/json_utils.dart';
+import '../core/utils/text_utils.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
@@ -383,6 +384,85 @@ class HealthRepository {
   Future<String?> _decryptForUser(String? encrypted, UserRow user) async {
     if (encrypted == null || encrypted.isEmpty) return null;
     return HealthCipher.decrypt(encrypted, user.key, user.iv);
+  }
+
+  /// Port of `TransactionSyncManager.syncDashboardKeyId` — pull the health
+  /// AES key/IV a user's account published to its per-user CouchDB database
+  /// (`userdb-<hex(planetCode)>-<hex(name)>`), so records written on another
+  /// device decrypt here.
+  ///
+  /// A role containing "health" syncs every locally-known synced account
+  /// (`syncAllHealthData`); anything else syncs only the signed-in user
+  /// (`syncKeyIv`). The user-credentialed header — not the satellite PIN — is
+  /// what the per-user database accepts.
+  Future<void> syncDashboardKeyIv({
+    required String userName,
+    required String password,
+    required String? currentUserId,
+    String? role,
+  }) async {
+    final config = _config;
+    if (config == null) return;
+    final authHeader = UrlUtils.basicAuthHeader(userName, password);
+
+    final List<UserRow> users;
+    if (role != null && role.contains('health')) {
+      users = await _userDao.getUsersForHealthSync();
+    } else {
+      final current = currentUserId == null
+          ? null
+          : await _userDao.getById(currentUserId);
+      users = [?current];
+    }
+
+    for (final user in users) {
+      await _syncHealthKeyIvFor(config, user, authHeader);
+    }
+  }
+
+  /// Port of `TransactionSyncManager.syncHealthData` for one user: read the
+  /// first document of the user's `userdb-*` database and store its key/IV.
+  ///
+  /// Failures are swallowed exactly as the Kotlin's
+  /// `catch (e: Exception) { e.printStackTrace() }` — one unreachable account
+  /// must not fail the rest of the batch, and the dashboard never surfaces
+  /// this sync; a failure just means the key stays local.
+  Future<void> _syncHealthKeyIvFor(
+    ServerConfig config,
+    UserRow user,
+    String authHeader,
+  ) async {
+    // Kotlin's string interpolation renders a null planetCode/name as the
+    // literal "null", and `?.let` keeps `toHex` itself from ever seeing null.
+    final table =
+        'userdb-${user.planetCode == null ? 'null' : toHexString(user.planetCode!)}-'
+        '${user.name == null ? 'null' : toHexString(user.name!)}';
+    try {
+      final dbBase = UrlUtils.dbUrl(config);
+      final allDocs = await _api.getJsonObject(
+        '$dbBase/$table/_all_docs',
+        authHeader: authHeader,
+      );
+      if (allDocs is! NetworkSuccess<Map<String, dynamic>>) return;
+      final rows = allDocs.data['rows'];
+      if (rows is! List || rows.isEmpty) return;
+      final first = rows.first;
+      if (first is! Map<String, dynamic>) return;
+      final docId = JsonUtils.getString('id', first);
+      if (docId.isEmpty) return;
+
+      final docResult = await _api.getJsonObject(
+        '$dbBase/$table/$docId',
+        authHeader: authHeader,
+      );
+      if (docResult is! NetworkSuccess<Map<String, dynamic>>) return;
+      final key = JsonUtils.getString('key', docResult.data);
+      final iv = JsonUtils.getString('iv', docResult.data);
+      if (key.isEmpty && iv.isEmpty) return;
+      await _userDao.markUserKeyIvSaved(user.id, key, iv);
+    } catch (_) {
+      // Swallowed — see the doc comment.
+    }
   }
 
   /// Sync health examinations from CouchDB.

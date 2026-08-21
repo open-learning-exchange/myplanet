@@ -600,6 +600,29 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
   /// Returns all users (for sending surveys to selected users).
   Future<List<UserRow>> getAllUsers() => select(users).get();
 
+  /// Port of `UserRepositoryImpl.getUsersForHealthSync` — every user with a
+  /// server id, the set whose per-user `userdb-*` key document is worth
+  /// probing. The Kotlin filters in memory after `userDao.getAll()`
+  /// (`!it._id.isNullOrBlank()`), and blank couch ids are excluded the same
+  /// way here.
+  Future<List<UserRow>> getUsersForHealthSync() async {
+    final all = await getAllUsers();
+    return [
+      for (final user in all)
+        if (user.couchId?.trim().isNotEmpty ?? false) user,
+    ];
+  }
+
+  /// Port of `UserRepositoryImpl.markUserKeyIvSaved` — record the health
+  /// AES key/IV pulled from the user's `userdb-*` database. A missing row
+  /// makes the Kotlin return early; the where-clause update is the same
+  /// no-op.
+  Future<void> markUserKeyIvSaved(String id, String key, String? iv) async {
+    await (update(users)..where((u) => u.id.equals(id))).write(
+      UsersCompanion(key: Value(key), iv: Value(iv)),
+    );
+  }
+
   /// Port of `UserDao.search` — name/firstName/lastName containment, matching
   /// the Kotlin `LIKE '%' || :query || '%'` predicate.
   Future<List<UserRow>> search(String query) {
