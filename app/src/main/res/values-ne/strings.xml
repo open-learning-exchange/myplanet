@@ -358,7 +358,8 @@
     <string-array name="sort_by_date">
         <item>मितिमा आदान - अवरोही</item>
         <item>मितिमा आदान - आरोही</item>
-        <item>शीर्षकमा आदान</item>
+        <item>शीर्षकमा आदान - आरोही</item>
+        <item>शीर्षकमा आदान - अवरोही</item>
     </string-array>
 
     <string-array name="sort_member">
@@ -614,6 +615,10 @@
     <string name="meetup_added">मिलन सम्मेलन थपियो</string>
     <string name="meetup_not_added">मिलन सम्मेलन होइन थपियो</string>
     <string name="add_transaction">लेखा थप्नुहोस्</string>
+    <string name="from_date">मिति देखि</string>
+    <string name="to_date">मिति सम्म</string>
+    <string name="select_from_date">मिति देखि चयन गर्नुहोस्</string>
+    <string name="select_to_date">मिति सम्म चयन गर्नुहोस्</string>
     <string name="note_is_required">टिप्पणी आवश्यक छ</string>
     <string name="amount_is_required">रकम आवश्यक छ</string>
     <string name="date_is_required">मिति आवश्यक छ</string>

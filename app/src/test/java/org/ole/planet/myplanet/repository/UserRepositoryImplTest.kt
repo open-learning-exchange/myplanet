@@ -106,7 +106,6 @@ class UserRepositoryImplTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
-            mockk(relaxed = true),
             userDao,
             mockk(relaxed = true)
         )
@@ -116,6 +115,31 @@ class UserRepositoryImplTest {
     fun tearDown() {
         unmockkObject(UrlUtils)
         unmockkStatic(Log::class)
+    }
+
+    @Test
+    fun `updateSecurityData preserves existing credentials when server response omits them`() = runTest(testDispatcher) {
+        val user = UserEntity().apply {
+            id = "123"
+            name = "john"
+            derived_key = "oldDerivedKey"
+            salt = "oldSalt"
+            password_scheme = "oldScheme"
+            iterations = "10000"
+        }
+        coEvery { userDao.getByName("john") } returns user
+        coEvery { userDao.getById("123") } returns user
+
+        repository.updateSecurityData("john", "userId", "rev", null, null, null, null)
+
+        val slot = slot<UserEntity>()
+        coVerify { userDao.upsert(capture(slot)) }
+        assertEquals("oldDerivedKey", slot.captured.derived_key)
+        assertEquals("oldSalt", slot.captured.salt)
+        assertEquals("oldScheme", slot.captured.password_scheme)
+        assertEquals("10000", slot.captured.iterations)
+        assertEquals("userId", slot.captured._id)
+        assertEquals("rev", slot.captured._rev)
     }
 
     @Test

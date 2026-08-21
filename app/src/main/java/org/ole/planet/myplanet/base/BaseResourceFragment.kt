@@ -47,6 +47,8 @@ import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
+    open val shouldShowDownloadDialog: Boolean = true
+
     @Inject
     lateinit var timeProvider: TimeProvider
     @Inject

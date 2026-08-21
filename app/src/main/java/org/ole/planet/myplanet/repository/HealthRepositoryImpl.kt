@@ -1,7 +1,10 @@
 package org.ole.planet.myplanet.repository
 
+import android.text.TextUtils
+import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import dagger.Lazy
 import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.async
@@ -12,7 +15,7 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
+import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.HealthExamination.Companion.serialize
 import org.ole.planet.myplanet.model.HealthRecord
@@ -21,16 +24,18 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class HealthRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
     private val dispatcherProvider: DispatcherProvider,
     private val healthExaminationDao: HealthExaminationDao,
-    private val userDao: UserDao
+    private val userRepository: Lazy<UserRepository>,
+    @PlainGson private val gson: Gson
 ) : HealthRepository {
     override suspend fun getHealthEntry(userId: String): Pair<UserEntity?, HealthExamination?> {
-        val userCopy = userDao.getById(userId)
+        val userCopy = userRepository.get().getUserById(userId)
         val pojoCopy = healthExaminationDao.getByIdOrUserId(userId)
 
         return Pair(userCopy, pojoCopy)
@@ -64,7 +69,7 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveExamination(examination: HealthExamination?, pojo: HealthExamination?, user: UserEntity?) {
-        user?.let { userDao.upsert(it) }
+        user?.let { userRepository.get().saveUser(it) }
         pojo?.let { healthExaminationDao.upsert(it) }
         examination?.let { healthExaminationDao.upsert(it) }
     }
@@ -91,7 +96,7 @@ class HealthRepositoryImpl @Inject constructor(
             val result = mutableMapOf<String, Boolean>()
             if (examination != null && !examination.conditions.isNullOrEmpty()) {
                 try {
-                    val conditions = JsonUtils.gson.fromJson(examination.conditions, JsonObject::class.java)
+                    val conditions = gson.fromJson(examination.conditions, JsonObject::class.java)
                     for (key in conditions.keySet()) {
                         result[key] = JsonUtils.getBoolean(key, conditions)
                     }
@@ -148,30 +153,93 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getPatientById(id: String): UserEntity? {
-        return userDao.getById(id)
+        return userRepository.get().getUserById(id)
     }
 
     override suspend fun getPatientsSortedBy(fieldName: String, descending: Boolean): List<UserEntity> {
-        val users = userDao.getAll()
-        return sortPatients(users, fieldName, descending)
+        return userRepository.get().getUsersSortedBy(fieldName, descending)
     }
 
     override suspend fun searchPatients(query: String, sortField: String, descending: Boolean): List<UserEntity> {
-        val users = if (query.isBlank()) {
-            userDao.getAll()
+        return if (query.isBlank()) {
+            userRepository.get().getUsersSortedBy(sortField, descending)
         } else {
-            userDao.search(query)
+            userRepository.get().searchUsers(query, sortField, descending)
         }
-        return sortPatients(users, sortField, descending)
     }
 
-    private fun sortPatients(users: List<UserEntity>, fieldName: String, descending: Boolean): List<UserEntity> {
-        fun value(value: String?) = value.orEmpty().lowercase()
-        return when (fieldName) {
-            "joinDate" -> if (descending) users.sortedByDescending { it.joinDate } else users.sortedBy { it.joinDate }
-            "name" -> if (descending) users.sortedByDescending { value(it.name) } else users.sortedBy { value(it.name) }
-            else -> users
+    private fun decodeHealth(healthPojo: HealthExamination?, userModel: UserEntity?): MyHealth? {
+        val data = healthPojo?.data
+        if (data.isNullOrEmpty()) return null
+        return try {
+            val decrypted = AndroidDecrypter.decrypt(data, userModel?.key, userModel?.iv)
+            gson.fromJson(decrypted, MyHealth::class.java)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
+    }
+
+    override suspend fun getHealthProfile(userId: String): MyHealth? {
+        val userModel = userRepository.get().getUserById(userId)
+        return decodeHealth(healthExaminationDao.getByIdOrUserId(userId), userModel)
+    }
+
+    private fun applyUserDetails(userModel: UserEntity, userData: Map<String, Any?>) {
+        userModel.apply {
+            firstName = (userData["firstName"] as? String)?.trim()
+            middleName = (userData["middleName"] as? String)?.trim()
+            lastName = (userData["lastName"] as? String)?.trim()
+            email = (userData["email"] as? String)?.trim()
+            phoneNumber = (userData["phoneNumber"] as? String)?.trim()
+            birthPlace = (userData["birthPlace"] as? String)?.trim()
+            userData["dob"]?.let { dobVal ->
+                val dobInput = (dobVal as String).trim()
+                dob = TimeUtils.convertDDMMYYYYToISO(dobInput)
+            }
+            isUpdated = true
+        }
+    }
+
+    private fun applyProfileFields(profile: MyHealth.MyHealthProfile, userData: Map<String, Any?>) {
+        fun trimmed(key: String) = (userData[key] as? String)?.trim() ?: ""
+
+        profile.emergencyContactName = trimmed("emergencyContactName")
+        profile.emergencyContact = trimmed("emergencyContact").ifEmpty { profile.emergencyContact }
+        profile.emergencyContactType = trimmed("emergencyContactType").ifEmpty { profile.emergencyContactType }
+        profile.specialNeeds = trimmed("specialNeeds")
+        profile.notes = trimmed("notes")
+    }
+
+    override suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>) {
+        val userModel = userRepository.get().getUserById(userId)
+        val healthPojo = healthExaminationDao.getByIdOrUserId(userId) ?: HealthExamination().apply { _id = userId }
+
+        userModel?.let {
+            applyUserDetails(it, userData)
+            userRepository.get().saveUser(it)
+        }
+
+        val myHealth = decodeHealth(healthPojo, userModel) ?: MyHealth()
+        if (TextUtils.isEmpty(myHealth.userKey)) {
+            myHealth.userKey = AndroidDecrypter.generateKey()
+        }
+
+        val profile = myHealth.profile ?: MyHealth.MyHealthProfile().also { myHealth.profile = it }
+        applyProfileFields(profile, userData)
+
+        healthPojo.userId = userModel?._id
+        healthPojo.isUpdated = true
+
+        try {
+            val key = userModel?.key ?: AndroidDecrypter.generateKey().also { newKey -> userModel?.key = newKey }
+            val iv = userModel?.iv ?: AndroidDecrypter.generateIv().also { newIv -> userModel?.iv = newIv }
+            healthPojo.data = AndroidDecrypter.encrypt(gson.toJson(myHealth), key, iv)
+            userModel?.let { userRepository.get().saveUser(it) }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        healthExaminationDao.upsert(healthPojo)
     }
 
     override suspend fun getPatientHealthRecords(userId: String, currentUser: UserEntity): HealthRecord? {
@@ -181,7 +249,7 @@ class HealthRepositoryImpl @Inject constructor(
             null
         } else {
             try {
-                JsonUtils.gson.fromJson(json, MyHealth::class.java)
+                gson.fromJson(json, MyHealth::class.java)
             } catch (e: Exception) {
                 e.printStackTrace()
                 null
@@ -202,9 +270,7 @@ class HealthRepositoryImpl @Inject constructor(
         val userMap = if (userIds.isEmpty()) {
             emptyMap()
         } else {
-            val userIdSet = userIds.toSet()
-            userDao.getAll()
-                .filter { it.id in userIdSet }
+            userRepository.get().getUsersByIds(userIds)
                 .associateBy { it.id ?: "" }
         }
         return HealthRecord(mh, mm, list, userMap)

@@ -358,7 +358,8 @@
     <string-array name="sort_by_date">
         <item>ترتيب حسب التاريخ - تنازليًا</item>
         <item>ترتيب حسب التاريخ - تصاعديًا</item>
-        <item>ترتيب حسب العنوان</item>
+        <item>ترتيب حسب العنوان - تصاعديًا</item>
+        <item>ترتيب حسب العنوان - تنازليًا</item>
     </string-array>
 
     <string-array name="sort_member">
@@ -614,6 +615,10 @@
     <string name="meetup_added">تمت إضافة اللقاء</string>
     <string name="meetup_not_added">ميكوشي ب نو ت د</string>
     <string name="add_transaction">إضافة المعاملة</string>
+    <string name="from_date">من تاريخ</string>
+    <string name="to_date">إلى تاريخ</string>
+    <string name="select_from_date">حدد من التاريخ</string>
+    <string name="select_to_date">حدد حتى التاريخ</string>
     <string name="note_is_required">الملاحظة مطلوبة</string>
     <string name="amount_is_required">المبلغ مطلوب</string>
     <string name="date_is_required">التاريخ مطلوب</string>

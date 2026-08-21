@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet
 
 import android.app.Application
+import android.content.ComponentCallbacks2
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -26,7 +27,6 @@ import dagger.hilt.android.HiltAndroidApp
 import java.lang.ref.WeakReference
 import java.net.HttpURLConnection
 import java.net.URL
-import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -63,10 +63,10 @@ import org.ole.planet.myplanet.utils.MarkdownUtils
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utils.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utils.NetworkUtils.stopListenNetworkState
+import org.ole.planet.myplanet.utils.PdfThumbnailLoader
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.ThemeMode
 import org.ole.planet.myplanet.utils.UrlUtils.init
-import org.ole.planet.myplanet.utils.VersionUtils.getVersionName
 
 @HiltAndroidApp
 class MainApplication : Application(), WorkManagerConfiguration.Provider {
@@ -140,27 +140,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             }
         }
 
-        private fun buildApkLog(
-            spm: SharedPrefManager,
-            modelId: String?,
-            time: String,
-            type: String,
-            error: String
-        ): ApkLog {
-            return ApkLog().apply {
-                id = "${UUID.randomUUID()}"
-                parentCode = spm.getParentCode()
-                createdOn = spm.getPlanetCode()
-                modelId?.let { userId = it }
-                this.time = time
-                page = ""
-                version = getVersionName(context)
-                this.type = type
-                if (error.isNotEmpty()) {
-                    this.error = error
-                }
-            }
-        }
+
 
         // A report for a failure that may kill the process (crash/ANR) must be persisted
         // to a plain file before this runs: the Room write below can still be lost
@@ -170,18 +150,8 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 context,
                 CoreDependenciesEntryPoint::class.java
             )
-            val userSessionManager = entryPoint.userSessionManager()
-            val spm = entryPoint.sharedPrefManager()
-            val apkLogDao = entryPoint.apkLogDao()
-            return try {
-                val model = userSessionManager.getUserModel()
-                val log = buildApkLog(spm, model?.id, time, type, error)
-                apkLogDao.insert(log)
-                true
-            } catch (e: Exception) {
-                e.printStackTrace()
-                false
-            }
+            val diagnosticsRepository = entryPoint.diagnosticsRepository()
+            return diagnosticsRepository.saveLogToRoom(type, error, time)
         }
 
         suspend fun saveLogsToRoom(pendingLogs: List<CrashLogStore.PendingLog>): Boolean {
@@ -190,36 +160,8 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 context,
                 CoreDependenciesEntryPoint::class.java
             )
-            val userSessionManager = entryPoint.userSessionManager()
-            val spm = entryPoint.sharedPrefManager()
-            val apkLogDao = entryPoint.apkLogDao()
-            return try {
-                val model = userSessionManager.getUserModel()
-                val versionName = getVersionName(context)
-                val parentCode = spm.getParentCode()
-                val planetCode = spm.getPlanetCode()
-
-                val logsToInsert = pendingLogs.map { pending ->
-                    ApkLog().apply {
-                        id = "${UUID.randomUUID()}"
-                        this.parentCode = parentCode
-                        this.createdOn = planetCode
-                        model?.let { userId = it.id }
-                        this.time = pending.time
-                        page = ""
-                        version = versionName
-                        this.type = pending.type
-                        if (pending.error.isNotEmpty()) {
-                            this.error = pending.error
-                        }
-                    }
-                }
-                apkLogDao.insertAll(logsToInsert)
-                true
-            } catch (e: Exception) {
-                e.printStackTrace()
-                false
-            }
+            val diagnosticsRepository = entryPoint.diagnosticsRepository()
+            return diagnosticsRepository.saveLogsToRoom(pendingLogs)
         }
 
         private fun applyThemeMode(themeMode: String?) {
@@ -578,6 +520,13 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     private fun onAppStarted() {
         applicationScope.launch {
             createLog("new login", "")
+        }
+    }
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
+            PdfThumbnailLoader.evictAll()
         }
     }
 

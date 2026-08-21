@@ -6,6 +6,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -16,10 +17,20 @@ import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UploadRepositoryImplTest {
+
+    private val testDispatcher = UnconfinedTestDispatcher()
+    private val dispatcherProvider = object : DispatcherProvider {
+        override val main = testDispatcher
+        override val mainImmediate = testDispatcher
+        override val io = testDispatcher
+        override val default = testDispatcher
+        override val unconfined = testDispatcher
+    }
 
     private lateinit var apiInterface: ApiInterface
     private lateinit var examDao: ExamDao
@@ -33,7 +44,7 @@ class UploadRepositoryImplTest {
         examDao = mockk(relaxed = true)
         submissionDao = mockk(relaxed = true)
         answerDao = mockk(relaxed = true)
-        repository = UploadRepositoryImpl(apiInterface, examDao, submissionDao, answerDao)
+        repository = UploadRepositoryImpl(apiInterface, examDao, submissionDao, answerDao, dispatcherProvider)
 
         val spm = mockk<org.ole.planet.myplanet.services.SharedPrefManager>(relaxed = true)
         every { spm.getUrlUser() } returns "user"
