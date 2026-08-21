@@ -218,7 +218,9 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(_resource!.title ?? l10n.untitledResource)),
+      appBar: AppBar(
+        title: Text(_resource!.title ?? l10n.untitledResourceTitle),
+      ),
       // Nothing can render until the attachment is on disk. Previously every
       // viewer was built regardless and each showed its own "not downloaded"
       // message, with no way to actually get the file.
@@ -578,7 +580,7 @@ class _AudioViewerState extends State<_AudioViewer> {
           const Icon(Icons.audiotrack, size: 80),
           const SizedBox(height: 16),
           Text(
-            widget.resource.title ?? l10n.untitledResource,
+            widget.resource.title ?? l10n.untitledResourceTitle,
             style: Theme.of(context).textTheme.titleLarge,
           ),
           if (widget.resource.author != null) ...[
@@ -693,7 +695,7 @@ class _PdfViewerState extends State<_PdfViewer> {
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: Text(
-            widget.resource.title ?? l10n.untitledResource,
+            widget.resource.title ?? l10n.untitledResourceTitle,
             style: Theme.of(context).textTheme.titleMedium,
           ),
         ),
@@ -736,7 +738,7 @@ class _ImageViewer extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
-                resource.title ?? l10n.untitledResource,
+                resource.title ?? l10n.untitledResourceTitle,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
@@ -831,7 +833,7 @@ class _TextViewerState extends State<_TextViewer> {
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: Text(
-            widget.resource.title ?? l10n.untitledResource,
+            widget.resource.title ?? l10n.untitledResourceTitle,
             style: Theme.of(context).textTheme.titleMedium,
           ),
         ),
@@ -966,7 +968,7 @@ class _MarkdownViewerState extends State<_MarkdownViewer> {
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: Text(
-            widget.resource.title ?? l10n.untitledResource,
+            widget.resource.title ?? l10n.untitledResourceTitle,
             style: Theme.of(context).textTheme.titleMedium,
           ),
         ),

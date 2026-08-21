@@ -80,7 +80,9 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(_resource!.title ?? l10n.untitledResource)),
+      appBar: AppBar(
+        title: Text(_resource!.title ?? l10n.untitledResourceTitle),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

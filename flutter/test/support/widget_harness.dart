@@ -83,6 +83,8 @@ MyLibraryRow buildLibraryRow({
   required String id,
   String? title,
   String? author,
+  String? description,
+  String? resourceId,
   bool offline = false,
   List<String> subject = const [],
 }) {
@@ -91,6 +93,8 @@ MyLibraryRow buildLibraryRow({
     userId: const [],
     title: title,
     titleNormal: title?.toLowerCase(),
+    description: description,
+    resourceId: resourceId,
     resourceOffline: offline,
     createdDate: 0,
     timesRated: 0,

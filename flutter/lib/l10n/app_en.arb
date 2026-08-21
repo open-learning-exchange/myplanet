@@ -1049,7 +1049,7 @@
   "noEnrolledCourses": "You are not enrolled in any courses",
   "mistakes": "Mistakes",
   "step": "Step",
-  "untitledResource": "Untitled Resource",
+  "untitledResourceTitle": "Untitled Resource",
   "author": "Author",
   "publisher": "Publisher",
   "license": "License",
