@@ -31,7 +31,7 @@ class ProgressRepositoryImpl @Inject constructor(
     private val answerDao: AnswerDao,
     private val questionDao: QuestionDao
 ) : ProgressRepository {
-    override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): Map<String, CourseProgressState> = withContext(dispatcherProvider.io) {
+    override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): Map<String, CourseProgressState> = withContext(dispatcherProvider.default) {
         val allSteps = if (courseIds.isEmpty()) {
             emptyList()
         } else {
