@@ -135,6 +135,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState != null) {
+            syncStatusDismissed = savedInstanceState.getBoolean(KEY_SYNC_STATUS_DISMISSED, false)
+        }
         postponeEnterTransition()
         initViews()
 
@@ -595,8 +598,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun updateLastSyncStatus() {
         val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        binding.dashboardSyncBanner.visibility = if (isLandscape || syncStatusDismissed) View.GONE else View.VISIBLE
-        if (isLandscape) return
+        binding.dashboardSyncBanner.visibility = if (isSyncBannerVisible(isLandscape, syncStatusDismissed)) View.VISIBLE else View.GONE
+        if (binding.dashboardSyncBanner.visibility == View.GONE) return
 
         val lastSyncMillis = prefData.getLastSync()
         val timeText = if (lastSyncMillis <= 0L) {
@@ -977,16 +980,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         super.onDestroy()
     }
 
-    override fun openCallFragment(newFragment: Fragment, tag: String?) {
-        resetSyncStatusDismissed()
-        super.openCallFragment(newFragment, tag)
-    }
-
-    override fun onBackStackChanged() {
-        super.onBackStackChanged()
-        resetSyncStatusDismissed()
-    }
-
     override fun openCallFragment(f: Fragment) {
         val id = f.arguments?.getString("id")
         val tag = if (id != null) "${f::class.java.simpleName}_$id" else f::class.java.simpleName
@@ -1092,8 +1085,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onResume() {
         super.onResume()
-        resetSyncStatusDismissed()
+        updateLastSyncStatus()
         checkNotificationPermissionStatus()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_SYNC_STATUS_DISMISSED, syncStatusDismissed)
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -1137,7 +1135,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     companion object {
+        const val KEY_SYNC_STATUS_DISMISSED = "sync_status_dismissed"
         const val MESSAGE_PROGRESS = "message_progress"
         var isFromNotificationAction = false
+
+        fun isSyncBannerVisible(isLandscape: Boolean, isDismissed: Boolean): Boolean {
+            return !isLandscape && !isDismissed
+        }
     }
 }
