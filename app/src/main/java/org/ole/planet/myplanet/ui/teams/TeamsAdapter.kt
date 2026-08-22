@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.databinding.ItemTeamListBinding
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.StableIdGenerator
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class TeamsAdapter(
@@ -25,6 +26,16 @@ class TeamsAdapter(
 ) : ListAdapter<TeamDetails, TeamsAdapter.TeamsViewHolder>(DIFF_CALLBACK) {
     private var type: String? = ""
     private val dateCache = mutableMapOf<Long, String>()
+
+    init {
+        setHasStableIds(true)
+    }
+
+    override fun getItemId(position: Int): Long {
+        val item = getItem(position)
+        val id = StableIdGenerator.generateStringId(item._id)
+        return if (id != RecyclerView.NO_ID) id else StableIdGenerator.generateFallbackId(item)
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TeamsViewHolder {
         val binding = ItemTeamListBinding.inflate(LayoutInflater.from(parent.context), parent, false)
