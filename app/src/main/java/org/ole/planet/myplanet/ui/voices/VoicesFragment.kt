@@ -267,7 +267,7 @@ class VoicesFragment : BaseVoicesFragment() {
             },
             onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(viewLifecycleOwner.lifecycleScope, dispatcherProvider),
             labelManager = labelManager,
-            voicesRepository = voicesRepository,
+            voicesEditActions = voicesRepository,
             leadersList = UserEntity.parseLeadersJson(sharedPrefManager.getCommunityLeaders()),
             setRepliedNewsIdFn = { sharedPrefManager.setRepliedNewsId(it) }
         )
