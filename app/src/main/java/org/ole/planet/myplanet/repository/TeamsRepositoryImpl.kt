@@ -517,7 +517,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun attachTeamImage(teamId: String, imageName: String, imageData: ByteArray) {
+    private suspend fun attachTeamImage(teamId: String, imageName: String, imageData: ByteArray) {
         if (teamId.isBlank()) return
         val destFile = MyTeam.getAttachmentFile(MainApplication.context, teamId, imageName) ?: return
         withContext(dispatcherProvider.io) {
@@ -1260,7 +1260,7 @@ class TeamsRepositoryImpl @Inject constructor(
         return teamDao.getById(id) ?: teamDao.getByTeamId(id)
     }
 
-    override suspend fun updateTeamEntityById(id: String, updater: (MyTeam) -> Unit): Boolean {
+    private suspend fun updateTeamEntityById(id: String, updater: (MyTeam) -> Unit): Boolean {
         val entity = teamDao.getById(id) ?: return false
         val model = entity
         updater(model)
@@ -1284,7 +1284,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun MyTeam.requireRoomEntity(): MyTeam {
+    private fun MyTeam.requireRoomEntity(): MyTeam {
         return this
     }
 

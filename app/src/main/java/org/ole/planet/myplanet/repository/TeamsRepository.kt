@@ -104,9 +104,6 @@ interface TeamsRepository {
     suspend fun removeResourceLink(teamId: String, resourceId: String)
     suspend fun deleteTask(taskId: String)
     suspend fun createTask(title: String, description: String, deadline: Long, teamId: String, assigneeId: String?)
-    suspend fun attachTeamImage(teamId: String, imageName: String, imageData: ByteArray)
-    suspend fun updateTeamEntityById(id: String, updater: (MyTeam) -> Unit): Boolean
-    fun MyTeam.requireRoomEntity(): MyTeam
     suspend fun updateTask(taskId: String, title: String, description: String, deadline: Long, assigneeId: String?)
     suspend fun assignTask(taskId: String, assigneeId: String?)
     suspend fun setTaskCompletion(taskId: String, completed: Boolean)

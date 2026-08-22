@@ -17,10 +17,9 @@ class EnterprisesRepositoryImplTest {
     private val teamDao: TeamDao = mockk()
     private val timeProvider: TimeProvider = mockk()
     private val dispatcherProvider: DispatcherProvider = mockk()
-    private val teamsRepository: TeamsRepository = mockk()
 
     private val repository = EnterprisesRepositoryImpl(
-        teamDao, timeProvider, dispatcherProvider, teamsRepository
+        teamDao, timeProvider, dispatcherProvider
     )
 
     @Test
