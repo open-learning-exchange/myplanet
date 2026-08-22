@@ -187,6 +187,7 @@ class ChatHistoryFragment : Fragment() {
             }
         })
         binding.recyclerView.adapter = newAdapter
+        binding.recyclerView.setHasFixedSize(true)
 
         collectLatestWhenStarted(sharedViewModel.screenData) { data ->
             if (data == null) return@collectLatestWhenStarted

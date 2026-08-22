@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.services.DownloadService
 import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
-@Config(sdk = [33], manifest = Config.NONE, application = Application::class)
+@Config(manifest = Config.NONE, application = Application::class)
 class DownloadUtilsTest {
 
     private lateinit var context: Context
