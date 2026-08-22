@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.VoicePostingPolicy
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.toVoicePostingPolicy
@@ -201,11 +202,11 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     teamName = effectiveTeamName,
                     teamId = teamId,
                     isTeamLeaderFn = { onResult ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
+                        val job = viewLifecycleOwner.lifecycleScope.launch {
                             val result = kotlinx.coroutines.withTimeoutOrNull(2000) {
                                 viewModel.isTeamLeader(teamId, user?._id)
                             }
-                            kotlinx.coroutines.withContext(dispatcherProvider.main) { onResult(result ?: false) }
+                            onResult(result ?: false)
                         }
                     },
                     getUserFn = { userId, onResult ->
@@ -249,8 +250,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(viewLifecycleOwner.lifecycleScope, dispatcherProvider),
                     labelManager = labelManager,
                     voicesRepository = voicesRepository,
-                    userRepository = userRepository,
-                    getCommunityLeadersFn = { sharedPrefManager.getCommunityLeaders() },
+                    leadersList = UserEntity.parseLeadersJson(sharedPrefManager.getCommunityLeaders()),
                     setRepliedNewsIdFn = { sharedPrefManager.setRepliedNewsId(it) }
                 )
             }

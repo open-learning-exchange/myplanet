@@ -4,7 +4,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.HashMap
 import kotlinx.coroutines.flow.Flow
-import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 
@@ -51,4 +50,6 @@ interface VoicesRepository {
     suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String>
     suspend fun countTeamChats(teamId: String): Long
     suspend fun getTeamChatViewableIds(teamIds: List<String>): List<String>
+    suspend fun getPendingNewsLogUploads(): List<org.ole.planet.myplanet.model.NewsLog>
+    suspend fun markNewsLogUploaded(localId: String, remoteId: String, rev: String): Boolean
 }

@@ -7,7 +7,6 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnDiffRefreshListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnSurveyAdoptListener
 import org.ole.planet.myplanet.databinding.RowSurveyBinding
@@ -33,11 +32,7 @@ class SurveysAdapter(
                 oldItem.isTeamShareAllowed == newItem.isTeamShareAllowed &&
                 oldItem.isFromNation == newItem.isFromNation
     }
-)), OnDiffRefreshListener {
-    override fun refreshWithDiff() {
-        submitList(currentList.toList())
-    }
-
+)) {
     private var listener: OnHomeItemClickListener? = null
 
     init {

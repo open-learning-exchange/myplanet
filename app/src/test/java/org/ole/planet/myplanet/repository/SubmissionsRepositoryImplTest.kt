@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
@@ -27,7 +28,6 @@ import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.ExamQuestion
@@ -51,11 +51,13 @@ class SubmissionsRepositoryImplTest {
     private val answerDao: AnswerDao = mockk(relaxed = true)
     private val examDao: ExamDao = mockk(relaxed = true)
     private val questionDao: QuestionDao = mockk(relaxed = true)
-    private val userDao: UserDao = mockk(relaxed = true)
+    private val lazyUserRepository: dagger.Lazy<UserRepository> = mockk(relaxed = true)
+    private val userRepository: UserRepository = mockk(relaxed = true)
     private lateinit var repository: SubmissionsRepositoryImpl
 
     @Before
     fun setUp() {
+        every { lazyUserRepository.get() } returns userRepository
         val teamsRepo = mockk<TeamsRepository>(relaxed = true)
         teamsRepositoryProvider = mockk(relaxed = true)
         every { teamsRepositoryProvider.get() } returns teamsRepo
@@ -74,7 +76,8 @@ class SubmissionsRepositoryImplTest {
             answerDao,
             examDao,
             questionDao,
-            userDao
+            lazyUserRepository,
+            Gson()
         ), recordPrivateCalls = true)
     }
 
@@ -471,14 +474,14 @@ class SubmissionsRepositoryImplTest {
         // blob, whose _attachments were stripped for storage safety.
         val freshUser = mockk<UserEntity>()
         every { freshUser.serialize() } returns JsonObject().apply { addProperty("_id", "fresh_user") }
-        coEvery { userDao.getById("u1") } returns freshUser
+        coEvery { userRepository.getUserById("u1") } returns freshUser
 
         val submission = Submission().apply {
             id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
             user = "{\"_id\":\"stored_user\"}"
         }
 
-        val result = repository.serializeSubmission(submission, context, "planet", "parent")
+        val result = repository.serializeSubmission(submission, "planet", "parent")
 
         assertEquals("fresh_user", result.getAsJsonObject("user").get("_id").asString)
     }
@@ -490,14 +493,14 @@ class SubmissionsRepositoryImplTest {
         every { NetworkUtils.getDeviceName() } returns "device"
         every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
 
-        coEvery { userDao.getById(any()) } returns null
+        coEvery { userRepository.getUserById(any()) } returns null
 
         val submission = Submission().apply {
             id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
             user = "{\"_id\":\"stored_user\"}"
         }
 
-        val result = repository.serializeSubmission(submission, context, "planet", "parent")
+        val result = repository.serializeSubmission(submission, "planet", "parent")
 
         assertEquals("stored_user", result.getAsJsonObject("user").get("_id").asString)
     }

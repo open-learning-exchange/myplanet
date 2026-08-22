@@ -12,9 +12,8 @@ import javax.inject.Inject
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
 import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
@@ -24,19 +23,12 @@ class ResourceViewerViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val resourcesRepository: ResourcesRepository,
     private val authSessionUpdaterFactory: AuthSessionUpdater.Factory,
-    private val serverUrlMapper: ServerUrlMapper,
-    private val sharedPrefManager: SharedPrefManager,
+    private val configurationsRepository: ConfigurationsRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     suspend fun ensureServerUrlUpdated() {
-        val serverUrl = sharedPrefManager.getServerUrl()
-        val mapping = serverUrlMapper.processUrl(serverUrl)
-        if (mapping.alternativeUrl != null) {
-            serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
-                serverUrlMapper.isUrlDirectlyReachable(url)
-            }
-        }
+        configurationsRepository.ensureServerUrlUpdated()
     }
 
     fun getAuthSessionUpdater(callback: AuthSessionUpdater.AuthCallback): AuthSessionUpdater {

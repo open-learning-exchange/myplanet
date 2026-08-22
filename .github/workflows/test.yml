@@ -35,7 +35,7 @@ jobs:
           cache-read-only: false
 
       - name: restore project build dir
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             app/build
@@ -60,7 +60,22 @@ jobs:
         run: |
           FLAVOR=${{ matrix.build }}
           SHARD=${{ matrix.shard }}
-          ./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=${{ strategy.job-total }} -PtestShardIndex=$((SHARD - 1)) --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
+          ./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=${{ strategy.job-total }} -PtestShardIndex=$((SHARD - 1)) -ProbolectricOffline=true --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
+
+      - name: check the offline robolectric runtime took effect
+        if: always()
+        shell: bash
+        run: |
+          staged=$(find build/robolectric-sdks -name '*.jar' 2>/dev/null | wc -l || true)
+          size=$(du -sh build/robolectric-sdks 2>/dev/null | cut -f1 || true)
+          echo "staged android-all jars: ${staged:-0} (${size:-0})" | tee -a "$GITHUB_STEP_SUMMARY"
+          # Nothing else writes here, so a jar means -ProbolectricOffline missed the forks.
+          fetched=$(find "$HOME/.m2/repository/org/robolectric" -name '*.jar' 2>/dev/null || true)
+          if [ -n "$fetched" ]; then
+            echo "offline mode did not take effect: a test fork resolved an android-all jar at runtime" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "$fetched" | sed 's|.*/|  - |' | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
 
       - name: summarise slowest tests
         if: always()

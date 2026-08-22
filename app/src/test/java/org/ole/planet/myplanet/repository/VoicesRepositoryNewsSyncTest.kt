@@ -74,10 +74,12 @@ class VoicesRepositoryNewsSyncTest {
         repository = VoicesRepositoryImpl(
             mockk<DispatcherProvider>(relaxed = true),
             Gson(),
+            Gson(),
             sharedPrefManager,
             mockk<TeamNotificationDao>(relaxed = true),
             newsDao,
             mockk<MyLibraryDao>(relaxed = true),
+            mockk<org.ole.planet.myplanet.data.room.dao.NewsLogDao>(relaxed = true)
         )
     }
 

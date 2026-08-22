@@ -1,9 +1,7 @@
 package org.ole.planet.myplanet.services.retry
 
-import android.content.Context
 import android.util.Log
 import com.google.gson.JsonObject
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.model.RetryFailure
@@ -13,8 +11,7 @@ import org.ole.planet.myplanet.services.upload.UploadError
 
 @Singleton
 class RetryQueue @Inject constructor(
-    private val retryRepository: RetryRepository,
-    @ApplicationContext private val context: Context
+    private val retryRepository: RetryRepository
 ) {
     companion object {
         private const val TAG = "RetryQueue"

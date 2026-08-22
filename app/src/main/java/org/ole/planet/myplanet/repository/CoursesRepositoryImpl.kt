@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.CourseDao
@@ -220,9 +219,7 @@ class CoursesRepositoryImpl @Inject constructor(
                     course.id.takeIf { it.isNotBlank() }?.let { idsToDelete.add(it) }
                     course._id?.takeIf { it.isNotBlank() }?.let { idsToDelete.add(it) }
                 }
-                idsToDelete.toList().chunked(1000).forEach { chunk ->
-                    removedLogDao.deleteByTypeUserAndDocs("courses", userId, chunk)
-                }
+                removedLogDao.deleteByTypeUserAndDocsChunked("courses", userId, idsToDelete.toList())
             }
 
             realtimeSyncManager.notifyTableUpdated(TableDataUpdate("courses", 0, courses.size))
@@ -238,12 +235,7 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     internal fun matchesAllParts(title: String, parts: List<String>): Boolean {
-        for (part in parts) {
-            if (!title.contains(part)) {
-                return false
-            }
-        }
-        return true
+        return parts.all { title.contains(it) }
     }
 
     override suspend fun search(query: String): List<MyCourse> {
@@ -345,9 +337,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 course.id.takeIf { it.isNotBlank() }?.let { idsToDelete.add(it) }
                 course._id?.takeIf { it.isNotBlank() }?.let { idsToDelete.add(it) }
             }
-            idsToDelete.toList().chunked(1000).forEach { chunk ->
-                removedLogDao.deleteByTypeUserAndDocs("courses", userId, chunk)
-            }
+            removedLogDao.deleteByTypeUserAndDocsChunked("courses", userId, idsToDelete.toList())
             realtimeSyncManager.notifyTableUpdated(TableDataUpdate("courses", 0, 1))
         }
     }

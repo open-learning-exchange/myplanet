@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.teams.members
 
-import android.os.Bundle
 import android.view.View
 import android.widget.FrameLayout
 import androidx.test.core.app.ApplicationProvider
@@ -11,8 +10,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.callback.OnMemberActionListener
+import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.JoinedMemberData
 import org.ole.planet.myplanet.ui.teams.members.MembersAdapter.Companion.PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED
 
 @RunWith(AndroidJUnit4::class)

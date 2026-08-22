@@ -16,7 +16,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.androidDecrypter
@@ -28,7 +27,6 @@ import org.ole.planet.myplanet.utils.UrlUtils
 class LoginSyncManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val sharedPrefManager: SharedPrefManager,
-    private val userRepository: UserRepository,
     private val userSyncRepository: UserSyncRepository,
     private val apiInterface: ApiInterface,
     @ApplicationScope private val applicationScope: CoroutineScope,

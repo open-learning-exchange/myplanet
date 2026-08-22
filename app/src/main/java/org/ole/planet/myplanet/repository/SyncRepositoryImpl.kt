@@ -7,7 +7,6 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
-import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -40,7 +39,7 @@ class SyncRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val resourcesRepository: ResourcesRepository,
     private val coursesRepository: CoursesRepository,
-    private val eventsRepository: EventsRepository,
+    private val eventsRepository: EventsSyncWriter,
     private val teamsSyncRepository: TeamsSyncRepository,
     private val transactionSyncManager: dagger.Lazy<TransactionSyncManager>
 ) : SyncRepository {

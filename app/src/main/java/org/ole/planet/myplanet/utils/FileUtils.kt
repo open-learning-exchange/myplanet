@@ -48,9 +48,6 @@ object FileUtils {
         return File(externalFilesDir, "ole/$libraryId/$address")
     }
 
-    @Throws(IOException::class)
-    fun fullyReadFileToBytes(f: File): ByteArray = f.readBytes()
-
     private fun createFilePath(context: Context, folder: String, filename: String): File {
         val baseDirectory = File(getExternalFilesDir(context), folder)
 
@@ -83,7 +80,48 @@ object FileUtils {
     }
 
     fun getSDPathFromUrl(context: Context, url: String?): File {
-        return createFilePath(context, "/ole/${getIdFromUrl(url)}", getFileNameFromUrl(url))
+        return createFilePath(context, "/ole/${getIdFromUrl(url)}", getResourceRelativePathFromUrl(url))
+    }
+
+    private fun getResourceRelativePathFromUrl(url: String?): String {
+        return try {
+            val segments = url?.toUri()?.pathSegments ?: return getFileNameFromUrl(url)
+            val idx = segments.indexOf("resources")
+            if (idx != -1 && idx + 2 < segments.size) {
+                segments.subList(idx + 2, segments.size).joinToString("/") {
+                    URLDecoder.decode(it, StandardCharsets.UTF_8.name())
+                }
+            } else {
+                getFileNameFromUrl(url)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            getFileNameFromUrl(url)
+        }
+    }
+
+    /**
+     * Resolves an HTML resource's entry file (e.g. from `openWhichFile`, which may nest the
+     * entry point in a subfolder like `sudoku/index.html`) against its download directory,
+     * defaulting to `index.html` when unset and refusing to resolve outside [baseDirectory].
+     */
+    fun resolveHtmlEntryFile(baseDirectory: File, relativePath: String?): File? {
+        val candidate = relativePath?.takeIf { it.isNotBlank() } ?: "index.html"
+        if (candidate.startsWith("/") || candidate.startsWith("\\") || candidate.contains("..")) {
+            return null
+        }
+        return try {
+            val canonicalBase = baseDirectory.canonicalFile
+            val resolved = File(canonicalBase, candidate).canonicalFile
+            if (resolved.path == canonicalBase.path || resolved.path.startsWith(canonicalBase.path + File.separator)) {
+                resolved
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
     }
 
     fun checkFileExist(context: Context, url: String?): Boolean {

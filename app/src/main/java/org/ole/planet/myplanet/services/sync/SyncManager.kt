@@ -40,12 +40,9 @@ import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SyncRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -72,9 +69,6 @@ class SyncManager @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val timeProvider: TimeProvider,
     private val teamsRepository: TeamsRepository,
-    private val teamsSyncRepository: TeamsSyncRepository,
-    private val coursesRepository: CoursesRepository,
-    private val eventsRepository: EventsRepository,
     private val userSyncRepository: UserSyncRepository,
     private val syncRepository: SyncRepository
 ) {
@@ -276,6 +270,7 @@ class SyncManager @Inject constructor(
         try {
             val newIds: MutableList<String?> = ArrayList()
             var totalRows = 0
+            var hadBatchFailure = false
 
             // Get total count
             logger.startProcess("resource_get_total_count")
@@ -316,6 +311,7 @@ class SyncManager @Inject constructor(
 
                     if (response == null) {
                         batchSizer.recordFailure()
+                        hadBatchFailure = true
                         logger.logApiCall("${UrlUtils.getUrl()}/resources/_all_docs (batch $batchCount)", batchApiDuration, false, 0)
                         skip += batchSize
                         continue
@@ -387,6 +383,7 @@ class SyncManager @Inject constructor(
                 } catch (e: Exception) {
                     e.printStackTrace()
                     batchSizer.recordFailure()
+                    hadBatchFailure = true
                     logger.logDetail("resource_sync", "Batch $batchCount failed: ${e.message}")
                     skip += batchSize
                 }
@@ -396,7 +393,9 @@ class SyncManager @Inject constructor(
                 logger.startProcess("resource_cleanup")
                 val cleanupStartTime = SystemClock.elapsedRealtime()
                 val validNewIds = newIds.filter { !it.isNullOrBlank() }
-                if (validNewIds.isNotEmpty() && validNewIds.size == newIds.size) {
+                if (hadBatchFailure) {
+                    logger.logDetail("resource_sync", "Skipping delete-cleanup: one or more batches failed, id list is incomplete")
+                } else if (validNewIds.isNotEmpty() && validNewIds.size == newIds.size) {
                     resourcesRepository.removeDeletedResources(validNewIds)
                 }
                 val cleanupDuration = SystemClock.elapsedRealtime() - cleanupStartTime

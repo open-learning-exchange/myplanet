@@ -18,12 +18,12 @@ import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.databinding.FragmentTeamCourseBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.MyCourse
-import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.utils.Utilities
 
 class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
+    override val shouldShowDownloadDialog = false
     private var _binding: FragmentTeamCourseBinding? = null
     private val binding get() = _binding!!
     private var adapterTeamCourse: TeamCoursesAdapter? = null
@@ -181,7 +181,4 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
         super.onDestroyView()
     }
 
-    override fun showDownloadDialog(dbMyLibrary: List<MyLibrary?>) {
-        // Do not show download suggestion dialog in Team Courses (Fix #15435)
-    }
 }
