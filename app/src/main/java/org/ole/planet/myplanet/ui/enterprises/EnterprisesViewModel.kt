@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.MyTeam
-import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.TeamsFinancesRepository
 
 sealed class ReportEvent {
     object ReportAdded : ReportEvent()
@@ -22,7 +22,7 @@ sealed class ReportEvent {
 
 @HiltViewModel
 class EnterprisesViewModel @Inject constructor(
-    private val teamsRepository: TeamsRepository
+    private val teamsRepository: TeamsFinancesRepository
 ) : ViewModel() {
 
     private val _reportEvent = MutableSharedFlow<ReportEvent>()
