@@ -21,7 +21,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowEnvironment
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33], manifest = Config.NONE, application = Application::class)
+@Config(manifest = Config.NONE, application = Application::class)
 class MapTileUtilsTest {
 
     private lateinit var context: Context
