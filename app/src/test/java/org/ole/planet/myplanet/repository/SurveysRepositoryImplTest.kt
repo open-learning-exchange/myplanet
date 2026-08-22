@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.repository
 import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
-import android.os.Build
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -37,7 +36,7 @@ import org.robolectric.annotation.Config
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [Build.VERSION_CODES.P], application = Application::class)
+@Config(application = Application::class)
 class SurveysRepositoryImplTest {
     private lateinit var repository: SurveysRepositoryImpl
     private lateinit var context: Context

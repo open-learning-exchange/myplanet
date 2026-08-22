@@ -614,6 +614,10 @@
     <string name="meetup_added">Meetup added</string>
     <string name="meetup_not_added">Meetup not added</string>
     <string name="add_transaction">Add Transaction</string>
+    <string name="from_date">From Date</string>
+    <string name="to_date">To Date</string>
+    <string name="select_from_date">Select From Date</string>
+    <string name="select_to_date">Select To Date</string>
     <string name="note_is_required">Note is required</string>
     <string name="amount_is_required">Amount is required</string>
     <string name="date_is_required">Date is required</string>
