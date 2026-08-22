@@ -57,6 +57,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     private val viewModel: DashboardViewModel by viewModels()
     private val newsViewModel: NewsViewModel by viewModels()
     protected var userLibrary: List<MyLibrary> = emptyList()
+    protected var userCourses: List<MyCourse> = emptyList()
     private var fullName: String? = null
     private val params: FlexboxLayout.LayoutParams by lazy {
         FlexboxLayout.LayoutParams(
@@ -201,6 +202,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutCourse) ?: return
         flexboxLayout.removeAllViews()
         val filteredCourses = courses.filter { !it.courseTitle.isNullOrBlank() }
+        userCourses = filteredCourses
         setCountText(filteredCourses.size, MyCourse::class.java, requireView())
         if (filteredCourses.isEmpty()) {
             renderPlaceholder(flexboxLayout, getString(R.string.no_courses_joined_yet)) {

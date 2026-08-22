@@ -40,7 +40,6 @@ class CoursesViewModel @Inject constructor(
 
     private val _coursesState = MutableStateFlow(CoursesUiState())
     val coursesState: StateFlow<CoursesUiState> = _coursesState.asStateFlow()
-
     private var isTitleAscending = false
     private var isDateAscending = true
     private var activeSort: SortType? = null
@@ -118,10 +117,7 @@ class CoursesViewModel @Inject constructor(
                     val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
 
                     val myCourses = if (isMyCourseLib) {
-                        val courses = coursesRepository.getMyCourses(userId, validCourses)
-                        courses.ifEmpty {
-                            allCourses
-                        }
+                        coursesRepository.getMyCourses(userId, validCourses)
                     } else {
                         emptyList()
                     }
