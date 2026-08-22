@@ -16,7 +16,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [32], application = Application::class)
+@Config(application = Application::class)
 class CoursesAdapterTest {
 
     @Mock
