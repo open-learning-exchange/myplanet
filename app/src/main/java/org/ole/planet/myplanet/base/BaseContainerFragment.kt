@@ -123,7 +123,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                     val isDownloaded = withContext(dispatcherProvider.io) {
                         if (library.mediaType == "HTML") {
                             val directory = File(ctx.getExternalFilesDir(null), "ole/${library.resourceId}")
-                            File(directory, "index.html").exists()
+                            FileUtils.resolveHtmlEntryFile(directory, library.openWhichFile)?.exists() == true
                         } else {
                             library.isResourceOffline() || FileUtils.checkFileExist(ctx, UrlUtils.getUrl(library))
                         }
@@ -192,7 +192,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             val indexExists = withContext(dispatcherProvider.io) {
                 val directory = File(context?.getExternalFilesDir(null), "ole/${items.resourceId}")
-                File(directory, "index.html").exists()
+                FileUtils.resolveHtmlEntryFile(directory, items.openWhichFile)?.exists() == true
             }
 
             if (indexExists) {
@@ -200,6 +200,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 val intent = Intent(activity, WebViewActivity::class.java)
                 intent.putExtra("RESOURCE_ID", items.id)
                 intent.putExtra("LOCAL_ADDRESS", items.resourceLocalAddress)
+                intent.putExtra("OPEN_WHICH_FILE", items.openWhichFile)
                 intent.putExtra("title", items.title)
                 startActivity(intent)
                 return@launch
