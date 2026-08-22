@@ -684,11 +684,7 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
 
     override suspend fun markResourcesAsNotOffline(resourceIds: Collection<String>) {
         if (resourceIds.isEmpty()) return
-        val results = myLibraryDao.getOfflineByResourceIds(resourceIds.toList())
-        results.forEach { it.resourceOffline = false }
-        if (results.isNotEmpty()) {
-            myLibraryDao.upsertAll(results)
-        }
+        myLibraryDao.markAsNotOfflineByResourceIds(resourceIds.toList())
     }
 
     override suspend fun getPendingResourceUploads(): List<MyLibrary> {
