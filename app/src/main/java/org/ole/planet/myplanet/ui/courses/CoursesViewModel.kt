@@ -40,7 +40,6 @@ class CoursesViewModel @Inject constructor(
 
     private val _coursesState = MutableStateFlow(CoursesUiState())
     val coursesState: StateFlow<CoursesUiState> = _coursesState.asStateFlow()
-
     private var isTitleAscending = false
     private var isDateAscending = true
     private var activeSort: SortType? = null
