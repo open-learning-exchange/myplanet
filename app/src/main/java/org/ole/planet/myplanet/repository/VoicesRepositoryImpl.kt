@@ -9,7 +9,6 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.HashMap
-import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -18,10 +17,8 @@ import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.NewsLogDao
-import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.News
-import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -34,7 +31,6 @@ class VoicesRepositoryImpl @Inject constructor(
     private val gson: Gson,
     @PlainGson private val plainGson: Gson,
     private val sharedPrefManager: SharedPrefManager,
-    private val teamNotificationDao: TeamNotificationDao,
     private val newsDao: NewsDao,
     private val myLibraryDao: MyLibraryDao,
     private val newsLogDao: NewsLogDao
@@ -245,22 +241,6 @@ class VoicesRepositoryImpl @Inject constructor(
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
-        }
-    }
-
-    override suspend fun updateTeamNotification(teamId: String, count: Int) {
-        val existing = teamNotificationDao.findByParentAndType(teamId, "chat")
-        if (existing != null) {
-            existing.lastCount = count
-            teamNotificationDao.update(existing)
-        } else {
-            val notification = TeamNotification().apply {
-                id = UUID.randomUUID().toString()
-                parentId = teamId
-                type = "chat"
-                lastCount = count
-            }
-            teamNotificationDao.insert(notification)
         }
     }
 
