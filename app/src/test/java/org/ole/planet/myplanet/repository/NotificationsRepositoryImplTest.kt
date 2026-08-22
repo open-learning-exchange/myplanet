@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.app.Application
-import android.os.Build
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
@@ -27,7 +26,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [Build.VERSION_CODES.P], application = Application::class)
+@Config(application = Application::class)
 @ExperimentalCoroutinesApi
 class NotificationsRepositoryImplTest {
 
