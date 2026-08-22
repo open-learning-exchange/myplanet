@@ -131,8 +131,12 @@ database with the user's own basic-auth credentials (health-role users sweep eve
 account), guarded against re-entry by its `SyncRunning` state. The `toHex` encoding is one
 big-endian number, not per-byte hex — `toHexString` pins the empty-string/leading-zero cases a
 naive port gets wrong. The master's progress dialog is deliberately not ported: `di` is never
-assigned there, so its show/dismiss calls are no-ops. Still open: the upload direction
-(`saveKeyIv` during member creation).
+assigned there, so its show/dismiss calls are no-ops. Phase 62 ports the upload direction
+(`saveKeyIv`): `UserRepository.saveKeyIv` publishes the freshly generated key/IV to the
+user's `userdb-`+hex database during online member creation, retried 3× with the
+`changeUserSecurity` health-role grant, and `uploadNewUser` swallows its failure so the
+account still reports success. Still open: the background/outbox path for accounts created
+offline.
 
 ### Documentation Map
 

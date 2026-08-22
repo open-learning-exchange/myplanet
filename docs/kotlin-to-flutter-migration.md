@@ -2922,6 +2922,58 @@ skips a stored key and guests).
 
 ---
 
+## Phase 62 — the key/IV upload direction (`saveKeyIv`)
+
+Phase 61's sync-in reads the key back; this phase writes it. A member
+created on the Flutter app now publishes the health AES key/IV to their
+per-user CouchDB database during the online creation flow, so records
+encrypted on this device decrypt on another — the direction that makes the
+key recoverable in the first place.
+
+`UserRepository.saveKeyIv` ports `UserRepositoryImpl.saveKeyIv`:
+
+1. Generate a key/IV (or reuse the row's stored ones — a re-upload must not
+   rotate the key, or the records encrypted with the old one become
+   unreadable).
+2. PUT an empty document to `${dbUrl}/$table` to create the database —
+   best-effort, failure swallowed (it may already exist).
+3. POST `{key, iv, createdOn}` to that database, retried up to 3 times with
+   a 2 s backoff (`RetryUtils.retry`). Throws on the 3rd failure, as the
+   Kotlin's `IOException` does — but `uploadNewUser` swallows that so the
+   user-facing creation still reports success and the key stays
+   device-local.
+4. `changeUserSecurity` (port of the same-named Kotlin method) GETs the
+   database's `_security` document, appends `health` to the members' roles
+   array, and PUTs it back — best-effort, swallowed, so a `_security`
+   failure does not undo the key recording.
+
+`uploadNewUser` calls `saveKeyIv` after the security-data fetch, matching
+the `saveUserToDb` to `saveKeyIv` chain. Two things worth noting:
+
+- The POST and `_security` calls authenticate as the new member
+  (`basicAuthHeader(username, password)`), not the satellite PIN — the
+  per-user database accepts only its owner, exactly as the sync-in does.
+- The table name reuses `toHexString` from Phase 61, so the upload and
+  sync-in target the same `userdb-`+hex database.
+
+Eight tests cover it: generate-and-POST-and-grant-and-record, reuse-stored
+key/IV (no rotation), user-credential authentication on both POST and
+`_security`, 3-attempt retry-then-succeed, throw-after-3-failures,
+`_security` GET failure swallowed but key still recorded, `uploadNewUser`
+calls `saveKeyIv`, and `uploadNewUser` still succeeds when `saveKeyIv`
+throws.
+
+Still open: the **background** upload path. The Kotlin's
+`UploadToShelfService.uploadUserData` to `checkAndUploadUser` to
+`uploadNewUser(model)` to `processUserAfterCreation` to `saveKeyIv` chain
+runs for pending-sync users drained from the outbox. The Flutter
+`UserUploader` handles the `_users` PUT but does not call `saveKeyIv` after
+a first-time creation, so an account created offline and later uploaded via
+the outbox does not publish its key. That is the durable-path counterpart
+to this phase's synchronous path.
+
+---
+
 **Last updated**: 2026-08-21 (Phase 61 complete — dashboard health key/IV
 sync-in ported with the 9f3fac1d9 re-entrancy guard; the stale
 courses-progress-filter spec-debt entry corrected. Phase 60 — three further

@@ -2,8 +2,10 @@ import 'package:meta/meta.dart';
 
 import '../core/config/server_config.dart';
 import '../core/crypto/android_decrypter.dart';
+import '../core/crypto/health_cipher.dart';
 import '../core/network/network_result.dart';
 import '../core/utils/json_utils.dart';
+import '../core/utils/text_utils.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
@@ -317,7 +319,143 @@ class UserRepository {
       iterations: iterations,
     );
 
+    // Publish the health key/IV to the user's per-user database so records
+    // written on this device decrypt on another — port of `saveKeyIv`,
+    // the upload direction Phase 61's sync-in reads back. Failures are
+    // swallowed to match the Kotlin's `catch (_: Exception) { }` in
+    // `saveUserToDb`: the account is already created; a missing key doc just
+    // means the key stays device-local until the next attempt.
+    try {
+      await saveKeyIv(
+        localId: localId,
+        config: config,
+        username: username,
+        password: password,
+      );
+    } catch (_) {}
+
     return true;
+  }
+
+  /// Port of `UserRepositoryImpl.saveKeyIv` — publish the health AES key/IV to
+  /// the user's per-user CouchDB database (`userdb-`+hex(planetCode)+`-`+hex(
+  /// name)), so health records written on this device decrypt on another.
+  ///
+  /// The flow, matching the Kotlin:
+  /// 1. Generate a key/IV, reusing any already stored on the row (a re-upload
+  ///    must not rotate the key, or the records encrypted with the old one
+  ///    become unreadable).
+  /// 2. PUT an empty document to `${dbUrl}/$table` to create the database —
+  ///    best-effort, failure swallowed (it may already exist).
+  /// 3. POST `{key, iv, createdOn}` to that database, retried up to 3 times
+  ///    with a 2 s backoff (`RetryUtils.retry`).
+  /// 4. On success, call [changeUserSecurity] (grant the `health` role on the
+  ///    database's `_security` doc) and [UserDao.markUserKeyIvSaved].
+  ///
+  /// Throws on a POST that fails all 3 attempts, as the Kotlin throws
+  /// `IOException("Failed to save key/IV after $maxAttempts attempts")`. The
+  /// caller ([uploadNewUser]) swallows that, so the user-facing upload still
+  /// reports success.
+  Future<void> saveKeyIv({
+    required String localId,
+    required ServerConfig config,
+    required String username,
+    required String password,
+  }) async {
+    final user = await _userDao.getById(localId);
+    if (user == null) return;
+
+    final table =
+        'userdb-${user.planetCode == null ? 'null' : toHexString(user.planetCode!)}-'
+        '${user.name == null ? 'null' : toHexString(user.name!)}';
+    final authHeader = UrlUtils.basicAuthHeader(username, password);
+    final dbUrl = UrlUtils.dbUrl(config);
+
+    var key = user.key;
+    var iv = user.iv;
+    key ??= HealthCipher.generateKey();
+    iv ??= HealthCipher.generateIv();
+
+    final body = <String, dynamic>{
+      'key': key,
+      'iv': iv,
+      'createdOn': DateTime.now().millisecondsSinceEpoch,
+    };
+
+    // Best-effort database creation — the Kotlin wraps it in its own
+    // try/catch and ignores the result.
+    try {
+      await _api.putJsonObject('$dbUrl/$table', <String, dynamic>{});
+    } catch (_) {}
+
+    final maxAttempts = 3;
+    const retryDelay = Duration(seconds: 2);
+    Map<String, dynamic>? posted;
+    for (var attempt = 0; attempt < maxAttempts; attempt++) {
+      final result = await _api.postJsonObject(
+        '$dbUrl/$table',
+        body,
+        authHeader: authHeader,
+      );
+      if (result is NetworkSuccess<Map<String, dynamic>>) {
+        posted = result.data;
+        break;
+      }
+      if (attempt < maxAttempts - 1) {
+        await Future<void>.delayed(retryDelay);
+      }
+    }
+
+    if (posted == null) {
+      throw Exception('Failed to save key/IV after $maxAttempts attempts');
+    }
+
+    await changeUserSecurity(
+      table: table,
+      dbUrl: dbUrl,
+      authHeader: authHeader,
+    );
+    await _userDao.markUserKeyIvSaved(localId, key, iv);
+  }
+
+  /// Port of `UserRepositoryImpl.changeUserSecurity` — grant the `health` role
+  /// on the user's per-user database `_security` document, so the user can
+  /// read their own key/IV doc. Best-effort: the Kotlin wraps the GET-and-PUT
+  /// in `try/catch { e.printStackTrace() }`, so a failure here is swallowed
+  /// and the key/IV is still recorded locally.
+  Future<void> changeUserSecurity({
+    required String table,
+    required String dbUrl,
+    required String authHeader,
+  }) async {
+    try {
+      final result = await _api.getJsonObject(
+        '$dbUrl/$table/_security',
+        authHeader: authHeader,
+      );
+      if (result is! NetworkSuccess<Map<String, dynamic>>) return;
+      final security = Map<String, dynamic>.from(result.data);
+      final members = security['members'] is Map<String, dynamic>
+          ? Map<String, dynamic>.from(
+              security['members'] as Map<String, dynamic>,
+            )
+          : <String, dynamic>{};
+      final roles = members['roles'] is List
+          ? List<Object>.from(members['roles'] as List)
+          : <Object>[];
+      if (!roles.contains('health')) {
+        roles.add('health');
+      }
+      members['roles'] = roles;
+      security['members'] = members;
+      await _api.putJsonObject(
+        '$dbUrl/$table/_security',
+        security,
+        authHeader: authHeader,
+      );
+    } catch (_) {
+      // Swallowed — see the doc comment.
+    }
   }
 
   /// Builds the CouchDB user document for a new member.

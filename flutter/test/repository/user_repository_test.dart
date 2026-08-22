@@ -631,7 +631,12 @@ void main() {
       );
 
       final url =
-          verify(() => api.putJsonObject(captureAny(), any())).captured.single
+          verify(
+                () => api.putJsonObject(
+                  captureAny(that: contains('_users')),
+                  any(),
+                ),
+              ).captured.single
               as String;
       expect(url, contains('new%20member'));
     });
@@ -933,6 +938,387 @@ void main() {
         ),
       );
       expect(await repository.validateUsername('ada', messages), isNull);
+    });
+  });
+
+  // ── saveKeyIv — port of UserRepositoryImpl.saveKeyIv ────────────────────
+  //
+  // The upload direction Phase 61's sync-in reads back: publish the health
+  // AES key/IV to the user's per-user database so records written on this
+  // device decrypt on another. The expected table names below are pinned to
+  // the Kotlin `Utilities.toHex` output (see text_utils_test).
+
+  group('saveKeyIv', () {
+    Future<void> seedUser({String? key, String? iv}) => db.userDao.upsert(
+      UsersCompanion.insert(
+        id: '12345',
+        name: const Value('newmember'),
+        planetCode: const Value('earth'),
+        key: key == null ? const Value.absent() : Value(key),
+        iv: iv == null ? const Value.absent() : Value(iv),
+      ),
+    );
+
+    // `earth` → 6561727468, `newmember` → 6e65776d656d626572.
+    const table = 'userdb-6561727468-6e65776d656d626572';
+    // `UrlUtils.dbUrl(config)` appends `/db` to the credentialed root, as
+    // Kotlin's `UrlUtils.getUrl()` does.
+    final dbUrl = '${config.couchDbUrl}/db';
+    final tableUrl = '$dbUrl/$table';
+    final secUrl = '$tableUrl/_security';
+
+    void stubSuccessPost() {
+      when(
+        () => api.putJsonObject(any(), any()),
+      ).thenAnswer((_) async => const NetworkError(412, 'db exists'));
+      when(
+        () => api.postJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer(
+        (_) async => NetworkSuccess({'ok': true, 'id': 'k1', 'rev': '1'}),
+      );
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer(
+        (_) async => NetworkSuccess({
+          'members': {'roles': <String>[]},
+        }),
+      );
+      when(
+        () => api.putJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer((_) async => NetworkSuccess({'ok': true}));
+    }
+
+    test(
+      'generates a key/IV, POSTs them, grants the health role, and records them',
+      () async {
+        await seedUser();
+        stubSuccessPost();
+
+        await repository.saveKeyIv(
+          localId: '12345',
+          config: config,
+          username: 'newmember',
+          password: 'secret',
+        );
+
+        // The POST carries key/iv/createdOn to the per-user database.
+        final postCapture = verify(
+          () => api.postJsonObject(
+            captureAny(),
+            captureAny(),
+            authHeader: any(named: 'authHeader'),
+          ),
+        ).captured;
+        expect(postCapture[0], tableUrl);
+        final body = postCapture[1] as Map<String, dynamic>;
+        expect(body.containsKey('key'), isTrue);
+        expect(body.containsKey('iv'), isTrue);
+        expect(body['createdOn'], isA<int>());
+
+        // The health role was PUT onto _security.
+        final secCapture = verify(
+          () => api.putJsonObject(
+            secUrl,
+            captureAny(),
+            authHeader: any(named: 'authHeader'),
+          ),
+        ).captured;
+        final security = secCapture.single as Map<String, dynamic>;
+        final roles = (security['members'] as Map)['roles'] as List;
+        expect(roles, contains('health'));
+
+        // The generated key/IV landed on the row.
+        final user = await db.userDao.getById('12345');
+        expect(user?.key, isNotNull);
+        expect(user?.iv, isNotNull);
+        expect(body['key'], user?.key);
+        expect(body['iv'], user?.iv);
+      },
+    );
+
+    test('reuses a stored key/IV instead of rotating them', () async {
+      await seedUser(key: 'EXISTING-KEY', iv: 'EXISTING-IV');
+      stubSuccessPost();
+
+      await repository.saveKeyIv(
+        localId: '12345',
+        config: config,
+        username: 'newmember',
+        password: 'secret',
+      );
+
+      final postCapture =
+          verify(
+                () => api.postJsonObject(
+                  any(),
+                  captureAny(),
+                  authHeader: any(named: 'authHeader'),
+                ),
+              ).captured.single
+              as Map<String, dynamic>;
+      expect(postCapture['key'], 'EXISTING-KEY');
+      expect(postCapture['iv'], 'EXISTING-IV');
+      final user = await db.userDao.getById('12345');
+      expect(user?.key, 'EXISTING-KEY');
+      expect(user?.iv, 'EXISTING-IV');
+    });
+
+    test(
+      'authenticates the POST and _security calls as the user, not the satellite',
+      () async {
+        await seedUser();
+        stubSuccessPost();
+
+        await repository.saveKeyIv(
+          localId: '12345',
+          config: config,
+          username: 'newmember',
+          password: 'secret',
+        );
+
+        final postHeader =
+            verify(
+                  () => api.postJsonObject(
+                    any(),
+                    any(),
+                    authHeader: captureAny(named: 'authHeader'),
+                  ),
+                ).captured.single
+                as String;
+        final secHeader =
+            verify(
+                  () => api.getJsonObject(
+                    any(),
+                    authHeader: captureAny(named: 'authHeader'),
+                  ),
+                ).captured.single
+                as String;
+        // Both are Basic auth for newmember:secret, not satellite:1234.
+        for (final header in [postHeader, secHeader]) {
+          expect(header, startsWith('Basic '));
+          final decoded = String.fromCharCodes(
+            base64Decode(header.substring(6)),
+          );
+          expect(decoded, 'newmember:secret');
+        }
+      },
+    );
+
+    test('retries the POST up to 3 times, then succeeds', () async {
+      await seedUser();
+      var calls = 0;
+      when(
+        () => api.putJsonObject(any(), any()),
+      ).thenAnswer((_) async => const NetworkError(412, 'db exists'));
+      when(
+        () => api.postJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer((_) async {
+        calls++;
+        if (calls < 3) return const NetworkError(500, 'down');
+        return NetworkSuccess({'ok': true, 'id': 'k1', 'rev': '1'});
+      });
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer(
+        (_) async => NetworkSuccess({
+          'members': {'roles': <String>[]},
+        }),
+      );
+      when(
+        () => api.putJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer((_) async => NetworkSuccess({'ok': true}));
+
+      await repository.saveKeyIv(
+        localId: '12345',
+        config: config,
+        username: 'newmember',
+        password: 'secret',
+      );
+
+      expect(calls, 3);
+      final user = await db.userDao.getById('12345');
+      expect(user?.key, isNotNull);
+    });
+
+    test('throws after 3 failed POSTs', () async {
+      await seedUser();
+      when(
+        () => api.putJsonObject(any(), any()),
+      ).thenAnswer((_) async => const NetworkError(412, 'db exists'));
+      when(
+        () => api.postJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer((_) async => const NetworkError(500, 'down'));
+
+      await expectLater(
+        repository.saveKeyIv(
+          localId: '12345',
+          config: config,
+          username: 'newmember',
+          password: 'secret',
+        ),
+        throwsA(isA<Exception>()),
+      );
+      // Nothing was recorded.
+      final user = await db.userDao.getById('12345');
+      expect(user?.key, isNull);
+    });
+
+    test(
+      'a _security GET failure is swallowed but the key is still recorded',
+      () async {
+        await seedUser();
+        when(
+          () => api.putJsonObject(any(), any()),
+        ).thenAnswer((_) async => const NetworkError(412, 'db exists'));
+        when(
+          () => api.postJsonObject(
+            any(),
+            any(),
+            authHeader: any(named: 'authHeader'),
+          ),
+        ).thenAnswer(
+          (_) async => NetworkSuccess({'ok': true, 'id': 'k1', 'rev': '1'}),
+        );
+        // _security GET fails.
+        when(
+          () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+        ).thenAnswer((_) async => const NetworkError(403, 'forbidden'));
+
+        await repository.saveKeyIv(
+          localId: '12345',
+          config: config,
+          username: 'newmember',
+          password: 'secret',
+        );
+
+        // The key/IV were still recorded locally.
+        final user = await db.userDao.getById('12345');
+        expect(user?.key, isNotNull);
+        expect(user?.iv, isNotNull);
+        // And the _security PUT was never attempted.
+        verifyNever(
+          () => api.putJsonObject(
+            secUrl,
+            any(),
+            authHeader: any(named: 'authHeader'),
+          ),
+        );
+      },
+    );
+
+    test('uploadNewUser calls saveKeyIv after a successful creation', () async {
+      await seedUser();
+      // The _users PUT (no authHeader) — stubbed with a URL guard so the
+      // db-creation PUT does not collide with it.
+      when(
+        () => api.putJsonObject(any(that: contains('_users')), any()),
+      ).thenAnswer(
+        (_) async => NetworkSuccess({
+          'id': 'org.couchdb.user:newmember',
+          'rev': '1-abc',
+          'ok': true,
+        }),
+      );
+      // The db-creation PUT (no authHeader) — best-effort, ignored.
+      when(
+        () => api.putJsonObject(any(that: contains('userdb-')), any()),
+      ).thenAnswer((_) async => const NetworkError(412, 'db exists'));
+      // The _security PUT (authHeader).
+      when(
+        () => api.putJsonObject(
+          any(that: contains('_security')),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer((_) async => NetworkSuccess({'ok': true}));
+      // The _users fetch and the _security GET both go through getJsonObject.
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer(
+        (_) async => NetworkSuccess({
+          'members': {'roles': <String>[]},
+        }),
+      );
+      when(
+        () => api.postJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer(
+        (_) async => NetworkSuccess({'ok': true, 'id': 'k1', 'rev': '1'}),
+      );
+
+      final result = await repository.uploadNewUser(
+        localId: '12345',
+        config: config,
+        username: 'newmember',
+        password: 'secret',
+      );
+
+      expect(result, isTrue);
+      // saveKeyIv ran: the row carries a health key.
+      final user = await db.userDao.getById('12345');
+      expect(user?.key, isNotNull);
+    });
+
+    test('uploadNewUser still succeeds when saveKeyIv throws', () async {
+      await seedUser();
+      when(
+        () => api.putJsonObject(any(that: contains('_users')), any()),
+      ).thenAnswer(
+        (_) async => NetworkSuccess({
+          'id': 'org.couchdb.user:newmember',
+          'rev': '1-abc',
+          'ok': true,
+        }),
+      );
+      when(
+        () => api.putJsonObject(any(that: contains('userdb-')), any()),
+      ).thenAnswer((_) async => const NetworkError(412, 'db exists'));
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer((_) async => NetworkSuccess({}));
+      // Every POST fails — saveKeyIv throws after 3 attempts.
+      when(
+        () => api.postJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer((_) async => const NetworkError(500, 'down'));
+
+      final result = await repository.uploadNewUser(
+        localId: '12345',
+        config: config,
+        username: 'newmember',
+        password: 'secret',
+      );
+
+      // The account was still created; the key just stays device-local.
+      expect(result, isTrue);
+      final user = await db.userDao.getById('12345');
+      expect(user?.key, isNull);
     });
   });
 }
