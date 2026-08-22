@@ -98,6 +98,34 @@ class ServerUrlMapperTest {
     }
 
     @Test
+    fun testUpdateUrlPreferencesExtractsCredentialsFromAlternativeUrlNotPrimary() {
+        val editor = mockk<SharedPreferences.Editor>()
+        val settings = mockk<SharedPreferences>()
+
+        every { editor.putString(any(), any()) } returns editor
+        every { editor.putBoolean(any(), any()) } returns editor
+        every { editor.apply() } just Runs
+
+        val uri = mockk<Uri>()
+        every { uri.userInfo } returns null
+        every { uri.scheme } returns "http"
+        every { uri.host } returns "primary.com"
+
+        val alternativeUrl = "http://clone_user:clone_pass@alternative.com:5984"
+
+        val url = "http://primary.com"
+
+        serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, url, settings)
+
+        verify { editor.putString("url_user", "clone_user") }
+        verify { editor.putString("url_pwd", "clone_pass") }
+        verify { editor.putString("url_Scheme", "http") }
+        verify { editor.putString("url_Host", "primary.com") }
+        verify { editor.putString("processedAlternativeUrl", alternativeUrl) }
+        verify { editor.apply() }
+    }
+
+    @Test
     fun testUpdateUrlPreferencesWithoutUserInfo() {
         val editor = mockk<SharedPreferences.Editor>()
         val settings = mockk<SharedPreferences>()
