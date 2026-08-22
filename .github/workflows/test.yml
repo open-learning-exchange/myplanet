@@ -4,6 +4,13 @@ on:
   push:
     branches:
       - '**'
+    # See build.yml — the Flutter port and documentation cannot change the
+    # outcome of the Kotlin unit tests.
+    paths-ignore:
+      - 'flutter/**'
+      - 'docs/**'
+      - '**.md'
+      - '.github/workflows/flutter.yml'
   workflow_dispatch:
 
 permissions:
@@ -77,7 +84,7 @@ jobs:
 
       - name: upload test reports
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-reports-${{ matrix.build }}-shard-${{ matrix.shard }}
           overwrite: true

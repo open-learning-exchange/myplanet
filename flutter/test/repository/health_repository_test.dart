@@ -1,0 +1,423 @@
+import 'dart:convert';
+
+import 'package:drift/drift.dart' hide isNotNull, isNull;
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:myplanet/core/config/server_config.dart';
+import 'package:myplanet/core/network/network_result.dart';
+import 'package:myplanet/core/sync/sync_result.dart';
+import 'package:myplanet/data/api/planet_api.dart';
+import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/repository/health_repository.dart';
+
+void main() {
+  late AppDatabase database;
+  late MockPlanetApi api;
+
+  setUp(() {
+    database = AppDatabase.memory();
+    api = MockPlanetApi();
+  });
+
+  tearDown(() => database.close());
+
+  HealthRepository createRepository({ServerConfig? config, int counter = 0}) {
+    return HealthRepository(
+      api,
+      database.healthExaminationDao,
+      database.userDao,
+      config: config,
+      createId: () => 'health-local-${++counter}',
+    );
+  }
+
+  test('creates and retrieves a health examination', () async {
+    final repository = createRepository();
+    final id = await repository.createExamination(
+      userId: 'user-1',
+      temperature: 36.5,
+      pulse: 72,
+      bp: '120/80',
+      height: 175,
+      weight: 70,
+      vision: '20/20',
+      hearing: 'Normal',
+    );
+
+    expect(id, 'health-local-1');
+
+    final row = await repository.getById(id);
+    expect(row, isNotNull);
+    expect(row!.temperature, 36.5);
+    expect(row.pulse, 72);
+    expect(row.bp, '120/80');
+    expect(row.height, 175);
+    expect(row.weight, 70);
+    expect(row.isUpdated, isTrue);
+  });
+
+  test('updates an existing examination', () async {
+    final repository = createRepository();
+    final id = await repository.createExamination(
+      userId: 'user-1',
+      temperature: 36.5,
+      pulse: 72,
+      height: 175,
+      weight: 70,
+    );
+
+    await repository.updateExamination(id, temperature: 37.0, pulse: 80);
+
+    final row = await repository.getById(id);
+    expect(row!.temperature, 37.0);
+    expect(row.pulse, 80);
+    expect(row.isUpdated, isTrue);
+  });
+
+  test('parses conditions from JSON', () {
+    final repository = createRepository();
+    expect(repository.parseConditions('{"Fever": true, "Cough": false}'), {
+      'Fever': true,
+      'Cough': false,
+    });
+
+    expect(repository.parseConditions(null), isEmpty);
+    expect(repository.parseConditions(''), isEmpty);
+    expect(repository.parseConditions('invalid'), isEmpty);
+  });
+
+  test('converts row to model', () async {
+    final companion = HealthExaminationsCompanion.insert(
+      id: 'health-1',
+      userId: const Value('user-1'),
+      temperature: const Value(36.5),
+      pulse: const Value(72),
+    );
+
+    // Insert into database and get back
+    await database.healthExaminationDao.upsert(companion);
+    final row = await database.healthExaminationDao.getById('health-1');
+
+    expect(row, isNotNull);
+    expect(row!.temperature, 36.5);
+
+    // Test rowToModel conversion
+    final model = HealthRepository.rowToModel(row);
+    expect(model.temperature, 36.5);
+    expect(model.pulse, 72);
+  });
+
+  test('maps and caches server health documents', () async {
+    final repository = createRepository();
+    expect(
+      await repository.cacheDocuments([
+        {
+          '_id': 'health-1',
+          '_rev': '1-a',
+          'temperature': 36.6,
+          'pulse': 75,
+          'bp': '118/78',
+          'height': 180.0,
+          'weight': 80.0,
+        },
+      ]),
+      1,
+    );
+
+    final row = await repository.getById('health-1');
+    expect(row?.temperature, 36.6);
+    expect(row?.pulse, 75);
+    expect(row?.bp, '118/78');
+    expect(row?.rev, '1-a');
+    expect(row?.isUpdated, isFalse);
+  });
+
+  test('preserves local edits during cache', () async {
+    final repository = createRepository();
+    await repository.cacheDocuments([
+      {'_id': 'health-1', 'temperature': 36.5, 'pulse': 70},
+    ]);
+
+    // Create a local edit
+    await repository.updateExamination(
+      'health-1',
+      temperature: 37.0,
+      pulse: 80,
+    );
+
+    // Server sends an update
+    await repository.cacheDocuments([
+      {'_id': 'health-1', 'temperature': 36.0, 'pulse': 60},
+    ]);
+
+    // Local edit should be preserved
+    final row = await repository.getById('health-1');
+    expect(row?.temperature, 37.0);
+    expect(row?.pulse, 80);
+    expect(row?.isUpdated, isTrue);
+  });
+
+  test('serializes examination for upload', () async {
+    final repository = createRepository();
+    await repository.cacheDocuments([
+      {
+        '_id': 'health-1',
+        '_rev': '1-a',
+        'temperature': 36.5,
+        'pulse': 72,
+        'bp': '120/80',
+        'height': 175.0,
+        'weight': 70.0,
+      },
+    ]);
+
+    final row = await repository.getById('health-1');
+    final payload = HealthRepository.serialize(row!);
+
+    expect(payload['_id'], 'health-1');
+    expect(payload['_rev'], '1-a');
+    expect(payload['temperature'], 36.5);
+    expect(payload['pulse'], 72);
+    expect(payload['bp'], '120/80');
+    expect(payload['height'], 175.0);
+    expect(payload['weight'], 70.0);
+  });
+
+  test('gets examinations by user id', () async {
+    final repository = createRepository();
+    // Create examinations directly via repository
+    await repository.createExamination(
+      userId: 'user-1',
+      temperature: 36.5,
+      pulse: 72,
+      height: 175,
+      weight: 70,
+    );
+    await repository.createExamination(
+      userId: 'user-1',
+      temperature: 36.6,
+      pulse: 72,
+      height: 175,
+      weight: 70,
+    );
+    await repository.createExamination(
+      userId: 'user-2',
+      temperature: 36.7,
+      pulse: 75,
+      height: 180,
+      weight: 80,
+    );
+
+    final rows = await repository.getForUser('user-1');
+    expect(rows.length, 2);
+    expect(rows.every((r) => r.userId == 'user-1'), isTrue);
+  });
+
+  test('gets updated examinations for sync', () async {
+    final repository = createRepository();
+    await repository.cacheDocuments([
+      {'_id': 'health-1', 'temperature': 36.5},
+    ]);
+
+    // Create a local edit
+    await repository.updateExamination('health-1', temperature: 37.0);
+
+    final updated = await repository.getUpdated();
+    expect(updated.length, 1);
+    expect(updated.first.temperature, 37.0);
+  });
+
+  test('marks examination as uploaded', () async {
+    final repository = createRepository();
+    await repository.cacheDocuments([
+      {'_id': 'health-1', 'temperature': 36.5},
+    ]);
+
+    await repository.updateExamination('health-1', temperature: 37.0);
+
+    await repository.markUploaded('health-1', '2-b');
+
+    final row = await repository.getById('health-1');
+    expect(row!.isUpdated, isFalse);
+    expect(row.rev, '2-b');
+  });
+
+  test('sync walks CouchDB pages', () async {
+    final repository = createRepository(
+      config: const ServerConfig(
+        serverUrl: 'https://planet.example',
+        couchDbUrl: 'https://satellite:1234@planet.example:443',
+        pin: '1234',
+      ),
+    );
+    when(
+      () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer((invocation) async {
+      final url = invocation.positionalArguments.single as String;
+      if (url.endsWith('limit=0')) {
+        return NetworkSuccess<Map<String, dynamic>>({'total_rows': 2});
+      }
+      return NetworkSuccess<Map<String, dynamic>>({
+        'rows': [
+          {
+            'doc': {'_id': 'health-1', 'temperature': 36.5},
+          },
+          {
+            'doc': {'_id': 'health-2', 'temperature': 36.6},
+          },
+        ],
+      });
+    });
+
+    final result = await repository.sync();
+
+    expect(result, isA<SyncComplete>());
+    expect((result as SyncComplete).savedCount, 2);
+  });
+
+  // ── Patient management — port of Kotlin 962e1e736 ──────────────────────
+
+  group('patient management', () {
+    Future<void> seedUsers() async {
+      await database.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'user-a',
+          couchId: const Value('org.couchdb.user:alice'),
+          name: const Value('alice'),
+          firstName: const Value('Alice'),
+          joinDate: const Value(1000),
+        ),
+      );
+      await database.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'user-b',
+          couchId: const Value('org.couchdb.user:bob'),
+          name: const Value('bob'),
+          firstName: const Value('Bob'),
+          joinDate: const Value(2000),
+        ),
+      );
+      await database.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'user-c',
+          couchId: const Value('org.couchdb.user:carol'),
+          name: const Value('carol'),
+          firstName: const Value('Carol'),
+          joinDate: const Value(3000),
+        ),
+      );
+    }
+
+    test('getPatientById returns user by id', () async {
+      await seedUsers();
+      final repo = createRepository();
+      final user = await repo.getPatientById('user-b');
+      expect(user, isNotNull);
+      expect(user!.name, 'bob');
+    });
+
+    test('getPatientsSortedBy sorts by joinDate descending', () async {
+      await seedUsers();
+      final repo = createRepository();
+      final patients = await repo.getPatientsSortedBy(
+        'joinDate',
+        descending: true,
+      );
+      expect(patients.map((u) => u.name).toList(), ['carol', 'bob', 'alice']);
+    });
+
+    test('getPatientsSortedBy sorts by joinDate ascending', () async {
+      await seedUsers();
+      final repo = createRepository();
+      final patients = await repo.getPatientsSortedBy(
+        'joinDate',
+        descending: false,
+      );
+      expect(patients.map((u) => u.name).toList(), ['alice', 'bob', 'carol']);
+    });
+
+    test('getPatientsSortedBy sorts by name', () async {
+      await seedUsers();
+      final repo = createRepository();
+      final patients = await repo.getPatientsSortedBy(
+        'name',
+        descending: false,
+      );
+      expect(patients.map((u) => u.name).toList(), ['alice', 'bob', 'carol']);
+    });
+
+    test('searchPatients with blank query returns all', () async {
+      await seedUsers();
+      final repo = createRepository();
+      final patients = await repo.searchPatients('');
+      expect(patients.length, 3);
+    });
+
+    test('searchPatients filters by name', () async {
+      await seedUsers();
+      final repo = createRepository();
+      final patients = await repo.searchPatients('bob');
+      expect(patients.length, 1);
+      expect(patients.first.name, 'bob');
+    });
+
+    test('searchPatients filters by firstName', () async {
+      await seedUsers();
+      final repo = createRepository();
+      final patients = await repo.searchPatients('Car');
+      expect(patients.length, 1);
+      expect(patients.first.firstName, 'Carol');
+    });
+
+    test(
+      'getPatientHealthRecords returns null when no examination exists',
+      () async {
+        await seedUsers();
+        final repo = createRepository();
+        final user = await repo.getPatientById('user-a');
+        final record = await repo.getPatientHealthRecords('user-a', user!);
+        expect(record, isNull);
+      },
+    );
+
+    test(
+      'getPatientHealthRecords decrypts and bundles the health record',
+      () async {
+        await seedUsers();
+        final repo = createRepository();
+        // Ensure the user has crypto keys.
+        final user = await database.userDao.ensureSecurityKeys('user-a');
+        // Encrypt a MyHealth JSON payload.
+        final myHealthJson = jsonEncode({
+          'profile': {
+            'emergencyContactName': 'Jane',
+            'emergencyContact': '555-1234',
+          },
+          'userKey': 'user-a',
+          'lastExamination': 0,
+        });
+        final encrypted = await repo.encryptData('user-a', myHealthJson);
+        // Create the primary health examination row carrying the encrypted
+        // profile. Its profileId is set so getByProfileId includes it.
+        await repo.createExamination(
+          userId: 'user-a',
+          profileId: 'user-a',
+          temperature: 36.5,
+          pulse: 70,
+          height: 170,
+          weight: 65,
+          data: encrypted,
+        );
+
+        final record = await repo.getPatientHealthRecords('user-a', user!);
+        expect(record, isNotNull);
+        expect(record!.healthProfile.profile?.emergencyContactName, 'Jane');
+        // The primary examination is included in the bundled history.
+        expect(record.examinations, isNotEmpty);
+        expect(record.healthPojo.temperature, 36.5);
+      },
+    );
+  });
+}
+
+class MockPlanetApi extends Mock implements PlanetApi {}

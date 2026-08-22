@@ -8,7 +8,7 @@
 - **Primary Language**: Kotlin (100% — no Java sources remain)
 - **Min SDK**: 26 (Android 8.0)
 - **Target SDK**: 36 (Android 16); **Compile SDK**: 37
-- **Current Version**: 0.63.42 (versionCode: 6342)
+- **Current Version**: 0.64.35 (versionCode: 6435)
 - **Build System**: Gradle 9.6.1 with Android Gradle Plugin 9.3.1
 - **Local Database**: Room (AndroidX) 2.8.4 — the only local persistence store
 - **License**: AGPL v3
@@ -16,6 +16,115 @@
 ### Build Flavors
 - **default**: Full-featured version
 - **lite**: Lightweight version with reduced features (removes `REQUEST_INSTALL_PACKAGES`; `-lite` version-name suffix)
+
+### Flutter port (in progress)
+A Flutter/Dart port lives in **`flutter/`**, alongside — not replacing — the Kotlin app. `app/`
+is unchanged and remains the shipping app. **27 of 28 UI packages** have a screen, plus a durable
+write-back path. The first vertical slice ran server configuration → login → resources list;
+since then the dashboard shell, courses, calendar, first-launch onboarding, the offline user
+profile, appearance settings, the dictionary, notifications, My life, references, personals, and
+ratings, offline submissions with question-aware answer review, events/meetups, individual
+surveys, teams, chat, feedback, community, graded course exams, and the resource viewer with
+its download path, encrypted health records, the chat and feedback sync-in directions, chat
+upload, member registration, team and public survey sharing, personal-note attachments, and the
+completed home dashboard — completed-course stars, the server-reachability ring, team alert
+badges, offline-login counting with its activity chart, survey remind-later, and the language
+action — and the activity log (resource opens/downloads, course visits, completed syncs) with the
+four-database upload path that carries it and the profile stats that read it, and deep links
+(`app_links`, so a public-survey link's origin survives) with durable delivery for the anonymous
+answer sheet they collect, and profile photos with the `login_activities` sync-in (harvested from
+`flutter-openhands4`), and — harvested from `flutter-openhands7` — the About and Disclaimer
+screens, team finance/report receipt attachments in both directions, free-up-space storage
+management over a `disk_stats` method channel, and debounced username validation, have landed —
+plus voices share-to-community with the upstream `f4adebf` visibility/un-share parity, device and
+tablet-usage telemetry (`myplanet_activities`), and task deadline notifications.
+Everything below in this document describes the Kotlin app and still applies to it.
+
+See **`docs/kotlin-to-flutter-migration.md`** for scope, the technology mapping (Hilt→Riverpod,
+Room→Drift, Retrofit→Dio, strings.xml→.arb), and the open problems. The `WorkManager` gap is
+resolved for write-back: `RetryQueue`'s durability was always the SQLite table rather than the
+worker, so the queue ported directly and only the drain trigger needed replacing (`outbox` table
++ `OutboxDrainer`, drained on app resume). What remains open is background work with no user
+present — `AutoSyncWorker`'s timed sync landed in Phase 38 through the `workmanager` plugin behind
+a testable Dart seam, though that plugin's own Android side is Kotlin, and
+`TaskNotificationWorker`'s deadline notifications landed in Phase 42 on the same plugin's
+`maintenance` cadence (`TaskDeadlineNotifier` policy behind a `NotificationPresenter` seam, with
+`team_tasks.isNotified` making the reminder once-only). Phase 43 closes the final WorkManager gap:
+resource requests are persisted before the foreground attempt and handed to a network-constrained
+one-shot worker for retry and process-death recovery. Phase 44 then closed the device-identity
+serializer gap for personal, rating, submission and team uploads using the Phase 41 platform seam.
+Phase 45 hardened both: the download queue moved from a preference list to a preserved Drift table
+at schema v33, and device identity gained a UI-primed cache for headless WorkManager engines.
+Phase 46 applied that same cache to `disk_stats`, where the missing headless channel had been
+silently disabling the deadline notifier's storage-warning step — the only caller of
+`updateStorageNotification`, so the row was never written at all. Both channels still live in
+`MainActivity`; moving them into a `FlutterPlugin` registered for every engine is the real fix and
+is not done.
+
+Phase 47 localised the other four languages: `tool/arb_from_strings_xml.dart` derives `app_ar.arb`,
+`app_fr.arb`, `app_ne.arb` and `app_so.arb` from the Kotlin `values-*/strings.xml` (195–196 of 727
+keys each, nothing machine-translated), which also made the language picker's four dead entries
+real — they had been setting a locale with no `.arb` to resolve to. Somali needed
+`framework_fallback_delegates.dart`, because `flutter_localizations` does not translate it and the
+locale would otherwise resolve with no `MaterialLocalizations` and crash. Directional padding and
+alignment are done; a visual RTL review in Arabic is not.
+
+Phase 48 fixed the team-finance summary so it is derived from the filtered transaction stream.
+Phase 49 made notification rows actionable rather than read-only: resources and storage warnings
+open their matching screens, while task and join-request notifications resolve their cached team
+documents before opening that team's tasks or join-requests tab. Already-read notifications remain
+actionable, matching Kotlin's click behaviour.
+
+Phase 50 closed the resource-catalog batch-selection gap. Long-press enters selection mode in both
+list and grid layouts, further taps build a multi-selection, and one add/remove action atomically
+updates every resource plus its `removed_log` entry before attempting the derived shelf upload.
+
+Phase 51 ported the certified-course-exam verification photo. A new `submit_photos` Drift table
+(schema v34, preserved in `localAuthorityTables`) holds the row; `SubmissionsRepository` authors
+and serializes it with device identity layered on at queue time; `SubmitPhotosUploader` delivers
+the durable two-step write-back through the outbox (POST doc, record id/rev, then best-effort PUT
+the JPEG bytes as a CouchDB attachment). Capture runs through a `PhotoCapture` seam
+(`image_picker` in production, faked in tests), wired into `take_exam_screen` behind
+`ProgressRepository.isCourseCertified(courseId)`; a null capture is swallowed, matching Kotlin.
+
+Phase 52 ported the mandatory-survey toast (the deferred second half of `c5141b658`): on
+finishing the MyPlanet Onboarding course, the screen checks
+`SubmissionsRepository.hasUnfinishedSurveys(courseId, userId)` — a port of the Kotlin
+`hasUnfinishedSurveys`/`hasSubmission` pair — and blocks the pop with a toast when an attached
+survey is outstanding. The `courseId`/`stepId` columns on `Surveys` (schema v35) make
+course-attached surveys queryable. The resource-sync `deleteNotIn` bug (`2ec7e3187`, #15831) is
+the second fix: a mid-walk batch failure now sets a `hadBatchFailure` flag and skips the cleanup
+(returns `SyncComplete`, not `SyncFailed`), so valid resources survive an incomplete walk.
+
+Phase 53 closed five deferred/audit items. The dashboard library-card my/call split
+(`08e18ffdc`, #15728) ships a `resourceShelfOnlyProvider` shelf toggle and a `shelfUserId`-scoped
+`watchResources` (the `isMyCourseLib` view): the card opens the user's shelf when it has items
+and the full catalog otherwise. The notification sub-destination work (`a08fc5662`) adds a
+`subType` column to `Notifications` (schema v37) and a `NotificationParser` that splits a raw
+`"team"` type (via `linkParams.activeTab` or message sniffing) into `team_join`, `chat`, and
+`voice_reply` destination kinds. Nested HTML entry files land via the `openWhichFile` column on
+`MyLibraryTable` (schema v36) and `ResourceFiles.resolveHtmlEntryFile` (path-traversal-safe).
+The voices shared-team suffix (`"| Shared from {name}"`) and the team-finances future-date cap
+(#15766) round out the batch.
+
+Phases 54–60 shift from adding screens to hardening what exists. Phase 54 landed the HTML
+resource viewer (`webview_flutter`, local files only — `loadFile`, never `loadRequest`) and
+fixed a server-url alt-credential bug; Phase 55 added team financial report CSV export.
+Phase 56 ports `aa24dfa6c` (#15836): `updateUserSecurityData` now writes `Value.absent()`
+rather than `Value(null)` when the server omits a credential, so a null-returning fetch can no
+longer wipe a stored `derived_key`/`salt` and lock the user out of offline PBKDF2 verification.
+Phases 57–58 finished localising the UI, retiring the last hardcoded strings. Phase 59 replaced
+the hardcoded version/build line with `appVersionInfoProvider` (`package_info_plus`) and
+backfilled the team detail screens with 33 widget tests — the largest untested surface. Phase 60
+extends two Phase 59 fixes from one instance to the class: three further duplicate `app_en.arb`
+keys (`justNow`, `description`, `apply`) are removed and guarded by a test that reads the ARB
+source text, because `jsonDecode` collapses a duplicate pair before any assertion can see it;
+and the `minapk` comparator in `ConfigurationsRepository` now reads the runtime version too.
+That last one matters because a failed version check returns `_UrlCheckFailure`, which is
+indistinguishable from an unreachable server — a constant nobody remembered to bump presents as
+"cannot reach the server" on the first screen. The lookup falls back to the constant on anything
+unusable (throw, empty, or the `0.0.0` placeholder), since under-reporting the version would
+fail configuration outright.
 
 ### Documentation Map
 
@@ -25,6 +134,7 @@
 | `docs/DOMAIN_MODEL.md` | You need to understand the learning domain — roles, courses, teams, surveys, sync concepts |
 | `docs/CODE_STYLE_GUIDE.md` | You're writing code — naming, imports, coroutines, Room, Hilt, UI conventions |
 | `docs/TESTING.md` | You're writing or fixing tests — patterns to copy per layer |
+| `docs/kotlin-to-flutter-migration.md` | You're working on the Flutter port in `flutter/` — scope, technology mapping, ported slices, open problems |
 | `docs/AGENT_SPELLBOOK.md` | You're summoning another AI agent (`@claude` `@coderabbit` `@codex` `@copilot` `@dependabot` `@devin` `@jules` `@openhands`) on a PR — who answers, how fast, and with what side effects. Its "The Skill Sync" section covers maintaining the shared agent skills (`merge-prepping`, `kotlin-importing`) — how one skill repo feeds Claude Code, OpenHands, and Copilot |
 
 ---
@@ -709,6 +819,6 @@ Note: SYSTEM_ALERT_WINDOW is **not** declared (removed at some point; older docs
 
 ---
 
-**Last Updated**: 2026-08-07
-**Version**: 0.63.42
+**Last Updated**: 2026-08-21
+**Version**: 0.64.35
 **Maintainer**: Open Learning Exchange
