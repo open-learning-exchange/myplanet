@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.TeamsMembersRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 
@@ -23,7 +23,7 @@ data class RequestsUiState(
 
 @HiltViewModel
 class RequestsViewModel @Inject constructor(
-    private val teamsRepository: TeamsRepository,
+    private val teamsRepository: TeamsMembersRepository,
     private val teamsSyncRepository: TeamsSyncRepository,
     private val userSessionManager: UserSessionManager
 ) : ViewModel() {
