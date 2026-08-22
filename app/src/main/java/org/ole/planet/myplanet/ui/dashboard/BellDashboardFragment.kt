@@ -228,6 +228,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
         val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
         recyclerView.layoutManager = LinearLayoutManager(requireActivity())
+        recyclerView.setHasFixedSize(true)
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.markSurveyDialogShown()
