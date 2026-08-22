@@ -458,16 +458,19 @@ class TeamsRepositoryImpl @Inject constructor(
         endDate: Long?,
         sortAscending: Boolean,
     ): Flow<List<MyTeam>> {
-        return teamDao.observeAll().map { entities ->
-            entities.filter {
-                it.teamId == teamId &&
-                    it.docType == "transaction" &&
+        return teamDao.observeByTeamIdAndDocType(teamId, "transaction")
+            .map { entities ->
+                entities.filter {
                     it.status != "archived" &&
-                    (startDate == null || it.date >= startDate) &&
-                    (endDate == null || it.date <= endDate)
-            }.sortedByWithDirection(sortAscending) { it.date }
-                .map { it }
-        }
+                        (startDate == null || it.date >= startDate) &&
+                        (endDate == null || it.date <= endDate)
+                }.sortedByWithDirection(sortAscending) { it.date }
+            }
+            .distinctUntilChanged { old, new ->
+                if (old.size != new.size) return@distinctUntilChanged false
+                old.zip(new).all { (o, n) -> o._id == n._id && o._rev == n._rev }
+            }
+            .flowOn(dispatcherProvider.default)
     }
 
     private fun mapTransactionsToPresentationModel(transactions: List<MyTeam>): List<Transaction> {
@@ -796,14 +799,17 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getReportsFlow(teamId: String): Flow<List<MyTeam>> {
-        return teamDao.observeAll().map { entities ->
-            entities.filter {
-                it.teamId == teamId &&
-                    it.docType == "report" &&
+        return teamDao.observeByTeamIdAndDocType(teamId, "report")
+            .map { entities ->
+                entities.filter {
                     it.status != "archived"
-            }.sortedByDescending { it.createdDate }
-                .map { it }
-        }
+                }.sortedByDescending { it.createdDate }
+            }
+            .distinctUntilChanged { old, new ->
+                if (old.size != new.size) return@distinctUntilChanged false
+                old.zip(new).all { (o, n) -> o._id == n._id && o._rev == n._rev }
+            }
+            .flowOn(dispatcherProvider.default)
     }
 
     override suspend fun exportReportsAsCsv(reports: List<MyTeam>, teamName: String): String {
