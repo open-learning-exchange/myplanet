@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.events
 
 import android.app.Application
 import android.content.Context
-import android.os.Build
 import android.widget.LinearLayout
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
@@ -15,7 +14,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLooper
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [Build.VERSION_CODES.P], application = Application::class)
+@Config(application = Application::class)
 class EventsAdapterTest {
 
     private lateinit var context: Context
