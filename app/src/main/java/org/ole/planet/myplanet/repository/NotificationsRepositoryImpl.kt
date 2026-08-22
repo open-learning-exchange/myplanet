@@ -322,9 +322,7 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun markNotificationsSynced(syncResults: List<Pair<String, String?>>) {
         if (syncResults.isEmpty()) return
-        syncResults.forEach { (id, rev) ->
-            notificationDao.markSynced(id, rev)
-        }
+        notificationDao.markSynced(syncResults)
     }
 
     private fun parseNotification(doc: JsonObject): AppNotification? {

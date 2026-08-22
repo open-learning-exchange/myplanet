@@ -270,6 +270,7 @@ class SyncManager @Inject constructor(
         try {
             val newIds: MutableList<String?> = ArrayList()
             var totalRows = 0
+            var hadBatchFailure = false
 
             // Get total count
             logger.startProcess("resource_get_total_count")
@@ -310,6 +311,7 @@ class SyncManager @Inject constructor(
 
                     if (response == null) {
                         batchSizer.recordFailure()
+                        hadBatchFailure = true
                         logger.logApiCall("${UrlUtils.getUrl()}/resources/_all_docs (batch $batchCount)", batchApiDuration, false, 0)
                         skip += batchSize
                         continue
@@ -381,6 +383,7 @@ class SyncManager @Inject constructor(
                 } catch (e: Exception) {
                     e.printStackTrace()
                     batchSizer.recordFailure()
+                    hadBatchFailure = true
                     logger.logDetail("resource_sync", "Batch $batchCount failed: ${e.message}")
                     skip += batchSize
                 }
@@ -390,7 +393,9 @@ class SyncManager @Inject constructor(
                 logger.startProcess("resource_cleanup")
                 val cleanupStartTime = SystemClock.elapsedRealtime()
                 val validNewIds = newIds.filter { !it.isNullOrBlank() }
-                if (validNewIds.isNotEmpty() && validNewIds.size == newIds.size) {
+                if (hadBatchFailure) {
+                    logger.logDetail("resource_sync", "Skipping delete-cleanup: one or more batches failed, id list is incomplete")
+                } else if (validNewIds.isNotEmpty() && validNewIds.size == newIds.size) {
                     resourcesRepository.removeDeletedResources(validNewIds)
                 }
                 val cleanupDuration = SystemClock.elapsedRealtime() - cleanupStartTime
