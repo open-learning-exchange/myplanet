@@ -17,11 +17,13 @@ import java.text.DateFormatSymbols
 import java.util.Calendar
 import javax.inject.Inject
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentActivitiesBinding
 import org.ole.planet.myplanet.model.OfflineActivity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
@@ -32,6 +34,8 @@ class ActivitiesFragment : Fragment() {
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var activitiesRepository: ActivitiesRepository
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentActivitiesBinding.inflate(inflater, container, false)
@@ -47,21 +51,21 @@ class ActivitiesFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             val userName = userSessionManager.getUserModel()?.name ?: return@launch
-            val loginsFlow = activitiesRepository.getOfflineLogins(userName)
-            collectLatestWhenStarted(loginsFlow) { logins ->
+
+            collectLatestWhenStarted(activitiesRepository.getOfflineLogins(userName)) { logins ->
                 val monthlyCounts = computeMonthlyCounts(logins, startMillis, endMillis)
                 renderChart(monthlyCounts, daynightTextColor)
             }
         }
     }
 
-    internal fun computeMonthlyCounts(
+    internal suspend fun computeMonthlyCounts(
         logins: List<OfflineActivity>,
         startMillis: Long,
         endMillis: Long
-    ): Map<Int, Int> {
+    ): Map<Int, Int> = withContext(dispatcherProvider.default) {
         val calendar = Calendar.getInstance()
-        return logins
+        logins
             .mapNotNull { it.loginTime }
             .filter { it in startMillis..endMillis }
             .map { loginTime ->

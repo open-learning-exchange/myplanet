@@ -13,6 +13,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -59,8 +60,11 @@ class ActivitiesRepositoryImpl @Inject constructor(
         return offlineActivityDao.countByUserNameAndType(userName, UserSessionManager.KEY_LOGIN)
     }
 
-    override suspend fun getOfflineLogins(userName: String): Flow<List<OfflineActivity>> {
+    override fun getOfflineLogins(userName: String): Flow<List<OfflineActivity>> {
         return offlineActivityDao.observeByUserNameAndType(userName, UserSessionManager.KEY_LOGIN)
+            .distinctUntilChanged { old, new ->
+                old.size == new.size && old.zip(new).all { (a, b) -> a.id == b.id && a.loginTime == b.loginTime }
+            }
     }
 
     override suspend fun markResourceAdded(userId: String?, resourceId: String) {
