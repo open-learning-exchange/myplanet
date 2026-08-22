@@ -23,7 +23,22 @@ import 'outbox_repository.dart';
 /// time rather than re-read from a temp file at send time — the temp file may
 /// be gone by the time the drain runs, and the outbox is the durable half.
 class UserUploader {
-  UserUploader(this._api, this._userDao, this._outbox);
+  UserUploader(
+    this._api,
+    this._userDao,
+    this._outbox, {
+    Future<void> Function({
+      required String localId,
+      required ServerConfig config,
+      required String username,
+      required String password,
+    })?
+    onCreated,
+    ServerConfig? Function()? readConfig,
+    Future<String?> Function()? readPassword,
+  }) : _onCreated = onCreated,
+       _readConfig = readConfig,
+       _readPassword = readPassword;
 
   /// The `uploadType` these operations carry in the outbox.
   static const String type = 'user';
@@ -31,6 +46,31 @@ class UserUploader {
   final PlanetApi _api;
   final UserDao _userDao;
   final OutboxRepository _outbox;
+
+  /// Fires after a new user's `_users` PUT succeeds — the durable counterpart
+  /// of `processUserAfterCreation`: publish the health key/IV to `userdb-*`
+  /// (`UserRepository.saveKeyIv`) and rewrite health examinations' userId
+  /// from the local id to the server-assigned couch id. Best-effort, as the
+  /// Kotlin's `try/catch` is; a failure just means the key stays device-local.
+  ///
+  /// The provider wires this with the real [UserRepository] + health DAO; tests
+  /// inject a recorder or leave it null to assert the handler still succeeds.
+  final Future<void> Function({
+    required String localId,
+    required ServerConfig config,
+    required String username,
+    required String password,
+  })?
+  _onCreated;
+
+  /// Resolves the current [ServerConfig] — the outbox handler signature has no
+  /// config parameter, so this seam lets the handler reach the live config the
+  /// provider holds without threading it through the drainer.
+  final ServerConfig? Function()? _readConfig;
+
+  /// Reads the signed-in user's password from secure storage, for the
+  /// per-user basic auth header `saveKeyIv` needs.
+  final Future<String?> Function()? _readPassword;
 
   /// `_users/org.couchdb.user:<name>` behind the configured server, credential-
   /// free — the PIN travels as the `Authorization` header at send time. This
@@ -138,6 +178,27 @@ class UserUploader {
         couchId: id,
         rev: rev is String ? rev : null,
       );
+      // A first-time creation (no prior couchId) triggers the post-create
+      // steps the Kotlin's `processUserAfterCreation` runs: publish the
+      // health key/IV and rewrite health exams' userId. Best-effort, as the
+      // Kotlin wraps the whole chain in try/catch.
+      if (!hasCouchId && _onCreated != null && _readConfig != null) {
+        final config = _readConfig();
+        final name = user.name;
+        if (config != null && name != null && name.isNotEmpty) {
+          final password = await (_readPassword ?? _noPassword)();
+          try {
+            await _onCreated(
+              localId: row.itemId,
+              config: config,
+              username: name,
+              password: password ?? '',
+            );
+          } catch (_) {
+            // Swallowed — see the comment above.
+          }
+        }
+      }
     }
     return result;
   }
@@ -145,4 +206,6 @@ class UserUploader {
   /// The `satellite:PIN` Basic credential the outbox drainer attaches.
   static String authHeaderFor(ServerConfig config) =>
       UrlUtils.authHeader(config);
+
+  static Future<String?> _noPassword() async => null;
 }

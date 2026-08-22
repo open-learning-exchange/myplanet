@@ -2970,7 +2970,43 @@ runs for pending-sync users drained from the outbox. The Flutter
 `UserUploader` handles the `_users` PUT but does not call `saveKeyIv` after
 a first-time creation, so an account created offline and later uploaded via
 the outbox does not publish its key. That is the durable-path counterpart
-to this phase's synchronous path.
+to this phase's synchronous path. **Ported in Phase 63.**
+
+---
+
+## Phase 63 — the durable key/IV path (`processUserAfterCreation`)
+
+Phase 62's `saveKeyIv` ran only on the synchronous online-creation path
+(`BecomeMemberScreen` → `uploadNewUser`). An account created offline — no
+server reachable at signup time — gets a local row with no couchId and no
+published key, and later uploads via the outbox. That durable path now
+fires the same post-creation steps the Kotlin's
+`processUserAfterCreation` runs.
+
+`UserUploader._send` gained an `onCreated` callback, fired after a
+first-time `_users` PUT succeeds (no prior couchId → creation, not
+update). The provider wires it to call `UserRepository.saveKeyIv` (the
+Phase 62 flow) and `HealthExaminationDao.updateUserId` — rewriting
+examinations' userId from the local id to the server-assigned couch id,
+exactly as the Kotlin's `updateHealthFn` lambda does. Two seams resolve
+what the outbox handler signature lacks:
+
+- `readConfig` returns the live `ServerConfig` — the handler gets only
+  `authHeader` (the satellite PIN), so the per-user database URL needs the
+  config the provider holds.
+- `readPassword` reads the signed-in user's password from secure storage —
+  `saveKeyIv`'s basic-auth header needs it, not the satellite PIN.
+
+The whole step is best-effort and swallowed, matching the Kotlin's
+`try/catch { e.printStackTrace() }` around `processUserAfterCreation`: the
+`_users` PUT already succeeded and the row is marked uploaded, so a
+`saveKeyIv` or `updateUserId` failure just means the key stays
+device-local and the exams keep their local id until the next attempt.
+
+Four tests cover it: `onCreated` fires after a new-user PUT with the right
+localId/username/password, does not fire for an existing-user update, a
+failure is swallowed and the PUT still reports success, and no config skips
+the step entirely.
 
 ---
 

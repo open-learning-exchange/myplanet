@@ -136,7 +136,7 @@ assigned there, so its show/dismiss calls are no-ops. Phase 62 ports the upload 
 user's `userdb-`+hex database during online member creation, retried 3× with the
 `changeUserSecurity` health-role grant, and `uploadNewUser` swallows its failure so the
 account still reports success. Still open: the background/outbox path for accounts created
-offline.
+offline. **Ported in Phase 63.**
 
 ### Documentation Map
 

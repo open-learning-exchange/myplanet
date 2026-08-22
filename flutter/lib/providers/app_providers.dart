@@ -291,6 +291,34 @@ final userUploaderProvider = Provider<UserUploader>(
     ref.watch(planetApiProvider),
     ref.watch(userDaoProvider),
     ref.watch(outboxRepositoryProvider),
+    onCreated:
+        ({
+          required localId,
+          required config,
+          required username,
+          required password,
+        }) async {
+          final repo = ref.read(userRepositoryProvider);
+          await repo.saveKeyIv(
+            localId: localId,
+            config: config,
+            username: username,
+            password: password,
+          );
+          // Rewrite health examinations' userId from the local id to the
+          // server-assigned couch id, as `updateHealthFn` does. The row just
+          // gained its couchId from markUploaded; reading it back gets the
+          // fresh value.
+          final user = await ref.read(userDaoProvider).getById(localId);
+          final couchId = user?.couchId;
+          if (couchId != null && couchId.isNotEmpty) {
+            await ref
+                .read(healthExaminationDaoProvider)
+                .updateUserId(localId, couchId);
+          }
+        },
+    readConfig: () => ref.read(serverConfigProvider),
+    readPassword: () => ref.read(planetPrefsProvider).readPassword(),
   ),
 );
 

@@ -667,6 +667,189 @@ void main() {
     // markUploaded clears the flag even when rev is absent.
     expect(user?.isUpdated, isFalse);
   });
+
+  // ── Post-creation key/IV + health exam rewrite ──────────────────────────
+  //
+  // The durable counterpart of `processUserAfterCreation`: after a new user's
+  // PUT succeeds, the handler fires `onCreated` to publish the health key/IV
+  // and rewrite health exams' userId. Best-effort — a failure is swallowed.
+
+  group('post-creation', () {
+    test('fires onCreated after a new-user PUT succeeds', () async {
+      await seedNewUser();
+      when(
+        () => api.putJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer(
+        (_) async => NetworkSuccess<Map<String, dynamic>>({
+          'id': 'org.couchdb.user:newbie',
+          'rev': '1-a',
+          'ok': true,
+        }),
+      );
+
+      final localIds = <String>[];
+      final usernames = <String>[];
+      final passwords = <String>[];
+      final postCreate = UserUploader(
+        api,
+        database.userDao,
+        outbox,
+        onCreated:
+            ({
+              required localId,
+              required config,
+              required username,
+              required password,
+            }) async {
+              localIds.add(localId);
+              usernames.add(username);
+              passwords.add(password);
+            },
+        readConfig: () => config,
+        readPassword: () async => 'plain-secret',
+      );
+
+      final result = await postCreate.handler(rowFor('user-2'), {
+        'name': 'newbie',
+      }, 'auth');
+
+      expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
+      expect(localIds, ['user-2']);
+      expect(usernames, ['newbie']);
+      expect(passwords, ['plain-secret']);
+    });
+
+    test('does not fire onCreated for an existing-user update', () async {
+      await seedEditedUser();
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer(
+        (_) async => NetworkSuccess<Map<String, dynamic>>({
+          '_id': 'org.couchdb.user:ada',
+          '_rev': '2-b',
+        }),
+      );
+      when(
+        () => api.putJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer(
+        (_) async => NetworkSuccess<Map<String, dynamic>>({
+          'id': 'org.couchdb.user:ada',
+          'rev': '3-c',
+          'ok': true,
+        }),
+      );
+
+      var calls = 0;
+      final postCreate = UserUploader(
+        api,
+        database.userDao,
+        outbox,
+        onCreated:
+            ({
+              required localId,
+              required config,
+              required username,
+              required password,
+            }) async {
+              calls++;
+            },
+        readConfig: () => config,
+        readPassword: () async => 'secret',
+      );
+
+      await postCreate.handler(rowFor('user-1'), {'name': 'ada'}, 'auth');
+
+      expect(calls, 0);
+    });
+
+    test('swallows an onCreated failure and still reports success', () async {
+      await seedNewUser();
+      when(
+        () => api.putJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer(
+        (_) async => NetworkSuccess<Map<String, dynamic>>({
+          'id': 'org.couchdb.user:newbie',
+          'rev': '1-a',
+          'ok': true,
+        }),
+      );
+
+      final postCreate = UserUploader(
+        api,
+        database.userDao,
+        outbox,
+        onCreated:
+            ({
+              required localId,
+              required config,
+              required username,
+              required password,
+            }) async {
+              throw Exception('saveKeyIv blew up');
+            },
+        readConfig: () => config,
+        readPassword: () async => 'plain-secret',
+      );
+
+      final result = await postCreate.handler(rowFor('user-2'), {
+        'name': 'newbie',
+      }, 'auth');
+
+      // The _users PUT still succeeded; the swallowed failure is invisible.
+      expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
+    });
+
+    test('skips onCreated when no config is available', () async {
+      await seedNewUser();
+      when(
+        () => api.putJsonObject(
+          any(),
+          any(),
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer(
+        (_) async => NetworkSuccess<Map<String, dynamic>>({
+          'id': 'org.couchdb.user:newbie',
+          'rev': '1-a',
+          'ok': true,
+        }),
+      );
+
+      var calls = 0;
+      final postCreate = UserUploader(
+        api,
+        database.userDao,
+        outbox,
+        onCreated:
+            ({
+              required localId,
+              required config,
+              required username,
+              required password,
+            }) async {
+              calls++;
+            },
+        readConfig: () => null,
+        readPassword: () async => 'plain-secret',
+      );
+
+      await postCreate.handler(rowFor('user-2'), {'name': 'newbie'}, 'auth');
+
+      expect(calls, 0);
+    });
+  });
 }
 
 class MockPlanetApi extends Mock implements PlanetApi {}
