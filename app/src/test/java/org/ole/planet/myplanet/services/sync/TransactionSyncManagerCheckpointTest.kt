@@ -101,7 +101,6 @@ class TransactionSyncManagerCheckpointTest {
         every { prefs.edit() } returns editor
         every { editor.putInt(any(), capture(putValues)) } returns editor
         every { editor.remove(any()) } returns editor
-        every { editor.commit() } returns true
         every { editor.apply() } returns Unit
 
         transactionSyncManager = TransactionSyncManager(
