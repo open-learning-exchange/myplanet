@@ -201,6 +201,11 @@ class ResourcesRepositoryImpl @Inject constructor(
         return myLibraryDao.getForUserPattern(userIdPattern(userId))
     }
 
+    override fun getMyLibraryFlow(userId: String?): Flow<List<MyLibrary>> {
+        if (userId.isNullOrBlank()) return flowOf(emptyList())
+        return myLibraryDao.getForUserPatternFlow(userIdPattern(userId))
+    }
+
     override suspend fun getAllStepResources(stepId: String?): List<MyLibrary> {
         if (stepId == null) return emptyList()
         return myLibraryDao.getByStepId(stepId)
