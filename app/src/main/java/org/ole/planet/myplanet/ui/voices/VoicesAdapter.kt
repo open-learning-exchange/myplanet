@@ -80,8 +80,8 @@ class VoicesAdapter(
                 oldItem.id == newItem.id && oldItem.time == newItem.time &&
                         oldItem.isEdited == newItem.isEdited && oldItem.message == newItem.message &&
                         oldItem.userName == newItem.userName && oldItem.userId == newItem.userId &&
-                        oldItem.sharedBy == newItem.sharedBy && oldItem.labels?.toList() == newItem.labels?.toList() &&
-                        oldItem.avatar == newItem.avatar && oldItem.imageUrls?.toList() == newItem.imageUrls?.toList() &&
+                        oldItem.sharedBy == newItem.sharedBy && oldItem.labels == newItem.labels &&
+                        oldItem.avatar == newItem.avatar && oldItem.imageUrls == newItem.imageUrls &&
                         oldItem.images == newItem.images && oldItem.replyTo == newItem.replyTo
             } catch (e: Exception) {
                 false
@@ -90,10 +90,10 @@ class VoicesAdapter(
         getChangePayload = { oldItem, newItem ->
             val payloads = mutableListOf<String>()
 
-            if (oldItem.labels?.toList() != newItem.labels?.toList()) {
+            if (oldItem.labels != newItem.labels) {
                 payloads.add(PAYLOAD_LABELS_CHANGED)
             }
-            if (oldItem.imageUrls?.toList() != newItem.imageUrls?.toList() || oldItem.images != newItem.images || oldItem.parsedImageUrls != newItem.parsedImageUrls) {
+            if (oldItem.imageUrls != newItem.imageUrls || oldItem.images != newItem.images || oldItem.parsedImageUrls != newItem.parsedImageUrls) {
                 payloads.add(PAYLOAD_IMAGES_CHANGED)
             }
             if (oldItem.userId != newItem.userId || oldItem.userName != newItem.userName || oldItem.avatar != newItem.avatar) {
