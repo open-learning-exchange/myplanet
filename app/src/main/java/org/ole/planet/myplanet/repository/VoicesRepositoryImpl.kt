@@ -9,7 +9,6 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.HashMap
-import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -18,10 +17,8 @@ import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.NewsLogDao
-import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.News
-import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -34,7 +31,6 @@ class VoicesRepositoryImpl @Inject constructor(
     private val gson: Gson,
     @PlainGson private val plainGson: Gson,
     private val sharedPrefManager: SharedPrefManager,
-    private val teamNotificationDao: TeamNotificationDao,
     private val newsDao: NewsDao,
     private val myLibraryDao: MyLibraryDao,
     private val newsLogDao: NewsLogDao
@@ -82,12 +78,6 @@ class VoicesRepositoryImpl @Inject constructor(
         return news to replies
     }
 
-    override suspend fun getCommunityVisibleNews(userIdentifier: String): List<News> {
-        return newsDao.getTopLevelMessages().filter { news ->
-            isVisibleToUser(news, userIdentifier)
-        }
-    }
-
     override suspend fun isAlreadyShared(chatId: String, viewInId: String): Boolean {
         return newsDao.getByNewsId(chatId).any { news ->
             news.viewIn?.contains("\"_id\":\"$viewInId\"", ignoreCase = true) == true
@@ -118,10 +108,6 @@ class VoicesRepositoryImpl @Inject constructor(
             .replace("%", "\\%")
             .replace("_", "\\_")
         return "%\"_id\":\"$escaped\"%"
-    }
-
-    override suspend fun getNewsByTeamId(teamId: String): List<News> {
-        return newsDao.getTopLevelByTeam(teamId, teamIdPattern(teamId))
     }
 
     private fun isVisibleToUser(news: News, userIdentifier: String): Boolean {
@@ -248,22 +234,6 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun updateTeamNotification(teamId: String, count: Int) {
-        val existing = teamNotificationDao.findByParentAndType(teamId, "chat")
-        if (existing != null) {
-            existing.lastCount = count
-            teamNotificationDao.update(existing)
-        } else {
-            val notification = TeamNotification().apply {
-                id = UUID.randomUUID().toString()
-                parentId = teamId
-                type = "chat"
-                lastCount = count
-            }
-            teamNotificationDao.insert(notification)
-        }
-    }
-
     override suspend fun deletePost(newsId: String, teamName: String) {
         val news = newsDao.getById(newsId) ?: return
         val viewInStr = news.viewIn
@@ -307,11 +277,6 @@ class VoicesRepositoryImpl @Inject constructor(
     override suspend fun getReplyCount(newsId: String?): Int {
         if (newsId == null) return 0
         return newsDao.getReplyCount(newsId)
-    }
-
-    override suspend fun deleteNews(newsId: String) {
-        val idsToDelete = collectNewsAndReplies(newsId)
-        newsDao.deleteByIds(idsToDelete)
     }
 
     // Gathers a post and all of its (recursive) replies for deletion.

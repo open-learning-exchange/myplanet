@@ -91,6 +91,26 @@ A controllable `TimeProvider`: `TestTimeProvider(var currentTime: Long = 0L)` wi
 
 ## How to Test Each Layer
 
+### Robolectric SDK levels
+
+**Don't pin `@Config(sdk = [...])` unless the test is actually about that API level.** Robolectric builds one sandbox per distinct (SDK level, config) per test fork and each sandbox loads a 95-215 MB `android-all-instrumented` jar, so every extra level the suite mentions is paid again — up to `maxParallelForks` (4) times per shard. That cost shows up as a multi-second first test in the class: it was 16.0s for `TeamsRepositoryBulkInsertTransactionTest` (SDK 26) against a 0.43s average for the rest of its methods.
+
+Omit `sdk` and the test runs on the default, which Robolectric takes from `targetSdk` (36). Keep the rest of `@Config` (`application = ...`, `manifest = Config.NONE`) as needed — omitting `sdk` only drops the pin.
+
+One consequence worth knowing: Robolectric keys a sandbox by SDK level (plus the instrumentation config and the `LooperMode`/`GraphicsMode`/`SQLiteMode` settings), **not** by test class, so every class on the same level shares one classloader and therefore one copy of your `object` statics. Meanwhile each test *method* gets a fresh temp directory. A `File` or `Context` cached in an `object` and never reset will outlive the directory it points at, and unpinning a class changes which other classes can leave that cache dirty — see the note in [Things to Avoid](#things-to-avoid).
+
+Pin only when the assertion depends on the level, and say why in a comment so the next reader doesn't fold it away:
+
+| Test | Pin | Why |
+| --- | --- | --- |
+| `services/DownloadServiceTest.kt` | class `UPSIDE_DOWN_CAKE` (34), methods `R` (30) / `S` (31) | asserts the API-gated foreground-service/worker branches |
+| `utils/VersionUtilsTest.kt` | methods `O` (26), `P` (28) | `VersionUtils` branches on `SDK_INT >= P` |
+| `utils/SecurePrefsTest.kt` | `O_MR1` (27) | keystore-backed prefs path |
+| `utils/NotificationUtilsTest.kt` | `O` (26) | notification channels exist only from `O` |
+| `repository/TeamsRepositoryBulkInsertTransactionTest.kt` | `26` | needs to sit below `S` so `processDescription` short-circuits instead of reaching for `MainApplication.context` |
+
+The suite therefore needs sandboxes at 26, 27, 28, 30, 31, 34 and the default 36 — nothing else.
+
 ### ViewModels
 
 Mock the repository/manager dependencies with MockK, install `MainDispatcherRule`, construct the ViewModel directly (no Hilt needed), and assert on the exposed `StateFlow` value.
@@ -182,7 +202,6 @@ References: `data/room/AppDatabaseRoundTripTest.kt` (insert-and-read round-trips
 
 ```kotlin
 @RunWith(AndroidJUnit4::class)
-@Config(sdk = [32])
 class NewsDaoTest {
     private lateinit var db: AppDatabase
 
@@ -296,7 +315,7 @@ Reference: `base/BaseRecyclerFragmentTest.kt`
 
 ```kotlin
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33], application = Application::class)
+@Config(application = Application::class)
 class BaseRecyclerFragmentTest {
 
     class TestBaseRecyclerFragment : BaseRecyclerFragment<Any>() {
@@ -319,7 +338,7 @@ Real `strings.xml` resources are used in assertions (`context.getString(R.string
 
 ### Plain Utility Functions
 
-If the utility is pure Kotlin with no Android dependency, a plain JUnit test with no `@RunWith` annotation is enough (`utils/TimeUtilsTest.kt`, `utils/JsonUtilsTest.kt`). If it touches `Context`, `SharedPreferences`, or other framework classes, add `@RunWith(RobolectricTestRunner::class)` + `@Config(sdk = [...])` and get the context from `ApplicationProvider` (`utils/ConstantsTest.kt`).
+If the utility is pure Kotlin with no Android dependency, a plain JUnit test with no `@RunWith` annotation is enough (`utils/TimeUtilsTest.kt`, `utils/JsonUtilsTest.kt`). If it touches `Context`, `SharedPreferences`, or other framework classes, add `@RunWith(RobolectricTestRunner::class)` and get the context from `ApplicationProvider` (`utils/ConstantsTest.kt`). Leave the SDK level alone — see [Robolectric SDK levels](#robolectric-sdk-levels) below.
 
 ### DI Modules and the API/auth layer
 
@@ -367,7 +386,17 @@ Test class names always match `{ClassUnderTest}Test.kt` (e.g. `CoursesRepository
 ./gradlew testLiteDebugUnitTest
 ```
 
-CI (`.github/workflows/test.yml`, "myPlanet test") runs on every push to every branch (no `pull_request` trigger — the push itself triggers it) plus manual dispatch: `./gradlew test${FLAVOR^}DebugUnitTest --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4` (matrix is `default` only) on `ubuntu-24.04`. On failure it uploads `app/build/reports/tests/` as the `test-reports-default` artifact (7-day retention); a timing summary always runs. There is no separate lint or coverage gate — passing `testDefaultDebugUnitTest` is the bar.
+CI (`.github/workflows/test.yml`, "myPlanet test") runs on every push to every branch (no `pull_request` trigger — the push itself triggers it) plus manual dispatch: `./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=2 -PtestShardIndex=<0|1> -ProbolectricOffline=true --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4` (matrix is `default` only) on `ubuntu-24.04`, split across two shards that each run half the test classes (`app/build.gradle` `testOptions` hashes each top-level class into a shard). On failure each shard uploads `app/build/reports/tests/` as `test-reports-default-shard-<n>` (7-day retention); a timing summary always runs. There is no separate lint or coverage gate — passing `testDefaultDebugUnitTest` is the bar.
+
+### The Robolectric `android-all` runtime
+
+Robolectric doesn't ship the Android framework it runs your test against — it downloads an `android-all-instrumented` jar (95–215 MB, one per API level) the first time a test fork needs that level. Left to itself it does that *from inside the test fork*, and because tests run in four parallel forks two of them can fetch the same jar at once; the loser reads a half-written file and every Robolectric test that follows in that JVM fails (`AndroidVersions.CURRENT` is null, then `NoSuchFieldError` on framework fields) while the other forks stay green. A rerun passes, which is what makes it costly.
+
+So CI passes `-ProbolectricOffline=true`: Gradle resolves the jars into `build/robolectric-sdks` before the test task starts and Robolectric is told to look there and fetch nothing (`robolectric.offline`, `robolectric.dependency.dir`). The list of levels lives in `robolectricSdkJars` in `app/build.gradle`.
+
+The workflow also fails the job if a jar turns up in Robolectric's own runtime cache (`~/.m2/repository/org/robolectric`), which can only happen if `-ProbolectricOffline=true` stopped reaching the test forks — the one regression whose other symptom is just the flake coming back.
+
+**If you add `@Config(sdk = [N])` for a level nothing else uses**, add the matching jar version to that map, or the CI run fails with `Path is not a file: build/robolectric-sdks/android-all-instrumented-<version>.jar`. The version strings come from Robolectric's `DefaultSdkProvider` and all of them change when Robolectric is bumped. Prefer reusing a level the suite already pins — every extra level is another jar to download, and one more Robolectric sandbox to build per fork.
 
 ---
 
@@ -390,6 +419,10 @@ CI (`.github/workflows/test.yml`, "myPlanet test") runs on every push to every b
 ---
 
 ## Things to Avoid
+
+**Don't let a production `object` cache leak across tests.** `FileUtils.cachedExternalFilesDir`, `LocaleUtils.cachedLanguage`, `UrlUtils`' state — these live for the whole sandbox, which is shared by every test class on the same SDK level. Reset them in `@Before` (reflection on the private field, as `FileUtilsTest` and `LocaleUtilsTest` do, or a purpose-built `internal fun resetForTesting()` like `UrlUtils` has), otherwise the test passes only as long as nothing else happens to run first.
+
+**Don't pin `@Config(sdk = [...])` out of habit.** A pin the assertions don't need still costs a per-fork sandbox build and an `android-all` jar download; see [Robolectric SDK levels](#robolectric-sdk-levels).
 
 **Don't introduce new Mockito usage.** Two legacy files use it (`CoursesAdapterTest`, `SubmissionViewModelTest`); the other 113 mocking files use MockK. Use MockK for anything new.
 
