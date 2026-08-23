@@ -373,7 +373,7 @@ class SurveysRepositoryImpl @Inject constructor(
 
     override suspend fun getSurvey(id: String): StepExam? {
         return examDao.getById(id)
-            ?: examDao.getByType("surveys").firstOrNull { it.name == id }
+            ?: examDao.getByTypeAndName("surveys", id)
     }
 
     override suspend fun getSurveys(ascending: Boolean): List<StepExam> {
