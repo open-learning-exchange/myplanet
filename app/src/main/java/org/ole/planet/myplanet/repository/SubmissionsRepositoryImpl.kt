@@ -176,10 +176,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return hydrateSubmissions(submissionDao.getByIds(ids))
     }
 
-    override suspend fun getSubmissionsByUserId(userId: String): List<Submission> {
-        return hydrateSubmissions(submissionDao.getByUserId(userId))
-    }
-
     override suspend fun hasSubmission(
         stepExamId: String?,
         courseId: String?,
