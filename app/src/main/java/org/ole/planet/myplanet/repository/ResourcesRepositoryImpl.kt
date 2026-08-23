@@ -337,10 +337,6 @@ class ResourcesRepositoryImpl @Inject constructor(
         return myLibraryDao.getPendingDownloadsForUserPatternFlow(userIdPattern(userId)).distinctUntilChanged()
     }
 
-    override suspend fun markAllResourcesOffline(isOffline: Boolean) {
-        myLibraryDao.setAllOffline(isOffline)
-    }
-
     override suspend fun saveSearchActivity(
         userName: String,
         searchText: String,
