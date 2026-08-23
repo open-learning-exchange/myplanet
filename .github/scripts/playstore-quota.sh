@@ -15,9 +15,12 @@
 # slot opens 24h after the LIMIT-th newest save, and saves keep freeing at the
 # cadence they were spent.
 #
-# It stays an estimate: a refused upload still counts here (it consumes no slot
-# in reality) and a re-run spends a slot without adding a release, so treat the
-# answer as give-or-take a slot. Times print in eastern.
+# It stays an estimate, and nothing gates on it -- the playstore workflow
+# retries every 30 minutes whatever this says. Releases are only a proxy for
+# saves: a hand upload from the Play Console, a re-run, or that retry spends a
+# slot without adding a release (answer too early), while a refused upload adds
+# a release without spending one (answer too late). Give or take a couple of
+# slots. Times print in eastern.
 set -euo pipefail
 
 REPO="${REPO:?}"
@@ -78,7 +81,7 @@ status() {
         for e in "${live[@]}"; do
             [ "$e" -lt "$nth" ] && [ $((e + WINDOW_SEC)) -le $((next + 3600)) ] && soon=$((soon + 1))
         done
-        report="playstore save quota: $used of $LIMIT slots used -- next frees $(fmt "$next"), 24h after the save at $(fmt "$nth")"
+        report="playstore save quota: $used of $LIMIT slots used -- next slot around $(fmt "$next"), 24h after the save at $(fmt "$nth")"
         [ "$soon" -gt 0 ] && report="$report (then $soon more within the hour)"
     fi
 
