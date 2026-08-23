@@ -66,8 +66,13 @@ class UploadCoordinator @Inject constructor(
                         )
                     }
 
-                    val actuallySucceeded = succeeded.filter { it !in dbFailed }
-                    allSucceeded.addAll(actuallySucceeded)
+                    if (dbFailed.isEmpty()) {
+                        allSucceeded.addAll(succeeded)
+                    } else {
+                        val dbFailedIds = dbFailed.map { it.localId }.toHashSet()
+                        val actuallySucceeded = succeeded.filter { it.localId !in dbFailedIds }
+                        allSucceeded.addAll(actuallySucceeded)
+                    }
                 }
 
                 allFailed.addAll(failed)
@@ -254,8 +259,11 @@ class UploadCoordinator @Inject constructor(
 
         val failedResults = uploadRepository.markUploaded(updateContract, itemResults)
 
+        if (failedResults.isEmpty()) return emptyList()
+
+        val succeededMap = succeeded.associateBy { it.localId }
         val failedLocally = failedResults.mapNotNull { failedResult ->
-            succeeded.find { it.localId == failedResult.localId }
+            succeededMap[failedResult.localId]
         }
 
         return failedLocally
@@ -322,7 +330,12 @@ class UploadCoordinator @Inject constructor(
                     dbFailedErrors = dbFailed.map { failedItem ->
                         UploadError(failedItem.localId, Exception("Local DB update failed"), retryable = false)
                     }
-                    allSucceeded.addAll(succeeded.filter { it !in dbFailed })
+                    if (dbFailed.isEmpty()) {
+                        allSucceeded.addAll(succeeded)
+                    } else {
+                        val dbFailedIds = dbFailed.map { it.localId }.toHashSet()
+                        allSucceeded.addAll(succeeded.filter { it.localId !in dbFailedIds })
+                    }
                 }
 
                 allFailed.addAll(failed)
@@ -437,8 +450,11 @@ class UploadCoordinator @Inject constructor(
             UploadedItemResult(it.localId, it.remoteId, it.remoteRev, it.response)
         }
         val failedResults = config.markUploaded(itemResults)
+        if (failedResults.isEmpty()) return emptyList()
+
+        val succeededMap = succeeded.associateBy { it.localId }
         return failedResults.mapNotNull { failedResult ->
-            succeeded.find { it.localId == failedResult.localId }
+            succeededMap[failedResult.localId]
         }
     }
 
