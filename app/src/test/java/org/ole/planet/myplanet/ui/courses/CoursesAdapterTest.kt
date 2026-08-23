@@ -16,7 +16,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [32], application = Application::class)
+@Config(application = Application::class)
 class CoursesAdapterTest {
 
     @Mock
@@ -30,7 +30,9 @@ class CoursesAdapterTest {
     @Before
     fun setUp() {
         MockitoAnnotations.initMocks(this)
-        adapter = CoursesAdapter(mockContext, false, false)
+        val testContext = androidx.test.core.app.ApplicationProvider.getApplicationContext<Context>()
+        testContext.setTheme(com.google.android.material.R.style.Theme_MaterialComponents)
+        adapter = CoursesAdapter(testContext, false, false)
         adapter.registerAdapterDataObserver(mockObserver)
     }
 
@@ -73,5 +75,47 @@ class CoursesAdapterTest {
         adapter.selectAllItems(true)
 
         assertEquals(false, adapter.areAllSelected())
+    }
+
+    @Test
+    fun `test setViewMode passes PAYLOAD_VIEW_MODE`() {
+        val courses = listOf(
+            Course("1", "A", "desc", "grade", "subject", 0, 10, isMyCourse = false)
+        )
+        adapter.submitList(courses)
+
+        adapter.setViewMode(org.ole.planet.myplanet.utils.ListViewMode.LIST)
+
+        verify(mockObserver, times(1)).onItemRangeChanged(0, 1, CoursesAdapter.PAYLOAD_VIEW_MODE)
+    }
+
+    @Test
+    fun `test updateIdentity passes PAYLOAD_IDENTITY`() {
+        val courses = listOf(
+            Course("1", "A", "desc", "grade", "subject", 0, 10, isMyCourse = false)
+        )
+        adapter.submitList(courses)
+
+        adapter.updateIdentity(true)
+
+        verify(mockObserver, times(1)).onItemRangeChanged(0, 1, CoursesAdapter.PAYLOAD_IDENTITY)
+    }
+
+    @Test
+    fun `test partial bind handles PAYLOAD_IDENTITY`() {
+        val course = Course("1", "A", "desc", "grade", "subject", 0, 10, isMyCourse = false)
+        adapter.submitList(listOf(course))
+
+        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<Context>()
+        context.setTheme(com.google.android.material.R.style.Theme_MaterialComponents)
+        val parent = android.widget.LinearLayout(context)
+        val holder = adapter.onCreateViewHolder(parent, adapter.getItemViewType(0)) as CoursesAdapter.GridViewHolder
+        adapter.onBindViewHolder(holder, 0)
+
+        adapter.updateIdentity(true)
+        adapter.onBindViewHolder(holder, 0, mutableListOf(CoursesAdapter.PAYLOAD_IDENTITY))
+
+        assertEquals(android.view.View.GONE, holder.binding.checkbox.visibility)
+        assertEquals(false, holder.binding.checkbox.hasOnClickListeners())
     }
 }
