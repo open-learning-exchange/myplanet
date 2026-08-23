@@ -154,6 +154,7 @@ class UploadCoordinator @Inject constructor(
     ): Pair<List<UploadedItem>, List<UploadError>> {
         val succeeded = mutableListOf<UploadedItem>()
         val failed = mutableListOf<UploadError>()
+        val baseUrl = UrlUtils.getUrl()
 
         batch.forEach { preparedItem ->
             coroutineContext.ensureActive()
@@ -162,9 +163,9 @@ class UploadCoordinator @Inject constructor(
                 config.beforeUpload?.invoke(preparedItem.item)
 
                 val requestUrl = if (preparedItem.dbId.isNullOrEmpty()) {
-                    "${UrlUtils.getUrl()}/${config.endpoint}"
+                    "$baseUrl/${config.endpoint}"
                 } else {
-                    "${UrlUtils.getUrl()}/${config.endpoint}/${preparedItem.dbId}"
+                    "$baseUrl/${config.endpoint}/${preparedItem.dbId}"
                 }
 
                 val response = if (preparedItem.dbId.isNullOrEmpty()) {
@@ -192,7 +193,7 @@ class UploadCoordinator @Inject constructor(
                 } else if (response.code() == 409) {
                     try {
                         val docId = preparedItem.dbId ?: preparedItem.localId
-                        val getResponse = uploadRepository.fetchExistingDoc("${UrlUtils.getUrl()}/${config.endpoint}/$docId")
+                        val getResponse = uploadRepository.fetchExistingDoc("$baseUrl/${config.endpoint}/$docId")
                         val existingDoc = getResponse.body()
                         if (getResponse.isSuccessful && existingDoc != null) {
                             val uploadedItem = normalizeUploadResult(
@@ -386,6 +387,7 @@ class UploadCoordinator @Inject constructor(
     ): Pair<List<UploadedItem>, List<UploadError>> {
         val succeeded = mutableListOf<UploadedItem>()
         val failed = mutableListOf<UploadError>()
+        val baseUrl = UrlUtils.getUrl()
 
         batch.forEach { preparedItem ->
             coroutineContext.ensureActive()
@@ -393,9 +395,9 @@ class UploadCoordinator @Inject constructor(
                 config.beforeUpload?.invoke(preparedItem.item)
 
                 val requestUrl = if (preparedItem.dbId.isNullOrEmpty()) {
-                    "${UrlUtils.getUrl()}/${config.endpoint}"
+                    "$baseUrl/${config.endpoint}"
                 } else {
-                    "${UrlUtils.getUrl()}/${config.endpoint}/${preparedItem.dbId}"
+                    "$baseUrl/${config.endpoint}/${preparedItem.dbId}"
                 }
 
                 val response = if (preparedItem.dbId.isNullOrEmpty()) {
@@ -415,7 +417,7 @@ class UploadCoordinator @Inject constructor(
                     succeeded.add(uploadedItem)
                 } else if (response.code() == 409) {
                     val docId = preparedItem.dbId ?: preparedItem.localId
-                    val getResponse = uploadRepository.fetchExistingDoc("${UrlUtils.getUrl()}/${config.endpoint}/$docId")
+                    val getResponse = uploadRepository.fetchExistingDoc("$baseUrl/${config.endpoint}/$docId")
                     val existingDoc = getResponse.body()
                     if (getResponse.isSuccessful && existingDoc != null) {
                         val uploadedItem = normalizeUploadResult(preparedItem.localId, existingDoc, "_id", "_rev")
