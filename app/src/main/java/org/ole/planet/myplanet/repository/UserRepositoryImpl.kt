@@ -405,10 +405,10 @@ class UserRepositoryImpl @Inject constructor(
         val user = getUserByName(name) ?: return
         user._id = userId
         user._rev = rev
-        user.derived_key = derivedKey
-        user.salt = salt
-        user.password_scheme = passwordScheme
-        user.iterations = iterations
+        derivedKey?.let { user.derived_key = it }
+        salt?.let { user.salt = it }
+        passwordScheme?.let { user.password_scheme = it }
+        iterations?.let { user.iterations = it }
         user.isUpdated = false
         upsertUser(user)
     }
