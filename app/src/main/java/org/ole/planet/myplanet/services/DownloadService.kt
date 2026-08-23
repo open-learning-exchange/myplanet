@@ -566,10 +566,10 @@ class DownloadService : Service() {
             isPriority: Boolean
         ): QueuedUrl? {
             val urls = preferences.getStringSet(key, emptySet()) ?: emptySet()
-            val queue = urls.sorted()
+            return urls
                 .filter { it !in processedUrls && it.isNotBlank() }
-                .map { QueuedUrl(it, isPriority) }
-            return getNextPriorityUrl(queue)
+                .minOrNull()
+                ?.let { QueuedUrl(it, isPriority) }
         }
 
         fun startService(context: Context, urlsKey: String, fromSync: Boolean) {
