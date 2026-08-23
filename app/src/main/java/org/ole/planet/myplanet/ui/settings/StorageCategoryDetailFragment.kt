@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
@@ -22,22 +23,21 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentStorageCategoryDetailBinding
 import org.ole.planet.myplanet.databinding.ItemDownloadedResourceBinding
 import org.ole.planet.myplanet.model.OfflineResourceItem
-import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
     private var _binding: FragmentStorageCategoryDetailBinding? = null
     private val binding get() = _binding!!
 
-    @Inject
-    lateinit var resourcesRepository: ResourcesRepository
+    private val viewModel: StorageCategoryViewModel by viewModels()
+
     private var categoryLabel: String = ""
     private var extensions: Set<String> = emptySet()
     private var allKnownExtensions: Set<String> = emptySet()
 
-    private var items: List<OfflineResourceItem> = emptyList()
     private lateinit var adapter: ResourceAdapter
 
     companion object {
@@ -94,66 +94,70 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         binding.closeButton.setOnClickListener { dismiss() }
 
         adapter = ResourceAdapter { clickedItem ->
-            items = items.map {
-                if (it.resourceId == clickedItem.resourceId) it.copy(isChecked = !it.isChecked) else it
-            }
-            adapter.submitList(items)
-            updateSelectionState()
+            viewModel.toggleItemChecked(clickedItem.resourceId)
         }
         binding.resourceList.layoutManager = LinearLayoutManager(requireContext())
         binding.resourceList.adapter = adapter
 
         binding.selectAllRow.setOnClickListener {
-            val allChecked = items.all { it.isChecked }
-            items = items.map { it.copy(isChecked = !allChecked) }
-            adapter.submitList(items)
-            updateSelectionState()
+            viewModel.toggleAllChecked()
         }
 
         binding.deleteSelectedButton.setOnClickListener {
-            val selected = items.filter { it.isChecked }
+            val selected = viewModel.uiState.value.items.filter { it.isChecked }
             confirmDelete(selected.size, getString(R.string.storage_delete_selected_confirm, selected.size)) {
                 deleteItems(selected)
             }
         }
 
         binding.deleteAllButton.setOnClickListener {
+            val items = viewModel.uiState.value.items
             confirmDelete(items.size, getString(R.string.storage_delete_confirm, categoryLabel)) {
                 deleteItems(items)
             }
         }
-        loadResources()
+
+        observeViewModel()
+        viewModel.loadResources(extensions, allKnownExtensions)
     }
 
-    private fun loadResources() {
-        binding.progressBar.visibility = View.VISIBLE
-        binding.resourceList.visibility = View.GONE
-        binding.emptyText.visibility = View.GONE
-        binding.actionButtons.visibility = View.GONE
-        binding.selectAllRow.visibility = View.GONE
-        binding.selectAllDivider.visibility = View.GONE
+    private fun observeViewModel() {
+        collectWhenStarted(viewModel.uiState) { state ->
+            if (_binding == null) return@collectWhenStarted
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val olePath = FileUtils.getOlePath(requireContext())
-            val loaded = resourcesRepository.getOfflineResourceItems(olePath, extensions, allKnownExtensions)
-            binding.progressBar.visibility = View.GONE
+            binding.progressBar.visibility = if (state.isLoading) View.VISIBLE else View.GONE
 
-            if (loaded.isEmpty()) {
+            if (state.isEmpty) {
                 binding.emptyText.visibility = View.VISIBLE
-                return@launch
+                binding.resourceList.visibility = View.GONE
+                binding.actionButtons.visibility = View.GONE
+                binding.selectAllRow.visibility = View.GONE
+                binding.selectAllDivider.visibility = View.GONE
+                adapter.submitList(emptyList())
+            } else if (!state.isLoading) {
+                binding.emptyText.visibility = View.GONE
+                binding.resourceList.visibility = View.VISIBLE
+                binding.actionButtons.visibility = View.VISIBLE
+                binding.selectAllRow.visibility = View.VISIBLE
+                binding.selectAllDivider.visibility = View.VISIBLE
+
+                adapter.submitList(state.items)
+                updateSelectionState(state.items)
             }
 
-            items = loaded
-            adapter.submitList(items)
+            if (state.isDeleting) {
+                binding.deleteSelectedButton.isEnabled = false
+                binding.deleteAllButton.isEnabled = false
+            }
+        }
 
-            binding.resourceList.visibility = View.VISIBLE
-            binding.actionButtons.visibility = View.VISIBLE
-            binding.selectAllRow.visibility = View.VISIBLE
-            binding.selectAllDivider.visibility = View.VISIBLE
+        collectWhenStarted(viewModel.deleteCompleteEvent) {
+            parentFragmentManager.setFragmentResult(RESULT_KEY, Bundle())
+            dismiss()
         }
     }
 
-    private fun updateSelectionState() {
+    private fun updateSelectionState(items: List<OfflineResourceItem>) {
         if (_binding == null) return
         val checkedCount = items.count { it.isChecked }
         val allChecked = checkedCount == items.size && items.isNotEmpty()
@@ -180,16 +184,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
 
     private fun deleteItems(toDelete: List<OfflineResourceItem>) {
         if (_binding == null) return
-        binding.deleteSelectedButton.isEnabled = false
-        binding.deleteAllButton.isEnabled = false
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            val olePath = FileUtils.getOlePath(requireContext())
-            resourcesRepository.deleteOfflineResources(olePath, toDelete)
-
-            parentFragmentManager.setFragmentResult(RESULT_KEY, Bundle())
-            dismiss()
-        }
+        viewModel.deleteItems(toDelete)
     }
 
     private val DIFF_CALLBACK = DiffUtils.itemCallback<OfflineResourceItem>(
