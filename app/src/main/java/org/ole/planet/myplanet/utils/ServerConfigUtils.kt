@@ -152,15 +152,4 @@ object ServerConfigUtils {
             BuildConfig.PLANET_CAMBRIDGE_URL.takeIf { it.isNotEmpty() }
         )
     }
-
-    fun getChallengeServerUrls(): List<String> {
-        return listOfNotNull(
-            BuildConfig.PLANET_GUATEMALA_URL.takeIf { it.isNotEmpty() }?.let { "https://$it" },
-            BuildConfig.PLANET_XELA_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
-            BuildConfig.PLANET_URIUR_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
-            BuildConfig.PLANET_SANPABLO_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
-            BuildConfig.PLANET_EMBAKASI_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
-            BuildConfig.PLANET_VI_URL.takeIf { it.isNotEmpty() }?.let { "https://$it" }
-        )
-    }
 }

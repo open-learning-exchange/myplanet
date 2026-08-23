@@ -183,8 +183,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             registerSystemNotificationReceiver()
             checkIfShouldShowNotifications()
 
-            val validUrls = ServerConfigUtils.getChallengeServerUrls()
-            val isGuest = user?.id?.startsWith("guest") == true
             reportFullyDrawn()
         }
     }

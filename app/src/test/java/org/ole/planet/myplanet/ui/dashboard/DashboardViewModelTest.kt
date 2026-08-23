@@ -214,38 +214,6 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun `calculateIndividualProgress handles boundary cases properly`() {
-        assertEquals(1, viewModel.calculateIndividualProgress(0, false))
-        assertEquals(0, viewModel.calculateIndividualProgress(0, true))
-
-        assertEquals(3, viewModel.calculateIndividualProgress(1, false))
-        assertEquals(2, viewModel.calculateIndividualProgress(1, true))
-
-        assertEquals(11, viewModel.calculateIndividualProgress(5, false))
-        assertEquals(10, viewModel.calculateIndividualProgress(5, true))
-
-        // Coerced value cases
-        assertEquals(11, viewModel.calculateIndividualProgress(10, false))
-        assertEquals(10, viewModel.calculateIndividualProgress(10, true))
-    }
-
-    @Test
-    fun `calculateCommunityProgress handles boundary cases properly`() {
-        assertEquals(1, viewModel.calculateCommunityProgress(0, false))
-        assertEquals(0, viewModel.calculateCommunityProgress(0, true))
-
-        assertEquals(3, viewModel.calculateCommunityProgress(1, false))
-        assertEquals(2, viewModel.calculateCommunityProgress(1, true))
-
-        assertEquals(11, viewModel.calculateCommunityProgress(5, false))
-        assertEquals(10, viewModel.calculateCommunityProgress(5, true))
-
-        // Ensure cap at 11
-        assertEquals(11, viewModel.calculateCommunityProgress(10, false))
-        assertEquals(10, viewModel.calculateCommunityProgress(10, true))
-    }
-
-    @Test
     fun `loadUserContent with null userId exits early`() = runTest(testDispatcher) {
         viewModel.loadUserContent(null)
         advanceUntilIdle()

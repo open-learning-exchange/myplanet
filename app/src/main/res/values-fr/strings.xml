@@ -2,13 +2,6 @@
 <resources>
     <string name="resource_not_found">Ressource introuvable</string>
     <string name="resource_not_found_message">La ressource demandée est introuvable</string>
-    <string name="community_earnings">Revenus totaux de la communauté: **$%1$d** /$500</string>
-    <string name="your_earnings">Vos gains totaux: **$%1$d** /$11</string>
-    <string name="congratulations">Félicitations! Défi terminé</string>
-    <string name="daily_voices">de 5 Voix quotidiennes</string>
-    <string name="share_opinion">Partagez votre opinion dans Nos Voix.[$2/voix]</string>
-    <string name="remember_sync">N\'oubliez pas de synchroniser l\'application mobile.</string>
-    <string name="per_survey">%1$s par enquête</string>
     <string name="course_completed">%1$s terminé!</string>
     <string name="course_cover_image">Image de couverture du cours</string>
     <string name="course_in_progress">Entrez dans le cours %1$s complétez-le (%2$d de %3$d fait)</string>
