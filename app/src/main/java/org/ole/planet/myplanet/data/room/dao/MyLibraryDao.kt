@@ -126,6 +126,9 @@ interface MyLibraryDao {
     @Query("SELECT * FROM my_library WHERE resourceId IN (:resourceIds) AND resourceOffline = 1")
     suspend fun getOfflineByResourceIds(resourceIds: List<String>): List<MyLibrary>
 
+    @Query("UPDATE my_library SET resourceOffline = 0 WHERE resourceId IN (:ids) AND resourceOffline = 1")
+    suspend fun markAsNotOfflineByResourceIds(ids: List<String>)
+
     // --- writes ---
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -137,8 +140,6 @@ interface MyLibraryDao {
     @Query("DELETE FROM my_library WHERE id IN (:ids)")
     suspend fun deleteByIds(ids: List<String>)
 
-    @Query("UPDATE my_library SET resourceOffline = :isOffline")
-    suspend fun setAllOffline(isOffline: Boolean)
 
     // removeDeletedResources: server-known public resources whose id fell out of the current set.
     @Query(

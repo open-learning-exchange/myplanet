@@ -224,11 +224,15 @@ class CoursesRepositoryImplTest {
 
     @Test
     fun `getMyCourses by userId fetches all and filters`() = runTest {
-        coEvery { courseDao.getAll() } returns listOf(
-            MyCourse(id = "1", userId = listOf("user1", "user2")),
-            MyCourse(id = "2", userId = listOf("user2")),
-            MyCourse(id = "3", userId = null)
-        )
+        coEvery { courseDao.getForUserPattern(any()) } answers {
+            val userPattern = arg<String>(0)
+            val userId = userPattern.removeSurrounding("%\"", "\"%")
+            listOf(
+                MyCourse(id = "1", userId = listOf("user1", "user2")),
+                MyCourse(id = "2", userId = listOf("user2")),
+                MyCourse(id = "3", userId = null)
+            ).filter { it.userId?.contains(userId) == true }
+        }
         coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
 
         val resultUser1 = repository.getMyCourses("user1")
@@ -248,7 +252,7 @@ class CoursesRepositoryImplTest {
         // Create an identical copy simulating Room's recreation on query
         val identicalCourse = MyCourse(id = "1", userId = listOf("user1"))
 
-        coEvery { courseDao.observeAll() } returns flowOf(listOf(course), listOf(identicalCourse))
+        coEvery { courseDao.observeForUserPattern(any()) } returns flowOf(listOf(course), listOf(identicalCourse))
         coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
 
         val emissions = repository.getMyCoursesFlow("user1").toList()

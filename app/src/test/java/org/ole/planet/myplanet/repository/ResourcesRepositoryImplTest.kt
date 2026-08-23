@@ -280,6 +280,18 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
+    fun `getRecentResources deduplicates byte-identical flow emissions`() = runTest {
+        val l1 = MyLibrary().apply { id = "l1"; _rev = "rev1"; resourceOffline = false; setUserId("u1") }
+        val l2 = MyLibrary().apply { id = "l1"; _rev = "rev1"; resourceOffline = false; setUserId("u1") }
+        every { myLibraryDao.getRecentForUserPatternFlow(any()) } returns flowOf(listOf(l1), listOf(l2))
+
+        val emissions = mutableListOf<List<MyLibrary>>()
+        repository.getRecentResources("u1").collect { emissions.add(it) }
+
+        assertEquals(1, emissions.size)
+    }
+
+    @Test
     fun `getPendingDownloads returns flow from dao with correct pattern`() = runTest {
         val userId = "testUser123"
         val expectedPattern = "%\"testUser123\"%"
@@ -290,6 +302,16 @@ class ResourcesRepositoryImplTest {
         val result = repository.getPendingDownloads(userId).first()
 
         assertEquals(expectedList, result)
+    }
+
+    @Test
+    fun `getPendingDownloads deduplicates byte-identical flow emissions`() = runTest {
+        every { myLibraryDao.getPendingDownloadsForUserPatternFlow(any()) } returns flowOf(listOf("d1", "d2"), listOf("d1", "d2"))
+
+        val emissions = mutableListOf<List<String>>()
+        repository.getPendingDownloads("u1").collect { emissions.add(it) }
+
+        assertEquals(1, emissions.size)
     }
 
     @Test
