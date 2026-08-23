@@ -11,6 +11,7 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.ceil
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -39,6 +40,7 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.distinctByContent
 
 class ResourcesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -199,6 +201,11 @@ class ResourcesRepositoryImpl @Inject constructor(
         return myLibraryDao.getForUserPattern(userIdPattern(userId))
     }
 
+    override fun getMyLibraryFlow(userId: String?): Flow<List<MyLibrary>> {
+        if (userId.isNullOrBlank()) return flowOf(emptyList())
+        return myLibraryDao.getForUserPatternFlow(userIdPattern(userId))
+    }
+
     override suspend fun getAllStepResources(stepId: String?): List<MyLibrary> {
         if (stepId == null) return emptyList()
         return myLibraryDao.getByStepId(stepId)
@@ -323,15 +330,16 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override fun getRecentResources(userId: String): Flow<List<MyLibrary>> {
-        return myLibraryDao.getRecentForUserPatternFlow(userIdPattern(userId))
+        return myLibraryDao.getRecentForUserPatternFlow(userIdPattern(userId)).distinctByContent { a, b ->
+            // Compare CouchDB sync markers alongside fields editable/mutable locally (title, description, offline state, local path)
+            a.id == b.id && a._rev == b._rev && a.title == b.title && a.description == b.description &&
+                a.resourceOffline == b.resourceOffline && a.downloadedRev == b.downloadedRev &&
+                a.resourceLocalAddress == b.resourceLocalAddress && a.userId == b.userId
+        }
     }
 
     override fun getPendingDownloads(userId: String): Flow<List<String>> {
-        return myLibraryDao.getPendingDownloadsForUserPatternFlow(userIdPattern(userId))
-    }
-
-    override suspend fun markAllResourcesOffline(isOffline: Boolean) {
-        myLibraryDao.setAllOffline(isOffline)
+        return myLibraryDao.getPendingDownloadsForUserPatternFlow(userIdPattern(userId)).distinctUntilChanged()
     }
 
     override suspend fun saveSearchActivity(
@@ -689,11 +697,7 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
 
     override suspend fun markResourcesAsNotOffline(resourceIds: Collection<String>) {
         if (resourceIds.isEmpty()) return
-        val results = myLibraryDao.getOfflineByResourceIds(resourceIds.toList())
-        results.forEach { it.resourceOffline = false }
-        if (results.isNotEmpty()) {
-            myLibraryDao.upsertAll(results)
-        }
+        myLibraryDao.markAsNotOfflineByResourceIds(resourceIds.toList())
     }
 
     override suspend fun getPendingResourceUploads(): List<MyLibrary> {
@@ -778,5 +782,10 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
         }
         val deletedIds = items.map { it.resourceId }.toSet()
         markResourcesAsNotOffline(deletedIds)
+    }
+
+    override suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String> {
+        return myLibraryDao.getPrivateImagesCreatedAfter(timestamp)
+            .mapNotNull { it.resourceRemoteAddress }
     }
 }

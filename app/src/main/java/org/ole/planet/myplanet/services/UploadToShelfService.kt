@@ -40,11 +40,7 @@ class UploadToShelfService @Inject constructor(
                     userSyncRepository.checkAndUploadUser(model, password) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
                 }
 
-                uploadToShelf(object : OnSuccessListener {
-                    override fun onSuccess(success: String?) {
-                        listener.onSuccess(success)
-                    }
-                })
+                uploadToShelf(listener)
             } catch (e: Exception) {
                 withContext(dispatcherProvider.main) {
                     listener.onSuccess("Error during user data sync: ${e.localizedMessage}")
@@ -99,46 +95,42 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
-    private fun uploadToShelf(listener: OnSuccessListener) {
-        appScope.launch(dispatcherProvider.io) {
-            val unmanagedUsers = userRepository.getSyncedUsers()
+    private suspend fun uploadToShelf(listener: OnSuccessListener) {
+        val unmanagedUsers = userRepository.getSyncedUsers()
 
-            if (unmanagedUsers.isEmpty()) {
-                withContext(dispatcherProvider.main) {
-                    listener.onSuccess("Sync with server completed successfully")
-                }
-                return@launch
+        if (unmanagedUsers.isEmpty()) {
+            withContext(dispatcherProvider.main) {
+                listener.onSuccess("Sync with server completed successfully")
             }
+            return
+        }
 
-            val result = userSyncRepository.uploadAllSyncedUsersToShelf(unmanagedUsers)
-            if (result.isSuccess) {
-                withContext(dispatcherProvider.main) {
-                    listener.onSuccess("Sync with server completed successfully")
-                }
-            } else {
-                withContext(dispatcherProvider.main) {
-                    listener.onSuccess("Unable to update documents: ${result.exceptionOrNull()?.localizedMessage ?: "Unknown error"}")
-                }
+        val result = userSyncRepository.uploadAllSyncedUsersToShelf(unmanagedUsers)
+        if (result.isSuccess) {
+            withContext(dispatcherProvider.main) {
+                listener.onSuccess("Sync with server completed successfully")
+            }
+        } else {
+            withContext(dispatcherProvider.main) {
+                listener.onSuccess("Unable to update documents: ${result.exceptionOrNull()?.localizedMessage ?: "Unknown error"}")
             }
         }
     }
 
-    private fun uploadSingleUserToShelf(userName: String?, listener: OnSuccessListener) {
-        appScope.launch(dispatcherProvider.io) {
-            try {
-                val model = userName?.let { userRepository.getSyncedUserByName(it) }
+    private suspend fun uploadSingleUserToShelf(userName: String?, listener: OnSuccessListener) {
+        try {
+            val model = userName?.let { userRepository.getSyncedUserByName(it) }
 
-                if (model != null) {
-                    userSyncRepository.uploadShelfData(model)
-                }
-                withContext(dispatcherProvider.main) {
-                    listener.onSuccess("Single user shelf sync completed successfully")
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(dispatcherProvider.main) {
-                    listener.onSuccess("Unable to update document: ${e.localizedMessage}")
-                }
+            if (model != null) {
+                userSyncRepository.uploadShelfData(model)
+            }
+            withContext(dispatcherProvider.main) {
+                listener.onSuccess("Single user shelf sync completed successfully")
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            withContext(dispatcherProvider.main) {
+                listener.onSuccess("Unable to update document: ${e.localizedMessage}")
             }
         }
     }
