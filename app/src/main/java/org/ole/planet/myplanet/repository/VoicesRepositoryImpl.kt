@@ -78,12 +78,6 @@ class VoicesRepositoryImpl @Inject constructor(
         return news to replies
     }
 
-    override suspend fun getCommunityVisibleNews(userIdentifier: String): List<News> {
-        return newsDao.getTopLevelMessages().filter { news ->
-            isVisibleToUser(news, userIdentifier)
-        }
-    }
-
     override suspend fun isAlreadyShared(chatId: String, viewInId: String): Boolean {
         return newsDao.getByNewsId(chatId).any { news ->
             news.viewIn?.contains("\"_id\":\"$viewInId\"", ignoreCase = true) == true
@@ -114,10 +108,6 @@ class VoicesRepositoryImpl @Inject constructor(
             .replace("%", "\\%")
             .replace("_", "\\_")
         return "%\"_id\":\"$escaped\"%"
-    }
-
-    override suspend fun getNewsByTeamId(teamId: String): List<News> {
-        return newsDao.getTopLevelByTeam(teamId, teamIdPattern(teamId))
     }
 
     private fun isVisibleToUser(news: News, userIdentifier: String): Boolean {
@@ -287,11 +277,6 @@ class VoicesRepositoryImpl @Inject constructor(
     override suspend fun getReplyCount(newsId: String?): Int {
         if (newsId == null) return 0
         return newsDao.getReplyCount(newsId)
-    }
-
-    override suspend fun deleteNews(newsId: String) {
-        val idsToDelete = collectNewsAndReplies(newsId)
-        newsDao.deleteByIds(idsToDelete)
     }
 
     // Gathers a post and all of its (recursive) replies for deletion.

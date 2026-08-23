@@ -116,54 +116,6 @@ class VoicesRepositoryImplTest {
     }
 
     @Test
-    fun `getCommunityVisibleNews filters correctly based on viewableBy and viewIn`() = testScope.runTest {
-        val repoWithRealGson = newRepository(Gson())
-
-        val news1 = News().apply {
-            viewableBy = "community"
-            viewIn = null
-        }
-        val news2 = News().apply {
-            viewableBy = "other"
-            viewIn = "[{\"_id\":\"user1\",\"section\":\"community\"}]"
-        }
-        val news3 = News().apply {
-            viewableBy = "other"
-            viewIn = "[{\"_id\":\"user2\",\"section\":\"community\"}]"
-        }
-        coEvery { newsDao.getTopLevelMessages() } returns listOf(news1, news2, news3)
-
-        val result = repoWithRealGson.getCommunityVisibleNews("user1")
-
-        assertEquals(2, result.size)
-        assertEquals("community", result[0].viewableBy)
-        assertEquals("[{\"_id\":\"user1\",\"section\":\"community\"}]", result[1].viewIn)
-    }
-
-    @Test
-    fun `getNewsByTeamId filters correctly based on viewableBy and viewIn`() = testScope.runTest {
-        val news1 = News().apply {
-            viewableBy = "teams"
-            viewableId = "team1"
-        }
-        val news2 = News().apply {
-            viewableBy = "other"
-            viewIn = "[{\"_id\":\"team1\"}]"
-        }
-        val news3 = News().apply {
-            viewableBy = "other"
-            viewIn = "[{\"_id\":\"team2\"}]"
-        }
-        coEvery { newsDao.getTopLevelByTeam(any(), any()) } returns listOf(news1, news2)
-
-        val result = repository.getNewsByTeamId("team1")
-
-        assertEquals(2, result.size)
-        assertEquals("teams", result[0].viewableBy)
-        assertEquals("[{\"_id\":\"team1\"}]", result[1].viewIn)
-    }
-
-    @Test
     fun `getFilteredNews filters top-level posts by team`() = testScope.runTest {
         val news1 = News().apply {
             viewableBy = "teams"
@@ -179,17 +131,6 @@ class VoicesRepositoryImplTest {
 
         assertEquals(1, result.size)
         assertEquals("teams", result[0].viewableBy)
-    }
-
-    @Test
-    fun `deleteNews recursively deletes replies`() = testScope.runTest {
-        coEvery { newsDao.getNewsAndRepliesIds("newsId") } returns listOf("newsId", "reply1_id", "reply2_id")
-
-        repository.deleteNews("newsId")
-
-        val idsSlot = slot<List<String>>()
-        coVerify(exactly = 1) { newsDao.deleteByIds(capture(idsSlot)) }
-        assertEquals(listOf("newsId", "reply1_id", "reply2_id"), idsSlot.captured)
     }
 
     @Test
