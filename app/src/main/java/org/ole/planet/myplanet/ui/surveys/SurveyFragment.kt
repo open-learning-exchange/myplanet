@@ -14,6 +14,8 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -91,7 +93,9 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
         realtimeSyncHelper.setupRealtimeSync()
         initializeViews()
         binding.layoutSearch.etSearch.textChanges()
+            .drop(1)
             .debounce(300)
+            .distinctUntilChanged()
             .onEach { text -> viewModel.search(text?.toString() ?: "") }
             .launchIn(viewLifecycleOwner.lifecycleScope)
         viewLifecycleOwner.lifecycleScope.launch {
