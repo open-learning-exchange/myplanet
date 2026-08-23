@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -68,6 +69,7 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
         binding.etSearch.textChanges()
             .drop(1)
             .debounce(300)
+            .distinctUntilChanged()
             .onEach { text -> viewModel.setFilter(type ?: "", text?.toString() ?: "") }
             .launchIn(viewLifecycleOwner.lifecycleScope)
         showHideRadioButton()

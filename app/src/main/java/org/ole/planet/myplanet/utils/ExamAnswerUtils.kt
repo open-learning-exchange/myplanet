@@ -73,9 +73,12 @@ object ExamAnswerUtils {
     }
 
     private fun checkTextAnswer(ans: String, correctChoices: List<String>?): Boolean {
-        return correctChoices?.any {
-            ans.lowercase(Locale.getDefault()).contains(it.lowercase(Locale.getDefault()))
-        } == true
+        if (correctChoices == null) return false
+        val locale = Locale.getDefault()
+        val normalizedAns = ans.lowercase(locale)
+        return correctChoices.any {
+            normalizedAns.contains(it.lowercase(locale))
+        }
     }
 
     private fun isEqual(ar1: Array<String>?, ar2: Array<String>?): Boolean {
