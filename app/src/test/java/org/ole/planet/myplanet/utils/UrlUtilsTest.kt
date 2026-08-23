@@ -17,7 +17,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33], application = Application::class)
+@Config(application = Application::class)
 class UrlUtilsTest {
     private lateinit var mockSpm: SharedPrefManager
     private lateinit var sharedPrefManager: SharedPrefManager

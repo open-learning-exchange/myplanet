@@ -228,6 +228,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
         val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
         recyclerView.layoutManager = LinearLayoutManager(requireActivity())
+        recyclerView.setHasFixedSize(true)
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.markSurveyDialogShown()
@@ -316,14 +317,20 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun declareElements() {
-        binding.homeCardTeams.llHomeTeam.setOnClickListener {
-            val fragment = TeamFragment().apply {
-                arguments = Bundle().apply {
-                    putBoolean("fromDashboard", true)
+        val openTeamsAction = {
+            if (userTeams.isNotEmpty()) {
+                val fragment = TeamFragment().apply {
+                    arguments = Bundle().apply {
+                        putBoolean("fromDashboard", true)
+                    }
                 }
+                homeItemClickListener?.openMyFragment(fragment)
+            } else {
+                homeItemClickListener?.openCallFragment(TeamFragment())
             }
-            homeItemClickListener?.openMyFragment(fragment)
         }
+        binding.homeCardTeams.llHomeTeam.setOnClickListener { openTeamsAction() }
+        binding.homeCardTeams.myTeamsImageButton.setOnClickListener { openTeamsAction() }
         val openLibraryAction = {
             if (user?.id?.startsWith("guest") == true) {
                 guestDialog(requireContext())
