@@ -8,12 +8,12 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class NewsViewModel @Inject constructor(
-    private val voicesRepository: VoicesRepository,
+    private val resourcesRepository: ResourcesRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
@@ -22,7 +22,7 @@ class NewsViewModel @Inject constructor(
 
     fun getPrivateImageUrlsCreatedAfter(timestamp: Long) {
         viewModelScope.launch {
-            val urls = voicesRepository.getPrivateImageUrlsCreatedAfter(timestamp)
+            val urls = resourcesRepository.getPrivateImageUrlsCreatedAfter(timestamp)
             _privateImageUrls.emit(urls)
         }
     }

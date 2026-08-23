@@ -253,6 +253,11 @@ class SharedPrefManager @Inject constructor(
         return defaultPreferences.getBoolean("beta_auto_download", false)
     }
 
+    fun setBetaAutoDownload(enabled: Boolean) {
+        val defaultPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        defaultPreferences.edit { putBoolean("beta_auto_download", enabled) }
+    }
+
     fun getVersionDetail(): String? = pref.getString(VERSION_DETAIL, null)
     fun setVersionDetail(json: String) = pref.edit { putString(VERSION_DETAIL, json) }
 
@@ -271,17 +276,15 @@ class SharedPrefManager @Inject constructor(
     fun setRawLong(key: String, value: Long) = pref.edit { putLong(key, value) }
     fun removeKey(key: String) = pref.edit { remove(key) }
     fun clearPreferences() {
-        val editor = pref.edit()
         val keysToKeep = setOf(FIRST_LAUNCH, MANUAL_CONFIG)
         val tempStorage = HashMap<String, Boolean>()
         for (key in keysToKeep) {
             tempStorage[key] = pref.getBoolean(key, false)
         }
-        editor.clear().apply()
-        for ((key, value) in tempStorage) {
-            editor.putBoolean(key, value)
+        pref.edit {
+            clear()
+            tempStorage.forEach { (k, v) -> putBoolean(k, v) }
         }
-        editor.commit()
         val defaultPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         defaultPreferences.edit { clear() }
     }
