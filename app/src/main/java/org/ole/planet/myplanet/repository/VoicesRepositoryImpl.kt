@@ -141,10 +141,11 @@ class VoicesRepositoryImpl @Inject constructor(
             .distinctUntilChanged { old, new ->
                 old.size == new.size && old.zip(new).all { (o, n) ->
                     o.id == n.id && o.time == n.time &&
+                            // Labels are semantically a set; order carries no meaning.
                             o.labels?.toSet() == n.labels?.toSet() &&
                             o.message == n.message &&
                             o.isEdited == n.isEdited &&
-                            o.imageUrls?.toList() == n.imageUrls?.toList() &&
+                            o.imageUrls == n.imageUrls &&
                             o.images == n.images &&
                             o.viewIn == n.viewIn &&
                             o.viewableBy == n.viewableBy &&
@@ -175,8 +176,9 @@ class VoicesRepositoryImpl @Inject constructor(
                     o.id == n.id && o.time == n.time &&
                             o.message == n.message &&
                             o.isEdited == n.isEdited &&
-                            o.imageUrls?.toList() == n.imageUrls?.toList() &&
+                            o.imageUrls == n.imageUrls &&
                             o.images == n.images &&
+                            // Labels are semantically a set; order carries no meaning.
                             o.labels?.toSet() == n.labels?.toSet() &&
                             o.viewIn == n.viewIn &&
                             o.viewableBy == n.viewableBy &&
