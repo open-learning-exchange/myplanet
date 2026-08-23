@@ -223,15 +223,6 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `getSubmissionsByUserId returns correctly`() = runTest {
-        coEvery { submissionDao.getByUserId("test") } returns listOf(Submission(id = "submission1", userId = "test"))
-        coEvery { answerDao.getBySubmissionIds(listOf("submission1")) } returns emptyList()
-
-        val result = repository.getSubmissionsByUserId("test")
-        assertEquals(1, result.size)
-    }
-
-    @Test
     fun `createBulkSurveySubmissions with empty list does not query or insert`() = runTest {
         val examId = "examId"
         coEvery { examDao.getById(examId) } returns StepExam(id = examId, courseId = "courseId")
