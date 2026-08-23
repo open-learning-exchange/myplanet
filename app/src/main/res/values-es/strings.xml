@@ -615,6 +615,10 @@
     <string name="meetup_added">Encuentro agregado</string>
     <string name="meetup_not_added">Encuentro no agregado</string>
     <string name="add_transaction">Agregar transacción</string>
+    <string name="from_date">Desde fecha</string>
+    <string name="to_date">Hasta fecha</string>
+    <string name="select_from_date">Seleccionar desde fecha</string>
+    <string name="select_to_date">Seleccionar hasta fecha</string>
     <string name="note_is_required">Se requiere una nota</string>
     <string name="amount_is_required">Se requiere una cantidad</string>
     <string name="date_is_required">Se requiere una fecha</string>
