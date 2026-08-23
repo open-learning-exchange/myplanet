@@ -107,7 +107,7 @@ class VoicesViewModel @Inject constructor(
             }
             list.forEach { news ->
                 news?.labels?.forEach { label ->
-                    val labelName = Constants.LABELS.entries.find { it.value == label }?.key
+                    val labelName = Constants.LABEL_VALUE_TO_NAME[label]
                         ?: VoicesLabelManager.formatLabelValue(label)
                     labelDisplayToValue.putIfAbsent(labelName, label)
                 }
@@ -203,7 +203,7 @@ class VoicesViewModel @Inject constructor(
             }
 
             news?.labels?.forEach { label ->
-                val labelName = Constants.LABELS.entries.find { it.value == label }?.key
+                val labelName = Constants.LABEL_VALUE_TO_NAME[label]
                     ?: VoicesLabelManager.formatLabelValue(label)
                 allLabels.add(labelName)
             }
