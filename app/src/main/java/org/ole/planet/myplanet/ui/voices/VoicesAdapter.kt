@@ -34,7 +34,7 @@ import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.repository.VoicesEditActions
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
@@ -61,7 +61,7 @@ class VoicesAdapter(
     private val onEditAction: (suspend () -> Unit) -> Unit,
     private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit),
     private val labelManager: VoicesLabelManager,
-    private val voicesRepository: VoicesRepository,
+    private val voicesEditActions: VoicesEditActions,
     private val leadersList: List<UserEntity>,
     private val setRepliedNewsIdFn: (String?) -> Unit
 ) : ListAdapter<News, RecyclerView.ViewHolder>(
@@ -487,7 +487,7 @@ class VoicesAdapter(
                         currentUser,
                         listener,
                         holder,
-                        voicesRepository,
+                        voicesEditActions,
                         { h, updatedNews, pos ->
                             val targetNews = updatedNews ?: news
                             preParseNews(targetNews)
@@ -759,7 +759,7 @@ class VoicesAdapter(
                         currentUser,
                         listener,
                         viewHolder,
-                        voicesRepository,
+                        voicesEditActions,
                         { _, _, _ -> },
                         onEditAction
                     )
