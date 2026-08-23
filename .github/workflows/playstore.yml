@@ -1,24 +1,16 @@
 name: myPlanet playstore
 
 # The release workflow uploads every master build to the playstore internal
-# track. Play holds about 48 save slots per app, each freeing 24h after its own
-# use, and answers a save that finds none free with "Daily save quota
-# exceeded." -- that build stays tagged and released on GitHub but never
-# reaches the track, and the automerge drain stops there.
+# track. Play holds about 48 save slots, each freeing 24h after its own use,
+# and refuses the next save with "Daily save quota exceeded." -- that build
+# stays released on GitHub but off the track, and the automerge drain stops.
 #
-# This closes the gap without a human downloading an .aab: when the track is
-# behind the newest GitHub release it re-uploads that release's signed bundle
-# -- the exact file the release workflow built, no rebuild and no new version
-# code. When the track is current it costs two API calls and stops.
-#
-# Started by hand, never on a schedule: the Run workflow button (the link the
-# release warning and the automerge stop both print), gh workflow run
-# playstore.yml, or a repository_dispatch webhook with event_type playstore
-# (no inputs, so the defaults below).
-#
-# It cannot beat the quota, only wait it out: wait_minutes lets a run sit on a
-# runner until the estimated slot opens, otherwise start it again later -- the
-# report says when, and how many slots follow the first.
+# When the track is behind the newest GitHub release this re-uploads that
+# release's signed bundle: no rebuild, no new version code. Started by hand,
+# never on a schedule -- the Run workflow button (the link the release warning
+# and the automerge stop print), gh workflow run playstore.yml, or a
+# repository_dispatch with event_type playstore. wait_minutes may sit on a
+# runner until the estimated slot opens; otherwise start it again later.
 #
 # Needs SERVICE_ACCOUNT_JSON, the secret the release workflow publishes with.
 on:

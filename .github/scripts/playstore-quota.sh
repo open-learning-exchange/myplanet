@@ -1,22 +1,14 @@
 #!/usr/bin/env bash
 #
-# Estimate the Google Play daily save quota from the GitHub release history:
-# every release on master is one playstore save, and Play never says when the
-# next slot opens.
+#   playstore-quota.sh {status|report}   # key=value / one human line
 #
-#   playstore-quota.sh status   # key=value, eval-friendly
-#   playstore-quota.sh report   # just the one-line human summary
-#
-# The quota is a pool of LIMIT slots where each frees 24h after its own use,
-# not a counter reset at midnight: 6514 was refused at 02:57 Pacific on
-# 2026-08-18 with only 10 saves made that Pacific day and 49 in the preceding
-# 24h, which no calendar-day reset can produce. So the next slot is the oldest
-# save still holding one plus 24h -- saves past LIMIT in the window were
-# refused, and a refusal holds nothing.
-#
-# An estimate, and nothing gates on it: hand uploads and re-runs spend slots
-# that leave no release behind, refusals leave releases that hold no slot.
-# Eastern times.
+# Estimates the playstore save quota from the release history: one master
+# release is one save. The quota is a pool of LIMIT slots each freeing 24h
+# after its own use, not a midnight reset -- 6514 was refused at 02:57 Pacific
+# on 2026-08-18 after only 10 saves that Pacific day. So the next slot is the
+# oldest one still in use plus 24h. Advisory, and nothing gates on it: hand
+# uploads and re-runs spend slots that leave no release behind, refusals leave
+# releases that hold no slot. Eastern times.
 set -euo pipefail
 
 REPO="${REPO:?}"
