@@ -30,7 +30,7 @@ class MarkdownDialogFragment : DialogFragment() {
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
 
-    private val viewModel: MarkdownDialogViewModel by viewModels()
+    private val viewModel: MarkdownViewModel by viewModels()
     private lateinit var dialogCampaignChallengeBinding: DialogCampaignChallengeBinding
     private var markdownContent: String = ""
     private var courseStatus: String = ""

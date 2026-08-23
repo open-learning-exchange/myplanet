@@ -6,7 +6,7 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.repository.UserRepository
 
 @HiltViewModel
-class MarkdownDialogViewModel @Inject constructor(
+class MarkdownViewModel @Inject constructor(
     private val userRepository: UserRepository
 ) : ViewModel() {
     suspend fun hasActiveUserSyncAction(): Boolean {
