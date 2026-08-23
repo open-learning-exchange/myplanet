@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -32,7 +33,8 @@ class TeamsVoicesViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
     private val dispatcherProvider: DispatcherProvider,
     private val userRepository: UserRepository,
-    private val resourcesRepository: ResourcesRepository
+    private val resourcesRepository: ResourcesRepository,
+    private val notificationsRepository: NotificationsRepository
 ) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository, dispatcherProvider) {
 
     private val _teamPolicy = MutableStateFlow<Pair<MyTeam?, VoicePostingPolicy?>?>(null)
@@ -55,7 +57,7 @@ class TeamsVoicesViewModel @Inject constructor(
 
     suspend fun getFilteredNews(teamId: String): List<News?> {
         val newsList = voicesRepository.getFilteredNews(teamId)
-        voicesRepository.updateTeamNotification(teamId, newsList.size)
+        notificationsRepository.updateTeamNotification(teamId, newsList.size)
         return newsList
     }
 
