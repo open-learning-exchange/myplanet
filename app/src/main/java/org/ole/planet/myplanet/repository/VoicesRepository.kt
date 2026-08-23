@@ -32,7 +32,6 @@ interface VoicesRepository : VoicesEditActions {
     suspend fun createTeamNews(newsData: HashMap<String?, String>, user: UserEntity, imageList: List<String>?): Boolean
     suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<News>>
     suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit>
-    suspend fun updateTeamNotification(teamId: String, count: Int)
     suspend fun getFilteredNews(teamId: String): List<News>
     suspend fun getReplyCount(newsId: String?): Int
     suspend fun deletePost(newsId: String, teamName: String)

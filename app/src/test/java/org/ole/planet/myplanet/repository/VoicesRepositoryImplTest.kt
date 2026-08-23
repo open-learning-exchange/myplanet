@@ -38,7 +38,6 @@ class VoicesRepositoryImplTest {
     private val gson: Gson = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
-    private val teamNotificationDao: TeamNotificationDao = mockk(relaxed = true)
     private val newsDao: NewsDao = mockk(relaxed = true)
     private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
     private val newsLogDao: org.ole.planet.myplanet.data.room.dao.NewsLogDao = mockk(relaxed = true)
@@ -50,7 +49,6 @@ class VoicesRepositoryImplTest {
                 gsonInstance,
                 Gson(),
                 sharedPrefManager,
-                teamNotificationDao,
                 newsDao,
                 myLibraryDao,
                 newsLogDao
