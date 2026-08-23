@@ -48,7 +48,7 @@ class SurveysRepositoryImpl @Inject constructor(
     private val examDao: ExamDao,
     private val questionDao: QuestionDao,
     private val submissionDao: SubmissionDao,
-    private val teamDao: TeamDao,
+    private val teamsRepository: dagger.Lazy<TeamsRepository>,
 ) : SurveysRepository {
 
     private val reminderPrefs: SharedPreferences by lazy {
@@ -79,7 +79,7 @@ class SurveysRepositoryImpl @Inject constructor(
         val userJsonString = createUserJsonString(userModel, planetCode, isTeam, teamId)
 
         if (isTeam && !teamId.isNullOrEmpty()) {
-            val teamName = teamDao.getById(teamId)?.name ?: teamDao.getByTeamId(teamId)?.name
+            val teamName = teamsRepository.get().getTeamByIdOrTeamId(teamId)?.name
             if (!teamName.isNullOrEmpty()) {
                 val existingSurvey = examDao.getByTeamIdAndType(teamId, "surveys")
                     .firstOrNull { it.sourceSurveyId == examId }
