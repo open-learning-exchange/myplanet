@@ -281,7 +281,7 @@ quota_note() {
     eval "$(sed -n "s/^report=/quota_report=/p; s/^next_free_local=/quota_eta=/p" <<<"$status")" || return 0
 
     [ -n "$quota_report" ] && log "  $quota_report"
-    [ -n "$quota_eta" ] && log "  the playstore workflow retries every 30 minutes and publishes it once a slot frees"
+    [ -n "$quota_eta" ] && log "  start ${GITHUB_SERVER_URL:-https://github.com}/$REPO/actions/workflows/playstore.yml then -- it publishes without a rebuild"
     return 0
 }
 

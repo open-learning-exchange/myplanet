@@ -1,26 +1,40 @@
 name: myPlanet playstore
 
-# Every master build is published to the playstore internal track by the
-# release workflow. Play accepts 48 saves a day and answers the 49th with
-# "Daily save quota exceeded." -- that build stays tagged and released on
-# GitHub but never reaches the track, and the automerge drain stops, because
-# it refuses to merge on top of an unpublished release.
+# The release workflow uploads every master build to the playstore internal
+# track. Play holds about 48 save slots per app, each freeing 24h after its own
+# use, and answers a save that finds none free with "Daily save quota
+# exceeded." -- that build stays tagged and released on GitHub but never
+# reaches the track, and the automerge drain stops, because it refuses to merge
+# on top of an unpublished release.
 #
-# This job closes that gap without a human downloading an .aab: every 30
-# minutes it asks the internal track what it has, and if the track is behind
-# the newest GitHub release it re-uploads that release's signed bundle -- the
-# exact file the release workflow built, no rebuild, no new version. When the
-# track is current it costs two API calls and stops.
+# This closes that gap without a human downloading an .aab: it asks the
+# internal track what it has, and if the track is behind the newest GitHub
+# release it re-uploads that release's signed bundle -- the exact file the
+# release workflow built, no rebuild, no new version code. When the track is
+# current it costs two API calls and stops.
 #
-# It cannot beat the quota, only wait it out, so it also reports when the next
-# save slot is expected (eastern time, see .github/scripts/playstore-quota.sh).
+# Started by hand, never on a schedule. Three ways in:
+#
+#   - the Run workflow button on .../actions/workflows/playstore.yml, the link
+#     the release warning and the automerge stop both print
+#   - gh workflow run playstore.yml [-f wait_minutes=90 ...]
+#   - a repository_dispatch webhook, for a bot or a phone shortcut:
+#       curl -X POST -H "Authorization: Bearer $TOKEN" \
+#         -H 'Accept: application/vnd.github+json' \
+#         https://api.github.com/repos/OWNER/REPO/dispatches \
+#         -d '{"event_type":"playstore"}'
+#     (a dispatch carries no inputs, so it runs with the defaults below)
+#
+# It cannot beat the quota, only wait it out: wait_minutes lets one run sit on
+# a runner until the slot the estimate names opens, which is worth it for a
+# short wait and not for tomorrow morning. Otherwise start it again later --
+# the report says when, and how many slots follow the first.
 #
 # Needs SERVICE_ACCOUNT_JSON, the secret the release workflow publishes with.
-# Cron only ever runs the copy of this file on the default branch.
 
 on:
-  schedule:
-    - cron: '*/30 * * * *'
+  repository_dispatch:
+    types: [playstore]
   workflow_dispatch:
     inputs:
       track:
@@ -43,6 +57,11 @@ on:
         required: false
         default: false
         type: boolean
+      wait_minutes:
+        description: 'how long this run may wait on a runner for the next save slot (0 = try right away)'
+        required: false
+        default: '0'
+        type: string
       dry_run:
         description: 'report what would be published, upload nothing'
         required: false
@@ -61,7 +80,7 @@ jobs:
   publish:
     name: myPlanet playstore
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 350
     env:
       REPO: ${{ github.repository }}
       BASE: master
@@ -69,7 +88,9 @@ jobs:
       PLAYSTORE_TRACK: ${{ inputs.track || 'internal' }}
       PLAYSTORE_DAILY_LIMIT: ${{ inputs.daily_limit || '48' }}
       PLAYSTORE_FORCE: ${{ inputs.force || false }}
+      WAIT_MINUTES: ${{ inputs.wait_minutes || '0' }}
       DRY_RUN: ${{ inputs.dry_run || false }}
+      WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/workflows/playstore.yml
 
     steps:
       - name: checkout repository code
@@ -87,6 +108,27 @@ jobs:
           quota=$(.github/scripts/playstore-quota.sh report)
           echo "$quota"
           echo "quota=$quota" >> "$GITHUB_OUTPUT"
+
+      - name: wait for a save slot
+        if: steps.pending.outputs.pending == 'true' && env.DRY_RUN != 'true' && env.WAIT_MINUTES != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # a quota estimate that cannot be read must not hold up the upload
+          next_free_epoch=0
+          next_free_local='now'
+          eval "$(.github/scripts/playstore-quota.sh status || true)"
+          wait=$(( next_free_epoch + 120 - $(date -u +%s) ))
+          if [ "$wait" -le 0 ]; then
+            echo "a slot should be free now -- not waiting"
+            exit 0
+          fi
+          if [ "$wait" -gt $(( WAIT_MINUTES * 60 )) ]; then
+            echo "the next slot is about $((wait / 60))m out, past wait_minutes=$WAIT_MINUTES -- trying now anyway"
+            exit 0
+          fi
+          echo "waiting $((wait / 60))m for the slot that frees around $next_free_local"
+          sleep "$wait"
 
       - name: download the signed bundle from its GitHub release
         if: steps.pending.outputs.pending == 'true' && env.DRY_RUN != 'true'
@@ -162,7 +204,7 @@ jobs:
             exit 0
           fi
 
-          MESSAGE="playstore still refused $PENDING. $QUOTA -- retrying in 30 minutes."
+          MESSAGE="playstore still refused $PENDING. $QUOTA. Start this workflow again then: $WORKFLOW_URL"
           echo "::warning::${MESSAGE}"
           echo "### ${MESSAGE}" >> "$GITHUB_STEP_SUMMARY"
 

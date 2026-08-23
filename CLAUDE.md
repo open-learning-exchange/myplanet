@@ -392,25 +392,26 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 - Builds signed APK and AAB for both flavors
 - Signs with keystore credentials via GitHub Secrets
 - Generates SHA256 checksums for integrity verification
-- Publishes to Google Play Store (internal track) with fallback retry; a refused upload (usually `Daily save quota exceeded.`) only warns — `playstore.yml` publishes it later
+- Publishes to Google Play Store (internal track) with fallback retry; a refused upload (usually `Daily save quota exceeded.`) only warns, and the warning links `playstore.yml`, which publishes that bundle later without a rebuild
 - Creates GitHub release with artifacts (tag: `v${VERSION}`)
 - Sends Discord notifications via Treehouses CLI
 
 **Playstore Workflow** (`.github/workflows/playstore.yml`)
-- Runs on a `*/30 * * * *` schedule (and `workflow_dispatch`); cron only ever runs the copy on the default branch
+- **Never scheduled** — started by hand: the *Run workflow* button (the link the release warning and the automerge stop both print), `gh workflow run playstore.yml`, or a `repository_dispatch` webhook with `event_type: playstore` (a dispatch carries no inputs, so it runs on the defaults)
 - Google Play accepts about **48 saves per app per rolling 24h** and answers the next one with `Daily save quota exceeded.` — at one release per master push (~6 min apart during an automerge drain) that ceiling is hit in an afternoon, leaving the newest build tagged and on GitHub but not on the internal track, which stops the automerge drain
 - The quota is a **pool of slots, each freeing 24h after its own use** — not a counter that resets at midnight anywhere. Evidence: 6514 was refused at 02:57 Pacific on 2026-08-18 having made only 10 saves that Pacific day, with 49 in the preceding 24h (`myPlanet release (lite)` log of run 32123984765). Don't reintroduce a midnight-reset estimate
 - Each run asks the internal track what version it has and compares it with the newest GitHub release. If the track is behind it re-uploads that release's **signed `myPlanet-lite.aab` asset** — the exact bundle the release workflow built, so no rebuild and no new version code. When the track is current it costs two API calls and stops
 - Two cheap pre-checks come before any Play Store call: the newest `release.yml` run on master must have warned that its publish failed (`warn that the playstore upload failed` did not skip), and the release must actually carry the `.aab`. `force: true` skips the first
 - Logic lives in `.github/scripts/playstore.sh` (track reads mint their own JWT from `SERVICE_ACCOUNT_JSON` with `openssl`; reading a track opens an edit but never commits one, so it spends no save quota) and `.github/scripts/playstore-quota.sh`
-- `.github/scripts/playstore-quota.sh` estimates when the next slot opens from the GitHub release history — 24h after the 48th-newest release, plus how many more free within the hour after that — and prints it in eastern time. It stays an estimate and nothing gates on it: hand uploads from the Play Console, re-runs, and the retry's own publish all spend a slot without adding a release, while a refused upload adds a release without spending one. `automerge.sh` reports the same line when a stopped publish stops the drain
+- `.github/scripts/playstore-quota.sh` estimates when the next slot opens from the GitHub release history — 24h after the oldest release still holding a slot (saves past the 48th inside the window were refused, and a refusal holds nothing), plus how many more free within the hour after that — and prints it in eastern time. It stays an estimate and nothing gates on it: hand uploads from the Play Console, re-runs, and the retry's own publish all spend a slot without adding a release, while a refused upload adds a release without spending one. `automerge.sh` reports the same line when a stopped publish stops the drain
+- `wait_minutes` lets one run sit on a runner until the estimated slot opens (worth it for a short wait, not for tomorrow morning; `timeout-minutes: 350` caps it). Past that budget it tries anyway and reports when to come back
 - `resume_automerge: true` dispatches the drain again once the pending release lands; the default leaves that to a human
 
 **Automerge Workflow** (`.github/workflows/automerge.yml`)
 - Manually dispatched (`workflow_dispatch`) queue drainer for PRs labelled `automerge`
 - For each labelled PR: merges the base branch in, bumps the version, waits for build + test to pass, then squash-merges
 - Logic lives in `.github/scripts/automerge.sh`; requires `AUTOMERGE_TOKEN` (the default `GITHUB_TOKEN` can't push to the protected base branch)
-- A release that never reached the Play Store stops the drain; the stop now reports the estimated next save slot (eastern time) and `playstore.yml` retries the upload every 30 minutes
+- A release that never reached the Play Store stops the drain; the stop reports the estimated next save slot (eastern time, plus how many follow it) and links `playstore.yml`, which publishes that upload without a rebuild
 - A red workflow on the base is re-run before the drain gives up (`base_rerun_attempts`, default 1): every base commit is a PR head that build + test passed on just before the squash merge, so a failure there is treated as flaky until it reproduces
 
 **Dependabot** (`.github/dependabot.yml`)

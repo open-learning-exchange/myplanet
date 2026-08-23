@@ -11,9 +11,12 @@
 # The quota behaves as a pool of LIMIT slots where each slot frees 24h after
 # its own use -- not as a counter reset at midnight anywhere. 6514 was refused
 # at 02:57 Pacific on 2026-08-18 with only 10 saves made that Pacific day, and
-# 49 in the preceding 24h; no calendar-day reset can produce that. So the next
-# slot opens 24h after the LIMIT-th newest save, and saves keep freeing at the
-# cadence they were spent.
+# 49 in the preceding 24h; no calendar-day reset can produce that.
+#
+# So: next slot = the oldest save still holding one, plus 24h. Saves past LIMIT
+# inside the window were refused, and a refusal holds no slot, so the oldest
+# save in the window is the oldest slot in use -- and slots keep freeing at the
+# cadence they were spent, which is why the report says how many follow.
 #
 # It stays an estimate, and nothing gates on it -- the playstore workflow
 # retries every 30 minutes whatever this says. Releases are only a proxy for
@@ -56,14 +59,14 @@ iso() { date -u -d "@$1" '+%Y-%m-%dT%H:%M:%SZ'; }
 
 status() {
     local window_start=$((NOW_EPOCH - WINDOW_SEC))
-    local used=0 nth="" e
+    local used=0 oldest="" e
     local -a live=()
     while read -r e; do
         [ -n "$e" ] || continue
         [ "$e" -gt "$window_start" ] || continue
         used=$((used + 1))
         live+=("$e")
-        [ "$used" -eq "$LIMIT" ] && nth="$e"
+        oldest="$e"   # newest first, so the last one standing is the oldest
     done < <(save_epochs)
 
     local free=$((LIMIT - used))
@@ -74,15 +77,14 @@ status() {
         next="$NOW_EPOCH"
         report="playstore save quota: $used of $LIMIT slots used -- $free free now"
     else
-        # The LIMIT-th newest save is holding the slot the next save needs.
-        next=$((nth + WINDOW_SEC))
-        # Slots whose 24h is up within the hour after that, so a drain knows
-        # whether it gets one save or a handful.
+        next=$((oldest + WINDOW_SEC))
+        # Slots ageing out within the hour after it, so a drain knows whether
+        # it gets one save or a handful.
         for e in "${live[@]}"; do
-            [ "$e" -lt "$nth" ] && [ $((e + WINDOW_SEC)) -le $((next + 3600)) ] && soon=$((soon + 1))
+            [ "$e" -gt "$oldest" ] && [ "$e" -le $((oldest + 3600)) ] && soon=$((soon + 1))
         done
-        report="playstore save quota: $used of $LIMIT slots used -- next slot around $(fmt "$next"), 24h after the save at $(fmt "$nth")"
-        [ "$soon" -gt 0 ] && report="$report (then $soon more within the hour)"
+        report="playstore save quota: $used of $LIMIT slots used -- next slot around $(fmt "$next"), 24h after the oldest one in use ($(fmt "$oldest"))"
+        [ "$soon" -gt 0 ] && report="$report, then $soon more within the hour"
     fi
 
     echo "limit=$LIMIT"

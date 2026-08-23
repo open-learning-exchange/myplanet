@@ -9,9 +9,9 @@ name: myPlanet automerge
 #
 # A release that never reached the playstore stops the drain, and the stop is
 # reported with an estimate of when the playstore save quota frees up again
-# (.github/scripts/playstore-quota.sh). The playstore workflow retries that
-# upload every 30 minutes, so the drain can simply be started again once it
-# lands -- nothing here has to be rebuilt or re-released.
+# (.github/scripts/playstore-quota.sh) and a link to the playstore workflow,
+# which publishes that upload from its GitHub release without a rebuild. Start
+# that, then start this again -- nothing here has to be rebuilt or re-released.
 #
 # A commit on the base was already built and tested green as a PR head, so a
 # red workflow there is treated as flaky first: it is re-run (base_rerun_attempts
