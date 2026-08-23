@@ -20,7 +20,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowEnvironment
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33], manifest = Config.NONE, application = Application::class)
+@Config(manifest = Config.NONE, application = Application::class)
 class FileUtilsTest {
 
     private lateinit var context: Context
@@ -30,6 +30,11 @@ class FileUtilsTest {
     fun setUp() {
         // We use a generic Application class to avoid MainApplication initialization that calls Realm.init()
         context = RuntimeEnvironment.getApplication()
+        // FileUtils caches externalFilesDir in an object-level field, and Robolectric hands every test
+        // method a fresh temp directory while re-using one sandbox (so one set of statics) for every
+        // class on this SDK level. Without this reset, a cache warmed by an earlier test — in this
+        // class or another one in the same sandbox — points at a temp directory that no longer exists.
+        resetExternalFilesDirCache()
         tempDir = File(context.cacheDir, "test_dir")
         if (!tempDir.exists()) {
             tempDir.mkdirs()
@@ -38,8 +43,16 @@ class FileUtilsTest {
 
     @After
     fun tearDown() {
+        resetExternalFilesDirCache()
         if (tempDir.exists()) {
             tempDir.deleteRecursively()
+        }
+    }
+
+    private fun resetExternalFilesDirCache() {
+        FileUtils::class.java.getDeclaredField("cachedExternalFilesDir").apply {
+            isAccessible = true
+            set(FileUtils, null)
         }
     }
 
@@ -90,6 +103,61 @@ class FileUtilsTest {
         assertEquals("document.pdf", FileUtils.getFileNameFromUrl("https://site.org/path/document.pdf?query=1"))
         assertEquals("", FileUtils.getFileNameFromUrl(null))
         assertEquals("file with spaces.txt", FileUtils.getFileNameFromUrl("http://example.com/file%20with%20spaces.txt"))
+    }
+
+    @Test
+    fun getSDPathFromUrl_preservesNestedAttachmentPath() {
+        FileUtils.warmUp(context)
+        val url = "http://example.com/resources/123/js/game_manager.js"
+
+        val resolved = FileUtils.getSDPathFromUrl(context, url)
+
+        assertEquals("game_manager.js", resolved.name)
+        assertEquals("js", resolved.parentFile?.name)
+        assertTrue(resolved.absolutePath.endsWith("ole/123/js/game_manager.js"))
+    }
+
+    @Test
+    fun getSDPathFromUrl_singleSegmentFileHasNoSubdirectory() {
+        FileUtils.warmUp(context)
+        val url = "http://example.com/resources/123/index.html"
+
+        val resolved = FileUtils.getSDPathFromUrl(context, url)
+
+        assertEquals("index.html", resolved.name)
+        assertEquals("123", resolved.parentFile?.name)
+    }
+
+    @Test
+    fun resolveHtmlEntryFile_defaultsToIndexHtmlAtRootWhenUnset() {
+        val resolved = FileUtils.resolveHtmlEntryFile(tempDir, null)
+
+        assertEquals(File(tempDir, "index.html").canonicalFile, resolved)
+    }
+
+    @Test
+    fun resolveHtmlEntryFile_defaultsToIndexHtmlAtRootWhenBlank() {
+        val resolved = FileUtils.resolveHtmlEntryFile(tempDir, "")
+
+        assertEquals(File(tempDir, "index.html").canonicalFile, resolved)
+    }
+
+    @Test
+    fun resolveHtmlEntryFile_honorsNestedRelativePath() {
+        val resolved = FileUtils.resolveHtmlEntryFile(tempDir, "sudoku/index.html")
+
+        assertEquals(File(tempDir, "sudoku/index.html").canonicalFile, resolved)
+    }
+
+    @Test
+    fun resolveHtmlEntryFile_rejectsPathTraversal() {
+        assertNull(FileUtils.resolveHtmlEntryFile(tempDir, "../outside.html"))
+        assertNull(FileUtils.resolveHtmlEntryFile(tempDir, "sudoku/../../outside.html"))
+    }
+
+    @Test
+    fun resolveHtmlEntryFile_rejectsAbsolutePath() {
+        assertNull(FileUtils.resolveHtmlEntryFile(tempDir, "/etc/passwd"))
     }
 
     @Test
