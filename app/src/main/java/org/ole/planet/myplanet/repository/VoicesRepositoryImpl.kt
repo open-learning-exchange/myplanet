@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.di.PlainGson
@@ -32,7 +31,6 @@ class VoicesRepositoryImpl @Inject constructor(
     @PlainGson private val plainGson: Gson,
     private val sharedPrefManager: SharedPrefManager,
     private val newsDao: NewsDao,
-    private val myLibraryDao: MyLibraryDao,
     private val newsLogDao: NewsLogDao
 ) : VoicesRepository {
     private val concatenatedLinks = ArrayList<String>()
@@ -505,11 +503,6 @@ class VoicesRepositoryImpl @Inject constructor(
         existingConcatenatedLinks.addAll(linksToProcess)
         val jsonConcatenatedLinks = plainGson.toJson(existingConcatenatedLinks)
         sharedPrefManager.setConcatenatedLinks(jsonConcatenatedLinks)
-    }
-
-    override suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String> {
-        return myLibraryDao.getPrivateImagesCreatedAfter(timestamp)
-            .mapNotNull { it.resourceRemoteAddress }
     }
 
     override suspend fun countTeamChats(teamId: String): Long {

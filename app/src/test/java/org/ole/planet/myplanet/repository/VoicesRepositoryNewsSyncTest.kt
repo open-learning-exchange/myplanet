@@ -77,7 +77,6 @@ class VoicesRepositoryNewsSyncTest {
             Gson(),
             sharedPrefManager,
             newsDao,
-            mockk<MyLibraryDao>(relaxed = true),
             mockk<org.ole.planet.myplanet.data.room.dao.NewsLogDao>(relaxed = true)
         )
     }
