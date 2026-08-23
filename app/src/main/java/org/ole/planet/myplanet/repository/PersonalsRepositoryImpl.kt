@@ -79,12 +79,7 @@ class PersonalsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updatePersonalAfterSync(id: String, newId: String, rev: String) {
-        personalDao.findById(id)?.let { personal ->
-            personal.isUploaded = true
-            personal._id = newId
-            personal._rev = rev
-            personalDao.update(personal)
-        }
+        personalDao.updateUploadedStatus(id, newId, rev)
     }
 
     override suspend fun uploadPersonalDocument(personal: Personal): Pair<String, String>? {
