@@ -57,6 +57,7 @@ class HealthExaminationViewModelTest {
         coEvery { userRepository.ensureUserSecurityKeys("user_id") } returns mockUser
         coEvery { healthRepository.initHealth() } returns mockHealth
         coEvery { healthRepository.getExaminationById("exam_id") } returns mockExamination
+        coEvery { healthRepository.getExaminationConditions(mockExamination) } returns mapOf("Condition A" to true)
 
         val states = mutableListOf<HealthExaminationState>()
         val job = launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -75,6 +76,7 @@ class HealthExaminationViewModelTest {
         assertEquals(mockPojo, finalState.pojo)
         assertEquals(mockHealth, finalState.health)
         assertEquals(mockExamination, finalState.examination)
+        assertEquals(mapOf("Condition A" to true), finalState.conditionsMap)
 
         job.cancel()
     }
