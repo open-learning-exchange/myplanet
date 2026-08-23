@@ -89,6 +89,8 @@ class CoursesAdapter(
     companion object {
         const val PAYLOAD_PROGRESS = "payload_progress"
         const val PAYLOAD_SELECTION = "payload_selection"
+        const val PAYLOAD_VIEW_MODE = "payload_view_mode"
+        const val PAYLOAD_IDENTITY = "payload_identity"
         private const val VIEW_TYPE_GRID = 0
         private const val VIEW_TYPE_LIST = 1
 
@@ -126,7 +128,7 @@ class CoursesAdapter(
     fun setViewMode(mode: ListViewMode, onChanged: (() -> Unit)? = null) {
         if (viewMode != mode) {
             viewMode = mode
-            notifyItemRangeChanged(0, itemCount)
+            notifyItemRangeChanged(0, itemCount, PAYLOAD_VIEW_MODE)
         }
         onChanged?.invoke()
     }
@@ -134,7 +136,7 @@ class CoursesAdapter(
     fun updateIdentity(isGuest: Boolean) {
         if (this.isGuest != isGuest) {
             this.isGuest = isGuest
-            notifyItemRangeChanged(0, itemCount)
+            notifyItemRangeChanged(0, itemCount, PAYLOAD_IDENTITY)
         }
     }
 
@@ -221,16 +223,24 @@ class CoursesAdapter(
 
         val flatPayloads = payloads.flatMap { if (it is List<*>) it else listOf(it) }
         val hasSelectionPayload = flatPayloads.any { it == PAYLOAD_SELECTION }
+        val hasIdentityPayload = flatPayloads.any { it == PAYLOAD_IDENTITY }
         val hasProgressPayload = flatPayloads.any { it == PAYLOAD_PROGRESS } ||
                 flatPayloads.filterIsInstance<Bundle>().any { it.containsKey(PAYLOAD_PROGRESS) }
+        val hasViewModePayload = flatPayloads.any { it == PAYLOAD_VIEW_MODE }
 
-        if (hasProgressPayload || hasSelectionPayload) {
-            val course = getItem(position) ?: return
-            when (holder) {
-                is GridViewHolder -> holder.bindPayloads(course, hasProgressPayload, hasSelectionPayload)
-                is ListViewHolder -> holder.bindPayloads(course, hasProgressPayload, hasSelectionPayload)
+        var partialHandled = false
+        if (hasProgressPayload || hasSelectionPayload || hasIdentityPayload) {
+            val course = getItem(position)
+            if (course != null) {
+                when (holder) {
+                    is GridViewHolder -> holder.bindPayloads(course, hasProgressPayload, hasSelectionPayload, hasIdentityPayload)
+                    is ListViewHolder -> holder.bindPayloads(course, hasProgressPayload, hasSelectionPayload, hasIdentityPayload)
+                }
+                partialHandled = true
             }
-        } else {
+        }
+
+        if (hasViewModePayload || !partialHandled) {
             super.onBindViewHolder(holder, position, payloads)
         }
     }
@@ -321,11 +331,13 @@ class CoursesAdapter(
     private fun setupCheckbox(course: Course, checkbox: CheckBox, adapterPositionProvider: () -> Int) {
         if (isGuest) {
             checkbox.visibility = View.GONE
+            checkbox.setOnClickListener(null)
             return
         }
         val showCheckbox = isMyCourseLib || !course.isMyCourse
         if (!showCheckbox) {
             checkbox.visibility = View.GONE
+            checkbox.setOnClickListener(null)
             return
         }
         checkbox.visibility = View.VISIBLE
@@ -396,9 +408,9 @@ class CoursesAdapter(
             bindProgress(course)
         }
 
-        fun bindPayloads(course: Course, hasProgressPayload: Boolean, hasSelectionPayload: Boolean) {
+        fun bindPayloads(course: Course, hasProgressPayload: Boolean, hasSelectionPayload: Boolean, hasIdentityPayload: Boolean = false) {
             if (hasProgressPayload) bindProgress(course)
-            if (hasSelectionPayload) {
+            if (hasSelectionPayload || hasIdentityPayload) {
                 updateVisibilityForMyCourse(course, binding.isMyCourse, binding.checkbox)
                 setupCheckbox(course, binding.checkbox) { bindingAdapterPosition }
             }
@@ -443,9 +455,9 @@ class CoursesAdapter(
             bindStatus(course)
         }
 
-        fun bindPayloads(course: Course, hasProgressPayload: Boolean, hasSelectionPayload: Boolean) {
+        fun bindPayloads(course: Course, hasProgressPayload: Boolean, hasSelectionPayload: Boolean, hasIdentityPayload: Boolean = false) {
             if (hasProgressPayload) bindStatus(course)
-            if (hasSelectionPayload) {
+            if (hasSelectionPayload || hasIdentityPayload) {
                 updateVisibilityForMyCourse(course, binding.isMyCourse, binding.checkbox)
                 setupCheckbox(course, binding.checkbox) { bindingAdapterPosition }
             }
