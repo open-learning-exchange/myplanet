@@ -85,6 +85,15 @@ class CoursesRepositoryImpl @Inject constructor(
         val questions: List<ExamQuestion>
     )
 
+    // Shelf membership is stored as a JSON userId list; match a single entry with LIKE %"id"%.
+    private fun userIdPattern(userId: String): String {
+        val escaped = userId
+            .replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_")
+        return "%\"$escaped\"%"
+    }
+
     override suspend fun getAllCourses(): List<MyCourse> {
         return mapCourses(courseDao.getAll())
             .filter { !it.courseTitle.isNullOrEmpty() }
@@ -96,12 +105,12 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getMyCourses(userId: String): List<MyCourse> {
-        return getMyCourses(userId, mapCourses(courseDao.getAll()))
+        return mapCourses(courseDao.getForUserPattern(userIdPattern(userId)))
     }
 
     override suspend fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>> {
-        return courseDao.observeAll().map { courses ->
-            mapCourses(courses).filter { it.userId?.contains(userId) == true }
+        return courseDao.observeForUserPattern(userIdPattern(userId)).map { courses ->
+            mapCourses(courses)
         }.distinctUntilChanged { old, new ->
             old.size == new.size && old.zip(new).all { (a, b) ->
                 a.id == b.id && a.courseRev == b.courseRev && a.userId == b.userId
@@ -518,9 +527,27 @@ class CoursesRepositoryImpl @Inject constructor(
         val resources = myLibraryDao.getByStepId(stepId)
         val stepExams = examDao.getByStepIdAndType(stepId, "courses").map { it }
         val stepSurvey = examDao.getByStepIdAndType(stepId, "surveys").map { it }
-        val intermediate = CourseStepData(step, resources, stepExams, stepSurvey, false)
-        val userHasCourse = isMyCourse(userId, intermediate.step.courseId)
-        return intermediate.copy(userHasCourse = userHasCourse)
+        val userHasCourse = isMyCourse(userId, step.courseId)
+
+        val hasExam = if (stepExams.isNotEmpty()) {
+            val firstStepId = stepExams[0].id
+            submissionsRepository.hasSubmission(firstStepId, step.courseId, userId, "exam")
+        } else false
+
+        val hasSurvey = if (stepSurvey.isNotEmpty()) {
+            val firstStepId = stepSurvey[0].id
+            submissionsRepository.hasSubmission(firstStepId, step.courseId, userId, "survey")
+        } else false
+
+        return CourseStepData(
+            step = step,
+            resources = resources,
+            stepExams = stepExams,
+            stepSurvey = stepSurvey,
+            userHasCourse = userHasCourse,
+            hasExam = hasExam,
+            hasSurvey = hasSurvey
+        )
     }
 
     override suspend fun getMyCourseIds(userId: String): JsonArray {

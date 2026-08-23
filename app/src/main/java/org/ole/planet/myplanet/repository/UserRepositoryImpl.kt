@@ -405,10 +405,10 @@ class UserRepositoryImpl @Inject constructor(
         val user = getUserByName(name) ?: return
         user._id = userId
         user._rev = rev
-        user.derived_key = derivedKey
-        user.salt = salt
-        user.password_scheme = passwordScheme
-        user.iterations = iterations
+        derivedKey?.let { user.derived_key = it }
+        salt?.let { user.salt = it }
+        passwordScheme?.let { user.password_scheme = it }
+        iterations?.let { user.iterations = it }
         user.isUpdated = false
         upsertUser(user)
     }
@@ -880,6 +880,11 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun hasUserSyncAction(userId: String?): Boolean {
         if (userId.isNullOrEmpty()) return false
         return activitiesRepositoryLazy.get().hasUserSyncAction(userId)
+    }
+
+    override suspend fun hasActiveUserSyncAction(): Boolean {
+        val userId = getActiveUserIdSuspending()
+        return if (userId.isNotEmpty()) hasUserSyncAction(userId) else false
     }
 
     override suspend fun initializeAchievement(achievementId: String): Achievement? {
