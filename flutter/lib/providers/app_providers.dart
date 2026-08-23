@@ -53,6 +53,7 @@ import '../repository/submissions_exporter.dart';
 import '../repository/surveys_repository.dart';
 import '../repository/teams_repository.dart';
 import '../repository/team_tasks_repository.dart';
+import '../repository/team_log_uploader.dart';
 import '../repository/team_tasks_uploader.dart';
 import '../repository/feedback_uploader.dart';
 import '../repository/teams_uploader.dart';
@@ -120,8 +121,11 @@ final teamDaoProvider = Provider<TeamDao>(
 );
 
 final teamsRepositoryProvider = Provider<TeamsRepository>(
-  (ref) =>
-      TeamsRepository(ref.watch(planetApiProvider), ref.watch(teamDaoProvider)),
+  (ref) => TeamsRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(teamDaoProvider),
+    ref.watch(appDatabaseProvider).teamLogDao,
+  ),
 );
 final teamTaskDaoProvider = Provider<TeamTaskDao>(
   (ref) => ref.watch(appDatabaseProvider).teamTaskDao,
@@ -141,6 +145,16 @@ final teamsUploaderProvider = Provider<TeamsUploader>(
   (ref) => TeamsUploader(
     ref.watch(planetApiProvider),
     ref.watch(teamDaoProvider),
+    ref.watch(deviceIdentitySourceProvider),
+  ),
+);
+
+final teamLogUploaderProvider = Provider<TeamLogUploader>(
+  (ref) => TeamLogUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(teamsRepositoryProvider),
+    ref.watch(appDatabaseProvider).teamLogDao,
+    ref.watch(outboxRepositoryProvider),
     ref.watch(deviceIdentitySourceProvider),
   ),
 );
@@ -529,6 +543,7 @@ final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
       EventsUploader.type: ref.watch(eventsUploaderProvider).handler,
       VoicesUploader.type: ref.watch(voicesUploaderProvider).handler,
       TeamTasksUploader.type: ref.watch(teamTasksUploaderProvider).handler,
+      TeamLogUploader.type: ref.watch(teamLogUploaderProvider).handler,
       for (final type in TeamsUploader.types)
         type: ref.watch(teamsUploaderProvider).handler,
       FeedbackUploader.type: ref.watch(feedbackUploaderProvider).handler,

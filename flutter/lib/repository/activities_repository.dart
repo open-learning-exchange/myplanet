@@ -29,9 +29,10 @@ class MostOpenedResource {
 /// so every table here stays preserved across a schema bump (see
 /// `AppDatabase.localAuthorityTables`).
 ///
-/// Not ported: `myplanet_activities` (device/tablet usage telemetry, which
-/// needs a device-info plugin the port does not have) and
-/// `user_challenge_actions` (the challenge feature is unported).
+/// Not ported: `user_challenge_actions` (the challenge feature is a
+/// time-boxed promotional campaign that ran Nov 2024 – Jan 2025 and has no
+/// screen, so the row would have no reader). `myplanet_activities` is ported
+/// separately (`myplanet_activities_uploader.dart`, Phase 41).
 class ActivitiesRepository {
   ActivitiesRepository(
     this._api,

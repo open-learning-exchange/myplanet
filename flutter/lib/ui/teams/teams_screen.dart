@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../data/local/app_database.dart';
+import '../../providers/app_providers.dart';
 import '../../providers/teams_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/sync_state.dart';
@@ -145,28 +147,72 @@ class TeamsScreen extends ConsumerWidget {
   }
 }
 
-class TeamDetailScreen extends ConsumerWidget {
+class TeamDetailScreen extends ConsumerStatefulWidget {
   const TeamDetailScreen({required this.teamId, super.key});
   final String teamId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TeamDetailScreen> createState() => _TeamDetailScreenState();
+}
+
+class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
+  /// One `team_log` row per mount. `TeamDetailFragment.onViewCreated` fires
+  /// `createTeamLog` once per screen creation; a rebuild is not a revisit.
+  bool _visitLogged = false;
+
+  void _logVisitOnce(TeamRow team) {
+    if (_visitLogged) return;
+    _visitLogged = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final user = ref.read(sessionProvider).valueOrNull;
+      if (user == null) return;
+      try {
+        final config = ref.read(serverConfigProvider);
+        await ref
+            .read(teamsRepositoryProvider)
+            .logTeamVisit(
+              teamId: widget.teamId,
+              userName: user.name,
+              userPlanetCode: user.planetCode,
+              userParentCode: user.parentCode,
+              // `getEffectiveTeamType()` resolves from route args, falling
+              // back to the team document; the port has the document, which
+              // is the same value once it has loaded.
+              teamType: team.type,
+            );
+        if (config != null) {
+          await ref
+              .read(teamLogUploaderProvider)
+              .queuePending(config: config, userId: user.id);
+        }
+      } catch (_) {
+        // A visit log is telemetry; a failure must not surface on the screen.
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final memberCount = ref.watch(teamMemberCountProvider(teamId)).valueOrNull;
+    final memberCount = ref
+        .watch(teamMemberCountProvider(widget.teamId))
+        .valueOrNull;
     final memberships =
         ref.watch(teamMembershipsProvider).valueOrNull ?? const {};
     final requests =
-        ref.watch(teamRequestsProvider(teamId)).valueOrNull ?? const [];
+        ref.watch(teamRequestsProvider(widget.teamId)).valueOrNull ?? const [];
     final currentUserId = ref.watch(sessionProvider).valueOrNull?.id;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.teamDetails)),
       body: ref
-          .watch(teamProvider(teamId))
+          .watch(teamProvider(widget.teamId))
           .when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (_, _) => Center(child: Text(l10n.teamsUnavailable)),
             data: (team) {
               if (team == null) return Center(child: Text(l10n.teamNotFound));
+              _logVisitOnce(team);
               final membership =
                   memberships[team.id] ??
                   (team.teamId == null ? null : memberships[team.teamId]);

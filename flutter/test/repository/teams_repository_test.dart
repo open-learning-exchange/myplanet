@@ -25,7 +25,7 @@ void main() {
   setUp(() {
     database = AppDatabase.memory();
     api = MockPlanetApi();
-    repository = TeamsRepository(api, database.teamDao);
+    repository = TeamsRepository(api, database.teamDao, database.teamLogDao);
   });
   tearDown(() => database.close());
 
@@ -82,6 +82,7 @@ void main() {
       final local = TeamsRepository(
         api,
         database.teamDao,
+        database.teamLogDao,
         createId: () => 'report-1',
       );
       final report = await local.saveReport(
@@ -157,6 +158,7 @@ void main() {
     final local = TeamsRepository(
       api,
       database.teamDao,
+      database.teamLogDao,
       createId: () => 'link-1',
     );
     final link = await local.addResourceLink(
@@ -187,6 +189,7 @@ void main() {
     final local = TeamsRepository(
       api,
       database.teamDao,
+      database.teamLogDao,
       createId: () => 'request-1',
     );
     final request = await local.createJoinRequest(
@@ -210,6 +213,7 @@ void main() {
     final local = TeamsRepository(
       api,
       database.teamDao,
+      database.teamLogDao,
       createId: () => 'request-1',
     );
     await local.createJoinRequest(teamId: 'team', userId: 'user');
@@ -474,6 +478,7 @@ void main() {
       final local = TeamsRepository(
         api,
         database.teamDao,
+        database.teamLogDao,
         createId: () => 'tx-1',
       );
       final row = await local.createTransaction(
@@ -574,6 +579,67 @@ void main() {
     // The weekday and month abbreviations are locale-independent English.
     expect(formatted, matches(RegExp(r'^\w{3} \w{3} \d{2} 2026 \d{2}:00:00')));
     expect(formatted, contains('GMT'));
+  });
+
+  // ── Team visit logging — port of TeamsRepositoryImpl.logTeamVisit ──────
+
+  group('logTeamVisit', () {
+    test('records a teamVisit row with the user and team fields', () async {
+      final id = await repository.logTeamVisit(
+        teamId: 'team-1',
+        userName: 'ada',
+        userPlanetCode: 'earth',
+        userParentCode: 'sol',
+        teamType: 'team',
+      );
+
+      expect(id, isNotNull);
+      final rows = await repository.pendingTeamLogUploads();
+      final row = rows.single;
+      expect(row.id, id);
+      expect(row.teamId, 'team-1');
+      expect(row.user, 'ada');
+      expect(row.type, 'teamVisit');
+      expect(row.teamType, 'team');
+      expect(row.createdOn, 'earth');
+      expect(row.parentCode, 'sol');
+      expect(row.time, isNotNull);
+      expect(row.uploaded, isFalse);
+    });
+
+    test('returns null and writes nothing for a blank team id', () async {
+      final id = await repository.logTeamVisit(teamId: '', userName: 'ada');
+
+      expect(id, isNull);
+      expect(await repository.pendingTeamLogUploads(), isEmpty);
+    });
+
+    test('returns null and writes nothing for a blank user name', () async {
+      // The Kotlin's `userName.isNullOrBlank()` guard: a whitespace-only
+      // name is as absent as a null one.
+      final id = await repository.logTeamVisit(
+        teamId: 'team-1',
+        userName: '   ',
+      );
+
+      expect(id, isNull);
+      expect(await repository.pendingTeamLogUploads(), isEmpty);
+    });
+
+    test('pendingTeamLogUploads excludes rows already uploaded', () async {
+      final first = await repository.logTeamVisit(
+        teamId: 'team-1',
+        userName: 'ada',
+      );
+      final second = await repository.logTeamVisit(
+        teamId: 'team-2',
+        userName: 'ada',
+      );
+      await database.teamLogDao.markUploaded(first!, 'couch-1', '1-a');
+
+      final pending = await repository.pendingTeamLogUploads();
+      expect(pending.map((row) => row.id), [second]);
+    });
   });
 }
 

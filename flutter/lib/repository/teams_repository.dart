@@ -14,11 +14,16 @@ import 'package:drift/drift.dart';
 /// First vertical slice of `repository/TeamsRepositoryImpl.kt`: the offline
 /// team/enterprise catalog and its CouchDB refresh.
 class TeamsRepository {
-  TeamsRepository(this._api, this._dao, {String Function()? createId})
-    : _createId = createId ?? _randomId;
+  TeamsRepository(
+    this._api,
+    this._dao,
+    this._teamLogDao, {
+    String Function()? createId,
+  }) : _createId = createId ?? _randomId;
 
   final PlanetApi _api;
   final TeamDao _dao;
+  final TeamLogDao _teamLogDao;
   final String Function() _createId;
 
   Stream<List<TeamRow>> watchCatalog({String type = 'team'}) =>
@@ -35,6 +40,46 @@ class TeamsRepository {
       _dao.watchResourceLinks(teamId);
   Stream<List<TeamRow>> watchReports(String teamId) =>
       _dao.watchReports(teamId);
+
+  /// Port of `TeamsRepositoryImpl.logTeamVisit` — record a `teamVisit` action
+  /// when a user opens a team's detail screen. The row is queued for upload
+  /// to `team_activities` on the next sync; the `uploaded` flag is the only
+  /// durable record it has not yet left the device.
+  ///
+  /// Returns the new row's id, or `null` when the arguments are blank (the
+  /// Kotlin's `if (teamId.isBlank() || userName.isNullOrBlank()) return`).
+  Future<String?> logTeamVisit({
+    required String teamId,
+    String? userName,
+    String? userPlanetCode,
+    String? userParentCode,
+    String? teamType,
+  }) async {
+    if (teamId.isEmpty || userName == null || userName.trim().isEmpty) {
+      return null;
+    }
+    final id = _createId();
+    await _teamLogDao.insert(
+      TeamLogTableCompanion.insert(
+        id: id,
+        teamId: Value(teamId),
+        user: Value(userName),
+        type: const Value('teamVisit'),
+        teamType: Value(teamType),
+        createdOn: Value(userPlanetCode),
+        parentCode: Value(userParentCode),
+        time: Value(DateTime.now().millisecondsSinceEpoch),
+      ),
+    );
+    return id;
+  }
+
+  /// Rows whose `teamVisit` has not yet reached `team_activities`.
+  ///
+  /// Port of `TeamsRepositoryImpl.getPendingTeamLogUploads` — the uploader
+  /// selects these, serializes each, and POSTs it to `team_activities`.
+  Future<List<TeamLogRow>> pendingTeamLogUploads() =>
+      _teamLogDao.pendingUploads();
 
   /// Watch all transactions for a team.
   Stream<List<TeamRow>> watchTransactions(

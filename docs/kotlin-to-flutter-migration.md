@@ -3010,6 +3010,48 @@ the step entirely.
 
 ---
 
+## Phase 64 — team visit logging (`team_log` / `team_activities`)
+
+The Kotlin logs a `teamVisit` action every time a user opens a team's detail
+screen (`TeamDetailFragment.onViewCreated` → `TeamsRepositoryImpl.logTeamVisit`
+→ `team_log` table → `UploadManager.uploadTeamActivities` on the next sync).
+The Flutter port had no `team_log` table and no upload path, so visits were
+never recorded.
+
+The port now:
+
+- **`team_log` Drift table** (schema v38, preserved in `localAuthorityTables`):
+  one row per visit, carrying `teamId`/`user`/`type`/`teamType`/`createdOn`/
+  `parentCode`/`time` and the `uploaded` flag that marks delivery to
+  `team_activities`. The preservation test in `migration_test.dart` covers it.
+- **`TeamLogDao`**: `insert`, `pendingUploads` (`uploaded = false`), and
+  `markUploaded` (records couchId/rev and clears the flag) — the same shape
+  as every other local-authority uploader table.
+- **`TeamsRepository.logTeamVisit`** — port of the same-named Kotlin method:
+  blanks guard (the Kotlin's `if (teamId.isBlank() || userName.isNullOrBlank())
+  return`), then `TeamLogTableCompanion.insert`. Returns the new row's id or
+  `null`.
+- **`TeamLogUploader`** (`type: 'teamLog'`) — the outbox half: `queuePending`
+  serializes each pending row with the device identity layered on at queue
+  time (the same `DeviceIdentitySource` seam every other uploader uses) and
+  POSTs it to `team_activities`; the handler records the returned id/rev via
+  `markUploaded`.
+- **`TeamDetailScreen` converted to `ConsumerStatefulWidget`**: `_logVisitOnce`
+  fires once per mount (a rebuild is not a revisit) via
+  `addPostFrameCallback`, matching `TakeCourseScreen`'s visit-log pattern.
+  After the write it queues the pending uploads through `TeamLogUploader` so
+  the row reaches `team_activities` on the next drain.
+
+Eleven tests cover it: `logTeamVisit` writes the row with the right fields,
+blank guards return null, `pendingTeamLogUploads` excludes uploaded rows, the
+uploader endpoint is credential-free, `queuePending` enqueues pending rows
+with device identity, the handler POSTs and marks uploaded, a missing id/rev
+leaves the row pending, the preserved-table migration test survives a schema
+bump, and the widget test asserts one visit row fires on open and none for a
+guest.
+
+---
+
 **Last updated**: 2026-08-21 (Phase 61 complete — dashboard health key/IV
 sync-in ported with the 9f3fac1d9 re-entrancy guard; the stale
 courses-progress-filter spec-debt entry corrected. Phase 60 — three further
@@ -3020,5 +3062,5 @@ runtime through package_info_plus behind a testable seam; the last
 correctness gap Phase 58 flagged is closed; the team detail screens
 backfilled with 33 widget tests; duplicate `untitledResource` ARB key
 split into `untitledResource`/`untitledResourceTitle`)
-**Phase**: 61 of N (27 of 28 UI packages have a screen — see Status for what that does and
+**Phase**: 64 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

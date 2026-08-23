@@ -605,6 +605,33 @@ void main() {
     expect(survivor?.uploaded, isFalse);
   });
 
+  // A `teamVisit` the user made exists only on this device until the
+  // `TeamLogUploader` delivers it to `team_activities`. Dropping the table on
+  // a schema bump would silently lose an action the user took, so the table
+  // is preserved and the row must survive.
+  test('an un-uploaded team_log row survives a schema bump', () async {
+    await database.teamLogDao.insert(
+      TeamLogTableCompanion.insert(
+        id: 'visit-1',
+        teamId: const Value('team-1'),
+        user: const Value('ada'),
+        type: const Value('teamVisit'),
+        teamType: const Value('team'),
+        createdOn: const Value('earth'),
+        parentCode: const Value('sol'),
+        time: const Value(1000),
+        uploaded: const Value(false),
+      ),
+    );
+
+    await runUpgrade();
+
+    final survivor = await database.teamLogDao.pendingUploads();
+    expect(survivor.single.id, 'visit-1');
+    expect(survivor.single.teamId, 'team-1');
+    expect(survivor.single.uploaded, isFalse);
+  });
+
   test('every preserved table has a preservation test', () {
     // `my_life` and the submissions tables were added to the preserved set
     // without one. This fails the moment another name is added, so the next
@@ -631,6 +658,7 @@ void main() {
       'course_activity',
       'download_queue',
       'submit_photos',
+      'team_log',
     };
     expect(
       AppDatabase.localAuthorityTables,

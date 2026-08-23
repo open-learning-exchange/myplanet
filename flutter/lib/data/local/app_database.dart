@@ -57,6 +57,7 @@ part 'app_database.g.dart';
     TeamNotifications,
     DownloadQueueEntries,
     SubmitPhotosTable,
+    TeamLogTable,
   ],
   daos: [
     UserDao,
@@ -87,6 +88,7 @@ part 'app_database.g.dart';
     TeamNotificationDao,
     DownloadQueueDao,
     SubmitPhotosDao,
+    TeamLogDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -99,7 +101,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 37;
+  int get schemaVersion => 38;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -198,6 +200,12 @@ class AppDatabase extends _$AppDatabase {
     // would discard a photo (and orphan its file) the user was never warned
     // had not reached the server.
     'submit_photos',
+    // One row per `teamVisit` the user makes. The Kotlin writes the row at
+    // open time (`logTeamVisit`) and `UploadManager.uploadTeamActivities`
+    // carries it to `team_activities` on the next sync. Until the upload
+    // succeeds the row exists only here, so a schema bump would silently lose
+    // an action the user took.
+    'team_log',
   };
 
   @override
@@ -3059,6 +3067,33 @@ class SubmitPhotosDao extends DatabaseAccessor<AppDatabase>
   Future<int> markUploaded(String id, String couchId, String rev) =>
       (update(submitPhotosTable)..where((row) => row.id.equals(id))).write(
         SubmitPhotosTableCompanion(
+          couchId: Value(couchId),
+          rev: Value(rev),
+          uploaded: const Value(true),
+        ),
+      );
+}
+
+/// Port of `data/room/dao/TeamLogDao.kt`.
+@DriftAccessor(tables: [TeamLogTable])
+class TeamLogDao extends DatabaseAccessor<AppDatabase> with _$TeamLogDaoMixin {
+  TeamLogDao(super.db);
+
+  Future<void> insert(TeamLogTableCompanion row) =>
+      into(teamLogTable).insertOnConflictUpdate(row);
+
+  /// Rows whose `teamVisit` has not yet reached `team_activities`.
+  ///
+  /// Port of `TeamsRepositoryImpl.getPendingTeamLogUploads` — the uploader
+  /// selects these, serializes each, and POSTs it to `team_activities`.
+  Future<List<TeamLogRow>> pendingUploads() =>
+      (select(teamLogTable)..where((row) => row.uploaded.equals(false))).get();
+
+  /// Records that the document POST landed, mirroring
+  /// `TeamLogDao.markUploaded`.
+  Future<int> markUploaded(String id, String couchId, String rev) =>
+      (update(teamLogTable)..where((row) => row.id.equals(id))).write(
+        TeamLogTableCompanion(
           couchId: Value(couchId),
           rev: Value(rev),
           uploaded: const Value(true),

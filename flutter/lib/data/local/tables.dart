@@ -1127,3 +1127,31 @@ class SubmitPhotosTable extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Port of `model/TeamLog.kt` (`@Entity(tableName = "team_log")`) — one row
+/// per `teamVisit` a user makes to a team's detail screen. Locally authored
+/// (the Kotlin logs the visit from `TeamDetailFragment.onViewCreated` via
+/// `TeamsRepositoryImpl.logTeamVisit`) and preserved across a schema bump:
+/// the `uploaded` flag is the only durable record that the visit has not yet
+/// reached `team_activities`, and dropping the row would silently lose an
+/// action the user took.
+@DataClassName('TeamLogRow')
+class TeamLogTable extends Table {
+  @override
+  String get tableName => 'team_log';
+
+  TextColumn get id => text()();
+  TextColumn get couchId => text().named('_id').nullable()();
+  TextColumn get rev => text().named('_rev').nullable()();
+  TextColumn get teamId => text().nullable()();
+  TextColumn get user => text().nullable()();
+  TextColumn get type => text().nullable()();
+  TextColumn get teamType => text().nullable()();
+  TextColumn get createdOn => text().nullable()();
+  TextColumn get parentCode => text().nullable()();
+  IntColumn get time => integer().nullable()();
+  BoolColumn get uploaded => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

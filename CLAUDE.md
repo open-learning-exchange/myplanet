@@ -136,7 +136,10 @@ assigned there, so its show/dismiss calls are no-ops. Phase 62 ports the upload 
 user's `userdb-`+hex database during online member creation, retried 3× with the
 `changeUserSecurity` health-role grant, and `uploadNewUser` swallows its failure so the
 account still reports success. Still open: the background/outbox path for accounts created
-offline. **Ported in Phase 63.**
+offline. **Ported in Phase 63.** Phase 64 ports team visit logging (`team_log` /
+`team_activities`): `TeamDetailScreen` fires `logTeamVisit` once per mount (a rebuild is
+not a revisit) via `addPostFrameCallback`, and `TeamLogUploader` carries the row to
+`team_activities` through the outbox with device identity layered on at queue time.
 
 ### Documentation Map
 
