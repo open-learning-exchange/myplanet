@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
 #
+# What does the playstore track still owe the newest GitHub release?
+#
 #   playstore.sh track-code   # highest versionCode on $PLAYSTORE_TRACK
 #   playstore.sh pending      # key=value: what (if anything) to publish
 #
-# `pending` checks the newest release run's publish warning and the release's
-# own .aab before it spends a playstore call. Auth is the release workflow's
-# service account, JWT minted with openssl; reading a track opens an edit that
-# is deleted again, and only edits.commit spends save quota.
+# `pending` spends nothing on the playstore until two cheap checks pass: the
+# newest release run on $BASE must have warned that its publish failed, and the
+# release must carry the signed .aab the release workflow built.
+#
+# Auth is the release workflow's service account; the JWT is minted with
+# openssl so the job needs nothing installed. Reading a track needs an edit,
+# but only edits.commit spends the daily save quota -- the edit opened here is
+# deleted again, unsaved.
 set -euo pipefail
 
 REPO="${REPO:?}"

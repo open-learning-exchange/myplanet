@@ -1,16 +1,26 @@
 name: myPlanet playstore
 
-# Publish a master build the playstore refused. Play holds about 48 save slots
-# per app, each freeing 24h after its own use, and answers a save that finds
-# none free with "Daily save quota exceeded." -- the build stays tagged and
-# released on GitHub but off the track, and the automerge drain stops there.
+# The release workflow uploads every master build to the playstore internal
+# track. Play holds about 48 save slots per app, each freeing 24h after its own
+# use, and answers a save that finds none free with "Daily save quota
+# exceeded." -- that build stays tagged and released on GitHub but never
+# reaches the track, and the automerge drain stops there.
 #
-# Started by hand only: the Run workflow button (the link the release warning
-# and the automerge stop print), gh workflow run playstore.yml, or a
-# repository_dispatch webhook with event_type playstore (no inputs, so the
-# defaults). When the track is behind it re-uploads the newest release's signed
-# .aab -- no rebuild, no new version code -- and wait_minutes may sit on a
-# runner until the estimated slot opens. Needs SERVICE_ACCOUNT_JSON.
+# This closes the gap without a human downloading an .aab: when the track is
+# behind the newest GitHub release it re-uploads that release's signed bundle
+# -- the exact file the release workflow built, no rebuild and no new version
+# code. When the track is current it costs two API calls and stops.
+#
+# Started by hand, never on a schedule: the Run workflow button (the link the
+# release warning and the automerge stop both print), gh workflow run
+# playstore.yml, or a repository_dispatch webhook with event_type playstore
+# (no inputs, so the defaults below).
+#
+# It cannot beat the quota, only wait it out: wait_minutes lets a run sit on a
+# runner until the estimated slot opens, otherwise start it again later -- the
+# report says when, and how many slots follow the first.
+#
+# Needs SERVICE_ACCOUNT_JSON, the secret the release workflow publishes with.
 on:
   repository_dispatch:
     types: [playstore]
@@ -151,7 +161,7 @@ jobs:
           fi
           echo "published=$published" >> "$GITHUB_OUTPUT"
 
-      # a quota that has not lifted is not a broken run: stay green, warn
+      # a quota that has not lifted is not a broken run: stay green and warn
       - name: report what happened
         if: always()
         run: |

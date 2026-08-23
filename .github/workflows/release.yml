@@ -159,6 +159,6 @@ jobs:
       - name: warn that the playstore upload failed
         if: github.event_name != 'workflow_dispatch' && matrix.build == 'lite' && steps.playstore.outcome == 'failure' && steps.playstore_fallback.outcome == 'failure'
         run: |
-          MESSAGE="playstore upload failed twice: ${{ env.PLAYSTORE_RELEASE_NAME }} was not published. If it hit the daily save quota, start the playstore workflow (${{ github.server_url }}/${{ github.repository }}/actions/workflows/playstore.yml) and it publishes this bundle from its GitHub release without a rebuild; the automerge drain stays stopped until it lands."
+          MESSAGE="playstore upload failed twice: ${{ env.PLAYSTORE_RELEASE_NAME }} was not published, and the automerge drain stops until it is. Publish it without a rebuild: ${{ github.server_url }}/${{ github.repository }}/actions/workflows/playstore.yml"
           echo "::warning::${MESSAGE}"
           echo "### ${MESSAGE}" >> $GITHUB_STEP_SUMMARY
