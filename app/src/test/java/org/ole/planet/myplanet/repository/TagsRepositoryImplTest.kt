@@ -89,6 +89,36 @@ class TagsRepositoryImplTest {
     }
 
     @Test
+    fun `getTagsForResources bulk lookup resolves 1000 items`() = runTest {
+        val resourceIds = (1..1000).map { "res$it" }
+        val linkTags = resourceIds.mapIndexed { index, resId ->
+            TagEntity().apply {
+                db = "resources"
+                linkId = resId
+                tagId = "tag$index"
+            }
+        }
+        val parentTags = (0 until 1000).map { index ->
+            TagEntity().apply { id = "tag$index"; name = "Parent Tag $index" }
+        }
+
+        coEvery { tagDao.getByDbAndLinkIds("resources", any()) } answers {
+            val queriedLinkIds = it.invocation.args[1] as List<String>
+            linkTags.filter { link -> queriedLinkIds.contains(link.linkId) }
+        }
+        coEvery { tagDao.getByIds(any()) } answers {
+            val queriedTagIds = it.invocation.args[0] as List<String>
+            parentTags.filter { tag -> queriedTagIds.contains(tag.id) }
+        }
+
+        val result = repository.getTagsForResources(resourceIds)
+
+        assertEquals(1000, result.size)
+        assertEquals("Parent Tag 0", result["res1"]?.get(0)?.name)
+        assertEquals("Parent Tag 999", result["res1000"]?.get(0)?.name)
+    }
+
+    @Test
     fun `getTagsForResource resolves linked tags through tagId lookup`() = runTest {
         val resourceId = "res1"
         val tagId = "tag1"

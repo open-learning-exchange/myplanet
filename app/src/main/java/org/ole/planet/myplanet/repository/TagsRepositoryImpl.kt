@@ -9,6 +9,9 @@ import org.ole.planet.myplanet.utils.JsonUtils
 class TagsRepositoryImpl @Inject constructor(
     private val tagDao: TagDao,
 ) : TagsRepository {
+    companion object {
+        private const val MAX_IN_PARAMS = 900 // SQLITE_MAX_VARIABLE_NUMBER is 999 on API 26-30
+    }
 
     override suspend fun getTags(dbType: String?): List<TagEntity> {
         return tagDao.getParentTags(dbType)
@@ -61,9 +64,6 @@ class TagsRepositoryImpl @Inject constructor(
         }
         return chunkedIn(matchingTagIds) { tagDao.getByDbAndTagIds(dbType, it) }.mapNotNull { it.linkId }
     }
-
-    private suspend fun <T> chunkedIn(ids: List<String>, query: suspend (List<String>) -> List<T>): List<T> =
-        if (ids.size <= 900) query(ids) else ids.chunked(900).flatMap { query(it) }
 
     private suspend fun getLinkedTagsBulk(db: String, linkIds: List<String>): Map<String, List<TagEntity>> {
         if (linkIds.isEmpty()) {
@@ -153,4 +153,7 @@ class TagsRepositoryImpl @Inject constructor(
         tag.isAttached = attachedTo.size > 0
         return tag
     }
+
+    private suspend fun <T> chunkedIn(ids: List<String>, query: suspend (List<String>) -> List<T>): List<T> =
+        if (ids.size <= MAX_IN_PARAMS) query(ids) else ids.chunked(MAX_IN_PARAMS).flatMap { query(it) }
 }
