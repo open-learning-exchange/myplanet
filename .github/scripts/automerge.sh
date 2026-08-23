@@ -14,6 +14,7 @@ LABEL="${LABEL:?}"
 GRADLE_FILE="${GRADLE_FILE:?}"
 VERSION_SH="${VERSION_SH:?}"
 COAUTHORS_SH="${COAUTHORS_SH:?}"
+QUOTA_SH="${QUOTA_SH:-}"
 REQUIRE_CHECKS="${REQUIRE_CHECKS:-true}"
 REQUIRED_WORKFLOWS="${REQUIRED_WORKFLOWS:-}"
 PUBLISH_JOB="${PUBLISH_JOB:-}"
@@ -268,6 +269,22 @@ publish_failed() {
     return 1
 }
 
+# What stops a publish is almost always the playstore daily save quota, and
+# Play never says when it lifts -- so estimate it, and name who retries.
+quota_note() {
+    quota_report=""
+    quota_eta=""
+    [ -n "$QUOTA_SH" ] && [ -x "$QUOTA_SH" ] || return 0
+
+    local status
+    status=$("$QUOTA_SH" status 2>/dev/null) || return 0
+    eval "$(sed -n "s/^report=/quota_report=/p; s/^next_free_local=/quota_eta=/p" <<<"$status")" || return 0
+
+    [ -n "$quota_report" ] && log "  $quota_report"
+    [ -n "$quota_eta" ] && log "  the playstore workflow retries every 30 minutes and publishes it once a slot frees"
+    return 0
+}
+
 base_already_failed() {
     local sha=$1 runs bad
     runs=$(runs_for "$sha" "$BASE")
@@ -360,7 +377,8 @@ while :; do
 
     if [ "$REQUIRE_CHECKS" = 'true' ] && publish_failed "$base_at_prepare"; then
         log "the release on $BASE (${base_at_prepare:0:7}) was not published -- stopping the drain"
-        summary "| | | **stopped**: release on \`$BASE\` not published |"
+        quota_note
+        summary "| | | **stopped**: release on \`$BASE\` not published${quota_eta:+, next playstore slot around $quota_eta} |"
         exit 1
     fi
 
@@ -468,7 +486,8 @@ while :; do
 
         if publish_failed "$(git rev-parse "origin/$BASE")"; then
             log "the release of the last merge was not published -- stopping before #$NUMBER"
-            summary "| #$NUMBER | → \`$new_name\` | **stopped**: release of the last merge not published |"
+            quota_note
+            summary "| #$NUMBER | → \`$new_name\` | **stopped**: release of the last merge not published${quota_eta:+, next playstore slot around $quota_eta} |"
             exit 1
         fi
 
