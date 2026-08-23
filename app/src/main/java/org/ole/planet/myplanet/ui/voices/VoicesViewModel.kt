@@ -212,4 +212,23 @@ class VoicesViewModel @Inject constructor(
         allLabels.sorted()
     }
 
+    fun downloadReferencedResources(list: List<News?>) {
+        val resourceIds = mutableSetOf<String>()
+        list.forEach { news ->
+            if ((news?.imagesArray?.size() ?: 0) > 0) {
+                val ob = news?.imagesArray?.get(0)?.asJsonObject
+                val resourceId = JsonUtils.getString("resourceId", ob?.asJsonObject)
+                if (!resourceId.isNullOrBlank()) {
+                    resourceIds.add(resourceId)
+                }
+            }
+        }
+        viewModelScope.launch {
+            if (resourceIds.isNotEmpty()) {
+                val libraries = resourcesRepository.getLibraryItemsByIds(resourceIds)
+                resourcesRepository.downloadResources(libraries)
+            }
+        }
+    }
+
 }
