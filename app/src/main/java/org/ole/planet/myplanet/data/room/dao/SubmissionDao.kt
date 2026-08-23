@@ -10,7 +10,6 @@ import org.ole.planet.myplanet.model.Submission
 interface SubmissionDao {
     @Query("SELECT * FROM submissions WHERE id = :id OR _id = :id LIMIT 1") suspend fun getByIdOrRemoteId(id: String): Submission?
     @Query("SELECT * FROM submissions WHERE id IN (:ids)") suspend fun getByIds(ids: List<String>): List<Submission>
-    @Query("SELECT * FROM submissions WHERE userId = :userId") suspend fun getByUserId(userId: String): List<Submission>
     @Query("SELECT * FROM submissions WHERE userId = :userId AND teamId = :teamId") suspend fun getByUserIdAndTeamId(userId: String, teamId: String): List<Submission>
     @Query("SELECT * FROM submissions WHERE userId = :userId AND teamId IS NULL") suspend fun getByUserIdWithoutTeam(userId: String): List<Submission>
     @Query("SELECT * FROM submissions WHERE userId = :userId AND type = 'exam'") suspend fun getExamSubmissionsByUser(userId: String?): List<Submission>
