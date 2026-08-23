@@ -23,7 +23,7 @@ import org.robolectric.util.ReflectionHelpers
 
 @HiltAndroidTest
 @RunWith(RobolectricTestRunner::class)
-@Config(application = HiltTestApplication::class, sdk = [33])
+@Config(application = HiltTestApplication::class)
 @LooperMode(LooperMode.Mode.PAUSED)
 class NetworkUtilsTest {
 

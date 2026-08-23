@@ -430,29 +430,7 @@ class ChatDetailFragment : Fragment() {
     }
 
     fun checkAiProviders() {
-        if (!sharedViewModel.shouldFetchAiProviders()) {
-            return
-        }
-
-        sharedViewModel.setAiProvidersLoading(true)
-        sharedViewModel.setAiProvidersError(false)
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            val providers = sharedViewModel.fetchAiProviders(serverUrl)
-            sharedViewModel.setAiProvidersLoading(false)
-            if (providers == null || providers.values.all { !it }) {
-                val cachedProviders = getCachedProviderAvailability()
-                if (cachedProviders != null) {
-                    sharedViewModel.setAiProvidersError(false)
-                    sharedViewModel.setAiProviders(cachedProviders)
-                } else {
-                    sharedViewModel.setAiProvidersError(true)
-                    sharedViewModel.setAiProviders(null)
-                }
-            } else {
-                sharedViewModel.setAiProviders(providers)
-            }
-        }
+        sharedViewModel.fetchAiProviders(serverUrl, getCachedProviderAvailability())
     }
 
     private fun updateAIButtons(aiProvidersResponse: Map<String, Boolean>) {
