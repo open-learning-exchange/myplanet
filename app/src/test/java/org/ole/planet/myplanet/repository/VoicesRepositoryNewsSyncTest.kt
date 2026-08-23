@@ -33,7 +33,7 @@ import org.robolectric.annotation.Config
  * batched existing-row dedup (the former N+1), and the top-level/reply queries the UI relies on.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(application = Application::class, sdk = [26])
+@Config(application = Application::class)
 class VoicesRepositoryNewsSyncTest {
 
     private lateinit var db: AppDatabase

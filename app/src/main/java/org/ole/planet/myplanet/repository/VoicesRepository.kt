@@ -22,7 +22,7 @@ data class NewsUpdateData(
     val imagesArray: JsonArray
 )
 
-interface VoicesRepository {
+interface VoicesRepository : VoicesEditActions {
     suspend fun getNewsForUpload(): List<NewsUploadData>
     suspend fun markNewsUploaded(updates: List<NewsUpdateData>)
     suspend fun getCommunityNews(userIdentifier: String): Flow<List<News>>
@@ -39,9 +39,6 @@ interface VoicesRepository {
     suspend fun addLabel(newsId: String, label: String)
     suspend fun removeLabel(newsId: String, label: String)
     suspend fun getCommunityVoiceDates(startTime: Long, endTime: Long, userId: String?): List<String>
-    suspend fun getNewsById(id: String): News?
-    suspend fun postReply(message: String, news: News, currentUser: UserEntity, imageList: List<String>?)
-    suspend fun editPost(newsId: String, message: String, imagesToRemove: Set<String>, newImages: List<String>?): News?
     suspend fun getPlanetNewsMessages(planetCode: String?): List<News>
     suspend fun insertNewsList(docs: List<JsonObject>)
     suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String>
