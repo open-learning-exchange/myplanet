@@ -1,29 +1,14 @@
 #!/usr/bin/env bash
 #
-# Estimate the Google Play daily save quota for this app from the GitHub
-# release history. Every release on master is one playstore save, so counting
-# releases counts saves; Play answers the save past the limit with
-# "Daily save quota exceeded." and never says when the next slot opens.
+#   playstore-quota.sh {status|report}   # key=value / one human line
 #
-#   playstore-quota.sh status   # key=value, eval-friendly
-#   playstore-quota.sh report   # just the one-line human summary
-#
-# The quota behaves as a pool of LIMIT slots where each slot frees 24h after
-# its own use -- not as a counter reset at midnight anywhere. 6514 was refused
-# at 02:57 Pacific on 2026-08-18 with only 10 saves made that Pacific day, and
-# 49 in the preceding 24h; no calendar-day reset can produce that.
-#
-# So: next slot = the oldest save still holding one, plus 24h. Saves past LIMIT
-# inside the window were refused, and a refusal holds no slot, so the oldest
-# save in the window is the oldest slot in use -- and slots keep freeing at the
-# cadence they were spent, which is why the report says how many follow.
-#
-# It stays an estimate, and nothing gates on it -- the playstore workflow
-# retries every 30 minutes whatever this says. Releases are only a proxy for
-# saves: a hand upload from the Play Console, a re-run, or that retry spends a
-# slot without adding a release (answer too early), while a refused upload adds
-# a release without spending one (answer too late). Give or take a couple of
-# slots. Times print in eastern.
+# Estimates the playstore save quota from the release history (one release on
+# master is one save). The quota is a pool of LIMIT slots each freeing 24h
+# after its own use, not a midnight reset -- 6514 was refused at 02:57 Pacific
+# on 2026-08-18 after 10 saves that Pacific day. So the next slot is the oldest
+# save still holding one plus 24h; saves past LIMIT in the window were refused
+# and hold nothing. Advisory only: hand uploads and re-runs spend slots that
+# leave no release behind, refusals leave releases that hold no slot.
 set -euo pipefail
 
 REPO="${REPO:?}"
@@ -39,8 +24,7 @@ die() { echo "playstore-quota.sh: $*" >&2; exit 1; }
 case "$LIMIT" in *[!0-9]*|"") die "PLAYSTORE_DAILY_LIMIT must be a number, got '$LIMIT'" ;; esac
 [ "$LIMIT" -gt 0 ] || die "PLAYSTORE_DAILY_LIMIT must be greater than 0"
 
-# Save epochs, newest first. gh api output and a captured fixture are the same
-# shape, so tests can point RELEASES_JSON at a file instead of the network.
+# Save epochs, newest first. RELEASES_JSON points tests at a captured fixture.
 save_epochs() {
     local raw
     if [ -n "$RELEASES_JSON" ]; then
@@ -78,8 +62,7 @@ status() {
         report="playstore save quota: $used of $LIMIT slots used -- $free free now"
     else
         next=$((oldest + WINDOW_SEC))
-        # Slots ageing out within the hour after it, so a drain knows whether
-        # it gets one save or a handful.
+        # slots ageing out within the hour after it: one save, or a handful?
         for e in "${live[@]}"; do
             [ "$e" -gt "$oldest" ] && [ "$e" -le $((oldest + 3600)) ] && soon=$((soon + 1))
         done

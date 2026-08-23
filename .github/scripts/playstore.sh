@@ -1,22 +1,12 @@
 #!/usr/bin/env bash
 #
-# What does the playstore track still owe the newest GitHub release?
-#
 #   playstore.sh track-code   # highest versionCode on $PLAYSTORE_TRACK
 #   playstore.sh pending      # key=value: what (if anything) to publish
 #
-# `pending` answers in two cheap steps before it spends a playstore call:
-#
-#   1. the newest release run on $BASE -- if its publish job did not warn,
-#      that build reached the track and there is nothing to do
-#   2. the newest GitHub release -- its tag names the versionCode, and its
-#      signed .aab is the very file the release workflow already uploaded
-#   3. only then: what the track actually has, and whether it is behind
-#
-# Auth is the release workflow's service account; the JWT is minted with
-# openssl so the job needs nothing installed. Reading a track needs an edit,
-# but only edits.commit spends the daily save quota -- the edit opened here is
-# deleted again, unsaved.
+# `pending` checks the newest release run's publish warning and the release's
+# own .aab before it spends a playstore call. Auth is the release workflow's
+# service account, JWT minted with openssl; reading a track opens an edit that
+# is deleted again, and only edits.commit spends save quota.
 set -euo pipefail
 
 REPO="${REPO:?}"
@@ -63,7 +53,6 @@ access_token() {
     printf '%s\n' "$token"
 }
 
-# Highest versionCode on the track, 0 if the track is empty.
 track_code() {
     local token edit body code
     token=$(access_token) || return 1
@@ -90,8 +79,7 @@ code_for() {
     printf '%s\n' "$(( 10#${BASH_REMATCH[1]} * 10000 + 10#${BASH_REMATCH[2]} * 100 + 10#${BASH_REMATCH[3]} ))"
 }
 
-# Did the newest release run on $BASE report a failed publish? 0 = yes (or the
-# answer is not knowable), 1 = no, that build reached the track.
+# 0 = the newest release run on $BASE warned (or cannot say), 1 = it published.
 release_run_warned() {
     local run job_id concl
     run=$(gh api "repos/$REPO/actions/workflows/$RELEASE_WORKFLOW/runs?branch=$BASE&event=push&per_page=1" \
