@@ -8,19 +8,21 @@
 #   playstore-quota.sh status   # key=value, eval-friendly
 #   playstore-quota.sh report   # just the one-line human summary
 #
-# The reset is guessed two ways and the earlier one wins:
+# The quota behaves as a pool of LIMIT slots where each slot frees 24h after
+# its own use -- not as a counter reset at midnight anywhere. 6514 was refused
+# at 02:57 Pacific on 2026-08-18 with only 10 saves made that Pacific day, and
+# 49 in the preceding 24h; no calendar-day reset can produce that. So the next
+# slot opens 24h after the LIMIT-th newest save, and saves keep freeing at the
+# cadence they were spent.
 #
-#   reset   -- Google API daily quotas roll over at midnight Pacific
-#   rolling -- the LIMIT-th newest save ages out of a rolling 24h window
-#
-# Both are estimates: a release whose upload failed still counts here, which
-# only ever makes the answer late, never early. Times print in eastern.
+# It stays an estimate: a refused upload still counts here (it consumes no slot
+# in reality) and a re-run spends a slot without adding a release, so treat the
+# answer as give-or-take a slot. Times print in eastern.
 set -euo pipefail
 
 REPO="${REPO:?}"
 LIMIT="${PLAYSTORE_DAILY_LIMIT:-48}"
 QUOTA_TZ="${PLAYSTORE_QUOTA_TZ:-America/New_York}"
-RESET_TZ="${PLAYSTORE_RESET_TZ:-America/Los_Angeles}"
 RELEASES_JSON="${RELEASES_JSON:-}"
 NOW_EPOCH="${NOW_EPOCH:-$(date -u +%s)}"
 
@@ -49,39 +51,35 @@ save_epochs() {
 fmt() { TZ="$QUOTA_TZ" date -d "@$1" '+%a %b %-d %H:%M %Z'; }
 iso() { date -u -d "@$1" '+%Y-%m-%dT%H:%M:%SZ'; }
 
-# Midnight in the quota's own timezone, one day on from now. Named by the day
-# 24h out rather than with a "+1 day" modifier, which date reads as an offset.
-reset_epoch() {
-    local tomorrow
-    tomorrow=$(TZ="$RESET_TZ" date -d "@$((NOW_EPOCH + WINDOW_SEC))" +%Y-%m-%d)
-    TZ="$RESET_TZ" date -d "$tomorrow 00:00" +%s
-}
-
 status() {
     local window_start=$((NOW_EPOCH - WINDOW_SEC))
     local used=0 nth="" e
+    local -a live=()
     while read -r e; do
         [ -n "$e" ] || continue
         [ "$e" -gt "$window_start" ] || continue
         used=$((used + 1))
+        live+=("$e")
         [ "$used" -eq "$LIMIT" ] && nth="$e"
     done < <(save_epochs)
 
     local free=$((LIMIT - used))
     [ "$free" -ge 0 ] || free=0
-    local reset rolling next report
-    reset=$(reset_epoch)
 
+    local next report soon=0
     if [ "$used" -lt "$LIMIT" ]; then
         next="$NOW_EPOCH"
-        rolling="$NOW_EPOCH"
-        report="playstore save quota: $used of $LIMIT saves used in the last 24h -- $free slot(s) free"
+        report="playstore save quota: $used of $LIMIT slots used -- $free free now"
     else
-        # The LIMIT-th newest save leaves the window LIMIT-th first.
-        rolling=$((nth + WINDOW_SEC))
-        next="$reset"
-        [ "$rolling" -lt "$next" ] && next="$rolling"
-        report="playstore save quota: $used of $LIMIT saves used in the last 24h -- next slot around $(fmt "$next") (midnight PT reset $(fmt "$reset"), rolling 24h window $(fmt "$rolling"))"
+        # The LIMIT-th newest save is holding the slot the next save needs.
+        next=$((nth + WINDOW_SEC))
+        # Slots whose 24h is up within the hour after that, so a drain knows
+        # whether it gets one save or a handful.
+        for e in "${live[@]}"; do
+            [ "$e" -lt "$nth" ] && [ $((e + WINDOW_SEC)) -le $((next + 3600)) ] && soon=$((soon + 1))
+        done
+        report="playstore save quota: $used of $LIMIT slots used -- next frees $(fmt "$next"), 24h after the save at $(fmt "$nth")"
+        [ "$soon" -gt 0 ] && report="$report (then $soon more within the hour)"
     fi
 
     echo "limit=$LIMIT"
@@ -91,8 +89,7 @@ status() {
     echo "next_free_epoch=$next"
     echo "next_free_iso=$(iso "$next")"
     echo "next_free_local='$(fmt "$next")'"
-    echo "reset_local='$(fmt "$reset")'"
-    echo "rolling_local='$(fmt "$rolling")'"
+    echo "frees_within_hour=$soon"
     echo "report='$report'"
 }
 
