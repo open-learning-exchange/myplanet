@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 class ActivitiesFragment : Fragment() {
     private var _binding: FragmentActivitiesBinding? = null
     private val binding get() = _binding!!
+    private val months = DateFormatSymbols().months
     @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
@@ -121,8 +122,8 @@ class ActivitiesFragment : Fragment() {
         }
     }
 
-    fun getMonth(month: Int): String {
-        return DateFormatSymbols().months[month]
+    internal fun getMonth(month: Int): String {
+        return months[month]
     }
 
     override fun onDestroyView() {
