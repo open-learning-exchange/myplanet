@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.data.room.dao
 
 import androidx.room.Dao
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Upsert
 import java.util.Date
 import org.ole.planet.myplanet.model.AppNotification
@@ -46,6 +47,13 @@ interface NotificationDao {
 
     @Query("UPDATE notifications SET needsSync = 0, rev = COALESCE(:rev, rev) WHERE id = :id")
     suspend fun markSynced(id: String, rev: String?)
+
+    @Transaction
+    suspend fun markSynced(syncResults: List<Pair<String, String?>>) {
+        syncResults.forEach { (id, rev) ->
+            markSynced(id, rev)
+        }
+    }
 
     @Query("DELETE FROM notifications WHERE id IN (:ids)")
     suspend fun deleteByIds(ids: List<String>): Int

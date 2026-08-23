@@ -55,7 +55,6 @@ interface ResourcesRepository {
     suspend fun updateUserLibrary(resourceId: String, userId: String, isAdd: Boolean): MyLibrary?
     suspend fun updateLibraryItem(id: String, updater: (MyLibrary) -> Unit)
     suspend fun markResourceOfflineByUrl(url: String)
-    suspend fun markAllResourcesOffline(isOffline: Boolean)
     suspend fun saveSearchActivity(
         userName: String,
         searchText: String,
@@ -107,6 +106,7 @@ interface ResourcesRepository {
     suspend fun trackResourceOpen(item: MyLibrary)
     suspend fun getOfflineResourceItems(oleDirPath: String, extensions: Set<String>, allKnownExtensions: Set<String>): List<OfflineResourceItem>
     suspend fun deleteOfflineResources(oleDirPath: String, items: List<OfflineResourceItem>)
+    suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String>
 }
 
 sealed class ResourceUrlsResponse {
