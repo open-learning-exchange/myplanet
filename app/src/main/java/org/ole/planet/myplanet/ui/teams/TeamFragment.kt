@@ -67,6 +67,8 @@ class TeamFragment : Fragment() {
         binding.addTeam.setOnClickListener { createTeamAlert(null) }
         binding.tvFragmentInfo.text = if (TextUtils.equals(type, "enterprise")) {
             getString(R.string.enterprises)
+        } else if (fromDashboard) {
+            getString(R.string.txt_myTeams)
         } else {
             getString(R.string.team)
         }

@@ -26,8 +26,6 @@ import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnSurveyAdoptListener
 import org.ole.planet.myplanet.databinding.FragmentSurveyBinding
 import org.ole.planet.myplanet.model.StepExam
-import org.ole.planet.myplanet.model.SurveyFormState
-import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
@@ -43,8 +41,6 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
     private val mutex = Mutex()
     private var isTeam: Boolean = false
     private var teamId: String? = null
-    private val surveyInfoMap = mutableMapOf<String, SurveyInfo>()
-    private val bindingDataMap = mutableMapOf<String, SurveyFormState>()
     private val viewModel: SurveysViewModel by viewModels()
 
     @Inject
@@ -84,9 +80,7 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
                     userProfileModel?.id,
                     isTeam,
                     teamId,
-                    this@SurveyFragment,
-                    surveyInfoMap,
-                    bindingDataMap
+                    this@SurveyFragment
                 )
             }
         }
@@ -177,16 +171,6 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
                 recyclerView.scrollToPosition(0)
                 updateUIState()
             }
-        }
-        collectWhenStarted(viewModel.surveyInfos) { infos ->
-            surveyInfoMap.clear()
-            surveyInfoMap.putAll(infos)
-            getAdapter().notifyDataSetChanged()
-        }
-        collectWhenStarted(viewModel.bindingData) { data ->
-            bindingDataMap.clear()
-            bindingDataMap.putAll(data)
-            getAdapter().notifyDataSetChanged()
         }
         collectWhenStarted(viewModel.isLoading) { isLoading ->
             binding.loadingSpinner.visibility = if (isLoading) View.VISIBLE else View.GONE
