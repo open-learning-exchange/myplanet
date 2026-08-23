@@ -527,9 +527,27 @@ class CoursesRepositoryImpl @Inject constructor(
         val resources = myLibraryDao.getByStepId(stepId)
         val stepExams = examDao.getByStepIdAndType(stepId, "courses").map { it }
         val stepSurvey = examDao.getByStepIdAndType(stepId, "surveys").map { it }
-        val intermediate = CourseStepData(step, resources, stepExams, stepSurvey, false)
-        val userHasCourse = isMyCourse(userId, intermediate.step.courseId)
-        return intermediate.copy(userHasCourse = userHasCourse)
+        val userHasCourse = isMyCourse(userId, step.courseId)
+
+        val hasExam = if (stepExams.isNotEmpty()) {
+            val firstStepId = stepExams[0].id
+            submissionsRepository.hasSubmission(firstStepId, step.courseId, userId, "exam")
+        } else false
+
+        val hasSurvey = if (stepSurvey.isNotEmpty()) {
+            val firstStepId = stepSurvey[0].id
+            submissionsRepository.hasSubmission(firstStepId, step.courseId, userId, "survey")
+        } else false
+
+        return CourseStepData(
+            step = step,
+            resources = resources,
+            stepExams = stepExams,
+            stepSurvey = stepSurvey,
+            userHasCourse = userHasCourse,
+            hasExam = hasExam,
+            hasSurvey = hasSurvey
+        )
     }
 
     override suspend fun getMyCourseIds(userId: String): JsonArray {
