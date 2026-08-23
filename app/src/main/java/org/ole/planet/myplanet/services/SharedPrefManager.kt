@@ -271,17 +271,15 @@ class SharedPrefManager @Inject constructor(
     fun setRawLong(key: String, value: Long) = pref.edit { putLong(key, value) }
     fun removeKey(key: String) = pref.edit { remove(key) }
     fun clearPreferences() {
-        val editor = pref.edit()
         val keysToKeep = setOf(FIRST_LAUNCH, MANUAL_CONFIG)
         val tempStorage = HashMap<String, Boolean>()
         for (key in keysToKeep) {
             tempStorage[key] = pref.getBoolean(key, false)
         }
-        editor.clear().apply()
-        for ((key, value) in tempStorage) {
-            editor.putBoolean(key, value)
+        pref.edit {
+            clear()
+            tempStorage.forEach { (k, v) -> putBoolean(k, v) }
         }
-        editor.commit()
         val defaultPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         defaultPreferences.edit { clear() }
     }
