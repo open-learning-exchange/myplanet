@@ -141,6 +141,13 @@ class ProgressRepositoryImpl @Inject constructor(
     private suspend fun submissionMap(
         submissions: List<Submission>, examIds: List<String>, obj: JsonObject
     ) {
+        val examIndexMap = HashMap<String, String>()
+        examIds.forEachIndexed { index, id ->
+            if (!examIndexMap.containsKey(id)) {
+                examIndexMap[id] = index.toString()
+            }
+        }
+
         val submissionIds = submissions.mapNotNull { it.id }
         val allAnswers = if (submissionIds.isEmpty()) emptyList() else answerDao.getBySubmissionIds(submissionIds).map { it }
 
@@ -157,10 +164,12 @@ class ProgressRepositoryImpl @Inject constructor(
             answers.forEach { r ->
                 r.questionId?.let { questionId ->
                     val question = questionsMap[questionId]
-                    if (question != null && examIds.contains(question.examId)) {
-                        totalMistakes += r.mistakes
-                        val examIndexKey = examIds.indexOf(question.examId).toString()
-                        mistakesMap[examIndexKey] = (mistakesMap[examIndexKey] ?: 0) + r.mistakes
+                    if (question != null) {
+                        val examIndexKey = examIndexMap[question.examId]
+                        if (examIndexKey != null) {
+                            totalMistakes += r.mistakes
+                            mistakesMap[examIndexKey] = (mistakesMap[examIndexKey] ?: 0) + r.mistakes
+                        }
                     }
                 }
             }

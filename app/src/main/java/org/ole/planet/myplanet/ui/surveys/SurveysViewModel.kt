@@ -7,13 +7,17 @@ import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
+import org.ole.planet.myplanet.model.SurveyRow
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
@@ -43,13 +47,18 @@ class SurveysViewModel @Inject constructor(
     private var filterSortJob: Job? = null
 
     private val _surveys = MutableStateFlow<List<StepExam>>(emptyList())
-    val surveys: StateFlow<List<StepExam>> = _surveys.asStateFlow()
 
     private val _surveyInfos = MutableStateFlow<Map<String, SurveyInfo>>(emptyMap())
     val surveyInfos: StateFlow<Map<String, SurveyInfo>> = _surveyInfos.asStateFlow()
 
     private val _bindingData = MutableStateFlow<Map<String, SurveyFormState>>(emptyMap())
     val bindingData: StateFlow<Map<String, SurveyFormState>> = _bindingData.asStateFlow()
+
+    val surveys: StateFlow<List<SurveyRow>> = combine(_surveys, _surveyInfos, _bindingData) { surveys, infos, bindingData ->
+        surveys.map { exam ->
+            SurveyRow(exam, infos[exam.id], bindingData[exam.id])
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
