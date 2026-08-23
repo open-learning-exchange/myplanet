@@ -62,16 +62,15 @@ class ActivitiesFragment : Fragment() {
         endMillis: Long
     ): Map<Int, Int> {
         val calendar = Calendar.getInstance()
-        return logins
-            .mapNotNull { it.loginTime }
-            .filter { it in startMillis..endMillis }
-            .map { loginTime ->
+        return logins.fold(mutableMapOf<Int, Int>()) { acc, activity ->
+            val loginTime = activity.loginTime
+            if (loginTime != null && loginTime in startMillis..endMillis) {
                 calendar.timeInMillis = loginTime
-                calendar.get(Calendar.MONTH)
+                val month = calendar.get(Calendar.MONTH)
+                acc[month] = (acc[month] ?: 0) + 1
             }
-            .groupingBy { it }
-            .eachCount()
-            .toSortedMap()
+            acc
+        }.toSortedMap()
     }
 
     private fun renderChart(monthlyCounts: Map<Int, Int>, textColor: Int) {

@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.repository
 import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
-import android.os.Build
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -37,7 +36,7 @@ import org.robolectric.annotation.Config
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [Build.VERSION_CODES.P], application = Application::class)
+@Config(application = Application::class)
 class SurveysRepositoryImplTest {
     private lateinit var repository: SurveysRepositoryImpl
     private lateinit var context: Context
@@ -52,7 +51,7 @@ class SurveysRepositoryImplTest {
     private val examDao: ExamDao = mockk(relaxed = true)
     private val questionDao: QuestionDao = mockk(relaxed = true)
     private val submissionDao: SubmissionDao = mockk(relaxed = true)
-    private val teamDao: TeamDao = mockk(relaxed = true)
+    private val teamsRepository: TeamsRepository = mockk(relaxed = true)
 
     @Before
     fun setup() {
@@ -81,7 +80,7 @@ class SurveysRepositoryImplTest {
             examDao,
             questionDao,
             submissionDao,
-            teamDao
+            { teamsRepository }
         )
     }
 
@@ -193,14 +192,21 @@ class SurveysRepositoryImplTest {
     @Test
     fun `getSurvey returns survey by name if id not found`() = runTest {
         coEvery { examDao.getById("Survey Name") } returns null
-        coEvery { examDao.getByType("surveys") } returns listOf(
-            StepExam(id = "survey1", name = "Other Name"),
-            StepExam(id = "survey2", name = "Survey Name")
-        )
+        coEvery { examDao.getByTypeAndName("surveys", "Survey Name") } returns StepExam(id = "survey2", name = "Survey Name")
 
         val result = repository.getSurvey("Survey Name")
 
         assertEquals("survey2", result?.id)
+    }
+
+    @Test
+    fun `getSurvey returns null if no match found`() = runTest {
+        coEvery { examDao.getById("Survey Name") } returns null
+        coEvery { examDao.getByTypeAndName("surveys", "Survey Name") } returns null
+
+        val result = repository.getSurvey("Survey Name")
+
+        assertEquals(null, result)
     }
 
     @Test
