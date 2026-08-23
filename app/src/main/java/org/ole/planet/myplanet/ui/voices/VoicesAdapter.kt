@@ -700,7 +700,7 @@ class VoicesAdapter(
     }
 
     private fun applyReplyCount(binding: RowNewsBinding, replyCount: Int, position: Int) {
-        binding.btnShowReply.text = String.format(Locale.getDefault(), "(%d)", replyCount)
+        binding.btnShowReply.text = context.getString(R.string.reply_count_format, replyCount)
         binding.btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
         val visible = replyCount > 0 && !(position == 0 && parentNews != null) && canReply()
         binding.btnShowReply.visibility = if (visible) View.VISIBLE else View.GONE
@@ -883,10 +883,14 @@ class VoicesAdapter(
     }
 
 
+    private fun isGif(path: String?): Boolean {
+        return path?.endsWith(".gif", ignoreCase = true) == true
+    }
+
     private fun loadGlideImage(file: File, target: ImageView, size: Int) {
         val request = Glide.with(target.context)
         val path = file.absolutePath
-        val glideTarget = if (path.lowercase(Locale.getDefault()).endsWith(".gif")) {
+        val glideTarget = if (isGif(path)) {
             request.asGif().load(file).error(request.asGif().load(path))
         } else {
             request.load(file).error(request.load(path))
@@ -979,7 +983,7 @@ class VoicesAdapter(
 
         val request = Glide.with(photoView.context)
         val file = File(imageUrl)
-        val target = if (imageUrl.lowercase(Locale.getDefault()).endsWith(".gif")) {
+        val target = if (isGif(imageUrl)) {
             request.asGif().load(file).error(request.asGif().load(imageUrl))
         } else {
             request.load(file).error(request.load(imageUrl))
