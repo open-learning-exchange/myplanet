@@ -247,5 +247,9 @@
   "exportCsv": "Exportar CSV",
   "csvFileSavedSuccessfully": "archivo CSV guardado con éxito.",
   "failedToSaveCsvFile": "error al guardar el archivo CSV.",
-  "exportCancelled": "exportación cancelada."
+  "exportCancelled": "exportación cancelada.",
+  "collections": "Colecciones",
+  "filterCollections": "Filtrar colecciones",
+  "selectManyCollections": "Seleccionar varias colecciones",
+  "selected": "Seleccionado: "
 }

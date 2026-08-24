@@ -26,9 +26,9 @@ class SearchActivityRepository {
 
   /// Port of `CoursesRepositoryImpl.saveSearchActivity`.
   ///
-  /// [tags] is the list of selected tag ids; the port has no tags filter UI,
-  /// so callers pass an empty list and the serialized `tags` array is empty
-  /// (the same shape the Kotlin produces when no tags are selected).
+  /// [tags] is the list of selected tag ids — `TagEntity.getTagsArray`
+  /// serializes the tag's `_id` — the collections dialog's selection; an
+  /// empty list is the shape the Kotlin produces when no tags are selected.
   Future<void> saveCourseSearch({
     required String searchText,
     required String userName,

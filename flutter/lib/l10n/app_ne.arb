@@ -212,5 +212,9 @@
   "emptyFile": "खाली फाइल",
   "htmlEntryNotFound": "HTML प्रविष्टि फाइल फेला परेन",
   "errorOccurred": "त्रुटि: {error}",
-  "openingResource": "खोल्दै: {title}"
+  "openingResource": "खोल्दै: {title}",
+  "collections": "संग्रहहरू",
+  "filterCollections": "संग्रहहरू छान्नुहोस्",
+  "selectManyCollections": "धेरै संग्रहहरू छान्नुहोस्",
+  "selected": "छानिएको: "
 }

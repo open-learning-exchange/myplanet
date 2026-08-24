@@ -71,10 +71,25 @@ class ResourceSyncNotifier extends SyncNotifier {
   Future<SyncResult> runSync(
     ServerConfig config,
     void Function(SyncProgress) onProgress,
-  ) {
-    return ref
+  ) async {
+    // The two CouchDB caches are independent tables, so the pulls run
+    // concurrently. Tags ride along with resources because the resources
+    // screen's collections filter reads them together (the Kotlin pulls
+    // `tags` as part of every full sync; see `SyncManager`'s table list).
+    final resourcesResult = ref
         .read(resourcesRepositoryProvider)
         .sync(config: config, onProgress: onProgress);
+    final tagsResult = ref
+        .read(tagsRepositoryProvider)
+        .sync(config: config, onProgress: onProgress);
+
+    final [a, b] = await Future.wait([resourcesResult, tagsResult]);
+    final totalSaved = [
+      a,
+      b,
+    ].fold<int>(0, (sum, r) => sum + (r is SyncComplete ? r.savedCount : 0));
+    final failed = [a, b].whereType<SyncFailed>().firstOrNull;
+    return failed ?? SyncComplete(totalSaved);
   }
 }
 

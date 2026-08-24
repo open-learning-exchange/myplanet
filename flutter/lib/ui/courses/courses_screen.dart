@@ -7,11 +7,13 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/courses_providers.dart';
 import '../../providers/search_activity_providers.dart';
 import '../../providers/sync_state.dart';
+import '../../providers/tags_providers.dart';
 import '../../providers/view_mode_providers.dart';
 import '../components/grid_span_calculator.dart';
 import '../components/list_view_mode.dart';
 import '../components/view_mode_toggle.dart';
 import '../dashboard/dashboard_shell.dart';
+import '../resources/collections_dialog.dart';
 import '../router.dart';
 import 'course_subject.dart';
 
@@ -35,6 +37,7 @@ class _CoursesScreenState extends ConsumerState<CoursesScreen> {
   /// disposed. Port of `CoursesFragment.onPause` → `saveSearchActivity`.
   CourseFilter _lastFilter = const CourseFilter();
   CourseProgressFilter _lastProgress = CourseProgressFilter.all;
+  List<Tag> _lastSelectedTags = const [];
   ProviderContainer? _container;
 
   @override
@@ -49,17 +52,20 @@ class _CoursesScreenState extends ConsumerState<CoursesScreen> {
     if (container == null) return;
     final filter = _lastFilter;
     final progress = _lastProgress != CourseProgressFilter.all;
+    final tags = _lastSelectedTags;
     final applied =
         filter.query.isNotEmpty ||
         filter.gradeLevel != null ||
         filter.subjectLevel != null ||
-        progress;
+        progress ||
+        tags.isNotEmpty;
     if (!applied) return;
     // Fire-and-forget; the row is durable once written. `ref` is gone by the
     // time `dispose` runs, so the helper reads through the container instead.
     saveCourseSearchActivity(
       container,
       searchText: filter.query,
+      tags: [for (final t in tags) t.couchId],
       grade: filter.gradeLevel,
       subject: filter.subjectLevel,
     );
@@ -94,12 +100,44 @@ class _CoursesScreenState extends ConsumerState<CoursesScreen> {
     // element is torn down).
     _lastFilter = ref.watch(courseFilterProvider);
     _lastProgress = ref.watch(courseProgressFilterProvider);
+    _lastSelectedTags = ref.watch(courseSelectedTagsProvider);
     _container = ProviderScope.containerOf(context, listen: false);
+    final selectedTags = _lastSelectedTags;
+
+    // Course id → its named tags, for the collections filter. The family key
+    // is the ids joined so an unchanged list reuses the cached map.
+    final tagMap =
+        ref
+            .watch(
+              courseTagsProvider(
+                [
+                  for (final c in courses.valueOrNull ?? const []) c.id,
+                ].join('\n'),
+              ),
+            )
+            .valueOrNull ??
+        const {};
 
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.courses),
         actions: [
+          IconButton(
+            tooltip: l10n.collections,
+            icon: Badge(
+              isLabelVisible: selectedTags.isNotEmpty,
+              child: const Icon(Icons.collections_bookmark_outlined),
+            ),
+            onPressed: () async {
+              final picked = await showCollectionsDialog(
+                context,
+                dbType: 'courses',
+              );
+              if (picked != null) {
+                ref.read(courseSelectedTagsProvider.notifier).state = picked;
+              }
+            },
+          ),
           ViewModeToggle(
             mode: viewMode,
             onChanged: ref.read(courseViewModeProvider.notifier).set,
@@ -119,7 +157,10 @@ class _CoursesScreenState extends ConsumerState<CoursesScreen> {
           const LogoutAction(),
         ],
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(syncState is SyncRunning ? 116 : 112),
+          preferredSize: Size.fromHeight(
+            (syncState is SyncRunning ? 116 : 112) +
+                (selectedTags.isNotEmpty ? 28 : 0),
+          ),
           child: Column(
             children: [
               Padding(
@@ -133,6 +174,23 @@ class _CoursesScreenState extends ConsumerState<CoursesScreen> {
                 ),
               ),
               _CourseFilterBar(onCleared: _searchController.clear),
+              // Port of the Kotlin `tvSelected` label under the tag tabs.
+              if (selectedTags.isNotEmpty)
+                SizedBox(
+                  height: 28,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        '${l10n.selected}'
+                        '${selectedTags.map((t) => t.name).join(", ")}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ),
               if (syncState is SyncRunning)
                 LinearProgressIndicator(
                   value: syncState.progress.total == 0
@@ -147,7 +205,16 @@ class _CoursesScreenState extends ConsumerState<CoursesScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text(l10n.syncFailed('$error'))),
         data: (items) {
-          if (items.isEmpty) {
+          // Port of `filterCourses` in the courses controller: keep only
+          // courses carrying at least one of the selected collections.
+          final selectedTagIds = {for (final t in selectedTags) t.id};
+          final visibleItems = selectedTags.isEmpty
+              ? items
+              : items.where((course) {
+                  final tags = tagMap[course.id] ?? const [];
+                  return tags.any((t) => selectedTagIds.contains(t.id));
+                }).toList();
+          if (visibleItems.isEmpty) {
             return Center(child: Text(l10n.noDataAvailable));
           }
           if (viewMode == ListViewMode.grid) {
@@ -164,17 +231,17 @@ class _CoursesScreenState extends ConsumerState<CoursesScreen> {
                     mainAxisSpacing: 8,
                   ),
                   padding: const EdgeInsets.all(8),
-                  itemCount: items.length,
+                  itemCount: visibleItems.length,
                   itemBuilder: (context, index) =>
-                      _CourseGridTile(items[index]),
+                      _CourseGridTile(visibleItems[index]),
                 );
               },
             );
           }
           return ListView.separated(
-            itemCount: items.length,
+            itemCount: visibleItems.length,
             separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (context, index) => _CourseTile(items[index]),
+            itemBuilder: (context, index) => _CourseTile(visibleItems[index]),
           );
         },
       ),

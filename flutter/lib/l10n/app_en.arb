@@ -1148,5 +1148,9 @@
   "exportCsv": "Export CSV",
   "csvFileSavedSuccessfully": "CSV file saved successfully.",
   "failedToSaveCsvFile": "Failed to save CSV file.",
-  "exportCancelled": "Export cancelled."
+  "exportCancelled": "Export cancelled.",
+  "collections": "Collections",
+  "filterCollections": "Filter Collections",
+  "selectManyCollections": "Select Many Collections",
+  "selected": "Selected: "
 }

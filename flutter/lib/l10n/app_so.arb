@@ -212,5 +212,9 @@
   "emptyFile": "Fayl maran",
   "htmlEntryNotFound": "Faylka gelinta HTML lama helin",
   "errorOccurred": "Khalad: {error}",
-  "openingResource": "Furaya: {title}"
+  "openingResource": "Furaya: {title}",
+  "collections": "Ururinta",
+  "filterCollections": "Uruurinta shaandhaynta",
+  "selectManyCollections": "Dooro Ururo Badan",
+  "selected": "La Xulo: "
 }

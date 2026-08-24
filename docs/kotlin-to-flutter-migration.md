@@ -3194,14 +3194,85 @@ and three stale "unported" claims in older sections were corrected.
   landed in Phase 53; only moderator-gate widenings remain.
 - The 2026-08-16/17 audit's "`saveSearchActivity` remains unported" — landed
   in Phase 65 (this doc's own immediately preceding entry).
+- Phase 65's "tags serialize as an empty array since the port has no tags
+  filter UI" — the tags filter UI and search-activity tag capture landed in
+  Phase 67.
 
 ---
 
-**Last updated**: 2026-08-23 (Phase 66 complete — the 85-commit
-2026-08-20→23 batch audited with no new harvest, and three stale "unported"
-claims corrected in place. Phase 65 — search activity logging ported: the
-`search_activity` table, repository, outbox uploader, and the
+## Phase 67 — tags and collections (`tags`)
+
+The Kotlin's collections feature is a single CouchDB `tags` database holding
+three doc shapes: parent definitions (`isAttached = false`, scoped by `db` =
+`resources`/`courses`), child definitions (`attachedTo` lists parent ids), and
+link rows (`name` empty, `tagId` + `linkId` + `db`) that attach a tag to a
+resource or course. `CollectionsFragment` (resources) and
+`CollectionsDialog` (courses) let the user pick tags — singly, or many when
+`MainApplication.isCollectionSwitchOn` is on — and the selected set filters
+the list (`filterLocalLibraryByTag`/`filterCourses` resolve the tag ids into
+link ids and keep matching rows) and is captured into `search_activity`'s
+filter JSON (`TagEntity.getTagsArray`).
+
+The port now:
+
+- **`tags` Drift table** (schema v40, a pure CouchDB cache — link rows make
+  the table a merge of definitions and attachments, so it is not a
+  local-authority table): one row per doc, with `StringListConverter` for
+  `attachedTo`. Insertion is an upsert keyed on the doc `_id`; the Kotlin's
+  `insertTags` likewise rewrites a doc's row in place.
+- **`TagDao`**: `parentTags(db)` / `childTags(parentIds)` for the dialog's
+  parent list and the expand-to-children lookup, `tagsByIds` for joining
+  link rows to their definitions, `linkTagsForLinkIds` for the resource/
+  course id → tags map, and `linkIdsForTagNames` — the port of the courses
+  controller's name-to-link-id resolution.
+- **`TagsRepository`** — `getTagsWithChildren` (the pair the dialog shows),
+  `getTagsForResources`/`getTagsForCourses` (each row's named tags, deduped),
+  `getLinkIdsForTagNames`, and `sync` — a paginated `_all_docs` walk through
+  `AdaptiveBatchProcessor` that skips `_design/` docs and treats a bare
+  string `attachedTo` like the array form, then runs `deleteNotIn`. The
+  Phase 52/66 `hadBatchFailure` rule applies here too: a failed batch skips
+  the cleanup so valid tags survive an incomplete walk.
+- **`CollectionsDialog`** (`ui/resources/collections_dialog.dart`) — the
+  shared dialog for both screens, parameterized by `dbType`: parents listed
+  with an expand chevron for children, a debounced (300 ms) search box, a
+  "Select Many Collections" switch flipping single-select into
+  checkbox multi-select, and the OK button enabling once something is
+  checked. An empty tag cache toasts "No data available" and dismisses,
+  matching the Kotlin's `showDialog` path. The multi-select flag is the
+  `collectionMultiSelectProvider` StateProvider, standing in for the Kotlin's
+  static `MainApplication.isCollectionSwitchOn`.
+- **Screen wiring** — the resources screen gains the collections action
+  button (badged when tags are selected), a dismissible chip per selected tag
+  (`refreshTagChips`), and the any-of selected-tags filter applied after the
+  regular filter; its `dispose`-time `saveSearchActivity` now records the
+  selected tag couch ids, so Phase 65's `tags: []` placeholder is gone. The
+  courses screen gains the same button, a "Selected: …" label under the
+  filter bar (the Kotlin's `tvSelected`), the same filter over
+  `filteredSortedCoursesProvider`'s rows, and tag capture in its own
+  `saveCourseSearchActivity`. `resourceTagsProvider`/`courseTagsProvider` map
+  each listed id to its tags; the family key is the ids joined (identity
+  keys would refetch on every rebuild).
+- **Sync wiring** — `ResourceSyncNotifier` and `CourseSyncNotifier` each
+  fire `tagsRepository.sync` alongside their table syncs, so a library or
+  course sync refreshes the tag cache too. Dashboard sync areas pick it up
+  for free through those notifiers.
+
+Fifteen tests cover it: insert mapping (design-doc skip, string vs array
+`attachedTo`, link rows), `getTagsWithChildren` grouping and db scoping,
+resource-tag join with dedup, name-to-link-id resolution (including the
+unknown-tag and empty cases), the sync walk with prune, empty-server prune,
+a failed count lookup returning `SyncFailed`, the `hadBatchFailure` cleanup
+skip, and the dialog's single-select return, child expansion, debounced
+filter, multi-select OK, and empty-cache toast-and-dismiss paths.
+
+---
+
+**Last updated**: 2026-08-23 (Phase 67 complete — tags and collections: the
+`tags` cache table, dialog, per-screen filter/chip wiring, and tag capture in
+search-activity logging. Phase 66 — the 85-commit 2026-08-20→23 batch
+audited with no new harvest. Phase 65 — search activity logging ported:
+the `search_activity` table, repository, outbox uploader, and the
 courses/resources `dispose`-time write that fires one row per applied filter,
 uploaded to `search_activities` on sync. Phase 64 — team visit logging.)
-**Phase**: 66 of N (27 of 28 UI packages have a screen — see Status for what that does and
+**Phase**: 67 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

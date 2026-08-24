@@ -140,6 +140,16 @@ offline. **Ported in Phase 63.** Phase 64 ports team visit logging (`team_log` /
 `team_activities`): `TeamDetailScreen` fires `logTeamVisit` once per mount (a rebuild is
 not a revisit) via `addPostFrameCallback`, and `TeamLogUploader` carries the row to
 `team_activities` through the outbox with device identity layered on at queue time.
+Phase 65 ports search-activity logging (`search_activity` / `search_activities`), with
+one durable row per applied filter written from the courses/resources screens' `dispose`
+and carried through the outbox; Phase 66 was a pure harvest audit of the 2026-08-20→23
+upstream batch (no new port). Phase 67 ports tags and collections: the `tags` Drift table
+(schema v40, a pure CouchDB cache), `TagsRepository` with the `hadBatchFailure` cleanup
+rule, the shared `CollectionsDialog` (single/multi-select, debounced search, expand-to-
+children), and per-screen wiring — a badged collections button, selected-tag chips on
+resources, a Selected: … label on courses, any-of tag filtering on both lists, and the
+selected tag ids now captured into the search-activity filter JSON instead of Phase 65's
+empty-array placeholder.
 
 ### Documentation Map
 

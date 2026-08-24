@@ -1193,3 +1193,33 @@ class TeamLogTable extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Port of `model/TagEntity.kt` (`@Entity(tableName = "tag")`) — the cache of
+/// the `tags` CouchDB database. One table holds three row shapes at once:
+/// collection definitions (a non-empty [name], an empty [attachedTo]),
+/// child tags (a name whose [attachedTo] lists a parent's id), and link rows
+/// attaching a tag to a resource or course ([db] is `resources` or `courses`,
+/// [linkId] the resource/course id, [tagId] the tag's id). Pure cache: the
+/// app never writes tags locally, so sync refills with upserts and prunes
+/// with `deleteNotIn`, and the table is not preserved across schema bumps.
+class Tags extends Table {
+  @override
+  String get tableName => 'tag';
+
+  TextColumn get id => text()();
+  TextColumn get couchId =>
+      text().named('_id').withDefault(const Constant(''))();
+  TextColumn get rev => text().named('_rev').withDefault(const Constant(''))();
+  TextColumn get name => text().withDefault(const Constant(''))();
+  TextColumn get linkId => text().withDefault(const Constant(''))();
+  TextColumn get tagId => text().withDefault(const Constant(''))();
+  TextColumn get attachedTo => text()
+      .map(const StringListConverter())
+      .withDefault(const Constant('[]'))();
+  TextColumn get docType => text().withDefault(const Constant(''))();
+  TextColumn get db => text().withDefault(const Constant(''))();
+  BoolColumn get isAttached => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

@@ -26,6 +26,7 @@ Future<void> _queuePending(ProviderContainer container) async {
 Future<void> saveCourseSearchActivity(
   ProviderContainer container, {
   required String searchText,
+  List<String> tags = const [],
   String? grade,
   String? subject,
 }) async {
@@ -42,6 +43,7 @@ Future<void> saveCourseSearchActivity(
         userName: name,
         planetCode: planetCode,
         parentCode: parentCode,
+        tags: tags,
         grade: grade,
         subject: subject,
       );
@@ -58,6 +60,7 @@ Future<void> saveCourseSearchActivity(
 Future<void> saveResourceSearchActivity(
   ProviderContainer container, {
   required String searchText,
+  List<String> tags = const [],
   Set<String> subjects = const {},
   Set<String> languages = const {},
   Set<String> levels = const {},
@@ -76,6 +79,7 @@ Future<void> saveResourceSearchActivity(
         searchText: searchText,
         planetCode: planetCode,
         parentCode: parentCode,
+        tags: tags,
         subjects: subjects,
         languages: languages,
         levels: levels,

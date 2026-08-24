@@ -213,5 +213,9 @@
   "emptyFile": "Fichier vide",
   "htmlEntryNotFound": "Fichier d'entrée HTML introuvable",
   "errorOccurred": "Erreur : {error}",
-  "openingResource": "Ouverture : {title}"
+  "openingResource": "Ouverture : {title}",
+  "collections": "Collections",
+  "filterCollections": "Filtrer les collections",
+  "selectManyCollections": "Sélectionner plusieurs collections",
+  "selected": "Sélectionné : "
 }

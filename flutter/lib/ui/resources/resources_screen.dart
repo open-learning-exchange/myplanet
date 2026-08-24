@@ -7,11 +7,13 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/resources_providers.dart';
 import '../../providers/search_activity_providers.dart';
 import '../../providers/sync_state.dart';
+import '../../providers/tags_providers.dart';
 import '../../providers/view_mode_providers.dart';
 import '../components/grid_span_calculator.dart';
 import '../components/list_view_mode.dart';
 import '../components/view_mode_toggle.dart';
 import '../dashboard/dashboard_shell.dart';
+import 'collections_dialog.dart';
 import 'resources_filter_sheet.dart';
 
 /// Port of `ui/resources/ResourcesFragment.kt`.
@@ -38,6 +40,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
   /// disposed. Port of `ResourcesFragment.onPause` → `saveSearchActivity`.
   ResourceFilter _lastFilter = const ResourceFilter();
   String _lastSearchText = '';
+  List<Tag> _lastSelectedTags = const [];
   ProviderContainer? _container;
 
   @override
@@ -55,11 +58,13 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     if (container == null) return;
     final filter = _lastFilter;
     final searchText = _lastSearchText;
-    final applied = searchText.isNotEmpty || !filter.isEmpty;
+    final tags = _lastSelectedTags;
+    final applied = searchText.isNotEmpty || !filter.isEmpty || tags.isNotEmpty;
     if (!applied) return;
     saveResourceSearchActivity(
       container,
       searchText: searchText,
+      tags: [for (final t in tags) t.couchId],
       subjects: filter.subjects,
       languages: filter.languages,
       levels: filter.levels,
@@ -75,13 +80,31 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     final filter = ref.watch(resourceFilterProvider);
     final viewMode = ref.watch(libraryViewModeProvider);
     final shelfOnly = ref.watch(resourceShelfOnlyProvider);
+    final selectedTags = ref.watch(resourceSelectedTagsProvider);
 
     // Capture the current filter state, search text, and container so
     // `dispose` can fire `saveSearchActivity` without touching `ref` (which
     // throws after the element is torn down).
     _lastFilter = filter;
     _lastSearchText = ref.watch(resourceSearchQueryProvider);
+    _lastSelectedTags = selectedTags;
     _container = ProviderScope.containerOf(context, listen: false);
+
+    // Resource id → its named tags, for the collections filter. Only needed
+    // when a tag is selected, but the watch must run unconditionally (hooks
+    // rule). The family key is the ids joined so an unchanged list reuses the
+    // cached map.
+    final tagMap =
+        ref
+            .watch(
+              resourceTagsProvider(
+                [
+                  for (final r in resources.valueOrNull ?? const []) r.id,
+                ].join('\n'),
+              ),
+            )
+            .valueOrNull ??
+        const {};
 
     // #15572: when the shelf has no rows at all, the search bar, the list/grid
     // toggle, and the filter button offer nothing to act on. Hiding them
@@ -142,6 +165,23 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                       !shelfOnly,
             ),
             if (hasData) ...[
+              IconButton(
+                tooltip: l10n.collections,
+                icon: Badge(
+                  isLabelVisible: selectedTags.isNotEmpty,
+                  child: const Icon(Icons.collections_bookmark_outlined),
+                ),
+                onPressed: () async {
+                  final picked = await showCollectionsDialog(
+                    context,
+                    dbType: 'resources',
+                  );
+                  if (picked != null) {
+                    ref.read(resourceSelectedTagsProvider.notifier).state =
+                        picked;
+                  }
+                },
+              ),
               ViewModeToggle(
                 mode: viewMode,
                 onChanged: ref.read(libraryViewModeProvider.notifier).set,
@@ -175,7 +215,8 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
             ? null
             : PreferredSize(
                 preferredSize: Size.fromHeight(
-                  syncState is SyncRunning ? 68 : 64,
+                  (syncState is SyncRunning ? 68 : 64) +
+                      (selectedTags.isNotEmpty ? 40 : 0),
                 ),
                 child: Column(
                   children: [
@@ -197,6 +238,34 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                             ? null
                             : syncState.progress.fraction,
                       ),
+                    // Port of `ResourcesFragment.refreshTagChips` — the
+                    // selected collections as dismissible chips.
+                    if (selectedTags.isNotEmpty)
+                      SizedBox(
+                        height: 36,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          children: [
+                            for (final tag in selectedTags)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: InputChip(
+                                  label: Text(tag.name),
+                                  onDeleted: () =>
+                                      ref
+                                          .read(
+                                            resourceSelectedTagsProvider
+                                                .notifier,
+                                          )
+                                          .state = selectedTags
+                                          .where((t) => t.id != tag.id)
+                                          .toList(),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -206,19 +275,33 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
         error: (error, _) => Center(child: Text(l10n.syncFailed('$error'))),
         data: (items) {
           // Apply filter if active
-          final filteredItems = items.applyFilter(filter);
+          var filteredItems = items.applyFilter(filter);
+
+          // Port of `filterLocalLibraryByTag`: keep only resources carrying
+          // at least one of the selected collections. A resource's tag set
+          // comes from the `tag` link rows, joined to the tag definitions.
+          if (selectedTags.isNotEmpty) {
+            final selectedTagIds = {for (final t in selectedTags) t.id};
+            filteredItems = filteredItems.where((item) {
+              final tags = tagMap[item.id] ?? const [];
+              return tags.any((t) => selectedTagIds.contains(t.id));
+            }).toList();
+          }
+
           if (filteredItems.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(l10n.noDataAvailable),
-                  if (!filter.isEmpty) ...[
+                  if (!filter.isEmpty || selectedTags.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     TextButton(
                       onPressed: () {
                         ref.read(resourceFilterProvider.notifier).state =
                             const ResourceFilter();
+                        ref.read(resourceSelectedTagsProvider.notifier).state =
+                            [];
                       },
                       child: Text(l10n.clearFilters),
                     ),

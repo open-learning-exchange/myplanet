@@ -56,6 +56,7 @@ import '../repository/team_tasks_repository.dart';
 import '../repository/team_log_uploader.dart';
 import '../repository/search_activity_repository.dart';
 import '../repository/search_activity_uploader.dart';
+import '../repository/tags_repository.dart';
 import '../repository/team_tasks_uploader.dart';
 import '../repository/feedback_uploader.dart';
 import '../repository/teams_uploader.dart';
@@ -176,6 +177,13 @@ final searchActivityUploaderProvider = Provider<SearchActivityUploader>(
     ref.watch(searchActivityDaoProvider),
     ref.watch(outboxRepositoryProvider),
     ref.watch(deviceIdentitySourceProvider),
+  ),
+);
+
+final tagsRepositoryProvider = Provider<TagsRepository>(
+  (ref) => TagsRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(appDatabaseProvider).tagDao,
   ),
 );
 

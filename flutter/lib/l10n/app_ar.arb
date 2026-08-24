@@ -212,5 +212,9 @@
   "emptyFile": "ملف فارغ",
   "htmlEntryNotFound": "ملف إدخال HTML غير موجود",
   "errorOccurred": "خطأ: {error}",
-  "openingResource": "فتح: {title}"
+  "openingResource": "فتح: {title}",
+  "collections": "المجموعات",
+  "filterCollections": "تصفية المجموعات",
+  "selectManyCollections": "اختيار العديد من المجموعات",
+  "selected": "المحدد: "
 }

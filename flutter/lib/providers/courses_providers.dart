@@ -287,11 +287,14 @@ class CourseSyncNotifier extends SyncNotifier {
   ) async {
     final courses = ref.read(coursesRepositoryProvider);
     final progress = ref.read(progressRepositoryProvider);
+    final tags = ref.read(tagsRepositoryProvider);
 
-    // The three CouchDB caches are independent tables, so the pulls run
+    // The four CouchDB caches are independent tables, so the pulls run
     // concurrently. A "sync courses" refreshes progress and certifications in
     // the same pass - the take-course view reads them together, and a stale
-    // `certification` row is what gates the "certified" badge.
+    // `certification` row is what gates the "certified" badge. Tags ride
+    // along because the courses screen's collections filter reads them
+    // (the Kotlin pulls `tags` in every full sync).
     final courseResult = courses.sync(config: config, onProgress: onProgress);
     final progressResult = progress.syncCourseProgress(
       config: config,
@@ -301,18 +304,21 @@ class CourseSyncNotifier extends SyncNotifier {
       config: config,
       onProgress: onProgress,
     );
+    final tagsResult = tags.sync(config: config, onProgress: onProgress);
 
-    final [a, b, c] = await Future.wait([
+    final [a, b, c, d] = await Future.wait([
       courseResult,
       progressResult,
       certResult,
+      tagsResult,
     ]);
     final totalSaved = [
       a,
       b,
       c,
+      d,
     ].fold<int>(0, (sum, r) => sum + (r is SyncComplete ? r.savedCount : 0));
-    final failed = [a, b, c].whereType<SyncFailed>().firstOrNull;
+    final failed = [a, b, c, d].whereType<SyncFailed>().firstOrNull;
     return failed ?? SyncComplete(totalSaved);
   }
 }

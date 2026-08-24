@@ -59,6 +59,7 @@ part 'app_database.g.dart';
     SubmitPhotosTable,
     TeamLogTable,
     SearchActivities,
+    Tags,
   ],
   daos: [
     UserDao,
@@ -91,6 +92,7 @@ part 'app_database.g.dart';
     SubmitPhotosDao,
     TeamLogDao,
     SearchActivityDao,
+    TagDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -103,7 +105,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 39;
+  int get schemaVersion => 40;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -3131,4 +3133,52 @@ class SearchActivityDao extends DatabaseAccessor<AppDatabase>
       (update(searchActivities)..where((row) => row.id.equals(id))).write(
         SearchActivitiesCompanion(couchId: Value(couchId), rev: Value(rev)),
       );
+}
+
+/// Port of `data/room/dao/TagDao.kt`.
+@DriftAccessor(tables: [Tags])
+class TagDao extends DatabaseAccessor<AppDatabase> with _$TagDaoMixin {
+  TagDao(super.db);
+
+  /// Parent tags for a collections dialog: named, not attached, optionally
+  /// scoped to a `db`. Port of `TagDao.getParentTags`.
+  Future<List<Tag>> parentTags(String? db) {
+    final query = select(tags)
+      ..where((row) => row.isAttached.equals(false))
+      ..where((row) => row.name.isNotValue(''));
+    if (db != null) {
+      query.where((row) => row.db.equals(db));
+    }
+    return query.get();
+  }
+
+  Future<List<Tag>> allTags() => select(tags).get();
+
+  Future<void> upsertAll(List<TagsCompanion> rows) =>
+      batch((b) => b.insertAllOnConflictUpdate(tags, rows));
+
+  /// Link rows for a set of resource/course ids. Port of
+  /// `TagDao.getByDbAndLinkIds`.
+  Future<List<Tag>> byDbAndLinkIds(String db, List<String> linkIds) => (select(
+    tags,
+  )..where((row) => row.db.equals(db) & row.linkId.isIn(linkIds))).get();
+
+  Future<List<Tag>> byIds(List<String> ids) =>
+      (select(tags)..where((row) => row.id.isIn(ids))).get();
+
+  Future<List<Tag>> byNames(List<String> names) =>
+      (select(tags)..where((row) => row.name.isIn(names))).get();
+
+  /// Link rows whose `tagId` matches a tag. Port of
+  /// `TagDao.getByDbAndTagIds`.
+  Future<List<Tag>> byDbAndTagIds(String db, List<String> tagIds) => (select(
+    tags,
+  )..where((row) => row.db.equals(db) & row.tagId.isIn(tagIds))).get();
+
+  /// Drops cache rows the server no longer lists. Pure cache, so the cleanup
+  /// runs unconditionally on a complete walk, like `MyLibraryDao.deleteNotIn`.
+  Future<void> deleteNotIn(List<String> ids) {
+    if (ids.isEmpty) return delete(tags).go();
+    return (delete(tags)..where((row) => row.id.isNotIn(ids))).go();
+  }
 }
