@@ -18,6 +18,9 @@ import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
+import org.ole.planet.myplanet.repository.RatingsRepository
+import org.ole.planet.myplanet.repository.RatingSummary
+import org.ole.planet.myplanet.repository.RatingEntry
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
@@ -32,6 +35,7 @@ class TakeCourseViewModelTest {
     private val coursesRepository: CoursesRepository = mockk()
     private val progressRepository: ProgressRepository = mockk()
     private val userSessionManager: UserSessionManager = mockk()
+    private val ratingsRepository: RatingsRepository = mockk()
 
     private lateinit var viewModel: TakeCourseViewModel
 
@@ -52,7 +56,7 @@ class TakeCourseViewModelTest {
 
     @Before
     fun setUp() {
-        viewModel = TakeCourseViewModel(coursesRepository, progressRepository, userSessionManager)
+        viewModel = TakeCourseViewModel(coursesRepository, progressRepository, userSessionManager, ratingsRepository)
     }
 
     @Test
@@ -133,5 +137,40 @@ class TakeCourseViewModelTest {
         assertFalse(viewModel.hasOfferedJoinDialog)
         viewModel.markJoinDialogOffered()
         assertTrue(viewModel.hasOfferedJoinDialog)
+    }
+
+    @Test
+    fun getRatingPromptDecision_whenParamsNullOrEmpty_returnsSkip() = runTest {
+        assertEquals(RatingPromptDecision.Skip, viewModel.getRatingPromptDecision(null, "user_1"))
+        assertEquals(RatingPromptDecision.Skip, viewModel.getRatingPromptDecision("", "user_1"))
+        assertEquals(RatingPromptDecision.Skip, viewModel.getRatingPromptDecision("course_1", null))
+        assertEquals(RatingPromptDecision.Skip, viewModel.getRatingPromptDecision("course_1", ""))
+    }
+
+    @Test
+    fun getRatingPromptDecision_whenRepositoryThrows_returnsShow() = runTest {
+        coEvery { ratingsRepository.getRatingSummary("course", "course_1", "user_1") } throws Exception("Network error")
+        assertEquals(RatingPromptDecision.Show, viewModel.getRatingPromptDecision("course_1", "user_1"))
+    }
+
+    @Test
+    fun getRatingPromptDecision_whenNoExistingRating_returnsShow() = runTest {
+        val summary = RatingSummary(existingRating = null, averageRating = 0f, totalRatings = 0, userRating = null)
+        coEvery { ratingsRepository.getRatingSummary("course", "course_1", "user_1") } returns summary
+        assertEquals(RatingPromptDecision.Show, viewModel.getRatingPromptDecision("course_1", "user_1"))
+    }
+
+    @Test
+    fun getRatingPromptDecision_whenExistingRating_returnsSkip() = runTest {
+        val summary = RatingSummary(existingRating = RatingEntry("id", "comment", 5), averageRating = 5f, totalRatings = 1, userRating = 5)
+        coEvery { ratingsRepository.getRatingSummary("course", "course_1", "user_1") } returns summary
+        assertEquals(RatingPromptDecision.Skip, viewModel.getRatingPromptDecision("course_1", "user_1"))
+    }
+
+    @Test
+    fun getRatingPromptDecision_whenUserRatingNotNull_returnsSkip() = runTest {
+        val summary = RatingSummary(existingRating = null, averageRating = 4f, totalRatings = 1, userRating = 4)
+        coEvery { ratingsRepository.getRatingSummary("course", "course_1", "user_1") } returns summary
+        assertEquals(RatingPromptDecision.Skip, viewModel.getRatingPromptDecision("course_1", "user_1"))
     }
 }
