@@ -180,7 +180,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         var dialogSelectedItem: UserEntity? = filteredUserList.firstOrNull()
 
         val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
-        val adapter = UserArrayAdapter { selectedUser ->
+        val adapter = UserArrayAdapter(requireContext()) { selectedUser ->
             dialogSelectedItem = selectedUser
         }
         alertUsersSpinnerBinding.rvUser.layoutManager = LinearLayoutManager(requireContext())
@@ -367,7 +367,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
             var dialogSelectedItem: UserEntity? = filteredUserList.firstOrNull()
 
             val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
-            val adapter = UserArrayAdapter { selectedUser ->
+            val adapter = UserArrayAdapter(requireContext()) { selectedUser ->
                 dialogSelectedItem = selectedUser
             }
             alertUsersSpinnerBinding.rvUser.layoutManager = LinearLayoutManager(requireContext())
