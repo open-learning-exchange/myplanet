@@ -54,6 +54,8 @@ import '../repository/surveys_repository.dart';
 import '../repository/teams_repository.dart';
 import '../repository/team_tasks_repository.dart';
 import '../repository/team_log_uploader.dart';
+import '../repository/search_activity_repository.dart';
+import '../repository/search_activity_uploader.dart';
 import '../repository/team_tasks_uploader.dart';
 import '../repository/feedback_uploader.dart';
 import '../repository/teams_uploader.dart';
@@ -154,6 +156,24 @@ final teamLogUploaderProvider = Provider<TeamLogUploader>(
     ref.watch(planetApiProvider),
     ref.watch(teamsRepositoryProvider),
     ref.watch(appDatabaseProvider).teamLogDao,
+    ref.watch(outboxRepositoryProvider),
+    ref.watch(deviceIdentitySourceProvider),
+  ),
+);
+
+final searchActivityDaoProvider = Provider<SearchActivityDao>(
+  (ref) => ref.watch(appDatabaseProvider).searchActivityDao,
+);
+
+final searchActivityRepositoryProvider = Provider<SearchActivityRepository>(
+  (ref) => SearchActivityRepository(ref.watch(searchActivityDaoProvider)),
+);
+
+final searchActivityUploaderProvider = Provider<SearchActivityUploader>(
+  (ref) => SearchActivityUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(searchActivityRepositoryProvider),
+    ref.watch(searchActivityDaoProvider),
     ref.watch(outboxRepositoryProvider),
     ref.watch(deviceIdentitySourceProvider),
   ),
@@ -544,6 +564,9 @@ final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
       VoicesUploader.type: ref.watch(voicesUploaderProvider).handler,
       TeamTasksUploader.type: ref.watch(teamTasksUploaderProvider).handler,
       TeamLogUploader.type: ref.watch(teamLogUploaderProvider).handler,
+      SearchActivityUploader.type: ref
+          .watch(searchActivityUploaderProvider)
+          .handler,
       for (final type in TeamsUploader.types)
         type: ref.watch(teamsUploaderProvider).handler,
       FeedbackUploader.type: ref.watch(feedbackUploaderProvider).handler,

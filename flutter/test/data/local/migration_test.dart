@@ -632,6 +632,32 @@ void main() {
     expect(survivor.single.uploaded, isFalse);
   });
 
+  // A filtered search the user ran exists only on this device until the
+  // `SearchActivityUploader` delivers it to `search_activities`. Dropping the
+  // table on a schema bump would silently lose the analytics event, so the
+  // table is preserved and the row must survive.
+  test('an un-uploaded search_activity row survives a schema bump', () async {
+    await database.searchActivityDao.insert(
+      SearchActivitiesCompanion.insert(
+        id: 'search-1',
+        user: const Value('ada'),
+        searchText: const Value('math'),
+        type: const Value('resources'),
+        time: const Value(1000),
+        createdOn: const Value('earth'),
+        parentCode: const Value('sol'),
+        filterJson: const Value('{"subjects":[]}'),
+      ),
+    );
+
+    await runUpgrade();
+
+    final survivor = await database.searchActivityDao.pendingUploads();
+    expect(survivor.single.id, 'search-1');
+    expect(survivor.single.searchText, 'math');
+    expect(survivor.single.type, 'resources');
+  });
+
   test('every preserved table has a preservation test', () {
     // `my_life` and the submissions tables were added to the preserved set
     // without one. This fails the moment another name is added, so the next
@@ -659,6 +685,7 @@ void main() {
       'download_queue',
       'submit_photos',
       'team_log',
+      'search_activity',
     };
     expect(
       AppDatabase.localAuthorityTables,

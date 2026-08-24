@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/courses_providers.dart';
+import '../../providers/search_activity_providers.dart';
 import '../../providers/sync_state.dart';
 import '../../providers/view_mode_providers.dart';
 import '../components/grid_span_calculator.dart';
@@ -29,10 +30,39 @@ class CoursesScreen extends ConsumerStatefulWidget {
 class _CoursesScreenState extends ConsumerState<CoursesScreen> {
   final _searchController = TextEditingController();
 
+  /// The filter state captured on the last build, so `dispose` can read it
+  /// after the widget is torn down — `ref.read` throws once the element is
+  /// disposed. Port of `CoursesFragment.onPause` → `saveSearchActivity`.
+  CourseFilter _lastFilter = const CourseFilter();
+  CourseProgressFilter _lastProgress = CourseProgressFilter.all;
+  ProviderContainer? _container;
+
   @override
   void dispose() {
+    _saveSearchActivity();
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _saveSearchActivity() {
+    final container = _container;
+    if (container == null) return;
+    final filter = _lastFilter;
+    final progress = _lastProgress != CourseProgressFilter.all;
+    final applied =
+        filter.query.isNotEmpty ||
+        filter.gradeLevel != null ||
+        filter.subjectLevel != null ||
+        progress;
+    if (!applied) return;
+    // Fire-and-forget; the row is durable once written. `ref` is gone by the
+    // time `dispose` runs, so the helper reads through the container instead.
+    saveCourseSearchActivity(
+      container,
+      searchText: filter.query,
+      grade: filter.gradeLevel,
+      subject: filter.subjectLevel,
+    );
   }
 
   @override
@@ -58,6 +88,13 @@ class _CoursesScreenState extends ConsumerState<CoursesScreen> {
           break;
       }
     });
+
+    // Capture the current filter state and container so `dispose` can fire
+    // `saveSearchActivity` without touching `ref` (which throws after the
+    // element is torn down).
+    _lastFilter = ref.watch(courseFilterProvider);
+    _lastProgress = ref.watch(courseProgressFilterProvider);
+    _container = ProviderScope.containerOf(context, listen: false);
 
     return Scaffold(
       appBar: AppBar(

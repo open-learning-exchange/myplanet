@@ -1128,6 +1128,44 @@ class SubmitPhotosTable extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+/// Port of `model/SearchActivity.kt` (`@Entity(tableName =
+/// "search_activity")`) — one row per filtered search the user runs on the
+/// courses or resources list. Locally authored (the Kotlin writes the row from
+/// `CoursesFragment.onPause` / `ResourcesFragment.onPause` via
+/// `*Repository.saveSearchActivity`) and preserved across a schema bump: a
+/// row whose `_rev` is empty has not yet reached `search_activities`, and
+/// dropping it would silently lose the analytics event.
+@DataClassName('SearchActivityRow')
+class SearchActivities extends Table {
+  @override
+  String get tableName => 'search_activity';
+
+  TextColumn get id => text()();
+  TextColumn get couchId =>
+      text().named('_id').withDefault(const Constant(''))();
+  TextColumn get rev => text().named('_rev').withDefault(const Constant(''))();
+  // The Dart getter is `searchText` because `text` clashes with the `text()`
+  // builder on drift's `Table` base class; `.named('text')` keeps the SQL
+  // column name the Kotlin schema uses.
+  TextColumn get searchText =>
+      text().named('text').withDefault(const Constant(''))();
+  TextColumn get type => text().withDefault(const Constant(''))();
+  IntColumn get time => integer().withDefault(const Constant(0))();
+  TextColumn get user => text().withDefault(const Constant(''))();
+  // The Kotlin persists the filter JSON via Gson; the port stores the same
+  // serialized string and parses it back at upload time. The Dart getter is
+  // named `filterJson` because `filter` clashes with a member on drift's
+  // `Table` base class; `.named('filter')` keeps the SQL column name the
+  // Kotlin schema uses.
+  TextColumn get filterJson =>
+      text().named('filter').withDefault(const Constant(''))();
+  TextColumn get createdOn => text().withDefault(const Constant(''))();
+  TextColumn get parentCode => text().withDefault(const Constant(''))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 /// Port of `model/TeamLog.kt` (`@Entity(tableName = "team_log")`) — one row
 /// per `teamVisit` a user makes to a team's detail screen. Locally authored
 /// (the Kotlin logs the visit from `TeamDetailFragment.onViewCreated` via

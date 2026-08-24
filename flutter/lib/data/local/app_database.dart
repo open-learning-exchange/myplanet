@@ -58,6 +58,7 @@ part 'app_database.g.dart';
     DownloadQueueEntries,
     SubmitPhotosTable,
     TeamLogTable,
+    SearchActivities,
   ],
   daos: [
     UserDao,
@@ -89,6 +90,7 @@ part 'app_database.g.dart';
     DownloadQueueDao,
     SubmitPhotosDao,
     TeamLogDao,
+    SearchActivityDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -101,7 +103,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 38;
+  int get schemaVersion => 39;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -206,6 +208,12 @@ class AppDatabase extends _$AppDatabase {
     // succeeds the row exists only here, so a schema bump would silently lose
     // an action the user took.
     'team_log',
+    // One row per filtered search the user runs. The Kotlin writes the row
+    // from `CoursesFragment.onPause` / `ResourcesFragment.onPause` and
+    // `UploadManager.uploadSearchActivity` carries it to `search_activities`
+    // on the next sync. Until the upload succeeds the row exists only here, so
+    // a schema bump would silently lose the analytics event.
+    'search_activity',
   };
 
   @override
@@ -3098,5 +3106,29 @@ class TeamLogDao extends DatabaseAccessor<AppDatabase> with _$TeamLogDaoMixin {
           rev: Value(rev),
           uploaded: const Value(true),
         ),
+      );
+}
+
+/// Port of `data/room/dao/SearchActivityDao.kt`.
+@DriftAccessor(tables: [SearchActivities])
+class SearchActivityDao extends DatabaseAccessor<AppDatabase>
+    with _$SearchActivityDaoMixin {
+  SearchActivityDao(super.db);
+
+  Future<void> insert(SearchActivitiesCompanion row) =>
+      into(searchActivities).insertOnConflictUpdate(row);
+
+  /// Rows whose filtered search has not yet reached `search_activities`.
+  ///
+  /// Port of `SearchActivityDao.getPendingUploads` — the uploader selects
+  /// these, serializes each, and POSTs it to `search_activities`.
+  Future<List<SearchActivityRow>> pendingUploads() =>
+      (select(searchActivities)..where((row) => row.rev.equals(''))).get();
+
+  /// Records that the document POST landed, mirroring
+  /// `SearchActivityDao.markUploaded`.
+  Future<int> markUploaded(String id, String couchId, String rev) =>
+      (update(searchActivities)..where((row) => row.id.equals(id))).write(
+        SearchActivitiesCompanion(couchId: Value(couchId), rev: Value(rev)),
       );
 }

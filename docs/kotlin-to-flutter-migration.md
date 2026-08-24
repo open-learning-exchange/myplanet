@@ -170,7 +170,10 @@ Known gaps:
   star row (per-step progress records), the avatar's network-status ring (connectivity plugin), team
   chat/task alert badges (team notifications), the offline-logins count and activity-chart FAB
   (login activity tracking), the navigation drawer and overflow menu, and
-  the "remind later" reminder scheduler.
+  the "remind later" reminder scheduler. **Corrected (Phase 66 audit):** the star row, ring,
+  badges, offline-logins count, activity chart, and remind-later scheduler all landed in
+  Phase 33; the navigation drawer and overflow menu remain a deliberate divergence
+  (bottom-tab navigation).
 
 - **Phase 30** — successful foreground syncs now persist Kotlin's `LastSync` timestamp and
   publish it through reactive Riverpod state. The home dashboard displays the missing last-sync
@@ -631,7 +634,9 @@ The thread screen's author-gated app-bar edit/delete moved onto the card itself,
 `row_news.xml`'s per-row buttons, so team voices and the feed both get them through `VoiceCard`.
 
 Still unported on voices: the "Shared from X" date suffix the Kotlin adapter derives from its
-team-name lookups, and anything the moderator gates protect.
+team-name lookups, and anything the moderator gates protect. **Corrected (Phase 66 audit):** the
+suffix landed in Phase 53 (`JsonUtils.extractSharedTeamName`, appended on the community feed);
+only the moderator-gate widenings remain.
 
 ## Harvesting upstream: the 2026-08-12 rebase
 
@@ -1722,7 +1727,8 @@ already carries the equivalent behaviour where one exists.
   its `Result.onFailure` as an error toast. Phase 50 now carries batch resource
   selection/removal and its failure snackbar. `saveSearchActivity` remains
   unported; filter facets are computed locally from the cached catalog rather
-  than through a repository method.
+  than through a repository method. **Corrected (Phase 66 audit):**
+  `saveSearchActivity` landed in Phase 65.
 
 **RecyclerView / adapter-internal refactors (no Flutter equivalent).**
 
@@ -3050,17 +3056,152 @@ leaves the row pending, the preserved-table migration test survives a schema
 bump, and the widget test asserts one visit row fires on open and none for a
 guest.
 
+## Phase 65 — search activity logging (`search_activity` / `search_activities`)
+
+The Kotlin records one `search_activity` row every time the user leaves the
+courses or resources screen with a filter applied
+(`CoursesFragment.onPause`/`ResourcesFragment.onPause` →
+`CoursesRepositoryImpl.saveSearchActivity`/`ResourcesRepositoryImpl.saveSearchActivity`
+→ `search_activity` table → `UploadManager.uploadSearchActivity`, fired from
+`AutoSyncWorker`/`UserDataWorker` at sync completion). The row carries the
+search text, the active filter (grade/subject for courses; subjects/languages/
+levels/mediums for resources), the user, and the device identity fields the
+`SearchActivity.serialize` adds. The Flutter port had no `search_activity`
+table, so filtered searches were never logged.
+
+The port now:
+
+- **`search_activities` Drift table** (SQL `search_activity`, schema v39,
+  preserved in `localAuthorityTables`): one row per applied search, carrying
+  `text` (the CouchDB `searchText` column, renamed to avoid shadowing drift's
+  `Table.text`), `type`, `time`, `user`, `filter` (the CouchDB `filterJson`
+  column, renamed for the same reason), `createdOn`, `parentCode`, and the
+  `uploaded` flag. The preservation test in `migration_test.dart` covers it.
+- **`SearchActivityDao`**: `insert`, `pendingUploads` (`uploaded = false`),
+  and `markUploaded` (records couchId/rev and clears the flag) — the same
+  shape as every other local-authority uploader table.
+- **`SearchActivityRepository`** — `saveCourseSearch`/`saveResourceSearch`
+  ports of the same-named Kotlin methods: mint a microsecond id, build the
+  filter JSON in the Kotlin's key shape (`doc.gradeLevel`/`doc.subjectLevel`
+  for courses; `subjects`/`language`/`level`/`mediaType`/`tags` for
+  resources — tags serialize as an empty array since the port has no tags
+  filter UI), then `insertOnConflictUpdate`. `serialize` is the static port
+  of `SearchActivity.serialize`.
+- **`SearchActivityUploader`** (`type: 'searchActivity'`) — the outbox half:
+  `queuePending` serializes each pending row with the device identity layered
+  on at queue time and POSTs it to `search_activities`; the handler records
+  the returned id/rev via `markUploaded`. Registered in the
+  `outboxDrainerProvider` handler map.
+- **`search_activity_providers.dart`** — `saveCourseSearchActivity`/
+  `saveResourceSearchActivity` helpers that read the session user and call
+  the repository, then queue pending rows into the outbox. They take a
+  `ProviderContainer` rather than a `WidgetRef` so they can be called from
+  `dispose()`, where the widget's `ref` is already torn down.
+- **`CoursesScreen`/`ResourcesScreen` `dispose()`** — port of `onPause` →
+  `saveSearchActivity`. The filter state is captured on each `build` into
+  fields (since `ref.read` throws after the element is disposed) and the
+  `ProviderContainer` is captured via `ProviderScope.containerOf`; on
+  `dispose`, if a filter is applied, the helper writes one row and queues it.
+- **`dashboard_sync_provider.syncAll`** — `_queueSearchActivities` runs after
+  the sync completes, porting `AutoSyncWorker`/`UserDataWorker`'s
+  `uploadSearchActivity` call. Swallowed on error, like
+  `_uploadMyPlanetActivities`, so losing telemetry never fails the sync.
+
+Eight tests cover it: the uploader endpoint is credential-free and points at
+`search_activities`, `queuePending` enqueues pending rows with device identity
+and the right filter shape (and skips already-uploaded rows), the handler
+POSTs and marks uploaded, a missing id/rev leaves the row pending,
+`serialize` reproduces the Kotlin's field shape (and handles an empty
+filter), `saveResourceSearch` serializes the resource filter shape, and the
+preserved-table migration test survives a schema bump.
+
+## Phase 66 — harvest audit, the 2026-08-20→23 commit batch (85 commits)
+
+The 85 commits after `9c54a03` (the tip of the 2026-08-19 batch) were
+audited. Four had already been harvested by earlier phases; the rest are
+refactors, performance rewrites, Kotlin-idiom cleanups, CI/dependency work,
+or land on unported features — no new behavioural port came out of the batch,
+and three stale "unported" claims in older sections were corrected.
+
+**Already harvested (no action).**
+
+- `2ec7e3187` (mid-walk resource cleanup failure) — harvested in Phase 52
+  (`hadBatchFailure` skips `deleteNotIn`; the issue number even matches,
+  #15831).
+- `aa24dfa6c` (security-data preservation) — harvested in Phase 56
+  (`Value.absent()` vs `Value(null)` in `updateUserSecurityData`).
+- `96a04b138` (alternative-URL credentials, #15834) — harvested in Phase 54;
+  the port reads the userinfo straight out of `ServerConfig.alternativeUrl`
+  at the `authHeader` boundary instead of re-running the Kotlin's
+  prefs-rewrite step.
+- `815e5bcee` (nested HTML entry pathing, #15634) — harvested in Phase 53:
+  `openWhichFile` column, `resolveHtmlEntryFile` (path-traversal-safe), and
+  `resourceRelativePathFromUrl` (subfolder-preserving storage) all exist on
+  the Flutter side.
+
+**Deferred — lands on unported features.**
+
+- `2ee164f88`, `825413a9b` (Collections screen view modelling / tag data
+  querying) — the resources `CollectionsFragment` (tag editing against
+  `tags`) has no counterpart screen in the port.
+- `563fcf73b` (enterprises finances landscaping) — deferred for the fourth
+  time; enterprises remains covered by the teams slice with no UI layer of
+  its own.
+- `9d5acb6e2` (bundled `dhulikhel`/`somalia`.mbtiles copy) — the port's
+  maps are cached-tiles-only (Phase 25); there are no bundled archives to
+  skip copying.
+
+**No Flutter equivalent — same behaviour, different mechanism.**
+
+- `77087b09b` (releases the old ExoPlayer before recreating it) — the port's
+  viewer builds one `VideoPlayerController` per widget and disposes it at
+  `dispose`; there is no re-create path to leak through.
+- `792ca9b5f` (`Locale.US` on `%02d:%02d`) — Dart's own zero-padded minute
+  formatting is locale-independent; the Kotlin fix guards against
+  locale-sensitive digit substitution the port never performs.
+- `dd16b4d6b`-class ViewModel extractions (`4252652c1`, `5939bb25a`,
+  `9038ffe96`, `3ec57002c`, `b937ab668`, `d67de28e2`, `e2b1515c2`,
+  `2ee164f88`, `9e6256591`, `6c94b58a1`,
+  `4c91a5c96`, `ebb8abc1f`, `b45b306dc`'s DI addition, `373420b6f`'s
+  repository splitting, `a92fbe3ec`'s and `39d02d4cf`'s repository-method
+  moves) — RecyclerView/ViewBinding/Hilt reshuffling. Riverpod providers
+  already sit where the Kotlin is moving logic to.
+- Layout/dimension handling (`a372000df`, `5386738ce`, `5418c2bf6`,
+  `563fcf73b`, `b68cc3ca3` RecyclerView decorations) — no Flutter
+  counterpart.
+- Kotlin idiom cleanups (`f6bf012bb` import sorting, `d68b6dc85`
+  `TextUtils.isEmpty` → `isNullOrEmpty`, `19d81672f` launch→suspend,
+  `33367300b` `safeGet` lambda defaults, `9bd82e7ae` override removal,
+  `d2753bd7d`/`9bdca5c9f` small API additions) — semantics identical.
+- Performance rewrites that keep semantics (`b10ef665b`, `165dfd987`,
+  `337cd477c`, `e986d3583`, `6abec3e35`, `868ac3ef0`, `475ca7c68`,
+  `c03c3064c`, `14d98ee6b`, `5b5795333`, `13c2b981d`, `7eeb55e55`,
+  `83d281311`, `a56ef0943`, `0a80a8203`, `4252652c1`'s query moves,
+  `9bdca5c9f`, `5c1902cc0`, `2cc3a836a`/`71c310044` DiffUtil diffs) — the
+  port's providers, drift queries, and Riverpod rebuilds make different
+  trade-offs; nothing the port lacks is added.
+- `240ffbe47` OkHttp 5.5.0 (port runs Dio), `f9881e165`/`86dddb147`/
+  `41d89f46c` CI workflow callbacks, and `app/build.gradle` version bumps —
+  Kotlin-side machinery.
+
+**Doctor's note (stale claims corrected in place).**
+
+- Phase 30's "still unported" list (completed-course stars, reachability
+  ring, team alert badges, offline-logins count, activity chart, remind-later
+  scheduler) — all landed in Phase 33; only the navigation drawer/overflow
+  menu remains, as a deliberate divergence.
+- Phase 40's "still unported on voices" line — the "Shared from X" suffix
+  landed in Phase 53; only moderator-gate widenings remain.
+- The 2026-08-16/17 audit's "`saveSearchActivity` remains unported" — landed
+  in Phase 65 (this doc's own immediately preceding entry).
+
 ---
 
-**Last updated**: 2026-08-21 (Phase 61 complete — dashboard health key/IV
-sync-in ported with the 9f3fac1d9 re-entrancy guard; the stale
-courses-progress-filter spec-debt entry corrected. Phase 60 — three further
-duplicate ARB keys removed and guarded by a test that reads the source text
-rather than the parsed map; the `minapk` comparator reads the runtime app
-version with a conservative fallback. Phase 59 — app version/build read at
-runtime through package_info_plus behind a testable seam; the last
-correctness gap Phase 58 flagged is closed; the team detail screens
-backfilled with 33 widget tests; duplicate `untitledResource` ARB key
-split into `untitledResource`/`untitledResourceTitle`)
-**Phase**: 64 of N (27 of 28 UI packages have a screen — see Status for what that does and
+**Last updated**: 2026-08-23 (Phase 66 complete — the 85-commit
+2026-08-20→23 batch audited with no new harvest, and three stale "unported"
+claims corrected in place. Phase 65 — search activity logging ported: the
+`search_activity` table, repository, outbox uploader, and the
+courses/resources `dispose`-time write that fires one row per applied filter,
+uploaded to `search_activities` on sync. Phase 64 — team visit logging.)
+**Phase**: 66 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

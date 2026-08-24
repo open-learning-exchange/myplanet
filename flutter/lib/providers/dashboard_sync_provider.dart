@@ -125,6 +125,7 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
 
     await _recordSyncActivity();
     await _uploadMyPlanetActivities();
+    await _queueSearchActivities();
 
     state = state.copyWith(running: false, finishedAt: DateTime.now());
   }
@@ -170,6 +171,26 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
       await ref
           .read(myPlanetActivitiesUploaderProvider)
           .upload(user: user, config: config);
+    } catch (_) {
+      // Deliberately ignored — see above.
+    }
+  }
+
+  /// Port of `UploadManager.uploadSearchActivity`, which
+  /// `AutoSyncWorker`/`UserDataWorker` fire at the end of a completed sync.
+  /// Queues pending search-activity rows into the outbox; the drainer sends
+  /// them on app resume. Swallowed on error for the same reason
+  /// `_uploadMyPlanetActivities` is: losing telemetry must not flip the sync
+  /// itself to failed.
+  Future<void> _queueSearchActivities() async {
+    if (state.successCount == 0) return;
+    final config = ref.read(serverConfigProvider);
+    final user = ref.read(sessionProvider).valueOrNull;
+    if (config == null) return;
+    try {
+      await ref
+          .read(searchActivityUploaderProvider)
+          .queuePending(config: config, userId: user?.id);
     } catch (_) {
       // Deliberately ignored — see above.
     }

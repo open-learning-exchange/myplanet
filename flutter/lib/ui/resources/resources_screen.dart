@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/resources_providers.dart';
+import '../../providers/search_activity_providers.dart';
 import '../../providers/sync_state.dart';
 import '../../providers/view_mode_providers.dart';
 import '../components/grid_span_calculator.dart';
@@ -32,6 +33,40 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
 
   bool get _selecting => _selectedIds.isNotEmpty;
 
+  /// The filter state captured on the last build, so `dispose` can read it
+  /// after the widget is torn down — `ref.read` throws once the element is
+  /// disposed. Port of `ResourcesFragment.onPause` → `saveSearchActivity`.
+  ResourceFilter _lastFilter = const ResourceFilter();
+  String _lastSearchText = '';
+  ProviderContainer? _container;
+
+  @override
+  void dispose() {
+    // Port of `ResourcesFragment.onPause` → `saveSearchActivity`: records one
+    // search-activity row when the user leaves the screen with a filter or
+    // search text applied. `dispose` is the Flutter lifecycle point that maps
+    // to `onPause`. Fire-and-forget; the row is durable once written.
+    _saveSearchActivity();
+    super.dispose();
+  }
+
+  void _saveSearchActivity() {
+    final container = _container;
+    if (container == null) return;
+    final filter = _lastFilter;
+    final searchText = _lastSearchText;
+    final applied = searchText.isNotEmpty || !filter.isEmpty;
+    if (!applied) return;
+    saveResourceSearchActivity(
+      container,
+      searchText: searchText,
+      subjects: filter.subjects,
+      languages: filter.languages,
+      levels: filter.levels,
+      mediums: filter.mediaTypes,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -40,6 +75,13 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     final filter = ref.watch(resourceFilterProvider);
     final viewMode = ref.watch(libraryViewModeProvider);
     final shelfOnly = ref.watch(resourceShelfOnlyProvider);
+
+    // Capture the current filter state, search text, and container so
+    // `dispose` can fire `saveSearchActivity` without touching `ref` (which
+    // throws after the element is torn down).
+    _lastFilter = filter;
+    _lastSearchText = ref.watch(resourceSearchQueryProvider);
+    _container = ProviderScope.containerOf(context, listen: false);
 
     // #15572: when the shelf has no rows at all, the search bar, the list/grid
     // toggle, and the filter button offer nothing to act on. Hiding them
