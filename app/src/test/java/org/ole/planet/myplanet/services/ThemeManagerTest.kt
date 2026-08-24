@@ -27,7 +27,7 @@ import org.robolectric.annotation.LooperMode
 import org.robolectric.shadows.ShadowDialog
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33], manifest = Config.NONE, application = HiltTestApplication::class)
+@Config(manifest = Config.NONE, application = HiltTestApplication::class)
 @LooperMode(LooperMode.Mode.PAUSED)
 class ThemeManagerTest {
     private lateinit var activityController: ActivityController<AppCompatActivity>

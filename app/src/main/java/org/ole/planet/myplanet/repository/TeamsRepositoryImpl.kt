@@ -203,9 +203,11 @@ class TeamsRepositoryImpl @Inject constructor(
                 emptyList()
             } else {
                 entities.filter {
-                    (it._id ?: it.id) in teamIds &&
+                    it._id in teamIds &&
                         it.status != "archived" &&
-                        it.isRootTeam()
+                        !it.isDeletePending &&
+                        it.isRootTeam() &&
+                        (it.type == "team" || it.type.isNullOrBlank())
                 }.map { it }
             }
         }.flowOn(dispatcherProvider.default)
@@ -281,10 +283,14 @@ class TeamsRepositoryImpl @Inject constructor(
         )
     }
 
-    override fun getMyTeamDetailsFlow(userId: String): Flow<List<TeamDetails>> {
+    override fun getMyTeamDetailsFlow(userId: String, type: String?): Flow<List<TeamDetails>> {
+        val targetType = type ?: "team"
         return teamDao.observeAll().map { entities ->
             val teamIds = entities.filter {
-                it.userId == userId && it.docType == "membership"
+                it.userId == userId &&
+                    it.docType == "membership" &&
+                    !it.isDeletePending &&
+                    !it.teamId.isNullOrBlank()
             }.mapNotNull { it.teamId }.toSet()
 
             val teams = if (teamIds.isEmpty()) {
@@ -292,8 +298,10 @@ class TeamsRepositoryImpl @Inject constructor(
             } else {
                 entities.filter {
                     it.isRootTeam() &&
-                        (it._id ?: it.id) in teamIds &&
-                        it.status != "archived"
+                        it._id in teamIds &&
+                        it.status != "archived" &&
+                        !it.isDeletePending &&
+                        (if (targetType == "enterprise") it.type == "enterprise" else (it.type == "team" || it.type.isNullOrBlank()))
                 }.map { it }
             }
             mapToTeamDetails(teams, userId)
@@ -450,16 +458,19 @@ class TeamsRepositoryImpl @Inject constructor(
         endDate: Long?,
         sortAscending: Boolean,
     ): Flow<List<MyTeam>> {
-        return teamDao.observeAll().map { entities ->
-            entities.filter {
-                it.teamId == teamId &&
-                    it.docType == "transaction" &&
+        return teamDao.observeByTeamIdAndDocType(teamId, "transaction")
+            .map { entities ->
+                entities.filter {
                     it.status != "archived" &&
-                    (startDate == null || it.date >= startDate) &&
-                    (endDate == null || it.date <= endDate)
-            }.sortedByWithDirection(sortAscending) { it.date }
-                .map { it }
-        }
+                        (startDate == null || it.date >= startDate) &&
+                        (endDate == null || it.date <= endDate)
+                }.sortedByWithDirection(sortAscending) { it.date }
+            }
+            .distinctUntilChanged { old, new ->
+                if (old.size != new.size) return@distinctUntilChanged false
+                old.zip(new).all { (o, n) -> o._id == n._id && o._rev == n._rev }
+            }
+            .flowOn(dispatcherProvider.default)
     }
 
     private fun mapTransactionsToPresentationModel(transactions: List<MyTeam>): List<Transaction> {
@@ -788,14 +799,17 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getReportsFlow(teamId: String): Flow<List<MyTeam>> {
-        return teamDao.observeAll().map { entities ->
-            entities.filter {
-                it.teamId == teamId &&
-                    it.docType == "report" &&
+        return teamDao.observeByTeamIdAndDocType(teamId, "report")
+            .map { entities ->
+                entities.filter {
                     it.status != "archived"
-            }.sortedByDescending { it.createdDate }
-                .map { it }
-        }
+                }.sortedByDescending { it.createdDate }
+            }
+            .distinctUntilChanged { old, new ->
+                if (old.size != new.size) return@distinctUntilChanged false
+                old.zip(new).all { (o, n) -> o._id == n._id && o._rev == n._rev }
+            }
+            .flowOn(dispatcherProvider.default)
     }
 
     override suspend fun exportReportsAsCsv(reports: List<MyTeam>, teamName: String): String {
@@ -1145,8 +1159,11 @@ class TeamsRepositoryImpl @Inject constructor(
         }
         if (members.isEmpty()) return null
 
-        val users = members.mapNotNull { member ->
-            member.userId?.let { userId -> userRepository.getUserById(userId) }
+        val userIds = members.mapNotNull { it.userId }
+        val users = if (userIds.isNotEmpty()) {
+            userRepository.getUsersByIds(userIds)
+        } else {
+            emptyList()
         }
         if (users.isEmpty()) return null
 
