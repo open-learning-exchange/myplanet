@@ -49,6 +49,11 @@ class ExamAnswerUtilsTest {
         assertTrue(ExamAnswerUtils.checkCorrectAnswer("the expected word is here", null, question))
         assertFalse(ExamAnswerUtils.checkCorrectAnswer("something else entirely", null, question))
         assertTrue(ExamAnswerUtils.checkCorrectAnswer("the EXPECTED WORD is here", null, question))
+
+        val multiQuestion = createQuestion("input", listOf("first choice", "second choice"))
+        assertTrue(ExamAnswerUtils.checkCorrectAnswer("this is the SECOND choice", null, multiQuestion))
+        assertTrue(ExamAnswerUtils.checkCorrectAnswer("FIRST choice here", null, multiQuestion))
+        assertFalse(ExamAnswerUtils.checkCorrectAnswer("third choice is missing", null, multiQuestion))
     }
 
     @Test

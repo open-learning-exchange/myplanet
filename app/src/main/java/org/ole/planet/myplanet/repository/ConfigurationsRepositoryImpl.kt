@@ -460,16 +460,14 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
     private fun handleVersionEvaluation(info: MyPlanet, apkVersion: Int, callback: ConfigurationsRepository.CheckVersionCallback) {
         val currentVersion = VersionUtils.getVersionCode(context)
-        serviceScope.launch(dispatcherProvider.main) {
-            if (Constants.showBetaFeature(Constants.KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
-                callback.onUpdateAvailable(info, false)
-            } else if (apkVersion > currentVersion) {
-                callback.onUpdateAvailable(info, currentVersion >= info.minapkcode)
-            } else if (currentVersion < info.minapkcode && apkVersion < info.minapkcode) {
-                callback.onUpdateAvailable(info, true)
-            } else {
-                callback.onError(context.getString(R.string.planet_is_up_to_date), false)
-            }
+        if (Constants.showBetaFeature(Constants.KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
+            callback.onUpdateAvailable(info, false)
+        } else if (apkVersion > currentVersion) {
+            callback.onUpdateAvailable(info, currentVersion >= info.minapkcode)
+        } else if (currentVersion < info.minapkcode && apkVersion < info.minapkcode) {
+            callback.onUpdateAvailable(info, true)
+        } else {
+            callback.onError(context.getString(R.string.planet_is_up_to_date), false)
         }
     }
 
