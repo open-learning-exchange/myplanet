@@ -55,6 +55,8 @@ class ResourcesAdapter(
 
     companion object {
         const val PAYLOAD_SELECTION = "PAYLOAD_SELECTION"
+        const val PAYLOAD_VIEW_MODE = "PAYLOAD_VIEW_MODE"
+        const val PAYLOAD_IDENTITY = "PAYLOAD_IDENTITY"
         private const val VIEW_TYPE_GRID = 0
         private const val VIEW_TYPE_LIST = 1
         private const val GRID_COVER_WIDTH_DP = 84
@@ -114,7 +116,7 @@ class ResourcesAdapter(
     fun setViewMode(mode: ListViewMode, onChanged: (() -> Unit)? = null) {
         if (viewMode != mode) {
             viewMode = mode
-            notifyItemRangeChanged(0, itemCount)
+            notifyItemRangeChanged(0, itemCount, PAYLOAD_VIEW_MODE)
         }
         onChanged?.invoke()
     }
@@ -130,7 +132,7 @@ class ResourcesAdapter(
             changed = true
         }
         if (changed) {
-            notifyItemRangeChanged(0, itemCount)
+            notifyItemRangeChanged(0, itemCount, PAYLOAD_IDENTITY)
         }
     }
 
@@ -209,12 +211,23 @@ class ResourcesAdapter(
         }
         val model = getItem(position) ?: return
         val flatPayloads = payloads.flatMap { it as? List<*> ?: listOf(it) }
-        if (flatPayloads.contains(PAYLOAD_SELECTION)) {
+
+        var partialHandled = false
+        if (flatPayloads.contains(PAYLOAD_SELECTION) || flatPayloads.contains(PAYLOAD_IDENTITY)) {
             when (holder) {
-                is GridViewHolder -> bindSelectionAndDownload(holder.binding.checkbox, holder.binding.ivDownloaded, model)
-                is ListViewHolder -> bindSelectionAndDownload(holder.binding.checkbox, holder.binding.ivDownloaded, model)
+                is GridViewHolder -> {
+                    bindSelectionAndDownload(holder.binding.checkbox, holder.binding.ivDownloaded, model)
+                    if (flatPayloads.contains(PAYLOAD_IDENTITY)) bindClicks(holder.itemView, holder.binding.checkbox, model)
+                }
+                is ListViewHolder -> {
+                    bindSelectionAndDownload(holder.binding.checkbox, holder.binding.ivDownloaded, model)
+                    if (flatPayloads.contains(PAYLOAD_IDENTITY)) bindClicks(holder.itemView, holder.binding.checkbox, model)
+                }
             }
-        } else {
+            partialHandled = true
+        }
+
+        if (flatPayloads.contains(PAYLOAD_VIEW_MODE) || !partialHandled) {
             super.onBindViewHolder(holder, position, payloads)
         }
     }
@@ -412,6 +425,8 @@ class ResourcesAdapter(
                 }
                 listener?.onSelectedListChange(selectedItemsMap.values.toList())
             }
+        } else {
+            checkbox.setOnClickListener(null)
         }
     }
 

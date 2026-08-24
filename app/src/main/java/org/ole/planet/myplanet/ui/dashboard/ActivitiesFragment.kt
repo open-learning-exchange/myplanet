@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 class ActivitiesFragment : Fragment() {
     private var _binding: FragmentActivitiesBinding? = null
     private val binding get() = _binding!!
+    private val months = DateFormatSymbols().months
     @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
@@ -61,16 +62,15 @@ class ActivitiesFragment : Fragment() {
         endMillis: Long
     ): Map<Int, Int> {
         val calendar = Calendar.getInstance()
-        return logins
-            .mapNotNull { it.loginTime }
-            .filter { it in startMillis..endMillis }
-            .map { loginTime ->
+        return logins.fold(mutableMapOf<Int, Int>()) { acc, activity ->
+            val loginTime = activity.loginTime
+            if (loginTime != null && loginTime in startMillis..endMillis) {
                 calendar.timeInMillis = loginTime
-                calendar.get(Calendar.MONTH)
+                val month = calendar.get(Calendar.MONTH)
+                acc[month] = (acc[month] ?: 0) + 1
             }
-            .groupingBy { it }
-            .eachCount()
-            .toSortedMap()
+            acc
+        }.toSortedMap()
     }
 
     private fun renderChart(monthlyCounts: Map<Int, Int>, textColor: Int) {
@@ -122,8 +122,8 @@ class ActivitiesFragment : Fragment() {
         }
     }
 
-    fun getMonth(month: Int): String {
-        return DateFormatSymbols().months[month]
+    internal fun getMonth(month: Int): String {
+        return months[month]
     }
 
     override fun onDestroyView() {
