@@ -320,7 +320,7 @@ class TransactionSyncManager @Inject constructor(
                 }
             }
             if (useCheckpoint && syncCompletedFully) {
-                sharedPrefManager.rawPreferences.edit().remove(checkpointKey).commit()
+                sharedPrefManager.rawPreferences.edit().remove(checkpointKey).apply()
             }
             val totalDuration = SystemClock.elapsedRealtime() - syncStartTime
             Log.d("SyncPerf", "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms")

@@ -172,10 +172,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return hydrateSubmissions(submissionDao.getByIds(ids))
     }
 
-    override suspend fun getSubmissionsByUserId(userId: String): List<Submission> {
-        return hydrateSubmissions(submissionDao.getByUserId(userId))
-    }
-
     override suspend fun hasSubmission(
         stepExamId: String?,
         courseId: String?,
@@ -254,8 +250,16 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
         val questions = examId?.let { questionDao.getByExamId(it).map { question -> question } } ?: emptyList()
 
+        val answersLookup = mutableMapOf<String, Answer>()
+        submission.answers?.forEach { answer ->
+            val qId = answer.questionId
+            if (qId != null && !answersLookup.containsKey(qId)) {
+                answersLookup[qId] = answer
+            }
+        }
+
         val questionAnswers = questions.map { question ->
-            val answer = submission.answers?.find { it.questionId == question.id }
+            val answer = answersLookup[question.id]
             val isCorrect = answer != null && question.getCorrectChoice()?.contains(answer.value) == true
             var formattedAnswer: String? = null
             if (answer != null) {
