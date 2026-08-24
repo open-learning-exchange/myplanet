@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 @AndroidEntryPoint
 class PublicSurveyActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPublicSurveyBinding
+    private var backStackListener: FragmentManager.OnBackStackChangedListener? = null
 
     @Inject
     lateinit var surveysRepository: SurveysRepository
@@ -61,11 +62,12 @@ class PublicSurveyActivity : AppCompatActivity() {
         }
 
         supportFragmentManager.registerFragmentLifecycleCallbacks(userInfoDialogCallback, true)
-        supportFragmentManager.addOnBackStackChangedListener {
+        backStackListener = FragmentManager.OnBackStackChangedListener {
             if (surveyStarted && supportFragmentManager.backStackEntryCount == 0 && !isFinishing) {
                 uploadCompletedSubmission()
             }
         }
+        backStackListener?.let { supportFragmentManager.addOnBackStackChangedListener(it) }
         loadSurvey()
     }
 
@@ -179,6 +181,7 @@ class PublicSurveyActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         supportFragmentManager.unregisterFragmentLifecycleCallbacks(userInfoDialogCallback)
+        backStackListener?.let { supportFragmentManager.removeOnBackStackChangedListener(it) }
         super.onDestroy()
     }
 

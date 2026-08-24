@@ -27,7 +27,7 @@ class ResourcesViewModel @Inject constructor(
     enum class SortMode { NONE, DATE, TITLE }
     private var sortMode = SortMode.NONE
     private var isAscending = true
-    private var isTitleAscending = true
+    private var isTitleAscending = false
 
     private val _downloadComplete = MutableStateFlow(false)
     val downloadComplete: StateFlow<Boolean> = _downloadComplete.asStateFlow()
