@@ -22,7 +22,7 @@ class ResourceViewerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityResourceViewerBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root, lightStatusBar = false)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 

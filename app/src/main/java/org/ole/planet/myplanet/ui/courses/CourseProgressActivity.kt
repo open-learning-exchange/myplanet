@@ -21,7 +21,7 @@ class CourseProgressActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityCourseProgressBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root, lightStatusBar = false)
         initActionBar()
         courseId = intent.getStringExtra("courseId").toString()
 

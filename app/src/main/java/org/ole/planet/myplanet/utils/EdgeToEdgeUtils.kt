@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.utils
 
 import android.app.Activity
+import android.content.res.Configuration
 import android.view.View
 import android.view.Window
 import androidx.core.view.ViewCompat
@@ -64,6 +65,40 @@ object EdgeToEdgeUtils {
         }
     }
 
+    /**
+     * Sets up edge-to-edge display for activities whose top bar is a custom Toolbar
+     * standing in for the native ActionBar (e.g. windowActionBar = false themes).
+     * The status-bar inset is added to the toolbar's own top padding so the toolbar's
+     * background extends behind the status bar, instead of the window background
+     * showing through above it.
+     */
+    fun setupEdgeToEdgeWithStatusBarToolbar(
+        activity: Activity,
+        rootView: View,
+        toolbar: View,
+        lightStatusBar: Boolean = true,
+        lightNavigationBar: Boolean = true
+    ) {
+        configureEdgeToEdge(activity, rootView, lightStatusBar, lightNavigationBar)
+
+        val toolbarBasePaddingTop = toolbar.paddingTop
+        val toolbarBasePaddingLeft = toolbar.paddingLeft
+        val toolbarBasePaddingRight = toolbar.paddingRight
+        val toolbarBasePaddingBottom = toolbar.paddingBottom
+
+        ViewCompat.setOnApplyWindowInsetsListener(rootView) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(insets.left, 0, insets.right, insets.bottom)
+            toolbar.setPadding(
+                toolbarBasePaddingLeft,
+                toolbarBasePaddingTop + insets.top,
+                toolbarBasePaddingRight,
+                toolbarBasePaddingBottom
+            )
+            WindowInsetsCompat.CONSUMED
+        }
+    }
+
     private fun configureEdgeToEdge(
         activity: Activity,
         rootView: View,
@@ -72,8 +107,12 @@ object EdgeToEdgeUtils {
     ) {
         activity.window.setTransparentSystemBars()
 
+        val isNightMode = (activity.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
+
         val controller = WindowCompat.getInsetsController(activity.window, rootView)
-        controller.isAppearanceLightStatusBars = lightStatusBar
+        // Dark mode always gets white status bar icons, regardless of what a given screen requests.
+        controller.isAppearanceLightStatusBars = !isNightMode && lightStatusBar
         controller.isAppearanceLightNavigationBars = lightNavigationBar
     }
 }
