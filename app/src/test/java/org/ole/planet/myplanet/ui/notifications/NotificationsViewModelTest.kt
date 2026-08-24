@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.notifications
 
 import android.content.Context
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -206,6 +207,26 @@ class NotificationsViewModelTest {
         loadNotifications(payload)
 
         assertEquals("resource", item("1").notification.type)
+    }
+
+    @Test
+    fun testLoadNotificationsExtractsRelevantTypesCaseInsensitivelyInOrder() = runTest(testDispatcher) {
+        val task1 = notification(id = "t1", type = "TaSk", isRead = false, message = "Task 1", subType = null).copy(relatedId = "rel1")
+        val other1 = notification(id = "o1", type = "OTHER", isRead = false, message = "Other 1", subType = null)
+        val join1 = notification(id = "j1", type = "joiN_rEquEst", isRead = false, message = "Join 1", subType = null).copy(relatedId = "rel2")
+        val task2 = notification(id = "t2", type = "task", isRead = false, message = "Task 2", subType = null).copy(relatedId = "rel3")
+
+        loadNotifications(task1, other1, join1, task2)
+
+        coVerify { repository.getTaskTeamNamesByTaskIds(listOf("rel1", "rel3")) }
+        coVerify { repository.getJoinRequestDetailsBatch(listOf("rel2")) }
+
+        val notifs = viewModel.notifications.value
+        assertEquals(4, notifs.size)
+        assertEquals("t1", notifs[0].id)
+        assertEquals("o1", notifs[1].id)
+        assertEquals("j1", notifs[2].id)
+        assertEquals("t2", notifs[3].id)
     }
 
     private fun item(id: String): NotificationListItem.Item =

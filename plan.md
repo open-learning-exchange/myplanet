@@ -1,0 +1,6 @@
+1. **Modify `app/src/main/java/org/ole/planet/myplanet/ui/notifications/NotificationsViewModel.kt`**: Use `replace_with_git_merge_diff` to replace the `groupBy` allocation with a single loop that populates `taskNotifications` and `joinRequestNotifications` directly via `equals("...", ignoreCase = true)`. This eliminates `lowercase()` allocations per notification and avoiding the map allocation.
+2. **Update `app/src/test/java/org/ole/planet/myplanet/ui/notifications/NotificationsViewModelTest.kt`**: Use `replace_with_git_merge_diff` to add a test method `testLoadNotificationsExtractsRelevantTypesCaseInsensitivelyInOrder` that verifies `loadNotifications` logic using mixed-case relevant types (e.g. `TaSk` or `joiN_rEquEst`) and an unrelated type. This test will assert batch-lookup arguments (e.g. `getTaskTeamNamesByTaskIds`, etc.) and final notification order are unchanged.
+3. **Verify changes**: Run `git diff` to verify the applied code changes in both modified files.
+4. **Test**: Run the relevant test command (`./gradlew test --tests "*NotificationsViewModelTest*"`) in the bash session to ensure the changes are correct and haven't introduced regressions.
+5. **Run Pre-commit Checks**: Complete pre-commit steps to ensure proper testing, verification, review, and reflection are done.
+6. **Submit**: Submit the changes.
