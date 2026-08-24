@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.distinctByContent
 
 @Singleton
 class FeedbackRepositoryImpl @Inject constructor(
@@ -69,10 +70,15 @@ class FeedbackRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getFeedback(userModel: UserEntity?): Flow<List<Feedback>> {
-        return if (userModel?.isManager() == true) {
+        val flow = if (userModel?.isManager() == true) {
             feedbackDao.getAllSortedFlow()
         } else {
             feedbackDao.getByOwnerFlow(userModel?.name)
+        }
+        return flow.distinctByContent { a, b ->
+            // Compare CouchDB sync markers alongside local status changes and reply messages
+            a.id == b.id && a._rev == b._rev && a.status == b.status &&
+                a.isUploaded == b.isUploaded && a.messages == b.messages
         }
     }
 
