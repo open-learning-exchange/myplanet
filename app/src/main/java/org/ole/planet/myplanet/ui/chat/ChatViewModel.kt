@@ -73,8 +73,7 @@ class ChatViewModel @Inject constructor(
     val refreshChatSignal: SharedFlow<Unit> = _refreshChatSignal.asSharedFlow()
     init {
         viewModelScope.launch {
-            realtimeSyncManager.dataUpdateFlow
-                .filter { it.table == "chats" }
+            realtimeSyncManager.updatesFor("chats")
                 .collect { update ->
                     if (update.shouldRefreshUI) {
                         _refreshChatSignal.emit(Unit)
