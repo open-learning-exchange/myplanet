@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
@@ -148,8 +149,18 @@ class DashboardViewModel @Inject constructor(
 
         libraryJob?.cancel()
         libraryJob = viewModelScope.launch {
-            val myLibrary = resourcesRepository.getMyLibrary(userId)
-            _uiState.update { it.copy(library = myLibrary) }
+            resourcesRepository.getMyLibraryFlow(userId)
+                .flowOn(dispatcherProvider.io)
+                .distinctUntilChanged { old, new ->
+                    if (old.size != new.size) return@distinctUntilChanged false
+                    for (i in old.indices) {
+                        if (old[i]._id != new[i]._id || old[i]._rev != new[i]._rev) return@distinctUntilChanged false
+                    }
+                    true
+                }
+                .collect { myLibrary ->
+                    _uiState.update { it.copy(library = myLibrary) }
+                }
         }
 
         coursesJob?.cancel()

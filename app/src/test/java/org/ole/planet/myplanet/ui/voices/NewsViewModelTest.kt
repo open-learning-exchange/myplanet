@@ -12,7 +12,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
@@ -22,7 +22,7 @@ class NewsViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private lateinit var voicesRepository: VoicesRepository
+    private lateinit var resourcesRepository: ResourcesRepository
     private lateinit var viewModel: NewsViewModel
 
     private val testDispatcherProvider = object : DispatcherProvider {
@@ -35,15 +35,15 @@ class NewsViewModelTest {
 
     @Before
     fun setup() {
-        voicesRepository = mockk()
-        viewModel = NewsViewModel(voicesRepository, testDispatcherProvider)
+        resourcesRepository = mockk()
+        viewModel = NewsViewModel(resourcesRepository, testDispatcherProvider)
     }
 
     @Test
     fun `getPrivateImageUrlsCreatedAfter updates flow with list`() = runTest {
         val timestamp = 123456789L
         val expectedUrls = listOf("url1", "url2")
-        coEvery { voicesRepository.getPrivateImageUrlsCreatedAfter(timestamp) } returns expectedUrls
+        coEvery { resourcesRepository.getPrivateImageUrlsCreatedAfter(timestamp) } returns expectedUrls
 
         var capturedResult: List<String>? = null
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -63,7 +63,7 @@ class NewsViewModelTest {
     fun `getPrivateImageUrlsCreatedAfter updates flow with empty list`() = runTest {
         val timestamp = 123456789L
         val expectedUrls = emptyList<String>()
-        coEvery { voicesRepository.getPrivateImageUrlsCreatedAfter(timestamp) } returns expectedUrls
+        coEvery { resourcesRepository.getPrivateImageUrlsCreatedAfter(timestamp) } returns expectedUrls
 
         var capturedResult: List<String>? = null
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
