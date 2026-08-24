@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.surveys
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -146,8 +145,8 @@ class SurveysViewModel @Inject constructor(
                 when (currentSortOption) {
                     SortOption.DATE_DESC -> filteredList.sortedByDescending { getSortDate(it) }
                     SortOption.DATE_ASC -> filteredList.sortedBy { getSortDate(it) }
-                    SortOption.TITLE_ASC -> filteredList.sortedBy { it.name?.lowercase(Locale.getDefault()) }
-                    SortOption.TITLE_DESC -> filteredList.sortedByDescending { it.name?.lowercase(Locale.getDefault()) }
+                    SortOption.TITLE_ASC -> filteredList.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name ?: "" })
+                    SortOption.TITLE_DESC -> filteredList.sortedWith(compareByDescending(String.CASE_INSENSITIVE_ORDER) { it.name ?: "" })
                 }
             }
             if (rawSurveys === currentRawSurveys) {
