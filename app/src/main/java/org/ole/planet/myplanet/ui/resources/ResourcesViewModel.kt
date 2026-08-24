@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,10 +32,14 @@ class ResourcesViewModel @Inject constructor(
     private val _currentUser = MutableStateFlow<UserEntity?>(null)
     val currentUser: StateFlow<UserEntity?> = _currentUser.asStateFlow()
 
-    fun fetchCurrentUser() {
-        viewModelScope.launch {
-            _currentUser.value = userRepository.getUserModel()
+    private val userDeferred: Deferred<UserEntity?> = viewModelScope.async {
+        userRepository.getUserModel().also {
+            _currentUser.value = it
         }
+    }
+
+    suspend fun getCurrentUser(): UserEntity? {
+        return userDeferred.await()
     }
 
     enum class SortMode { NONE, DATE, TITLE }

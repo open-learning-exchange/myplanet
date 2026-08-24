@@ -46,15 +46,15 @@ class ResourcesViewModelTest {
     }
 
     @Test
-    fun `fetchCurrentUser populates currentUser flow`() = runTest {
+    fun `currentUser is populated on init and getCurrentUser returns it`() = runTest {
         val mockUser = UserEntity().apply { id = "user123" }
         coEvery { userRepository.getUserModel() } returns mockUser
 
         viewModel = ResourcesViewModel(resourcesRepository, userRepository, dispatcherProvider)
-        viewModel.fetchCurrentUser()
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(mockUser, viewModel.currentUser.value)
+        assertEquals(mockUser, viewModel.getCurrentUser())
     }
 
     @Test

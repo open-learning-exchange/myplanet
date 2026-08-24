@@ -32,7 +32,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -148,7 +147,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override suspend fun getAdapter(): ListAdapter<*, *> {
         allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
 
-        val user = viewModel.currentUser.filterNotNull().first()
+        val user = viewModel.getCurrentUser()
         // The adapter caches the Context (Activity) which outlives onCreateView,
         // but Fragments and their host Activities are re-created together so this is safe from leaks.
         if (!::adapterLibrary.isInitialized) {
@@ -217,7 +216,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.fetchCurrentUser()
                 viewModel.currentUser.filterNotNull().collectLatest { user ->
                     userModel = user
                     if (::adapterLibrary.isInitialized && _binding != null) {
