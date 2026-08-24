@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.app.Application
 import android.content.Context
-import android.os.Build
 import android.widget.LinearLayout
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
@@ -14,7 +13,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [Build.VERSION_CODES.P], application = Application::class)
+@Config(application = Application::class)
 class CoursesProgressAdapterTest {
 
     private lateinit var context: Context

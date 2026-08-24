@@ -25,7 +25,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(manifest = Config.NONE, sdk = [33], application = Application::class)
+@Config(manifest = Config.NONE, application = Application::class)
 class RetryInterceptorTest {
     private lateinit var broadcastService: BroadcastService
     private lateinit var timeProvider: TimeProvider
