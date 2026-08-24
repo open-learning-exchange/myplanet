@@ -262,3 +262,10 @@ class VoicesActions {
 }
 
 final voicesActionsProvider = Provider<VoicesActions>(VoicesActions.new);
+
+/// Stream of inline comments on a team task or meetup. Comments are `News`
+/// rows with `messageType = 'comment'` and `replyTo = parentId`.
+final commentsForParentProvider = StreamProvider.family<List<NewsRow>, String>(
+  (ref, parentId) =>
+      ref.watch(appDatabaseProvider).newsDao.watchCommentsForParent(parentId),
+);

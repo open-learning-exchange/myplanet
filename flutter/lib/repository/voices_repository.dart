@@ -533,6 +533,115 @@ class VoicesRepository {
     );
   }
 
+  /// Port of `VoicesRepositoryImpl.updateReaction` — toggles a user's emoji
+  /// reaction on a voice. The `reactions` column is a JSON map of emoji to
+  /// a list of user ids; toggling adds the user's id if absent, or removes
+  /// it (and the emoji key if the list becomes empty) if present. A user
+  /// can only have one reaction at a time — switching emojis removes the
+  /// old one first.
+  Future<void> toggleReaction(
+    String newsId,
+    String emoji,
+    String userId,
+  ) async {
+    final row = await _dao.getById(newsId);
+    if (row == null) return;
+    final current = _parseReactions(row.reactions);
+    final updated = _toggleReaction(current, emoji, userId);
+    await _dao.upsert(
+      row
+          .toCompanion(false)
+          .copyWith(
+            reactions: Value(updated.isEmpty ? null : jsonEncode(updated)),
+            isEdited: const Value(true),
+          ),
+    );
+  }
+
+  /// Port of `TeamsRepositoryImpl.addComment` — creates a `News` row as an
+  /// inline comment on a team task or meetup. `messageType = 'comment'`
+  /// and `replyTo = parentId` distinguish it from a voice post.
+  Future<NewsRow> addComment({
+    required String parentId,
+    String? teamId,
+    required String message,
+    required String userId,
+    String? userName,
+    String? planetCode,
+    String? parentCode,
+  }) async {
+    final now = _now().millisecondsSinceEpoch;
+    final id = '$now-${userId.hashCode.abs()}';
+    final companion = NewsEntriesCompanion.insert(
+      id: id,
+      message: Value(message),
+      time: Value(now),
+      docType: const Value('message'),
+      messageType: const Value('comment'),
+      replyTo: Value(parentId),
+      userName: Value(userName),
+      userId: Value(userId),
+      createdOn: Value(planetCode),
+      parentCode: Value(parentCode),
+      messagePlanetCode: Value(planetCode),
+      viewableBy: Value(teamId == null ? '' : 'teams'),
+      viewableId: Value(teamId ?? ''),
+      avatar: const Value(''),
+      sharedBy: const Value(''),
+      imageUrls: const Value([]),
+      labels: const Value([]),
+      isEdited: const Value(false),
+      editedTime: const Value(0),
+      chat: const Value(false),
+    );
+    await _dao.upsert(companion);
+    return (await _dao.getById(id))!;
+  }
+
+  /// Port of `TeamsRepositoryImpl.deleteComment`.
+  Future<void> deleteComment(String commentId) async {
+    await _dao.deleteById(commentId);
+  }
+
+  Map<String, List<String>> _parseReactions(String? json) {
+    if (json == null || json.isEmpty) return {};
+    try {
+      final decoded = jsonDecode(json) as Map<String, dynamic>;
+      return {
+        for (final entry in decoded.entries)
+          entry.key: (entry.value as List).cast<String>(),
+      };
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Map<String, List<String>> _toggleReaction(
+    Map<String, List<String>> current,
+    String emoji,
+    String userId,
+  ) {
+    final result = {
+      for (final entry in current.entries)
+        entry.key: List<String>.from(entry.value),
+    };
+    // Remove the user from any existing emoji first (one reaction at a time).
+    String? existingEmoji;
+    for (final entry in result.entries) {
+      if (entry.value.contains(userId)) {
+        existingEmoji = entry.key;
+        entry.value.remove(userId);
+        if (entry.value.isEmpty) result.remove(entry.key);
+        break;
+      }
+    }
+    // If toggling the same emoji off, we're done. Otherwise add to the new one.
+    if (existingEmoji != emoji) {
+      result.putIfAbsent(emoji, () => []).add(userId);
+    }
+    return result;
+  }
+
   /// Port of `serializeNews`.
   static Map<String, dynamic> serialize(NewsRow row) {
     final object = <String, dynamic>{
@@ -574,6 +683,8 @@ class VoicesRepository {
         'createdDate': row.newsCreatedDate,
         'updatedDate': row.newsUpdatedDate,
         'sharedBy': row.sharedBy,
+        if (row.reactions != null && row.reactions!.isNotEmpty)
+          'reactions': row.reactions,
       },
     });
     return object;

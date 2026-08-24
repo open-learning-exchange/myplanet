@@ -794,6 +794,15 @@
   "submit": "Submit",
   "takeTest": "Take test",
   "recordSurvey": "Record survey",
+  "react": "React",
+  "pickReaction": "Pick a reaction",
+  "comments": "Comments",
+  "addComment": "Add a comment",
+  "commentsCount": "{count} comments",
+  "@commentsCount": {
+    "placeholders": { "count": {"type": "int"} }
+  },
+  "noComments": "No comments yet",
   "leaderboard": "Leaderboard",
   "allTime": "All time",
   "thisMonth": "This month",

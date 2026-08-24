@@ -650,6 +650,7 @@ class NewsEntries extends Table {
   BoolColumn get isEdited => boolean().withDefault(const Constant(false))();
   IntColumn get editedTime => integer().withDefault(const Constant(0))();
   TextColumn get sharedBy => text().nullable()();
+  TextColumn get reactions => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

@@ -107,7 +107,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 41;
+  int get schemaVersion => 42;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -294,6 +294,14 @@ class AppDatabase extends _$AppDatabase {
       // already on the device, and a duplicate reminder is the cheaper mistake.
       if (from < 32) {
         await _addColumnIfMissing(m, teamTasks, teamTasks.isNotified);
+      }
+
+      // `news` is preserved, so `createAll` does not alter it. v42 adds the
+      // `reactions` column — a JSON-encoded map of emoji to user ids, porting
+      // the upstream `13357` emoji-reactions feature. Existing rows have no
+      // reactions, so the nullable column's default is correct.
+      if (from < 42) {
+        await _addColumnIfMissing(m, newsEntries, newsEntries.reactions);
       }
     },
   );
@@ -2179,6 +2187,33 @@ class NewsDao extends DatabaseAccessor<AppDatabase> with _$NewsDaoMixin {
     if (rows.isEmpty) return;
     await batch((b) => b.insertAllOnConflictUpdate(newsEntries, rows));
   }
+
+  /// Port of `NewsDao.getCommentsForParentFlow` — the inline comments on a
+  /// team task or meetup. Comments are `News` rows with
+  /// `messageType = 'comment'` and `replyTo = parentId`.
+  Stream<List<NewsRow>> watchCommentsForParent(String parentId) =>
+      (select(newsEntries)
+            ..where(
+              (row) =>
+                  row.replyTo.equals(parentId) &
+                  row.messageType.equals('comment'),
+            )
+            ..orderBy([(row) => OrderingTerm(expression: row.time)]))
+          .watch();
+
+  Future<List<NewsRow>> getCommentsForParent(String parentId) =>
+      (select(newsEntries)
+            ..where(
+              (row) =>
+                  row.replyTo.equals(parentId) &
+                  row.messageType.equals('comment'),
+            )
+            ..orderBy([(row) => OrderingTerm(expression: row.time)]))
+          .get();
+
+  /// Port of `NewsDao.deleteById` — removes a comment or voice.
+  Future<int> deleteById(String id) =>
+      (delete(newsEntries)..where((row) => row.id.equals(id))).go();
 
   Future<NewsRow?> getById(String id) =>
       (select(newsEntries)..where((r) => r.id.equals(id))).getSingleOrNull();

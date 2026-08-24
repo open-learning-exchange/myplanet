@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/team_tasks_provider.dart';
+import 'inline_comments.dart';
 
 class TeamTasksScreen extends ConsumerWidget {
   const TeamTasksScreen({required this.teamId, super.key});
@@ -31,54 +32,59 @@ class TeamTasksScreen extends ConsumerWidget {
                       : MaterialLocalizations.of(context).formatMediumDate(
                           DateTime.fromMillisecondsSinceEpoch(task.deadline),
                         );
-                  return Card(
-                    child: CheckboxListTile(
-                      value: task.completed,
-                      onChanged: (value) => ref
-                          .read(teamTaskActionsProvider)
-                          .complete(task.id, value ?? false),
-                      title: Text(
-                        task.title ?? l10n.untitledTask,
-                        style: task.completed
-                            ? const TextStyle(
-                                decoration: TextDecoration.lineThrough,
-                              )
-                            : null,
-                      ),
-                      subtitle: Text(
-                        [
-                          due,
-                          task.assignee,
-                        ].where((v) => v?.isNotEmpty == true).join(' · '),
-                      ),
-                      secondary: PopupMenuButton<String>(
-                        onSelected: (value) async {
-                          if (value == 'edit') {
-                            await _showTaskDialog(
-                              context,
-                              ref,
-                              teamId,
-                              task: task,
-                            );
-                          }
-                          if (value == 'delete') {
-                            await ref
-                                .read(teamTaskActionsProvider)
-                                .delete(task.id);
-                          }
-                        },
-                        itemBuilder: (_) => [
-                          PopupMenuItem(
-                            value: 'edit',
-                            child: Text(l10n.editTask),
+                  return Column(
+                    children: [
+                      Card(
+                        child: CheckboxListTile(
+                          value: task.completed,
+                          onChanged: (value) => ref
+                              .read(teamTaskActionsProvider)
+                              .complete(task.id, value ?? false),
+                          title: Text(
+                            task.title ?? l10n.untitledTask,
+                            style: task.completed
+                                ? const TextStyle(
+                                    decoration: TextDecoration.lineThrough,
+                                  )
+                                : null,
                           ),
-                          PopupMenuItem(
-                            value: 'delete',
-                            child: Text(l10n.deleteTask),
+                          subtitle: Text(
+                            [
+                              due,
+                              task.assignee,
+                            ].where((v) => v?.isNotEmpty == true).join(' · '),
                           ),
-                        ],
+                          secondary: PopupMenuButton<String>(
+                            onSelected: (value) async {
+                              if (value == 'edit') {
+                                await _showTaskDialog(
+                                  context,
+                                  ref,
+                                  teamId,
+                                  task: task,
+                                );
+                              }
+                              if (value == 'delete') {
+                                await ref
+                                    .read(teamTaskActionsProvider)
+                                    .delete(task.id);
+                              }
+                            },
+                            itemBuilder: (_) => [
+                              PopupMenuItem(
+                                value: 'edit',
+                                child: Text(l10n.editTask),
+                              ),
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Text(l10n.deleteTask),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
+                      InlineComments(parentId: task.id, teamId: teamId),
+                    ],
                   );
                 },
               ),

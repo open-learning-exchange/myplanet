@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/team_tasks_provider.dart';
+import 'package:myplanet/providers/voices_provider.dart';
 import 'package:myplanet/ui/teams/team_tasks_screen.dart';
 
 import '../support/widget_harness.dart';
@@ -37,6 +38,9 @@ void main() {
           teamTasksProvider(
             'team-1',
           ).overrideWith((ref) => Stream.value(const <TeamTaskRow>[])),
+          commentsForParentProvider.overrideWith(
+            (ref, parentId) => Stream.value(const <NewsRow>[]),
+          ),
         ],
       ),
     );
@@ -65,6 +69,9 @@ void main() {
           teamTasksProvider(
             'team-1',
           ).overrideWith((ref) => Stream.value(tasks)),
+          commentsForParentProvider.overrideWith(
+            (ref, parentId) => Stream.value(const <NewsRow>[]),
+          ),
         ],
       ),
     );
@@ -89,6 +96,9 @@ void main() {
           teamTasksProvider(
             'team-1',
           ).overrideWith((ref) => Stream.value(tasks)),
+          commentsForParentProvider.overrideWith(
+            (ref, parentId) => Stream.value(const <NewsRow>[]),
+          ),
           teamTaskActionsProvider.overrideWith((ref) => actions),
         ],
       ),
@@ -125,6 +135,9 @@ void main() {
           teamTasksProvider(
             'team-1',
           ).overrideWith((ref) => Stream.value(const <TeamTaskRow>[])),
+          commentsForParentProvider.overrideWith(
+            (ref, parentId) => Stream.value(const <NewsRow>[]),
+          ),
           teamTaskActionsProvider.overrideWith((ref) => actions),
         ],
       ),
@@ -163,6 +176,9 @@ void main() {
           teamTasksProvider(
             'team-1',
           ).overrideWith((ref) => Stream.value(tasks)),
+          commentsForParentProvider.overrideWith(
+            (ref, parentId) => Stream.value(const <NewsRow>[]),
+          ),
           teamTaskActionsProvider.overrideWith((ref) => actions),
         ],
       ),

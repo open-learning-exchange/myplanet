@@ -90,6 +90,7 @@ class NewsMapper {
       sharedBy: Value(
         nested == null ? null : JsonUtils.getStringOrNull('sharedBy', nested),
       ),
+      reactions: Value(JsonUtils.getStringOrNull('reactions', doc)),
       // Local-only fields: an in-flight attachment list and the edit marker
       // belong to this device and are never sent back by the server.
       imageUrls: Value(existing?.imageUrls ?? const []),

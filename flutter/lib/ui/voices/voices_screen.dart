@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/utils/json_utils.dart';
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/app_providers.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/sync_state.dart';
 import '../../providers/voices_provider.dart';
@@ -186,6 +189,8 @@ class VoiceCard extends ConsumerWidget {
                   ],
                 ),
               ],
+              if (user != null && !user.id.startsWith('guest'))
+                _ReactionRow(row: row, userId: user.id),
               const SizedBox(height: 4),
               Align(
                 alignment: AlignmentDirectional.centerStart,
@@ -316,4 +321,78 @@ String _formatDateWithSharedTeam(NewsRow row, String teamName) {
   final sharedTeamName = JsonUtils.extractSharedTeamName(row.viewIn);
   if (sharedTeamName.isEmpty) return date;
   return '$date | Shared from $sharedTeamName';
+}
+
+/// A row of emoji reaction chips plus an "add" button that opens the emoji
+/// picker. Port of `VoicesAdapter.showReactions` / `flReactions`.
+class _ReactionRow extends ConsumerWidget {
+  const _ReactionRow({required this.row, required this.userId});
+
+  final NewsRow row;
+  final String userId;
+
+  static const _emojis = ['👍', '❤️', '😂', '🎉', '💡', '🤔'];
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final reactions = _parseReactions(row.reactions);
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 4,
+        children: [
+          for (final entry in reactions.entries)
+            ActionChip(
+              label: Text('${entry.key} ${entry.value.length}'),
+              onPressed: () => _toggle(ref, entry.key),
+              backgroundColor: entry.value.contains(userId)
+                  ? Theme.of(context).colorScheme.primaryContainer
+                  : null,
+            ),
+          ActionChip(
+            avatar: const Icon(Icons.add_reaction_outlined, size: 18),
+            label: Text(AppLocalizations.of(context).react),
+            onPressed: () => _showPicker(context, ref),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showPicker(BuildContext context, WidgetRef ref) async {
+    final emoji = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: Text(AppLocalizations.of(context).pickReaction),
+        children: [
+          for (final e in _emojis)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, e),
+              child: Text(e, style: const TextStyle(fontSize: 28)),
+            ),
+        ],
+      ),
+    );
+    if (emoji != null) _toggle(ref, emoji);
+  }
+
+  Future<void> _toggle(WidgetRef ref, String emoji) async {
+    await ref
+        .read(voicesRepositoryProvider)
+        .toggleReaction(row.id, emoji, userId);
+  }
+}
+
+Map<String, List<String>> _parseReactions(String? json) {
+  if (json == null || json.isEmpty) return {};
+  try {
+    final decoded = jsonDecode(json) as Map<String, dynamic>;
+    return {
+      for (final entry in decoded.entries)
+        entry.key: (entry.value as List).cast<String>(),
+    };
+  } catch (_) {
+    return {};
+  }
 }

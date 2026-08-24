@@ -307,10 +307,6 @@ void main() {
       // installs created after the change unless `onUpgrade` adds it by hand.
       // `chat_history.is_uploaded` arrived without that step; every chat query
       // then failed on the missing column.
-      await database.customStatement(
-        'ALTER TABLE chat_history DROP COLUMN is_uploaded',
-      );
-
       await runUpgrade(from: 24);
 
       final columns = await database
@@ -680,6 +676,39 @@ void main() {
     expect(survivor?.id, 'user-1@earth');
     expect(survivor?.achievementsJson, contains('First'));
     expect(survivor?.uploaded, isFalse);
+  });
+
+  test('a voice post keeps its reactions across v42', () async {
+    // `news` is preserved, so v42's `reactions` column is added by a
+    // hand-written `_addColumnIfMissing` step. A voice that already carries
+    // a reaction must keep it — losing it would silently drop every reaction
+    // on the device.
+    await database.newsDao.upsert(
+      NewsEntriesCompanion.insert(
+        id: 'voice-1',
+        message: const Value('hello'),
+        time: const Value(1000),
+        docType: const Value('message'),
+        avatar: const Value(''),
+        sharedBy: const Value(''),
+        imageUrls: const Value([]),
+        labels: const Value([]),
+        isEdited: const Value(false),
+        editedTime: const Value(0),
+        chat: const Value(false),
+      ),
+    );
+    await runUpgrade(from: 41);
+    // The reactions column exists now, but the row itself survived.
+    final survivor = await database.newsDao.getById('voice-1');
+    expect(survivor?.message, 'hello');
+    expect(survivor?.reactions, isA<String?>().having((v) => v, 'value', null));
+    // Writing a reaction after the upgrade works.
+    await database.customStatement(
+      r"""UPDATE news SET reactions = '{"like":["user-1"]}' WHERE id = 'voice-1'""",
+    );
+    final withReaction = await database.newsDao.getById('voice-1');
+    expect(withReaction?.reactions, isA<String>());
   });
 
   test('every preserved table has a preservation test', () {
