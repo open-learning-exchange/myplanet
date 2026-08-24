@@ -134,7 +134,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 val rawApkVersion = fetchApkVersionString(spm)
                 val versionStr = gson.fromJson(rawApkVersion, String::class.java)
                 if (versionStr.isNullOrEmpty()) {
-                    callback.onError(context.getString(R.string.planet_is_up_to_date), false)
+                    callback.onUpToDate()
                     return@launch
                 }
 
@@ -467,7 +467,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         } else if (currentVersion < info.minapkcode && apkVersion < info.minapkcode) {
             callback.onUpdateAvailable(info, true)
         } else {
-            callback.onError(context.getString(R.string.planet_is_up_to_date), false)
+            callback.onUpToDate()
         }
     }
 

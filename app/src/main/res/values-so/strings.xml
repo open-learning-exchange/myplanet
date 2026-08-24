@@ -724,6 +724,7 @@
     <string name="invalid_url">URL-ka ma jiro</string>
     <string name="please_enter_valid_url_to_continue">Fadlan geli URL-ka sax ah si aad uga sii wadato.</string>
     <string name="uploading_data_to_server_please_wait">Qiimeynta data-ka ee serverka, fadlan sug.....</string>
+    <string name="upload_complete">dhamaystirka upload-ka</string>
     <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">Xaqiij marka hore cinwaankaga serverka ah, waxaana aan la xiriirnay seriver Geed ah.</string>
     <string name="device_couldn_t_reach_local_server">qalabku ma uusan gaari karin server-ka. hubi inaad ku xiran tahay shabakadda Wi-Fi-ga saxda ah ee server-ka maxalliga ah (bulshada).</string>
     <string name="device_couldn_t_reach_nation_server">qalabku ma uusan gaari karin server-ka. hubi inaad ku xiran tahay internetka oo dib isku day.</string>
@@ -1126,7 +1127,6 @@
     <string name="edit_mission_and_services">wax ka beddel himilada iyo adeegyada</string>
     <string name="this_team_has_no_description_defined">kooxdani ma laha sharaxaad la cayimay</string>
     <string name="contact_preference">contact preference</string>
-    <string name="planet_is_up_to_date">Meeraha waa la cusbooneysiiyay.</string>
     <string name="new_apk_version_required_but_not_found_on_server">Nooca cusub ee APK waa loo baahan yahay, laakiin lama helin server-ka. La xidhiidh maamulka.</string>
     <string name="version_not_found">Nooca lama helin.</string>
     <string name="connection_failed">Xiriirku wuu fashilmay!</string>

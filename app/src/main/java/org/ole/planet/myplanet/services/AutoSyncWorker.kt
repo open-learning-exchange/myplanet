@@ -97,12 +97,20 @@ class AutoSyncWorker @AssistedInject constructor(
         syncContinuation = null
     }
 
+    override fun onUpToDate() {
+        startSyncProcess()
+    }
+
     override fun onError(msg: String, blockSync: Boolean) {
         if (blockSync) {
             syncContinuation?.takeIf { it.isActive }?.resume(Unit)
             syncContinuation = null
             return
         }
+        startSyncProcess()
+    }
+
+    private fun startSyncProcess() {
         workerScope.launch(dispatcherProvider.io) {
             syncManager.start(this@AutoSyncWorker, "upload")
             launch {

@@ -725,6 +725,7 @@
     <string name="invalid_url">Invalid Url</string>
     <string name="please_enter_valid_url_to_continue">Please enter valid url to continue.</string>
     <string name="uploading_data_to_server_please_wait">Uploading data to server, please wait.....</string>
+    <string name="upload_complete">upload complete</string>
     <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">Check the server address again. What i connected to wasn\'t the Planet Server</string>
     <string name="device_couldn_t_reach_local_server">device couldn\'t reach the server. check if you are connected to the correct Wi-Fi network for the local server (community).</string>
     <string name="device_couldn_t_reach_nation_server">device couldn’t reach the server. check if you are connected to the internet and try again</string>
@@ -1131,7 +1132,6 @@
     <string name="edit_mission_and_services">edit mission and services</string>
     <string name="this_team_has_no_description_defined">this team has no description defined</string>
     <string name="contact_preference">contact preference</string>
-    <string name="planet_is_up_to_date">Planet is up to date.</string>
     <string name="new_apk_version_required_but_not_found_on_server">New apk version required but not found on server. Contact admin.</string>
     <string name="version_not_found">Version not found.</string>
     <string name="connection_failed">Connection failed!</string>

@@ -724,6 +724,7 @@
     <string name="invalid_url">URL invalide</string>
     <string name="please_enter_valid_url_to_continue">Veuillez entrer une URL valide pour continuer.</string>
     <string name="uploading_data_to_server_please_wait">Téléchargement des données vers le serveur, veuillez patienter.....</string>
+    <string name="upload_complete">téléversement terminé</string>
     <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">Vérifiez à nouveau l\'adresse du serveur. Ce à quoi je me suis connecté n\'était pas le serveur Planet.</string>
     <string name="device_couldn_t_reach_local_server">l\'appareil n\'a pas pu atteindre le serveur. vérifiez si vous êtes connecté au réseau Wi-Fi correct pour le serveur local (communauté).</string>
     <string name="device_couldn_t_reach_nation_server">l\'appareil n\'a pas pu atteindre le serveur. vérifiez si vous êtes connecté à Internet et réessayez.</string>
@@ -1127,7 +1128,6 @@
     <string name="edit_mission_and_services">modifier la mission et les services</string>
     <string name="this_team_has_no_description_defined">cette équipe n\'a aucune description définie</string>
     <string name="contact_preference">contact preference</string>
-    <string name="planet_is_up_to_date">La planète est à jour</string>
     <string name="new_apk_version_required_but_not_found_on_server">Une nouvelle version de l\'APK est requise, mais elle n\'a pas été trouvée sur le serveur. Contactez l\'administrateur.</string>
     <string name="version_not_found">Version non trouvée.</string>
     <string name="connection_failed">Échec de la connexion !</string>

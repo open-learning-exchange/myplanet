@@ -748,6 +748,15 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         }
     }
 
+    override fun onUpToDate() {
+        lifecycleScope.launch {
+            if (customProgressDialog.isShowing()) {
+                customProgressDialog.dismiss()
+            }
+            continueSyncProcess()
+        }
+    }
+
     override fun onError(msg: String, blockSync: Boolean) {
         lifecycleScope.launch {
             Utilities.toast(this@SyncActivity, msg)

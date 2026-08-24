@@ -169,8 +169,6 @@ class ConfigurationsRepositoryImplTest {
         every { context.packageManager } returns pm
         every { pm.getPackageInfo("org.ole.planet.myplanet", 0) } returns packageInfo
 
-        every { context.getString(R.string.planet_is_up_to_date) } returns "Planet is up to date"
-
         io.mockk.mockkObject(org.ole.planet.myplanet.utils.Constants)
         every { org.ole.planet.myplanet.utils.Constants.showBetaFeature(any(), any()) } returns false
 
@@ -219,7 +217,6 @@ class ConfigurationsRepositoryImplTest {
         coEvery { apiInterface.checkVersion(any()) } returns responsePlanet
         coEvery { apiInterface.getApkVersion(any()) } returns responseApk
 
-        every { context.getString(R.string.planet_is_up_to_date) } returns "Planet is up to date"
         every { context.packageName } returns "org.ole.planet.myplanet"
 
         // Mock getVersionCode from context
@@ -255,6 +252,116 @@ class ConfigurationsRepositoryImplTest {
         verify(exactly = 1) { callback.onUpdateAvailable(any(), any()) }
 
         io.mockk.unmockkObject(org.ole.planet.myplanet.utils.Constants)
+        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
+    }
+
+    @Test
+    fun `checkVersion invokes onUpToDate when planet is up to date`() = runTest(testDispatcher) {
+        every { sharedPrefManager.isAlternativeUrl() } returns false
+        every { sharedPrefManager.getCouchdbUrl() } returns "http://test.url"
+        every { sharedPrefManager.getServerUrl() } returns "http://test.url"
+        every { sharedPrefManager.getUrlUser() } returns "user"
+        every { sharedPrefManager.getUrlPwd() } returns "pwd"
+        every { sharedPrefManager.getUrlScheme() } returns "http"
+        every { sharedPrefManager.getUrlHost() } returns "test.url"
+        every { sharedPrefManager.rawPreferences.getInt("url_port", 80) } returns 80
+
+        val rawPrefs: SharedPreferences = mockk(relaxed = true)
+        every { sharedPrefManager.rawPreferences } returns rawPrefs
+        every { rawPrefs.getLong("last_version_check_timestamp", 0) } returns -86400001L
+
+        val myPlanet = MyPlanet().apply {
+            planetVersion = "v1.0"
+            minapkcode = 1
+            latestapkcode = 1
+        }
+
+        val responsePlanet = retrofit2.Response.success(myPlanet)
+        val apkStringJson = JsonUtils.gson.toJson("v1")
+        val responseApk = retrofit2.Response.success(apkStringJson.toResponseBody("application/json".toMediaTypeOrNull()))
+
+        coEvery { apiInterface.checkVersion(any()) } returns responsePlanet
+        coEvery { apiInterface.getApkVersion(any()) } returns responseApk
+
+        every { context.packageName } returns "org.ole.planet.myplanet"
+
+        val pm = mockk<android.content.pm.PackageManager>()
+        val packageInfo = android.content.pm.PackageInfo().apply {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                longVersionCode = 2L
+            } else {
+                @Suppress("DEPRECATION")
+                versionCode = 2
+            }
+        }
+        every { context.packageManager } returns pm
+        every { pm.getPackageInfo("org.ole.planet.myplanet", 0) } returns packageInfo
+
+        io.mockk.mockkObject(org.ole.planet.myplanet.utils.Constants)
+        every { org.ole.planet.myplanet.utils.Constants.showBetaFeature(any(), any()) } returns false
+
+        io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
+        every { org.ole.planet.myplanet.utils.NetworkUtils.getCurrentNetworkId(context) } returns 1
+
+        UrlUtils.init(sharedPrefManager)
+
+        val callback = mockk<ConfigurationsRepository.CheckVersionCallback>(relaxed = true)
+
+        repository.checkVersion(callback, sharedPrefManager)
+
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        verify { callback.onCheckingVersion() }
+        verify(exactly = 1) { callback.onUpToDate() }
+
+        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.Constants)
+        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
+    }
+
+    @Test
+    fun `checkVersion invokes onUpToDate when apk version string is empty`() = runTest(testDispatcher) {
+        every { sharedPrefManager.isAlternativeUrl() } returns false
+        every { sharedPrefManager.getCouchdbUrl() } returns "http://test.url"
+        every { sharedPrefManager.getServerUrl() } returns "http://test.url"
+        every { sharedPrefManager.getUrlUser() } returns "user"
+        every { sharedPrefManager.getUrlPwd() } returns "pwd"
+        every { sharedPrefManager.getUrlScheme() } returns "http"
+        every { sharedPrefManager.getUrlHost() } returns "test.url"
+        every { sharedPrefManager.rawPreferences.getInt("url_port", 80) } returns 80
+
+        val rawPrefs: SharedPreferences = mockk(relaxed = true)
+        every { sharedPrefManager.rawPreferences } returns rawPrefs
+        every { rawPrefs.getLong("last_version_check_timestamp", 0) } returns -86400001L
+
+        val myPlanet = MyPlanet().apply {
+            planetVersion = "v1.0"
+            minapkcode = 1
+            latestapkcode = 1
+        }
+
+        val responsePlanet = retrofit2.Response.success(myPlanet)
+        val apkStringJson = JsonUtils.gson.toJson("")
+        val responseApk = retrofit2.Response.success(apkStringJson.toResponseBody("application/json".toMediaTypeOrNull()))
+
+        coEvery { apiInterface.checkVersion(any()) } returns responsePlanet
+        coEvery { apiInterface.getApkVersion(any()) } returns responseApk
+
+        every { context.packageName } returns "org.ole.planet.myplanet"
+
+        io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
+        every { org.ole.planet.myplanet.utils.NetworkUtils.getCurrentNetworkId(context) } returns 1
+
+        UrlUtils.init(sharedPrefManager)
+
+        val callback = mockk<ConfigurationsRepository.CheckVersionCallback>(relaxed = true)
+
+        repository.checkVersion(callback, sharedPrefManager)
+
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        verify { callback.onCheckingVersion() }
+        verify(exactly = 1) { callback.onUpToDate() }
+
         io.mockk.unmockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
     }
 
