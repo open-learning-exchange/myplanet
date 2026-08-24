@@ -3,9 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/teams_provider.dart';
+import 'package:myplanet/ui/teams/member_detail_screen.dart';
 import 'package:myplanet/ui/teams/team_members_screen.dart';
 
 import '../support/widget_harness.dart';
+import 'package:myplanet/providers/app_providers.dart';
 
 class _MockTeamMembershipActions extends Mock
     implements TeamMembershipActions {}
@@ -182,5 +184,77 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('No pending requests'), findsOneWidget);
+  });
+
+  testWidgets('resolves a member display name from the cached users row', (
+    tester,
+  ) async {
+    final members = [_member(id: 'm1', userId: 'alice')];
+
+    await tester.pumpWidget(
+      wrapScreen(
+        const TeamMembersScreen(teamId: 'team-1'),
+        overrides: [
+          teamMembersProvider(
+            'team-1',
+          ).overrideWith((ref) => Stream.value(members)),
+          teamRequestsProvider(
+            'team-1',
+          ).overrideWith((ref) => Stream.value(const <TeamRow>[])),
+          teamMembershipsProvider.overrideWith(
+            (ref) => Stream.value(const <String, TeamRow>{}),
+          ),
+          userByIdProvider('alice').overrideWith(
+            (ref) => Future.value(
+              buildUserRow(
+                id: 'alice',
+                firstName: 'Alice',
+                lastName: 'Lovelace',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The full name wins over the raw id.
+    expect(find.text('Alice Lovelace'), findsOneWidget);
+    expect(find.text('alice'), findsNothing);
+  });
+
+  testWidgets('tapping a member opens the member detail route', (tester) async {
+    final members = [_member(id: 'm1', userId: 'alice')];
+
+    await tester.pumpWidget(
+      wrapScreen(
+        const TeamMembersScreen(teamId: 'team-1'),
+        overrides: [
+          teamMembersProvider(
+            'team-1',
+          ).overrideWith((ref) => Stream.value(members)),
+          teamRequestsProvider(
+            'team-1',
+          ).overrideWith((ref) => Stream.value(const <TeamRow>[])),
+          teamMembershipsProvider.overrideWith(
+            (ref) => Stream.value(const <String, TeamRow>{}),
+          ),
+          userByIdProvider('alice').overrideWith(
+            (ref) => Future.value(buildUserRow(id: 'alice', name: 'alice')),
+          ),
+        ],
+        pushTargets: {
+          '/life/teams/team-1/members/alice': (_) =>
+              const MemberDetailScreen(teamId: 'team-1', userId: 'alice'),
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('alice'));
+    await tester.pumpAndSettle();
+
+    // The member detail screen renders the header.
+    expect(find.text('Member detail'), findsOneWidget);
   });
 }

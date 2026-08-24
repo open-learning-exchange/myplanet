@@ -169,6 +169,14 @@ bottom sheet's date/title pair had no counterpart, so the port gains
 `ResourceSortState` (one direction flag per mode, like the ViewModel's), a pure
 `applyResourceSort` applied to the filtered stream at build time, a badged sort
 button opening a two-option sheet, and a scroll-to-top shared by both layouts.
+Phase 71 ports the member detail screen (`MembersDetailFragment`) and fixes the
+team members list, which had rendered each member as the raw `userId` with no
+tap target. `MemberDetailScreen` shows the profile photo, full name, leader
+badge, and labelled rows (email, DOB, language, phone, level, visits, last
+login); a `memberDetailProvider` joins the `users` row with per-team visit
+counts (`TeamLogDao.teamVisitsForUsers`/`lastTeamVisit`) and the last login
+(`activitiesRepository.lastVisit`); the list resolves real names via a new
+`userByIdProvider` and navigates to the detail route on tap.
 
 ### Documentation Map
 

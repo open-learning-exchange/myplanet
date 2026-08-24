@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../l10n/app_localizations.dart';
-import '../../providers/teams_provider.dart';
 import '../../data/local/app_database.dart';
+import '../../l10n/app_localizations.dart';
+import '../../providers/app_providers.dart';
+import '../../providers/teams_provider.dart';
+import '../router.dart';
 
 class TeamMembersScreen extends ConsumerWidget {
   const TeamMembersScreen({
@@ -37,7 +40,11 @@ class TeamMembersScreen extends ConsumerWidget {
         ),
         body: TabBarView(
           children: [
-            _MembersList(rows: members, emptyText: l10n.noMembers),
+            _MembersList(
+              teamId: teamId,
+              rows: members,
+              emptyText: l10n.noMembers,
+            ),
             if (canManage) _RequestsList(teamId: teamId, rows: requests),
           ],
         ),
@@ -46,38 +53,64 @@ class TeamMembersScreen extends ConsumerWidget {
   }
 }
 
-class _MembersList extends StatelessWidget {
-  const _MembersList({required this.rows, required this.emptyText});
+class _MembersList extends ConsumerWidget {
+  const _MembersList({
+    required this.teamId,
+    required this.rows,
+    required this.emptyText,
+  });
+  final String teamId;
   final AsyncValue<List<TeamRow>> rows;
   final String emptyText;
+
   @override
-  Widget build(BuildContext context) => rows.when(
-    loading: () => const Center(child: CircularProgressIndicator()),
-    error: (_, _) =>
-        Center(child: Text(AppLocalizations.of(context).membersUnavailable)),
-    data: (items) => items.isEmpty
-        ? Center(child: Text(emptyText))
-        : ListView.builder(
-            itemCount: items.length,
-            itemBuilder: (context, index) {
-              final row = items[index];
-              return ListTile(
-                leading: CircleAvatar(
-                  child: Text(
-                    (row.userId ?? '?').characters.first.toUpperCase(),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    return rows.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (_, _) => Center(child: Text(l10n.membersUnavailable)),
+      data: (items) => items.isEmpty
+          ? Center(child: Text(emptyText))
+          : ListView.builder(
+              itemCount: items.length,
+              itemBuilder: (context, index) {
+                final row = items[index];
+                final userId = row.userId ?? '';
+                // Resolve the member's display name from the cached `users`
+                // row. Falls back to the raw id exactly as the Kotlin's
+                // `MembersAdapter` falls back to the username when no full
+                // name is set.
+                final user = userId.isEmpty
+                    ? null
+                    : ref.watch(userByIdProvider(userId)).valueOrNull;
+                final fullName = user == null
+                    ? ''
+                    : [user.firstName, user.lastName]
+                          .where((p) => p != null && p.trim().isNotEmpty)
+                          .join(' ');
+                final displayName = fullName.isNotEmpty
+                    ? fullName
+                    : (user?.name ?? userId);
+                final initial = displayName.isEmpty
+                    ? '?'
+                    : displayName.characters.first.toUpperCase();
+                return ListTile(
+                  leading: CircleAvatar(child: Text(initial)),
+                  title: Text(
+                    displayName.isEmpty ? l10n.unknownMember : displayName,
                   ),
-                ),
-                title: Text(
-                  row.userId ?? AppLocalizations.of(context).unknownMember,
-                ),
-                subtitle: row.isLeader
-                    ? Text(AppLocalizations.of(context).leader)
-                    : null,
-                trailing: row.isLeader ? const Icon(Icons.star) : null,
-              );
-            },
-          ),
-  );
+                  subtitle: row.isLeader ? Text(l10n.leader) : null,
+                  trailing: row.isLeader ? const Icon(Icons.star) : null,
+                  onTap: userId.isEmpty
+                      ? null
+                      : () => context.push(
+                          '${Routes.teams}/$teamId/members/$userId',
+                        ),
+                );
+              },
+            ),
+    );
+  }
 }
 
 class _RequestsList extends ConsumerWidget {

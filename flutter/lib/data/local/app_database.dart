@@ -3119,6 +3119,44 @@ class TeamLogDao extends DatabaseAccessor<AppDatabase> with _$TeamLogDaoMixin {
           uploaded: const Value(true),
         ),
       );
+
+  /// Port of `TeamLogDao.getTeamVisitsForUsers` — the per-team visit count
+  /// `MembersDetailFragment` shows. `type = 'teamVisit'` filters out any
+  /// other team-log rows, exactly as the Kotlin query does.
+  Future<List<TeamLogRow>> teamVisitsForUsers(
+    String teamId,
+    List<String> userNames,
+  ) {
+    if (userNames.isEmpty) return Future.value(const <TeamLogRow>[]);
+    final query = select(teamLogTable)
+      ..where(
+        (row) =>
+            row.type.equals('teamVisit') &
+            row.teamId.equals(teamId) &
+            row.user.isIn(userNames),
+      );
+    return query.get();
+  }
+
+  /// Port of `TeamLogDao.getLastVisit` — the most recent `teamVisit` time for
+  /// a user in a team, or null if they have never visited. The Kotlin uses
+  /// `SELECT MAX(time) ...`; drift's `selectOnly` + `Expression.max()` is the
+  /// same query shape.
+  Future<int?> lastTeamVisit(String? userName, String? teamId) async {
+    final query = selectOnly(teamLogTable, distinct: false)
+      ..addColumns([teamLogTable.time.max()])
+      ..where(teamLogTable.type.equals('teamVisit'));
+    if (userName != null) {
+      query.where(teamLogTable.user.equals(userName));
+    }
+    if (teamId != null) {
+      query.where(teamLogTable.teamId.equals(teamId));
+    }
+    final row = await query
+        .map((r) => r.read(teamLogTable.time.max()))
+        .getSingleOrNull();
+    return row;
+  }
 }
 
 /// Port of `data/room/dao/SearchActivityDao.kt`.

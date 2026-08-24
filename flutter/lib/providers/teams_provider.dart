@@ -40,6 +40,58 @@ final teamResourceLinksProvider = StreamProvider.family<List<TeamRow>, String>(
   (ref, teamId) =>
       ref.watch(teamsRepositoryProvider).watchResourceLinks(teamId),
 );
+
+/// The profile + visit data `MemberDetailScreen` shows, joined the way the
+/// Kotlin's `getJoinedMembersWithVisitInfo` joins it for one member: the
+/// `users` row, the per-team visit count (from `team_log`), and the last
+/// login timestamp (from `offline_activity`). `null` when the member's user
+/// document is not in the local cache (a guest, or a member whose profile
+/// has not synced yet).
+class MemberDetail {
+  const MemberDetail({
+    required this.user,
+    required this.visitCount,
+    required this.lastVisit,
+    required this.lastLogin,
+    required this.isLeader,
+  });
+
+  final UserRow user;
+  final int visitCount;
+  final int? lastVisit;
+  final int? lastLogin;
+  final bool isLeader;
+}
+
+final memberDetailProvider =
+    FutureProvider.family<MemberDetail?, ({String teamId, String userId})>((
+      ref,
+      key,
+    ) async {
+      final user = await ref.watch(userDaoProvider).getById(key.userId);
+      if (user == null) return null;
+      final visits = await ref
+          .watch(teamsRepositoryProvider)
+          .teamVisitsForUsers(key.teamId, [user.name ?? '']);
+      final lastVisit = await ref
+          .watch(teamsRepositoryProvider)
+          .lastTeamVisit(user.name, key.teamId);
+      final lastLogin = user.name == null || user.name!.isEmpty
+          ? null
+          : await ref.watch(activitiesRepositoryProvider).lastVisit(user.name!);
+      // `teamMembersProvider` rows carry `isLeader`; look it up so the
+      // detail screen's header matches the list's leader star.
+      final membership = await ref
+          .watch(teamsRepositoryProvider)
+          .membership(key.teamId, key.userId);
+      return MemberDetail(
+        user: user,
+        visitCount: visits.length,
+        lastVisit: lastVisit,
+        lastLogin: lastLogin,
+        isLeader: membership?.isLeader ?? false,
+      );
+    });
 final teamResourcesProvider = StreamProvider.family<List<MyLibraryRow>, String>(
   (ref, teamId) async* {
     await for (final links

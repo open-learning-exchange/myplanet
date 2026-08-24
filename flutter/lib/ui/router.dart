@@ -55,6 +55,7 @@ import 'surveys/take_survey_screen.dart';
 import 'teams/teams_screen.dart';
 import 'teams/team_tasks_screen.dart';
 import 'teams/team_members_screen.dart';
+import 'teams/member_detail_screen.dart';
 import 'teams/team_resources_screen.dart';
 import 'teams/team_courses_screen.dart';
 import 'teams/team_reports_screen.dart';
@@ -472,6 +473,15 @@ final routerProvider = Provider<GoRouter>((ref) {
                                   state.uri.queryParameters['tab'] ==
                                   'requests',
                             ),
+                            routes: [
+                              GoRoute(
+                                path: ':userId',
+                                builder: (context, state) => MemberDetailScreen(
+                                  teamId: state.pathParameters['teamId']!,
+                                  userId: state.pathParameters['userId']!,
+                                ),
+                              ),
+                            ],
                           ),
                           GoRoute(
                             path: 'resources',

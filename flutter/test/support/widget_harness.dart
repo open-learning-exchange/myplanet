@@ -109,6 +109,39 @@ MyLibraryRow buildLibraryRow({
   );
 }
 
+UserRow buildUserRow({
+  required String id,
+  String? name,
+  String? firstName,
+  String? lastName,
+  String? email,
+  String? dob,
+  String? language,
+  String? phoneNumber,
+  String? level,
+  String? userImage,
+  bool isArchived = false,
+  bool isUpdated = false,
+}) {
+  return UserRow(
+    id: id,
+    name: name,
+    rolesList: const [],
+    userAdmin: false,
+    joinDate: 0,
+    firstName: firstName,
+    lastName: lastName,
+    email: email,
+    dob: dob,
+    language: language,
+    phoneNumber: phoneNumber,
+    level: level,
+    userImage: userImage,
+    isArchived: isArchived,
+    isUpdated: isUpdated,
+  );
+}
+
 CourseRow buildCourseRow({
   required String id,
   String? courseTitle,

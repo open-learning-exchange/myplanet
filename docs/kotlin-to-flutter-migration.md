@@ -3471,16 +3471,62 @@ suite passes, `flutter analyze` clean, `dart format` clean.
 
 ---
 
-**Last updated**: 2026-08-24 (Phase 70 complete — resource list sort
-toggles (date/title, per-mode direction, scroll-to-top), porting upstream
-`14a9f14` (#15941) together with the bottom-sheet pair the port had never
-built; the rest of the 2026-08-24 batch is refactors. Phase 69 — the ARB
-derivation tool merges instead of regenerating, after it was found to
-delete 17 hand-authored translations per locale on every run. Phase 68 —
-achievements: the `achievements` ledger table, repository, outbox uploader,
-list and edit screens, CV/resume file slot, and the Life tile wired at
-`/life/achievements`. Phase 67 — tags and collections: the `tags` cache
-table, dialog, per-screen filter/chip wiring, and tag capture in
-search-activity logging.)
-**Phase**: 70 of N (27 of 28 UI packages have a screen — see Status for what that does and
+## Phase 71 — member detail screen, and real member names in the list
+
+`MembersDetailFragment` — the profile card opened by tapping a member in the
+team members list (also the destination for voice authors and community
+leaders in the Kotlin) — had no counterpart. Worse, the port's
+`team_members_screen.dart` rendered each member as a plain `ListTile` titled
+by the raw `userId` string, with no tap handler at all. A member's full name,
+email, date of birth, language, phone, level, visit count, and last login were
+all unreachable.
+
+This phase ports the screen and fixes the list:
+
+- `TeamLogDao.teamVisitsForUsers` / `lastTeamVisit` port the two Kotlin
+  team-log queries the member card reads (`getTeamVisitsForUsers` for the
+  per-team visit count, `getLastVisit` for the most recent visit). The
+  `offline_activities` half (`lastVisit`/`offlineVisitCount`) was already
+  there from the activity-log slice.
+- `memberDetailProvider` joins the three sources the way the Kotlin's
+  `getJoinedMembersWithVisitInfo` joins them for one member: the `users` row
+  by id (`UserDao.getById`), the per-team visit count, and the last login
+  timestamp. It returns `null` for a member whose user document is not in
+  the local cache, the same state the Kotlin shows as a blank card.
+- `MemberDetailScreen` (`/life/teams/:teamId/members/:userId`) renders the
+  profile photo, full name, leader badge, and the labelled rows for
+  username, email, date of birth (cut at `T`), language, phone, level,
+  number of visits, and last login. Empty/blank fields hide — the port of
+  `setFieldOrHide`, which also hides the wrapping parent, so a member with
+  no email set shows no email row.
+- `_MembersList` is now a `ConsumerWidget` that resolves each member's
+  display name from the cached `users` row (first + last name, falling
+  back to the username, then the raw id — the Kotlin's `MembersAdapter`
+  fallback chain) and navigates to the detail screen on tap. A new
+  `userByIdProvider` backs the per-row lookup.
+- `memberDetail`, `numberOfVisits`, and `noLogoutRecord` are new in
+  `app_en.arb`; the derived locales fall back to English until translated.
+
+Tests: `test/ui/member_detail_screen_test.dart` covers the populated-fields
+render (scrolling the below-fold visit/login rows into view first), the
+leader badge, the hide-empty-fields behaviour, the visit count + formatted
+last login, and the unknown-member state. `team_members_screen_test.dart`
+gains a name-resolution test and a tap-opens-detail-route test. The
+1294-test suite passes, `flutter analyze` clean, `dart format` clean.
+
+---
+
+**Last updated**: 2026-08-24 (Phase 71 complete — the member detail screen
+(`MembersDetailFragment`), reached by tapping a member; the team members
+list now resolves real names instead of raw ids. Phase 70 — resource list
+sort toggles (date/title, per-mode direction, scroll-to-top), porting
+upstream `14a9f14` (#15941) together with the bottom-sheet pair the port
+had never built. Phase 69 — the ARB derivation tool merges instead of
+regenerating, after it was found to delete 17 hand-authored translations
+per locale on every run. Phase 68 — achievements: the `achievements`
+ledger table, repository, outbox uploader, list and edit screens, CV/resume
+file slot, and the Life tile wired at `/life/achievements`. Phase 67 — tags
+and collections: the `tags` cache table, dialog, per-screen filter/chip
+wiring, and tag capture in search-activity logging.)
+**Phase**: 71 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

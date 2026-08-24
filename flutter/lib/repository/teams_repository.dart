@@ -36,6 +36,19 @@ class TeamsRepository {
       _dao.watchTeamDocuments(teamId, 'membership');
   Stream<List<TeamRow>> watchRequests(String teamId) =>
       _dao.watchTeamDocuments(teamId, 'request');
+
+  /// Port of `TeamLogDao.getTeamVisitsForUsers` — the per-team visit rows for
+  /// the members of `teamId`, used to compute the visit count
+  /// `MembersDetailFragment` shows.
+  Future<List<TeamLogRow>> teamVisitsForUsers(
+    String teamId,
+    List<String> userNames,
+  ) => _teamLogDao.teamVisitsForUsers(teamId, userNames);
+
+  /// Port of `TeamLogDao.getLastVisit` — the most recent `teamVisit` time for
+  /// a user in a team, or null if they have never visited.
+  Future<int?> lastTeamVisit(String? userName, String? teamId) =>
+      _teamLogDao.lastTeamVisit(userName, teamId);
   Stream<List<TeamRow>> watchResourceLinks(String teamId) =>
       _dao.watchResourceLinks(teamId);
   Stream<List<TeamRow>> watchReports(String teamId) =>

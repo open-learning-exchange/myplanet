@@ -97,6 +97,12 @@ final userDaoProvider = Provider<UserDao>(
   (ref) => ref.watch(appDatabaseProvider).userDao,
 );
 
+/// A single cached `users` row by id, for the team members list and member
+/// detail screen. `null` when the user document is not in the local cache.
+final userByIdProvider = FutureProvider.family<UserRow?, String>(
+  (ref, id) => ref.watch(userDaoProvider).getById(id),
+);
+
 final myLibraryDaoProvider = Provider<MyLibraryDao>(
   (ref) => ref.watch(appDatabaseProvider).myLibraryDao,
 );
