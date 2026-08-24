@@ -23,6 +23,7 @@ interface NotificationsRepository {
     suspend fun getJoinRequestDetailsBatch(relatedIds: List<String>): Map<String, Pair<String, String>>
     suspend fun getTaskTeamName(taskTitle: String): String?
     suspend fun getTeamNotifications(teamIds: List<String>, userId: String): Map<String, TeamNotificationInfo>
+    suspend fun updateTeamNotification(teamId: String, count: Int)
     suspend fun getTaskTeamNamesByTaskTitles(taskTitles: List<String>): Map<String, String>
     suspend fun getPendingSyncNotifications(): List<AppNotification>
     suspend fun markNotificationsSynced(syncResults: List<Pair<String, String?>>)
