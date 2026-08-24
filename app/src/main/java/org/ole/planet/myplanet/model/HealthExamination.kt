@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.text.TextUtils
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -35,7 +34,7 @@ class HealthExamination {
     var gender: String? = null
     var age = 0
     fun getEncryptedDataAsJson(model: UserEntity): JsonObject {
-        return if (!TextUtils.isEmpty(data)) JsonUtils.gson.fromJson(
+        return if (!data.isNullOrEmpty()) JsonUtils.gson.fromJson(
             AndroidDecrypter.decrypt(data, model.key, model.iv), JsonObject::class.java
         ) else JsonObject()
     }
@@ -77,8 +76,8 @@ class HealthExamination {
 
         fun serialize(health: HealthExamination): JsonObject {
             val `object` = JsonObject()
-            if (!TextUtils.isEmpty(health.userId)) `object`.addProperty("_id", health.userId)
-            if (!TextUtils.isEmpty(health._rev)) `object`.addProperty("_rev", health._rev)
+            if (!health.userId.isNullOrEmpty()) `object`.addProperty("_id", health.userId)
+            if (!health._rev.isNullOrEmpty()) `object`.addProperty("_rev", health._rev)
             `object`.addProperty("data", health.data)
             JsonUtils.addFloat(`object`, "temperature", health.temperature)
             JsonUtils.addInteger(`object`, "pulse", health.pulse)
