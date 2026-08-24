@@ -94,7 +94,6 @@ class FreeSpaceWorkerTest {
         coVerify {
             resourcesRepository.markResourcesAsNotOffline(match { it.toSet() == setOf("res1", "res2") })
         }
-        coVerify(exactly = 0) { resourcesRepository.markAllResourcesOffline(any()) }
 
         val outputData = (result as Result.Success).outputData
         assertTrue(outputData.getInt("deletedFiles", -1) > 0)

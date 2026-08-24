@@ -21,6 +21,8 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
     private var _binding: FragmentTeamDetailBinding? = null
     private val binding get() = _binding!!
     private var bottomSheetBehavior: BottomSheetBehavior<View>? = null
+    private var bottomSheetCallback: BottomSheetBehavior.BottomSheetCallback? = null
+    private var tabLayoutMediator: TabLayoutMediator? = null
 
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
@@ -43,7 +45,7 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
             bottomSheetBehavior?.peekHeight = resources.displayMetrics.heightPixels / 7
 
             bottomSheetBehavior?.state = BottomSheetBehavior.STATE_COLLAPSED
-            bottomSheetBehavior?.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
+            bottomSheetCallback = object : BottomSheetBehavior.BottomSheetCallback() {
                 override fun onStateChanged(bottomSheet: View, newState: Int) {
                     when (newState) {
                         BottomSheetBehavior.STATE_HIDDEN -> {
@@ -58,8 +60,10 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
                     val screenHeight = resources.displayMetrics.heightPixels
                     val newHeight = (screenHeight * (0.25f + (0.75f * slideOffset))).toInt()
 
-                    bottomSheet.layoutParams.height = newHeight
-                    bottomSheet.requestLayout()
+                    if (bottomSheet.layoutParams.height != newHeight) {
+                        bottomSheet.layoutParams.height = newHeight
+                        bottomSheet.requestLayout()
+                    }
 
                     when {
                         slideOffset > 0.5f -> bottomSheetBehavior?.state = BottomSheetBehavior.STATE_EXPANDED
@@ -67,7 +71,8 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
                         slideOffset < -0.3f -> bottomSheetBehavior?.state = BottomSheetBehavior.STATE_HIDDEN
                     }
                 }
-            })
+            }
+            bottomSheetCallback?.let { bottomSheetBehavior?.addBottomSheetCallback(it) }
         }
 
         initCommunityTab()
@@ -78,8 +83,10 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
         dialog?.let { d ->
             val bottomSheet = d.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
             bottomSheet?.let {
-                it.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                it.requestLayout()
+                if (it.layoutParams.height != ViewGroup.LayoutParams.WRAP_CONTENT) {
+                    it.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                    it.requestLayout()
+                }
             }
         }
     }
@@ -90,9 +97,10 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
         val communityName = sharedPrefManager.getCommunityName()
         val planetType = configurationsRepository.getPlanetType()
         binding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "$communityName@$sParentcode", true, planetType)
-        TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
+        tabLayoutMediator = TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
             tab.text = (binding.viewPager2.adapter as CommunityPagerAdapter).getPageTitle(position)
-        }.attach()
+        }
+        tabLayoutMediator?.attach()
         binding.title.text = communityName
         binding.title.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
         binding.subtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
@@ -102,6 +110,11 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        bottomSheetCallback?.let { bottomSheetBehavior?.removeBottomSheetCallback(it) }
+        bottomSheetCallback = null
+        tabLayoutMediator?.detach()
+        tabLayoutMediator = null
+        binding.viewPager2.adapter = null
         _binding = null
     }
 }
