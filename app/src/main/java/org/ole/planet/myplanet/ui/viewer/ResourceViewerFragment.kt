@@ -51,6 +51,8 @@ import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.text.PDFTextStripper
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import java.io.File
 import java.util.regex.Pattern
 import javax.inject.Inject
@@ -83,7 +85,9 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
     private var _binding: FragmentResourceViewerBinding? = null
     private val binding get() = _binding!!
-
+    private var pdfTotalPages: Int = 0
+    private var pdfCurrentPage: Int = 0
+    private var hasPromptedPdfRating: Boolean = false
     private var resourceId: String? = null
     private var filePath: String? = null
     private var title: String? = null
@@ -92,6 +96,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private var isFullPath: Boolean = false
     private var auth: String = ""
 
+    private var imageRatingJob: Job? = null
     private var exoPlayer: ExoPlayer? = null
     private var streamingHttpDataSourceFactory: DefaultHttpDataSource.Factory? = null
     private var videoLoadingOverlay: View? = null
@@ -102,12 +107,15 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private var pdfText: String = ""
     private var isExtractingText = false
     private var externalFilesDir: File? = null
-
+    private var imageStartTime: Long = 0L
+    private var hasPromptedImageRating: Boolean = false
     private val viewModel: ResourceViewerViewModel by viewModels()
     @Inject lateinit var dispatcherProvider: DispatcherProvider
     @Inject lateinit var ttsManager: TTSManager
     @Inject lateinit var userRepository: UserRepository
     private var authSessionUpdater: AuthSessionUpdater? = null
+    private var isResourceFinished: Boolean = false
+    fun isResourceFinished(): Boolean = isResourceFinished
 
     private val audioRecordListener = object : OnAudioRecordListener {
         override fun onRecordStarted() {
@@ -338,24 +346,18 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                 when (playbackState) {
                     Player.STATE_BUFFERING -> showVideoLoading(getString(R.string.video_loading_buffering))
                     Player.STATE_READY -> hideVideoLoading()
-                    Player.STATE_ENDED -> {
-                        if (!::library.isInitialized) return
-                        val rid = library.resourceId ?: return
-                        viewLifecycleOwner.lifecycleScope.launch {
-                            val showDialog= viewModel.shouldShowResourceRatingDialog(rid)
-                            if (showDialog) {
-                                val userId = userRepository.getUserModel()?.id
-                                val ratingDialog = RatingsFragment.newInstance("resource", rid, library.title)
-                                ratingDialog.show(parentFragmentManager, RatingsFragment.TAG)
-                                viewModel.setRatingPrompted(userId, rid)
-                            }
-                        }
-                    }
+                    Player.STATE_ENDED -> { isResourceFinished = true }
                     else -> {}
                 }
             }
         })
         return player
+    }
+
+    private fun onPdfPageChanged(currentPage: Int, totalPages: Int) {
+        if (currentPage == totalPages - 1) {
+            isResourceFinished = true
+        }
     }
 
     private fun setupAudioViewer() {
@@ -378,7 +380,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     @OptIn(UnstableApi::class)
     private fun initializeAudioPlayer(playerView: PlayerView) {
         val fullPath = resolveAudioPath(filePath)
-        exoPlayer = ExoPlayer.Builder(requireContext()).build().also { player ->
+        exoPlayer = createExoPlayer().also { player ->
             playerView.player = player
             player.setMediaItem(MediaItem.fromUri(fullPath))
             player.prepare()
@@ -434,6 +436,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                 page.close()
                 pdfRenderer.close()
                 fileDescriptor.close()
+                // Currently, the pdf renders page 0 directly in a linear layout
+                onPdfPageChanged(0, 1)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -473,6 +477,16 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val imageFileName = binding.root.findViewById<TextView>(R.id.imageFileName)
         val imageViewer = binding.root.findViewById<ImageView>(R.id.imageViewer)
         imageFileName.text = title
+
+        imageStartTime = System.currentTimeMillis()
+        hasPromptedImageRating = false
+
+        imageRatingJob?.cancel()
+        imageRatingJob = viewLifecycleOwner.lifecycleScope.launch {
+            if (type == ResourceType.IMAGE) {
+                isResourceFinished = true
+            }
+        }
 
         val imageFile = if (isFullPath) filePath?.let { File(it) }
                         else File(externalFilesDir, "ole/$filePath")
@@ -587,6 +601,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     }
 
     override fun onDestroyView() {
+        imageRatingJob?.cancel()
+        imageRatingJob = null
         authSessionUpdater?.stop()
         exoPlayer?.release()
         exoPlayer = null

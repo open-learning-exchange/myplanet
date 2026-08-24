@@ -19,25 +19,36 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.addCallback
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import androidx.lifecycle.lifecycleScope
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewFeature
+import dagger.hilt.android.AndroidEntryPoint
+import jakarta.inject.Inject
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
 import java.net.URLConnection
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityWebViewBinding
+import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.ui.ratings.RatingsFragment
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.ServerConfigUtils
 import org.ole.planet.myplanet.utils.WebViewSafety
 
+@AndroidEntryPoint
 class WebViewActivity : AppCompatActivity() {
     private lateinit var activityWebViewBinding: ActivityWebViewBinding
     private var fromDeepLink = false
+    @Inject
+    lateinit var userRepository: UserRepository
+    private val viewModel: ResourceViewerViewModel by viewModels()
     private lateinit var link: String
     private val trustedHosts by lazy {
         ServerConfigUtils.getTrustedServerHosts()
@@ -63,7 +74,7 @@ class WebViewActivity : AppCompatActivity() {
         setupWebView()
         setListeners()
 
-        activityWebViewBinding.contentWebView.finish.setOnClickListener { finish() }
+        activityWebViewBinding.contentWebView.finish.setOnClickListener { handleBackNavigation() }
         setWebClient()
 
         onBackPressedDispatcher.addCallback(this) {
@@ -72,7 +83,7 @@ class WebViewActivity : AppCompatActivity() {
                 webView.goBack()
             } else {
                 isEnabled = false
-                onBackPressedDispatcher.onBackPressed()
+                handleBackNavigation()
             }
         }
 
@@ -142,6 +153,33 @@ class WebViewActivity : AppCompatActivity() {
         }
     }
 
+    private fun handleBackNavigation() {
+        val resourceId = intent.getStringExtra("RESOURCE_ID")
+        val title = activityWebViewBinding.contentWebView.webTitle.text.toString().ifBlank {
+            intent.getStringExtra("title") ?: ""
+        }
+
+        if (!resourceId.isNullOrBlank()) {
+            lifecycleScope.launch {
+                val userId = userRepository.getUserModel()?.id?.takeIf { it.isNotBlank() }
+                if (viewModel.isRatingPrompted(userId, resourceId)) {
+                    finish()
+                    return@launch
+                }
+                val showDialog = viewModel.shouldShowResourceRatingDialog(resourceId)
+                if (showDialog) {
+                    val dialog = RatingsFragment.newInstance("resource", resourceId, title)
+                    dialog.setOnDismissListener { finish() }
+                    dialog.show(supportFragmentManager, RatingsFragment.TAG)
+                    viewModel.setRatingPrompted(userId, resourceId)
+                } else {
+                    finish()
+                }
+            }
+        } else {
+            finish()
+        }
+    }
 
     private fun setWebClient() {
         val assetLoader = setupAssetLoader()

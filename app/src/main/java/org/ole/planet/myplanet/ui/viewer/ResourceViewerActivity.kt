@@ -8,15 +8,25 @@ import android.util.Log
 import android.util.Rational
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityResourceViewerBinding
+import org.ole.planet.myplanet.ui.ratings.RatingsFragment
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.viewModels
+import jakarta.inject.Inject
+import org.ole.planet.myplanet.repository.UserRepository
 
 @AndroidEntryPoint
 class ResourceViewerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityResourceViewerBinding
+    @Inject
+    lateinit var userRepository: UserRepository
+    private val viewModel: ResourceViewerViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,6 +35,12 @@ class ResourceViewerActivity : AppCompatActivity() {
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                handleBackNavigation()
+            }
+        })
 
         if (savedInstanceState == null) {
             val resourceId = intent.getStringExtra("resourceId")
@@ -80,10 +96,37 @@ class ResourceViewerActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
-            finish()
+            handleBackNavigation()
             return true
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    private fun handleBackNavigation() {
+        val fragment = currentViewerFragment()
+        val resourceId = intent.getStringExtra("resourceId")
+        val title = intent.getStringExtra("RESOURCE_TITLE")
+
+        if (fragment?.isResourceFinished() == true && !resourceId.isNullOrBlank()) {
+            lifecycleScope.launch {
+                val userId = userRepository.getUserModel()?.id?.takeIf { it.isNotBlank() }
+                if (viewModel.isRatingPrompted(userId, resourceId)) {
+                    finish()
+                    return@launch
+                }
+                val showDialog = viewModel.shouldShowResourceRatingDialog(resourceId)
+                if (showDialog) {
+                    val dialog = RatingsFragment.newInstance("resource", resourceId, title)
+                    dialog.setOnDismissListener { finish() }
+                    dialog.show(supportFragmentManager, RatingsFragment.TAG)
+                    viewModel.setRatingPrompted(userId, resourceId)
+                } else {
+                    finish()
+                }
+            }
+        } else {
+            finish()
+        }
     }
 
     override fun onUserLeaveHint() {
