@@ -113,10 +113,10 @@ class NotificationsRepositoryImpl @Inject constructor(
     override suspend fun markNotificationsAsRead(notificationIds: Set<String>): Set<String> {
         if (notificationIds.isEmpty()) return emptySet()
 
-        val existingIds = notificationDao.getByIds(notificationIds.toList()).map { it.id }.toSet()
+        val existingIds = notificationDao.getByIds(notificationIds.toList()).map { it.id }
         if (existingIds.isEmpty()) return emptySet()
-        notificationDao.markAsRead(existingIds.toList(), Date())
-        return existingIds
+        notificationDao.markAsRead(existingIds, Date())
+        return existingIds.toSet()
     }
 
     override suspend fun markAllUnreadAsRead(userId: String?): Set<String> {
@@ -403,11 +403,11 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun deleteNotifications(ids: Set<String>): Set<String> {
         if (ids.isEmpty()) return emptySet()
-        val deletedIds = notificationDao.getByIds(ids.toList()).map { it.id }.toSet()
+        val deletedIds = notificationDao.getByIds(ids.toList()).map { it.id }
         if (deletedIds.isNotEmpty()) {
-            notificationDao.deleteByIds(deletedIds.toList())
+            notificationDao.deleteByIds(deletedIds)
         }
-        return deletedIds
+        return deletedIds.toSet()
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
