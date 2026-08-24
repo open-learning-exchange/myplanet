@@ -7,6 +7,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import okhttp3.RequestBody
 import org.ole.planet.myplanet.model.ChatResponse
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
@@ -14,7 +16,8 @@ import retrofit2.Response
 @Singleton
 class ChatApiService @Inject constructor(
     private val apiInterface: ApiInterface,
-    @param:ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context,
+    private val dispatcherProvider: DispatcherProvider
 ) {
     suspend fun fetchAiProviders(): Map<String, Boolean>? {
         return try {
@@ -30,7 +33,9 @@ class ChatApiService @Inject constructor(
                 return null
             }
 
-            val responseString = response.body()?.string()
+            val responseString = withContext(dispatcherProvider.io) {
+                response.body()?.string()
+            }
             if (responseString.isNullOrBlank()) {
                 return null
             }

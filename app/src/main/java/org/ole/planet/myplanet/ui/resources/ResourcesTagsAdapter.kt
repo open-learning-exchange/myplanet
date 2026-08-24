@@ -84,17 +84,20 @@ class ResourcesTagsAdapter(
                 setExpandedIcon(parent.isExpanded, binding.ivIndicators)
                 binding.root.setOnClickListener { listener.onParentTagClicked(parent) }
             }
-            createCheckbox(binding.root, parent.tag, parent.isSelectMultiple, parent.isSelected)
+            createCheckbox(binding.checkbox, parent.tag, parent.isSelectMultiple, parent.isSelected)
         }
     }
 
     inner class ChildViewHolder(private val binding: RowNavigationChildAdapterBinding) : RecyclerView.ViewHolder(binding.root) {
+        private val backgroundColor = ContextCompat.getColor(itemView.context, R.color.multi_select_grey)
+        private val textColor = ContextCompat.getColor(itemView.context, R.color.daynight_textColor)
+
         fun bind(child: TagData.Child) {
             binding.tvDrawerTitle.text = child.tag.name
-            binding.root.setBackgroundColor(ContextCompat.getColor(itemView.context, R.color.multi_select_grey))
-            binding.tvDrawerTitle.setTextColor(ContextCompat.getColor(itemView.context, R.color.daynight_textColor))
+            binding.root.setBackgroundColor(backgroundColor)
+            binding.tvDrawerTitle.setTextColor(textColor)
             binding.tvDrawerTitle.setOnClickListener { listener.onTagClicked(child.tag) }
-            createCheckbox(binding.root, child.tag, child.isSelectMultiple, child.isSelected)
+            createCheckbox(binding.checkbox, child.tag, child.isSelectMultiple, child.isSelected)
         }
     }
 
@@ -103,12 +106,11 @@ class ResourcesTagsAdapter(
     }
 
     private fun createCheckbox(
-        convertView: View,
+        checkBox: CheckBox,
         tag: TagEntity,
         isSelectMultiple: Boolean,
         isSelected: Boolean
     ) {
-        val checkBox = convertView.findViewById<CheckBox>(R.id.checkbox)
         checkBox.visibility = if (isSelectMultiple) View.VISIBLE else View.GONE
 
         checkBox.setOnCheckedChangeListener(null)
