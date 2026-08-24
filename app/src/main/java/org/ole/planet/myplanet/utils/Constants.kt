@@ -31,7 +31,12 @@ object Constants {
     const val KEY_UPGRADE_MAX = "beta_upgrade_max"
     const val PREFS_NAME = "OLE_PLANET"
     var classList = mutableMapOf<String, Class<*>>()
-    var LABELS = mutableMapOf<String, String>()
+    val LABELS = mapOf(
+        "Offer" to "offer",
+        "Help wanted" to "help",
+        "Request for advice" to "advice"
+    )
+    val LABEL_VALUE_TO_NAME: Map<String, String> by lazy { LABELS.entries.associate { it.value to it.key } }
     const val KEY_NOTIFICATION_SHOWN = "notification_shown"
     const val SELECTED_LANGUAGE = "app_language"
     const val ACTION_RETRY_EVENT = "ACTION_RETRY_EVENT"
@@ -44,11 +49,6 @@ object Constants {
             ShelfData("meetupIds", "meetups", "meetupId"),
             ShelfData("courseIds", "courses", "courseId"),
             ShelfData("myTeamIds", "teams", "teamId")
-        )
-        LABELS = mutableMapOf(
-            "Offer" to "offer",
-            "Help wanted" to "help",
-            "Request for advice" to "advice"
         )
     }
 

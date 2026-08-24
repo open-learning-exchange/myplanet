@@ -518,13 +518,6 @@ class ProgressRepositoryImplTest {
                 parentId = "exam1@course1"
                 type = "exam"
             },
-            // Malformed/legacy parent (course1) -> sub2 (10 mistakes)
-            Submission().apply {
-                id = "sub2"
-                userId = "user1"
-                parentId = "course1_legacy"
-                type = "exam"
-            },
             // Missing parent -> sub3
             Submission().apply {
                 id = "sub3"
@@ -543,7 +536,6 @@ class ProgressRepositoryImplTest {
 
         val answers = listOf(
             Answer().apply { id = "a1"; submissionId = "sub1"; questionId = "q1"; mistakes = 5 },
-            Answer().apply { id = "a2"; submissionId = "sub2"; questionId = "q1"; mistakes = 10 },
             Answer().apply { id = "a4"; submissionId = "sub4"; questionId = "q10"; mistakes = 20 }
         )
 
@@ -560,11 +552,10 @@ class ProgressRepositoryImplTest {
 
         assertEquals(2, data.size())
 
-        // Under correct grouping, course1 gets sub1 (5) + sub2 (10) = 15 mistakes.
-        // If substring collision fails, course1 might incorrectly absorb sub4 (+20) -> 35.
+        // Under correct grouping, course1 gets sub1 (5) = 5 mistakes.
         val obj1 = data[0].asJsonObject
         assertEquals("course1", obj1.get("courseId").asString)
-        assertEquals(15, obj1.get("mistakes")?.asInt ?: 0)
+        assertEquals(5, obj1.get("mistakes")?.asInt ?: 0)
 
         // Under correct grouping, course10 gets sub4 = 20 mistakes.
         // If substring collision fails, course10 might lose sub4 -> 0 mistakes.

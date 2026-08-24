@@ -40,7 +40,7 @@ class TeamViewModel @Inject constructor(
     private val _taskList = MutableStateFlow<List<TeamTask>>(emptyList())
     val taskList: StateFlow<List<TeamTask>> = _taskList
 
-    fun getTeamUpdateFlow() = realtimeSyncManager.dataUpdateFlow
+    fun getTeamUpdateFlow() = realtimeSyncManager.updatesFor("teams")
 
     fun loadTasks(teamId: String) {
         loadTaskJob?.cancel()
@@ -68,17 +68,27 @@ class TeamViewModel @Inject constructor(
         currentUserId = userId
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
+            val targetType = type ?: "team"
             when {
                 fromDashboard -> {
                     if (userId != null) {
-                        teamsRepository.getMyTeamDetailsFlow(userId)
+                        teamsRepository.getMyTeamDetailsFlow(userId, targetType)
                             .flowOn(dispatcherProvider.io)
                             .collectLatest { list ->
-                            applyFilters(list, currentSearchQuery)
+                                applyFilters(list, currentSearchQuery)
+                            }
+                    } else {
+                        val teamList = withContext(dispatcherProvider.io) {
+                            if (targetType == "enterprise") {
+                                teamsRepository.getShareableEnterpriseDetails(null)
+                            } else {
+                                teamsRepository.getTeamDetails(null)
+                            }
                         }
+                        applyFilters(teamList, currentSearchQuery)
                     }
                 }
-                type == "enterprise" -> {
+                targetType == "enterprise" -> {
                     val teamList = withContext(dispatcherProvider.io) {
                         teamsRepository.getShareableEnterpriseDetails(userId)
                     }
