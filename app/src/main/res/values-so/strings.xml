@@ -579,8 +579,6 @@
     <string name="no_data_available_please_check_and_try_again">Ma jiro wax macluumaad, fadlan mari karo oo isku day.</string>
     <string name="no_course_matched_filter">Ma jiro kursiga laga cabsi qabo</string>
     <string name="added_to_my_library">lagu daray myLibrary</string>
-    <string name="format_added_to_mylibrary">%1$s lagu daray myLibrary</string>
-    <string name="format_removed_from_mylibrary">%1$s Ka tirtiray Maktabaddayda</string>
     <string name="added_to_my_courses">lagu daray myCourses</string>
     <string name="do_you_want_to_stay_online">Ma rabtid inaad joogto internetka?</string>
     <string name="device_not_connected_to_planet">Qalabka aan la xidhiidhin Geedka.</string>

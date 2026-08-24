@@ -116,6 +116,9 @@ class TagsRepositoryImplTest {
         assertEquals(1000, result.size)
         assertEquals("Parent Tag 0", result["res1"]?.get(0)?.name)
         assertEquals("Parent Tag 999", result["res1000"]?.get(0)?.name)
+
+        coVerify(exactly = 2) { tagDao.getByDbAndLinkIds("resources", any()) }
+        coVerify(exactly = 2) { tagDao.getByIds(any()) }
     }
 
     @Test
