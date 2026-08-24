@@ -327,8 +327,7 @@ class SyncManager @Inject constructor(
 
                     // Parse documents
                     val parseStartTime = SystemClock.elapsedRealtime()
-                    val batchDocuments = JsonArray()
-                    val validDocuments = mutableListOf<Pair<JsonObject, String>>()
+                    val validDocuments = mutableListOf<JsonObject>()
 
                     for (rowElement in rows) {
                         val rowObj = rowElement.asJsonObject
@@ -337,8 +336,7 @@ class SyncManager @Inject constructor(
                             val id = getString("_id", doc)
 
                             if (!id.startsWith("_design") && id.isNotBlank()) {
-                                batchDocuments.add(doc)
-                                validDocuments.add(Pair(doc, id))
+                                validDocuments.add(doc)
                             }
                         }
                     }
@@ -348,10 +346,8 @@ class SyncManager @Inject constructor(
                     }
 
                     if (validDocuments.isNotEmpty()) {
-                        val docs = validDocuments.map { it.first }
-
                         val realmInsertStartTime = SystemClock.elapsedRealtime()
-                        val savedIds = resourcesRepository.batchInsertResources(docs)
+                        val savedIds = resourcesRepository.batchInsertResources(validDocuments)
                         val realmInsertDuration = SystemClock.elapsedRealtime() - realmInsertStartTime
                         logger.logRealmOperation("insert_chunks", "resources", realmInsertDuration, validDocuments.size)
 

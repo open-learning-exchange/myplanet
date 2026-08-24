@@ -41,4 +41,7 @@ interface PersonalDao {
 
     @Query("DELETE FROM my_personal WHERE id = :id")
     suspend fun deleteById(id: String)
+
+    @Query("UPDATE my_personal SET isUploaded = 1, _id = :newId, _rev = :rev WHERE id = :id")
+    suspend fun updateUploadedStatus(id: String, newId: String, rev: String)
 }
