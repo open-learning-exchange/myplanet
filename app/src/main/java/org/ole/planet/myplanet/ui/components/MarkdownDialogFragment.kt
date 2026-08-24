@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.mikepenz.materialdrawer.Drawer
 import dagger.hilt.android.AndroidEntryPoint
@@ -16,7 +17,6 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.DialogCampaignChallengeBinding
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.components.CustomClickableSpan
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
@@ -30,8 +30,7 @@ class MarkdownDialogFragment : DialogFragment() {
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
 
-    @Inject
-    lateinit var userRepository: UserRepository
+    private val viewModel: MarkdownViewModel by viewModels()
     private lateinit var dialogCampaignChallengeBinding: DialogCampaignChallengeBinding
     private var markdownContent: String = ""
     private var courseStatus: String = ""
@@ -123,13 +122,7 @@ class MarkdownDialogFragment : DialogFragment() {
             text = buttonText
 
             viewLifecycleOwner.lifecycleScope.launch {
-                val userId = userRepository.getActiveUserIdSuspending()
-                val hasSyncAction = if (userId.isNotEmpty()) {
-                    userRepository.hasUserSyncAction(userId)
-                } else {
-                    false
-                }
-
+                val hasSyncAction = viewModel.hasActiveUserSyncAction()
                 val isCompleted = courseStatus.contains("terminado") && voiceCount >= 5 && hasSyncAction
                 visibility = if (isCompleted) View.GONE else View.VISIBLE
             }
