@@ -1380,5 +1380,9 @@
     <string name="filter_pdfs">PDF-yo</string>
     <string name="downloaded">La soo dejiyay</string>
     <string name="not_downloaded">Lama soo dejin</string>
-
+    <string-array name="download_filter">
+        <item>Dhammaan</item>
+        <item>La soo dejiyay</item>
+        <item>Lama soo dejin</item>
+    </string-array>
 </resources>
