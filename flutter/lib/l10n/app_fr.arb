@@ -251,5 +251,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "update": "Mettre à jour"
 }

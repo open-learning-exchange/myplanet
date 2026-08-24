@@ -26,9 +26,18 @@
 //   dart tool/arb_from_strings_xml.dart            # writes ar, fr, ne, so
 //   dart tool/arb_from_strings_xml.dart ar fr      # or named locales
 //
-// Re-running is safe and idempotent: it regenerates from the template and the
-// XML, so a key hand-translated into an .arb afterwards would be lost. Add such
-// strings to the Kotlin `strings.xml` instead, where both apps get them.
+// Re-running is safe: the script *merges* into the existing .arb rather than
+// replacing it. A key already present keeps its value, and only keys the .arb
+// does not have yet are added. That matters because the port has UI text with
+// no Kotlin counterpart at all — `videoFileNotFound`, `exportCancelled` — which
+// was translated by hand into these files; an earlier version of this script
+// regenerated from scratch and would have deleted 17 such keys per locale. The
+// advice that used to live here (put new strings in the Kotlin `strings.xml`
+// instead) does not work for those: there is no Kotlin string to add them to.
+//
+// A consequence worth knowing: because existing values win, the script cannot
+// *correct* a translation already in the .arb. Delete the key first, then
+// re-run, if the XML has a better one.
 
 import 'dart:convert';
 import 'dart:io';
@@ -70,7 +79,7 @@ void main(List<String> args) {
       continue;
     }
     final translated = _readStringsXml(path);
-    final out = <String, String>{'@@locale': locale};
+    final derived = <String, String>{};
     var byName = 0;
     var byText = 0;
 
@@ -89,7 +98,7 @@ void main(List<String> args) {
       if (exactNamed.isNotEmpty) {
         final value = translated[exactNamed]?.trim();
         if (value != null && value.isNotEmpty) {
-          out[key] = value;
+          derived[key] = value;
           byName++;
           continue;
         }
@@ -102,17 +111,50 @@ void main(List<String> args) {
           .where((value) => value != null && value.isNotEmpty)
           .toSet();
       if (candidates.length == 1) {
-        out[key] = candidates.single!;
+        derived[key] = candidates.single!;
         byText++;
       }
     }
 
     final file = File('lib/l10n/app_$locale.arb');
-    // `ensure_ascii`-style escaping and two-space indent, matching app_es.arb.
-    file.writeAsStringSync('${_encodeArb(out)}\n');
+
+    // Merge into whatever is already there. Existing keys keep their existing
+    // value and their existing position, so re-running produces no diff for
+    // them; newly derived keys are appended in template order. Iterating the
+    // existing file's order rather than the template's is deliberate — these
+    // files are not in template order, and reordering them would bury the real
+    // change under a whole-file diff.
+    final existing = file.existsSync()
+        ? _readArb(file.path)
+        : const <String, Object?>{};
+    final merged = <String, Object?>{'@@locale': locale};
+    var preserved = 0;
+    for (final entry in existing.entries) {
+      if (entry.key == '@@locale') continue;
+      final value = entry.value;
+      // `@key` metadata blocks (placeholder declarations, which `gen-l10n`
+      // needs) are objects, not strings. They are carried over verbatim —
+      // dropping one silently un-declares a message's placeholders.
+      if (value is! String) {
+        merged[entry.key] = value;
+        continue;
+      }
+      merged[entry.key] = value;
+      if (!derived.containsKey(entry.key)) preserved++;
+    }
+    var added = 0;
+    for (final key in keys) {
+      final value = derived[key];
+      if (value == null || merged.containsKey(key)) continue;
+      merged[key] = value;
+      added++;
+    }
+
+    file.writeAsStringSync('${_encodeArb(merged)}\n');
     stdout.writeln(
-      'app_$locale.arb: ${out.length - 1} strings '
-      '($byName by name, $byText by shared English) of ${keys.length} keys',
+      'app_$locale.arb: ${merged.length - 1} strings '
+      '($byName by name, $byText by shared English) of ${keys.length} keys'
+      ' — $added added, $preserved kept that the XML does not derive',
     );
   }
 }
@@ -146,13 +188,25 @@ String _camelCase(String snakeCase) {
           .join();
 }
 
-/// Two-space indented JSON with non-ASCII escaped, so the generated files match
-/// `app_es.arb` byte-for-byte in style and diff cleanly.
-String _encodeArb(Map<String, String> values) {
+/// Two-space indented JSON, non-ASCII written literally.
+///
+/// This used to `\u`-escape every non-ASCII rune to match `app_es.arb`'s
+/// original style. The locale files have since been rewritten as literal UTF-8,
+/// which is far easier to review — a reviewer can actually read the Arabic —
+/// so escaping here would rewrite all four files on every run.
+String _encodeArb(Map<String, Object?> values) {
   final buffer = StringBuffer('{\n');
   var index = 0;
   for (final entry in values.entries) {
-    buffer.write('  ${_escape(entry.key)}: ${_escape(entry.value)}');
+    final value = entry.value;
+    // Strings go through [_escape]; a carried-over `@key` metadata object is
+    // re-encoded as indented JSON so it stays readable.
+    final encoded = value is String
+        ? _escape(value)
+        : const JsonEncoder.withIndent(
+            '  ',
+          ).convert(value).replaceAll('\n', '\n  ');
+    buffer.write('  ${_escape(entry.key)}: $encoded');
     buffer.write(++index == values.length ? '\n' : ',\n');
   }
   buffer.write('}');
@@ -174,17 +228,10 @@ String _escape(String value) {
       case 0x09:
         buffer.write(r'\t');
       default:
-        if (rune < 0x20 || rune > 0x7E) {
-          if (rune > 0xFFFF) {
-            // Surrogate pair, as JSON requires for astral characters.
-            final value = rune - 0x10000;
-            final high = 0xD800 + (value >> 10);
-            final low = 0xDC00 + (value & 0x3FF);
-            buffer.write('\\u${high.toRadixString(16).padLeft(4, '0')}');
-            buffer.write('\\u${low.toRadixString(16).padLeft(4, '0')}');
-          } else {
-            buffer.write('\\u${rune.toRadixString(16).padLeft(4, '0')}');
-          }
+        // Control characters still have to be escaped — JSON forbids them raw.
+        // Everything else, including all non-ASCII, is written as-is.
+        if (rune < 0x20) {
+          buffer.write('\\u${rune.toRadixString(16).padLeft(4, '0')}');
         } else {
           buffer.writeCharCode(rune);
         }

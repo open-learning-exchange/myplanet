@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 57 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 69 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -3354,11 +3354,76 @@ document.
 
 ---
 
-**Last updated**: 2026-08-23 (Phase 68 complete — achievements: the
+## Phase 69 — the ARB derivation tool stops deleting translations
+
+`tool/arb_from_strings_xml.dart` (Phase 47) derived the four locale files from
+the Kotlin `strings.xml` by regenerating each one from scratch. That was fine
+on the day it was written, when the files contained nothing but its own output.
+It is not fine now: Phases 54–58 translated **17 keys per locale by hand** —
+the resource viewer's per-media-type error states (`videoFileNotFound`,
+`unableToLoadPdf`, `emptyFile`, `htmlEntryNotFound`, …) plus `errorOccurred`
+and `openingResource`. Those have no counterpart in `strings.xml` at all, so
+the tool cannot derive them, and regenerating deleted every one.
+
+Measured before fixing, by running the tool as documented:
+
+```
+ar: committed=246 regenerated=230 LOST=17
+fr: committed=247 regenerated=231 LOST=17
+ne: committed=246 regenerated=230 LOST=17
+so: committed=246 regenerated=230 LOST=17
+```
+
+68 translations, removed with no error and no warning. The advice the tool's own
+header gave — "add such strings to the Kotlin `strings.xml` instead" — does not
+apply to them: there is no Kotlin string to add. And the header called the
+script "safe and idempotent" in the same breath as admitting hand-translations
+would be lost, which is a contradiction that made the trap easy to miss.
+
+Two changes:
+
+- **It merges.** Existing keys keep their value *and their position*, so
+  re-running produces no diff for them; only keys the file lacks are appended,
+  in template order. Position matters because these files are not in template
+  order — reordering them would bury a one-key change under a whole-file diff.
+  `@key` metadata blocks (placeholder declarations `gen-l10n` needs) are carried
+  over verbatim; an earlier cut of this fix dropped `@currentCv` by filtering
+  non-String values, which would have silently un-declared a placeholder.
+- **It writes literal UTF-8.** The escaping existed to match `app_es.arb`'s
+  original style, but the locale files were since rewritten as literal UTF-8, so
+  escaping meant every run rewrote all four files — 548 insertions / 636
+  deletions of pure churn, and unreviewable Arabic.
+
+Because existing values now win, the tool can no longer *correct* a translation
+already in a file; delete the key first if the XML has a better one. That is
+recorded in the header.
+
+Verified by running the tool twice: the first run adds one genuinely derived key
+(`update`, present in all four `values-*/strings.xml` and previously missing)
+and changes nothing else; the second run produces an empty diff.
+
+### Test
+
+`locale_coverage_test.dart` gains `hand-authored translations survive in every
+derived locale`, pinning the 12 Flutter-only keys across `ar`/`fr`/`ne`/`so`.
+This tests the artifact rather than the tool, which is the right place for it:
+whatever future change makes regeneration destructive again, the suite fails
+instead of four locales quietly reverting to English. Verified in both
+directions — removing one key fails the test with the key named.
+
+The 1279-test suite passes, `flutter analyze` clean, `dart format` clean,
+`flutter build apk --debug` green.
+
+---
+
+**Last updated**: 2026-08-24 (Phase 69 complete — the ARB derivation tool
+merges instead of regenerating, after it was found to delete 17 hand-authored
+translations per locale on every run; literal UTF-8 output; a test pinning the
+hand-authored keys. Phase 68 — achievements: the
 `achievements` ledger table, repository, outbox uploader, list and edit
 screens, CV/resume file slot, and the Life tile wired at `/life/achievements`.
 Phase 67 — tags and collections: the `tags` cache table, dialog, per-screen
 filter/chip wiring, and tag capture in search-activity logging. Phase 66 —
 the 85-commit 2026-08-20→23 batch audited with no new harvest.)
-**Phase**: 68 of N (27 of 28 UI packages have a screen — see Status for what that does and
+**Phase**: 69 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

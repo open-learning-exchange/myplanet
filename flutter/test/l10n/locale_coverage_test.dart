@@ -208,6 +208,61 @@ void main() {
     expect(material.cancelButtonLabel, isNot('Cancel'));
   });
 
+  test('hand-authored translations survive in every derived locale', () {
+    // `tool/arb_from_strings_xml.dart` derives translations from the Kotlin
+    // `strings.xml`, and these 16 keys are exactly the ones it *cannot* derive
+    // for any locale — mostly the resource viewer's per-media-type error
+    // states, which have no Kotlin counterpart at all. They were translated by
+    // hand, and the tool used to regenerate each file from scratch, deleting
+    // every one of them on every run with no error and nothing a reader would
+    // recognise as data loss.
+    //
+    // It merges now, but it remains the documented way to refresh these files,
+    // so the artifact is what gets pinned: whatever future change makes
+    // regeneration destructive again, this fails instead of four locales
+    // quietly reverting to English.
+    const handAuthored = [
+      'failedToSaveCsvFile',
+      'exportCancelled',
+      'videoFileNotFound',
+      'unableToLoadVideo',
+      'audioFileNotFound',
+      'unableToLoadAudio',
+      'pdfFileNotFound',
+      'unableToLoadPdf',
+      'imageFileNotFound',
+      'noContent',
+      'emptyFile',
+      'htmlEntryNotFound',
+      'errorOccurred',
+      'openingResource',
+      'selected',
+      'currentCv',
+    ];
+
+    for (final code in ['ar', 'fr', 'ne', 'so']) {
+      final arb = readArb(code);
+      for (final key in handAuthored) {
+        expect(
+          arb[key],
+          isA<String>().having((value) => value.trim(), 'value', isNotEmpty),
+          reason:
+              '$code lost the hand-authored "$key" — most likely a '
+              'regeneration that overwrote instead of merging',
+        );
+      }
+      // `currentCv` takes a placeholder, so its `@currentCv` declaration has to
+      // survive too. An earlier cut of the merge fix dropped it by filtering
+      // non-String values, which un-declares the placeholder without touching
+      // the translation — the kind of loss the check above cannot see.
+      expect(
+        arb['@currentCv'],
+        isA<Map<String, Object?>>(),
+        reason: '$code lost the @currentCv placeholder declaration',
+      );
+    }
+  });
+
   test('no locale file declares the same key twice', () {
     // `gen-l10n` parses ARB as JSON, and a duplicate key is not an error there:
     // the last value silently wins and one getter is emitted. That is how

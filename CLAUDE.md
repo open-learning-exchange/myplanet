@@ -151,6 +151,20 @@ resources, a Selected: … label on courses, any-of tag filtering on both lists,
 selected tag ids now captured into the search-activity filter JSON instead of Phase 65's
 empty-array placeholder.
 
+Phase 68 ports achievements: the `achievements` table (schema v41, preserved), an
+`AchievementsRepository`/`AchievementsUploader` pair on the outbox, the achievements and
+edit screens, and a CV/resume attachment written under `<base>/ole/cv/` through
+`AchievementFiles`, whose `_segment` reduces a server-supplied filename to its basename so
+a `..` cannot escape that directory. Phase 69 hardens the localisation tooling rather than
+adding a screen: `tool/arb_from_strings_xml.dart` **merges** into the existing `.arb`
+instead of regenerating it. As written in Phase 47 it rebuilt each locale file from the
+template and `strings.xml`, so the 17 keys per locale that later phases translated by hand
+— the resource viewer's per-media-type error states, which have no Kotlin counterpart to
+derive from — were deleted on any re-run, silently and with no error. The tool also emits
+literal UTF-8 now, matching how the locale files are actually committed, so a run no longer
+rewrites all four; it is idempotent, verified by running it twice. A test pins the
+hand-authored keys in all four locales so a destructive regeneration fails the suite.
+
 ### Documentation Map
 
 | Document | Read it when… |
@@ -842,6 +856,6 @@ Note: SYSTEM_ALERT_WINDOW is **not** declared (removed at some point; older docs
 
 ---
 
-**Last Updated**: 2026-08-21
+**Last Updated**: 2026-08-24
 **Version**: 0.64.35
 **Maintainer**: Open Learning Exchange
