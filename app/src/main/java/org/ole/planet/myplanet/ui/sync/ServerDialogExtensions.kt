@@ -180,6 +180,7 @@ fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: Mate
         prefData.getPinnedServerUrl(),
     )
     serverAddressAdapter = ServerAddressAdapter(
+        context = this,
         onItemClick = { serverListAddress ->
             val actualUrl = serverListAddress.url.replace(httpsPrefixRegex, "")
             binding.inputServerUrl.setText(actualUrl)
