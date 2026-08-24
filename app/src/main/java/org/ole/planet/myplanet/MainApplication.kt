@@ -525,6 +525,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
+        @Suppress("DEPRECATION")
         if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
             PdfThumbnailLoader.evictAll()
         }
