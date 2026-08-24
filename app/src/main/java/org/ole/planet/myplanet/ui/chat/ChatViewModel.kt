@@ -66,8 +66,7 @@ class ChatViewModel @Inject constructor(
     val refreshChatSignal: SharedFlow<Unit> = _refreshChatSignal.asSharedFlow()
     init {
         viewModelScope.launch {
-            realtimeSyncManager.dataUpdateFlow
-                .filter { it.table == "chats" }
+            realtimeSyncManager.updatesFor("chats")
                 .collect { update ->
                     if (update.shouldRefreshUI) {
                         _refreshChatSignal.emit(Unit)
@@ -280,8 +279,30 @@ class ChatViewModel @Inject constructor(
             }
         }
     }
-    suspend fun fetchAiProviders(serverUrl: String): Map<String, Boolean>? {
-        return chatRepository.fetchAiProviders(serverUrl)
+    fun fetchAiProviders(serverUrl: String, cachedProviders: Map<String, Boolean>? = null) {
+        if (!shouldFetchAiProviders()) {
+            return
+        }
+
+        setAiProvidersLoading(true)
+        setAiProvidersError(false)
+
+        viewModelScope.launch {
+            val providers = chatRepository.fetchAiProviders(serverUrl)
+            setAiProvidersLoading(false)
+            if (providers == null || providers.values.all { !it }) {
+                if (cachedProviders != null) {
+                    setAiProvidersError(false)
+                    setAiProviders(cachedProviders)
+                } else {
+                    setAiProvidersError(true)
+                    setAiProviders(null)
+                }
+            } else {
+                setAiProvidersError(false)
+                setAiProviders(providers)
+            }
+        }
     }
     suspend fun getLatestRev(id: String): String? {
         return chatRepository.getLatestRev(id)
