@@ -90,7 +90,14 @@ class NewsMapper {
       sharedBy: Value(
         nested == null ? null : JsonUtils.getStringOrNull('sharedBy', nested),
       ),
-      reactions: Value(JsonUtils.getStringOrNull('reactions', doc)),
+      // Read from the *nested* object, because that is where `serializeNews`
+      // writes it. Reading the top level here — as this did — meant a reaction
+      // uploaded from one device was never seen by another, and worse, the next
+      // sync-in of that same document wrote `Value(null)` straight over the
+      // local column, so a user's own reaction vanished on their next sync.
+      reactions: Value(
+        nested == null ? null : JsonUtils.getStringOrNull('reactions', nested),
+      ),
       // Local-only fields: an in-flight attachment list and the edit marker
       // belong to this device and are never sent back by the server.
       imageUrls: Value(existing?.imageUrls ?? const []),

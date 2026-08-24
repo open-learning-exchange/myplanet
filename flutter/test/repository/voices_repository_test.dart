@@ -8,6 +8,7 @@ import 'package:myplanet/core/network/network_result.dart';
 import 'package:myplanet/core/sync/sync_result.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/data/local/news_mapper.dart';
 import 'package:myplanet/repository/voices_repository.dart';
 
 class MockPlanetApi extends Mock implements PlanetApi {}
@@ -737,5 +738,53 @@ void main() {
     expect((await repository.getById('fresh'))?.message, 'Fresh');
     // The pruning walk must not take a post the outbox has not delivered yet.
     expect((await repository.getById(localId))?.message, 'Not yet sent');
+  });
+
+  group('reaction round trip', () {
+    // The end-to-end shape that was broken: toggleReaction writes the column,
+    // serialize puts it on the wire, and NewsMapper.fromDoc has to find it
+    // again. Serializing and re-mapping in one test is what catches the two
+    // ends disagreeing on where the field lives -- neither side is wrong on
+    // its own, and each had its own passing test.
+    test('survives serialize then map back', () async {
+      await repository.cacheDocuments([
+        {'_id': 'voice-1', 'docType': 'message', 'message': 'Hi'},
+      ]);
+      await repository.toggleReaction('voice-1', '\u{1F44D}', 'user-1');
+
+      final row = (await repository.getById('voice-1'))!;
+      expect(row.reactions, isNotNull);
+
+      final wire = VoicesRepository.serialize(row);
+      final mapped = NewsMapper.fromDoc(wire)!;
+
+      expect(mapped.reactions.value, row.reactions);
+    });
+
+    test('a second toggle of the same emoji removes the user', () async {
+      await repository.cacheDocuments([
+        {'_id': 'voice-1', 'docType': 'message', 'message': 'Hi'},
+      ]);
+      await repository.toggleReaction('voice-1', '\u{1F44D}', 'user-1');
+      await repository.toggleReaction('voice-1', '\u{1F44D}', 'user-1');
+
+      // The emoji key goes with the last user, so the column returns to null
+      // rather than holding an empty map.
+      expect((await repository.getById('voice-1'))!.reactions, isNull);
+    });
+
+    test('switching emoji keeps only one reaction per user', () async {
+      await repository.cacheDocuments([
+        {'_id': 'voice-1', 'docType': 'message', 'message': 'Hi'},
+      ]);
+      await repository.toggleReaction('voice-1', '\u{1F44D}', 'user-1');
+      await repository.toggleReaction('voice-1', '\u{2764}', 'user-1');
+
+      final decoded =
+          jsonDecode((await repository.getById('voice-1'))!.reactions!)
+              as Map<String, dynamic>;
+      expect(decoded.keys, ['\u{2764}']);
+      expect(decoded['\u{2764}'], ['user-1']);
+    });
   });
 }

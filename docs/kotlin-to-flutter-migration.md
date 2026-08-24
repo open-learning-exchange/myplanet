@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 69 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 74 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -3635,12 +3635,93 @@ assertion. 1303 tests pass, `flutter analyze` clean, `dart format` clean.
 
 ---
 
-**Last updated**: 2026-08-24 (Phase 73 complete — standalone WebView
+## Phase 74 — voice reactions and task comment threads (not ports), and a broken round trip
+
+Two features landed here that are **not** Kotlin ports, which makes them the
+first work in this document that does not advance Kotlin→Flutter parity:
+
+- **Emoji reactions on voices** — issue #13357, *open*, with PR #13415 *open and
+  unmerged*. Nothing in `app/` mentions reactions; `grep -rni "reaction\|emoji"`
+  over the Kotlin sources finds no match.
+- **Team task comment threads** — issue #15112, *open*, with PR #15820 *open and
+  unmerged*.
+
+Both are feature requests implemented directly in Flutter. That is legitimate
+work, but it changes what "parity" means for these two items and removes the
+safety net every earlier phase relied on: there is no Kotlin implementation to
+check the port against, so behaviour and wire format are unverifiable except
+against the issue text.
+
+Worth knowing about the reference implementations, since they will land in the
+shipping app eventually:
+
+- Kotlin PR #13415 stores `reactions` as a `String?` on `RealmNews` holding
+  JSON (`{emoji: [userId, …]}`), and **never serializes it** — no change to the
+  news serializer, so reactions stay on the device that made them. The port
+  syncs them, so it is ahead of that PR rather than matching it.
+- Issue #15112 asks for comment threads on team tasks **and meetups**. Only the
+  task half is wired (`team_tasks_screen`); the meetup card has no thread. Half
+  the issue.
+
+### The round trip was broken
+
+`serializeNews` writes reactions into the nested `news` sub-object:
+
+```dart
+'news': { …, if (row.reactions != null …) 'reactions': row.reactions },
+```
+
+while `NewsMapper.fromDoc` read them from the **top level**:
+
+```dart
+reactions: Value(JsonUtils.getStringOrNull('reactions', doc)),   // wrong level
+```
+
+So a reaction never reached another device — and the more serious half, the
+mapper writes its companion on *every* pull, so a document whose reactions it
+could not find wrote `Value(null)` straight over the local column. A user's own
+reaction disappeared on their next sync. That is the same failure the Phase 56
+security-data fix addressed (`Value(null)` where the value should have been left
+alone), in a different table.
+
+Each side had its own passing test, which is exactly why this survived: the
+serializer test checked the document, the mapper test checked the column, and
+nothing ran the two together. The fix reads from `nested`, matching `sharedBy`
+three lines above it, and the new coverage is a genuine round trip —
+`toggleReaction` → `serialize` → `fromDoc` → compare. Verified in both
+directions: three tests fail on the pre-fix mapper.
+
+### A trade-off left unresolved, and pinned
+
+`serializeNews` omits `reactions` when the column is empty, so an absent key
+cannot be distinguished from "no reactions". That leaves two imperfect options:
+
+- Clear on absence (what it does): a removal propagates correctly, but a pull
+  landing between a local reaction and its upload discards it.
+- Preserve on absence (`Value.absent()`, the Phase 56 trick): a fresh local
+  reaction is safe, but a *removal* never reaches another device.
+
+Clearing is kept, because losing a removal is the worse of the two and the race
+is narrow. Resolving it properly means always writing the key so absence is
+unambiguous — a wire-format change, and there is no shipping Kotlin behaviour to
+agree with yet. `news_mapper_test.dart` pins the current behaviour with that
+reasoning attached, so the next person meets a decision rather than a surprise.
+
+The 1310-test suite passes, `flutter analyze` clean, `dart format` clean,
+`flutter build apk --debug` green.
+
+---
+
+**Last updated**: 2026-08-24 (Phase 74 complete — voice emoji reactions and
+team task comment threads, neither a Kotlin port; the reactions sync round trip
+fixed, where the serializer wrote to the nested `news` object and the mapper
+read the top level, erasing local reactions on the next pull. Phase 73 —
+standalone WebView
 screen, course step exam/survey buttons, and the team leaderboard from
 the `14880` upstream branch. Phase 72 — the add-resource screen, team
 leader actions, and member-detail wiring. Phase 71 — the member detail
 screen, reached by tapping a member. Phase 70 — resource list sort
 toggles. Phase 69 — the ARB derivation tool merges instead of
 regenerating. Phase 68 — achievements. Phase 67 — tags and collections.)
-**Phase**: 73 of N (27 of 28 UI packages have a screen — see Status for what that does and
+**Phase**: 74 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

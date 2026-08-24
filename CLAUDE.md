@@ -189,6 +189,23 @@ exam/survey buttons on course steps (`CourseStepFragment`'s `btnTakeTest`/
 (`TeamLeaderboardCalculator` + `TeamLeaderboardScreen` with all-time/this-month
 period toggle).
 
+Phase 74 adds voice emoji reactions (`reactions` on `NewsEntries`, schema v42 —
+a preserved table, so it needs the hand-written `_addColumnIfMissing` step) and
+inline comment threads on team tasks. **Neither is a Kotlin port**: both are
+open issues (#13357, #15112) whose Kotlin PRs are unmerged, so they are the
+first features here that do not advance Kotlin→Flutter parity and have no
+reference implementation to check against. Kotlin PR #13415 also keeps
+`reactions` device-local (it never serializes the field), so the port syncing
+them is ahead of that PR, not matched to it; and #15112 asks for threads on
+tasks *and* meetups, of which only tasks are wired. The phase also fixes the
+reactions round trip: `serializeNews` wrote them into the nested `news`
+sub-object while `NewsMapper.fromDoc` read the top level, so a reaction never
+reached another device and — because the mapper writes its companion on every
+pull — `Value(null)` went over the local column, erasing the user's own
+reaction on their next sync. Same shape as the Phase 56 security-data fix.
+Each side had a passing test; nothing ran the two together, which is now what
+the new coverage does.
+
 ### Documentation Map
 
 | Document | Read it when… |
