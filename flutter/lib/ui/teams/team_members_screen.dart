@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/session_provider.dart';
 import '../../providers/teams_provider.dart';
 import '../router.dart';
 
@@ -44,6 +45,7 @@ class TeamMembersScreen extends ConsumerWidget {
               teamId: teamId,
               rows: members,
               emptyText: l10n.noMembers,
+              canManage: canManage,
             ),
             if (canManage) _RequestsList(teamId: teamId, rows: requests),
           ],
@@ -58,10 +60,12 @@ class _MembersList extends ConsumerWidget {
     required this.teamId,
     required this.rows,
     required this.emptyText,
+    required this.canManage,
   });
   final String teamId;
   final AsyncValue<List<TeamRow>> rows;
   final String emptyText;
+  final bool canManage;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -94,13 +98,51 @@ class _MembersList extends ConsumerWidget {
                 final initial = displayName.isEmpty
                     ? '?'
                     : displayName.characters.first.toUpperCase();
+                final currentUserId = ref
+                    .watch(sessionProvider)
+                    .valueOrNull
+                    ?.id;
+                final isOwnCard = userId == currentUserId;
                 return ListTile(
                   leading: CircleAvatar(child: Text(initial)),
                   title: Text(
                     displayName.isEmpty ? l10n.unknownMember : displayName,
                   ),
                   subtitle: row.isLeader ? Text(l10n.leader) : null,
-                  trailing: row.isLeader ? const Icon(Icons.star) : null,
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (row.isLeader) const Icon(Icons.star),
+                      if (canManage && !isOwnCard || isOwnCard)
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_vert),
+                          onSelected: (value) => _handleMemberAction(
+                            context,
+                            ref,
+                            value,
+                            teamId,
+                            userId,
+                          ),
+                          itemBuilder: (context) => [
+                            if (isOwnCard)
+                              PopupMenuItem(
+                                value: 'leave',
+                                child: Text(l10n.leave),
+                              )
+                            else ...[
+                              PopupMenuItem(
+                                value: 'remove',
+                                child: Text(l10n.remove),
+                              ),
+                              PopupMenuItem(
+                                value: 'make_leader',
+                                child: Text(l10n.makeLeader),
+                              ),
+                            ],
+                          ],
+                        ),
+                    ],
+                  ),
                   onTap: userId.isEmpty
                       ? null
                       : () => context.push(
@@ -110,6 +152,35 @@ class _MembersList extends ConsumerWidget {
               },
             ),
     );
+  }
+
+  Future<void> _handleMemberAction(
+    BuildContext context,
+    WidgetRef ref,
+    String action,
+    String teamId,
+    String userId,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final actions = ref.read(teamMembershipActionsProvider);
+    final messenger = ScaffoldMessenger.of(context);
+    bool success;
+    String message;
+    switch (action) {
+      case 'leave':
+        success = await actions.leave(teamId);
+        message = success ? l10n.leftTeam : l10n.operationFailed;
+      case 'remove':
+        success = await actions.removeMember(teamId, userId);
+        message = success ? l10n.memberRemoved : l10n.operationFailed;
+      case 'make_leader':
+        success = await actions.makeLeader(teamId, userId);
+        message = success ? l10n.leaderUpdated : l10n.operationFailed;
+      default:
+        return;
+    }
+    if (!context.mounted) return;
+    messenger.showSnackBar(SnackBar(content: Text(message)));
   }
 }
 

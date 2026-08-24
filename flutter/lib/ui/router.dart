@@ -35,6 +35,7 @@ import 'onboarding/onboarding_screen.dart';
 import 'notifications/notifications_screen.dart';
 import 'personals/personals_screen.dart';
 import 'resources/resource_detail_screen.dart';
+import 'resources/add_resource_screen.dart';
 import 'resources/resources_screen.dart';
 import 'references/references_screen.dart';
 import 'settings/settings_screen.dart';
@@ -85,6 +86,7 @@ class Routes {
   static const String offlineMaps = '/life/references/maps';
   static const String resources = '/resources';
   static const String resourceDetail = '/resources/detail/:resourceId';
+  static const String addResource = '/resources/add';
   static const String resourceViewer = '/resources/viewer/:resourceId';
   static const String courses = '/courses';
   static const String myProgress = '/courses/progress';
@@ -246,6 +248,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.resourceDetail,
         builder: (context, state) => ResourceDetailScreen(
           resourceId: state.pathParameters['resourceId']!,
+        ),
+      ),
+      GoRoute(
+        path: 'add',
+        builder: (context, state) => AddResourceScreen(
+          teamId: state.uri.queryParameters['teamId'],
+          editResourceId: state.uri.queryParameters['edit'],
         ),
       ),
       GoRoute(

@@ -252,6 +252,54 @@ class TeamMembershipActions {
     return true;
   }
 
+  /// Port of `MembersAdapter`'s remove-member overflow action. A leader
+  /// removes another member: the membership row is hard-deleted locally and
+  /// a tombstone is enqueued, exactly as [leave] does for the current user.
+  Future<bool> removeMember(String teamId, String userId) async {
+    final endpoint = _endpoint;
+    final currentUser = ref.read(sessionProvider).valueOrNull;
+    if (endpoint == null || currentUser == null) return false;
+    final row = await ref
+        .read(teamsRepositoryProvider)
+        .removeMember(teamId, userId);
+    if (row == null) return false;
+    await ref
+        .read(outboxRepositoryProvider)
+        .enqueue(
+          uploadType: 'teamMembership',
+          itemId: row.id,
+          endpoint: endpoint,
+          payload: {'_id': row.id, '_rev': row.rev, '_deleted': true},
+          userId: currentUser.id,
+        );
+    return true;
+  }
+
+  /// Port of `MembersAdapter`'s make-leader overflow action. Flips
+  /// `isLeader` on every membership (true for the new leader, false for the
+  /// rest) and enqueues each changed row for upload.
+  Future<bool> makeLeader(String teamId, String newLeaderId) async {
+    final endpoint = _endpoint;
+    final currentUser = ref.read(sessionProvider).valueOrNull;
+    if (endpoint == null || currentUser == null) return false;
+    final changed = await ref
+        .read(teamsRepositoryProvider)
+        .updateTeamLeader(teamId, newLeaderId);
+    if (changed.isEmpty) return false;
+    for (final row in changed) {
+      await ref
+          .read(outboxRepositoryProvider)
+          .enqueue(
+            uploadType: 'teamMembership',
+            itemId: row.id,
+            endpoint: endpoint,
+            payload: TeamsRepository.serializeTeamDocument(row),
+            userId: currentUser.id,
+          );
+    }
+    return true;
+  }
+
   Future<bool> respond(String requestId, {required bool accept}) async {
     final endpoint = _endpoint;
     if (endpoint == null) return false;

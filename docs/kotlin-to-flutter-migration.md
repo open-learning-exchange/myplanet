@@ -3516,17 +3516,82 @@ gains a name-resolution test and a tap-opens-detail-route test. The
 
 ---
 
-**Last updated**: 2026-08-24 (Phase 71 complete — the member detail screen
-(`MembersDetailFragment`), reached by tapping a member; the team members
-list now resolves real names instead of raw ids. Phase 70 — resource list
-sort toggles (date/title, per-mode direction, scroll-to-top), porting
-upstream `14a9f14` (#15941) together with the bottom-sheet pair the port
-had never built. Phase 69 — the ARB derivation tool merges instead of
-regenerating, after it was found to delete 17 hand-authored translations
-per locale on every run. Phase 68 — achievements: the `achievements`
-ledger table, repository, outbox uploader, list and edit screens, CV/resume
-file slot, and the Life tile wired at `/life/achievements`. Phase 67 — tags
-and collections: the `tags` cache table, dialog, per-screen filter/chip
-wiring, and tag capture in search-activity logging.)
-**Phase**: 71 of N (27 of 28 UI packages have a screen — see Status for what that does and
+## Phase 72 — add-resource screen, team leader actions, and member-detail wiring
+
+Three features land together: the resource creation/editing form, the team
+member overflow menu (remove / make leader / leave), and the member-detail
+screen wired to two more call sites (voice authors and community leaders).
+
+**AddResource** (`AddResourceActivity` + the file-pick half of
+`AddResourceFragment`):
+
+- `ResourcesRepository.saveLocalResource` / `updateLocalResource` /
+  `resourceTitleExists` port the three Kotlin repository methods. The
+  create path builds a `MyLibraryTableCompanion` from the form fields and a
+  picked file path, marks it `resourceOffline`, and shelves it for the
+  user unless it is a private team resource. The edit path loads the row,
+  applies the field changes via `toCompanion(false).copyWith(...)`, and
+  upserts. `LocalResourceRequest` is the port of the Kotlin data class.
+- `MyLibraryDao.countByTitle` ports the duplicate-title guard query.
+- `AddResourceScreen` (`/resources/add`) renders the full metadata form:
+  title, author, year, description, publisher, license, levels (chips),
+  subjects (chips), resource-for (chips), language / open-with / media /
+  resource-type (dropdowns), and a private-resource toggle for team
+  resources. Create mode picks a file first (`FilePicker.pickFiles`); edit
+  mode (reached from the resource detail screen's new edit button)
+  prefills from the existing row. The string arrays from `strings.xml` are
+  carried as const lists. The audio/video/image capture paths need platform
+  channels the port has not built, so only the file-pick path is ported —
+  the most common one.
+- A FAB on the resources screen opens the form; the resource detail
+  screen gains an edit action.
+
+**Team member leader actions** (the `MembersAdapter` overflow menu):
+
+- `TeamsRepository.removeMember` (same tombstone path as `leave`) and
+  `updateTeamLeader` (flip `isLeader` on every membership, mark dirty, return
+  the changed rows) port the two Kotlin methods.
+- `TeamMembershipActions.removeMember` / `makeLeader` enqueue the tombstone
+  or the updated documents through the outbox, exactly as `leave` and
+  `respond` do.
+- The members list gains a `PopupMenuButton` per member card: Leave for the
+  current user, Remove / Make leader for a leader acting on another member.
+  The `canManage` flag (already computed by the parent) is threaded into
+  `_MembersList`.
+
+**Member-detail wiring** — two more call sites for the Phase 71 screen:
+
+- Tapping a voice author's name navigates to the member detail route.
+- Tapping a community leader navigates to the member detail route (the
+  previous bottom-sheet detail is replaced, matching the Kotlin's
+  `CommunityLeadersAdapter.showLeaderDetails` → `MembersDetailFragment`).
+
+`memberDetail`, `numberOfVisits`, `noLogoutRecord`, `levels`, `leave`,
+`remove`, `makeLeader`, `leftTeam`, `memberRemoved`, `leaderUpdated`,
+`editResource`, `resourceUpdated`, `resourceAddedToTeam`,
+`descriptionIsRequired`, `levelIsRequired`, `subjectIsRequired`,
+`selectFile`, `fileSelected`, `privateResource`, `saveChanges`,
+`selectOpenWith`, `selectMedia`, `selectResourceType`, and `linkToLicense`
+are new in `app_en.arb`; the derived locales fall back to English.
+
+Tests: `resources_repository_test.dart` gains 5 tests (create, duplicate
+rejection, private team resource, edit, title-exists). The leaders screen
+test is updated from the bottom-sheet assertion to the navigation assertion.
+1299 tests pass, `flutter analyze` clean, `dart format` clean.
+
+---
+
+**Last updated**: 2026-08-24 (Phase 72 complete — the add-resource screen
+(create + edit + file pick), team member leader actions (remove / make
+leader / leave), and member-detail wiring for voice authors and community
+leaders. Phase 71 — the member detail screen, reached by tapping a member.
+Phase 70 — resource list sort toggles (date/title, per-mode direction,
+scroll-to-top), porting upstream `14a9f14` (#15941). Phase 69 — the ARB
+derivation tool merges instead of regenerating. Phase 68 — achievements:
+the `achievements` ledger table, repository, outbox uploader, list and
+edit screens, CV/resume file slot, and the Life tile wired at
+`/life/achievements`. Phase 67 — tags and collections: the `tags` cache
+table, dialog, per-screen filter/chip wiring, and tag capture in
+search-activity logging.)
+**Phase**: 72 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

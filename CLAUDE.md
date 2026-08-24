@@ -177,6 +177,12 @@ login); a `memberDetailProvider` joins the `users` row with per-team visit
 counts (`TeamLogDao.teamVisitsForUsers`/`lastTeamVisit`) and the last login
 (`activitiesRepository.lastVisit`); the list resolves real names via a new
 `userByIdProvider` and navigates to the detail route on tap.
+Phase 72 ports the add-resource screen (create + edit + file pick via
+`FilePicker`), team member leader actions (remove / make leader / leave with
+tombstone enqueue), and wires the member detail screen to voice authors and
+community leaders. The repository gains `saveLocalResource`/
+`updateLocalResource`/`resourceTitleExists`; the members list gains a
+`PopupMenuButton` overflow menu per member.
 
 ### Documentation Map
 

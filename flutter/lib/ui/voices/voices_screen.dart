@@ -131,9 +131,16 @@ class VoiceCard extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          row.userName ?? '',
-                          style: theme.textTheme.titleSmall,
+                        GestureDetector(
+                          onTap: row.userId == null || row.userId!.isEmpty
+                              ? null
+                              : () => context.push(
+                                  '/life/teams/voices/members/${row.userId}',
+                                ),
+                          child: Text(
+                            row.userName ?? '',
+                            style: theme.textTheme.titleSmall,
+                          ),
                         ),
                         Text(
                           _formatDateWithSharedTeam(row, teamName),

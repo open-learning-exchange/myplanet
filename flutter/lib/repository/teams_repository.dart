@@ -447,6 +447,38 @@ class TeamsRepository {
     return row;
   }
 
+  /// Port of `TeamsRepositoryImpl.removeMember` — same as [leave] but for a
+  /// leader removing another member. The row is hard-deleted locally and the
+  /// tombstone is enqueued by the caller.
+  Future<TeamRow?> removeMember(String teamId, String userId) async {
+    final row = await membership(teamId, userId);
+    if (row != null) await _dao.deleteById(row.id);
+    return row;
+  }
+
+  /// Port of `TeamsRepositoryImpl.updateTeamLeader` — sets `isLeader` to true
+  /// only for the new leader and false for every other member, marking each
+  /// changed row dirty. Returns the changed rows so the caller can enqueue
+  /// them for upload.
+  Future<List<TeamRow>> updateTeamLeader(
+    String teamId,
+    String newLeaderId,
+  ) async {
+    final memberships = await _dao
+        .watchTeamDocuments(teamId, 'membership')
+        .first;
+    final changed = <TeamRow>[];
+    for (final row in memberships) {
+      final shouldBeLeader = row.userId == newLeaderId;
+      if (row.isLeader != shouldBeLeader) {
+        final updated = row.copyWith(isLeader: shouldBeLeader, isUpdated: true);
+        await _dao.upsert(updated.toCompanion(false));
+        changed.add(updated);
+      }
+    }
+    return changed;
+  }
+
   static Map<String, dynamic> serializeTeamDocument(TeamRow row) => {
     '_id': row.id,
     if (row.rev?.isNotEmpty == true) '_rev': row.rev,

@@ -867,6 +867,17 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
   Future<MyLibraryRow?> getById(String id) =>
       (select(myLibraryTable)..where((r) => r.id.equals(id))).getSingleOrNull();
 
+  /// Port of `MyLibraryDao.countByTitle` — the duplicate-title guard
+  /// `resourceTitleExists` reads. Counts rows whose `titleNormal` matches
+  /// the normalized title exactly.
+  Future<bool> countByTitle(String normalizedTitle) =>
+      (select(myLibraryTable)
+            ..where((r) => r.titleNormal.equals(normalizedTitle))
+            ..limit(1))
+          .map((row) => row.id)
+          .get()
+          .then((rows) => rows.isNotEmpty);
+
   /// Records that the attachment is now on disk.
   ///
   /// `downloadedRev` is what lets a later sync notice the server replaced the

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
@@ -142,34 +143,12 @@ class LeaderCard extends StatelessWidget {
   }
 
   void _showLeaderDetails(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircleAvatar(
-              radius: 40,
-              child: Text(
-                leader.displayName.isNotEmpty
-                    ? leader.displayName[0].toUpperCase()
-                    : '?',
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              leader.displayName,
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            if (leader.email != null && leader.email!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(leader.email!),
-            ],
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
+    // The Kotlin opens MembersDetailFragment with the leader's user fields.
+    // The port's MemberDetailScreen is team-scoped (for visit counts), so a
+    // community leader passes a sentinel teamId — the visit count reads as 0,
+    // which is correct for a non-team context.
+    context.push(
+      '/life/teams/community/members/${Uri.encodeComponent(leader.id)}',
     );
   }
 }

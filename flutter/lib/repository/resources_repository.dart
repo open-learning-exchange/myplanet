@@ -1,4 +1,7 @@
 import 'dart:io';
+import 'dart:math';
+
+import 'package:drift/drift.dart';
 
 import '../core/config/server_config.dart';
 import '../core/files/resource_files.dart';
@@ -11,6 +14,7 @@ import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
 import '../data/local/my_library_mapper.dart';
 import '../data/local/offline_resource_item.dart';
+import 'local_resource_request.dart';
 import 'shelf_repository.dart';
 
 /// Port of the resources phase of `services/sync/SyncManager.kt` (phase 2) plus
@@ -42,6 +46,92 @@ class ResourcesRepository {
 
   /// Gets a single resource by its local id.
   Future<MyLibraryRow?> getById(String id) => _dao.getById(id);
+
+  /// Port of `ResourcesRepositoryImpl.resourceTitleExists` — a duplicate-title
+  /// guard the add-resource form runs as the user types.
+  Future<bool> resourceTitleExists(String title) {
+    final normalized = MyLibraryMapper.normalizeTitle(title);
+    if (normalized.isEmpty) return Future.value(false);
+    return _dao.countByTitle(normalized);
+  }
+
+  /// Port of `ResourcesRepositoryImpl.saveLocalResource`. Creates a new
+  /// `my_library` row from the form fields and a picked file path, marks it
+  /// offline-available, and adds it to the user's shelf unless it is a
+  /// private team resource. Returns `null` on success or an error message.
+  Future<String?> saveLocalResource(LocalResourceRequest request) async {
+    final title = request.title?.trim() ?? '';
+    if (title.isEmpty) return 'Title is missing';
+    if (await resourceTitleExists(title)) {
+      return 'Resource title already exists';
+    }
+    final id = _randomResourceId();
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final companion = MyLibraryTableCompanion.insert(
+      id: id,
+      resourceId: Value(id),
+      title: Value(title),
+      titleNormal: Value(MyLibraryMapper.normalizeTitle(title)),
+      addedBy: Value(request.addedBy),
+      author: Value(request.author),
+      year: Value(request.year),
+      description: Value(request.description),
+      publisher: Value(request.publisher),
+      linkToLicense: Value(request.linkToLicense),
+      openWith: Value(request.openWith),
+      language: Value(request.language),
+      mediaType: Value(request.mediaType),
+      resourceType: Value(request.resourceType),
+      subject: Value(request.subjects ?? const []),
+      level: Value(request.levels ?? const []),
+      resourceFor: Value(request.resourceFor ?? const []),
+      createdDate: Value(now),
+      resourceLocalAddress: Value(request.resourceUrl),
+      resourceOffline: const Value(true),
+      filename: Value(request.resourceUrl?.split('/').last),
+      isPrivate: Value(request.isPrivateTeamResource),
+      privateFor: Value(request.isPrivateTeamResource ? request.teamId : null),
+      userId: Value(
+        request.isPrivateTeamResource ? const [] : [request.userId ?? ''],
+      ),
+    );
+    await _dao.upsertAll([companion]);
+    return null;
+  }
+
+  /// Port of `ResourcesRepositoryImpl.updateLocalResource` — edits the
+  /// metadata of an existing row. Returns `null` on success or an error
+  /// message.
+  Future<String?> updateLocalResource({
+    required String resourceId,
+    required String title,
+    String? author,
+    String? year,
+    String? description,
+    String? publisher,
+    String? linkToLicense,
+    List<String>? subjects,
+    List<String>? levels,
+  }) async {
+    final row = await _dao.getById(resourceId);
+    if (row == null) return 'Resource not found';
+    await _dao.upsertAll([
+      row
+          .toCompanion(false)
+          .copyWith(
+            title: Value(title),
+            titleNormal: Value(MyLibraryMapper.normalizeTitle(title)),
+            author: Value(author),
+            year: Value(year),
+            description: Value(description),
+            publisher: Value(publisher),
+            linkToLicense: Value(linkToLicense),
+            subject: Value(subjects ?? const []),
+            level: Value(levels ?? const []),
+          ),
+    ]);
+    return null;
+  }
 
   /// Port of `ResourcesRepositoryImpl.getAllLibraries` — the achievement
   /// editor's resource picker lists the whole catalog.
@@ -416,3 +506,6 @@ class ResourcesRepository {
   /// which are the only writers to that tree.
   Future<Directory> get _oleDir => ResourceFiles.oleDirectory();
 }
+
+String _randomResourceId() =>
+    '${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 32)}';

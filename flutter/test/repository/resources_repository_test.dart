@@ -10,6 +10,7 @@ import 'package:myplanet/core/files/resource_files.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/resources_repository.dart';
+import 'package:myplanet/repository/local_resource_request.dart';
 import 'package:myplanet/ui/settings/storage_breakdown_screen.dart';
 
 class MockPlanetApi extends Mock implements PlanetApi {}
@@ -609,6 +610,120 @@ void main() {
         expect(result.freedBytes, 0);
       },
     );
+  });
+
+  group('local resource creation', () {
+    test('saveLocalResource creates a row and marks it offline', () async {
+      final error = await repository.saveLocalResource(
+        const LocalResourceRequest(
+          title: 'My New Resource',
+          addedBy: 'ada',
+          author: 'Author',
+          year: '2026',
+          description: 'A test resource',
+          subjects: ['Agriculture'],
+          levels: ['Lower Primary'],
+          userId: 'user-1',
+        ),
+      );
+      expect(error, isNull);
+
+      final rows = await db.myLibraryDao.getAll();
+      expect(rows, hasLength(1));
+      final row = rows.first;
+      expect(row.title, 'My New Resource');
+      expect(row.resourceOffline, isTrue);
+      expect(row.subject, contains('Agriculture'));
+      expect(row.level, contains('Lower Primary'));
+      expect(row.userId, contains('user-1'));
+    });
+
+    test('saveLocalResource rejects a duplicate title', () async {
+      await repository.saveLocalResource(
+        const LocalResourceRequest(
+          title: 'Duplicate',
+          description: 'first',
+          subjects: ['Arts'],
+          levels: ['Upper Primary'],
+          userId: 'user-1',
+        ),
+      );
+      final error = await repository.saveLocalResource(
+        const LocalResourceRequest(
+          title: 'Duplicate',
+          description: 'second',
+          subjects: ['Arts'],
+          levels: ['Upper Primary'],
+          userId: 'user-1',
+        ),
+      );
+      expect(error, isNotNull);
+      expect(error, contains('already exists'));
+    });
+
+    test(
+      'saveLocalResource as private team resource does not add to shelf',
+      () async {
+        await repository.saveLocalResource(
+          const LocalResourceRequest(
+            title: 'Team Resource',
+            description: 'private',
+            subjects: ['Arts'],
+            levels: ['Upper Primary'],
+            isPrivateTeamResource: true,
+            teamId: 'team-1',
+          ),
+        );
+        final row = await db.myLibraryDao.getAll();
+        expect(row.first.isPrivate, isTrue);
+        expect(row.first.privateFor, 'team-1');
+        expect(row.first.userId, isEmpty);
+      },
+    );
+
+    test('updateLocalResource edits an existing row', () async {
+      await repository.saveLocalResource(
+        const LocalResourceRequest(
+          title: 'Original',
+          description: 'original desc',
+          subjects: ['Arts'],
+          levels: ['Upper Primary'],
+          userId: 'user-1',
+        ),
+      );
+      final row = (await db.myLibraryDao.getAll()).first;
+      final error = await repository.updateLocalResource(
+        resourceId: row.id,
+        title: 'Updated Title',
+        author: 'New Author',
+        year: '2027',
+        description: 'updated desc',
+        publisher: 'Pub',
+        linkToLicense: 'MIT',
+        subjects: ['History'],
+        levels: ['Graduate'],
+      );
+      expect(error, isNull);
+      final updated = await db.myLibraryDao.getById(row.id);
+      expect(updated!.title, 'Updated Title');
+      expect(updated.author, 'New Author');
+      expect(updated.subject, contains('History'));
+      expect(updated.level, contains('Graduate'));
+    });
+
+    test('resourceTitleExists returns true for an existing title', () async {
+      await repository.saveLocalResource(
+        const LocalResourceRequest(
+          title: 'Unique Title',
+          description: 'desc',
+          subjects: ['Arts'],
+          levels: ['Upper Primary'],
+          userId: 'user-1',
+        ),
+      );
+      expect(await repository.resourceTitleExists('Unique Title'), isTrue);
+      expect(await repository.resourceTitleExists('Nonexistent'), isFalse);
+    });
   });
 }
 

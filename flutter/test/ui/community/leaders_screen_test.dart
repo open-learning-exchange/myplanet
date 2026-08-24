@@ -94,7 +94,9 @@ void main() {
     expect(find.textContaining('@'), findsNothing);
   });
 
-  testWidgets('tapping a leader opens the details sheet', (tester) async {
+  testWidgets('tapping a leader navigates to the member detail route', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       wrapScreen(
         const LeadersScreen(),
@@ -103,6 +105,10 @@ void main() {
             await _prefsWithLeaders(_leadersJson),
           ),
         ],
+        pushTargets: {
+          '/life/teams/community/members/org.couchdb.user%3Aalice': (_) =>
+              const Scaffold(body: Text('member detail target')),
+        },
       ),
     );
     await tester.pumpAndSettle();
@@ -110,22 +116,8 @@ void main() {
     await tester.tap(find.text('Alice Alda'));
     await tester.pumpAndSettle();
 
-    // The bottom sheet renders the display name as a headline, and the
-    // leader's email is shown inside the sheet.
-    expect(
-      find.ancestor(
-        of: find.text('Alice Alda'),
-        matching: find.byType(BottomSheet),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.ancestor(
-        of: find.text('alice@example.org'),
-        matching: find.byType(BottomSheet),
-      ),
-      findsOneWidget,
-    );
+    // The member detail screen is pushed.
+    expect(find.text('member detail target'), findsOneWidget);
   });
 
   testWidgets('malformed leaders JSON falls back to the empty state', (

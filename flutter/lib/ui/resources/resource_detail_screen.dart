@@ -8,6 +8,7 @@ import '../../providers/app_providers.dart';
 import '../../providers/ratings_provider.dart';
 import '../../providers/session_provider.dart';
 import '../ratings/rating_dialog.dart';
+import '../router.dart';
 
 /// Port of `ui/resources/ResourceDetailFragment.kt`.
 ///
@@ -82,6 +83,15 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_resource!.title ?? l10n.untitledResourceTitle),
+        actions: [
+          IconButton(
+            tooltip: l10n.editResource,
+            icon: const Icon(Icons.edit),
+            onPressed: () => context.push(
+              '${Routes.addResource}?edit=${Uri.encodeComponent(_resource!.id)}',
+            ),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

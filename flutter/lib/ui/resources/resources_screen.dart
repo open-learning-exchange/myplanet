@@ -13,6 +13,7 @@ import '../components/grid_span_calculator.dart';
 import '../components/list_view_mode.dart';
 import '../components/view_mode_toggle.dart';
 import '../dashboard/dashboard_shell.dart';
+import '../router.dart';
 import 'collections_dialog.dart';
 import 'resources_filter_sheet.dart';
 
@@ -132,6 +133,13 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     });
 
     return Scaffold(
+      floatingActionButton: !_selecting && !shelfOnly
+          ? FloatingActionButton(
+              tooltip: l10n.addResource,
+              onPressed: () => context.push(Routes.addResource),
+              child: const Icon(Icons.add),
+            )
+          : null,
       appBar: AppBar(
         leading: _selecting
             ? IconButton(
