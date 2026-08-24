@@ -3,12 +3,15 @@ updates:
   - package-ecosystem: "github-actions"
     directories:
       - "/"
-      - "/.github/workflows"
     schedule:
       interval: "daily"
     commit-message:
       prefix: "actions:"
     open-pull-requests-limit: 10
+    groups:
+      dependencies:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
   - package-ecosystem: "gradle"
     directories:
       - "/"
@@ -18,3 +21,7 @@ updates:
     commit-message:
       prefix: "all:"
     open-pull-requests-limit: 15
+    groups:
+      dependencies:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
