@@ -7,7 +7,6 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import java.io.File
 import java.io.InputStream
 import org.apache.commons.lang3.StringUtils
@@ -159,12 +158,10 @@ open class UserEntity(
 
     fun addImageUrl(jsonDoc: JsonObject?) {
         if (jsonDoc?.has("_attachments") == true) {
-            val element = JsonParser.parseString(jsonDoc["_attachments"].asJsonObject.toString())
-            val obj = element.asJsonObject
-            val entries = obj.entrySet()
-            for ((key1) in entries) {
+            val obj = jsonDoc["_attachments"].asJsonObject
+            val key1 = obj.entrySet().firstOrNull()?.key
+            if (key1 != null) {
                 userImage = UrlUtils.getUserImageUrl(id, key1)
-                break
             }
         }
     }

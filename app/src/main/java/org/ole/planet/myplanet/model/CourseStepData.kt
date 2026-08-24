@@ -5,5 +5,7 @@ data class CourseStepData(
     val resources: List<MyLibrary>,
     val stepExams: List<StepExam>,
     val stepSurvey: List<StepExam>,
-    val userHasCourse: Boolean
+    val userHasCourse: Boolean,
+    val hasExam: Boolean,
+    val hasSurvey: Boolean
 )
