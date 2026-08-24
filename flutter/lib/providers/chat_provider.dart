@@ -28,27 +28,26 @@ final chatSearchQueryProvider = StateProvider<String>((ref) => '');
 /// Provider for filtered chat history based on search.
 final filteredChatHistoryProvider = Provider<AsyncValue<List<ChatRow>>>((ref) {
   final search = ref.watch(chatSearchQueryProvider);
+  final mode = ref.watch(chatSearchModeProvider);
+  final fullSearch = ref.watch(chatFullSearchProvider);
   final history = ref.watch(chatHistoryProvider);
 
   return history.whenData((chats) {
     if (search.isEmpty) return chats;
 
-    final normalizedSearch = _normalizeText(search);
-    return chats.where((chat) {
-      final title = _normalizeText(chat.title ?? '');
-      return title.contains(normalizedSearch) ||
-          title.startsWith(normalizedSearch);
-    }).toList();
+    final effectiveMode = fullSearch ? mode : ChatSearchMode.title;
+    return searchChatsForMode(search, effectiveMode, chats);
   });
 });
 
-/// Normalizes text for search by removing diacritics and lowercasing.
-String _normalizeText(String text) {
-  return text.toLowerCase().replaceAll(
-    RegExp(r'\p{InCombiningDiacriticalMarks}+'),
-    '',
-  );
-}
+/// Current chat search field (only meaningful when full search is on).
+final chatSearchModeProvider = StateProvider<ChatSearchMode>(
+  (ref) => ChatSearchMode.question,
+);
+
+/// Whether full conversation search (across every question/response) is on.
+/// Off means title-only search, matching the Kotlin's `fullSearch` checkbox.
+final chatFullSearchProvider = StateProvider<bool>((ref) => false);
 
 /// State for a chat conversation.
 class ChatConversationState {

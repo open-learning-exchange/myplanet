@@ -7,11 +7,16 @@ import 'package:go_router/go_router.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/sync_state.dart';
+import '../../repository/chat_repository.dart';
 import '../router.dart';
 
 /// Port of `ui/chat/ChatHistoryFragment.kt`.
 ///
 /// Shows the list of chat conversations with search/filter capabilities.
+/// The search bar matches the title by default; a "full conversation" toggle
+/// reveals a question/response switch and searches every turn's query or
+/// response text, ranked so a prefix hit in the first turn outranks a
+/// substring hit in a later one.
 class ChatHistoryScreen extends ConsumerWidget {
   const ChatHistoryScreen({super.key});
 
@@ -20,6 +25,8 @@ class ChatHistoryScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final history = ref.watch(filteredChatHistoryProvider);
     final searchQuery = ref.watch(chatSearchQueryProvider);
+    final fullSearch = ref.watch(chatFullSearchProvider);
+    final searchMode = ref.watch(chatSearchModeProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -53,6 +60,54 @@ class ChatHistoryScreen extends ConsumerWidget {
                   ref.read(chatSearchQueryProvider.notifier).state = value,
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: CheckboxListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    value: fullSearch,
+                    onChanged: (value) =>
+                        ref.read(chatFullSearchProvider.notifier).state =
+                            value ?? false,
+                    title: Text(
+                      l10n.fullConversationResponse,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (fullSearch)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SegmentedButton<ChatSearchMode>(
+                      segments: [
+                        ButtonSegment(
+                          value: ChatSearchMode.question,
+                          label: Text(l10n.question),
+                        ),
+                        ButtonSegment(
+                          value: ChatSearchMode.response,
+                          label: Text(l10n.response),
+                        ),
+                      ],
+                      selected: {searchMode},
+                      onSelectionChanged: (selection) =>
+                          ref.read(chatSearchModeProvider.notifier).state =
+                              selection.first,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Expanded(
             child: history.when(
               loading: () => const Center(child: CircularProgressIndicator()),

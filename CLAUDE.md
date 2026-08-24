@@ -206,6 +206,19 @@ reaction on their next sync. Same shape as the Phase 56 security-data fix.
 Each side had a passing test; nothing ran the two together, which is now what
 the new coverage does.
 
+Phase 75 ports the chat full-conversation search from `62908f134`: a
+`ChatSearchMode` enum (`title`/`question`/`response`), ranked matching
+(prefix before contains, first conversation before later), recency sort by
+`max(createdDate, updatedDate)`, and accent-insensitive normalization. The
+search lives as a pure top-level `searchChatsForMode` (and
+`sortChatsByRecency`) in `lib/repository/chat_repository.dart` so the
+provider can call it without transitively watching
+`chatRepositoryProvider`/`planetPrefsProvider` (the latter is
+`UnimplementedError` in the widget-test harness). Dart has no NFD
+normalizer and its `RegExp` rejects the `InCombiningDiacriticalMarks` block
+name, so `lib/core/utils/text_normalize.dart` hand-rolls decomposition for
+the Latin-1 Supplement block and strips U+0300–U+036F in the same pass.
+
 ### Documentation Map
 
 | Document | Read it when… |

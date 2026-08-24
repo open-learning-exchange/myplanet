@@ -751,6 +751,8 @@
   "noChats": "No chats yet",
   "noSearchResults": "No matching chats",
   "untitledChat": "Untitled chat",
+  "fullConversationResponse": "Full conversation response",
+  "response": "Response",
   "chatConversation": "Conversation",
   "newConversation": "New conversation",
   "startConversation": "Start a new conversation",

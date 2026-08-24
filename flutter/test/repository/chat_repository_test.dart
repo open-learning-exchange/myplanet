@@ -204,6 +204,135 @@ void main() {
       ).called(3);
     });
   });
+
+  group('searchChats', () {
+    // Two conversations: the title (first query) is "math help"; the second
+    // turn's question is "fractions" and its response is "halves and quarters".
+    const mathConvo =
+        '[{"query":"math help","response":"yes?"},'
+        '{"query":"fractions","response":"halves and quarters"}]';
+    // The title is "science chat"; its only response mentions "gravity".
+    const scienceConvo =
+        '[{"query":"science chat","response":"gravity holds things down"}]';
+
+    late List<ChatRow> chats;
+
+    setUp(() {
+      chats = [
+        ChatRow(
+          id: 'math',
+          title: 'math help',
+          conversations: mathConvo,
+          createdDate: '100',
+          updatedDate: '200',
+          lastUsed: 0,
+          isUploaded: false,
+        ),
+        ChatRow(
+          id: 'science',
+          title: 'science chat',
+          conversations: scienceConvo,
+          createdDate: '50',
+          updatedDate: '300',
+          lastUsed: 0,
+          isUploaded: false,
+        ),
+      ];
+    });
+
+    test('empty query returns the chats unchanged', () {
+      final result = repository.searchChats('', ChatSearchMode.title, chats);
+      expect(result.length, 2);
+    });
+
+    test('title search matches the first query, ranked prefix-first', () {
+      // "math" prefixes the title of the first chat.
+      var result = repository.searchChats('math', ChatSearchMode.title, chats);
+      expect(result.map((c) => c.id), ['math']);
+
+      // "chat" is a substring of the second chat's title, not a prefix.
+      result = repository.searchChats('chat', ChatSearchMode.title, chats);
+      expect(result.map((c) => c.id), ['science']);
+    });
+
+    test('question search walks every turn and ranks in-title hits first', () {
+      // "fractions" is the second turn's question of the first chat.
+      var result = repository.searchChats(
+        'fractions',
+        ChatSearchMode.question,
+        chats,
+      );
+      expect(result.map((c) => c.id), ['math']);
+
+      // "math" prefixes the first turn's question (the title), so the first
+      // chat ranks ahead of a substring match in a later turn.
+      result = repository.searchChats('math', ChatSearchMode.question, chats);
+      expect(result.map((c) => c.id), ['math']);
+    });
+
+    test('response search matches response text', () {
+      final result = repository.searchChats(
+        'gravity',
+        ChatSearchMode.response,
+        chats,
+      );
+      expect(result.map((c) => c.id), ['science']);
+    });
+
+    test('diacritics are stripped so an accent matches its plain form', () {
+      final accented = [
+        ChatRow(
+          id: 'cafe',
+          title: 'café',
+          conversations: '[{"query":"café","response":"coffee"}]',
+          lastUsed: 0,
+          isUploaded: false,
+        ),
+      ];
+      final result = repository.searchChats(
+        'cafe',
+        ChatSearchMode.title,
+        accented,
+      );
+      expect(result.map((c) => c.id), ['cafe']);
+    });
+
+    test('multi-word queries match when all parts appear', () {
+      final result = repository.searchChats(
+        'halves quarters',
+        ChatSearchMode.response,
+        chats,
+      );
+      expect(result.map((c) => c.id), ['math']);
+    });
+  });
+
+  test(
+    'getChatHistoryForUser sorts by the newest of created/updated',
+    () async {
+      await database.chatDao.upsertAll([
+        ChatEntriesCompanion.insert(
+          id: 'old',
+          docId: const Value('old'),
+          user: const Value('ada'),
+          title: const Value('older chat'),
+          createdDate: const Value('100'),
+          updatedDate: const Value('100'),
+        ),
+        ChatEntriesCompanion.insert(
+          id: 'fresh',
+          docId: const Value('fresh'),
+          user: const Value('ada'),
+          title: const Value('freshly updated'),
+          createdDate: const Value('50'),
+          updatedDate: const Value('300'),
+        ),
+      ]);
+
+      final result = await repository.getChatHistoryForUser('ada');
+      expect(result.map((c) => c.id), ['fresh', 'old']);
+    },
+  );
 }
 
 class MockPlanetApi extends Mock implements PlanetApi {}

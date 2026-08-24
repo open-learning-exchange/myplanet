@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 74 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 75 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -3712,16 +3712,96 @@ The 1310-test suite passes, `flutter analyze` clean, `dart format` clean,
 
 ---
 
-**Last updated**: 2026-08-24 (Phase 74 complete — voice emoji reactions and
-team task comment threads, neither a Kotlin port; the reactions sync round trip
-fixed, where the serializer wrote to the nested `news` object and the mapper
-read the top level, erasing local reactions on the next pull. Phase 73 —
-standalone WebView
+## Phase 75 — chat full-conversation search (audit + port of `62908f134`)
+
+This phase is an upstream audit plus one behavioural port rather than a new
+screen. Twenty-eight commits between the Phase 70 boundary (`14a9f14`,
+2026-08-24 04:31) and the master tip (`7f9f80cd4`, tag v0.66.63,
+2026-08-24 10:29) were reviewed against the Flutter port. Twenty-seven of
+them need no port — they are refactors, Kotlin-idiom cleanups, performance
+rewrites, CI/version bumps, or land on mechanisms the Dart port already has
+(gradient drawables, `@`-split parsers, regex consolidations, BP-number
+parsing, hex formatting where Dart's `String.toRadixString` is already
+locale-independent). The one genuine gap:
+
+- **Chat repository search** — commit `62908f134`. The Kotlin
+  `ChatRepository` gained a `ChatSearchMode` enum (`title`/`question`/
+  `response`), a `searchChats()` with **ranked** matching (a prefix hit
+  outranks a substring hit; a hit in the first conversation — which is the
+  title — outranks one in a later turn), a `sortChats()` ordering by
+  `max(createdDate, updatedDate)` descending rather than by id, and
+  `Utilities.normalizeText` (NFD-decompose, strip combining marks, lowercase)
+  so an accented search finds its plain match. The port had only a flat
+  `title.contains` filter and ordered the DAO's id-desc output as-is.
+
+### The port
+
+The search logic is **pure** — it lives in a top-level `searchChatsForMode`
+(and `sortChatsByRecency`) in `lib/repository/chat_repository.dart`, and the
+provider calls that directly rather than `ref.watch(chatRepositoryProvider)`.
+That matters because the repo provider transitively watches
+`planetPrefsProvider`, which is `UnimplementedError` in the widget-test
+harness — a `filteredChatHistoryProvider` that reached for the repo would
+throw on every non-empty search and render "Chats could not be loaded"
+instead of the no-results message. The repo's `searchChats` impl delegates
+to the same function so the interface stays satisfied and the repository
+tests still exercise it through the repo.
+
+### Dart has no NFD normalizer
+
+The Kotlin normalizer is `Normalizer.normalize(str, NFD)` then a
+`\p{InCombiningDiacriticalMarks}` strip. Dart's core library has neither:
+it has no NFD decomposition, and its `RegExp` rejects the
+`InCombiningDiacriticalMarks` block name (`FormatException: Invalid property
+name`, even with `unicode: true`). A precomposed Dart string ("café", NFC)
+would survive the strip untouched, so an accented search would miss its
+plain match — the original port's `_normalizeText` had this bug, it just was
+never tested.
+
+`lib/core/utils/text_normalize.dart` bridges both gaps by hand: a
+decomposition table for the Latin-1 Supplement block (U+00C0–U+00FF, covering
+French and Spanish accented vowels, the cedilla, and ñ) rewrites a
+precomposed letter to base + combining mark, then any code point in the
+U+0300–U+036F combining-marks range is dropped in the same pass. Both a
+precomposed "café" and an already-decomposed "cafe\u0301" normalize to
+"cafe". The coverage does not extend past Latin-1 Supplement — the app's
+other locales (Arabic, Nepali, Somali) use scripts with no combining-mark
+diacritic stripping need, and Latin Extended-A/B is not present in the
+languages this app ships.
+
+### UI
+
+`chat_history_screen.dart` gained a "Full conversation response" checkbox
+(the Kotlin `fullSearch`) and, when it is on, a `SegmentedButton` switching
+between `question` and `response`. Off means title-only search (the
+default), matching the Kotlin. Two new ARB keys (`fullConversationResponse`,
+`response`) were added to `app_en.arb`; `question` already existed (the
+feedback "Question" label) and is reused, matching the Kotlin's shared
+string. The four other locales fall back to English until
+`tool/arb_from_strings_xml.dart` is run, which is how every prior phase
+added English strings.
+
+The 1324-test suite passes (9 new — search modes, ranked matching,
+diacritics, recency sort, the toggle UI, the response-mode search),
+`flutter analyze` clean, `dart format --set-exit-if-changed` clean.
+
+---
+
+**Last updated**: 2026-08-24 (Phase 75 complete — chat full-conversation
+search ported from `62908f134`: a `ChatSearchMode` enum with ranked matching
+(prefix before contains, first conversation before later), recency sort by
+`max(createdDate, updatedDate)`, and a hand-rolled NFD decomposition because
+Dart has neither an NFD normalizer nor a `RegExp` that accepts the
+`InCombiningDiacriticalMarks` block name. Phase 74 — voice emoji reactions
+and team task comment threads, neither a Kotlin port; the reactions sync
+round trip fixed, where the serializer wrote to the nested `news` object and
+the mapper read the top level, erasing local reactions on the next pull.
+Phase 73 — standalone WebView
 screen, course step exam/survey buttons, and the team leaderboard from
 the `14880` upstream branch. Phase 72 — the add-resource screen, team
 leader actions, and member-detail wiring. Phase 71 — the member detail
 screen, reached by tapping a member. Phase 70 — resource list sort
 toggles. Phase 69 — the ARB derivation tool merges instead of
 regenerating. Phase 68 — achievements. Phase 67 — tags and collections.)
-**Phase**: 74 of N (27 of 28 UI packages have a screen — see Status for what that does and
+**Phase**: 75 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

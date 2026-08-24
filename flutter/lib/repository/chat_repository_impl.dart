@@ -206,8 +206,16 @@ class ChatRepositoryImpl implements ChatRepository {
     if (userName == null || userName.isEmpty) {
       return [];
     }
-    return chatDao.getByUser(userName);
+    final chats = await chatDao.getByUser(userName);
+    return sortChatsByRecency(chats);
   }
+
+  @override
+  List<ChatRow> searchChats(
+    String query,
+    ChatSearchMode mode,
+    List<ChatRow> chats,
+  ) => searchChatsForMode(query, mode, chats);
 
   @override
   Future<String?> getLatestRev(String id) async {

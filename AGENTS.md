@@ -100,3 +100,24 @@ UI package at a time. Conventions worth remembering across slices:
     `docs/kotlin-to-flutter-migration.md`, use the real abbreviation from
     `git log --format=%H --abbrev=9` — a fabricated suffix reads fine and
     cites the wrong commit.
+  - **Pure functions vs provider-watched repos**: when a filter/sort
+    `*Provider` needs logic that lives on a repository, prefer a top-level
+    pure function and have the provider call *that* rather than
+    `ref.watch(<repo>Provider)`. A provider-watched repo transitively
+    watches `planetApiProvider`/`serverConfigProvider`/`planetPrefsProvider`,
+    and `planetPrefsProvider` is `UnimplementedError` in the widget-test
+    harness — so the provider throws on build, the screen renders the error
+    branch, and a "no results" screen test fails with "could not be loaded"
+    instead. The repo's impl method can delegate to the same pure function so
+    repository tests still exercise it through the interface. (Phase 75,
+    `searchChatsForMode`/`sortChatsByRecency`.)
+  - **Dart NFD / combining-mark gap**: Dart's core library has no NFD
+    normalizer, and its `RegExp` rejects the `\p{InCombiningDiacriticalMarks}`
+    block name (`FormatException: Invalid property name`, even with
+    `unicode: true`). For accent-insensitive search, hand-roll decomposition
+    for the Latin-1 Supplement block (U+00C0–U+00FF) and drop U+0300–U+036F
+    in the same pass — see `lib/core/utils/text_normalize.dart`. A
+    precomposed "café" (NFC, the Dart default) would otherwise survive a
+    naive regex strip untouched. The original port's `_normalizeText` had
+    this bug for months; it surfaced only when a test asserted on the
+    normalized output rather than the search result.

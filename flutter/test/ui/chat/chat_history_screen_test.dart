@@ -132,4 +132,67 @@ void main() {
     expect(find.text('No matching chats'), findsOneWidget);
     expect(find.text('Math help'), findsNothing);
   });
+
+  testWidgets('full-search toggle reveals the question/response switch', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wrapScreen(
+        const ChatHistoryScreen(),
+        overrides: [
+          chatHistoryProvider.overrideWith((ref) async => const <ChatRow>[]),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The toggle is off by default, so the question/response switch is absent.
+    expect(find.text('Question'), findsNothing);
+    expect(find.text('Response'), findsNothing);
+
+    await tester.tap(find.text('Full conversation response'));
+    await tester.pumpAndSettle();
+
+    // Toggling it on reveals the segmented switch.
+    expect(find.text('Question'), findsOneWidget);
+    expect(find.text('Response'), findsOneWidget);
+  });
+
+  testWidgets('full response search matches a response, not the title', (
+    tester,
+  ) async {
+    final chats = [
+      _chat(
+        id: 'c1',
+        title: 'greetings',
+        conversations: '[{"query":"hi","response":"hello there"}]',
+      ),
+      _chat(
+        id: 'c2',
+        title: 'science',
+        conversations: '[{"query":"why","response":"because"}]',
+      ),
+    ];
+
+    await tester.pumpWidget(
+      wrapScreen(
+        const ChatHistoryScreen(),
+        overrides: [chatHistoryProvider.overrideWith((ref) async => chats)],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Turn on full-conversation search and switch to response mode.
+    await tester.tap(find.text('Full conversation response'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Response'));
+    await tester.pumpAndSettle();
+
+    // Search a response only the second chat has.
+    await tester.enterText(find.byType(SearchBar), 'because');
+    await tester.pumpAndSettle();
+
+    expect(find.text('science'), findsOneWidget);
+    expect(find.text('greetings'), findsNothing);
+  });
 }
