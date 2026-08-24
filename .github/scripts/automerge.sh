@@ -269,8 +269,6 @@ publish_failed() {
     return 1
 }
 
-# What stops a publish is almost always the playstore daily save quota, and
-# Play never says when it lifts -- so estimate it, and name who retries.
 quota_note() {
     quota_report=""
     quota_eta=""

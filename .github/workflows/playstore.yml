@@ -4,15 +4,7 @@ name: myPlanet playstore
 # track. Play holds about 48 save slots, each freeing 24h after its own use,
 # and refuses the next save with "Daily save quota exceeded." -- that build
 # stays released on GitHub but off the track, and the automerge drain stops.
-#
-# When the track is behind the newest GitHub release this re-uploads that
-# release's signed bundle: no rebuild, no new version code. Started by hand,
-# never on a schedule -- the Run workflow button (the link the release warning
-# and the automerge stop print), gh workflow run playstore.yml, or a
-# repository_dispatch with event_type playstore. wait_minutes may sit on a
-# runner until the estimated slot opens; otherwise start it again later.
-#
-# Needs SERVICE_ACCOUNT_JSON, the secret the release workflow publishes with.
+
 on:
   repository_dispatch:
     types: [playstore]
@@ -153,7 +145,6 @@ jobs:
           fi
           echo "published=$published" >> "$GITHUB_OUTPUT"
 
-      # a quota that has not lifted is not a broken run: stay green and warn
       - name: report what happened
         if: always()
         run: |
