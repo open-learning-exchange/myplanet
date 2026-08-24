@@ -207,6 +207,8 @@
   "pdfFileNotFound": "ملف PDF غير موجود محليًا",
   "unableToLoadPdf": "تعذر تحميل PDF",
   "imageFileNotFound": "الصورة غير موجودة",
+  "attachment": "مرفق",
+  "cannotOpenAttachment": "لا يمكن فتح هذا النوع من المرفقات هنا.",
   "noContent": "لا يوجد محتوى",
   "emptyFile": "ملف فارغ",
   "htmlEntryNotFound": "ملف إدخال HTML غير موجود",

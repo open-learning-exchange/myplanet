@@ -207,6 +207,8 @@
   "pdfFileNotFound": "PDF फाइल स्थानीय रूपमा फेला परेन",
   "unableToLoadPdf": "PDF लोड गर्न असमर्थ",
   "imageFileNotFound": "तस्वीर फेला परेन",
+  "attachment": "संलग्नक",
+  "cannotOpenAttachment": "यो प्रकारको संलग्नक यहाँ खोल्न सकिँदैन।",
   "noContent": "कुनै सामग्री छैन",
   "emptyFile": "खाली फाइल",
   "htmlEntryNotFound": "HTML प्रविष्टि फाइल फेला परेन",

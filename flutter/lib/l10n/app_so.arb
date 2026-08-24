@@ -207,6 +207,8 @@
   "pdfFileNotFound": "Faylka PDF lama helin gudaha",
   "unableToLoadPdf": "Lama helin PDF-ga",
   "imageFileNotFound": "Sawirka lama helin",
+  "attachment": "Lifaaq",
+  "cannotOpenAttachment": "Nooca lifaaqan lama furi karo halkan.",
   "noContent": "Wax ma jiro",
   "emptyFile": "Fayl maran",
   "htmlEntryNotFound": "Faylka gelinta HTML lama helin",

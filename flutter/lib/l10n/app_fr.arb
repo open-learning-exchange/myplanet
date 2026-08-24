@@ -208,6 +208,8 @@
   "pdfFileNotFound": "Fichier PDF introuvable localement",
   "unableToLoadPdf": "Impossible de charger le PDF",
   "imageFileNotFound": "Image introuvable",
+  "attachment": "Pièce jointe",
+  "cannotOpenAttachment": "Ce type de pièce jointe ne peut pas être ouvert ici.",
   "noContent": "Aucun contenu",
   "emptyFile": "Fichier vide",
   "htmlEntryNotFound": "Fichier d'entrée HTML introuvable",

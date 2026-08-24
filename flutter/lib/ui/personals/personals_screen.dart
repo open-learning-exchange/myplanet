@@ -8,6 +8,7 @@ import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/personals_provider.dart';
 import '../../repository/personals_repository.dart';
+import '../viewer/path_resource_viewer_screen.dart';
 
 /// Offline CRUD port of `ui/personals/PersonalsFragment.kt`.
 class PersonalsScreen extends ConsumerWidget {
@@ -35,10 +36,26 @@ class PersonalsScreen extends ConsumerWidget {
                 separatorBuilder: (_, _) => const SizedBox(height: 8),
                 itemBuilder: (context, index) => _PersonalCard(
                   personal: rows[index],
+                  onOpen: () => _openAttachment(context, rows[index]),
                   onEdit: () => _edit(context, ref, personal: rows[index]),
                   onDelete: () => _delete(context, ref, rows[index]),
                 ),
               ),
+      ),
+    );
+  }
+
+  Future<void> _openAttachment(
+    BuildContext context,
+    PersonalRow personal,
+  ) async {
+    final path = personal.path;
+    if (path == null || path.isEmpty) return;
+    if (!context.mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            PathResourceViewerScreen(path: path, title: personal.title),
       ),
     );
   }
@@ -142,10 +159,12 @@ class _EmptyPersonals extends StatelessWidget {
 class _PersonalCard extends StatelessWidget {
   const _PersonalCard({
     required this.personal,
+    required this.onOpen,
     required this.onEdit,
     required this.onDelete,
   });
   final PersonalRow personal;
+  final VoidCallback onOpen;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
@@ -176,6 +195,9 @@ class _PersonalCard extends StatelessWidget {
               ),
           ],
         ),
+        onTap: personal.path != null && personal.path!.isNotEmpty
+            ? onOpen
+            : null,
         trailing: PopupMenuButton<_PersonalAction>(
           onSelected: (action) {
             switch (action) {

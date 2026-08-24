@@ -908,6 +908,8 @@
   "pdfFileNotFound": "PDF file not found locally",
   "unableToLoadPdf": "Unable to load PDF",
   "imageFileNotFound": "Image file not found",
+  "attachment": "Attachment",
+  "cannotOpenAttachment": "This attachment type cannot be opened here.",
   "noContent": "No content",
   "emptyFile": "Empty file",
   "htmlEntryNotFound": "HTML entry file not found",
