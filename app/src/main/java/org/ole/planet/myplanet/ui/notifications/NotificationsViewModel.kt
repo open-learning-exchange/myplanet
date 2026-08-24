@@ -59,14 +59,17 @@ class NotificationsViewModel @Inject constructor(
         viewModelScope.launch {
             val payloadNotifications = notificationsRepository.getNotifications(userId, filter, isAdmin)
 
-            val taskIds = payloadNotifications
-                .filter { it.type.lowercase() == "task" }
+            val byLoweredType = payloadNotifications.groupBy { it.type.lowercase() }
+            val taskNotifications = byLoweredType["task"] ?: emptyList()
+            val joinRequestNotifications = byLoweredType["join_request"] ?: emptyList()
+
+            val taskIds = taskNotifications
                 .mapNotNull { it.relatedId }
                 .distinct()
             val taskTeamNames = notificationsRepository.getTaskTeamNamesByTaskIds(taskIds).toMutableMap()
 
-            val taskTitles = payloadNotifications
-                .filter { it.type.lowercase() == "task" && (it.relatedId.isNullOrEmpty() || !taskTeamNames.containsKey(it.relatedId)) }
+            val taskTitles = taskNotifications
+                .filter { it.relatedId.isNullOrEmpty() || !taskTeamNames.containsKey(it.relatedId) }
                 .mapNotNull { parseTaskDate(it.message)?.first }
                 .distinct()
             if (taskTitles.isNotEmpty()) {
@@ -74,14 +77,13 @@ class NotificationsViewModel @Inject constructor(
                 taskTeamNames.putAll(teamNamesByTitle)
             }
 
-            val joinRequestIds = payloadNotifications
-                .filter { it.type.lowercase() == "join_request" }
+            val joinRequestIds = joinRequestNotifications
                 .mapNotNull { it.relatedId }
                 .distinct()
             val joinRequestDetails = notificationsRepository.getJoinRequestDetailsBatch(joinRequestIds).toMutableMap()
 
-            val joinRequestsWithoutRelatedId = payloadNotifications
-                .filter { it.type.lowercase() == "join_request" && it.relatedId.isNullOrEmpty() }
+            val joinRequestsWithoutRelatedId = joinRequestNotifications
+                .filter { it.relatedId.isNullOrEmpty() }
             if (joinRequestsWithoutRelatedId.isNotEmpty()) {
                 val fallbackDetail = notificationsRepository.getJoinRequestDetails(null)
                 joinRequestDetails[""] = fallbackDetail
@@ -162,16 +164,18 @@ class NotificationsViewModel @Inject constructor(
             if (markedIds.contains(notificationId)) {
                 var wasUnread = false
                 _notifications.update { currentList ->
-                    val targetNotification = currentList.find { it.id == notificationId }
-                    if (targetNotification != null && !targetNotification.isRead) {
-                        wasUnread = true
-                        if (currentFilter == "unread") {
-                            currentList.filter { it.id != notificationId }
+                    currentList.mapNotNull { notif ->
+                        if (notif.id == notificationId) {
+                            if (!notif.isRead) {
+                                wasUnread = true
+                                if (currentFilter == "unread") null
+                                else notif.copy(isRead = true)
+                            } else {
+                                notif
+                            }
                         } else {
-                            currentList.markAsRead(notificationId)
+                            notif
                         }
-                    } else {
-                        currentList
                     }
                 }
                 if (wasUnread && _unreadCount.value > 0) {
@@ -217,14 +221,13 @@ class NotificationsViewModel @Inject constructor(
         expandedGroups: Set<String>
     ): List<NotificationListItem> {
         if (notifications.isEmpty()) return emptyList()
-        val typeOrder = listOf("join_request", "team_join", "task", "chat", "voice_reply", "resource", "storage")
         // Normalize any unrecognized type to "notification" for a single Other group
         val grouped = notifications.groupBy { notif ->
             val t = notif.type.lowercase()
             if (t in KNOWN_TYPES) t else "notification"
         }
-        val orderedTypes = (typeOrder.filter { grouped.containsKey(it) } +
-                grouped.keys.filter { it !in typeOrder }).distinct()
+        val orderedTypes = (TYPE_ORDER.filter { grouped.containsKey(it) } +
+                grouped.keys.filter { it !in TYPE_ORDER }).distinct()
         val inSelectionMode = selectedIds.isNotEmpty()
         return buildList {
             for (type in orderedTypes) {
@@ -288,6 +291,7 @@ class NotificationsViewModel @Inject constructor(
 
     companion object {
         val KNOWN_TYPES = setOf("join_request", "team_join", "task", "chat", "voice_reply", "resource", "storage")
+        val TYPE_ORDER = listOf("join_request", "team_join", "task", "chat", "voice_reply", "resource", "storage")
 
         private val TASK_DATE_PATTERN = Pattern.compile("\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s\\d{1,2},\\s\\w+\\s\\d{4}\\b")
 

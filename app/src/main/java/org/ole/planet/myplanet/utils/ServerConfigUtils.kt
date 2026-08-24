@@ -10,6 +10,23 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
 
 object ServerConfigUtils {
+
+    private val pinMap = mapOf(
+        BuildConfig.PLANET_LEARNING_URL to BuildConfig.PLANET_LEARNING_PIN,
+        BuildConfig.PLANET_GUATEMALA_URL to BuildConfig.PLANET_GUATEMALA_PIN,
+        BuildConfig.PLANET_SANPABLO_URL to BuildConfig.PLANET_SANPABLO_PIN,
+        BuildConfig.PLANET_EARTH_URL to BuildConfig.PLANET_EARTH_PIN,
+        BuildConfig.PLANET_SOMALIA_URL to BuildConfig.PLANET_SOMALIA_PIN,
+        BuildConfig.PLANET_VI_URL to BuildConfig.PLANET_VI_PIN,
+        BuildConfig.PLANET_XELA_URL to BuildConfig.PLANET_XELA_PIN,
+        BuildConfig.PLANET_URIUR_URL to BuildConfig.PLANET_URIUR_PIN,
+        BuildConfig.PLANET_RUIRU_URL to BuildConfig.PLANET_RUIRU_PIN,
+        BuildConfig.PLANET_EMBAKASI_URL to BuildConfig.PLANET_EMBAKASI_PIN,
+        BuildConfig.PLANET_CAMBRIDGE_URL to BuildConfig.PLANET_CAMBRIDGE_PIN,
+    )
+
+    private val localNetworkRegex = Regex("^172\\.(1[6-9]|2[0-9]|3[0-1])\\..*")
+
     fun getServerAddresses(context: Context): List<ServerAddress> {
         return listOf(
             ServerAddress(context.getString(R.string.sync_planet_learning), BuildConfig.PLANET_LEARNING_URL),
@@ -49,19 +66,6 @@ object ServerConfigUtils {
     }
 
     fun getPinForUrl(url: String): String {
-        val pinMap = mapOf(
-            BuildConfig.PLANET_LEARNING_URL to BuildConfig.PLANET_LEARNING_PIN,
-            BuildConfig.PLANET_GUATEMALA_URL to BuildConfig.PLANET_GUATEMALA_PIN,
-            BuildConfig.PLANET_SANPABLO_URL to BuildConfig.PLANET_SANPABLO_PIN,
-            BuildConfig.PLANET_EARTH_URL to BuildConfig.PLANET_EARTH_PIN,
-            BuildConfig.PLANET_SOMALIA_URL to BuildConfig.PLANET_SOMALIA_PIN,
-            BuildConfig.PLANET_VI_URL to BuildConfig.PLANET_VI_PIN,
-            BuildConfig.PLANET_XELA_URL to BuildConfig.PLANET_XELA_PIN,
-            BuildConfig.PLANET_URIUR_URL to BuildConfig.PLANET_URIUR_PIN,
-            BuildConfig.PLANET_RUIRU_URL to BuildConfig.PLANET_RUIRU_PIN,
-            BuildConfig.PLANET_EMBAKASI_URL to BuildConfig.PLANET_EMBAKASI_PIN,
-            BuildConfig.PLANET_CAMBRIDGE_URL to BuildConfig.PLANET_CAMBRIDGE_PIN,
-        )
         return pinMap[url] ?: ""
     }
 
@@ -69,7 +73,7 @@ object ServerConfigUtils {
         val host = url.split(":").firstOrNull()?.split("/")?.firstOrNull() ?: url
         return host.startsWith("192.168.") ||
                 host.startsWith("10.") ||
-                host.matches(Regex("^172\\.(1[6-9]|2[0-9]|3[0-1])\\..*")) ||
+                host.matches(localNetworkRegex) ||
                 host == "localhost" ||
                 host == "127.0.0.1" ||
                 host.endsWith(".local")

@@ -428,6 +428,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private fun showMeetupDialog(meetupList: List<Meetup>) {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.meetup_dialog, null)
         val recyclerView = dialogView.findViewById<RecyclerView>(R.id.rvMeetups)
+        recyclerView.setHasFixedSize(true)
         val dialogTitle = dialogView.findViewById< TextView>(R.id.tvTitle)
         dialogTitle.text = getDateFormatter().format(clickedCalendar.toInstant())
         val extraHeight = TypedValue.applyDimension(

@@ -54,7 +54,7 @@ class ChatViewModelTest {
         voicesRepository = mockk(relaxed = true)
         dispatcherProvider = TestDispatcherProvider(testDispatcher)
         realtimeSyncManager = mockk(relaxed = true)
-        io.mockk.every { realtimeSyncManager.dataUpdateFlow } returns dataUpdateFlow
+        io.mockk.every { realtimeSyncManager.updatesFor("chats") } returns dataUpdateFlow
         viewModel = ChatViewModel(chatRepository, userRepository, teamsRepository, voicesRepository, dispatcherProvider, realtimeSyncManager)
     }
 
@@ -376,8 +376,12 @@ class ChatViewModelTest {
         val expectedProviders = mapOf("provider1" to true, "provider2" to false)
         coEvery { chatRepository.fetchAiProviders(serverUrl) } returns expectedProviders
 
-        val result = viewModel.fetchAiProviders(serverUrl)
-        assertEquals(expectedProviders, result)
+        viewModel.fetchAiProviders(serverUrl)
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(expectedProviders, viewModel.aiProviders.value)
+        assertEquals(false, viewModel.aiProvidersError.value)
+        assertEquals(false, viewModel.aiProvidersLoading.value)
         coVerify(exactly = 1) { chatRepository.fetchAiProviders(serverUrl) }
     }
 
