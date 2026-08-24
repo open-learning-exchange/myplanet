@@ -87,6 +87,7 @@ MyLibraryRow buildLibraryRow({
   String? resourceId,
   bool offline = false,
   List<String> subject = const [],
+  int createdDate = 0,
 }) {
   return MyLibraryRow(
     id: id,
@@ -96,7 +97,7 @@ MyLibraryRow buildLibraryRow({
     description: description,
     resourceId: resourceId,
     resourceOffline: offline,
-    createdDate: 0,
+    createdDate: createdDate,
     timesRated: 0,
     resourceFor: const [],
     subject: subject,

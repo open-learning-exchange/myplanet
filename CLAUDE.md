@@ -164,6 +164,11 @@ derive from — were deleted on any re-run, silently and with no error. The tool
 literal UTF-8 now, matching how the locale files are actually committed, so a run no longer
 rewrites all four; it is idempotent, verified by running it twice. A test pins the
 hand-authored keys in all four locales so a destructive regeneration fails the suite.
+Phase 70 ports the resources list sort toggles (`14a9f14`, #15941): the Kotlin
+bottom sheet's date/title pair had no counterpart, so the port gains
+`ResourceSortState` (one direction flag per mode, like the ViewModel's), a pure
+`applyResourceSort` applied to the filtered stream at build time, a badged sort
+button opening a two-option sheet, and a scroll-to-top shared by both layouts.
 
 ### Documentation Map
 

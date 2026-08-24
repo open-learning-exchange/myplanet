@@ -3416,14 +3416,71 @@ The 1279-test suite passes, `flutter analyze` clean, `dart format` clean,
 
 ---
 
-**Last updated**: 2026-08-24 (Phase 69 complete — the ARB derivation tool
-merges instead of regenerating, after it was found to delete 17 hand-authored
-translations per locale on every run; literal UTF-8 output; a test pinning the
-hand-authored keys. Phase 68 — achievements: the
-`achievements` ledger table, repository, outbox uploader, list and edit
-screens, CV/resume file slot, and the Life tile wired at `/life/achievements`.
-Phase 67 — tags and collections: the `tags` cache table, dialog, per-screen
-filter/chip wiring, and tag capture in search-activity logging. Phase 66 —
-the 85-commit 2026-08-20→23 batch audited with no new harvest.)
-**Phase**: 69 of N (27 of 28 UI packages have a screen — see Status for what that does and
+## Phase 70 — resource list sort toggles, and the 2026-08-24 upstream batch
+
+The five upstream commits after the Phase 66 audit window (2026-08-24) are
+four refactors and one behavioural fix:
+
+- `d64e98a` (submissions repository detail view modelling), `9a29130`
+  (events repository detail view modelling), `862fb1c` (realtime table
+  flowing), `2ded20c` (fragment manager back stack listening) —
+  ViewModel/repository reshuffling with no behaviour change; the port's
+  Riverpod providers already sit where the Kotlin is moving logic to.
+- `14a9f14` (#15941) flips `ResourcesViewModel.isTitleAscending`'s initial
+  value from `true` to `false`, so the first title-sort tap orders A→Z
+  instead of Z→A. Behavioural — and it lands on a feature the port had
+  never built: the `orderByDateButton`/`orderByTitleButton` pair in
+  `ResourcesFragment`'s bottom sheet, which drives
+  `ResourcesViewModel.toggleSortOrder`/`toggleTitleSortOrder`. The port's
+  resources screen had no sort affordance at all.
+
+This phase ports the pair rather than just the fix:
+
+- `ResourceSortState` + `resourceSortProvider`
+  (`providers/resources_providers.dart`) mirror the ViewModel's
+  `sortMode`/`isAscending`/`isTitleAscending` fields. Each toggle switches
+  the mode *and* flips that mode's own direction flag, so switching between
+  modes never disturbs the other mode's direction — the Kotlin holds one
+  flag per mode, and so does this.
+- `applyResourceSort` is the `applyCurrentSort` port, run on the filtered
+  list at build time so a sync pushing fresh rows into the Drift stream
+  keeps the chosen order — the same thing the Kotlin gets by re-sorting on
+  every `getLibraryListModels` refresh. The title key is the lower-cased
+  title with a null title sorting as ""; the date key is `createdDate`.
+  Kotlin's `sortedBy` is stable and Dart's `List.sort` is not, so equal
+  keys are tie-broken on the original index to keep the stream order
+  between them.
+- A sort `IconButton` in the resources app bar — badged once a mode is
+  active, the same treatment the collections and filter buttons get — opens
+  a bottom sheet with the two options; the active one carries an up/down
+  arrow for its direction. Tapping one toggles, pops the sheet, and
+  `jumpTo(0)`s the scroll controller both list layouts now share — the port
+  of `recyclerView.scrollToPosition(0)`.
+- The `sortResources` tooltip string is new in `app_en.arb`; the derived
+  locales fall back to English for it until translated. The option labels
+  (`orderByTitle`/`orderByDate`) already existed in all five locales,
+  derived from `strings.xml` in Phase 47.
+
+Tests: `test/providers/resource_sort_test.dart` pins the toggle semantics —
+first title toggle A→Z (the `14a9f14` fix), first date toggle newest-first,
+per-mode direction independence, case-insensitive title keys with nulls
+first, stable ordering on equal keys, and `none` leaving the stream order
+alone. Two widget tests on the resources screen drive the sheet through
+both toggles in each mode and assert the rendered row order. The 1287-test
+suite passes, `flutter analyze` clean, `dart format` clean.
+
+---
+
+**Last updated**: 2026-08-24 (Phase 70 complete — resource list sort
+toggles (date/title, per-mode direction, scroll-to-top), porting upstream
+`14a9f14` (#15941) together with the bottom-sheet pair the port had never
+built; the rest of the 2026-08-24 batch is refactors. Phase 69 — the ARB
+derivation tool merges instead of regenerating, after it was found to
+delete 17 hand-authored translations per locale on every run. Phase 68 —
+achievements: the `achievements` ledger table, repository, outbox uploader,
+list and edit screens, CV/resume file slot, and the Life tile wired at
+`/life/achievements`. Phase 67 — tags and collections: the `tags` cache
+table, dialog, per-screen filter/chip wiring, and tag capture in
+search-activity logging.)
+**Phase**: 70 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

@@ -229,4 +229,80 @@ void main() {
     expect(capturedRef.read(resourceShelfOnlyProvider), isTrue);
     expect(find.byTooltip('All Resources'), findsOneWidget);
   });
+
+  testWidgets('sort sheet toggles title order A-Z then Z-A', (tester) async {
+    await tester.pumpWidget(
+      wrapScreen(
+        const ResourcesScreen(),
+        overrides: [
+          resourcesStreamProvider.overrideWith(
+            (ref) => Stream.value([
+              buildLibraryRow(id: 'b', title: 'Banana'),
+              buildLibraryRow(id: 'a', title: 'Apple'),
+              buildLibraryRow(id: 'c', title: 'Cherry'),
+            ]),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    double topOf(String title) => tester.getTopLeft(find.text(title)).dy;
+    expect(topOf('Banana'), lessThan(topOf('Apple')));
+
+    await tester.tap(find.byTooltip('Sort resources'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Order by Title'));
+    await tester.pumpAndSettle();
+
+    // First toggle sorts A→Z (the upstream `14a9f14` fix).
+    expect(topOf('Apple'), lessThan(topOf('Banana')));
+    expect(topOf('Banana'), lessThan(topOf('Cherry')));
+
+    await tester.tap(find.byTooltip('Sort resources'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Order by Title'));
+    await tester.pumpAndSettle();
+
+    expect(topOf('Cherry'), lessThan(topOf('Banana')));
+    expect(topOf('Banana'), lessThan(topOf('Apple')));
+  });
+
+  testWidgets('sort sheet toggles date order newest-first then oldest-first', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wrapScreen(
+        const ResourcesScreen(),
+        overrides: [
+          resourcesStreamProvider.overrideWith(
+            (ref) => Stream.value([
+              buildLibraryRow(id: 'old', title: 'Old', createdDate: 100),
+              buildLibraryRow(id: 'new', title: 'New', createdDate: 300),
+              buildLibraryRow(id: 'mid', title: 'Mid', createdDate: 200),
+            ]),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    double topOf(String title) => tester.getTopLeft(find.text(title)).dy;
+
+    await tester.tap(find.byTooltip('Sort resources'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Order by Date'));
+    await tester.pumpAndSettle();
+
+    expect(topOf('New'), lessThan(topOf('Mid')));
+    expect(topOf('Mid'), lessThan(topOf('Old')));
+
+    await tester.tap(find.byTooltip('Sort resources'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Order by Date'));
+    await tester.pumpAndSettle();
+
+    expect(topOf('Old'), lessThan(topOf('Mid')));
+    expect(topOf('Mid'), lessThan(topOf('New')));
+  });
 }

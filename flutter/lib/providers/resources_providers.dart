@@ -19,6 +19,75 @@ final resourceSearchQueryProvider = StateProvider<String>((ref) => '');
 /// so the card lands on the shelf or the catalog respectively.
 final resourceShelfOnlyProvider = StateProvider<bool>((ref) => false);
 
+/// Sort state for the resources list — a port of `ResourcesViewModel`'s
+/// `sortMode`/`isAscending`/`isTitleAscending` fields. Each sort action
+/// switches the mode *and* flips that mode's own direction flag, so switching
+/// between modes never disturbs the other mode's direction. The initial
+/// directions are the post-`14a9f14` ones: the first date toggle sorts
+/// newest-first, the first title toggle sorts A–Z.
+enum ResourceSortMode { none, date, title }
+
+class ResourceSortState {
+  const ResourceSortState({
+    this.mode = ResourceSortMode.none,
+    this.dateAscending = true,
+    this.titleAscending = false,
+  });
+
+  final ResourceSortMode mode;
+  final bool dateAscending;
+  final bool titleAscending;
+
+  ResourceSortState toggleDate() => ResourceSortState(
+    mode: ResourceSortMode.date,
+    dateAscending: !dateAscending,
+    titleAscending: titleAscending,
+  );
+
+  ResourceSortState toggleTitle() => ResourceSortState(
+    mode: ResourceSortMode.title,
+    dateAscending: dateAscending,
+    titleAscending: !titleAscending,
+  );
+}
+
+final resourceSortProvider = StateProvider<ResourceSortState>(
+  (ref) => const ResourceSortState(),
+);
+
+/// Port of `ResourcesViewModel.applyCurrentSort`, applied to the filtered
+/// list at build time so a sync pushing fresh rows into the stream keeps the
+/// chosen order — the same thing the Kotlin gets by re-sorting on every
+/// `getLibraryListModels` refresh. The title key is the lower-cased title
+/// with a null title sorting as "" (first when ascending); the date key is
+/// `createdDate`. Kotlin's `sortedBy` is stable and Dart's `List.sort` is
+/// not, so equal keys are tie-broken on the original index to keep the
+/// stream order between them, matching the Kotlin exactly.
+List<MyLibraryRow> applyResourceSort(
+  List<MyLibraryRow> items,
+  ResourceSortState sort,
+) {
+  if (sort.mode == ResourceSortMode.none || items.length < 2) return items;
+  final direction = switch (sort.mode) {
+    ResourceSortMode.date => sort.dateAscending ? 1 : -1,
+    ResourceSortMode.title => sort.titleAscending ? 1 : -1,
+    ResourceSortMode.none => 1,
+  };
+  int keyCompare(MyLibraryRow a, MyLibraryRow b) => switch (sort.mode) {
+    ResourceSortMode.date => a.createdDate.compareTo(b.createdDate),
+    ResourceSortMode.title => (a.title ?? '').toLowerCase().compareTo(
+      (b.title ?? '').toLowerCase(),
+    ),
+    ResourceSortMode.none => 0,
+  };
+  final indexed = items.indexed.toList()
+    ..sort((a, b) {
+      final result = keyCompare(a.$2, b.$2) * direction;
+      return result != 0 ? result : a.$1.compareTo(b.$1);
+    });
+  return [for (final entry in indexed) entry.$2];
+}
+
 /// Offline-first resource list.
 ///
 /// Reads only from SQLite, so it emits immediately with whatever was last

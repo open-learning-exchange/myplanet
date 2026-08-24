@@ -598,6 +598,7 @@
   "syncMeetups": "Sync meetups",
   "searchMeetups": "Search meetups",
   "sortMeetups": "Sort meetups",
+  "sortResources": "Sort resources",
   "newestFirst": "Newest first",
   "oldestFirst": "Oldest first",
   "titleAscending": "Title A–Z",

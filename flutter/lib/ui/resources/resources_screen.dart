@@ -32,6 +32,7 @@ class ResourcesScreen extends ConsumerStatefulWidget {
 
 class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
   final Set<String> _selectedIds = {};
+  final ScrollController _scrollController = ScrollController();
 
   bool get _selecting => _selectedIds.isNotEmpty;
 
@@ -49,6 +50,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     // search-activity row when the user leaves the screen with a filter or
     // search text applied. `dispose` is the Flutter lifecycle point that maps
     // to `onPause`. Fire-and-forget; the row is durable once written.
+    _scrollController.dispose();
     _saveSearchActivity();
     super.dispose();
   }
@@ -81,6 +83,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     final viewMode = ref.watch(libraryViewModeProvider);
     final shelfOnly = ref.watch(resourceShelfOnlyProvider);
     final selectedTags = ref.watch(resourceSelectedTagsProvider);
+    final sort = ref.watch(resourceSortProvider);
 
     // Capture the current filter state, search text, and container so
     // `dispose` can fire `saveSearchActivity` without touching `ref` (which
@@ -187,6 +190,14 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                 onChanged: ref.read(libraryViewModeProvider.notifier).set,
               ),
               IconButton(
+                tooltip: l10n.sortResources,
+                icon: Badge(
+                  isLabelVisible: sort.mode != ResourceSortMode.none,
+                  child: const Icon(Icons.sort),
+                ),
+                onPressed: _showSortSheet,
+              ),
+              IconButton(
                 tooltip: l10n.filterResources,
                 onPressed: () {
                   showModalBottomSheet(
@@ -288,6 +299,8 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
             }).toList();
           }
 
+          filteredItems = applyResourceSort(filteredItems, sort);
+
           if (filteredItems.isEmpty) {
             return Center(
               child: Column(
@@ -317,6 +330,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
                   constraints.maxWidth / MediaQuery.devicePixelRatioOf(context),
                 );
                 return GridView.builder(
+                  controller: _scrollController,
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: spanCount,
                     childAspectRatio: 0.85,
@@ -337,6 +351,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
             );
           }
           return ListView.separated(
+            controller: _scrollController,
             itemCount: filteredItems.length,
             separatorBuilder: (_, _) => const Divider(height: 1),
             itemBuilder: (context, index) => _ResourceTile(
@@ -349,6 +364,61 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
         },
       ),
     );
+  }
+
+  /// Port of the `orderByDateButton`/`orderByTitleButton` pair in
+  /// `ResourcesFragment`'s bottom sheet. Tapping an option switches to its
+  /// sort mode and flips that mode's direction
+  /// (`ResourcesViewModel.toggleSortOrder`/`toggleTitleSortOrder`), then the
+  /// list scrolls back to the top exactly as the Kotlin's
+  /// `recyclerView.scrollToPosition(0)` does.
+  void _showSortSheet() {
+    final l10n = AppLocalizations.of(context);
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (context) {
+        final sort = ref.read(resourceSortProvider);
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.sort_by_alpha),
+                title: Text(l10n.orderByTitle),
+                trailing: sort.mode == ResourceSortMode.title
+                    ? Icon(
+                        sort.titleAscending
+                            ? Icons.arrow_upward
+                            : Icons.arrow_downward,
+                      )
+                    : null,
+                onTap: () => _toggleSort((s) => s.toggleTitle()),
+              ),
+              ListTile(
+                leading: const Icon(Icons.event),
+                title: Text(l10n.orderByDate),
+                trailing: sort.mode == ResourceSortMode.date
+                    ? Icon(
+                        sort.dateAscending
+                            ? Icons.arrow_upward
+                            : Icons.arrow_downward,
+                      )
+                    : null,
+                onTap: () => _toggleSort((s) => s.toggleDate()),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _toggleSort(ResourceSortState Function(ResourceSortState) toggle) {
+    ref.read(resourceSortProvider.notifier).update(toggle);
+    Navigator.pop(context);
+    if (_scrollController.hasClients) {
+      _scrollController.jumpTo(0);
+    }
   }
 
   void _tapResource(MyLibraryRow resource) {
