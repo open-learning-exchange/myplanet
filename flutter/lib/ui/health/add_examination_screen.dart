@@ -213,9 +213,20 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
                     hintText: '120/80',
                     validator: (value) {
                       if (value == null || value.isEmpty) return null;
-                      final parts = value.split('/');
+                      if (!value.contains('/')) {
+                        return l10n.bloodPressureFormatError;
+                      }
+                      final parts = value.trim().split('/');
                       if (parts.length != 2) {
                         return l10n.bloodPressureFormatError;
+                      }
+                      final sys = int.tryParse(parts[0]);
+                      final dis = int.tryParse(parts[1]);
+                      if (sys == null || dis == null) {
+                        return l10n.bloodPressureNotNumbers;
+                      }
+                      if (sys < 60 || dis < 40 || sys > 300 || dis > 200) {
+                        return l10n.bloodPressureRangeError;
                       }
                       return null;
                     },

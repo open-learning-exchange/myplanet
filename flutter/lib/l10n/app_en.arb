@@ -981,6 +981,8 @@
   "heightRangeError": "Height must be between 1 and 250",
   "weightRangeError": "Weight must be between 1 and 150",
   "bloodPressureFormatError": "Blood pressure should be systolic/diastolic",
+  "bloodPressureRangeError": "Blood pressure must be between 60/40 and 300/200",
+  "bloodPressureNotNumbers": "Systolic and diastolic must be numbers",
   "temp": "Temp",
   "bp": "BP",
   "offlineMaps": "Offline Maps",
