@@ -1,8 +1,9 @@
 package org.ole.planet.myplanet.utils
 
-import android.util.LruCache
 import com.google.gson.JsonObject
 import java.util.Arrays
+import java.util.Collections
+import java.util.LinkedHashMap
 import java.util.Locale
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.utils.JsonUtils.getStringAsJsonArray
@@ -10,7 +11,13 @@ import org.ole.planet.myplanet.utils.JsonUtils.getStringAsJsonArray
 object ExamAnswerUtils {
     // Process-lifetime cache mapping a stringified choices JSON to a Map of id -> text.
     // Using choices as the key prevents stale mapping if the question's choices are updated from the server.
-    private val choicesCache = LruCache<String, Map<String, String>>(100)
+    private val choicesCache = Collections.synchronizedMap(
+        object : LinkedHashMap<String, Map<String, String>>(100, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Map<String, String>>): Boolean {
+                return size > 100
+            }
+        }
+    )
 
     fun choiceDisplayValue(choice: JsonObject): String? {
         return JsonUtils.getString("text", choice).ifBlank {
