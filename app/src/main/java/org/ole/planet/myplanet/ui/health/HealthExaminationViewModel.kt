@@ -26,7 +26,8 @@ data class HealthExaminationState(
     val user: UserEntity? = null,
     val pojo: HealthExamination? = null,
     val health: MyHealth? = null,
-    val examination: HealthExamination? = null
+    val examination: HealthExamination? = null,
+    val conditionsMap: Map<String, Boolean> = emptyMap()
 )
 
 @HiltViewModel
@@ -53,6 +54,7 @@ class HealthExaminationViewModel @Inject constructor(
             var pojo: HealthExamination? = null
             var health: MyHealth? = null
             var examination: HealthExamination? = null
+            var conditionsMap: Map<String, Boolean> = emptyMap()
 
             withContext(dispatcherProvider.io) {
                 if (userId != null) {
@@ -80,6 +82,8 @@ class HealthExaminationViewModel @Inject constructor(
                 if (examinationId != null) {
                     examination = healthRepository.getExaminationById(examinationId)
                 }
+
+                conditionsMap = healthRepository.getExaminationConditions(examination)
             }
 
             _state.value = HealthExaminationState(
@@ -87,7 +91,8 @@ class HealthExaminationViewModel @Inject constructor(
                 user = user,
                 pojo = pojo,
                 health = health,
-                examination = examination
+                examination = examination,
+                conditionsMap = conditionsMap
             )
         }
     }

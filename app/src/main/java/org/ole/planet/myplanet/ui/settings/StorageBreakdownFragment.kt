@@ -60,6 +60,18 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
         CategoryData(R.string.storage_other, emptySet())
     )
 
+    private val extensionToIndex: Map<String, Int> by lazy {
+        val map = mutableMapOf<String, Int>()
+        categories.forEachIndexed { index, category ->
+            category.extensions.forEach { ext ->
+                if (!map.containsKey(ext)) {
+                    map[ext] = index
+                }
+            }
+        }
+        map
+    }
+
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
         dialog.setOnShowListener { d: DialogInterface ->
@@ -227,8 +239,7 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
             val ext = file.extension.lowercase()
             val size = file.length()
             total += size
-            val index = categories.indexOfFirst { it.extensions.isNotEmpty() && ext in it.extensions }
-                .let { if (it == -1) categories.lastIndex else it }
+            val index = extensionToIndex[ext] ?: categories.lastIndex
             sizes[index] += size
             counts[index]++
         }

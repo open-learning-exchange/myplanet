@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.text.TextUtils
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -56,7 +55,7 @@ class TeamTask {
 
         fun serialize(task: TeamTask, user: UserEntity?): JsonObject {
             val `object` = JsonObject()
-            if (!TextUtils.isEmpty(task._id)) {
+            if (!task._id.isNullOrEmpty()) {
                 `object`.addProperty("_id", task._id)
                 `object`.addProperty("_rev", task._rev)
             }
