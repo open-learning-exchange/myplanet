@@ -264,6 +264,25 @@ final courseStepsProvider = StreamProvider.family<List<CourseStepRow>, String>((
   return ref.watch(coursesRepositoryProvider).watchSteps(id);
 });
 
+/// The exam attached to a course step, or null if the step has none. Drives
+/// the "Take test" button on the step content view.
+final stepExamProvider = FutureProvider.family<ExamRow?, String>((
+  ref,
+  stepId,
+) async {
+  final db = ref.watch(appDatabaseProvider);
+  return db.examDao.getByStepId(stepId);
+});
+
+/// The surveys attached to a course step. Drives the "Take survey" button.
+final stepSurveysProvider = FutureProvider.family<List<SurveyRow>, String>((
+  ref,
+  stepId,
+) async {
+  final db = ref.watch(appDatabaseProvider);
+  return db.surveyDao.getByStepId(stepId);
+});
+
 /// Distinct grade levels present locally, for the filter spinner.
 ///
 /// Deliberately *not* derived from [coursesStreamProvider]: that watches

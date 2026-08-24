@@ -183,6 +183,11 @@ tombstone enqueue), and wires the member detail screen to voice authors and
 community leaders. The repository gains `saveLocalResource`/
 `updateLocalResource`/`resourceTitleExists`; the members list gains a
 `PopupMenuButton` overflow menu per member.
+Phase 73 ports a standalone WebView screen for external links, the
+exam/survey buttons on course steps (`CourseStepFragment`'s `btnTakeTest`/
+`btnTakeSurvey`), and the team leaderboard from the `14880` upstream branch
+(`TeamLeaderboardCalculator` + `TeamLeaderboardScreen` with all-time/this-month
+period toggle).
 
 ### Documentation Map
 

@@ -3581,17 +3581,66 @@ test is updated from the bottom-sheet assertion to the navigation assertion.
 
 ---
 
-**Last updated**: 2026-08-24 (Phase 72 complete — the add-resource screen
-(create + edit + file pick), team member leader actions (remove / make
-leader / leave), and member-detail wiring for voice authors and community
-leaders. Phase 71 — the member detail screen, reached by tapping a member.
-Phase 70 — resource list sort toggles (date/title, per-mode direction,
-scroll-to-top), porting upstream `14a9f14` (#15941). Phase 69 — the ARB
-derivation tool merges instead of regenerating. Phase 68 — achievements:
-the `achievements` ledger table, repository, outbox uploader, list and
-edit screens, CV/resume file slot, and the Life tile wired at
-`/life/achievements`. Phase 67 — tags and collections: the `tags` cache
-table, dialog, per-screen filter/chip wiring, and tag capture in
-search-activity logging.)
-**Phase**: 72 of N (27 of 28 UI packages have a screen — see Status for what that does and
+## Phase 73 — standalone WebView, course step exam/survey buttons, team leaderboard
+
+Three features land together: a standalone web browser, the exam/survey
+buttons on course steps, and the team leaderboard from the upstream
+`14880` feature branch.
+
+**Standalone WebView** (`WebViewActivity`'s external-URL half):
+
+- `WebViewScreen` (`/web-view`) loads an external URL in a
+  `webview_flutter` WebView with JavaScript disabled (matching the
+  Kotlin's `isLocalResource = false` default), a progress bar, a reload
+  action, and an error/retry view. The local-resource HTML viewer was
+  already ported by the resource viewer (Phase 54); this is the
+  standalone browser that community services and other external links
+  open.
+- Community services wiring: the stub snackbar ("would open in WebView")
+  is replaced with `context.push` to the new screen.
+
+**Course step exam/survey buttons** (`CourseStepFragment`'s
+`btnTakeTest`/`btnTakeSurvey`):
+
+- `stepExamProvider` / `stepSurveysProvider` load the exam or surveys
+  attached to a step (via `ExamDao.getByStepId` / `SurveyDao.getByStepId`,
+  the latter newly added).
+- `_StepContent` is now a `ConsumerWidget` that watches the providers
+  and renders "Take test" and "Record survey" cards when the step has an
+  exam or surveys, navigating to the exam or public-survey route on tap.
+
+**Team leaderboard** (from `14880-add-team-and-enterprise-leaderboards`):
+
+- `TeamLeaderboardCalculator` is a port of the Kotlin's pure-logic
+  calculator: given members, course progress, and survey completion
+  timestamps, it ranks by courses completed then surveys completed (both
+  descending), with an optional period-start filter for "this month".
+- `TeamLeaderboardScreen` resolves team members' display names and visit
+  counts (via Phase 71's `teamVisitsForUsers`), pre-computes course
+  progress per user (`courseProgressSummary`), and survey completion
+  timestamps (`getSurveySubmissionsByUser`, newly added to
+  `SubmissionDao`). An all-time / this-month `SegmentedButton` re-runs
+  the calculation. The current user's card is highlighted; the top three
+  carry medal emojis.
+- `SurveyDao.getByStepId` and `SubmissionDao.getSurveySubmissionsByUser`
+  are newly added DAO methods the leaderboard and step buttons read.
+
+`leaderboard`, `allTime`, `thisMonth`, `coursesCompleted` (placeholder),
+`surveysCompleted` (placeholder), `takeTest`, and `recordSurvey` are new
+in `app_en.arb`; the derived locales fall back to English.
+
+Tests: `team_leaderboard_calculator_test.dart` (4 tests). The services
+screen test is updated from the snackbar stub to the web-view navigation
+assertion. 1303 tests pass, `flutter analyze` clean, `dart format` clean.
+
+---
+
+**Last updated**: 2026-08-24 (Phase 73 complete — standalone WebView
+screen, course step exam/survey buttons, and the team leaderboard from
+the `14880` upstream branch. Phase 72 — the add-resource screen, team
+leader actions, and member-detail wiring. Phase 71 — the member detail
+screen, reached by tapping a member. Phase 70 — resource list sort
+toggles. Phase 69 — the ARB derivation tool merges instead of
+regenerating. Phase 68 — achievements. Phase 67 — tags and collections.)
+**Phase**: 73 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

@@ -1729,6 +1729,14 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
           ))
           .get();
 
+  /// Survey submissions for a user (for leaderboard survey-completion
+  /// counting). Port of the survey half of `getExamSubmissionsByUser`.
+  Future<List<SubmissionRow>> getSurveySubmissionsByUser(String userId) =>
+      (select(submissions)..where(
+            (row) => row.userId.equals(userId) & row.type.equals('survey'),
+          ))
+          .get();
+
   /// Port of `SubmissionDao.countByUserParentAndType` — whether the user has
   /// any submission (of any status) for the given parent and type. Used by
   /// the mandatory-survey check on course finish.
@@ -1996,6 +2004,12 @@ class SurveyDao extends DatabaseAccessor<AppDatabase> with _$SurveyDaoMixin {
   /// finish.
   Future<List<SurveyRow>> getByCourseId(String courseId) =>
       (select(surveys)..where((row) => row.courseId.equals(courseId))).get();
+
+  /// Port of `ExamDao.getByStepIdAndType(stepId, "survey")` — every
+  /// course-attached survey for a step. Used by the take-course step view's
+  /// "Take survey" button.
+  Future<List<SurveyRow>> getByStepId(String stepId) =>
+      (select(surveys)..where((row) => row.stepId.equals(stepId))).get();
 
   Future<List<SurveyQuestionRow>> questionsFor(String surveyId) =>
       (select(surveyQuestions)

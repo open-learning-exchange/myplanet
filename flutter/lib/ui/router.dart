@@ -57,6 +57,7 @@ import 'teams/teams_screen.dart';
 import 'teams/team_tasks_screen.dart';
 import 'teams/team_members_screen.dart';
 import 'teams/member_detail_screen.dart';
+import 'teams/leaderboard/team_leaderboard_screen.dart';
 import 'teams/team_resources_screen.dart';
 import 'teams/team_courses_screen.dart';
 import 'teams/team_reports_screen.dart';
@@ -66,6 +67,7 @@ import 'teams/team_plan_screen.dart';
 import 'teams/team_finances_screen.dart';
 import 'teams/team_calendar_screen.dart';
 import 'viewer/resource_viewer_screen.dart';
+import 'viewer/web_view_screen.dart';
 
 /// Replaces the Activity/Fragment navigation in `ui/components/FragmentNavigator`
 /// and the manual `Intent` hops between `SyncActivity` -> `LoginActivity` ->
@@ -87,6 +89,8 @@ class Routes {
   static const String resources = '/resources';
   static const String resourceDetail = '/resources/detail/:resourceId';
   static const String addResource = '/resources/add';
+  static const String webView = '/web-view';
+  static const String teamLeaderboard = '/life/teams/:teamId/leaderboard';
   static const String resourceViewer = '/resources/viewer/:resourceId';
   static const String courses = '/courses';
   static const String myProgress = '/courses/progress';
@@ -255,6 +259,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => AddResourceScreen(
           teamId: state.uri.queryParameters['teamId'],
           editResourceId: state.uri.queryParameters['edit'],
+        ),
+      ),
+      GoRoute(
+        path: Routes.webView.replaceFirst('/', ''),
+        builder: (context, state) => WebViewScreen(
+          url: state.uri.queryParameters['url']!,
+          title: state.uri.queryParameters['title'],
         ),
       ),
       GoRoute(
@@ -491,6 +502,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                                 ),
                               ),
                             ],
+                          ),
+                          GoRoute(
+                            path: 'leaderboard',
+                            builder: (context, state) => TeamLeaderboardScreen(
+                              teamId: state.pathParameters['teamId']!,
+                            ),
                           ),
                           GoRoute(
                             path: 'resources',

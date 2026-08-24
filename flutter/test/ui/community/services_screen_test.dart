@@ -127,7 +127,9 @@ void main() {
     expect(find.textContaining('Opening:'), findsNothing);
   });
 
-  testWidgets('an external route shows the opening snackbar', (tester) async {
+  testWidgets('an external route navigates to the web view screen', (
+    tester,
+  ) async {
     final rows = [
       _serviceRow(
         id: 's1',
@@ -142,6 +144,9 @@ void main() {
         overrides: [
           teamLinksStreamProvider.overrideWith((ref) => Stream.value(rows)),
         ],
+        pushTargets: {
+          '/web-view': (_) => const Scaffold(body: Text('web view target')),
+        },
       ),
     );
     await tester.pumpAndSettle();
@@ -149,14 +154,7 @@ void main() {
     await tester.tap(find.text('Clinic'));
     await tester.pumpAndSettle();
 
-    // The snackbar carries the localized "Opening: <title>" message; the
-    // list tile's own title is a separate Text("Clinic"), so the snackbar
-    // is the second match.
-    final openingMatches = find
-        .textContaining('Opening:')
-        .evaluate()
-        .map((e) => (e.widget as Text).data)
-        .toList();
-    expect(openingMatches, contains('Opening: Clinic'));
+    // The web view screen is pushed.
+    expect(find.text('web view target'), findsOneWidget);
   });
 }

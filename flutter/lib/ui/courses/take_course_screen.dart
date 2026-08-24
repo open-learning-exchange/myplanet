@@ -4,9 +4,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
+
+import '../../providers/courses_providers.dart';
+import '../router.dart';
 import '../../providers/activities_provider.dart';
 import '../../providers/app_providers.dart';
-import '../../providers/courses_providers.dart';
 import '../../providers/session_provider.dart';
 import '../ratings/rating_dialog.dart';
 
@@ -305,7 +307,7 @@ class _ProgressSection extends StatelessWidget {
   }
 }
 
-class _StepContent extends StatelessWidget {
+class _StepContent extends ConsumerWidget {
   const _StepContent({
     required this.step,
     required this.stepNumber,
@@ -317,9 +319,11 @@ class _StepContent extends StatelessWidget {
   final int totalSteps;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final exam = ref.watch(stepExamProvider(step.id)).valueOrNull;
+    final surveys = ref.watch(stepSurveysProvider(step.id)).valueOrNull;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -352,6 +356,32 @@ class _StepContent extends StatelessWidget {
                 leading: const Icon(Icons.folder_outlined),
                 title: Text(l10n.resourcesInStep(step.noOfResources)),
                 trailing: const Icon(Icons.chevron_right),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+          // Take Test button — port of CourseStepFragment's btnTakeTest
+          if (exam != null) ...[
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.quiz_outlined),
+                title: Text(l10n.takeTest),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('${Routes.exam}/${exam.id}'),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+          // Take Survey button — port of CourseStepFragment's btnTakeSurvey
+          if (surveys != null && surveys.isNotEmpty) ...[
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.assignment_outlined),
+                title: Text(l10n.recordSurvey),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push(
+                  '${Routes.publicSurvey}/${surveys.first.teamId ?? ''}/${surveys.first.id}',
+                ),
               ),
             ),
           ],

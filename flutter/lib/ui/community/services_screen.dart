@@ -58,10 +58,9 @@ class ServicesScreen extends ConsumerWidget {
   ) {
     final l10n = AppLocalizations.of(context);
     if (route.startsWith('http://') || route.startsWith('https://')) {
-      // External URL - would open in WebView
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.openingResource(title))));
+      context.push(
+        '${Routes.webView}?url=${Uri.encodeComponent(route)}&title=${Uri.encodeComponent(title)}',
+      );
       return;
     }
 

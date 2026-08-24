@@ -792,6 +792,19 @@
   "yes": "Yes",
   "no": "No",
   "submit": "Submit",
+  "takeTest": "Take test",
+  "recordSurvey": "Record survey",
+  "leaderboard": "Leaderboard",
+  "allTime": "All time",
+  "thisMonth": "This month",
+  "coursesCompleted": "{completed}/{total} courses",
+  "@coursesCompleted": {
+    "placeholders": { "completed": {"type": "int"}, "total": {"type": "int"} }
+  },
+  "surveysCompleted": "{completed}/{total} surveys",
+  "@surveysCompleted": {
+    "placeholders": { "completed": {"type": "int"}, "total": {"type": "int"} }
+  },
   "error": "Error",
   "close": "Close",
   "filter": "Filter",
