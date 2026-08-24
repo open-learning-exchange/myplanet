@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
@@ -26,7 +25,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.model.UserEntity
@@ -83,9 +81,6 @@ class SettingsActivity : AppCompatActivity() {
         private val viewModel: SettingsViewModel by viewModels()
         @Inject
         lateinit var profileDbHandler: UserSessionManager
-        @Inject
-        @DefaultPreferences
-        lateinit var defaultPref: SharedPreferences
         @Inject
         lateinit var sharedPrefManager: SharedPrefManager
         @Inject
@@ -210,10 +205,10 @@ class SettingsActivity : AppCompatActivity() {
                 val isChecked = newValue as Boolean
                 if (isChecked) {
                     preference.isEnabled = false
-                    defaultPref.edit { putBoolean("beta_auto_download", true) }
+                    sharedPrefManager.setBetaAutoDownload(true)
                     viewModel.downloadFiles(libraryList)
                 } else {
-                    defaultPref.edit { putBoolean("beta_auto_download", false) }
+                    sharedPrefManager.setBetaAutoDownload(false)
                 }
                 true
             }

@@ -34,7 +34,7 @@ import org.robolectric.annotation.Config
  * lets one resource belong to multiple shelves.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(application = Application::class, sdk = [26])
+@Config(application = Application::class)
 class ResourcesRepositoryLibrarySyncTest {
 
     private lateinit var db: AppDatabase
