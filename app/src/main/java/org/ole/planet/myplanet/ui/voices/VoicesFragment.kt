@@ -296,10 +296,6 @@ class VoicesFragment : BaseVoicesFragment() {
     }
 
     private val observer: AdapterDataObserver = object : AdapterDataObserver() {
-        override fun onChanged() {
-            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, currentEmptyStateSource) }
-        }
-
         override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
             adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, currentEmptyStateSource) }
         }
