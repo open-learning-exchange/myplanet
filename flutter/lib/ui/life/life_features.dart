@@ -38,6 +38,9 @@ void openLifeFeature(BuildContext context, String feature) {
     case 'health':
       context.push(Routes.health);
       return;
+    case 'achievements':
+      context.push(Routes.achievements);
+      return;
     default:
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context).featureComingSoon)),

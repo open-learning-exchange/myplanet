@@ -43,6 +43,47 @@ class ResourcesRepository {
   /// Gets a single resource by its local id.
   Future<MyLibraryRow?> getById(String id) => _dao.getById(id);
 
+  /// Port of `ResourcesRepositoryImpl.getAllLibraries` — the achievement
+  /// editor's resource picker lists the whole catalog.
+  Future<List<MyLibraryRow>> getAllLibraries() => _dao.getAll();
+
+  /// Port of `MyLibrary.serializeResource` — the compact resource document
+  /// an achievement entry attaches.
+  ///
+  /// The Drift table never persisted `needsOptimization` or `sum`, so the
+  /// document emits the Kotlin entity defaults (`false`/`0`) for them.
+  static Map<String, dynamic> serializeResource(MyLibraryRow row) => {
+    '_id': row.couchId,
+    '_rev': row.rev,
+    'need_optimization': false,
+    'resourceFor': row.resourceFor,
+    'publisher': row.publisher,
+    'linkToLicense': row.linkToLicense,
+    'addedBy': row.addedBy,
+    'uploadDate': row.uploadDate,
+    'openWith': row.openWith,
+    'subject': row.subject,
+    'kind': row.kind,
+    'medium': row.medium,
+    'language': row.language,
+    'author': row.author,
+    'sum': 0,
+    'createdDate': row.uploadDate,
+    'level': row.level,
+    'languages': row.languages,
+    'tag': row.tag,
+    'timesRated': row.timesRated,
+    'year': row.year,
+    'title': row.title,
+    'averageRating': row.averageRating,
+    'filename': row.filename,
+    'mediaType': row.mediaType,
+    'description': row.description,
+    '_attachments': {
+      if (row.resourceLocalAddress != null) row.resourceLocalAddress!: {},
+    },
+  };
+
   /// Port of `ResourcesRepositoryImpl.getResourceTitlesMap` — maps a resource's
   /// `resourceId` (the on-disk `docId` directory name) to its title, so storage
   /// management can label a downloaded file. Rows without a `resourceId` are

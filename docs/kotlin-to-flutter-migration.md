@@ -3267,12 +3267,98 @@ filter, multi-select OK, and empty-cache toast-and-dismiss paths.
 
 ---
 
-**Last updated**: 2026-08-23 (Phase 67 complete — tags and collections: the
-`tags` cache table, dialog, per-screen filter/chip wiring, and tag capture in
-search-activity logging. Phase 66 — the 85-commit 2026-08-20→23 batch
-audited with no new harvest. Phase 65 — search activity logging ported:
-the `search_activity` table, repository, outbox uploader, and the
-courses/resources `dispose`-time write that fires one row per applied filter,
-uploaded to `search_activities` on sync. Phase 64 — team visit logging.)
-**Phase**: 67 of N (27 of 28 UI packages have a screen — see Status for what that does and
+## Phase 68 — achievements (`achievements`)
+
+The Kotlin's "My Achievements" ledger — one `achievement` CouchDB document per
+user keyed `"userId@planetCode"`, carrying goals/purpose/header text, the
+achievements and references lists as JSON columns, and a resume/CV file whose
+bytes ride a CouchDB attachment. `UserRepositoryImpl.initializeAchievement`
+creates the row on first edit; `AchievementUploader` (and the partial user
+profile update from `updateProfileFields`) carries them out; the sync-in
+bulk-inserts `Achievement.serialize` rows, then a chained
+`updateAchievementList` downloads the `resume.pdf` attachment per row.
+
+The Flutter side had no `achievements` table at all — the Life tile toasted
+"coming soon".
+
+The port now:
+
+- **`Achievements` Drift table** (schema v41, preserved in
+  `localAuthorityTables` on a Kotlin-faithful column set — `achievementsJson`,
+  `referencesJson`, `linksJson`, `otherInfoJson`, `dateSortOrder`, `createdOn`,
+  `username`, `parentCode`, `resumeFileName`, `uploaded`). Its preservation
+  test in `migration_test.dart` round-trips an un-uploaded ledger through a
+  schema bump.
+- **`AchievementDao`**: `getById`, upsert-by-id, `pendingUploads` (the Kotlin
+  `_id NOT LIKE 'guest%'` guard plus `isUpdated = true`, minus
+  `username LIKE 'guest@%'` — the Kotlin lets it through, so no rows can
+  match both), `markUploaded` (records couchId/rev and clears the flag), and
+  a `upsertAll` for the sync bulk path.
+- **`AchievementsRepository`** — ports `initializeAchievement` (`getById` or
+  create), `updateAchievement` (marks the row unsynced, like the Kotlin
+  `isUpdated = true`), `serialize` (rebuilds the document with
+  `dateSortOrder` defaulted to `none`, `sendToNation` as a real bool, the
+  guest guard skipped by the backlog query), the sync-in bulk path
+  (`designDocumentPattern` skip, bool-or-string `sendToNation` tolerated, and
+  an upload-safe round trip — a synced row serializes back to the same
+  document), plus the `achievementsArray`/`referencesArray`/`resourcesOf`
+  helpers the screens parse JSON columns through.
+- **`AchievementFiles`** (`lib/core/files/`) — the `<ole>/cv/<name>` slot the
+  Kotlin uses for both the edit-time copy and the sync-time download, with the
+  same zero-length guard `ResourceFiles.existingFileFor` has.
+- **`AchievementsUploader`** (`type: 'achievements'`) — the outbox half of
+  `AchievementUploader`: `queuePending` puts the serialized document into the
+  `outbox`; the handler PUTs it, records the returned rev via `markUploaded`,
+  then best-effort PUTs the resume bytes to the `resume.pdf` attachment key
+  only when the file is on the device — both halves matching the Kotlin, whose
+  attachment upload is fire-and-forget.
+- **`AchievementsScreen`** — the Kotlin's three-tier body (goals, purpose,
+  achievements-header card) with the list cards below, and the CV card only
+  when the named file is on disk (`AchievementFragment.setupCv`), routed at
+  `/life/achievements` under the `life` branch; the tile under `LifeScreen`
+  now opens it.
+- **`EditAchievementScreen`** — the port of `EditAchievementFragment`: name/
+  birth-date/place validation (first name, last name, birth date required,
+  the toast listing the missing labels), the achievements/add and
+  references/add dialogs (title or name required), the resource multi-select
+  built from the whole resources table (the Kotlin `readResources`), the
+  send-to-nation switch, and the CV pick/delete/preview chain with the
+  pdf-only gate, plus `cv_viewer_dialog.dart` for the preview.
+- **Provider wiring** — `achievementsRepositoryProvider`,
+  `achievementEntryProvider` (the auto-initializing ledger row the screen
+  reads and the form saves through), `achievementActionsProvider` (`save` =
+  ledger update + `UserRepository.updateProfileFields` + `queuePending`), and
+  the `outboxDrainerProvider` handler registration.
+
+Thirty achievement arb keys were added to `app_en.arb` and translations to
+`ar`/`fr`/`ne`/`so`, matching the Kotlin `values-*` strings (`myAchievements`,
+`editAchievement`, `addAnAchievement`, `addAReference`, `myGoals`, `myPurpose`,
+`noGoalAdded`, `noPurposeAdded`, `noAchievementAdded`, `noReferencesAdded`,
+`sendToNation`, `saving`, `achievementSaved`, `titleIsRequired`,
+`selectPdfOnly`, `currentCv`, `viewCv`, `deleteCv`, `uploadCvLabel`,
+`addMaterials`, `labelAddReferences`, …). The knowledge that
+`AchievementUploader` always PUTs to the literal `resume.pdf` attachment key
+(and that Kotlin's `Achievement.serialize` falls back `dateSortOrder` to
+`none`) came from target-text review, and the four failing guesses along the
+way — column schema fidelity, the `notLike` drift API, and the locale key
+casing — were caught by analyzer/locale-coverage tests before the suite ran
+clean.
+
+Tests cover the round trip (repository upsert semantics, the unsynced flag
+reset, serialize against gleaned Kotlin doc shape, the guest guard), the DAO
+query portfolio, the uploader's queue/handler and resume attachment, the
+`initState` l10n trap, and widget tests for the empty state, the populated
+body, and the route push. The sync-in path is exercised end-to-end: a row the
+server delivers deserializes, uploads, and serializes back to the same
+document.
+
+---
+
+**Last updated**: 2026-08-23 (Phase 68 complete — achievements: the
+`achievements` ledger table, repository, outbox uploader, list and edit
+screens, CV/resume file slot, and the Life tile wired at `/life/achievements`.
+Phase 67 — tags and collections: the `tags` cache table, dialog, per-screen
+filter/chip wiring, and tag capture in search-activity logging. Phase 66 —
+the 85-commit 2026-08-20→23 batch audited with no new harvest.)
+**Phase**: 68 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

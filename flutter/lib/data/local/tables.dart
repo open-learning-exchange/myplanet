@@ -1223,3 +1223,47 @@ class Tags extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Port of `model/Achievement.kt` (`@Entity(tableName = "achievements")`).
+///
+/// One row per user, keyed `"$userId@$planetCode"` — the way
+/// `UserRepositoryImpl.initializeAchievement` derives it. The achievements
+/// and references lists are locally authored and preserved across a schema
+/// bump: until the `AchievementsUploader` delivers the document, a bump
+/// would silently erase the user's work.
+///
+/// `achievementsJson`/`referencesJson`/`linksJson`/`otherInfoJson` carry the
+/// JSON arrays the Kotlin stores through Room's `Converters` and
+/// `Achievement.serialize` re-parses at upload time — the upload document
+/// and the rendered list both read the same fields.
+@DataClassName('AchievementRow')
+class Achievements extends Table {
+  @override
+  String get tableName => 'achievements';
+
+  /// `"${user.id}@${user.planetCode}"`.
+  TextColumn get id => text()();
+  TextColumn get purpose => text().withDefault(const Constant(''))();
+  TextColumn get goals => text().withDefault(const Constant(''))();
+  TextColumn get achievementsHeader => text().withDefault(const Constant(''))();
+  BoolColumn get sendToNation => boolean().withDefault(const Constant(false))();
+  TextColumn get achievementsJson =>
+      text().named('achievements').withDefault(const Constant('[]'))();
+  TextColumn get referencesJson =>
+      text().named('references').withDefault(const Constant('[]'))();
+  TextColumn get linksJson =>
+      text().named('links').withDefault(const Constant('[]'))();
+  TextColumn get otherInfoJson =>
+      text().named('otherInfo').withDefault(const Constant('[]'))();
+  TextColumn get dateSortOrder => text().withDefault(const Constant('none'))();
+  TextColumn get createdOn => text().withDefault(const Constant(''))();
+  TextColumn get username => text().withDefault(const Constant(''))();
+  TextColumn get parentCode => text().withDefault(const Constant(''))();
+  TextColumn get couchId => text().named('_id')();
+  TextColumn get rev => text().named('_rev')();
+  BoolColumn get uploaded => boolean().withDefault(const Constant(false))();
+  TextColumn get resumeFileName => text()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

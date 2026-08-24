@@ -60,6 +60,7 @@ part 'app_database.g.dart';
     TeamLogTable,
     SearchActivities,
     Tags,
+    Achievements,
   ],
   daos: [
     UserDao,
@@ -93,6 +94,7 @@ part 'app_database.g.dart';
     TeamLogDao,
     SearchActivityDao,
     TagDao,
+    AchievementDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -105,7 +107,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 40;
+  int get schemaVersion => 41;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -216,6 +218,10 @@ class AppDatabase extends _$AppDatabase {
     // on the next sync. Until the upload succeeds the row exists only here, so
     // a schema bump would silently lose the analytics event.
     'search_activity',
+    // `achievements` rows are locally authored (the edit screen's lists,
+    // serialized the way `Achievement.serialize` rebuilds them), and exist
+    // only here until the `AchievementsUploader` delivers them.
+    'achievements',
   };
 
   @override
@@ -777,6 +783,10 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
     }
     return rows;
   }
+
+  /// Port of `MyLibraryDao.getAll` — the achievement editor's resource
+  /// picker lists the whole catalog.
+  Future<List<MyLibraryRow>> getAll() => select(myLibraryTable).get();
 
   Future<int> count() async {
     final query = selectOnly(myLibraryTable)
@@ -3181,4 +3191,43 @@ class TagDao extends DatabaseAccessor<AppDatabase> with _$TagDaoMixin {
     if (ids.isEmpty) return delete(tags).go();
     return (delete(tags)..where((row) => row.id.isNotIn(ids))).go();
   }
+}
+
+/// Port of `AchievementDao.kt` — the ledger for one user's achievements and
+/// references.
+@DriftAccessor(tables: [Achievements])
+class AchievementDao extends DatabaseAccessor<AppDatabase>
+    with _$AchievementDaoMixin {
+  AchievementDao(super.db);
+
+  Future<AchievementRow?> getById(String id) =>
+      (select(achievements)..where((a) => a.id.equals(id))).getSingleOrNull();
+
+  /// Port of the `updateAchievement` upsert — Room's `insertOrUpdate`.
+  Future<void> upsert(AchievementsCompanion row) =>
+      into(achievements).insertOnConflictUpdate(row);
+
+  /// Port of `AchievementDao.getPendingUploads` — non-guest rows the update
+  /// flagged unsynced (`_id NOT LIKE 'guest%' AND isUpdated = 1`; `uploaded`
+  /// is the port's inverted name for `isUpdated`).
+  Future<List<AchievementRow>> pendingUploads() => (select(
+    achievements,
+  )..where((a) => a.id.like('guest%').not() & a.uploaded.equals(false))).get();
+
+  /// Port of `AchievementDao.markUploaded` — stamps the server rev and
+  /// clears the pending flag once the PUT succeeds (`_rev = COALESCE(:rev,
+  /// _rev)`, so a null rev keeps the old one).
+  Future<int> markUploaded(String id, String couchId, String? rev) =>
+      (update(achievements)..where((a) => a.id.equals(id))).write(
+        AchievementsCompanion(
+          couchId: Value(couchId),
+          rev: rev != null ? Value(rev) : const Value.absent(),
+          uploaded: const Value(true),
+        ),
+      );
+
+  /// Port of the `bulkInsertAchievementsFromSync` upsert — a server document
+  /// adopts its CouchDB id.
+  Future<void> insertDocs(List<AchievementsCompanion> rows) =>
+      batch((b) => b.insertAllOnConflictUpdate(achievements, rows));
 }

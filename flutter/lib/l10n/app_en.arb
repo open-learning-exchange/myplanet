@@ -11,7 +11,7 @@
   "connect": "Connect",
   "serverUrlNotConfigured": "Server URL not configured",
   "deviceCouldNotReachLocalServer": "device couldn't reach the server. check if you are connected to the correct Wi-Fi network for the local server (community).",
-  "deviceCouldNotReachNationServer": "device couldn\u2019t reach the server. check if you are connected to the internet and try again",
+  "deviceCouldNotReachNationServer": "device couldn’t reach the server. check if you are connected to the internet and try again",
   "connectionFailed": "Connection failed!",
   "connectedToCommunity": "Connected to {code}",
   "@connectedToCommunity": {
@@ -56,7 +56,9 @@
   "backgroundFailedSteps": "Needs retry: {steps}",
   "@backgroundFailedSteps": {
     "placeholders": {
-      "steps": {"type": "String"}
+      "steps": {
+        "type": "String"
+      }
     }
   },
   "logOut": "Log out",
@@ -76,15 +78,51 @@
   "syncReady": "Ready to sync",
   "syncForegroundNotice": "Keep myPlanet open until the sync finishes. Pending offline writes remain durable if the connection drops.",
   "syncProgress": "Syncing {completed} of {total} areas",
-  "@syncProgress": {"placeholders": {"completed": {"type": "int"}, "total": {"type": "int"}}},
+  "@syncProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "syncAllSuccessful": "All {count} areas synced successfully",
-  "@syncAllSuccessful": {"placeholders": {"count": {"type": "int"}}},
+  "@syncAllSuccessful": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "syncCompletedWithFailures": "Sync finished: {success} succeeded, {failed} failed",
-  "@syncCompletedWithFailures": {"placeholders": {"success": {"type": "int"}, "failed": {"type": "int"}}},
+  "@syncCompletedWithFailures": {
+    "placeholders": {
+      "success": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
   "itemsSynced": "{count, plural, =0{Up to date} =1{1 item synced} other{{count} items synced}}",
-  "@itemsSynced": {"placeholders": {"count": {"type": "int"}}},
+  "@itemsSynced": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "lastSyncTimestamp": "Last successful sync: {date}",
-  "@lastSyncTimestamp": {"placeholders": {"date": {"type": "String"}}},
+  "@lastSyncTimestamp": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "syncResourcesDescription": "Refresh the offline learning library",
   "syncCoursesDescription": "Refresh courses, steps, and shelf membership",
   "syncTeamsDescription": "Refresh teams, memberships, and enterprise data",
@@ -116,16 +154,40 @@
     }
   },
   "lastSynced": "Last synced: {time}",
-  "@lastSynced": {"placeholders": {"time": {"type": "String"}}},
+  "@lastSynced": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "neverSynced": "Never synced",
   "justNow": "Just now",
   "minutesAgo": "{count, plural, =1{1 minute ago} other{{count} minutes ago}}",
-  "@minutesAgo": {"placeholders": {"count": {"type": "int"}}},
+  "@minutesAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "hoursAgo": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
-  "@hoursAgo": {"placeholders": {"count": {"type": "int"}}},
+  "@hoursAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "daysAgo": "{count, plural, =1{1 day ago} other{{count} days ago}}",
-  "@daysAgo": {"placeholders": {"count": {"type": "int"}}},
-  "syncingResources": "Syncing resources\u2026 {completed} of {total}",
+  "@daysAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncingResources": "Syncing resources… {completed} of {total}",
   "@syncingResources": {
     "placeholders": {
       "completed": {
@@ -407,7 +469,7 @@
   "addPersonal": "Add personal item",
   "editPersonal": "Edit personal item",
   "deletePersonal": "Delete personal item?",
-  "deletePersonalConfirmation": "Delete \u201c{title}\u201d from this device?",
+  "deletePersonalConfirmation": "Delete “{title}” from this device?",
   "@deletePersonalConfirmation": {
     "placeholders": {
       "title": {
@@ -429,7 +491,7 @@
   },
   "noFileSelected": "No file selected",
   "removeFile": "Remove file",
-  "savedOffline": "Saved offline \u2014 pending upload",
+  "savedOffline": "Saved offline — pending upload",
   "edit": "Edit",
   "title": "Title",
   "titleRequired": "Enter a title",
@@ -496,11 +558,11 @@
   "onboardingWelcomeDescription": "Your gateway to limitless Learning",
   "onboardingOfflineDescription": "Download resources for offline learning.\nAccess knowledge on the go.",
   "onboardingOpenDescription": "Choose your interests and dive into interactive content.\nCraft your unique learning journey.",
-  "onboardingPowerDescription": "Explore a world of knowledge at your fingertips.\n\n\ud83c\udf0d Offline Access: Learn without borders, anytime.\n\ud83c\udfaf Personalized: Tailor your learning path.\n\ud83d\udcda Interactive: Engage with videos, books, games.\n\nBegin your limitless learning journey with myPlanet!",
+  "onboardingPowerDescription": "Explore a world of knowledge at your fingertips.\n\n🌍 Offline Access: Learn without borders, anytime.\n🎯 Personalized: Tailor your learning path.\n📚 Interactive: Engage with videos, books, games.\n\nBegin your limitless learning journey with myPlanet!",
   "onboardingServerPrepHint": "Before you sign in, you'll need your Planet server address and PIN. Ask your community administrator if you don't have them yet.",
   "pageProgress": "Page {current} of {total}",
   "@pageProgress": {
-    "description": "Screen-reader label for the onboarding page indicator. New string with no strings.xml counterpart, so it has no existing translations \u2014 Crowdin must supply them.",
+    "description": "Screen-reader label for the onboarding page indicator. New string with no strings.xml counterpart, so it has no existing translations — Crowdin must supply them.",
     "placeholders": {
       "current": {
         "type": "int"
@@ -538,8 +600,8 @@
   "sortMeetups": "Sort meetups",
   "newestFirst": "Newest first",
   "oldestFirst": "Oldest first",
-  "titleAscending": "Title A\u2013Z",
-  "titleDescending": "Title Z\u2013A",
+  "titleAscending": "Title A–Z",
+  "titleDescending": "Title Z–A",
   "startDate": "Start date",
   "endDate": "End date",
   "timeNotSet": "Time not set",
@@ -670,7 +732,7 @@
   "chatConversation": "Conversation",
   "newConversation": "New conversation",
   "startConversation": "Start a new conversation",
-  "typeMessage": "Type a message\u2026",
+  "typeMessage": "Type a message…",
   "selectAiProvider": "Select AI provider",
   "aiProviders": "AI providers",
   "aiProviderAvailable": "{name} (available)",
@@ -760,7 +822,7 @@
   "exitExamMessage": "Your progress will be lost.",
   "exit": "Exit",
   "download": "Download",
-  "downloading": "Downloading\u2026",
+  "downloading": "Downloading…",
   "downloadFailed": "Download failed.",
   "resourceNotDownloaded": "This resource is not on your device yet.",
   "retry": "Retry",
@@ -1092,8 +1154,12 @@
   "@userNameWithLogins": {
     "description": "Profile name line with the offline login count, R.string.user_name",
     "placeholders": {
-      "name": {"type": "String"},
-      "logins": {"type": "int"}
+      "name": {
+        "type": "String"
+      },
+      "logins": {
+        "type": "int"
+      }
     }
   },
   "remindMeLater": "Remind Me Later",
@@ -1105,7 +1171,9 @@
   "reminderSurveysToComplete": "Reminder: You have {count, plural, =1{1 survey} other{{count} surveys}} to complete",
   "@reminderSurveysToComplete": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "myActivities": "My activities",
@@ -1125,12 +1193,22 @@
   "resourceOpenedTimes": "{title} opened {count} times",
   "@resourceOpenedTimes": {
     "placeholders": {
-      "title": {"type": "String"},
-      "count": {"type": "int"}
+      "title": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
     }
   },
   "resourcesOpenedTimes": "{count, plural, =1{Resource opened 1 time} other{Resource opened {count} times}}",
-  "@resourcesOpenedTimes": {"placeholders": {"count": {"type": "int"}}},
+  "@resourcesOpenedTimes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "serverReachable": "Server reachable",
   "serverUnreachable": "Server unreachable",
   "serverChecking": "Checking server",
@@ -1152,5 +1230,49 @@
   "collections": "Collections",
   "filterCollections": "Filter Collections",
   "selectManyCollections": "Select Many Collections",
-  "selected": "Selected: "
+  "selected": "Selected: ",
+  "myAchievements": "My Achievements",
+  "editAchievement": "Edit Achievements",
+  "addAchievement": "Add Achievement",
+  "addAnAchievement": "Add an Achievement",
+  "addReference": "Add Reference",
+  "addAReference": "Add a Reference",
+  "selectResources": "\"Select resources: \"",
+  "myGoals": "My Goals",
+  "myPurpose": "My Purpose",
+  "noGoalAdded": "No goals set yet",
+  "noPurposeAdded": "No purpose added",
+  "noAchievementAdded": "Summary of achievements",
+  "noReferencesAdded": "No references added",
+  "sendToNation": "Allow your achievements to be shared with the nation",
+  "saving": "Saving…",
+  "achievementSaved": "Achievement updated",
+  "titleIsRequired": "Title is required",
+  "selectPdfOnly": "Please select a PDF file",
+  "viewCv": "View CV/Resume",
+  "deleteCv": "Delete CV",
+  "uploadCvLabel": "Upload your CV/Resume below (PDF only)",
+  "addMaterials": "Add any materials demonstrating your achievements below",
+  "labelAddReferences": "Add any references below",
+  "cvResume": "CV / Resume",
+  "relationship": "Relationship",
+  "noFileChosen": "No file chosen",
+  "chooseFile": "Choose File",
+  "currentCv": "Current CV/Resume: {name}",
+  "update": "Update",
+  "fillRequiredFields": "Please fill required fields: {fields}",
+  "@currentCv": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@fillRequiredFields": {
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  }
 }

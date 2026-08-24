@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/app_providers.dart';
 import '../providers/session_provider.dart';
+import 'achievements/achievements_screen.dart';
+import 'achievements/edit_achievement_screen.dart';
 import 'calendar/calendar_screen.dart';
 import 'chat/chat_detail_screen.dart';
 import 'chat/chat_history_screen.dart';
@@ -108,6 +110,8 @@ class Routes {
   static const String feedback = '/life/feedback';
   static const String feedbackDetail = '/life/feedback/:feedbackId';
   static const String feedbackCreate = '/life/feedback/create';
+  static const String achievements = '/life/achievements';
+  static const String editAchievement = '/life/achievements/edit';
   static const String about = '/about';
   static const String disclaimer = '/disclaimer';
   static const String community = '/community';
@@ -549,6 +553,17 @@ final routerProvider = Provider<GoRouter>((ref) {
                           item: state.uri.queryParameters['item'],
                           state: state.uri.queryParameters['state'],
                         ),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'achievements',
+                    builder: (context, state) => const AchievementsScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'edit',
+                        builder: (context, state) =>
+                            const EditAchievementScreen(),
                       ),
                     ],
                   ),

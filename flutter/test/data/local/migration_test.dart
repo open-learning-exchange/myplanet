@@ -658,6 +658,30 @@ void main() {
     expect(survivor.single.type, 'resources');
   });
 
+  // An achievements ledger the user edited exists only on this device until
+  // the `AchievementsUploader` delivers it. Dropping the table on a schema
+  // bump would silently lose the user's lists, so the table is preserved and
+  // the row must survive.
+  test('an un-uploaded achievements row survives a schema bump', () async {
+    await database.achievementDao.upsert(
+      AchievementsCompanion(
+        id: const Value('user-1@earth'),
+        achievementsJson: const Value('[{"title":"First"}]'),
+        referencesJson: const Value('[{"name":"Mo"}]'),
+        couchId: const Value(''),
+        rev: const Value(''),
+        resumeFileName: const Value(''),
+      ),
+    );
+
+    await runUpgrade();
+
+    final survivor = await database.achievementDao.getById('user-1@earth');
+    expect(survivor?.id, 'user-1@earth');
+    expect(survivor?.achievementsJson, contains('First'));
+    expect(survivor?.uploaded, isFalse);
+  });
+
   test('every preserved table has a preservation test', () {
     // `my_life` and the submissions tables were added to the preserved set
     // without one. This fails the moment another name is added, so the next
@@ -686,6 +710,7 @@ void main() {
       'submit_photos',
       'team_log',
       'search_activity',
+      'achievements',
     };
     expect(
       AppDatabase.localAuthorityTables,

@@ -13,6 +13,8 @@ import '../core/system/device_identity.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
+import '../repository/achievements_repository.dart';
+import '../repository/achievements_uploader.dart';
 import '../repository/activities_repository.dart';
 import '../repository/activities_uploader.dart';
 import '../repository/chat_repository.dart';
@@ -184,6 +186,23 @@ final tagsRepositoryProvider = Provider<TagsRepository>(
   (ref) => TagsRepository(
     ref.watch(planetApiProvider),
     ref.watch(appDatabaseProvider).tagDao,
+  ),
+);
+
+final achievementDaoProvider = Provider<AchievementDao>(
+  (ref) => ref.watch(appDatabaseProvider).achievementDao,
+);
+
+final achievementsRepositoryProvider = Provider<AchievementsRepository>(
+  (ref) => AchievementsRepository(ref.watch(achievementDaoProvider)),
+);
+
+final achievementsUploaderProvider = Provider<AchievementsUploader>(
+  (ref) => AchievementsUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(achievementsRepositoryProvider),
+    ref.watch(achievementDaoProvider),
+    ref.watch(outboxRepositoryProvider),
   ),
 );
 
@@ -588,6 +607,9 @@ final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
       ...ref.watch(activitiesUploaderProvider).handlers,
       PublicSurveyUploader.type: ref
           .watch(publicSurveyUploaderProvider)
+          .handler,
+      AchievementsUploader.type: ref
+          .watch(achievementsUploaderProvider)
           .handler,
     },
   );
