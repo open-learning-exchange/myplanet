@@ -61,9 +61,21 @@ class CoursesProgressAdapterTest {
 
         adapter.onBindViewHolder(holder, 0)
         assertEquals(3, holder.binding.llProgress.childCount)
+        var row = holder.binding.llProgress.getChildAt(0) as LinearLayout
+        assertEquals("1", (row.getChildAt(0) as android.widget.TextView).text)
+        assertEquals("1", (row.getChildAt(1) as android.widget.TextView).text)
+        row = holder.binding.llProgress.getChildAt(1) as LinearLayout
+        assertEquals("2", (row.getChildAt(0) as android.widget.TextView).text)
+        assertEquals("2", (row.getChildAt(1) as android.widget.TextView).text)
+        row = holder.binding.llProgress.getChildAt(2) as LinearLayout
+        assertEquals("3", (row.getChildAt(0) as android.widget.TextView).text)
+        assertEquals("3", (row.getChildAt(1) as android.widget.TextView).text)
 
         adapter.onBindViewHolder(holder, 1)
         assertEquals(1, holder.binding.llProgress.childCount)
+        row = holder.binding.llProgress.getChildAt(0) as LinearLayout
+        assertEquals("1", (row.getChildAt(0) as android.widget.TextView).text)
+        assertEquals("5", (row.getChildAt(1) as android.widget.TextView).text)
 
         adapter.onBindViewHolder(holder, 2)
         assertEquals(0, holder.binding.llProgress.childCount)
