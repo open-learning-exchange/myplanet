@@ -62,7 +62,7 @@ pick_pr() {
         --base "$BASE" \
         --label "$LABEL" \
         --limit 100 \
-        --json number,title,isDraft,headRefName,headRefOid,headRepositoryOwner,labels \
+        --json number,title,isDraft,headRefName,headRefOid,headRepositoryOwner \
       | jq -c --arg skip "$skip_numbers" '
             [ $skip | split(" ")[] | select(length > 0) | tonumber ] as $done
             | map(select(.isDraft | not))
@@ -88,23 +88,12 @@ check_mergeable() {
     esac
 }
 
-has_label() {
-    case ",$1," in *",$2,"*) return 0 ;; esac
-    return 1
-}
-
 add_conflict_label() {
     local pr=$1
     gh pr edit "$pr" --repo "$REPO" --add-label "$CONFLICT_LABEL" >/dev/null 2>&1 && return 0
     gh label create "$CONFLICT_LABEL" --repo "$REPO" \
         --color BD8652 --description 'merge conflict' >/dev/null 2>&1 || true
     gh pr edit "$pr" --repo "$REPO" --add-label "$CONFLICT_LABEL" >/dev/null 2>&1
-}
-
-drop_stale_conflict_label() {
-    gh pr edit "$1" --repo "$REPO" --remove-label "$CONFLICT_LABEL" >/dev/null 2>&1 \
-        && log "  #$1 merges cleanly again -- stale '$CONFLICT_LABEL' removed" \
-        || log "  #$1: could not remove the stale '$CONFLICT_LABEL' label"
 }
 
 handle_conflict() {
@@ -436,7 +425,6 @@ while :; do
     HEAD=$(jq   -r '.headRefName'               <<<"$pr_json")
     SHA=$(jq    -r '.headRefOid'                <<<"$pr_json")
     OWNER=$(jq  -r '.headRepositoryOwner.login' <<<"$pr_json")
-    LABELS=$(jq -r '[.labels[]?.name] | join(",")' <<<"$pr_json")
 
     log "picked #$NUMBER ($HEAD @ ${SHA:0:7}): $TITLE"
 
@@ -498,10 +486,6 @@ while :; do
         handle_conflict "$NUMBER"
         skip_numbers="$skip_numbers $NUMBER"
         continue
-    fi
-
-    if [ -n "$CONFLICT_LABEL" ] && has_label "$LABELS" "$CONFLICT_LABEL"; then
-        drop_stale_conflict_label "$NUMBER"
     fi
 
     pre_bump_sha=$(git rev-parse HEAD)
