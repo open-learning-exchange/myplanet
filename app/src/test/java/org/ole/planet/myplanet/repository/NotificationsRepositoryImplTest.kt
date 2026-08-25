@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.app.Application
-import android.os.Build
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
@@ -27,7 +26,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [Build.VERSION_CODES.P], application = Application::class)
+@Config(application = Application::class)
 @ExperimentalCoroutinesApi
 class NotificationsRepositoryImplTest {
 
@@ -355,19 +354,19 @@ class NotificationsRepositoryImplTest {
 
     @Test
     fun `markNotificationsSynced marks all as synced`() = runTest {
-        coEvery { notificationDao.markSynced(any(), any()) } returns Unit
+        coEvery { notificationDao.markSynced(any<List<Pair<String, String?>>>()) } returns Unit
         val syncResults = listOf(Pair("id1", "rev1"), Pair("id2", "rev2"))
 
         repository.markNotificationsSynced(syncResults)
 
-        coVerify { notificationDao.markSynced("id1", "rev1") }
-        coVerify { notificationDao.markSynced("id2", "rev2") }
+        coVerify { notificationDao.markSynced(syncResults) }
     }
 
     @Test
     fun `markNotificationsSynced with empty list does nothing`() = runTest {
         repository.markNotificationsSynced(emptyList())
 
+        coVerify(exactly = 0) { notificationDao.markSynced(any<List<Pair<String, String?>>>()) }
         coVerify(exactly = 0) { notificationDao.markSynced(any(), any()) }
     }
 

@@ -12,17 +12,24 @@ object MapTileUtils {
     fun copyAssets(context: Context) {
         val tiles = arrayOf("dhulikhel.mbtiles", "somalia.mbtiles")
         val assetManager = context.assets
-        try {
-            for (s in tiles) {
+        for (s in tiles) {
+            try {
                 val outFile = File(Environment.getExternalStorageDirectory().toString() + "/osmdroid", s)
+
+                if (outFile.exists() && outFile.length() > 0) {
+                    continue
+                }
+
+                outFile.parentFile?.mkdirs()
+
                 assetManager.open(s).use { input ->
                     FileOutputStream(outFile).use { output ->
                         copyFile(input, output)
                     }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 

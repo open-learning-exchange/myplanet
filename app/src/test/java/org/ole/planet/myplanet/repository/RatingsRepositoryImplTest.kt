@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 class RatingsRepositoryImplTest {
 
     private lateinit var ratingDao: RatingDao
-    private lateinit var userRepository: UserRepository
     private lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var gson: Gson
     private lateinit var repository: RatingsRepositoryImpl
@@ -34,7 +33,6 @@ class RatingsRepositoryImplTest {
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
         ratingDao = mockk(relaxed = true)
-        userRepository = mockk(relaxed = true)
         val testDispatcher = StandardTestDispatcher()
         dispatcherProvider = object : DispatcherProvider {
             override val main: CoroutineDispatcher = testDispatcher
@@ -44,11 +42,7 @@ class RatingsRepositoryImplTest {
         }
         gson = Gson()
 
-        repository = RatingsRepositoryImpl(gson, ratingDao, userRepository, dispatcherProvider)
-    }
-
-    private fun mockUserLookup(user: UserEntity?) {
-        coEvery { userRepository.getUserById(any()) } returns user
+        repository = RatingsRepositoryImpl(gson, ratingDao, dispatcherProvider)
     }
 
     @Test
@@ -132,7 +126,7 @@ class RatingsRepositoryImplTest {
 
     @Test
     fun `submitRating inserts new rating if not exists`() = runTest {
-        mockUserLookup(UserEntity(id = "user1", _id = "user1", parentCode = "parent", planetCode = "planet"))
+        val testUser = UserEntity(id = "user1", _id = "user1", parentCode = "parent", planetCode = "planet")
         coEvery { ratingDao.findByTypeUserItem("course", "user1", "course1") } returns null
         val savedSlot = slot<Rating>()
         coEvery { ratingDao.upsert(capture(savedSlot)) } returns Unit
@@ -140,7 +134,7 @@ class RatingsRepositoryImplTest {
             Rating().apply { rate = 4; userId = "user1" }
         )
 
-        val summary = repository.submitRating("course", "course1", "Good", "user1", 4f, "Nice")
+        val summary = repository.submitRating("course", "course1", "Good", testUser, 4f, "Nice")
 
         coVerify { ratingDao.upsert(any()) }
         assertEquals("Nice", savedSlot.captured.comment)
@@ -152,14 +146,14 @@ class RatingsRepositoryImplTest {
 
     @Test
     fun `submitRating updates existing rating if it exists`() = runTest {
-        mockUserLookup(UserEntity(id = "user1", _id = "user1", parentCode = "parent", planetCode = "planet"))
+        val testUser = UserEntity(id = "user1", _id = "user1", parentCode = "parent", planetCode = "planet")
         val existingRating = Rating().apply { id = "existing_id"; rate = 3 }
         coEvery { ratingDao.findByTypeUserItem("course", "user1", "course1") } returns existingRating
         coEvery { ratingDao.findById("existing_id") } returns existingRating
         coEvery { ratingDao.update(any()) } returns Unit
         coEvery { ratingDao.getByTypeAndItem("course", "course1") } returns listOf(existingRating)
 
-        val summary = repository.submitRating("course", "course1", "Updated", "user1", 5f, "Awesome")
+        val summary = repository.submitRating("course", "course1", "Updated", testUser, 5f, "Awesome")
 
         assertEquals(5, existingRating.rate)
         assertEquals("Awesome", existingRating.comment)
@@ -171,14 +165,9 @@ class RatingsRepositoryImplTest {
     }
 
     @Test(expected = IllegalArgumentException::class)
-    fun `submitRating throws when userId is blank`() = runTest {
-        repository.submitRating("course", "course1", "Title", "", 4f, "Comment")
-    }
-
-    @Test(expected = IllegalArgumentException::class)
-    fun `submitRating throws when user is not found`() = runTest {
-        mockUserLookup(null)
-        repository.submitRating("course", "course1", "Title", "unknown", 4f, "Comment")
+    fun `submitRating throws when user id is blank`() = runTest {
+        val blankUser = UserEntity(id = "", _id = "")
+        repository.submitRating("course", "course1", "Title", blankUser, 4f, "Comment")
     }
 
     @Test
