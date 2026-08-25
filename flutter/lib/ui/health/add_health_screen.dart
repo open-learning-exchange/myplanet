@@ -3,12 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../core/utils/time_utils.dart';
+import '../../providers/app_providers.dart';
+import '../../providers/health_provider.dart';
 import '../../providers/session_provider.dart';
 
 /// Port of `ui/health/AddHealthActivity.kt`.
 ///
 /// Form for adding or editing user health profile information
-/// including emergency contacts and special needs.
+/// including emergency contacts and special needs. Loads the existing
+/// profile (encrypted `data` blob on the examination row) and the user's
+/// personal fields, and persists both via [HealthRepository.saveHealthProfile].
 class AddHealthScreen extends ConsumerStatefulWidget {
   const AddHealthScreen({super.key});
 
@@ -24,23 +29,17 @@ class _AddHealthScreenState extends ConsumerState<AddHealthScreen> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _dobController = TextEditingController();
+  final _birthPlaceController = TextEditingController();
   final _emergencyNameController = TextEditingController();
   final _emergencyContactController = TextEditingController();
   final _specialNeedsController = TextEditingController();
   final _otherNeedsController = TextEditingController();
   int _contactTypeIndex = 0;
 
-  bool _isLoading = false;
-  bool _isSaved = false;
+  bool _isSaving = false;
 
-  final List<String> _contactTypes = [
-    'Parent',
-    'Spouse',
-    'Sibling',
-    'Child',
-    'Friend',
-    'Other',
-  ];
+  /// Matches `R.array.contact_type` — the Kotlin spinner source.
+  final List<String> _contactTypes = ['Phone', 'Email'];
 
   @override
   void initState() {
@@ -49,17 +48,31 @@ class _AddHealthScreenState extends ConsumerState<AddHealthScreen> {
   }
 
   Future<void> _loadUserData() async {
-    final session = ref.read(sessionProvider);
-    final user = session.valueOrNull;
+    final user = await ref.read(sessionProvider.future);
     if (user == null) return;
 
+    final repo = ref.read(healthRepositoryProvider);
+    final health = await repo.getHealthProfile(user.id);
+
+    if (!mounted) return;
     setState(() {
       _fnameController.text = user.firstName ?? '';
       _mnameController.text = user.middleName ?? '';
       _lnameController.text = user.lastName ?? '';
       _emailController.text = user.email ?? '';
       _phoneController.text = user.phoneNumber ?? '';
-      _dobController.text = user.dob ?? '';
+      _dobController.text = TimeUtils.formatDateToDDMMYYYY(user.dob);
+      _birthPlaceController.text = user.birthPlace ?? '';
+
+      final profile = health?.profile;
+      _emergencyNameController.text = profile?.emergencyContactName ?? '';
+      _emergencyContactController.text = profile?.emergencyContact ?? '';
+      final typeIndex = _contactTypes.indexOf(
+        profile?.emergencyContactType ?? '',
+      );
+      _contactTypeIndex = typeIndex >= 0 ? typeIndex : 0;
+      _specialNeedsController.text = profile?.specialNeeds ?? '';
+      _otherNeedsController.text = profile?.notes ?? '';
     });
   }
 
@@ -71,6 +84,7 @@ class _AddHealthScreenState extends ConsumerState<AddHealthScreen> {
     _emailController.dispose();
     _phoneController.dispose();
     _dobController.dispose();
+    _birthPlaceController.dispose();
     _emergencyNameController.dispose();
     _emergencyContactController.dispose();
     _specialNeedsController.dispose();
@@ -84,104 +98,109 @@ class _AddHealthScreenState extends ConsumerState<AddHealthScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.updateHealth)),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  // Personal Information Section
-                  _SectionHeader(title: l10n.personalInformation),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                    controller: _fnameController,
-                    label: l10n.firstName,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return l10n.requiredField;
-                      }
-                      return null;
-                    },
-                  ),
-                  _buildTextField(
-                    controller: _mnameController,
-                    label: l10n.middleName,
-                  ),
-                  _buildTextField(
-                    controller: _lnameController,
-                    label: l10n.lastName,
-                  ),
-                  _buildTextField(
-                    controller: _emailController,
-                    label: l10n.email,
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  _buildTextField(
-                    controller: _phoneController,
-                    label: l10n.phone,
-                    keyboardType: TextInputType.phone,
-                  ),
-                  _buildTextField(
-                    controller: _dobController,
-                    label: l10n.birthDate,
-                    readOnly: true,
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.calendar_today),
-                      onPressed: () => _selectDate(context),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Emergency Contact Section
-                  _SectionHeader(title: l10n.emergencyContact),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                    controller: _emergencyNameController,
-                    label: l10n.contactName,
-                  ),
-                  _buildDropdownField(
-                    label: l10n.contactType,
-                    value: _contactTypeIndex,
-                    items: _contactTypes,
-                    onChanged: (value) {
-                      setState(() => _contactTypeIndex = value ?? 0);
-                    },
-                  ),
-                  _buildTextField(
-                    controller: _emergencyContactController,
-                    label: l10n.contactNumber,
-                    keyboardType: TextInputType.phone,
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Health Information Section
-                  _SectionHeader(title: l10n.healthInformation),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                    controller: _specialNeedsController,
-                    label: l10n.specialNeeds,
-                    maxLines: 3,
-                  ),
-                  _buildTextField(
-                    controller: _otherNeedsController,
-                    label: l10n.otherNeeds,
-                    maxLines: 3,
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  FilledButton(
-                    onPressed: _isSaved ? null : _saveHealthData,
-                    child: Text(l10n.save),
-                  ),
-
-                  const SizedBox(height: 16),
-                ],
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // Personal Information Section
+            _SectionHeader(title: l10n.personalInformation),
+            const SizedBox(height: 12),
+            _buildTextField(
+              controller: _fnameController,
+              label: l10n.firstName,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return l10n.requiredField;
+                }
+                return null;
+              },
+            ),
+            _buildTextField(
+              controller: _mnameController,
+              label: l10n.middleName,
+            ),
+            _buildTextField(controller: _lnameController, label: l10n.lastName),
+            _buildTextField(
+              controller: _emailController,
+              label: l10n.email,
+              keyboardType: TextInputType.emailAddress,
+            ),
+            _buildTextField(
+              controller: _phoneController,
+              label: l10n.phone,
+              keyboardType: TextInputType.phone,
+            ),
+            _buildTextField(
+              controller: _dobController,
+              label: l10n.birthDate,
+              readOnly: true,
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.calendar_today),
+                onPressed: () => _selectDate(context),
               ),
             ),
+            _buildTextField(
+              controller: _birthPlaceController,
+              label: l10n.birthPlace,
+            ),
+
+            const SizedBox(height: 24),
+
+            // Emergency Contact Section
+            _SectionHeader(title: l10n.emergencyContact),
+            const SizedBox(height: 12),
+            _buildTextField(
+              controller: _emergencyNameController,
+              label: l10n.contactName,
+            ),
+            _buildDropdownField(
+              label: l10n.contactType,
+              value: _contactTypeIndex,
+              items: _contactTypes,
+              onChanged: (value) {
+                setState(() => _contactTypeIndex = value ?? 0);
+              },
+            ),
+            _buildTextField(
+              controller: _emergencyContactController,
+              label: l10n.contactNumber,
+              keyboardType: TextInputType.phone,
+            ),
+
+            const SizedBox(height: 24),
+
+            // Health Information Section
+            _SectionHeader(title: l10n.healthInformation),
+            const SizedBox(height: 12),
+            _buildTextField(
+              controller: _specialNeedsController,
+              label: l10n.specialNeeds,
+              maxLines: 3,
+            ),
+            _buildTextField(
+              controller: _otherNeedsController,
+              label: l10n.otherNeeds,
+              maxLines: 3,
+            ),
+
+            const SizedBox(height: 32),
+
+            FilledButton(
+              onPressed: _isSaving ? null : _saveHealthData,
+              child: _isSaving
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(l10n.save),
+            ),
+
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
     );
   }
 
@@ -255,16 +274,32 @@ class _AddHealthScreenState extends ConsumerState<AddHealthScreen> {
   Future<void> _saveHealthData() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+    final user = await ref.read(sessionProvider.future);
+    if (user == null) return;
+
+    setState(() => _isSaving = true);
 
     try {
-      // In a full implementation, this would save to the database
-      // For now, just simulate a save
-      await Future.delayed(const Duration(seconds: 1));
+      final repo = ref.read(healthRepositoryProvider);
+      await repo.saveHealthProfile(user.id, {
+        'firstName': _fnameController.text,
+        'middleName': _mnameController.text,
+        'lastName': _lnameController.text,
+        'email': _emailController.text,
+        'dob': _dobController.text,
+        'birthPlace': _birthPlaceController.text,
+        'phoneNumber': _phoneController.text,
+        'emergencyContactName': _emergencyNameController.text,
+        'emergencyContact': _emergencyContactController.text,
+        'emergencyContactType': _contactTypes[_contactTypeIndex],
+        'specialNeeds': _specialNeedsController.text,
+        'notes': _otherNeedsController.text,
+      });
+
+      // Refresh the health data provider so MyHealthScreen reflects the edit.
+      ref.invalidate(healthDataProvider);
 
       if (!mounted) return;
-      setState(() => _isSaved = true);
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppLocalizations.of(context).healthSavedSuccessfully),
@@ -278,7 +313,7 @@ class _AddHealthScreenState extends ConsumerState<AddHealthScreen> {
       );
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() => _isSaving = false);
       }
     }
   }

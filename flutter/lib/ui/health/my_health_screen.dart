@@ -158,6 +158,10 @@ class _HealthContent extends StatelessWidget {
                   const Divider(),
                   const SizedBox(height: 8),
                   _InfoRow(label: l10n.birthDate, value: user.dob ?? '-'),
+                  if (user.birthPlace != null && user.birthPlace!.isNotEmpty)
+                    _InfoRow(label: l10n.birthPlace, value: user.birthPlace!),
+                  if (user.language != null && user.language!.isNotEmpty)
+                    _InfoRow(label: l10n.language, value: user.language!),
                   if (user.gender != null)
                     _InfoRow(label: l10n.gender, value: user.gender!),
                   if (user.phoneNumber != null)

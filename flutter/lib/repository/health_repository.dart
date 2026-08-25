@@ -11,6 +11,7 @@ import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
 import '../core/crypto/health_cipher.dart';
+import '../core/utils/time_utils.dart';
 import '../data/local/health_models.dart';
 
 /// Port of `repository/HealthRepositoryImpl.kt`.
@@ -206,6 +207,111 @@ class HealthRepository {
           : null;
     } catch (_) {
       return null;
+    }
+  }
+
+  /// Decrypts the patient's existing health profile (the encrypted `data` blob
+  /// on their examination row) and returns it as a [MyHealth], or null when
+  /// there is no row or the blob cannot be read.
+  ///
+  /// Port of `UserRepositoryImpl.getHealthProfile`.
+  Future<MyHealth?> getHealthProfile(String userId) async {
+    final exam = await _dao.getByIdOrUserId(userId);
+    if (exam == null || exam.data == null || exam.data!.isEmpty) return null;
+    final plain = await decryptData(userId, exam.data);
+    if (plain == null || plain.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(plain);
+      return decoded is Map<String, dynamic>
+          ? MyHealth.fromJson(decoded)
+          : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Updates the user's health profile: writes the user fields (firstName,
+  /// email, dob, birthPlace, etc.) to the [Users] row with `isUpdated = true`,
+  /// then decrypts the existing health profile, updates the emergency-contact
+  /// and special-needs fields, re-encrypts it, and saves it to the
+  /// examination row's `data` column.
+  ///
+  /// Port of `UserRepositoryImpl.updateUserHealthProfile`. The `data` map
+  /// carries every field the Kotlin `AddHealthActivity.createMyHealth`
+  /// gathers: firstName, middleName, lastName, email, dob (dd-MM-yyyy),
+  /// birthPlace, phoneNumber, emergencyContactName, emergencyContact,
+  /// emergencyContactType, specialNeeds, notes.
+  Future<void> saveHealthProfile(
+    String userId,
+    Map<String, String> data,
+  ) async {
+    final user = await _userDao.ensureSecurityKeys(userId);
+    if (user == null) return;
+
+    // Update user fields and mark the row dirty for upload.
+    await _userDao.upsert(
+      UsersCompanion(
+        id: Value(user.id),
+        firstName: Value(data['firstName']?.trim()),
+        middleName: Value(data['middleName']?.trim()),
+        lastName: Value(data['lastName']?.trim()),
+        email: Value(data['email']?.trim()),
+        phoneNumber: Value(data['phoneNumber']?.trim()),
+        birthPlace: Value(data['birthPlace']?.trim()),
+        dob: data['dob'] != null && data['dob']!.trim().isNotEmpty
+            ? Value(TimeUtils.convertDDMMYYYYToISO(data['dob']))
+            : Value(user.dob),
+        isUpdated: const Value(true),
+      ),
+    );
+
+    // Load or create the health profile.
+    var health = await getHealthProfile(userId) ?? MyHealth();
+    if (health.userKey == null || health.userKey!.isEmpty) {
+      health = health.copyWith(userKey: HealthCipher.generateKey());
+    }
+    // Port of `UserRepositoryImpl.updateUserHealthProfile` field rules:
+    // emergencyContactName/specialNeeds/notes are overwritten unconditionally,
+    // while emergencyContact/emergencyContactType keep their existing value
+    // when the new one is blank (so a partial edit does not clear a number).
+    final existing = health.profile ?? MyHealthProfile();
+    final newContact = data['emergencyContact']?.trim() ?? '';
+    final newType = data['emergencyContactType']?.trim() ?? '';
+    final profile = existing.copyWith(
+      emergencyContactName: data['emergencyContactName'] ?? '',
+      emergencyContact: newContact.isEmpty
+          ? existing.emergencyContact
+          : newContact,
+      emergencyContactType: newType.isEmpty
+          ? existing.emergencyContactType
+          : newType,
+      specialNeeds: data['specialNeeds'] ?? '',
+      notes: data['notes'] ?? '',
+    );
+    health = health.copyWith(profile: profile);
+
+    // Re-encrypt and save to the examination row.
+    final encrypted = await encryptData(userId, jsonEncode(health.toJson()));
+    final exam = await _dao.getByIdOrUserId(userId);
+    if (exam == null) {
+      await _dao.upsert(
+        HealthExaminationsCompanion(
+          id: Value(userId),
+          userId: Value(user.couchId ?? user.id),
+          data: Value(encrypted),
+          isUpdated: const Value(true),
+          date: Value(DateTime.now().millisecondsSinceEpoch),
+        ),
+      );
+    } else {
+      await _dao.upsert(
+        HealthExaminationsCompanion(
+          id: Value(exam.id),
+          userId: Value(exam.userId),
+          data: Value(encrypted),
+          isUpdated: const Value(true),
+        ),
+      );
     }
   }
 

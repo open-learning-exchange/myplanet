@@ -204,6 +204,18 @@ class MyHealth {
       'lastExamination': lastExamination,
     };
   }
+
+  MyHealth copyWith({
+    MyHealthProfile? profile,
+    String? userKey,
+    int? lastExamination,
+  }) {
+    return MyHealth(
+      profile: profile ?? this.profile,
+      userKey: userKey ?? this.userKey,
+      lastExamination: lastExamination ?? this.lastExamination,
+    );
+  }
 }
 
 /// Port of `model/MyHealth.kt` -> `MyHealthProfile`.

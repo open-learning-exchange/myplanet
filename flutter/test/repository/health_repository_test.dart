@@ -657,6 +657,137 @@ void main() {
       );
     });
   });
+
+  // ── Health profile (AddHealthActivity) ─────────────────────────────────
+
+  group('health profile', () {
+    Future<void> seedUser() async {
+      await database.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'user-1',
+          couchId: const Value('org.couchdb.user:alice'),
+          name: const Value('alice'),
+          firstName: const Value('Alice'),
+          joinDate: const Value(1000),
+        ),
+      );
+    }
+
+    test('getHealthProfile returns null when no examination exists', () async {
+      await seedUser();
+      final repo = createRepository();
+      expect(await repo.getHealthProfile('user-1'), isNull);
+    });
+
+    test('saveHealthProfile creates examination row and user fields', () async {
+      await seedUser();
+      final repo = createRepository();
+
+      await repo.saveHealthProfile('user-1', {
+        'firstName': 'Alice',
+        'middleName': 'Marie',
+        'lastName': 'Smith',
+        'email': 'alice@example.com',
+        'dob': '15-06-1990',
+        'birthPlace': 'Nairobi',
+        'phoneNumber': '+254700',
+        'emergencyContactName': 'Bob',
+        'emergencyContact': '+254701',
+        'emergencyContactType': 'Phone',
+        'specialNeeds': 'Asthma',
+        'notes': 'Carries inhaler',
+      });
+
+      // User fields updated.
+      final user = await database.userDao.getById('user-1');
+      expect(user!.firstName, 'Alice');
+      expect(user.middleName, 'Marie');
+      expect(user.lastName, 'Smith');
+      expect(user.email, 'alice@example.com');
+      expect(user.birthPlace, 'Nairobi');
+      expect(user.phoneNumber, '+254700');
+      expect(user.dob, '1990-06-15T00:00:00.000Z');
+      expect(user.isUpdated, isTrue);
+      // Security keys generated on first save.
+      expect(user.key, isNotNull);
+      expect(user.iv, isNotNull);
+
+      // Examination row created with encrypted data.
+      final exam = await database.healthExaminationDao.getByIdOrUserId(
+        'user-1',
+      );
+      expect(exam, isNotNull);
+      expect(exam!.data, isNotNull);
+      expect(exam.data!.isNotEmpty, isTrue);
+      expect(exam.isUpdated, isTrue);
+    });
+
+    test('getHealthProfile round-trips after saveHealthProfile', () async {
+      await seedUser();
+      final repo = createRepository();
+
+      await repo.saveHealthProfile('user-1', {
+        'firstName': 'Alice',
+        'emergencyContactName': 'Bob',
+        'emergencyContact': '+254701',
+        'emergencyContactType': 'Phone',
+        'specialNeeds': 'Asthma',
+        'notes': 'Carries inhaler',
+      });
+
+      final health = await repo.getHealthProfile('user-1');
+      expect(health, isNotNull);
+      expect(health!.profile, isNotNull);
+      expect(health.profile!.emergencyContactName, 'Bob');
+      expect(health.profile!.emergencyContact, '+254701');
+      expect(health.profile!.emergencyContactType, 'Phone');
+      expect(health.profile!.specialNeeds, 'Asthma');
+      expect(health.profile!.notes, 'Carries inhaler');
+      expect(health.userKey, isNotNull);
+    });
+
+    test('saveHealthProfile preserves existing profile fields', () async {
+      await seedUser();
+      final repo = createRepository();
+
+      await repo.saveHealthProfile('user-1', {
+        'firstName': 'Alice',
+        'emergencyContactName': 'Bob',
+        'emergencyContact': '+254701',
+        'emergencyContactType': 'Phone',
+        'specialNeeds': 'Asthma',
+        'notes': 'Carries inhaler',
+      });
+
+      // Second save with only some fields — the Kotlin keeps existing
+      // emergencyContact/emergencyContactType when the new value is empty,
+      // but overwrites name/specialNeeds/notes unconditionally.
+      await repo.saveHealthProfile('user-1', {
+        'firstName': 'Alice',
+        'emergencyContactName': 'Robert',
+        'emergencyContact': '',
+        'emergencyContactType': '',
+        'specialNeeds': 'Diabetes',
+        'notes': '',
+      });
+
+      final health = await repo.getHealthProfile('user-1');
+      expect(health!.profile!.emergencyContactName, 'Robert');
+      expect(health.profile!.emergencyContact, '+254701');
+      expect(health.profile!.emergencyContactType, 'Phone');
+      expect(health.profile!.specialNeeds, 'Diabetes');
+      expect(health.profile!.notes, '');
+    });
+
+    test('saveHealthProfile is a no-op when user does not exist', () async {
+      final repo = createRepository();
+      await repo.saveHealthProfile('nonexistent', {'firstName': 'Ghost'});
+      final exam = await database.healthExaminationDao.getByIdOrUserId(
+        'nonexistent',
+      );
+      expect(exam, isNull);
+    });
+  });
 }
 
 class MockPlanetApi extends Mock implements PlanetApi {}
