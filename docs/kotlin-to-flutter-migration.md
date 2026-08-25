@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 80 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 81 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -3367,6 +3367,68 @@ The 1363-test suite passes, `flutter analyze` clean, `dart format` clean.
 
 ---
 
+## Phase 81 — the challenge dialog (`ChallengePrompter` / `DashboardViewModel.evaluateChallengeDialog`)
+
+The December 2024 / January 2025 challenge campaign. A non-guest user on a
+participating server, between Nov 30 2024 and Jan 16 2025, sees a dialog on
+dashboard load tracking three tasks: complete the challenge course
+("terminado"), post five community voices, and sync. The Kotlin's
+`ChallengePrompter.showChallengeDialog` is driven by
+`DashboardViewModel.evaluateChallengeDialog`, which gathers the voice counts,
+course status, and sync state and then builds a `ChallengeDialogData`.
+
+The port:
+
+- **`user_challenge_actions` Drift table** (schema v43, a preserved
+  local-authority table) — one row per challenge action, with `id`, `userId`,
+  `actionType`, `resourceId`, and `time`. `UserChallengeActionDao` provides
+  `insert` and `countByUserAndType`. The table is preserved because a sync
+  action the user recorded but has not yet uploaded must survive a schema
+  bump, or the challenge dialog's "sync completed" check would silently flip
+  back to false. A preservation test pins it in `migration_test.dart`, and
+  the table is listed in its `covered` set.
+- **`ActivitiesRepository`** gains `recordSyncUserChallengeAction(userId)`
+  (port of the Kotlin method the dashboard calls right before the manual-
+  sync flow begins, not on auto-sync) and `hasUserCompletedSync(userId)`
+  (counts `"sync"` actions in the table). The constructor takes the new
+  `UserChallengeActionDao`.
+- **`ChallengeEvaluator`** (`lib/providers/challenge_provider.dart`) — the
+  port of `evaluateChallengeDialog`. It holds the challenge course id, the
+  campaign window, the prompt window, and the participating-server URL list
+  (mirrors `ServerConfigUtils.getChallengeServerUrls`). `evaluate()` checks
+  the gating (guest, window, server) and returns `ChallengeDialogData` or
+  null. `courseStatusString` (public, port of `getCourseStatusString`)
+  returns the course name with a "terminado" marker when `current == max`,
+  the substring the dialog's completion check keys on.
+- **`ChallengeDialog`** (`lib/ui/components/challenge_dialog.dart`) — a
+  `StatefulWidget` (no Riverpod; the data arrives via constructor params)
+  that renders the progress bar, the three task rows, the markdown
+  earnings content, and the action button. The action routes to the course
+  (`/courses/<challengeCourseId>/take`), voices (`/life/voices`), or sync
+  center (`/sync-center`) depending on which task is next. The congratulations
+  variant fires once: `hasShownChallengeCongratsProvider` (a
+  `NotifierProvider` backed by `PlanetPrefs`) suppresses every subsequent
+  appearance, matching `ChallengePrompter`'s `hasShownCongrats` guard.
+- **`home_screen.dart`** — `_evaluateChallenge` is wired to the session
+  listener via `addPostFrameCallback`, so it fires once on dashboard load
+  when a non-guest user is present.
+- **`dashboard_sync_provider.dart`** — `syncAll()` calls
+  `recordSyncUserChallengeAction` at the start of a manual sync, so the
+  "sync completed" task lights up after the user syncs.
+
+The hardcoded English strings in the dialog (`Progress: N%`,
+`Course: Not started`, `Sync completed`, `N of 5 Daily Voices`) are
+localized: four new keys (`progressLabel`, `courseNotStarted`,
+`syncCompletedChallenge`, `voicesProgress`) added to `app_en.arb` and
+generated into `AppLocalizations`. The derived locales fall back to English
+for these, matching the existing pattern for resource-viewer strings.
+
+The 1379-test suite passes (16 new tests: 5 challenge-action repository
+tests, 10 challenge-provider tests, 1 migration preservation test),
+`flutter analyze` clean, `dart format` clean.
+
+---
+
 ## Phase 67 — tags and collections (`tags`)
 
 The Kotlin's collections feature is a single CouchDB `tags` database holding
@@ -4042,7 +4104,7 @@ The 1360-test suite passes, `flutter analyze` clean, `dart format` clean,
 
 ---
 
-**Last updated**: 2026-08-25 (Phase 80 complete — ported `ef80dda52` toast-on-change behavior to the resource detail screen: the add/remove snackbar now fires only when shelf membership actually changed, not on every button press. Three widget tests added. Phase 79 complete — harvest audit of the 2026-08-24/25 upstream batch (33 commits): all refactors, performance rewrites, and Android-lifecycle concerns with no behavioural port needed. Phase 78 complete — the duplicate `normalizeText` removed, so chat search folds accents the same way resource and course search do. Phases 76–77 and two unnumbered ports (blood-pressure validation, personal-note attachments) written up. Phase 75 complete — chat full-conversation
+**Last updated**: 2026-08-25 (Phase 81 complete — ported the challenge dialog: the `user_challenge_actions` Drift table (schema v43, preserved), `recordSyncUserChallengeAction`/`hasUserCompletedSync` on `ActivitiesRepository`, the `ChallengeEvaluator` provider (port of `DashboardViewModel.evaluateChallengeDialog`), the `ChallengeDialog` widget with localized strings, the home-screen wiring, and the sync-start call that lights up the "sync completed" task. 16 new tests. Phase 80 complete — ported `ef80dda52` toast-on-change behavior to the resource detail screen: the add/remove snackbar now fires only when shelf membership actually changed, not on every button press. Three widget tests added. Phase 79 complete — harvest audit of the 2026-08-24/25 upstream batch (33 commits): all refactors, performance rewrites, and Android-lifecycle concerns with no behavioural port needed. Phase 78 complete — the duplicate `normalizeText` removed, so chat search folds accents the same way resource and course search do. Phases 76–77 and two unnumbered ports (blood-pressure validation, personal-note attachments) written up. Phase 75 complete — chat full-conversation
 search ported from `ChatViewModel.searchChats`: a `ChatSearchMode` enum with ranked matching
 (prefix before contains, first conversation before later), recency sort by
 `max(createdDate, updatedDate)`, and a hand-rolled NFD decomposition because

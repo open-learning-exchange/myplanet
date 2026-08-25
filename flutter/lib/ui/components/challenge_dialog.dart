@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
 
-/// Data class holding challenge dialog state
+/// Data class holding challenge dialog state.
+///
+/// Port of `DashboardViewModel.ChallengeDialogData`. Populated by
+/// `ChallengeEvaluator.evaluate` (see `challenge_provider.dart`).
 class ChallengeDialogData {
   final int voiceCount;
   final int allVoiceCount;
@@ -21,23 +23,9 @@ class ChallengeDialogData {
   });
 }
 
-/// Provider for challenge dialog data
-final challengeDialogDataProvider =
-    FutureProvider.autoDispose<ChallengeDialogData?>((ref) async {
-      // This would integrate with the actual data sources
-      // For now, return mock data structure
-      return const ChallengeDialogData(
-        voiceCount: 0,
-        allVoiceCount: 0,
-        hasUnfinishedSurvey: false,
-        hasValidSync: false,
-        courseStatus: '',
-      );
-    });
-
 /// Challenge Dialog - shows user's daily challenge progress
 /// This is the Flutter port of the Kotlin MarkdownDialogFragment
-class ChallengeDialog extends ConsumerStatefulWidget {
+class ChallengeDialog extends StatefulWidget {
   const ChallengeDialog({
     super.key,
     required this.voiceCount,
@@ -60,20 +48,14 @@ class ChallengeDialog extends ConsumerStatefulWidget {
   final VoidCallback onSync;
 
   @override
-  ConsumerState<ChallengeDialog> createState() => _ChallengeDialogState();
+  State<ChallengeDialog> createState() => _ChallengeDialogState();
 }
 
-class _ChallengeDialogState extends ConsumerState<ChallengeDialog> {
-  final bool _hasShownCongrats = false;
-
+class _ChallengeDialogState extends State<ChallengeDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final isCompleted = _isChallengeCompleted();
-
-    if (isCompleted && _hasShownCongrats) {
-      return const SizedBox.shrink();
-    }
 
     return AlertDialog(
       title: Row(
@@ -102,6 +84,7 @@ class _ChallengeDialogState extends ConsumerState<ChallengeDialog> {
   }
 
   Widget _buildProgressSection(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final userEarnings =
         widget.voiceCount * 2 + (widget.hasUnfinishedSurvey ? 0 : 1);
     final progress = ((userEarnings / 11) * 100).clamp(0, 100);
@@ -116,7 +99,7 @@ class _ChallengeDialogState extends ConsumerState<ChallengeDialog> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Progress: ${progress.toInt()}%',
+          l10n.progressLabel(progress.toInt()),
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
@@ -124,6 +107,7 @@ class _ChallengeDialogState extends ConsumerState<ChallengeDialog> {
   }
 
   Widget _buildTasksSection(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final voiceTaskDone = widget.voiceCount >= 5;
     final courseTaskDone = widget.courseStatus.toLowerCase().contains(
       'terminado',
@@ -137,13 +121,13 @@ class _ChallengeDialogState extends ConsumerState<ChallengeDialog> {
           done: courseTaskDone,
           text: widget.courseStatus.isNotEmpty
               ? widget.courseStatus
-              : 'Course: Not started',
+              : l10n.courseNotStarted,
         ),
         _TaskRow(
           done: voiceTaskDone,
-          text: '${widget.voiceCount.clamp(0, 5)} of 5 Daily Voices',
+          text: l10n.voicesProgress(widget.voiceCount.clamp(0, 5)),
         ),
-        _TaskRow(done: syncTaskDone, text: 'Sync completed'),
+        _TaskRow(done: syncTaskDone, text: l10n.syncCompletedChallenge),
       ],
     );
   }

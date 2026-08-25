@@ -199,6 +199,10 @@ final achievementDaoProvider = Provider<AchievementDao>(
   (ref) => ref.watch(appDatabaseProvider).achievementDao,
 );
 
+final userChallengeActionDaoProvider = Provider<UserChallengeActionDao>(
+  (ref) => ref.watch(appDatabaseProvider).userChallengeActionDao,
+);
+
 final achievementsRepositoryProvider = Provider<AchievementsRepository>(
   (ref) => AchievementsRepository(ref.watch(achievementDaoProvider)),
 );
@@ -285,6 +289,7 @@ final activitiesRepositoryProvider = Provider<ActivitiesRepository>(
     ref.watch(offlineActivityDaoProvider),
     ref.watch(resourceActivityDaoProvider),
     ref.watch(courseActivityDaoProvider),
+    ref.watch(userChallengeActionDaoProvider),
   ),
 );
 

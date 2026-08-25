@@ -272,6 +272,24 @@ class ProgressRepository {
     };
   }
 
+  /// Port of the `fetchCourseData` + `findProgressForCourse` pair the
+  /// challenge dialog uses. The Kotlin builds a JsonArray of all the user's
+  /// courses with their progress, then searches it for the challenge course;
+  /// here the caller already knows the course id, so a single-course lookup
+  /// is the same result without the array.
+  ///
+  /// Returns null when the course has no steps (the Kotlin's
+  /// `findProgressForCourse` returns null when no entry matches).
+  Future<CourseProgressSummary?> courseProgressForChallenge(
+    String? userId,
+    String courseId,
+  ) async {
+    final map = await courseProgressSummary([courseId], userId);
+    final summary = map[courseId];
+    if (summary == null || summary.max == 0) return null;
+    return summary;
+  }
+
   /// The contiguous-run calculation shared by [courseProgressSummary] and
   /// [getCurrentProgress]. Marks a step complete when *any* progress row
   /// exists for it (no `passed` check), then walks from 1 until the first gap.

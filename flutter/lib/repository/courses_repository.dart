@@ -55,6 +55,11 @@ class CoursesRepository {
 
   Future<CourseRow?> getCourseById(String courseId) => _dao.getById(courseId);
 
+  /// Port of `CoursesRepositoryImpl.getCourseTitleById`. The challenge dialog
+  /// uses it to label the course-status row.
+  Future<String?> getCourseTitleById(String courseId) async =>
+      (await _dao.getById(courseId))?.courseTitle;
+
   Future<List<CourseStepRow>> getCourseSteps(String courseId) =>
       _dao.getSteps(courseId);
 

@@ -84,6 +84,12 @@ class PlanetPrefs {
   static const String _keyLibraryViewMode = 'libraryViewMode';
   static const String _keyCourseViewMode = 'courseViewMode';
 
+  /// `SharedPrefManager.HAS_SHOWN_CONGRATS`. Once-only flag so the challenge
+  /// dialog's congratulations message does not reappear after the user has
+  /// seen it once.
+  static const String _keyHasShownChallengeCongrats =
+      'has_shown_challenge_congrats';
+
   /// `OnboardingActivity.DEEP_LINK_SECTION_KEY` / `DEEP_LINK_ID_KEY`. A section
   /// link that arrives before sign-in is stored under these and applied by the
   /// dashboard afterwards, so the link survives the login it triggered.
@@ -401,6 +407,13 @@ class PlanetPrefs {
 
   Future<void> setAutoSyncEnabled(bool value) =>
       _prefs.setBool(_keyAutoSync, value);
+
+  /// `SharedPrefManager.getHasShownCongrats` / `setHasShownCongrats`.
+  bool get hasShownChallengeCongrats =>
+      _prefs.getBool(_keyHasShownChallengeCongrats) ?? false;
+
+  Future<void> setHasShownChallengeCongrats(bool value) =>
+      _prefs.setBool(_keyHasShownChallengeCongrats, value);
 
   /// Requested automatic-sync cadence. Android WorkManager enforces a
   /// 15-minute floor; older Kotlin preferences below that are clamped by the

@@ -119,6 +119,11 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
       clearFinishedAt: true,
     );
 
+    // `DashboardElementActivity.logSyncInSharedPrefs` records the challenge
+    // action right before the sync starts -- the challenge dialog's "sync"
+    // checkbox reads it via `hasUserCompletedSync`.
+    await ref.read(activityLogProvider).recordSyncChallengeAction();
+
     for (final area in DashboardSyncArea.values) {
       await _syncArea(area);
     }

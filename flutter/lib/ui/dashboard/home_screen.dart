@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/challenge_provider.dart';
 import '../../providers/courses_providers.dart';
 import '../../providers/dashboard_providers.dart';
 import '../../providers/health_provider.dart';
@@ -16,6 +17,7 @@ import '../../providers/session_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/sync_state.dart';
 import '../../repository/notifications_repository.dart';
+import '../components/challenge_dialog.dart';
 import '../components/guest_dialog.dart';
 import '../components/profile_avatar.dart';
 import '../components/relative_time.dart';
@@ -80,6 +82,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               .read(healthKeyIvSyncProvider.notifier)
               .sync(user.rolesList.join(','));
         }
+        // `DashboardActivity.evaluateChallengeDialog` — the challenge campaign
+        // fires once on dashboard load when a non-guest user is on a
+        // participating server.
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => _evaluateChallenge(user),
+        );
       }
     });
 
@@ -122,6 +130,60 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         dismissOnNeutral: true,
       );
     }
+  }
+
+  /// Port of `DashboardActivity.evaluateChallengeDialog` +
+  /// `ChallengePrompter.showChallengeDialog`. The evaluator (see
+  /// `challenge_provider.dart`) gathers the voice counts, course status, and
+  /// sync state; this method shows the dialog and routes the action button to
+  /// the screen the user needs next (course, voices, or sync center).
+  Future<void> _evaluateChallenge(UserRow session) async {
+    if (!mounted) return;
+    final config = ref.read(serverConfigProvider);
+    if (config == null) return;
+
+    final evaluator = ref.read(challengeEvaluatorProvider);
+    final data = await evaluator.evaluate(
+      userId: session.id,
+      isGuest: session.id.startsWith('guest'),
+      serverUrl: config.serverUrl,
+    );
+    if (data == null || !mounted) return;
+
+    // The congratulations variant fires once: once shown, the flag suppresses
+    // every subsequent appearance, matching `ChallengePrompter`'s
+    // `hasShownCongrats` guard.
+    final isCompleted = _isChallengeCompleted(data);
+    if (isCompleted) {
+      final shown = ref.read(hasShownChallengeCongratsProvider);
+      if (shown) return;
+      await ref.read(hasShownChallengeCongratsProvider.notifier).setShown();
+    }
+
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => ChallengeDialog(
+        voiceCount: data.voiceCount,
+        allVoiceCount: data.allVoiceCount,
+        hasUnfinishedSurvey: data.hasUnfinishedSurvey,
+        hasValidSync: data.hasValidSync,
+        courseStatus: data.courseStatus,
+        onStartCourse: () => context.push(
+          '${Routes.courses}/${ChallengeEvaluator.challengeCourseId}/take',
+        ),
+        onNext: () => context.push(Routes.voices),
+        onSync: () => context.push(Routes.syncCenter),
+      ),
+    );
+  }
+
+  bool _isChallengeCompleted(ChallengeDialogData data) {
+    final voiceDone = data.voiceCount >= 5;
+    final courseDone = data.courseStatus.toLowerCase().contains('terminado');
+    final prereqsMet = courseDone && voiceDone;
+    final syncDone = prereqsMet && data.hasValidSync;
+    return voiceDone && courseDone && syncDone;
   }
 
   Future<void> _checkPendingSurveys(UserRow session) async {

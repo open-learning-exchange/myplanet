@@ -1268,3 +1268,23 @@ class Achievements extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Port of `model/UserChallengeActions.kt`. One row per challenge action a
+/// user completes (currently only `"sync"`). Locally authored and never
+/// synced back in — `user_challenge_actions` has no CouchDB counterpart — so
+/// it belongs in [localAuthorityTables] and survives a schema bump.
+class UserChallengeActions extends Table {
+  @override
+  String get tableName => 'user_challenge_actions';
+
+  /// UUID minted at insert, matching the Kotlin's
+  /// `UUID.randomUUID().toString()`.
+  TextColumn get id => text()();
+  TextColumn get userId => text().nullable()();
+  TextColumn get actionType => text().nullable()();
+  TextColumn get resourceId => text().nullable()();
+  IntColumn get time => integer().withDefault(const Constant(0))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

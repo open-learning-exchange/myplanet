@@ -244,6 +244,22 @@ while resource and course search use the old one, `skoda` found the resource
 narrower reimplementation fails the suite. **When you need accent folding, use
 `text_utils.normalizeText`; do not hand-roll a table.**
 
+Phase 81 ports the challenge dialog (the December 2024 / January 2025
+campaign): a non-guest user on a participating server, between Nov 30 2024
+and Jan 16 2025, sees a dialog on dashboard load tracking three tasks
+(complete the challenge course, post five community voices, sync). The
+`user_challenge_actions` Drift table (schema v43, a preserved
+local-authority table) holds the sync-action rows;
+`ActivitiesRepository.recordSyncUserChallengeAction` writes the row when
+a manual sync starts, and `hasUserCompletedSync` counts it. The
+`ChallengeEvaluator` provider (port of `DashboardViewModel.evaluateChallengeDialog`)
+gates on guest/window/server and gathers the voice counts, course status,
+and sync state; the `ChallengeDialog` widget renders the progress bar and
+task rows and routes the action button to the course, voices, or sync
+center. The congratulations variant fires once via
+`hasShownChallengeCongratsProvider` (backed by `PlanetPrefs`). Four new
+l10n keys replace the dialog's hardcoded English strings.
+
 ### Documentation Map
 
 | Document | Read it when… |

@@ -38,6 +38,7 @@ void main() {
       database.offlineActivityDao,
       database.resourceActivityDao,
       database.courseActivityDao,
+      database.userChallengeActionDao,
     );
     deviceStats = _FakeDeviceStats();
     SharedPreferences.setMockInitialValues({});

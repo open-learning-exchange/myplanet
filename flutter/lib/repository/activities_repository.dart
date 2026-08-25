@@ -29,22 +29,33 @@ class MostOpenedResource {
 /// so every table here stays preserved across a schema bump (see
 /// `AppDatabase.localAuthorityTables`).
 ///
-/// Not ported: `user_challenge_actions` (the challenge feature is a
-/// time-boxed promotional campaign that ran Nov 2024 – Jan 2025 and has no
-/// screen, so the row would have no reader). `myplanet_activities` is ported
-/// separately (`myplanet_activities_uploader.dart`, Phase 41).
+/// `user_challenge_actions` is ported now (Phase 81): the challenge dialog
+/// reads it to check whether the user has completed a `"sync"` action, and
+/// `recordSyncUserChallengeAction` writes the row when a full sync finishes.
+/// `myplanet_activities` is ported separately (`myplanet_activities_uploader.dart`,
+/// Phase 41).
 class ActivitiesRepository {
   ActivitiesRepository(
     this._api,
     this._dao,
     this._resourceDao,
     this._courseDao,
-  );
+    this._challengeActionDao, {
+    DateTime Function()? now,
+    String Function()? createId,
+  }) : _now = now ?? DateTime.now,
+       _createId = createId ?? _defaultId;
 
   final PlanetApi _api;
   final OfflineActivityDao _dao;
   final ResourceActivityDao _resourceDao;
   final CourseActivityDao _courseDao;
+  final UserChallengeActionDao _challengeActionDao;
+  final DateTime Function() _now;
+  final String Function() _createId;
+
+  static String _defaultId() =>
+      'challenge-${DateTime.now().microsecondsSinceEpoch}';
 
   /// `UserSessionManager.KEY_LOGIN`.
   static const String loginType = ActivityTypes.login;
@@ -175,6 +186,29 @@ class ActivitiesRepository {
         time: Value(time),
       ),
     );
+  }
+
+  /// Port of `recordSyncUserChallengeAction`, which the dashboard calls right
+  /// before the manual-sync flow begins (not on auto-sync). The row is the
+  /// challenge dialog's source of truth for whether the user has done a sync:
+  /// `hasUserCompletedSync` counts it.
+  Future<void> recordSyncUserChallengeAction(String userId) async {
+    await _challengeActionDao.insert(
+      UserChallengeActionsCompanion.insert(
+        id: _createId(),
+        userId: Value(userId),
+        actionType: const Value('sync'),
+        time: Value(_now().millisecondsSinceEpoch),
+      ),
+    );
+  }
+
+  /// Port of `ActivitiesRepositoryImpl.hasUserCompletedSync`. Returns true if
+  /// the user has at least one `"sync"` action in `user_challenge_actions`.
+  Future<bool> hasUserCompletedSync(String userId) async {
+    if (userId.isEmpty) return false;
+    final count = await _challengeActionDao.countByUserAndType(userId, 'sync');
+    return count > 0;
   }
 
   /// Port of `logCourseVisit`, called when the take-course view opens a course.

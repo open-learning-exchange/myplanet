@@ -61,6 +61,7 @@ part 'app_database.g.dart';
     SearchActivities,
     Tags,
     Achievements,
+    UserChallengeActions,
   ],
   daos: [
     UserDao,
@@ -95,6 +96,7 @@ part 'app_database.g.dart';
     SearchActivityDao,
     TagDao,
     AchievementDao,
+    UserChallengeActionDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -107,7 +109,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 42;
+  int get schemaVersion => 43;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -222,6 +224,11 @@ class AppDatabase extends _$AppDatabase {
     // serialized the way `Achievement.serialize` rebuilds them), and exist
     // only here until the `AchievementsUploader` delivers them.
     'achievements',
+    // One row per challenge action the user completes (currently only
+    // `"sync"`). Locally authored and never synced back — no CouchDB
+    // counterpart exists — so a schema bump would silently discard the
+    // user's completed-challenge state.
+    'user_challenge_actions',
   };
 
   @override
@@ -2234,6 +2241,36 @@ class NewsDao extends DatabaseAccessor<AppDatabase> with _$NewsDaoMixin {
 
   Future<List<NewsRow>> getAll() => select(newsEntries).get();
 
+  /// Port of `NewsDao.getInTimeRange(startTime, endTime)` — all top-level
+  /// community voices posted within a time window. Used by the challenge
+  /// dialog's `getCommunityVoiceDates` to count unique posting days.
+  Future<List<NewsRow>> getInTimeRange(int startTime, int endTime) {
+    return (select(newsEntries)..where(
+          (r) =>
+              _isTopLevel(r) &
+              r.time.isBiggerOrEqualValue(startTime) &
+              r.time.isSmallerOrEqualValue(endTime),
+        ))
+        .get();
+  }
+
+  /// Port of `NewsDao.getInTimeRangeForUser(startTime, endTime, userId)` —
+  /// the per-user slice the challenge dialog passes a non-null `userId`.
+  Future<List<NewsRow>> getInTimeRangeForUser(
+    int startTime,
+    int endTime,
+    String userId,
+  ) {
+    return (select(newsEntries)..where(
+          (r) =>
+              _isTopLevel(r) &
+              r.time.isBiggerOrEqualValue(startTime) &
+              r.time.isSmallerOrEqualValue(endTime) &
+              r.userId.equals(userId),
+        ))
+        .get();
+  }
+
   /// Port of `NewsDao.getTeamChatViewableIds` — the team-visible post count per
   /// team, for the dashboard's chat badge.
   ///
@@ -3328,4 +3365,32 @@ class AchievementDao extends DatabaseAccessor<AppDatabase>
   /// adopts its CouchDB id.
   Future<void> insertDocs(List<AchievementsCompanion> rows) =>
       batch((b) => b.insertAllOnConflictUpdate(achievements, rows));
+}
+
+/// Port of `data/room/dao/UserChallengeActionsDao.kt`. One row per challenge
+/// action the user completes (currently only `"sync"` when a full sync
+/// finishes).
+@DriftAccessor(tables: [UserChallengeActions])
+class UserChallengeActionDao extends DatabaseAccessor<AppDatabase>
+    with _$UserChallengeActionDaoMixin {
+  UserChallengeActionDao(super.db);
+
+  /// Port of `insert(action)` — a single REPLACE insert.
+  Future<void> insert(UserChallengeActionsCompanion row) =>
+      into(userChallengeActions).insertOnConflictUpdate(row);
+
+  /// Port of `countByUserAndType(userId, actionType)` — used by
+  /// `hasUserCompletedSync` to check whether a `"sync"` action exists.
+  Future<int> countByUserAndType(String userId, String actionType) async {
+    final countExpr = userChallengeActions.id.count();
+    final row =
+        await (selectOnly(userChallengeActions)
+              ..addColumns([countExpr])
+              ..where(
+                userChallengeActions.userId.equals(userId) &
+                    userChallengeActions.actionType.equals(actionType),
+              ))
+            .getSingle();
+    return row.read(countExpr) ?? 0;
+  }
 }

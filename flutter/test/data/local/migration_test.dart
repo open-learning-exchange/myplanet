@@ -711,6 +711,28 @@ void main() {
     expect(withReaction?.reactions, isA<String>());
   });
 
+  test('an un-uploaded challenge sync action survives a schema bump', () async {
+    // `user_challenge_actions` is preserved: a sync action the user recorded
+    // but has not yet uploaded must survive a schema bump, or the challenge
+    // dialog's "sync completed" check would silently flip back to false.
+    await database.userChallengeActionDao.insert(
+      UserChallengeActionsCompanion.insert(
+        id: 'challenge-1',
+        userId: const Value('user-1'),
+        actionType: const Value('sync'),
+        time: const Value(1000),
+      ),
+    );
+
+    await runUpgrade();
+
+    final survivor = await database.userChallengeActionDao.countByUserAndType(
+      'user-1',
+      'sync',
+    );
+    expect(survivor, 1);
+  });
+
   test('every preserved table has a preservation test', () {
     // `my_life` and the submissions tables were added to the preserved set
     // without one. This fails the moment another name is added, so the next
@@ -740,6 +762,7 @@ void main() {
       'team_log',
       'search_activity',
       'achievements',
+      'user_challenge_actions',
     };
     expect(
       AppDatabase.localAuthorityTables,

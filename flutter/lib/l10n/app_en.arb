@@ -1118,6 +1118,24 @@
   },
   "congratulations": "Congratulations! Challenge Completed",
   "dailyVoices": "of 5 Daily Voices",
+  "voicesProgress": "{count} of 5 Daily Voices",
+  "@voicesProgress": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "progressLabel": "Progress: {percent}%",
+  "@progressLabel": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "courseNotStarted": "Course: Not started",
+  "syncCompletedChallenge": "Sync completed",
   "rememberSync": "Remember to sync the mobile app.",
   "perSurvey": "%1$s per survey",
   "@perSurvey": {

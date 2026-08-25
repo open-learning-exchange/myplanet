@@ -89,9 +89,6 @@ class ActivityLog {
   /// Port of `recordSyncActivity`, which `SyncManager` runs once per completed
   /// sync. The port's equivalent of one `SyncManager` run is the dashboard Sync
   /// center's whole pass, not a single table pull, so it is called from there.
-  ///
-  /// `recordSyncUserChallengeAction` is deliberately not ported alongside it:
-  /// the challenge feature has no screen here, so the row would have no reader.
   Future<void> recordSyncActivity() async {
     final user = ref.read(sessionProvider).valueOrNull;
     if (user == null) return;
@@ -107,6 +104,23 @@ class ActivityLog {
             time: DateTime.now().millisecondsSinceEpoch,
           );
       await queuePending();
+    } catch (_) {
+      // Deliberately ignored — see above.
+    }
+  }
+
+  /// Port of `recordSyncUserChallengeAction`, which the dashboard calls right
+  /// before the manual-sync flow begins. The row is the challenge dialog's
+  /// source of truth for whether the user has done a sync: `hasUserCompletedSync`
+  /// counts it. Failure is swallowed for the same reason `recordSyncActivity`
+  /// swallows it — a lost row costs a checkbox, not a sync.
+  Future<void> recordSyncChallengeAction() async {
+    final user = ref.read(sessionProvider).valueOrNull;
+    if (user == null || user.id.startsWith('guest')) return;
+    try {
+      await ref
+          .read(activitiesRepositoryProvider)
+          .recordSyncUserChallengeAction(user.id);
     } catch (_) {
       // Deliberately ignored — see above.
     }

@@ -330,6 +330,9 @@ class SubmissionsRepository {
 
   /// Port of `SubmissionsRepositoryImpl.hasUnfinishedSurveys`. Returns true
   /// if the course has any attached survey the user has not yet submitted.
+  ///
+  /// Also aliased as `hasPendingSurvey` — the challenge dialog's name for the
+  /// same check. The Kotlin has both methods; they are identical.
   Future<bool> hasUnfinishedSurveys(String courseId, String? userId) async {
     if (courseId.isEmpty || (userId ?? '').isEmpty) return false;
     final surveys = await _surveyDao.getByCourseId(courseId);
@@ -344,6 +347,11 @@ class SubmissionsRepository {
     }
     return false;
   }
+
+  /// Port of `SubmissionsRepositoryImpl.hasPendingSurvey` — identical to
+  /// [hasUnfinishedSurveys]. The challenge dialog calls this name.
+  Future<bool> hasPendingSurvey(String courseId, String? userId) =>
+      hasUnfinishedSurveys(courseId, userId);
 
   Future<void> markUploaded(String id, String couchId, String rev) async {
     await _dao.markUploaded(id, couchId, rev);

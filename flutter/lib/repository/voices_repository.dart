@@ -31,6 +31,37 @@ class VoicesRepository {
 
   Future<NewsRow?> getById(String id) => _dao.getById(id);
 
+  /// Port of `VoicesRepositoryImpl.getCommunityVoiceDates`. Returns the
+  /// distinct `yyyy-MM-dd` dates of top-level community-section posts in a
+  /// time window — one per day the user (or, when `userId` is null, the whole
+  /// community) posted, used by the challenge dialog's voice-count check.
+  ///
+  /// The Kotlin filters `isCommunitySection` in memory after the DAO query;
+  /// [isCommunityNews] is the port of that filter.
+  Future<List<String>> getCommunityVoiceDates(
+    int startTime,
+    int endTime,
+    String? userId,
+  ) async {
+    final rows = await (userId != null
+        ? _dao.getInTimeRangeForUser(startTime, endTime, userId)
+        : _dao.getInTimeRange(startTime, endTime));
+    final dates = <String>{};
+    for (final row in rows) {
+      if (isCommunityNews(row)) {
+        dates.add(_formatDate(row.time));
+      }
+    }
+    return dates.toList();
+  }
+
+  static String _formatDate(int millis) {
+    final dt = DateTime.fromMillisecondsSinceEpoch(millis, isUtc: true);
+    return '${dt.year.toString().padLeft(4, '0')}'
+        '-${dt.month.toString().padLeft(2, '0')}'
+        '-${dt.day.toString().padLeft(2, '0')}';
+  }
+
   Stream<List<NewsRow>> watchReplies(String newsId) =>
       _dao.watchReplies(newsId);
 

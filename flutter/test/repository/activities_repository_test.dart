@@ -16,6 +16,7 @@ void main() {
       database.offlineActivityDao,
       database.resourceActivityDao,
       database.courseActivityDao,
+      database.userChallengeActionDao,
     );
   });
   tearDown(() => database.close());
@@ -422,6 +423,32 @@ void main() {
       expect(await repository.offlineLoginCount('grace'), 1);
       // The global last visit is what the profile shows, so it moves.
       expect(await repository.globalLastVisit(), 2000);
+    });
+  });
+
+  group('user_challenge_actions', () {
+    test('a sync action is recorded and counted', () async {
+      await repository.recordSyncUserChallengeAction('user-ada');
+      expect(await repository.hasUserCompletedSync('user-ada'), isTrue);
+    });
+
+    test('hasUserCompletedSync is false before any sync', () async {
+      expect(await repository.hasUserCompletedSync('user-ada'), isFalse);
+    });
+
+    test('a sync action is not shared across users', () async {
+      await repository.recordSyncUserChallengeAction('user-ada');
+      expect(await repository.hasUserCompletedSync('user-grace'), isFalse);
+    });
+
+    test('an empty userId is never completed', () async {
+      expect(await repository.hasUserCompletedSync(''), isFalse);
+    });
+
+    test('repeated syncs do not flip the count back to false', () async {
+      await repository.recordSyncUserChallengeAction('user-ada');
+      await repository.recordSyncUserChallengeAction('user-ada');
+      expect(await repository.hasUserCompletedSync('user-ada'), isTrue);
     });
   });
 }
