@@ -24,9 +24,12 @@ import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.CouchDBResponse
+import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.News
+import kotlinx.coroutines.Dispatchers
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatRepositoryImplTest {
@@ -35,11 +38,13 @@ class ChatRepositoryImplTest {
     private val chatApiService: ChatApiService = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
+    private val testDispatcher = kotlinx.coroutines.test.StandardTestDispatcher()
+    private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
     @Before
     fun setup() {
         every { sharedPrefManager.rawPreferences } returns mockk(relaxed = true)
-        chatRepository = ChatRepositoryImpl(chatDao, chatApiService, serverUrlMapper, sharedPrefManager, Gson())
+        chatRepository = ChatRepositoryImpl(chatDao, chatApiService, serverUrlMapper, sharedPrefManager, dispatcherProvider, Gson())
     }
 
     @After
@@ -87,6 +92,47 @@ class ChatRepositoryImplTest {
 
         assertEquals(mockHistoryList, result)
         coVerify(exactly = 1) { chatDao.getByUser(userName) }
+    }
+
+    @Test
+    fun `searchChats by title correctly filters list`() = runTest(testDispatcher) {
+        val chat1 = ChatHistory().apply { title = "First Chat" }
+        val chat2 = ChatHistory().apply { title = "Second Discussion" }
+        val chats = listOf(chat1, chat2)
+
+        val result = chatRepository.searchChats("First", ChatSearchMode.TITLE, chats)
+
+        assertEquals(1, result.size)
+        assertEquals("First Chat", result[0].title)
+    }
+
+    @Test
+    fun `searchChats by full conversation filters by question`() = runTest(testDispatcher) {
+        val chat1 = ChatHistory().apply {
+            title = "Chat 1"
+            conversations = listOf(Conversation().apply { query = "How is the weather?" })
+        }
+        val chat2 = ChatHistory().apply {
+            title = "Chat 2"
+            conversations = listOf(Conversation().apply { query = "Tell me a joke." })
+        }
+        val chats = listOf(chat1, chat2)
+
+        val result = chatRepository.searchChats("weather", ChatSearchMode.QUESTION, chats)
+
+        assertEquals(1, result.size)
+        assertEquals("Chat 1", result[0].title)
+    }
+
+    @Test
+    fun `searchChats with empty query returns empty when filtered list logic is applied`() = runTest(testDispatcher) {
+        val chat1 = ChatHistory().apply { title = "Chat 1" }
+        val chat2 = ChatHistory().apply { title = "Chat 2" }
+        val chats = listOf(chat1, chat2)
+
+        val result = chatRepository.searchChats("", ChatSearchMode.TITLE, chats)
+
+        assertEquals(2, result.size)
     }
 
     @Test
