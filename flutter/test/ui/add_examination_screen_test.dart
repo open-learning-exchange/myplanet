@@ -202,6 +202,53 @@ void main() {
     await tester.pump();
     expect(find.byType(Chip), findsNothing);
   });
+
+  // ── Exit confirmation — port of HealthExaminationActivity.finish() ─────
+  //
+  // The back gesture is intercepted (canPop: false) and a dialog asks the
+  // user to confirm; Cancel dismisses the dialog and keeps the screen, while
+  // "Yes, I want to exit" closes it.
+
+  testWidgets('pressing back shows the exit-confirmation dialog', (
+    tester,
+  ) async {
+    await pumpScreen(tester);
+    final binding = tester.binding;
+    binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'Are you sure you want to cancel adding examination? The data will be lost.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('Cancel in the exit dialog keeps the screen open', (
+    tester,
+  ) async {
+    await pumpScreen(tester);
+    tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AddExaminationScreen), findsOneWidget);
+    expect(
+      find.text(
+        'Are you sure you want to cancel adding examination? The data will be lost.',
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('Yes exits the screen', (tester) async {
+    await pumpScreen(tester);
+    tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Yes, I want to exit.'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AddExaminationScreen), findsNothing);
+  });
 }
 
 class _NeverHealthRepo implements HealthRepository {

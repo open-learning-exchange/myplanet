@@ -1011,6 +1011,8 @@
   },
   "storageUnknownResource": "Unknown resource",
   "areYouSure": "Are you sure?",
+  "cancelAddingExamination": "Are you sure you want to cancel adding examination? The data will be lost.",
+  "yesIWantToExit": "Yes, I want to exit.",
   "failedToDelete": "Failed to delete: {error}",
   "@failedToDelete": {
     "placeholders": {

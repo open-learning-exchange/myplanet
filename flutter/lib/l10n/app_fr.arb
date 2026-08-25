@@ -138,6 +138,8 @@
   "storageOther": "Autre",
   "fileCountOne": "1 fichier",
   "areYouSure": "Êtes-vous sûr ?",
+  "cancelAddingExamination": "Are you sure you want to cancel adding examination? The data will be lost.",
+  "yesIWantToExit": "Yes, I want to exit.",
   "deleteSelected": "Supprimer la sélection",
   "deleteAll": "Tout supprimer",
   "selectAll": "Sélectionner tout",

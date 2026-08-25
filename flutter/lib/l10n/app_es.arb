@@ -204,6 +204,8 @@
   "noAdoptableSurveys": "No hay encuestas disponibles para adoptar",
   "adoptSurvey": "Adoptar encuesta",
   "areYouSure": "¿Estás seguro?",
+  "cancelAddingExamination": "Are you sure you want to cancel adding examination? The data will be lost.",
+  "yesIWantToExit": "Yes, I want to exit.",
   "yes": "Sí",
   "no": "No",
   "completedCourse": "curso completado",

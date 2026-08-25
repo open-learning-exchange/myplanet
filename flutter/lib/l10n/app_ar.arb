@@ -138,6 +138,8 @@
   "storageOther": "أخرى",
   "fileCountOne": "ملف واحد",
   "areYouSure": "هل أنت متأكد؟",
+  "cancelAddingExamination": "Are you sure you want to cancel adding examination? The data will be lost.",
+  "yesIWantToExit": "Yes, I want to exit.",
   "deleteSelected": "حذف المحدد",
   "deleteAll": "حذف الكل",
   "selectAll": "تحديد الكل",

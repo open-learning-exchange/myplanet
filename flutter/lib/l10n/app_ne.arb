@@ -138,6 +138,8 @@
   "storageOther": "अन्य",
   "fileCountOne": "१ फाइल",
   "areYouSure": "के तपाईं निश्चित हुनुहुन्छ?",
+  "cancelAddingExamination": "Are you sure you want to cancel adding examination? The data will be lost.",
+  "yesIWantToExit": "Yes, I want to exit.",
   "deleteSelected": "छानिएका मेटाउनुहोस्",
   "deleteAll": "सबै मेटाउनुहोस्",
   "selectAll": "सबै चयन गर्नुहोस्",

@@ -217,271 +217,280 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
 
     final examState = ref.watch(examinationNotifierProvider(params));
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.addHealthRecord),
-        actions: [
-          if (_selfExamination)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Chip(label: Text(l10n.selfExamination)),
-            ),
-        ],
-      ),
-      body: examState.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  // Vital Signs Section
-                  _SectionHeader(title: l10n.vitalSigns),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildTextField(
-                          controller: _temperatureController,
-                          label: '${l10n.temperature} (°C)',
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) return null;
-                            final temp = double.tryParse(value);
-                            if (temp == null) return l10n.invalidNumber;
-                            if (temp < 30 || temp > 40) {
-                              return l10n.tempRangeError;
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildTextField(
-                          controller: _pulseController,
-                          label: '${l10n.pulse} (bpm)',
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) return null;
-                            final pulse = int.tryParse(value);
-                            if (pulse == null) return l10n.invalidNumber;
-                            if (pulse < 40 || pulse > 120) {
-                              return l10n.pulseRangeError;
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  _buildTextField(
-                    controller: _bpController,
-                    label: '${l10n.bloodPressure} (systolic/diastolic)',
-                    hintText: '120/80',
-                    validator: (value) {
-                      if (value == null || value.isEmpty) return null;
-                      if (!value.contains('/')) {
-                        return l10n.bloodPressureFormatError;
-                      }
-                      final parts = value.trim().split('/');
-                      if (parts.length != 2) {
-                        return l10n.bloodPressureFormatError;
-                      }
-                      final sys = int.tryParse(parts[0]);
-                      final dis = int.tryParse(parts[1]);
-                      if (sys == null || dis == null) {
-                        return l10n.bloodPressureNotNumbers;
-                      }
-                      if (sys < 60 || dis < 40 || sys > 300 || dis > 200) {
-                        return l10n.bloodPressureRangeError;
-                      }
-                      return null;
-                    },
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildTextField(
-                          controller: _heightController,
-                          label: '${l10n.height} (cm)',
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) return null;
-                            final height = double.tryParse(value);
-                            if (height == null) return l10n.invalidNumber;
-                            if (height < 1 || height > 250) {
-                              return l10n.heightRangeError;
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildTextField(
-                          controller: _weightController,
-                          label: '${l10n.weight} (kg)',
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) return null;
-                            final weight = double.tryParse(value);
-                            if (weight == null) return l10n.invalidNumber;
-                            if (weight < 1 || weight > 150) {
-                              return l10n.weightRangeError;
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildTextField(
-                          controller: _visionController,
-                          label: l10n.vision,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildTextField(
-                          controller: _hearingController,
-                          label: l10n.hearing,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Conditions Section
-                  _SectionHeader(title: l10n.conditions),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _conditionOptions.map((condition) {
-                      return FilterChip(
-                        label: Text(condition),
-                        selected: _conditions[condition] ?? false,
-                        onSelected: (selected) {
-                          setState(() => _conditions[condition] = selected);
-                        },
-                      );
-                    }).toList(),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Other Diagnosis — port of Kotlin's ChipCloud.
-                  _SectionHeader(title: l10n.otherDiagnosis),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _otherDiagnosisController,
-                          decoration: InputDecoration(
-                            labelText: l10n.otherDiagnosis,
-                            border: const OutlineInputBorder(),
-                            isDense: true,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _confirmExit(context);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.addHealthRecord),
+          actions: [
+            if (_selfExamination)
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Chip(label: Text(l10n.selfExamination)),
+              ),
+          ],
+        ),
+        body: examState.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Form(
+                key: _formKey,
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    // Vital Signs Section
+                    _SectionHeader(title: l10n.vitalSigns),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildTextField(
+                            controller: _temperatureController,
+                            label: '${l10n.temperature} (°C)',
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) return null;
+                              final temp = double.tryParse(value);
+                              if (temp == null) return l10n.invalidNumber;
+                              if (temp < 30 || temp > 40) {
+                                return l10n.tempRangeError;
+                              }
+                              return null;
+                            },
                           ),
-                          onSubmitted: (_) => _addCustomDiagnosis(),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      FilledButton.tonal(
-                        onPressed: _addCustomDiagnosis,
-                        child: Text(l10n.add),
-                      ),
-                    ],
-                  ),
-                  if (_customDiagnoses.isNotEmpty) ...[
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildTextField(
+                            controller: _pulseController,
+                            label: '${l10n.pulse} (bpm)',
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) return null;
+                              final pulse = int.tryParse(value);
+                              if (pulse == null) return l10n.invalidNumber;
+                              if (pulse < 40 || pulse > 120) {
+                                return l10n.pulseRangeError;
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    _buildTextField(
+                      controller: _bpController,
+                      label: '${l10n.bloodPressure} (systolic/diastolic)',
+                      hintText: '120/80',
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return null;
+                        if (!value.contains('/')) {
+                          return l10n.bloodPressureFormatError;
+                        }
+                        final parts = value.trim().split('/');
+                        if (parts.length != 2) {
+                          return l10n.bloodPressureFormatError;
+                        }
+                        final sys = int.tryParse(parts[0]);
+                        final dis = int.tryParse(parts[1]);
+                        if (sys == null || dis == null) {
+                          return l10n.bloodPressureNotNumbers;
+                        }
+                        if (sys < 60 || dis < 40 || sys > 300 || dis > 200) {
+                          return l10n.bloodPressureRangeError;
+                        }
+                        return null;
+                      },
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildTextField(
+                            controller: _heightController,
+                            label: '${l10n.height} (cm)',
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) return null;
+                              final height = double.tryParse(value);
+                              if (height == null) return l10n.invalidNumber;
+                              if (height < 1 || height > 250) {
+                                return l10n.heightRangeError;
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildTextField(
+                            controller: _weightController,
+                            label: '${l10n.weight} (kg)',
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) return null;
+                              final weight = double.tryParse(value);
+                              if (weight == null) return l10n.invalidNumber;
+                              if (weight < 1 || weight > 150) {
+                                return l10n.weightRangeError;
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildTextField(
+                            controller: _visionController,
+                            label: l10n.vision,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildTextField(
+                            controller: _hearingController,
+                            label: l10n.hearing,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Conditions Section
+                    _SectionHeader(title: l10n.conditions),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
-                      runSpacing: 4,
-                      children: _customDiagnoses.map((diagnosis) {
-                        return Chip(
-                          label: Text(diagnosis),
-                          onDeleted: () {
-                            setState(() => _customDiagnoses.remove(diagnosis));
+                      runSpacing: 8,
+                      children: _conditionOptions.map((condition) {
+                        return FilterChip(
+                          label: Text(condition),
+                          selected: _conditions[condition] ?? false,
+                          onSelected: (selected) {
+                            setState(() => _conditions[condition] = selected);
                           },
                         );
                       }).toList(),
                     ),
+
+                    const SizedBox(height: 16),
+
+                    // Other Diagnosis — port of Kotlin's ChipCloud.
+                    _SectionHeader(title: l10n.otherDiagnosis),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _otherDiagnosisController,
+                            decoration: InputDecoration(
+                              labelText: l10n.otherDiagnosis,
+                              border: const OutlineInputBorder(),
+                              isDense: true,
+                            ),
+                            onSubmitted: (_) => _addCustomDiagnosis(),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton.tonal(
+                          onPressed: _addCustomDiagnosis,
+                          child: Text(l10n.add),
+                        ),
+                      ],
+                    ),
+                    if (_customDiagnoses.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: _customDiagnoses.map((diagnosis) {
+                          return Chip(
+                            label: Text(diagnosis),
+                            onDeleted: () {
+                              setState(
+                                () => _customDiagnoses.remove(diagnosis),
+                              );
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    ],
+
+                    const SizedBox(height: 24),
+
+                    // Examination Details Section
+                    _SectionHeader(title: l10n.examinationDetails),
+                    const SizedBox(height: 12),
+                    _buildTextField(
+                      controller: _allergiesController,
+                      label: l10n.allergies,
+                      maxLines: 2,
+                    ),
+                    _buildTextField(
+                      controller: _diagnosisController,
+                      label: l10n.diagnosis,
+                      maxLines: 2,
+                    ),
+                    _buildTextField(
+                      controller: _medicationsController,
+                      label: l10n.medications,
+                      maxLines: 2,
+                    ),
+                    _buildTextField(
+                      controller: _immunizationController,
+                      label: l10n.immunizations,
+                      maxLines: 2,
+                    ),
+                    _buildTextField(
+                      controller: _treatmentsController,
+                      label: l10n.treatments,
+                      maxLines: 2,
+                    ),
+                    _buildTextField(
+                      controller: _observationController,
+                      label: l10n.observations,
+                      maxLines: 2,
+                    ),
+                    _buildTextField(
+                      controller: _referralsController,
+                      label: l10n.referrals,
+                      maxLines: 2,
+                    ),
+                    _buildTextField(
+                      controller: _labTestController,
+                      label: l10n.labTests,
+                      maxLines: 2,
+                    ),
+                    _buildTextField(
+                      controller: _xrayController,
+                      label: l10n.xrays,
+                      maxLines: 2,
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    FilledButton(
+                      onPressed: _isSaving ? null : _saveExamination,
+                      child: _isSaving
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(l10n.save),
+                    ),
+
+                    const SizedBox(height: 16),
                   ],
-
-                  const SizedBox(height: 24),
-
-                  // Examination Details Section
-                  _SectionHeader(title: l10n.examinationDetails),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                    controller: _allergiesController,
-                    label: l10n.allergies,
-                    maxLines: 2,
-                  ),
-                  _buildTextField(
-                    controller: _diagnosisController,
-                    label: l10n.diagnosis,
-                    maxLines: 2,
-                  ),
-                  _buildTextField(
-                    controller: _medicationsController,
-                    label: l10n.medications,
-                    maxLines: 2,
-                  ),
-                  _buildTextField(
-                    controller: _immunizationController,
-                    label: l10n.immunizations,
-                    maxLines: 2,
-                  ),
-                  _buildTextField(
-                    controller: _treatmentsController,
-                    label: l10n.treatments,
-                    maxLines: 2,
-                  ),
-                  _buildTextField(
-                    controller: _observationController,
-                    label: l10n.observations,
-                    maxLines: 2,
-                  ),
-                  _buildTextField(
-                    controller: _referralsController,
-                    label: l10n.referrals,
-                    maxLines: 2,
-                  ),
-                  _buildTextField(
-                    controller: _labTestController,
-                    label: l10n.labTests,
-                    maxLines: 2,
-                  ),
-                  _buildTextField(
-                    controller: _xrayController,
-                    label: l10n.xrays,
-                    maxLines: 2,
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  FilledButton(
-                    onPressed: _isSaving ? null : _saveExamination,
-                    child: _isSaving
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(l10n.save),
-                  ),
-
-                  const SizedBox(height: 16),
-                ],
+                ),
               ),
-            ),
+      ),
     );
   }
 
@@ -516,6 +525,32 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
       _customDiagnoses.add(text);
       _otherDiagnosisController.clear();
     });
+  }
+
+  /// Port of `HealthExaminationActivity.finish()` — intercepts the back
+  /// gesture and asks the user to confirm leaving, since the in-progress
+  /// examination data would be lost.
+  void _confirmExit(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        content: Text(l10n.cancelAddingExamination),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              Navigator.of(context).pop();
+            },
+            child: Text(l10n.yesIWantToExit),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _saveExamination() async {

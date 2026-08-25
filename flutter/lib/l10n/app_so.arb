@@ -138,6 +138,8 @@
   "storageOther": "Kale",
   "fileCountOne": "1 fayl",
   "areYouSure": "Ma hubtaa?",
+  "cancelAddingExamination": "Are you sure you want to cancel adding examination? The data will be lost.",
+  "yesIWantToExit": "Yes, I want to exit.",
   "deleteSelected": "Tirtir Kuwa La Doortay",
   "deleteAll": "Tirtir Dhammaan",
   "selectAll": "Dhammaad Dhammaadee",
