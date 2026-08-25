@@ -162,7 +162,7 @@
     <string name="https_protocol">https://</string>
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">Showing reply of:</string>
-    <string name="reply_count_format">(%1$d)</string>
+    <string name="reply_count_format" translatable="false">(%1$d)</string>
     <string name="open_date">Open Date</string>
     <string name="my_survey">mySurveys</string>
     <string name="failed_to_load_course">Failed to load course</string>
