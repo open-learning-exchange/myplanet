@@ -404,7 +404,7 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 **Automerge Workflow** (`.github/workflows/automerge.yml`)
 - Manually dispatched (`workflow_dispatch`) queue drainer for PRs labelled `automerge`
 - For each labelled PR: merges the base branch in, bumps the version, waits for build + test to pass, then squash-merges
-- A conflicting PR does not stop the drain (either detection: `mergeable: CONFLICTING` or the real `git merge`): it loses `automerge`, gains `conflict` (`conflict_label` input, blank = only drop `automerge`), and the queue moves on — re-add `automerge` once resolved. A stale `conflict` label is removed when the PR merges cleanly again. Dry run reports the same decisions without touching labels, stopping at the first *mergeable* PR
+- A conflicting PR does not stop the drain (either detection: `mergeable: CONFLICTING` or the real `git merge`): it loses `automerge`, gains `conflict` (`conflict_label` input, blank = only drop `automerge`), and the queue moves on — re-add `automerge` once resolved. A stale `conflict` label is removed when the PR merges cleanly again.
 - Logic lives in `.github/scripts/automerge.sh`; requires `AUTOMERGE_TOKEN` (the default `GITHUB_TOKEN` can't push to the protected base branch)
 - A release that never reached the Play Store stops the drain; the stop reports the estimated next save slot (eastern time, plus how many follow it) and links `playstore.yml`, which publishes that upload without a rebuild
 - A red workflow on the base is re-run before the drain gives up (`base_rerun_attempts`, default 1): every base commit is a PR head that build + test passed on just before the squash merge, so a failure there is treated as flaky until it reproduces

@@ -2,9 +2,8 @@ name: myPlanet automerge
 
 # Queue drainer, started by hand: for each PR labelled `automerge`, merge the
 # base in, bump the version, wait for build + test, squash merge. A conflicting
-# PR is relabelled and skipped, not fatal. Needs AUTOMERGE_TOKEN -- GITHUB_TOKEN
-# can neither merge into a protected branch nor trigger the runs the drain waits
-# for. Logic, and the conditions that do stop it: .github/scripts/automerge.sh
+# PR is relabelled and skipped, not fatal. Needs AUTOMERGE_TOKEN. Logic, and the
+# conditions that do stop it: .github/scripts/automerge.sh
 
 on:
   workflow_dispatch:
