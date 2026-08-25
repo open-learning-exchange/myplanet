@@ -7,8 +7,6 @@ import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import com.google.gson.stream.JsonReader
-import java.io.StringReader
 import org.ole.planet.myplanet.utils.JsonUtils
 
 /**
@@ -50,11 +48,7 @@ open class Feedback {
             if (TextUtils.isEmpty(messages)) return null
             val feedbackReplies: MutableList<FeedbackReply> = ArrayList()
 
-            val stringReader = StringReader(messages)
-            val jsonReader = JsonReader(stringReader)
-
-            val e = JsonParser.parseReader(jsonReader)
-            val ar = e.asJsonArray
+            val ar = JsonParser.parseString(messages).asJsonArray
             if (ar.size() > 0) {
                 for (i in 1 until ar.size()) {
                     val ob = ar[i].asJsonObject
@@ -75,11 +69,7 @@ open class Feedback {
         get() {
             if (TextUtils.isEmpty(messages)) return ""
 
-            val stringReader = StringReader(messages)
-            val jsonReader = JsonReader(stringReader)
-
-            val e = JsonParser.parseReader(jsonReader)
-            val ar = e.asJsonArray
+            val ar = JsonParser.parseString(messages).asJsonArray
             if (ar.size() > 0) {
                 val ob = ar[0].asJsonObject
                 return ob["message"].asString
