@@ -6,7 +6,19 @@ import android.os.Build
 import android.provider.Settings
 import androidx.core.content.pm.PackageInfoCompat.getLongVersionCode
 
+import java.util.Collections
+import java.util.LinkedHashMap
+
 object VersionUtils {
+
+    private val versionCache = Collections.synchronizedMap(
+        object : LinkedHashMap<String, List<Int>>(16, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, List<Int>>): Boolean {
+                return size > 50
+            }
+        }
+    )
+
     fun getVersionCode(context: Context): Int {
         try {
             val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
@@ -41,46 +53,21 @@ object VersionUtils {
     }
 
     fun compareVersions(version1: String, version2: String): Int {
-        val e1 = if (version1.endsWith("-lite")) version1.length - 5 else version1.length
-        val s1 = if (version1.startsWith("v")) 1 else 0
-        val e2 = version2.length
-        val s2 = if (version2.startsWith("v")) 1 else 0
-
-        var i1 = s1
-        var i2 = s2
-        var count1 = 0
-        var count2 = 0
-
-        var diff = 0
-
-        while (i1 <= e1 || i2 <= e2) {
-            val hasPart1 = i1 <= e1
-            val hasPart2 = i2 <= e2
-
-            var part1 = 0
-            if (hasPart1) {
-                var dot1 = version1.indexOf('.', i1)
-                if (dot1 < 0 || dot1 > e1) dot1 = e1
-                part1 = version1.substring(i1, dot1).toInt()
-                i1 = dot1 + 1
-                count1++
-            }
-
-            var part2 = 0
-            if (hasPart2) {
-                var dot2 = version2.indexOf('.', i2)
-                if (dot2 < 0 || dot2 > e2) dot2 = e2
-                part2 = version2.substring(i2, dot2).toInt()
-                i2 = dot2 + 1
-                count2++
-            }
-
-            if (hasPart1 && hasPart2 && diff == 0 && part1 != part2) {
-                diff = part1.compareTo(part2)
-            }
+        val clean1 = version1.removeSuffix("-lite")
+        val parts1 = versionCache.getOrPut(clean1) {
+            clean1.removePrefix("v").split(".").map { it.toInt() }
         }
 
-        return if (diff != 0) diff else count1.compareTo(count2)
+        val parts2 = versionCache.getOrPut(version2) {
+            version2.removePrefix("v").split(".").map { it.toInt() }
+        }
+
+        for (i in 0 until kotlin.math.min(parts1.size, parts2.size)) {
+            if (parts1[i] != parts2[i]) {
+                return parts1[i].compareTo(parts2[i])
+            }
+        }
+        return parts1.size.compareTo(parts2.size)
     }
 
     fun parseApkVersionString(raw: String?): Int? {
