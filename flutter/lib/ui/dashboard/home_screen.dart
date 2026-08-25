@@ -312,6 +312,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     context.go(Routes.resources);
   }
 
+  /// Port of `BellDashboardFragment`'s courses-card navigation (`034626415`,
+  /// #15727): if the user has joined courses, open "My Courses" (shelf); if
+  /// not, open the full catalog so they can browse and join. The library card
+  /// got the same my/call split in `08e18ffdc` (see [_openLibraryCard]).
+  void _openCoursesCard(BuildContext context, String userId) {
+    final courses =
+        ref.read(myCoursesStreamProvider(userId)).valueOrNull ?? const [];
+    ref
+        .read(courseFilterProvider.notifier)
+        .setMyCoursesOnly(courses.isNotEmpty);
+    context.go(Routes.courses);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -479,10 +492,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         showGuestDialog(context);
                         return;
                       }
-                      ref
-                          .read(courseFilterProvider.notifier)
-                          .setMyCoursesOnly(true);
-                      context.go(Routes.courses);
+                      _openCoursesCard(context, session.id);
                     },
                     child: _CourseTiles(userId: session.id, isGuest: isGuest),
                   ),

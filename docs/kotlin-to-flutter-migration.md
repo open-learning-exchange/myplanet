@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 91 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 92 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -4225,9 +4225,110 @@ recorded rather than open-ended.
 The 1432-test suite passes, `flutter analyze` clean, `dart format` clean,
 `flutter build apk --debug` green.
 
+## Phase 92 — harvest audit, the 2026-08-25 commit batch (38 commits), and the courses shelf split
+
+The 38 commits after `efec5e7c6` (Phase 79's last covered commit, up to
+`cfa883770`, the current tip of `master`) were audited. One had a behavioural
+port; the rest are refactors, performance rewrites, Kotlin-idiom cleanups,
+Android-lifecycle concerns, or CI/build work with no behavioural change the
+port lacks.
+
+**Behavioural — harvested (one).**
+
+- `034626415` (dashboard courses shelf handling, #15727) — the courses-card
+  analogue of the library-card my/call split Phase 53 ported (`08e18ffdc`).
+  `BellDashboardFragment` now tracks `userCourses` and, on the courses image
+  button tap, opens "My Courses" (`openMyFragment`, the shelf view) when the
+  user has joined courses and the full catalog (`openCallFragment`) when they
+  do not. **Ported:** `home_screen.dart` gains an `_openCoursesCard` mirroring
+  `_openLibraryCard` — it reads `myCoursesStreamProvider`, sets
+  `courseFilterProvider.setMyCoursesOnly(courses.isNotEmpty)`, and navigates.
+  Before this the courses header always set `myCoursesOnly = true`, so a user
+  with no joined courses landed on an empty shelf rather than the catalog. The
+  `_CourseTiles` empty-state placeholder already opened the catalog (it did not
+  set the filter), so only the header tap diverged. 3 widget tests cover the
+  shelf branch, the catalog branch, and the guest gate.
+
+**Deferred — lands on an unported feature.**
+
+- `6136f85f8`, `f66ee1454`, `1ef162120` (enterprises finances view binding /
+  transaction view modelling / teams repositories view modelling) — enterprises
+  remains covered by the teams slice with no UI layer of its own; deferred for
+  the fifth time.
+- `90dba9916` (crash log store handling) — the port has no `CrashLogStore`;
+  lands on the crash-diagnostics feature the port has never had.
+
+**No Flutter equivalent — same behaviour, different mechanism.**
+
+- `12e0fbd14` (sync url utils managing) — hoists `UrlUtils.getUrl()`/`header`
+  into locals before the resources `_all_docs` walk and the shelf fetch. The
+  port passes the `ServerConfig` (and derives the header from it) per call; the
+  config is read once before the loop and does not change. Micro-optimization,
+  no behavioural gap.
+- `bafc2da16` (download auth header) — caches `UrlUtils.header` once before the
+  `DownloadWorker` per-file loop. The port's background entrypoint reads
+  `prefs.serverConfig` once and `UrlUtils.authHeader(config)` is a pure function
+  of it, so the header is already constant across the batch. No-op.
+- `59e70b501` (photo url utils uploading) — hoists `UrlUtils.getUrl()` to a
+  local in `PhotoUploader`. The port's `SubmitPhotosUploader` builds the URL
+  from the passed `ServerConfig`. No-op.
+- `95d68b3d7` (download service buffering) — bumps the read buffer 4 KB → 16 KB
+  and moves a `current` KB calculation inside the notification-update branch.
+  The port streams via Dio, not a manual byte-buffer loop, so neither change has
+  an analogue.
+- `1404b04cd` (resources: less apply filter button is more, #16091) — removes a
+  "Close" button (labelled `@string/close`, id `btn_apply_filter`) from the
+  filter dialog whose only action was `dismiss()`; in the Kotlin, filters apply
+  live as checkboxes toggle. The port's `resources_filter_sheet` applies the
+  filter on an "Apply" button press (a deliberately different interaction
+  model), so its Apply button is functional, not redundant, and the header's
+  `Icons.close` IconButton already serves the dismiss role. No redundant button
+  to remove.
+- `3c6a76aed` (guest user role handling) — `UserEntity.isGuest()` swaps
+  `it?.lowercase() == "guest"` for `it.equals("guest", ignoreCase = true)`
+  (semantically identical) and `android.util.Base64` for `java.util.Base64`
+  (same NO_WRAP output). The port detects guests by the `guest_` id prefix
+  alone and does not consult `rolesList`, a pre-existing deliberate
+  simplification this refactor does not change.
+- `d9e400bf7` (voices sorting) — moves `filterNotNull()` into `sortNews` and
+  drops the redundant call-site filters. The port's `watchCommunityFeed` already
+  returns `List<NewsRow>` (non-nullable) sorted by `sortDateOf` descending. No
+  nulls to filter.
+- `50a2aa1b0` (voices label managing) — collapses a `when` into
+  `Constants.LABELS[labelText] ?: labels.firstOrNull{...}`. Semantically
+  identical; the port's labels are a `List<String>` on the row with no
+  chip-cloud lookup counterpart.
+- `19373d0a1` (myplanet context handling) — replaces `MainApplication.context`
+  (static singleton) with the passed `context` parameter and drops a
+  `LOLLLIPOP_MR1` SDK guard (minSdk 26 is well above it). The port's
+  `MyPlanetActivitiesUploader` uses the `DeviceStats` platform channel, which
+  already runs against the engine's context. No-op.
+
+**ViewModel extractions / DI refactors (Riverpod already sits there).**
+
+- `3235d3705` (activities view modelling), `9aacbb9a8` (submissions list
+  flowing), `f6bbf981a` (life repository view modelling), `79778bdc6` (community
+  voices view modelling), `62bfe6d7e` (members finances ratings querying),
+  `7fbfd40ea` (resources repositories linking), `14281a30b` (sync time logger
+  providing), `f42381c47` (surveys repository querying), `988994f88` (retry
+  repository dao querying), `135914643` (personals repository querying),
+  `ce9f0dad7` (submissions repository exporting), `90e250e8c` (layout change
+  listening), `8928ea2f8` (view lifecycle owning) — RecyclerView/ViewBinding/
+  Hilt reshuffling, dependency-direction refactors, or Android-lifecycle
+  concerns. Riverpod providers already sit where the Kotlin is moving logic to.
+
+**CI / build / dependency (no app impact).**
+
+- `cfa883770` (automerge conflict handling), `d652653ae` (dependabot config),
+  `ce6f701bc` (gradle-wrapper 9.7.1), `f71ab5633` (playstore quota), `8eb59e047`
+  (test workflow), `073d2e9fa` (download service testing) — workflow/build/test-
+  only edits plus the lockstep `versionCode`/`versionName` bumps.
+
+The 1435-test suite passes, `flutter analyze` clean, `dart format` clean.
+
 ---
 
-**Last updated**: 2026-08-25 (Phase 91 complete — first eight tests for `ResourceViewerScreen`, the port's largest untested screen: load and missing states, title and fallback, and the whole download prompt. The file-backed text/CSV/markdown renderers stall under the widget binding and are documented as a known gap rather than shipped flaky. Phase 90 complete — trim parity for three health-profile fields the Kotlin trims and the port did not, and the Status section corrected where it still called `ChallengeDialog` dead code after Phase 81 wired it; Phases 82–89 written up. Phase 89 complete — ported the resource detail download button state logic (`ResourceDetailFragment.setupDownloadButton`/`updateDownloadButtonState`) to Flutter: the `resource_detail_screen`'s primary action button now reflects download state instead of always showing "View Resource". When the resource's `resourceOffline` flag is set (the port of `MyLibrary.isResourceOffline()`), the button shows a "View" label with a visibility icon (or a play icon for video). When not downloaded, it shows "Download" — except for video, which shows "View" when the server is reachable (streaming) and "Download" when offline. The button is hidden entirely for non-HTML resources with no `resourceLocalAddress`, matching `setupDownloadButton`'s visibility rule. Tapping a non-HTML resource with no local address shows a "Link not available" snackbar (Kotlin's `link_not_available` toast). The state check is a pure data read (`resourceOffline`) rather than a filesystem probe, so the screen stays testable under the fake clock — the actual file-exists check belongs to the viewer, as in Kotlin. Two new l10n keys (`view`, `linkNotAvailable`) added to all six locale files. 4 widget tests cover the four button states. Phase 88 complete — ported survey resume from pending submission: the `take_survey_screen` now accepts a `submissionId` parameter and loads the existing submission's answers into the form controllers, so a user who started a survey but didn't finish can resume from where they left off rather than starting fresh. The survey list's "Continue" action passes the pending submission id. Phase 87 complete — ported the inactive-user dashboard (`InactiveDashboardFragment`) to Flutter: when a logged-in, non-guest user has no roles and is not an admin, `home_screen` now renders `InactiveDashboardScreen` instead of the bell dashboard — a centered "User not activated, please contact administrator" message with a "Submit Feedback" button that opens the feedback create screen. The check mirrors `DashboardActivity.handleGuestAccess`'s `rolesList.isEmpty() && userAdmin != true` gate; guests fall through to the bell dashboard since their access is gated per-action via `showGuestDialog`. Two new l10n keys (`inactiveMessage`, `submitFeedback`) added to all six locale files. 5 widget tests cover all four branches (inactive user, user with roles, admin with no roles, guest) plus the feedback navigation. Phase 86 complete — ported the examination exit-confirmation dialog (`HealthExaminationActivity.finish()`) to Flutter: the `add_examination_screen` now wraps its Scaffold in a `PopScope(canPop: false)` that intercepts the system back gesture and shows a dialog asking the user to confirm leaving, since in-progress examination data would be lost. "Cancel" dismisses the dialog and stays; "Yes, I want to exit" pops the screen. Two new l10n keys (`cancelAddingExamination`, `yesIWantToExit`) added to all six locale files. 3 widget tests cover the back-gesture interception and both dialog buttons. Phase 85 complete — ported the health profile editor (`AddHealthActivity`) to Flutter: the `add_health_screen` now has the full form (first/middle/last name, email, dob via date picker, birth place, phone, emergency contact name/contact/type with a Phone/Email spinner, special needs, other needs), loads the existing user + health profile into the controllers on mount, and saves through `HealthRepository.saveHealthProfile` which preserves `emergencyContact`/`emergencyContactType` when a new value is empty (matching Kotlin's logic). `my_health_screen` now shows `birthPlace` and `language` in the user profile card (Kotlin's `txtBirthPlace`/`txtLanguage`). `time_utils.formatDateToDDMMYYYY` validates numeric date parts so a non-date like `not-a-date` no longer crashes the form. 6 widget tests for the editor (form load, birth place field, contact-type dropdown, save-button state, required-field validation, end-to-end save round-trip), 43 repository tests (including health profile save/load), and a `time_utils_test` suite. Phase 84 complete — full diagnosis list + custom diagnosis chip cloud. Phase 83 complete — health examination detail dialog. Phase 82 complete — text size changer + reset/clear data. Phase 81 complete — ported the challenge dialog: the `user_challenge_actions` Drift table (schema v43, preserved), `recordSyncUserChallengeAction`/`hasUserCompletedSync` on `ActivitiesRepository`, the `ChallengeEvaluator` provider (port of `DashboardViewModel.evaluateChallengeDialog`), the `ChallengeDialog` widget with localized strings, the home-screen wiring, and the sync-start call that lights up the "sync completed" task. 16 new tests. Phase 80 complete — ported `ef80dda52` toast-on-change behavior to the resource detail screen: the add/remove snackbar now fires only when shelf membership actually changed, not on every button press. Three widget tests added. Phase 79 complete — harvest audit of the 2026-08-24/25 upstream batch (33 commits): all refactors, performance rewrites, and Android-lifecycle concerns with no behavioural port needed. Phase 78 complete — the duplicate `normalizeText` removed, so chat search folds accents the same way resource and course search do. Phases 76–77 and two unnumbered ports (blood-pressure validation, personal-note attachments) written up. Phase 75 complete — chat full-conversation
+**Last updated**: 2026-08-25 (Phase 92 complete — harvest audit of the 38 commits after `efec5e7c6` (up to `cfa883770`, master tip): one behavioural port, the dashboard courses-card my/call split (`034626415`, #15727), the analogue of the library-card split Phase 53 ported. `home_screen`'s courses header now opens "My Courses" when the user has joined courses and the full catalog when they do not, instead of always opening the shelf. 3 widget tests cover the shelf branch, the catalog branch, and the guest gate. The rest of the batch is refactors, perf rewrites, Android-lifecycle concerns, and CI/build work with no behavioural port needed. Phase 91 complete — first eight tests for `ResourceViewerScreen`, the port's largest untested screen: load and missing states, title and fallback, and the whole download prompt. The file-backed text/CSV/markdown renderers stall under the widget binding and are documented as a known gap rather than shipped flaky. Phase 90 complete — trim parity for three health-profile fields the Kotlin trims and the port did not, and the Status section corrected where it still called `ChallengeDialog` dead code after Phase 81 wired it; Phases 82–89 written up. Phase 89 complete — ported the resource detail download button state logic (`ResourceDetailFragment.setupDownloadButton`/`updateDownloadButtonState`) to Flutter: the `resource_detail_screen`'s primary action button now reflects download state instead of always showing "View Resource". When the resource's `resourceOffline` flag is set (the port of `MyLibrary.isResourceOffline()`), the button shows a "View" label with a visibility icon (or a play icon for video). When not downloaded, it shows "Download" — except for video, which shows "View" when the server is reachable (streaming) and "Download" when offline. The button is hidden entirely for non-HTML resources with no `resourceLocalAddress`, matching `setupDownloadButton`'s visibility rule. Tapping a non-HTML resource with no local address shows a "Link not available" snackbar (Kotlin's `link_not_available` toast). The state check is a pure data read (`resourceOffline`) rather than a filesystem probe, so the screen stays testable under the fake clock — the actual file-exists check belongs to the viewer, as in Kotlin. Two new l10n keys (`view`, `linkNotAvailable`) added to all six locale files. 4 widget tests cover the four button states. Phase 88 complete — ported survey resume from pending submission: the `take_survey_screen` now accepts a `submissionId` parameter and loads the existing submission's answers into the form controllers, so a user who started a survey but didn't finish can resume from where they left off rather than starting fresh. The survey list's "Continue" action passes the pending submission id. Phase 87 complete — ported the inactive-user dashboard (`InactiveDashboardFragment`) to Flutter: when a logged-in, non-guest user has no roles and is not an admin, `home_screen` now renders `InactiveDashboardScreen` instead of the bell dashboard — a centered "User not activated, please contact administrator" message with a "Submit Feedback" button that opens the feedback create screen. The check mirrors `DashboardActivity.handleGuestAccess`'s `rolesList.isEmpty() && userAdmin != true` gate; guests fall through to the bell dashboard since their access is gated per-action via `showGuestDialog`. Two new l10n keys (`inactiveMessage`, `submitFeedback`) added to all six locale files. 5 widget tests cover all four branches (inactive user, user with roles, admin with no roles, guest) plus the feedback navigation. Phase 86 complete — ported the examination exit-confirmation dialog (`HealthExaminationActivity.finish()`) to Flutter: the `add_examination_screen` now wraps its Scaffold in a `PopScope(canPop: false)` that intercepts the system back gesture and shows a dialog asking the user to confirm leaving, since in-progress examination data would be lost. "Cancel" dismisses the dialog and stays; "Yes, I want to exit" pops the screen. Two new l10n keys (`cancelAddingExamination`, `yesIWantToExit`) added to all six locale files. 3 widget tests cover the back-gesture interception and both dialog buttons. Phase 85 complete — ported the health profile editor (`AddHealthActivity`) to Flutter: the `add_health_screen` now has the full form (first/middle/last name, email, dob via date picker, birth place, phone, emergency contact name/contact/type with a Phone/Email spinner, special needs, other needs), loads the existing user + health profile into the controllers on mount, and saves through `HealthRepository.saveHealthProfile` which preserves `emergencyContact`/`emergencyContactType` when a new value is empty (matching Kotlin's logic). `my_health_screen` now shows `birthPlace` and `language` in the user profile card (Kotlin's `txtBirthPlace`/`txtLanguage`). `time_utils.formatDateToDDMMYYYY` validates numeric date parts so a non-date like `not-a-date` no longer crashes the form. 6 widget tests for the editor (form load, birth place field, contact-type dropdown, save-button state, required-field validation, end-to-end save round-trip), 43 repository tests (including health profile save/load), and a `time_utils_test` suite. Phase 84 complete — full diagnosis list + custom diagnosis chip cloud. Phase 83 complete — health examination detail dialog. Phase 82 complete — text size changer + reset/clear data. Phase 81 complete — ported the challenge dialog: the `user_challenge_actions` Drift table (schema v43, preserved), `recordSyncUserChallengeAction`/`hasUserCompletedSync` on `ActivitiesRepository`, the `ChallengeEvaluator` provider (port of `DashboardViewModel.evaluateChallengeDialog`), the `ChallengeDialog` widget with localized strings, the home-screen wiring, and the sync-start call that lights up the "sync completed" task. 16 new tests. Phase 80 complete — ported `ef80dda52` toast-on-change behavior to the resource detail screen: the add/remove snackbar now fires only when shelf membership actually changed, not on every button press. Three widget tests added. Phase 79 complete — harvest audit of the 2026-08-24/25 upstream batch (33 commits): all refactors, performance rewrites, and Android-lifecycle concerns with no behavioural port needed. Phase 78 complete — the duplicate `normalizeText` removed, so chat search folds accents the same way resource and course search do. Phases 76–77 and two unnumbered ports (blood-pressure validation, personal-note attachments) written up. Phase 75 complete — chat full-conversation
 search ported from `ChatViewModel.searchChats`: a `ChatSearchMode` enum with ranked matching
 (prefix before contains, first conversation before later), recency sort by
 `max(createdDate, updatedDate)`, and a hand-rolled NFD decomposition because
@@ -4243,5 +4344,5 @@ leader actions, and member-detail wiring. Phase 71 — the member detail
 screen, reached by tapping a member. Phase 70 — resource list sort
 toggles. Phase 69 — the ARB derivation tool merges instead of
 regenerating. Phase 68 — achievements. Phase 67 — tags and collections.)
-**Phase**: 91 of N (27 of 28 UI packages have a screen — see Status for what that does and
+**Phase**: 92 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/core/prefs/planet_prefs.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
+import 'package:myplanet/providers/courses_providers.dart';
 import 'package:myplanet/providers/dashboard_providers.dart';
 import 'package:myplanet/providers/health_provider.dart';
 import 'package:myplanet/providers/life_provider.dart';
@@ -100,6 +101,7 @@ void main() {
     UserRow? user,
     PlanetPrefs? prefs,
     List<MyLibraryRow> library = const [],
+    List<CourseRow> courses = const [],
     List<PendingSurvey> pendingSurveys = const [],
     List<TeamRow> teams = const [],
     List<CompletedCourse> completedCourses = const [],
@@ -118,7 +120,7 @@ void main() {
       (ref, userId) => Stream.value(library),
     ),
     myCoursesStreamProvider.overrideWith(
-      (ref, userId) => Stream.value(const []),
+      (ref, userId) => Stream.value(courses),
     ),
     myTeamsStreamProvider.overrideWith((ref, userId) => Stream.value(teams)),
     lifeItemsProvider.overrideWith((ref) => Stream.value(const [])),
@@ -318,6 +320,76 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('myLibrary'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'You are currently a guest user. To access this feature, become a member.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets(
+    'tapping the courses header opens the shelf when the user has courses',
+    (tester) async {
+      await tester.pumpWidget(
+        wrapScreen(
+          const HomeScreen(),
+          overrides: await homeOverrides(
+            user: _user('user-1'),
+            courses: [buildCourseRow(id: 'course-1', courseTitle: 'Algebra')],
+          ),
+          pushTargets: {'/courses': (_) => const Placeholder()},
+        ),
+      );
+      await tester.pumpAndSettle();
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(HomeScreen)),
+      );
+
+      await tester.tap(find.text('myCourses'));
+      await tester.pumpAndSettle();
+
+      expect(container.read(courseFilterProvider).myCoursesOnly, isTrue);
+    },
+  );
+
+  testWidgets(
+    'tapping the courses header opens the catalog when the user has no courses',
+    (tester) async {
+      await tester.pumpWidget(
+        wrapScreen(
+          const HomeScreen(),
+          overrides: await homeOverrides(user: _user('user-1')),
+          pushTargets: {'/courses': (_) => const Placeholder()},
+        ),
+      );
+      await tester.pumpAndSettle();
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(HomeScreen)),
+      );
+
+      await tester.tap(find.text('myCourses'));
+      await tester.pumpAndSettle();
+
+      expect(container.read(courseFilterProvider).myCoursesOnly, isFalse);
+    },
+  );
+
+  testWidgets('a guest tapping the courses header is offered membership', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wrapScreen(
+        const HomeScreen(),
+        overrides: await homeOverrides(user: _user('guest_ada')),
+        pushTargets: {'/become-member': (_) => const Placeholder()},
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('myCourses'));
     await tester.pumpAndSettle();
 
     expect(
