@@ -268,10 +268,10 @@ class SyncManager @Inject constructor(
         syncTimeLogger.startProcess("resource_sync_main")
         var processedItems = 0
 
-        val url = UrlUtils.getUrl()
-        val header = UrlUtils.header
-
         try {
+            val url = UrlUtils.getUrl()
+            val header = UrlUtils.header
+
             val newIds: MutableList<String?> = ArrayList()
             var totalRows = 0
             var hadBatchFailure = false
