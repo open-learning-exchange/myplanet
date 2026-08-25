@@ -227,6 +227,12 @@ class BecomeMemberActivity : BaseActivity() {
 
             override fun afterTextChanged(s: Editable?) {
                 val input = s?.toString() ?: ""
+
+                if (input.isEmpty()) {
+                    activityBecomeMemberBinding.etUsername.error = null
+                    return
+                }
+
                 usernameValidationJob?.cancel()
                 usernameValidationJob = lifecycleScope.launch {
                     delay(300)

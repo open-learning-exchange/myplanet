@@ -19,6 +19,7 @@ import fisk.chipcloud.ChipCloudConfig
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityHealthExaminationBinding
@@ -44,9 +45,6 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
     @Inject
     lateinit var userSessionManager: UserSessionManager
-
-    @Inject
-    lateinit var healthRepository: HealthRepository
 
     private val viewModel: HealthExaminationViewModel by viewModels()
     private lateinit var binding: ActivityHealthExaminationBinding
@@ -99,21 +97,16 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
         viewModel.loadData(userId, intent.getStringExtra("id"))
 
         lifecycleScope.launch {
-            viewModel.state.collect { state ->
-                if (!state.isLoading) {
-                    user = state.user
-                    pojo = state.pojo
-                    health = state.health
-                    examination = state.examination
+            val state = viewModel.state.first { !it.isLoading }
+            user = state.user
+            pojo = state.pojo
+            health = state.health
+            examination = state.examination
+            conditionsMap = state.conditionsMap
 
-                    lifecycleScope.launch {
-                        conditionsMap = healthRepository.getExaminationConditions(examination)
-                        initExamination()
-                        validateFields()
-                        btnSave.isEnabled = true
-                    }
-                }
-            }
+            initExamination()
+            validateFields()
+            btnSave.isEnabled = true
         }
 
         collectWhenStarted(viewModel.isSaving) { isSaving ->
@@ -163,7 +156,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             } else {
                 val sysDia = "${binding.etBloodpressure.text}"
                     .trim { it <= ' ' }
-                    .split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                    .split("/").dropLastWhile { it.isEmpty() }.toTypedArray()
                 if (sysDia.size > 2 || sysDia.isEmpty()) {
                     binding.etBloodpressure.error = getString(R.string.blood_pressure_should_be_systolic_diastolic)
                     allowSubmission = false

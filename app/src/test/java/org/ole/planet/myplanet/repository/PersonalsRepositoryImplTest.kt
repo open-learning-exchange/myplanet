@@ -143,10 +143,27 @@ class PersonalsRepositoryImplTest {
     }
 
     @Test
-    fun `updatePersonalResource calls updater on matched _id and id`() = runTest {
+    fun `updatePersonalResource uses _id if found and updates once`() = runTest {
         val personalByDocId = Personal().apply { title = "Old" }
-        val personalById = Personal().apply { title = "Old" }
         coEvery { personalDao.findByDocId("test-id") } returns personalByDocId
+        coEvery { personalDao.findById("test-id") } returns null
+
+        var updateCount = 0
+        repository.updatePersonalResource("test-id") { personal ->
+            personal.title = "New Title"
+            updateCount++
+        }
+
+        assertEquals(1, updateCount)
+        assertEquals("New Title", personalByDocId.title)
+        coVerify(exactly = 1) { personalDao.update(personalByDocId) }
+        coVerify(exactly = 0) { personalDao.findById(any()) }
+    }
+
+    @Test
+    fun `updatePersonalResource falls back to id if _id is not found and updates once`() = runTest {
+        val personalById = Personal().apply { title = "Old" }
+        coEvery { personalDao.findByDocId("test-id") } returns null
         coEvery { personalDao.findById("test-id") } returns personalById
 
         var updateCount = 0
@@ -155,11 +172,9 @@ class PersonalsRepositoryImplTest {
             updateCount++
         }
 
-        assertEquals(2, updateCount)
-        assertEquals("New Title", personalByDocId.title)
+        assertEquals(1, updateCount)
         assertEquals("New Title", personalById.title)
-        coVerify { personalDao.update(personalByDocId) }
-        coVerify { personalDao.update(personalById) }
+        coVerify(exactly = 1) { personalDao.update(personalById) }
     }
 
     @Test
@@ -174,21 +189,14 @@ class PersonalsRepositoryImplTest {
 
     @Test
     fun `updatePersonalAfterSync updates fields properly`() = runTest {
-        val personal = Personal()
-        coEvery { personalDao.findById("test-id") } returns personal
-
         repository.updatePersonalAfterSync("test-id", "new-id", "rev-1")
 
-        assertTrue(personal.isUploaded)
-        assertEquals("new-id", personal._id)
-        assertEquals("rev-1", personal._rev)
-        coVerify { personalDao.update(personal) }
+        coVerify { personalDao.updateUploadedStatus("test-id", "new-id", "rev-1") }
     }
 
     @Test
     fun `uploadPersonalDocument returns Pair of id and rev on success`() = runTest {
         val personal = Personal().apply { id = "test-id" }
-        coEvery { personalDao.findById("test-id") } returns personal
 
         val responseJson = JsonObject().apply {
             addProperty("id", "new-id")
@@ -200,10 +208,7 @@ class PersonalsRepositoryImplTest {
 
         assertEquals("new-id", result?.first)
         assertEquals("rev-1", result?.second)
-        assertTrue(personal.isUploaded)
-        assertEquals("new-id", personal._id)
-        assertEquals("rev-1", personal._rev)
-        coVerify { personalDao.update(personal) }
+        coVerify { personalDao.updateUploadedStatus("test-id", "new-id", "rev-1") }
     }
 
     @Test
@@ -288,5 +293,31 @@ class PersonalsRepositoryImplTest {
         val result = repository.uploadPersonal(personal)
 
         assertEquals("Failed to upload personal resource: No response", result)
+    }
+
+    @Test
+    fun `getPersonalResources deduplicates byte-identical flow emissions`() = runTest {
+        val p1 = Personal().apply { id = "p1"; _rev = "rev1"; isUploaded = true; title = "Title" }
+        val p2 = Personal().apply { id = "p1"; _rev = "rev1"; isUploaded = true; title = "Title" }
+        coEvery { personalDao.getByUserIdFlow("user1") } returns flowOf(listOf(p1), listOf(p2))
+
+        val emissions = mutableListOf<List<Personal>>()
+        repository.getPersonalResources("user1").collect { emissions.add(it) }
+
+        assertEquals(1, emissions.size)
+    }
+
+    @Test
+    fun `getPersonalResources emits when local properties like title change`() = runTest {
+        val p1 = Personal().apply { id = "p1"; _rev = "rev1"; isUploaded = false; title = "Old Title" }
+        val p2 = Personal().apply { id = "p1"; _rev = "rev1"; isUploaded = false; title = "New Title" }
+        coEvery { personalDao.getByUserIdFlow("user1") } returns flowOf(listOf(p1), listOf(p2))
+
+        val emissions = mutableListOf<List<Personal>>()
+        repository.getPersonalResources("user1").collect { emissions.add(it) }
+
+        assertEquals(2, emissions.size)
+        assertEquals("Old Title", emissions[0][0].title)
+        assertEquals("New Title", emissions[1][0].title)
     }
 }

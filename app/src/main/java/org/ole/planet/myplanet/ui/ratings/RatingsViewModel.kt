@@ -91,13 +91,11 @@ class RatingsViewModel @Inject constructor(
 
                 _userState.value = user
 
-                val userId = user.id?.takeIf { it.isNotBlank() } ?: user._id ?: ""
-
                 val summary = ratingsRepository.submitRating(
                     type = type,
                     itemId = itemId,
                     title = title,
-                    userId = userId,
+                    user = user,
                     rating = rating,
                     comment = comment
                 )
