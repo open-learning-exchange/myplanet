@@ -1001,7 +1001,8 @@
     <string name="empty_text" />
     <string name="message_placeholder">%s</string>
     <string name="reports">Reports</string>
-    <string name="number_placeholder">%d visits</string>
+    <string name="number_placeholder">%d</string>
+    <string name="visit_count_placeholder">%d visits</string>
     <string name="float_placeholder">%.1f</string>
     <string name="string_range">%1$s - %2$s</string>
     <string name="team_financial_report">%s Financial Report</string>
