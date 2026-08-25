@@ -11,7 +11,7 @@ set -euo pipefail
 REPO="${REPO:?}"
 BASE="${BASE:?}"
 LABEL="${LABEL:?}"
-CONFLICT_LABEL="${CONFLICT_LABEL-conflict}"   # set but empty = relabel nothing, just drop $LABEL
+CONFLICT_LABEL="${CONFLICT_LABEL-conflict}"
 GRADLE_FILE="${GRADLE_FILE:?}"
 VERSION_SH="${VERSION_SH:?}"
 COAUTHORS_SH="${COAUTHORS_SH:?}"
@@ -102,44 +102,30 @@ add_conflict_label() {
 }
 
 drop_stale_conflict_label() {
-    local pr=$1
-    [ -n "$CONFLICT_LABEL" ] || return 0
-    if gh pr edit "$pr" --repo "$REPO" --remove-label "$CONFLICT_LABEL" >/dev/null 2>&1; then
-        log "  #$pr merges cleanly again -- stale '$CONFLICT_LABEL' removed"
-    else
-        log "  #$pr: could not remove the stale '$CONFLICT_LABEL' label"
-    fi
+    gh pr edit "$1" --repo "$REPO" --remove-label "$CONFLICT_LABEL" >/dev/null 2>&1 \
+        && log "  #$1 merges cleanly again -- stale '$CONFLICT_LABEL' removed" \
+        || log "  #$1: could not remove the stale '$CONFLICT_LABEL' label"
 }
 
-# A conflicted PR is a human's job, not a reason to abandon the rest of the
-# queue: take $LABEL off it (so this and every later drain stops picking it),
-# mark it $CONFLICT_LABEL, and let the loop move to the next PR.
 handle_conflict() {
     local pr=$1
     conflict_count=$(( conflict_count + 1 ))
     conflict_list="$conflict_list #$pr"
 
     if [ "$DRY_RUN" = 'true' ]; then
-        log "  dry run: #$pr conflicts with $BASE -- would drop '$LABEL'${CONFLICT_LABEL:+, add '$CONFLICT_LABEL'} and move on"
-        summary "| #$pr | | dry run: **conflicts** with \`$BASE\`, would be relabelled |"
+        log "  dry run: #$pr conflicts with $BASE -- would relabel it and move on"
+        summary "| #$pr | | dry run: **conflicts** with \`$BASE\` |"
         return 0
     fi
 
-    log "  #$pr conflicts with $BASE -- needs a human, moving on to the next PR"
-
-    if [ -n "$CONFLICT_LABEL" ]; then
-        if add_conflict_label "$pr"; then
-            log "  #$pr labelled '$CONFLICT_LABEL'"
-        else
-            log "  #$pr: could not add '$CONFLICT_LABEL' -- does the token have pull-requests: write?"
-        fi
+    log "  #$pr conflicts with $BASE -- dropping '$LABEL', moving on to the next PR"
+    if [ -n "$CONFLICT_LABEL" ] && ! add_conflict_label "$pr"; then
+        log "  #$pr: could not add '$CONFLICT_LABEL'"
     fi
-
     if gh pr edit "$pr" --repo "$REPO" --remove-label "$LABEL" >/dev/null 2>&1; then
-        log "  #$pr: '$LABEL' removed, no drain will pick it up again until a human re-adds it"
         summary "| #$pr | | **conflicts** with \`$BASE\`: dropped \`$LABEL\`${CONFLICT_LABEL:+, added \`$CONFLICT_LABEL\`} |"
     else
-        log "  #$pr: could not remove '$LABEL' -- skipping it for this drain only"
+        log "  #$pr: could not remove '$LABEL' -- skipped for this drain only"
         summary "| #$pr | | **conflicts** with \`$BASE\`: \`$LABEL\` could not be removed |"
     fi
     return 0

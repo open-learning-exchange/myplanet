@@ -4,9 +4,8 @@ name: myPlanet automerge
 # base in, bump the version, wait for build + test, squash merge. The label is
 # the safety rail. Logic in .github/scripts/automerge.sh.
 #
-# A PR that conflicts with the base no longer stops the drain: it loses the
-# `automerge` label, gains `conflict`, and the queue moves on to the next PR.
-# Resolve the conflict and re-add `automerge` to queue it again.
+# A conflicting PR does not stop the drain: it is relabelled and the queue
+# moves on. Re-add `automerge` once the conflict is resolved.
 #
 # Needs AUTOMERGE_TOKEN. GITHUB_TOKEN cannot merge into a protected branch,
 # and its pushes do not trigger the workflow runs the drain waits for.
