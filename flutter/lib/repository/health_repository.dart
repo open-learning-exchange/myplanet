@@ -43,6 +43,11 @@ class HealthRepository {
   /// Get health examination by id.
   Future<HealthExaminationRow?> getById(String id) => _dao.getById(id);
 
+  /// Alias for [getById] — fetches a single examination row by its id.
+  /// Used by the examination detail dialog provider.
+  Future<HealthExaminationRow?> getExaminationById(String id) =>
+      _dao.getById(id);
+
   /// Get all examinations for a user.
   Future<List<HealthExaminationRow>> getForUser(String userId) =>
       _dao.getForUser(userId);
@@ -181,6 +186,27 @@ class HealthRepository {
     final user = await _userDao.getById(userId);
     if (user == null) return null;
     return HealthCipher.decrypt(encrypted, user.key, user.iv);
+  }
+
+  /// Decrypts a single examination's `data` blob and returns it as an
+  /// [Examination], or null if the blob is empty or cannot be read.
+  ///
+  /// Port of `HealthExamination.getEncryptedDataAsJson` — the patient's own
+  /// key/iv decrypts their records, not the current viewer's.
+  Future<Examination?> decryptExamination(
+    String userId,
+    HealthExaminationRow exam,
+  ) async {
+    final plain = await decryptData(userId, exam.data);
+    if (plain == null || plain.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(plain);
+      return decoded is Map<String, dynamic>
+          ? Examination.fromJson(decoded)
+          : null;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Parse examination conditions from JSON string.

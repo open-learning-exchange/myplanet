@@ -613,8 +613,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                       ),
                       GoRoute(
                         path: 'examination',
-                        builder: (context, state) =>
-                            const AddExaminationScreen(),
+                        builder: (context, state) => AddExaminationScreen(
+                          examinationId: state.uri.queryParameters['id'],
+                        ),
                       ),
                     ],
                   ),

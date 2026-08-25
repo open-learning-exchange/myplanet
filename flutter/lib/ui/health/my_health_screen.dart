@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/local/app_database.dart';
+import '../../data/local/health_models.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/app_providers.dart';
 import '../../providers/health_provider.dart';
 import '../../providers/sync_state.dart';
 import '../router.dart';
@@ -79,6 +81,7 @@ class MyHealthScreen extends ConsumerWidget {
       examination: record?.healthPojo,
       myHealth: record?.healthProfile,
       examinations: record?.examinations ?? const [],
+      userMap: record?.userMap ?? const {},
     );
     return _HealthContent(data: data);
   }
@@ -289,7 +292,7 @@ class _HealthContent extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
-                      height: 120,
+                      height: 140,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: examinations.length,
@@ -297,7 +300,11 @@ class _HealthContent extends StatelessWidget {
                             const SizedBox(width: 8),
                         itemBuilder: (context, index) {
                           final exam = examinations[index];
-                          return _ExaminationCard(exam: exam);
+                          return _ExaminationCard(
+                            exam: exam,
+                            userId: data.user?.id ?? '',
+                            userMap: data.userMap,
+                          );
                         },
                       ),
                     ),
@@ -401,58 +408,355 @@ class _VitalSignChip extends StatelessWidget {
   }
 }
 
-class _ExaminationCard extends StatelessWidget {
-  const _ExaminationCard({required this.exam});
+class _ExaminationCard extends ConsumerWidget {
+  const _ExaminationCard({
+    required this.exam,
+    required this.userId,
+    required this.userMap,
+  });
   final HealthExaminationRow exam;
+  final String userId;
+  final Map<String, UserRow> userMap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final date = exam.date > 0
         ? DateTime.fromMillisecondsSinceEpoch(exam.date)
         : null;
 
-    return Container(
-      width: 140,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Theme.of(context).colorScheme.outline),
-        borderRadius: BorderRadius.circular(8),
+    final createdBy = exam.creatorId;
+    final isSelfExam =
+        createdBy == null || createdBy.isEmpty || createdBy == userId;
+    final creatorName = isSelfExam
+        ? l10n.selfExamination
+        : _resolveCreatorName(createdBy);
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final selfColor = isDark
+        ? Theme.of(context).colorScheme.surfaceContainerHighest
+        : const Color(0xFFE8F5E9);
+    final providerColor = isDark
+        ? Theme.of(context).colorScheme.surfaceContainerLow
+        : const Color(0xFFFAFAFA);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => _showDetail(context, ref),
+      child: Container(
+        width: 160,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelfExam ? selfColor : providerColor,
+          border: Border.all(color: Theme.of(context).colorScheme.outline),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              date != null
+                  ? '${date.day}/${date.month}/${date.year}'
+                  : l10n.unknown,
+              style: Theme.of(context).textTheme.labelMedium,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              creatorName,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).colorScheme.outline,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 6),
+            if (exam.temperature > 0)
+              Text(
+                '${l10n.temp}: ${exam.temperature}°C',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            if (exam.pulse > 0)
+              Text(
+                '${l10n.pulse}: ${exam.pulse} bpm',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            if (exam.bp != null && exam.bp!.isNotEmpty)
+              Text(
+                '${l10n.bp}: ${exam.bp}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            if (exam.hasInfo)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+          ],
+        ),
       ),
-      child: Column(
+    );
+  }
+
+  String _resolveCreatorName(String createdBy) {
+    final user = userMap[createdBy];
+    if (user != null) {
+      final parts = [
+        user.firstName?.trim(),
+        user.middleName?.trim(),
+        user.lastName?.trim(),
+      ].where((p) => p != null && p.isNotEmpty).toList();
+      if (parts.isNotEmpty) return parts.join(' ');
+      return user.name ?? createdBy;
+    }
+    final colonIndex = createdBy.indexOf(':');
+    if (colonIndex >= 0 && colonIndex + 1 < createdBy.length) {
+      return createdBy.substring(colonIndex + 1).trim();
+    }
+    return createdBy;
+  }
+
+  void _showDetail(BuildContext context, WidgetRef ref) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => _ExaminationDetailDialog(
+        exam: exam,
+        userId: userId,
+        userMap: userMap,
+      ),
+    );
+  }
+}
+
+/// Detail dialog for a single examination — port of
+/// `HealthExaminationAdapter.showAlert`.
+///
+/// Shows the vitals, the checked conditions, the encrypted notes/diagnosis/
+/// medications/etc. (decrypted with the patient's key/iv), and an Edit button
+/// that opens the examination form pre-loaded with the row.
+class _ExaminationDetailDialog extends ConsumerWidget {
+  const _ExaminationDetailDialog({
+    required this.exam,
+    required this.userId,
+    required this.userMap,
+  });
+  final HealthExaminationRow exam;
+  final String userId;
+  final Map<String, UserRow> userMap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final date = exam.date > 0
+        ? DateTime.fromMillisecondsSinceEpoch(exam.date)
+        : null;
+    final dateText = date != null
+        ? '${date.day}/${date.month}/${date.year}'
+        : l10n.unknown;
+
+    final createdBy = exam.creatorId;
+    final isSelfExam =
+        createdBy == null || createdBy.isEmpty || createdBy == userId;
+    final creatorName = isSelfExam
+        ? l10n.selfExamination
+        : _resolveCreatorName(createdBy);
+
+    final title = '$dateText — $creatorName';
+
+    final detailAsync = ref.watch(
+      examinationDetailProvider((userId: userId, examId: exam.id)),
+    );
+
+    final conditions = ref
+        .read(healthRepositoryProvider)
+        .parseConditions(exam.conditions);
+
+    return AlertDialog(
+      title: Text(title),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                l10n.vitalSigns,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(height: 8),
+              _VitalRow(
+                label: l10n.temperature,
+                value: _formatDouble(exam.temperature),
+              ),
+              _VitalRow(label: l10n.pulse, value: _formatInt(exam.pulse)),
+              _VitalRow(label: l10n.bloodPressure, value: exam.bp),
+              _VitalRow(label: l10n.height, value: _formatDouble(exam.height)),
+              _VitalRow(label: l10n.weight, value: _formatDouble(exam.weight)),
+              _VitalRow(label: l10n.vision, value: exam.vision),
+              _VitalRow(label: l10n.hearing, value: exam.hearing),
+              if (conditions.entries.any((e) => e.value)) ...[
+                const SizedBox(height: 12),
+                Text(
+                  l10n.conditions,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: conditions.entries
+                      .where((e) => e.value)
+                      .map((e) => Chip(label: Text(e.key)))
+                      .toList(),
+                ),
+              ],
+              const SizedBox(height: 12),
+              Text(
+                l10n.examinationDetails,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(height: 8),
+              switch (detailAsync) {
+                AsyncData(:final value) when value != null => _EncryptedFields(
+                  exam: value,
+                  l10n: l10n,
+                ),
+                AsyncLoading() => const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+                _ => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    l10n.healthRecordNotAvailable,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              },
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.ok),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+            context.push('${Routes.addExamination}?id=${exam.id}');
+          },
+          child: Text(l10n.edit),
+        ),
+      ],
+    );
+  }
+
+  String _resolveCreatorName(String createdBy) {
+    final user = userMap[createdBy];
+    if (user != null) {
+      final parts = [
+        user.firstName?.trim(),
+        user.middleName?.trim(),
+        user.lastName?.trim(),
+      ].where((p) => p != null && p.isNotEmpty).toList();
+      if (parts.isNotEmpty) return parts.join(' ');
+      return user.name ?? createdBy;
+    }
+    final colonIndex = createdBy.indexOf(':');
+    if (colonIndex >= 0 && colonIndex + 1 < createdBy.length) {
+      return createdBy.substring(colonIndex + 1).trim();
+    }
+    return createdBy;
+  }
+
+  String _formatDouble(double v) => v == 0 ? '' : v.toString();
+  String _formatInt(int v) => v == 0 ? '' : v.toString();
+}
+
+class _VitalRow extends StatelessWidget {
+  const _VitalRow({required this.label, required this.value});
+  final String label;
+  final String? value;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final display = (value == null || value!.isEmpty) ? l10n.nA : value!;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            date != null
-                ? '${date.day}/${date.month}/${date.year}'
-                : l10n.unknown,
-            style: Theme.of(context).textTheme.labelMedium,
-          ),
-          const SizedBox(height: 8),
-          if (exam.temperature > 0)
-            Text(
-              '${l10n.temp}: ${exam.temperature}°C',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          if (exam.pulse > 0)
-            Text(
-              '${l10n.pulse}: ${exam.pulse} bpm',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          if (exam.bp != null && exam.bp!.isNotEmpty)
-            Text(
-              '${l10n.bp}: ${exam.bp}',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          if (exam.hasInfo)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Icon(
-                Icons.info_outline,
-                size: 16,
-                color: Theme.of(context).colorScheme.primary,
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.outline,
               ),
             ),
+          ),
+          Expanded(child: Text(display)),
+        ],
+      ),
+    );
+  }
+}
+
+class _EncryptedFields extends StatelessWidget {
+  const _EncryptedFields({required this.exam, required this.l10n});
+  final Examination exam;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _DetailRow(label: l10n.observations, value: exam.notes),
+        _DetailRow(label: l10n.diagnosis, value: exam.diagnosis),
+        _DetailRow(label: l10n.treatments, value: exam.treatments),
+        _DetailRow(label: l10n.medications, value: exam.medications),
+        _DetailRow(label: l10n.immunizations, value: exam.immunizations),
+        _DetailRow(label: l10n.allergies, value: exam.allergies),
+        _DetailRow(label: l10n.xrays, value: exam.xrays),
+        _DetailRow(label: l10n.labTests, value: exam.tests),
+        _DetailRow(label: l10n.referrals, value: exam.referrals),
+      ],
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({required this.label, required this.value});
+  final String label;
+  final String? value;
+
+  @override
+  Widget build(BuildContext context) {
+    if (value == null || value!.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.outline,
+              ),
+            ),
+          ),
+          Expanded(child: Text(value!)),
         ],
       ),
     );

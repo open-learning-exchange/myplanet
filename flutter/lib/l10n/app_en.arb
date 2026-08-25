@@ -428,6 +428,7 @@
   "submissionDetails": "Submission details",
   "submissionNotFound": "Submission not found",
   "unknown": "Unknown",
+  "nA": "N/A",
   "status": "Status",
   "lastUpdated": "Last updated",
   "grade": "Grade",

@@ -417,6 +417,68 @@ void main() {
         expect(record.healthPojo.temperature, 36.5);
       },
     );
+
+    test(
+      'decryptExamination decrypts the data blob and returns Examination',
+      () async {
+        await seedUsers();
+        final repo = createRepository();
+        await database.userDao.ensureSecurityKeys('user-a');
+        final examJson = jsonEncode({
+          'notes': 'Patient reports chest pain',
+          'diagnosis': 'Hypertension',
+          'treatments': 'ACE inhibitor',
+          'medications': 'Lisinopril 10mg',
+          'immunizations': 'Influenza vaccine',
+          'allergies': 'Penicillin',
+          'xrays': 'Chest X-ray clear',
+          'tests': 'Lipid panel normal',
+          'referrals': 'Cardiology',
+          'createdBy': 'org.couchdb.user:provider-1',
+        });
+        final encrypted = await repo.encryptData('user-a', examJson);
+        final id = await repo.createExamination(
+          userId: 'user-a',
+          temperature: 36.5,
+          pulse: 72,
+          height: 170,
+          weight: 65,
+          data: encrypted,
+        );
+        final row = await repo.getById(id);
+        expect(row, isNotNull);
+        final decrypted = await repo.decryptExamination('user-a', row!);
+        expect(decrypted, isNotNull);
+        expect(decrypted!.notes, 'Patient reports chest pain');
+        expect(decrypted.diagnosis, 'Hypertension');
+        expect(decrypted.treatments, 'ACE inhibitor');
+        expect(decrypted.medications, 'Lisinopril 10mg');
+        expect(decrypted.immunizations, 'Influenza vaccine');
+        expect(decrypted.allergies, 'Penicillin');
+        expect(decrypted.xrays, 'Chest X-ray clear');
+        expect(decrypted.tests, 'Lipid panel normal');
+        expect(decrypted.referrals, 'Cardiology');
+        expect(decrypted.createdBy, 'org.couchdb.user:provider-1');
+      },
+    );
+
+    test(
+      'decryptExamination returns null when data is empty or missing',
+      () async {
+        await seedUsers();
+        final repo = createRepository();
+        final id = await repo.createExamination(
+          userId: 'user-a',
+          temperature: 36.5,
+          pulse: 72,
+          height: 170,
+          weight: 65,
+        );
+        final row = await repo.getById(id);
+        expect(row, isNotNull);
+        expect(await repo.decryptExamination('user-a', row!), isNull);
+      },
+    );
   });
   // ── Dashboard key/IV sync — port of TransactionSyncManager ──────────────
   //

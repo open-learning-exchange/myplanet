@@ -97,7 +97,7 @@ void main() {
     );
 
     await tester.scrollUntilVisible(
-      find.byType(SwitchListTile),
+      find.text('Every hour'),
       300,
       scrollable: _settingsScrollable(),
     );
@@ -108,6 +108,15 @@ void main() {
     expect(prefs.autoSyncEnabled, isFalse);
     expect(scheduler.cancelled, ['myplanet.autoSync']);
 
+    // The ListView recycles the SwitchListTile off-tree once it scrolls far
+    // enough. Scroll back up, then down to it again before the second tap.
+    await tester.drag(_settingsScrollable(), const Offset(0, 1000));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byType(SwitchListTile),
+      300,
+      scrollable: _settingsScrollable(),
+    );
     await tester.tap(find.byType(SwitchListTile));
     await tester.pumpAndSettle();
     expect(prefs.autoSyncEnabled, isTrue);
@@ -153,7 +162,7 @@ void main() {
       ),
     );
     await tester.scrollUntilVisible(
-      find.byType(SwitchListTile),
+      find.text('Every hour'),
       300,
       scrollable: _settingsScrollable(),
     );

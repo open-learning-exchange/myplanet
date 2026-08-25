@@ -17,12 +17,14 @@ class HealthData {
   final HealthExaminationRow? examination;
   final MyHealth? myHealth;
   final List<HealthExaminationRow> examinations;
+  final Map<String, UserRow> userMap;
 
   HealthData({
     this.user,
     this.examination,
     this.myHealth,
     this.examinations = const [],
+    this.userMap = const {},
   });
 }
 
@@ -53,6 +55,20 @@ final healthDataProvider = FutureProvider<HealthData?>((ref) async {
     examinations: examinations,
   );
 });
+
+/// Decrypts a single examination's encrypted `data` blob for display in the
+/// examination detail dialog. The patient's own key/iv decrypts their records.
+/// Port of `HealthExamination.getEncryptedDataAsJson`.
+final examinationDetailProvider = FutureProvider.autoDispose
+    .family<Examination?, ({String userId, String examId})>((
+      ref,
+      params,
+    ) async {
+      final repo = ref.watch(healthRepositoryProvider);
+      final exam = await repo.getExaminationById(params.examId);
+      if (exam == null) return null;
+      return repo.decryptExamination(params.userId, exam);
+    });
 
 MyHealth? _decodeHealth(String? plainJson) {
   if (plainJson == null || plainJson.isEmpty) return null;
