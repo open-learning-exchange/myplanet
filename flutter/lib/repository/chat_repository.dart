@@ -1,6 +1,6 @@
 import '../core/config/server_config.dart';
 import '../core/sync/sync_result.dart';
-import '../core/utils/text_normalize.dart';
+import '../core/utils/text_utils.dart';
 import '../data/local/app_database.dart';
 import '../data/local/chat_mapper.dart';
 

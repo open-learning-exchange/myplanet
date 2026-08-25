@@ -206,7 +206,7 @@ reaction on their next sync. Same shape as the Phase 56 security-data fix.
 Each side had a passing test; nothing ran the two together, which is now what
 the new coverage does.
 
-Phase 75 ports the chat full-conversation search from `62908f134`: a
+Phase 75 ports the chat full-conversation search from `ChatViewModel.searchChats`: a
 `ChatSearchMode` enum (`title`/`question`/`response`), ranked matching
 (prefix before contains, first conversation before later), recency sort by
 `max(createdDate, updatedDate)`, and accent-insensitive normalization. The
@@ -214,10 +214,35 @@ search lives as a pure top-level `searchChatsForMode` (and
 `sortChatsByRecency`) in `lib/repository/chat_repository.dart` so the
 provider can call it without transitively watching
 `chatRepositoryProvider`/`planetPrefsProvider` (the latter is
-`UnimplementedError` in the widget-test harness). Dart has no NFD
-normalizer and its `RegExp` rejects the `InCombiningDiacriticalMarks` block
-name, so `lib/core/utils/text_normalize.dart` hand-rolls decomposition for
-the Latin-1 Supplement block and strips U+0300–U+036F in the same pass.
+`UnimplementedError` in the widget-test harness). Accent folding reuses the
+existing `normalizeText` in `lib/core/utils/text_utils.dart` — see Phase 78.
+
+Phases 76–77 port the courses multi-select shelf actions (Kotlin's
+`CourseSelectionController`, plus a fix for a `ref.read` race that silently
+no-oped the whole batch) and the course cover banner with markdown descriptions
+(`CourseDetailFragment.setCourseCover`; relative image paths are fetched as
+authenticated bytes through `PlanetApi.getBytes`, because CouchDB attachments
+sit behind Basic auth and `Image.network` cannot send the header). Two
+unnumbered ports land alongside: blood-pressure validation now matches Kotlin's
+three tiers exactly (`sys` 60–300, `dis` 40–200, verified against
+`HealthExaminationActivity.validateFields`), and `PathResourceViewerScreen`
+opens a personal note's attachment by extension (`PersonalsAdapter.openResource`
+— these are not `MyLibrary` rows, so the id-based viewer cannot reach them).
+
+Phase 78 removes a duplicate `normalizeText`. Phase 75 added
+`core/utils/text_normalize.dart` with a hand-written decomposition table, whose
+header explained that Dart has no NFD normalizer — true, and already solved:
+`core/utils/text_utils.dart` had carried `normalizeText` on the `diacritic`
+package since the resource search landed, and both files documented themselves
+as the port of the same Kotlin `Utilities.normalizeText`. The two disagreed on 7
+of 15 accented samples (`Škoda` → `škoda` vs `skoda`, `Māori` → `māori` vs
+`maori`, also `Łódź`/`Çağrı`/`Ærø`), and because chat search used the new one
+while resource and course search use the old one, `skoda` found the resource
+`Škoda` but not a chat about it. The hand-written file is deleted, chat imports
+`text_utils`, and its tests move to `text_utils_test.dart` — which had no
+`normalizeText` coverage at all — with the five divergences pinned so a
+narrower reimplementation fails the suite. **When you need accent folding, use
+`text_utils.normalizeText`; do not hand-roll a table.**
 
 ### Documentation Map
 
@@ -910,6 +935,6 @@ Note: SYSTEM_ALERT_WINDOW is **not** declared (removed at some point; older docs
 
 ---
 
-**Last Updated**: 2026-08-24
+**Last Updated**: 2026-08-25
 **Version**: 0.64.35
 **Maintainer**: Open Learning Exchange

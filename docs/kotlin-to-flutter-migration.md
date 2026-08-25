@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 75 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 78 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -3712,7 +3712,7 @@ The 1310-test suite passes, `flutter analyze` clean, `dart format` clean,
 
 ---
 
-## Phase 75 — chat full-conversation search (audit + port of `62908f134`)
+## Phase 75 — chat full-conversation search (upstream audit + one port)
 
 This phase is an upstream audit plus one behavioural port rather than a new
 screen. Twenty-eight commits between the Phase 70 boundary (`14a9f14`,
@@ -3724,7 +3724,11 @@ rewrites, CI/version bumps, or land on mechanisms the Dart port already has
 parsing, hex formatting where Dart's `String.toRadixString` is already
 locale-independent). The one genuine gap:
 
-- **Chat repository search** — commit `62908f134`. The Kotlin
+- **Chat repository search** — `ChatViewModel.searchChats(query, isFullSearch,
+  isQuestion)`. (This was first written up as commit `62908f134`, which does not
+  resolve in this repository while neighbouring citations like `aa24dfa6c` and
+  `2ec7e3187` do; the port is real either way, so the reference is the Kotlin
+  symbol, which outlives a rebase.) The Kotlin
   `ChatRepository` gained a `ChatSearchMode` enum (`title`/`question`/
   `response`), a `searchChats()` with **ranked** matching (a prefix hit
   outranks a substring hit; a hit in the first conversation — which is the
@@ -3785,10 +3789,94 @@ The 1324-test suite passes (9 new — search modes, ranked matching,
 diacritics, recency sort, the toggle UI, the response-mode search),
 `flutter analyze` clean, `dart format --set-exit-if-changed` clean.
 
+## Phases 76–77 and two unnumbered ports
+
+The harvest shipped these and left them out of this document; recorded here so
+the phase numbering stays contiguous.
+
+- **Phase 76 — courses multi-select shelf actions.** Ports the batch add/leave
+  from Kotlin's `CourseSelectionController`: long-press enters selection mode,
+  select-all toggles every visible tile, and one action writes shelf membership
+  for the whole batch with a count snackbar. It also fixes a real race it found
+  on the way: `CoursesScreen` resolved the user with `ref.read`, which returned
+  null on first access and silently no-oped the entire batch. The screen now
+  watches `sessionProvider` in `build`, matching its sibling screens.
+- **Phase 77 — course cover image and markdown description.** Course detail and
+  take-course render descriptions through `MarkdownBody` instead of `Text`, and
+  the detail screen gains the cover banner (`CourseDetailFragment.setCourseCover`,
+  `CourseStepFragment`'s `prependBaseUrlToImages` + `setMarkdownText`). The
+  interesting part is `CourseMarkdownBody`'s `imageBuilder`: CouchDB attachments
+  sit behind Basic auth and `Image.network` cannot send the header, so relative
+  `resources/<id>/<file>` paths resolve against the server's `/db` root and are
+  fetched as authenticated bytes through `PlanetApi.getBytes` — the same path
+  `profileImageProvider` already uses. A miss shrinks to nothing rather than
+  showing a broken-image icon, matching the Kotlin's silent `<img>` fallback.
+- **Blood-pressure validation** (no phase number). Kotlin's
+  `HealthExaminationActivity.validateFields` checks BP in three tiers: contains
+  `/`, splits into two parts, and `sys` 60–300 / `dis` 40–200. The Flutter
+  validator had only the format check, so `400/80` or `abc/def` passed. Verified
+  against the Kotlin source: the range expression is
+  `sys < 60 || dis < 40 || sys > 300 || dis > 200`, which the port now matches
+  exactly.
+- **Personal-note attachments** (no phase number, #16070).
+  `PathResourceViewerScreen` routes a personal note's stored path to the pdf /
+  image / audio / video renderer by extension, mirroring
+  `PersonalsAdapter.openResource`. Personal attachments are not `MyLibrary`
+  rows, so they cannot go through the id-based `ResourceViewerScreen`; this is
+  the `TOUCHED_FILE` / `isFullPath=true` entry point. No WebView is involved,
+  so the local-files-only rule that governs the HTML viewer does not apply here.
+
+## Phase 78 — one `normalizeText`, not two
+
+Phase 75 added `lib/core/utils/text_normalize.dart` with a hand-written Unicode
+decomposition table, described in its own header as bridging a gap in Dart:
+"Dart's core library has no NFD normalizer and its `RegExp` does not accept
+`\p{InCombiningDiacriticalMarks}`, so this bridges both gaps by hand."
+
+Both halves of that are true, and the project had already solved it.
+`lib/core/utils/text_utils.dart` has carried `normalizeText` since the resource
+search landed — `removeDiacritics(value).toLowerCase()`, on the `diacritic`
+package that `pubspec.yaml` lists for exactly this purpose ("stands in for
+`java.text.Normalizer` NFD"). Both files documented themselves as the port of
+the same Kotlin function, `Utilities.normalizeText`.
+
+Two implementations of one function would be untidy but harmless if they agreed.
+They do not — measured on 15 accented samples, they disagree on 7:
+
+| input | hand-written table | `diacritic` package |
+|---|---|---|
+| `Māori` | `māori` | `maori` |
+| `Łódź` | `łodź` | `lodz` |
+| `Škoda` | `škoda` | `skoda` |
+| `Çağrı` | `cağrı` | `cagri` |
+| `Ærø` | `ærø` | `aero` |
+
+The table covers precomposed Latin vowels — the common French and Spanish
+accents its tests exercise — and misses macrons, Eastern European letters,
+Turkish dotless/breve forms and Nordic ligatures. Because chat search used the
+new function while resource and course search use the old one, the same query
+folded two different ways in one app: searching `skoda` found a resource titled
+`Škoda` but not a chat conversation about it.
+
+Nothing pinned the narrower behaviour — the new file's tests only asserted cases
+where the two agree — and the function was used for in-memory filtering rather
+than a persisted `*Normalized` column, so there was no stored data to migrate:
+
+- `text_normalize.dart` and its test file are deleted.
+- `chat_repository.dart` imports `text_utils.dart`.
+- The deleted tests' cases move into `text_utils_test.dart`, which had no
+  `normalizeText` coverage at all despite being the older implementation, plus a
+  `folds beyond the common French and Spanish accents` case pinning the five
+  divergences above. That is the guard against a narrower reimplementation
+  arriving again.
+
+The 1360-test suite passes, `flutter analyze` clean, `dart format` clean,
+`flutter build apk --debug` green.
+
 ---
 
-**Last updated**: 2026-08-24 (Phase 75 complete — chat full-conversation
-search ported from `62908f134`: a `ChatSearchMode` enum with ranked matching
+**Last updated**: 2026-08-25 (Phase 78 complete — the duplicate `normalizeText` removed, so chat search folds accents the same way resource and course search do. Phases 76–77 and two unnumbered ports (blood-pressure validation, personal-note attachments) written up. Phase 75 complete — chat full-conversation
+search ported from `ChatViewModel.searchChats`: a `ChatSearchMode` enum with ranked matching
 (prefix before contains, first conversation before later), recency sort by
 `max(createdDate, updatedDate)`, and a hand-rolled NFD decomposition because
 Dart has neither an NFD normalizer nor a `RegExp` that accepts the
@@ -3803,5 +3891,5 @@ leader actions, and member-detail wiring. Phase 71 — the member detail
 screen, reached by tapping a member. Phase 70 — resource list sort
 toggles. Phase 69 — the ARB derivation tool merges instead of
 regenerating. Phase 68 — achievements. Phase 67 — tags and collections.)
-**Phase**: 75 of N (27 of 28 UI packages have a screen — see Status for what that does and
+**Phase**: 78 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

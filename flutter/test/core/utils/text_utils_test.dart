@@ -27,4 +27,48 @@ void main() {
       expect(toHexString('\x01a'), '161');
     });
   });
+
+  group('normalizeText', () {
+    test('lowercases plain text', () {
+      expect(normalizeText('HELLO'), 'hello');
+      expect(normalizeText('HeLLo World'), 'hello world');
+    });
+
+    test('strips Latin-1 accented vowels', () {
+      expect(normalizeText('café'), 'cafe');
+      expect(normalizeText('Élan'), 'elan');
+      expect(normalizeText('ÑOÑO'), 'nono');
+      expect(normalizeText('über'), 'uber');
+      expect(normalizeText('façade'), 'facade');
+    });
+
+    test('a search term and its accented source normalize the same way', () {
+      // The contract that makes accent-insensitive search work: the search
+      // term and the stored text collapse to the same normalized form.
+      expect(normalizeText('cafe'), normalizeText('café'));
+      expect(normalizeText('resume'), normalizeText('résumé'));
+    });
+
+    test('folds beyond the common French and Spanish accents', () {
+      // These are the cases a hand-written decomposition table gets wrong.
+      // A second `normalizeText` once lived in `text_normalize.dart` with its
+      // own table covering only precomposed Latin vowels; chat search used it
+      // while resource and course search used this one, so "skoda" found the
+      // resource "Škoda" but not a chat about it. Pinning the wider folding
+      // keeps a narrower reimplementation from coming back unnoticed.
+      expect(normalizeText('Māori'), 'maori');
+      expect(normalizeText('Łódź'), 'lodz');
+      expect(normalizeText('Škoda'), 'skoda');
+      expect(normalizeText('Çağrı'), 'cagri');
+      expect(normalizeText('Ærø'), 'aero');
+    });
+
+    test('leaves unaccented text untouched', () {
+      expect(normalizeText('plain text 123'), 'plain text 123');
+    });
+
+    test('handles an empty string', () {
+      expect(normalizeText(''), '');
+    });
+  });
 }
