@@ -129,6 +129,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var onGlobalLayoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
     private var exitSnackbar: Snackbar? = null
     private var lastSyncStatus: SyncManager.SyncStatus? = null
+    private var dismissedSyncTime = -1L
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleUtils.onAttach(base))
@@ -136,6 +137,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState != null) {
+            dismissedSyncTime = savedInstanceState.getLong(KEY_DISMISSED_SYNC_TIME, -1L)
+        }
         postponeEnterTransition()
         initViews()
 
@@ -274,6 +278,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         binding.dashboardSyncNow.setOnClickListener {
             logSyncInSharedPrefs()
+        }
+        binding.btnDismissSync.setOnClickListener {
+            dismissedSyncTime = prefData.getLastSync()
+            binding.dashboardSyncBanner.visibility = View.GONE
         }
     }
 
@@ -588,8 +596,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun updateLastSyncStatus() {
         val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        binding.dashboardSyncBanner.visibility = if (isLandscape) View.GONE else View.VISIBLE
-        if (isLandscape) return
+        val isDismissed = dismissedSyncTime >= 0L && prefData.getLastSync() <= dismissedSyncTime
+        binding.dashboardSyncBanner.visibility = if (!isLandscape && !isDismissed) View.VISIBLE else View.GONE
+        if (binding.dashboardSyncBanner.visibility == View.GONE) return
 
         val lastSyncMillis = prefData.getLastSync()
         val timeText = if (lastSyncMillis <= 0L) {
@@ -1081,6 +1090,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         updateLastSyncStatus()
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putLong(KEY_DISMISSED_SYNC_TIME, dismissedSyncTime)
+    }
+
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -1122,6 +1136,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     companion object {
+        const val KEY_DISMISSED_SYNC_TIME = "dismissed_sync_time"
         const val MESSAGE_PROGRESS = "message_progress"
         var isFromNotificationAction = false
     }

@@ -68,6 +68,16 @@
                 android:textColor="@color/dashboard_accent_blue"
                 android:textSize="12sp"
                 android:textStyle="bold" />
+            <ImageView
+                android:id="@+id/btn_dismiss_sync"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/dismiss"
+                android:padding="12dp"
+                android:scaleType="centerInside"
+                app:srcCompat="@drawable/baseline_close_24"
+                app:tint="@color/daynight_textColor" />
         </LinearLayout>
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
