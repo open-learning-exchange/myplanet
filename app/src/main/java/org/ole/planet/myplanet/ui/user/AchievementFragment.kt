@@ -197,7 +197,7 @@ class AchievementFragment : BaseContainerFragment() {
             if (lib.isResourceOffline()) {
                 openResource(lib)
             } else {
-                lifecycleScope.launch {
+                viewLifecycleOwner.lifecycleScope.launch {
                     resourcesRepository.downloadResources(listOf(lib))
                 }
             }
