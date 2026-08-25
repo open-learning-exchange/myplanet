@@ -18,11 +18,19 @@ object CrashLogStore {
 
     private fun dir(context: Context): File = File(context.filesDir, DIR_NAME)
 
+    private fun isValidLogFile(file: File): Boolean {
+        if (!file.isFile || !file.name.endsWith(FILE_EXTENSION)) return false
+        val name = file.name.removeSuffix(FILE_EXTENSION)
+        val separator = name.indexOf('_')
+        if (separator <= 0) return false
+        return name.substring(0, separator).toLongOrNull() != null
+    }
+
     fun save(context: Context, type: String, error: String, timeProvider: TimeProvider): File? {
         return try {
             val logDir = dir(context)
             if (!logDir.exists() && !logDir.mkdirs()) return null
-            if ((logDir.listFiles()?.size ?: 0) >= MAX_PENDING_FILES) return null
+            if ((logDir.listFiles()?.count { isValidLogFile(it) } ?: 0) >= MAX_PENDING_FILES) return null
             val file = File(logDir, "${timeProvider.now()}_$type$FILE_EXTENSION")
             file.writeText(error)
             file
@@ -34,13 +42,11 @@ object CrashLogStore {
 
     fun loadPendingLogs(context: Context): List<PendingLog> {
         val files = dir(context).listFiles() ?: return emptyList()
-        return files.filter { it.isFile && it.name.endsWith(FILE_EXTENSION) }.mapNotNull { file ->
+        return files.filter { isValidLogFile(it) }.mapNotNull { file ->
             try {
                 val name = file.name.removeSuffix(FILE_EXTENSION)
                 val separator = name.indexOf('_')
-                if (separator <= 0) return@mapNotNull null
                 val time = name.substring(0, separator)
-                if (time.toLongOrNull() == null) return@mapNotNull null
                 PendingLog(file, name.substring(separator + 1), time, file.readText())
             } catch (e: Exception) {
                 e.printStackTrace()
