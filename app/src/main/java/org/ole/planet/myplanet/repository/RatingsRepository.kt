@@ -3,24 +3,18 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.UserEntity
 
-data class RatingSummaryModel(
-    val user: UserEntity?,
-    val ratingSummary: RatingSummary?
-)
-
 interface RatingsRepository {
     suspend fun getRatings(type: String?, userId: String?): HashMap<String?, JsonObject>
     suspend fun getRatingsById(type: String, resourceId: String?, userId: String?): RatingSummary?
     suspend fun getCourseRatings(userId: String?): HashMap<String?, JsonObject>
     suspend fun getResourceRatings(userId: String?): HashMap<String?, JsonObject>
     suspend fun getRatingSummary(type: String, itemId: String, userId: String?): RatingSummary
-    suspend fun getCourseRatingSummary(courseId: String): RatingSummaryModel
 
     suspend fun submitRating(
         type: String,
         itemId: String,
         title: String,
-        userId: String,
+        user: UserEntity,
         rating: Float,
         comment: String,
     ): RatingSummary

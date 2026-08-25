@@ -48,7 +48,7 @@ class SurveysRepositoryImpl @Inject constructor(
     private val examDao: ExamDao,
     private val questionDao: QuestionDao,
     private val submissionDao: SubmissionDao,
-    private val teamDao: TeamDao,
+    private val teamsRepository: dagger.Lazy<TeamsRepository>,
 ) : SurveysRepository {
 
     private val reminderPrefs: SharedPreferences by lazy {
@@ -61,7 +61,7 @@ class SurveysRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getExamQuestions(examId: String): List<ExamQuestion> {
-        return questionDao.getByExamId(examId).map { it }
+        return questionDao.getByExamId(examId)
     }
 
     override suspend fun adoptSurvey(
@@ -79,7 +79,7 @@ class SurveysRepositoryImpl @Inject constructor(
         val userJsonString = createUserJsonString(userModel, planetCode, isTeam, teamId)
 
         if (isTeam && !teamId.isNullOrEmpty()) {
-            val teamName = teamDao.getById(teamId)?.name ?: teamDao.getByTeamId(teamId)?.name
+            val teamName = teamsRepository.get().getTeamByIdOrTeamId(teamId)?.name
             if (!teamName.isNullOrEmpty()) {
                 val existingSurvey = examDao.getByTeamIdAndType(teamId, "surveys")
                     .firstOrNull { it.sourceSurveyId == examId }
@@ -254,7 +254,6 @@ class SurveysRepositoryImpl @Inject constructor(
         return examDao.getByType("surveys")
             .asSequence()
             .filter { it.teamId == teamId || filteredSubmissionIds.contains(it.id) }
-            .map { it }
             .toList()
     }
 
@@ -267,14 +266,12 @@ class SurveysRepositoryImpl @Inject constructor(
             .asSequence()
             .filter { it.isTeamShareAllowed }
             .filterNot { excludedIds.contains(it.id) }
-            .map { it }
             .toList()
     }
 
     override suspend fun getIndividualSurveys(): List<StepExam> {
         return examDao.getByType("surveys")
             .filter { !it.isTeamShareAllowed && it.teamId.isNullOrEmpty() }
-            .map { it }
     }
 
     private suspend fun getTeamSubmissionExamIds(teamId: String): Set<String> {
@@ -373,12 +370,12 @@ class SurveysRepositoryImpl @Inject constructor(
 
     override suspend fun getSurvey(id: String): StepExam? {
         return examDao.getById(id)
-            ?: examDao.getByType("surveys").firstOrNull { it.name == id }
+            ?: examDao.getByTypeAndName("surveys", id)
     }
 
     override suspend fun getSurveys(ascending: Boolean): List<StepExam> {
         val entities = examDao.getByType("surveys").sortedBy { it.createdDate }
-        return (if (ascending) entities else entities.asReversed()).map { it }
+        return if (ascending) entities else entities.asReversed()
     }
 
     override suspend fun bulkInsertExamsFromSync(jsonArray: JsonArray) {
@@ -464,7 +461,7 @@ class SurveysRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getPendingAdoptedSurveys(): List<StepExam> {
-        return examDao.getPendingAdoptedSurveys().map { it }
+        return examDao.getPendingAdoptedSurveys()
     }
 
     override suspend fun fetchPublicSurvey(baseUrl: String, teamId: String, surveyId: String): JsonObject? {
