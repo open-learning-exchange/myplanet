@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.databinding.FragmentLibraryDetailBinding
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyLibrary.Companion.listToString
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.FileUtils.getFileExtension
@@ -31,7 +32,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var _binding: FragmentLibraryDetailBinding? = null
     private val binding get() = _binding!!
     private var libraryId: String? = null
-    private var lastKnownRating: org.ole.planet.myplanet.repository.RatingSummary? = null
+    private var lastKnownRating: RatingSummary? = null
     private lateinit var library: MyLibrary
     var userModel: UserEntity? = null
     private suspend fun fetchLibrary(libraryId: String): MyLibrary? {
