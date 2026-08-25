@@ -5,13 +5,14 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 81 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 90 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
 - `enterprises` has no screens of its own; the teams slice (Phase 18) covers what it did.
-- `components`: `CheckboxList` is used by four screens. `ChallengeDialog` and `CustomDropdown`
-  are built and called from nowhere — they are library code waiting for a caller, not features.
+- `components`: `CheckboxList` is used by four screens, and `ChallengeDialog` is wired to the
+  home screen as of Phase 81. `CustomDropdown` is still built and called from nowhere — library
+  code waiting for a caller, not a feature.
 - `user`: `BecomeMemberScreen` now POSTs the `_users` document when the server is reachable and
   adopts the server's PBKDF2 material, falling back to the local-only account when it is not —
   the shape Kotlin has.
@@ -117,8 +118,8 @@ Known gaps:
     Kotlin sends, without which Planet cannot attribute a rating to its author; and a response
     carrying no `_rev` is now an error rather than a success, which had been retiring the outbox
     entry while the row stayed pending — the next queue posted a duplicate document.
-  - **components**: `CheckboxList` is used by four screens. `ChallengeDialog` and
-    `CustomDropdown` are built and called from nowhere.
+  - **components**: `CheckboxList` is used by four screens; `ChallengeDialog` gained its caller
+    in Phase 81. `CustomDropdown` is still called from nowhere.
 
 - **Phase 26** — chat and feedback sync-in, team plan/finances/calendar/voices, take-course and
   course progress, and survey sending. The two syncs arrived with no caller on either side, as
@@ -1241,9 +1242,9 @@ reports, with their upload write-back and sync-in download) landed via `TeamAtta
 others landed in Phases 26 and 28, and deep links and the durable public-survey response in Phase 35.
 
 **Notes on remaining packages:**
-- `components` -- reusable utility widgets. `CheckboxList` is in use; `ChallengeDialog` and
-  `CustomDropdown` exist with no callers. Most of what the Kotlin package did is handled by
-  Flutter's built-in widgets.
+- `components` -- reusable utility widgets. `CheckboxList` and (since Phase 81)
+  `ChallengeDialog` are in use; `CustomDropdown` still exists with no callers. Most of what the
+  Kotlin package did is handled by Flutter's built-in widgets.
 - `enterprises` -- financial reports for teams. Already covered by `team_reports_screen.dart` in the
   teams slice (Phase 18). The Kotlin package is a separate UI layer over the same team data.
 
@@ -4102,9 +4103,85 @@ than a persisted `*Normalized` column, so there was no stored data to migrate:
 The 1360-test suite passes, `flutter analyze` clean, `dart format` clean,
 `flutter build apk --debug` green.
 
+## Phases 82–89 — settings, health, and dashboard gaps
+
+The harvest shipped these without write-ups; recorded here so the numbering
+stays contiguous. All eight are Kotlin ports, checked against the named
+symbols.
+
+- **Phase 82 — text size and reset app** (`SettingsActivity`). Three text
+  scales matching the Kotlin's `floatArrayOf(0.85f, 1.0f, 1.15f)`, applied as a
+  `MediaQuery` `textScaler` override. Reset app is the destructive one and is
+  built correctly: a Yes/No confirmation ported from `clearDataButtonInit`,
+  then `AppDatabase.clearAllData()` (a batched `DELETE FROM` over `allTables`,
+  the drift equivalent of `RoomDatabase.clearAllTables()`) plus
+  `PlanetPrefs.clearAllData()`, which calls `_secureStorage.deleteAll()` so the
+  stored password and PIN go with it rather than outliving the server they
+  belong to. `onboardingComplete` is deliberately kept. Undelivered outbox rows
+  are wiped along with everything else, matching the Kotlin — that is what the
+  user asked for, unlike a schema bump, where `localAuthorityTables` exists to
+  protect exactly those rows.
+- **Phase 83 — examination detail dialog** (`my_health_screen`).
+- **Phase 84 — full diagnosis list and custom diagnosis chip cloud**
+  (`HealthExaminationActivity.showOtherDiagnosis` / `preloadCustomDiagnosis`).
+- **Phase 85 — health profile editor.** Decrypts the stored blob, mutates it,
+  re-encrypts, and saves — the encryption path is intact and goes through
+  `HealthCipher` with `ensureSecurityKeys`. Its field rules are a faithful port
+  of `UserRepositoryImpl.updateUserHealthProfile`, including an asymmetry worth
+  not "fixing": the six name/email/phone fields are assigned unconditionally
+  (so an absent key clears the stored value) while `dob` is preserved when
+  absent, because the Kotlin writes the first group as
+  `(userData[k] as? String)?.trim()` and the second as `userData["dob"]?.let`.
+  Likewise `emergencyContact`/`emergencyContactType` keep their existing value
+  when the incoming one is blank, while name/specialNeeds/notes are overwritten.
+- **Phase 86 — examination exit confirmation** (`HealthExaminationActivity.finish`),
+  as a `PopScope(canPop: false)` intercepting the system back gesture.
+- **Phase 87 — inactive-user dashboard** (`InactiveDashboardFragment`), gated on
+  `rolesList.isEmpty() && userAdmin != true` per `handleGuestAccess`; guests
+  still fall through to the bell dashboard because their access is gated
+  per-action.
+- **Phase 88 — survey resume from a pending submission**
+  (`ExamTakingFragment` reusing `BaseExamFragment.checkId`'s `sub`). The shape
+  is right where it matters: `updateSurveyAnswers` updates the existing
+  submission row rather than inserting, and answer rows are keyed
+  `<submissionId>:<questionId>`, so resuming a survey cannot produce a second
+  submission or duplicate answers.
+- **Phase 89 — resource detail download button state**
+  (`ResourceDetailFragment.setupDownloadButton` / `updateDownloadButtonState`).
+
+Schema went 42 → 43 for `user_challenge_actions`, Phase 81's table. It is a new
+*table* rather than a new column, so `createAll` covers it and no hand-written
+step was needed; it is preserved, and the existing "every preserved table has a
+preservation test" meta-test did its job by forcing the migration test that
+comes with it.
+
+## Phase 90 — trim parity in the health profile, and a stale Status claim
+
+Two small corrections to the batch above.
+
+**Three untrimmed fields.** `saveHealthProfile` trimmed
+`emergencyContact` and `emergencyContactType` but not `emergencyContactName`,
+`specialNeeds` or `notes`, where the Kotlin trims all five
+(`(userData[k] as? String)?.trim() ?: ""`). Two consequences: the same typed
+input stored differently in the two apps, and a whitespace-only entry survived
+as whitespace where the Kotlin stores `""` — so `"   "` read as a note that
+exists. Fixed, with a test that fails on the pre-fix code.
+
+**`ChallengeDialog` is no longer dead code.** Three passages still described it
+as "built and called from nowhere ... library code waiting for a caller",
+including the document's headline Status section, which is the first thing a
+reader sees. Phase 81 gave it its caller (`home_screen.dart`, via
+`_evaluateChallenge`). `CustomDropdown` genuinely is still uncalled, so only the
+`ChallengeDialog` half changed. The Status header and phase footer were also
+stale and disagreed with each other — "Phase 81 complete" against
+"**Phase**: 80" — while the branch had shipped through 89.
+
+The 1424-test suite passes, `flutter analyze` clean, `dart format` clean,
+`flutter build apk --debug` green.
+
 ---
 
-**Last updated**: 2026-08-25 (Phase 89 complete — ported the resource detail download button state logic (`ResourceDetailFragment.setupDownloadButton`/`updateDownloadButtonState`) to Flutter: the `resource_detail_screen`'s primary action button now reflects download state instead of always showing "View Resource". When the resource's `resourceOffline` flag is set (the port of `MyLibrary.isResourceOffline()`), the button shows a "View" label with a visibility icon (or a play icon for video). When not downloaded, it shows "Download" — except for video, which shows "View" when the server is reachable (streaming) and "Download" when offline. The button is hidden entirely for non-HTML resources with no `resourceLocalAddress`, matching `setupDownloadButton`'s visibility rule. Tapping a non-HTML resource with no local address shows a "Link not available" snackbar (Kotlin's `link_not_available` toast). The state check is a pure data read (`resourceOffline`) rather than a filesystem probe, so the screen stays testable under the fake clock — the actual file-exists check belongs to the viewer, as in Kotlin. Two new l10n keys (`view`, `linkNotAvailable`) added to all six locale files. 4 widget tests cover the four button states. Phase 88 complete — ported survey resume from pending submission: the `take_survey_screen` now accepts a `submissionId` parameter and loads the existing submission's answers into the form controllers, so a user who started a survey but didn't finish can resume from where they left off rather than starting fresh. The survey list's "Continue" action passes the pending submission id. Phase 87 complete — ported the inactive-user dashboard (`InactiveDashboardFragment`) to Flutter: when a logged-in, non-guest user has no roles and is not an admin, `home_screen` now renders `InactiveDashboardScreen` instead of the bell dashboard — a centered "User not activated, please contact administrator" message with a "Submit Feedback" button that opens the feedback create screen. The check mirrors `DashboardActivity.handleGuestAccess`'s `rolesList.isEmpty() && userAdmin != true` gate; guests fall through to the bell dashboard since their access is gated per-action via `showGuestDialog`. Two new l10n keys (`inactiveMessage`, `submitFeedback`) added to all six locale files. 5 widget tests cover all four branches (inactive user, user with roles, admin with no roles, guest) plus the feedback navigation. Phase 86 complete — ported the examination exit-confirmation dialog (`HealthExaminationActivity.finish()`) to Flutter: the `add_examination_screen` now wraps its Scaffold in a `PopScope(canPop: false)` that intercepts the system back gesture and shows a dialog asking the user to confirm leaving, since in-progress examination data would be lost. "Cancel" dismisses the dialog and stays; "Yes, I want to exit" pops the screen. Two new l10n keys (`cancelAddingExamination`, `yesIWantToExit`) added to all six locale files. 3 widget tests cover the back-gesture interception and both dialog buttons. Phase 85 complete — ported the health profile editor (`AddHealthActivity`) to Flutter: the `add_health_screen` now has the full form (first/middle/last name, email, dob via date picker, birth place, phone, emergency contact name/contact/type with a Phone/Email spinner, special needs, other needs), loads the existing user + health profile into the controllers on mount, and saves through `HealthRepository.saveHealthProfile` which preserves `emergencyContact`/`emergencyContactType` when a new value is empty (matching Kotlin's logic). `my_health_screen` now shows `birthPlace` and `language` in the user profile card (Kotlin's `txtBirthPlace`/`txtLanguage`). `time_utils.formatDateToDDMMYYYY` validates numeric date parts so a non-date like `not-a-date` no longer crashes the form. 6 widget tests for the editor (form load, birth place field, contact-type dropdown, save-button state, required-field validation, end-to-end save round-trip), 43 repository tests (including health profile save/load), and a `time_utils_test` suite. Phase 84 complete — full diagnosis list + custom diagnosis chip cloud. Phase 83 complete — health examination detail dialog. Phase 82 complete — text size changer + reset/clear data. Phase 81 complete — ported the challenge dialog: the `user_challenge_actions` Drift table (schema v43, preserved), `recordSyncUserChallengeAction`/`hasUserCompletedSync` on `ActivitiesRepository`, the `ChallengeEvaluator` provider (port of `DashboardViewModel.evaluateChallengeDialog`), the `ChallengeDialog` widget with localized strings, the home-screen wiring, and the sync-start call that lights up the "sync completed" task. 16 new tests. Phase 80 complete — ported `ef80dda52` toast-on-change behavior to the resource detail screen: the add/remove snackbar now fires only when shelf membership actually changed, not on every button press. Three widget tests added. Phase 79 complete — harvest audit of the 2026-08-24/25 upstream batch (33 commits): all refactors, performance rewrites, and Android-lifecycle concerns with no behavioural port needed. Phase 78 complete — the duplicate `normalizeText` removed, so chat search folds accents the same way resource and course search do. Phases 76–77 and two unnumbered ports (blood-pressure validation, personal-note attachments) written up. Phase 75 complete — chat full-conversation
+**Last updated**: 2026-08-25 (Phase 90 complete — trim parity for three health-profile fields the Kotlin trims and the port did not, and the Status section corrected where it still called `ChallengeDialog` dead code after Phase 81 wired it; Phases 82–89 written up. Phase 89 complete — ported the resource detail download button state logic (`ResourceDetailFragment.setupDownloadButton`/`updateDownloadButtonState`) to Flutter: the `resource_detail_screen`'s primary action button now reflects download state instead of always showing "View Resource". When the resource's `resourceOffline` flag is set (the port of `MyLibrary.isResourceOffline()`), the button shows a "View" label with a visibility icon (or a play icon for video). When not downloaded, it shows "Download" — except for video, which shows "View" when the server is reachable (streaming) and "Download" when offline. The button is hidden entirely for non-HTML resources with no `resourceLocalAddress`, matching `setupDownloadButton`'s visibility rule. Tapping a non-HTML resource with no local address shows a "Link not available" snackbar (Kotlin's `link_not_available` toast). The state check is a pure data read (`resourceOffline`) rather than a filesystem probe, so the screen stays testable under the fake clock — the actual file-exists check belongs to the viewer, as in Kotlin. Two new l10n keys (`view`, `linkNotAvailable`) added to all six locale files. 4 widget tests cover the four button states. Phase 88 complete — ported survey resume from pending submission: the `take_survey_screen` now accepts a `submissionId` parameter and loads the existing submission's answers into the form controllers, so a user who started a survey but didn't finish can resume from where they left off rather than starting fresh. The survey list's "Continue" action passes the pending submission id. Phase 87 complete — ported the inactive-user dashboard (`InactiveDashboardFragment`) to Flutter: when a logged-in, non-guest user has no roles and is not an admin, `home_screen` now renders `InactiveDashboardScreen` instead of the bell dashboard — a centered "User not activated, please contact administrator" message with a "Submit Feedback" button that opens the feedback create screen. The check mirrors `DashboardActivity.handleGuestAccess`'s `rolesList.isEmpty() && userAdmin != true` gate; guests fall through to the bell dashboard since their access is gated per-action via `showGuestDialog`. Two new l10n keys (`inactiveMessage`, `submitFeedback`) added to all six locale files. 5 widget tests cover all four branches (inactive user, user with roles, admin with no roles, guest) plus the feedback navigation. Phase 86 complete — ported the examination exit-confirmation dialog (`HealthExaminationActivity.finish()`) to Flutter: the `add_examination_screen` now wraps its Scaffold in a `PopScope(canPop: false)` that intercepts the system back gesture and shows a dialog asking the user to confirm leaving, since in-progress examination data would be lost. "Cancel" dismisses the dialog and stays; "Yes, I want to exit" pops the screen. Two new l10n keys (`cancelAddingExamination`, `yesIWantToExit`) added to all six locale files. 3 widget tests cover the back-gesture interception and both dialog buttons. Phase 85 complete — ported the health profile editor (`AddHealthActivity`) to Flutter: the `add_health_screen` now has the full form (first/middle/last name, email, dob via date picker, birth place, phone, emergency contact name/contact/type with a Phone/Email spinner, special needs, other needs), loads the existing user + health profile into the controllers on mount, and saves through `HealthRepository.saveHealthProfile` which preserves `emergencyContact`/`emergencyContactType` when a new value is empty (matching Kotlin's logic). `my_health_screen` now shows `birthPlace` and `language` in the user profile card (Kotlin's `txtBirthPlace`/`txtLanguage`). `time_utils.formatDateToDDMMYYYY` validates numeric date parts so a non-date like `not-a-date` no longer crashes the form. 6 widget tests for the editor (form load, birth place field, contact-type dropdown, save-button state, required-field validation, end-to-end save round-trip), 43 repository tests (including health profile save/load), and a `time_utils_test` suite. Phase 84 complete — full diagnosis list + custom diagnosis chip cloud. Phase 83 complete — health examination detail dialog. Phase 82 complete — text size changer + reset/clear data. Phase 81 complete — ported the challenge dialog: the `user_challenge_actions` Drift table (schema v43, preserved), `recordSyncUserChallengeAction`/`hasUserCompletedSync` on `ActivitiesRepository`, the `ChallengeEvaluator` provider (port of `DashboardViewModel.evaluateChallengeDialog`), the `ChallengeDialog` widget with localized strings, the home-screen wiring, and the sync-start call that lights up the "sync completed" task. 16 new tests. Phase 80 complete — ported `ef80dda52` toast-on-change behavior to the resource detail screen: the add/remove snackbar now fires only when shelf membership actually changed, not on every button press. Three widget tests added. Phase 79 complete — harvest audit of the 2026-08-24/25 upstream batch (33 commits): all refactors, performance rewrites, and Android-lifecycle concerns with no behavioural port needed. Phase 78 complete — the duplicate `normalizeText` removed, so chat search folds accents the same way resource and course search do. Phases 76–77 and two unnumbered ports (blood-pressure validation, personal-note attachments) written up. Phase 75 complete — chat full-conversation
 search ported from `ChatViewModel.searchChats`: a `ChatSearchMode` enum with ranked matching
 (prefix before contains, first conversation before later), recency sort by
 `max(createdDate, updatedDate)`, and a hand-rolled NFD decomposition because
@@ -4120,5 +4197,5 @@ leader actions, and member-detail wiring. Phase 71 — the member detail
 screen, reached by tapping a member. Phase 70 — resource list sort
 toggles. Phase 69 — the ARB derivation tool merges instead of
 regenerating. Phase 68 — achievements. Phase 67 — tags and collections.)
-**Phase**: 80 of N (27 of 28 UI packages have a screen — see Status for what that does and
+**Phase**: 90 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)

@@ -260,6 +260,30 @@ center. The congratulations variant fires once via
 `hasShownChallengeCongratsProvider` (backed by `PlanetPrefs`). Four new
 l10n keys replace the dialog's hardcoded English strings.
 
+Phases 82–89 fill in settings, health and dashboard gaps, all Kotlin ports:
+text size and **reset app** (`SettingsActivity`), the examination detail dialog,
+the full diagnosis list with its custom-diagnosis chip cloud, the health profile
+editor, the examination exit-confirmation `PopScope`, the inactive-user
+dashboard (`rolesList.isEmpty() && userAdmin != true`), survey resume from a
+pending submission, and the resource-detail download button state. Two are worth
+knowing in detail. **Reset app** is the only destructive action in the app:
+behind a Yes/No confirmation it runs `AppDatabase.clearAllData()` (a batched
+`DELETE FROM` over `allTables`) plus `PlanetPrefs.clearAllData()`, which calls
+`_secureStorage.deleteAll()` so the password and PIN do not outlive the server
+they belong to; `onboardingComplete` is kept, and undelivered outbox rows are
+wiped along with everything else — correct here, unlike a schema bump, which is
+exactly what `localAuthorityTables` protects those rows from. **Survey resume**
+updates the existing submission row rather than inserting and keys answers
+`<submissionId>:<questionId>`, so resuming cannot produce a second submission.
+
+Phase 90 corrects two things in that batch. `saveHealthProfile` trimmed
+`emergencyContact`/`emergencyContactType` but not `emergencyContactName`,
+`specialNeeds` or `notes`, where Kotlin trims all five — so the same input
+stored differently in the two apps and a whitespace-only entry read as a real
+note. And three passages, the headline Status section among them, still called
+`ChallengeDialog` "built and called from nowhere" after Phase 81 gave it a
+caller; `CustomDropdown` genuinely is still uncalled, so only that half changed.
+
 ### Documentation Map
 
 | Document | Read it when… |

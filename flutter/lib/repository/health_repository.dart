@@ -278,15 +278,19 @@ class HealthRepository {
     final newContact = data['emergencyContact']?.trim() ?? '';
     final newType = data['emergencyContactType']?.trim() ?? '';
     final profile = existing.copyWith(
-      emergencyContactName: data['emergencyContactName'] ?? '',
+      // Trimmed like every other field here, and like the Kotlin, which reads
+      // each of these as `(userData[k] as? String)?.trim() ?: ""`. Without the
+      // trim a value typed with a trailing space stored differently in the two
+      // apps, and a whitespace-only entry stored as whitespace instead of "".
+      emergencyContactName: data['emergencyContactName']?.trim() ?? '',
       emergencyContact: newContact.isEmpty
           ? existing.emergencyContact
           : newContact,
       emergencyContactType: newType.isEmpty
           ? existing.emergencyContactType
           : newType,
-      specialNeeds: data['specialNeeds'] ?? '',
-      notes: data['notes'] ?? '',
+      specialNeeds: data['specialNeeds']?.trim() ?? '',
+      notes: data['notes']?.trim() ?? '',
     );
     health = health.copyWith(profile: profile);
 

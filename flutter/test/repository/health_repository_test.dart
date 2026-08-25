@@ -779,6 +779,33 @@ void main() {
       expect(health.profile!.notes, '');
     });
 
+    test('saveHealthProfile trims every profile field', () async {
+      // The Kotlin reads each of these as `(userData[k] as? String)?.trim()`,
+      // and the port trimmed emergencyContact/emergencyContactType but not
+      // name/specialNeeds/notes — so the same typed input stored differently
+      // in the two apps, and a whitespace-only entry survived as whitespace
+      // where the Kotlin stores "".
+      await seedUser();
+      final repo = createRepository();
+
+      await repo.saveHealthProfile('user-1', {
+        'firstName': 'Alice',
+        'emergencyContactName': '  Bob  ',
+        'emergencyContact': '  +254701  ',
+        'emergencyContactType': '  Phone  ',
+        'specialNeeds': '  Asthma  ',
+        'notes': '   ',
+      });
+
+      final health = await repo.getHealthProfile('user-1');
+      expect(health!.profile!.emergencyContactName, 'Bob');
+      expect(health.profile!.emergencyContact, '+254701');
+      expect(health.profile!.emergencyContactType, 'Phone');
+      expect(health.profile!.specialNeeds, 'Asthma');
+      // Whitespace-only collapses to empty, so it does not read as a note.
+      expect(health.profile!.notes, '');
+    });
+
     test('saveHealthProfile is a no-op when user does not exist', () async {
       final repo = createRepository();
       await repo.saveHealthProfile('nonexistent', {'firstName': 'Ghost'});
