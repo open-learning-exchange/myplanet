@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/app_providers.dart';
 import '../../providers/courses_providers.dart';
 import '../../providers/search_activity_providers.dart';
+import '../../providers/session_provider.dart';
 import '../../providers/sync_state.dart';
 import '../../providers/tags_providers.dart';
 import '../../providers/view_mode_providers.dart';
@@ -40,6 +42,14 @@ class _CoursesScreenState extends ConsumerState<CoursesScreen> {
   List<Tag> _lastSelectedTags = const [];
   ProviderContainer? _container;
 
+  /// Multi-selection state — port of `CourseSelectionController`. Long-press
+  /// a course tile to enter selection mode; tapping a tile then toggles
+  /// membership instead of navigating. The selection bar mirrors the
+  /// Kotlin's select-all + add-to-my-courses (or leave, in the My Courses
+  /// view) row.
+  final Set<String> _selectedCourseIds = {};
+  bool _selectionMode = false;
+
   @override
   void dispose() {
     _saveSearchActivity();
@@ -71,12 +81,99 @@ class _CoursesScreenState extends ConsumerState<CoursesScreen> {
     );
   }
 
+  void _enterSelection(String courseId) {
+    setState(() {
+      _selectionMode = true;
+      _selectedCourseIds.add(courseId);
+    });
+  }
+
+  void _toggleSelection(String courseId) {
+    setState(() {
+      if (!_selectedCourseIds.add(courseId)) {
+        _selectedCourseIds.remove(courseId);
+      }
+      if (_selectedCourseIds.isEmpty) _selectionMode = false;
+    });
+  }
+
+  void _clearSelection() {
+    setState(() {
+      _selectedCourseIds.clear();
+      _selectionMode = false;
+    });
+  }
+
+  void _toggleSelectAll(List<CourseRow> visibleItems) {
+    setState(() {
+      final allSelected = visibleItems.every(
+        (c) => _selectedCourseIds.contains(c.id),
+      );
+      if (allSelected) {
+        _selectedCourseIds.clear();
+      } else {
+        _selectedCourseIds.addAll(visibleItems.map((c) => c.id));
+      }
+    });
+  }
+
+  Future<void> _batchSetMembership(
+    List<CourseRow> selectedCourses, {
+    required String? userId,
+    required bool joined,
+  }) async {
+    final l10n = AppLocalizations.of(context);
+    if (userId == null) return;
+    final repo = ref.read(coursesRepositoryProvider);
+    for (final course in selectedCourses) {
+      await repo.setShelfMembership(course.id, userId, joined: joined);
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          joined
+              ? l10n.addedToMyCourses(selectedCourses.length)
+              : l10n.leftCourses(selectedCourses.length),
+        ),
+      ),
+    );
+    _clearSelection();
+  }
+
+  Future<void> _confirmLeave(
+    List<CourseRow> selectedCourses, {
+    required String? userId,
+  }) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: Text(l10n.leaveCoursesConfirm(selectedCourses.length)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.leaveCourse),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await _batchSetMembership(selectedCourses, userId: userId, joined: false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final courses = ref.watch(filteredSortedCoursesProvider);
     final syncState = ref.watch(courseSyncProvider);
     final viewMode = ref.watch(courseViewModeProvider);
+    final userId = ref.watch(sessionProvider).valueOrNull?.id;
 
     ref.listen<SyncUiState>(courseSyncProvider, (previous, next) {
       final messenger = ScaffoldMessenger.of(context);
@@ -217,33 +314,138 @@ class _CoursesScreenState extends ConsumerState<CoursesScreen> {
           if (visibleItems.isEmpty) {
             return Center(child: Text(l10n.noDataAvailable));
           }
-          if (viewMode == ListViewMode.grid) {
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                final spanCount = GridSpanCalculator.columnCount(
-                  constraints.maxWidth / MediaQuery.devicePixelRatioOf(context),
-                );
-                return GridView.builder(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: spanCount,
-                    childAspectRatio: 0.85,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  padding: const EdgeInsets.all(8),
+          final selectedCourses = visibleItems
+              .where((c) => _selectedCourseIds.contains(c.id))
+              .toList();
+          final courseContent = viewMode == ListViewMode.grid
+              ? LayoutBuilder(
+                  builder: (context, constraints) {
+                    final spanCount = GridSpanCalculator.columnCount(
+                      constraints.maxWidth /
+                          MediaQuery.devicePixelRatioOf(context),
+                    );
+                    return GridView.builder(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: spanCount,
+                        childAspectRatio: 0.85,
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      itemCount: visibleItems.length,
+                      itemBuilder: (context, index) => _CourseGridTile(
+                        visibleItems[index],
+                        selectionMode: _selectionMode,
+                        selected: _selectedCourseIds.contains(
+                          visibleItems[index].id,
+                        ),
+                        onTap: _selectionMode
+                            ? () => _toggleSelection(visibleItems[index].id)
+                            : null,
+                        onLongPress: () =>
+                            _enterSelection(visibleItems[index].id),
+                      ),
+                    );
+                  },
+                )
+              : ListView.separated(
                   itemCount: visibleItems.length,
-                  itemBuilder: (context, index) =>
-                      _CourseGridTile(visibleItems[index]),
+                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  itemBuilder: (context, index) => _CourseTile(
+                    visibleItems[index],
+                    selectionMode: _selectionMode,
+                    selected: _selectedCourseIds.contains(
+                      visibleItems[index].id,
+                    ),
+                    onTap: _selectionMode
+                        ? () => _toggleSelection(visibleItems[index].id)
+                        : null,
+                    onLongPress: () => _enterSelection(visibleItems[index].id),
+                  ),
                 );
-              },
-            );
-          }
-          return ListView.separated(
-            itemCount: visibleItems.length,
-            separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (context, index) => _CourseTile(visibleItems[index]),
+          if (!_selectionMode) return courseContent;
+          return Column(
+            children: [
+              _CourseSelectionBar(
+                selectedCount: _selectedCourseIds.length,
+                allSelected: visibleItems.every(
+                  (c) => _selectedCourseIds.contains(c.id),
+                ),
+                isMyCoursesView: _lastFilter.myCoursesOnly,
+                onToggleAll: () => _toggleSelectAll(visibleItems),
+                onAdd: () => _batchSetMembership(
+                  selectedCourses,
+                  userId: userId,
+                  joined: true,
+                ),
+                onLeave: () => _confirmLeave(selectedCourses, userId: userId),
+                onClose: _clearSelection,
+              ),
+              Expanded(child: courseContent),
+            ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// Port of `CourseSelectionController`'s action row: a select-all toggle and
+/// either the add-to-my-courses action (All Courses view) or the leave action
+/// (My Courses view). Shown only while the list is in selection mode.
+class _CourseSelectionBar extends StatelessWidget {
+  const _CourseSelectionBar({
+    required this.selectedCount,
+    required this.allSelected,
+    required this.isMyCoursesView,
+    required this.onToggleAll,
+    required this.onAdd,
+    required this.onLeave,
+    required this.onClose,
+  });
+
+  final int selectedCount;
+  final bool allSelected;
+  final bool isMyCoursesView;
+  final VoidCallback onToggleAll;
+  final VoidCallback onAdd;
+  final VoidCallback onLeave;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final hasSelection = selectedCount > 0;
+    return Material(
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.close),
+              tooltip: l10n.cancel,
+              onPressed: onClose,
+            ),
+            TextButton(
+              onPressed: onToggleAll,
+              child: Text(allSelected ? l10n.unselectAll : l10n.selectAll),
+            ),
+            const Spacer(),
+            Text(l10n.coursesSelected(selectedCount)),
+            const SizedBox(width: 8),
+            if (isMyCoursesView)
+              FilledButton.tonal(
+                onPressed: hasSelection ? onLeave : null,
+                child: Text(l10n.leaveCourse),
+              )
+            else
+              FilledButton.tonal(
+                onPressed: hasSelection ? onAdd : null,
+                child: Text(l10n.joinCourse),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -453,9 +655,19 @@ class _SortButton extends StatelessWidget {
 }
 
 class _CourseTile extends StatelessWidget {
-  const _CourseTile(this.course);
+  const _CourseTile(
+    this.course, {
+    this.selectionMode = false,
+    this.selected = false,
+    this.onTap,
+    this.onLongPress,
+  });
 
   final CourseRow course;
+  final bool selectionMode;
+  final bool selected;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -465,9 +677,12 @@ class _CourseTile extends StatelessWidget {
       if (course.subjectLevel != null && course.subjectLevel!.isNotEmpty)
         course.subjectLevel!,
     ];
-
+    final leading = selectionMode
+        ? Checkbox(value: selected, onChanged: (_) => onTap?.call())
+        : const Icon(Icons.school_outlined);
     return ListTile(
-      leading: const Icon(Icons.school_outlined),
+      leading: leading,
+      selected: selected,
       title: Text(
         course.courseTitle ?? '',
         maxLines: 2,
@@ -480,9 +695,15 @@ class _CourseTile extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () =>
-          context.go('${Routes.courses}/${Uri.encodeComponent(course.id)}'),
+      trailing: selectionMode
+          ? (selected ? const Icon(Icons.check_circle) : null)
+          : const Icon(Icons.chevron_right),
+      onTap: selectionMode
+          ? onTap
+          : () => context.go(
+              '${Routes.courses}/${Uri.encodeComponent(course.id)}',
+            ),
+      onLongPress: onLongPress,
     );
   }
 }
@@ -492,9 +713,19 @@ class _CourseTile extends StatelessWidget {
 /// grid mode — a card with a subject icon placeholder, the title, and the
 /// grade/subject subtitle.
 class _CourseGridTile extends ConsumerWidget {
-  const _CourseGridTile(this.course);
+  const _CourseGridTile(
+    this.course, {
+    this.selectionMode = false,
+    this.selected = false,
+    this.onTap,
+    this.onLongPress,
+  });
 
   final CourseRow course;
+  final bool selectionMode;
+  final bool selected;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -511,48 +742,69 @@ class _CourseGridTile extends ConsumerWidget {
 
     return Card(
       clipBehavior: Clip.antiAlias,
+      color: selected
+          ? theme.colorScheme.primaryContainer
+          : theme.cardTheme.color,
       child: InkWell(
-        onTap: () =>
-            context.go('${Routes.courses}/${Uri.encodeComponent(course.id)}'),
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                // Port of `CoursesAdapter.bindCover` (818732139): when the
-                // course has a cover attachment it is fetched via the
-                // authenticated `courseCoverImageProvider` and shown with
-                // `Image.memory`; otherwise the subject-tinted background
-                // with the subject icon is shown, matching the Kotlin's
-                // `setCoverColor` + `subjectIconRes` fallback path.
-                child: _CourseCover(
-                  courseId: course.id,
-                  coverFileName: coverFileName,
-                  subject: subject,
-                  subjectLabel: courseSubjectLabel(subject, l10n),
-                ),
+        onTap: selectionMode
+            ? onTap
+            : () => context.go(
+                '${Routes.courses}/${Uri.encodeComponent(course.id)}',
               ),
-              const SizedBox(height: 4),
-              Text(
-                course.courseTitle ?? '',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              if (subtitleParts.isNotEmpty)
-                Text(
-                  subtitleParts.join(' · '),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+        onLongPress: onLongPress,
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    // Port of `CoursesAdapter.bindCover` (818732139): when the
+                    // course has a cover attachment it is fetched via the
+                    // authenticated `courseCoverImageProvider` and shown with
+                    // `Image.memory`; otherwise the subject-tinted background
+                    // with the subject icon is shown, matching the Kotlin's
+                    // `setCoverColor` + `subjectIconRes` fallback path.
+                    child: _CourseCover(
+                      courseId: course.id,
+                      coverFileName: coverFileName,
+                      subject: subject,
+                      subjectLabel: courseSubjectLabel(subject, l10n),
+                    ),
                   ),
+                  const SizedBox(height: 4),
+                  Text(
+                    course.courseTitle ?? '',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  if (subtitleParts.isNotEmpty)
+                    Text(
+                      subtitleParts.join(' · '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            if (selectionMode && selected)
+              Positioned(
+                top: 4,
+                right: 4,
+                child: Icon(
+                  Icons.check_circle,
+                  color: theme.colorScheme.primary,
+                  size: 20,
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );

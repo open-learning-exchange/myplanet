@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -162,6 +163,33 @@ CourseRow buildCourseRow({
     description: description,
     coverFileName: coverFileName,
     createdDate: createdDate,
+  );
+}
+
+/// A [CoursesCompanion] counterpart of [buildCourseRow] for tests that write
+/// to the in-memory database rather than overriding the stream.
+CoursesCompanion buildCourseCompanion({
+  required String id,
+  String? courseTitle,
+  String? gradeLevel,
+  String? subjectLevel,
+  String? description,
+  String? coverFileName,
+  List<String> userId = const [],
+  int createdDate = 0,
+}) {
+  return CoursesCompanion(
+    id: Value(id),
+    couchId: Value(id),
+    courseId: Value(id),
+    courseTitle: Value(courseTitle),
+    courseTitleNormal: Value(courseTitle?.toLowerCase()),
+    gradeLevel: Value(gradeLevel),
+    subjectLevel: Value(subjectLevel),
+    description: Value(description),
+    coverFileName: Value(coverFileName),
+    userId: Value(userId),
+    createdDate: Value(createdDate),
   );
 }
 

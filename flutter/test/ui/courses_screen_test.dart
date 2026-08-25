@@ -7,6 +7,7 @@ import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/courses_providers.dart';
 import 'package:myplanet/providers/ratings_provider.dart';
+import 'package:myplanet/providers/session_provider.dart';
 import 'package:myplanet/repository/progress_repository.dart';
 import 'package:myplanet/repository/ratings_repository.dart';
 import 'package:myplanet/ui/courses/course_detail_screen.dart';
@@ -36,6 +37,17 @@ class _FakeProgressRepository implements ProgressRepository {
   @override
   dynamic noSuchMethod(Invocation invocation) =>
       throw UnimplementedError('ProgressRepository.${invocation.memberName}');
+}
+
+/// A [SessionNotifier] that returns a fixed user so the multi-select
+/// actions have a userId to write shelf membership against.
+class _TestSessionNotifier extends SessionNotifier {
+  _TestSessionNotifier(this.user);
+
+  final UserRow? user;
+
+  @override
+  Future<UserRow?> build() async => user;
 }
 
 void main() {
@@ -416,6 +428,201 @@ void main() {
       // subject fallback icon is not.
       expect(find.byType(Image), findsOneWidget);
       expect(find.byIcon(Icons.calculate_outlined), findsNothing);
+    });
+
+    testWidgets('long-press enters selection mode with a select-all bar', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrapScreen(
+          const CoursesScreen(),
+          overrides: courseOverrides([
+            buildCourseRow(id: 'c1', courseTitle: 'Algebra'),
+            buildCourseRow(id: 'c2', courseTitle: 'Biology'),
+          ]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // No selection bar before long-press.
+      expect(find.text('Select All'), findsNothing);
+
+      await tester.longPress(find.text('Algebra'));
+      await tester.pumpAndSettle();
+
+      // The bar appears, and both tiles are in selection mode (one checkbox
+      // each); the long-pressed course is checked, the other is not.
+      expect(find.text('Select All'), findsOneWidget);
+      expect(find.byType(Checkbox), findsNWidgets(2));
+      expect(
+        tester.widgetList<Checkbox>(find.byType(Checkbox)).first.value,
+        isTrue,
+      );
+      expect(
+        tester.widgetList<Checkbox>(find.byType(Checkbox)).last.value,
+        isFalse,
+      );
+    });
+
+    testWidgets('select-all toggles every tile then unselects', (tester) async {
+      await tester.pumpWidget(
+        wrapScreen(
+          const CoursesScreen(),
+          overrides: courseOverrides([
+            buildCourseRow(id: 'c1', courseTitle: 'Algebra'),
+            buildCourseRow(id: 'c2', courseTitle: 'Biology'),
+          ]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.longPress(find.text('Algebra'));
+      await tester.pumpAndSettle();
+
+      // Tap "Select All" — both tiles gain a checkbox.
+      await tester.tap(find.text('Select All'));
+      await tester.pumpAndSettle();
+      expect(find.byType(Checkbox), findsNWidgets(2));
+      // The toggle text flips to Unselect All.
+      expect(find.text('Unselect All'), findsOneWidget);
+
+      // Tap again to clear.
+      await tester.tap(find.text('Unselect All'));
+      await tester.pumpAndSettle();
+      // Tiles still show checkboxes (unchecked) — selection mode persists
+      // so the user can re-select without long-pressing again.
+      expect(find.byType(Checkbox), findsNWidgets(2));
+      expect(
+        tester.widgetList<Checkbox>(find.byType(Checkbox)).first.value,
+        isFalse,
+      );
+      // The toggle text flips back to Select All (none selected).
+      expect(find.text('Select All'), findsOneWidget);
+    });
+
+    testWidgets('add-to-my-courses writes shelf membership', (tester) async {
+      final user = UserRow(
+        id: 'user-1',
+        name: 'ada',
+        rolesList: const ['learner'],
+        userAdmin: false,
+        joinDate: 0,
+        isArchived: false,
+        isUpdated: false,
+      );
+      final db = AppDatabase.memory();
+      addTearDown(() async => db.close());
+      await db.courseDao.upsertAll([
+        buildCourseCompanion(id: 'c1', courseTitle: 'Algebra'),
+        buildCourseCompanion(id: 'c2', courseTitle: 'Biology'),
+      ], const []);
+      await tester.pumpWidget(
+        wrapScreen(
+          const CoursesScreen(),
+          overrides: [
+            coursesStreamProvider.overrideWith(
+              (ref) => Stream.value([
+                buildCourseRow(id: 'c1', courseTitle: 'Algebra'),
+                buildCourseRow(id: 'c2', courseTitle: 'Biology'),
+              ]),
+            ),
+            gradeLevelsProvider.overrideWith((ref) => Stream.value(const [])),
+            subjectLevelsProvider.overrideWith((ref) => Stream.value(const [])),
+            sessionProvider.overrideWith(() => _TestSessionNotifier(user)),
+            courseDaoProvider.overrideWith((ref) => db.courseDao),
+            removedLogDaoProvider.overrideWith((ref) => db.removedLogDao),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The two synced courses appear through the overridden stream.
+      expect(find.text('Algebra'), findsOneWidget);
+      expect(find.text('Biology'), findsOneWidget);
+
+      await tester.longPress(find.text('Algebra'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Select All'));
+      await tester.pumpAndSettle();
+
+      // Add both to the user's shelf.
+      await tester.tap(find.text('Add to my courses'));
+      await tester.pumpAndSettle();
+
+      // The snackbar reports the batch, and selection mode exits.
+      expect(find.text('2 courses added'), findsOneWidget);
+      expect(find.text('Select All'), findsNothing);
+
+      // The membership rows were actually written to the db.
+      expect(await db.courseDao.isMyCourse('c1', 'user-1'), isTrue);
+      expect(await db.courseDao.isMyCourse('c2', 'user-1'), isTrue);
+    });
+
+    testWidgets('leave shows a confirm dialog before writing', (tester) async {
+      final user = UserRow(
+        id: 'user-1',
+        name: 'ada',
+        rolesList: const ['learner'],
+        userAdmin: false,
+        joinDate: 0,
+        isArchived: false,
+        isUpdated: false,
+      );
+      final db = AppDatabase.memory();
+      addTearDown(() async => db.close());
+      await db.courseDao.upsertAll([
+        buildCourseCompanion(id: 'c1', courseTitle: 'Algebra'),
+      ], const []);
+      await tester.pumpWidget(
+        wrapScreen(
+          const CoursesScreen(),
+          overrides: [
+            ...courseOverrides([
+              buildCourseRow(
+                id: 'c1',
+                courseTitle: 'Algebra',
+                userId: const ['user-1'],
+              ),
+            ]),
+            sessionProvider.overrideWith(() => _TestSessionNotifier(user)),
+            courseDaoProvider.overrideWith((ref) => db.courseDao),
+            removedLogDaoProvider.overrideWith((ref) => db.removedLogDao),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Switch to the My Courses view so the leave action is offered.
+      await tester.tap(find.text('My courses'));
+      await tester.pumpAndSettle();
+
+      await tester.longPress(find.text('Algebra'));
+      await tester.pumpAndSettle();
+
+      // My-courses view shows the leave action, not add.
+      expect(find.text('Add to my courses'), findsNothing);
+      expect(find.text('Remove from my courses'), findsOneWidget);
+
+      await tester.tap(find.text('Remove from my courses'));
+      await tester.pumpAndSettle();
+
+      // The confirmation dialog appears first; no snackbar yet.
+      expect(
+        find.text('Are you sure you want to remove this course?'),
+        findsOneWidget,
+      );
+      expect(find.text('1 course removed'), findsNothing);
+
+      // Confirm — the membership write fires and selection exits.
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.widgetWithText(FilledButton, 'Remove from my courses'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('1 course removed'), findsOneWidget);
+      expect(find.text('Select All'), findsNothing);
     });
   });
 

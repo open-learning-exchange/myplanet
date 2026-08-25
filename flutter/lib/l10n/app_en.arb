@@ -1043,6 +1043,23 @@
   "deleteSelected": "Delete Selected",
   "deleteAll": "Delete All",
   "selectAll": "Select All",
+  "unselectAll": "Unselect All",
+  "addedToMyCourses": "{count, plural, =1{1 course added} other{{count} courses added}}",
+  "@addedToMyCourses": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "leftCourses": "{count, plural, =1{1 course removed} other{{count} courses removed}}",
+  "@leftCourses": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "coursesSelected": "{count, plural, =1{1 selected} other{{count} selected}}",
+  "@coursesSelected": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "leaveCoursesConfirm": "{count, plural, =1{Are you sure you want to remove this course?} other{Are you sure you want to remove these courses?}}",
+  "@leaveCoursesConfirm": {
+    "placeholders": {"count": {"type": "int"}}
+  },
   "noStorageUsed": "No downloaded files found",
   "availableSpace": "Available space",
   "freeUpSpace": "Free up space",
