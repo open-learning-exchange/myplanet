@@ -133,9 +133,9 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private fun refreshResourcesData() {
         if (!isAdded || requireActivity().isFinishing) return
-        val owner = view?.let { viewLifecycleOwner } ?: return
+        if (view == null) return
         refreshJob?.cancel()
-        refreshJob = owner.lifecycleScope.launch {
+        refreshJob = viewLifecycleOwner.lifecycleScope.launch {
             try {
                 allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
                 lastSearchQuery = null
