@@ -37,8 +37,8 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 class ProgressRepositoryImplTest {
 
     private lateinit var repository: ProgressRepositoryImpl
-    private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
+    private val dispatcherProvider: DispatcherProvider = org.ole.planet.myplanet.utils.TestDispatcherProvider(testDispatcher)
     private val testScope = TestScope(testDispatcher)
     private lateinit var mockCoursesRepository: CoursesRepository
     private val courseProgressDao: CourseProgressDao = mockk(relaxed = true)
@@ -50,7 +50,6 @@ class ProgressRepositoryImplTest {
 
     @Before
     fun setUp() {
-        every { dispatcherProvider.io } returns testDispatcher
         mockCoursesRepository = mockk<CoursesRepository>()
         coEvery { mockCoursesRepository.getMyCourses(any()) } returns emptyList()
         repository = spyk(

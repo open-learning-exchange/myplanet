@@ -40,7 +40,7 @@ class TeamViewModel @Inject constructor(
     private val _taskList = MutableStateFlow<List<TeamTask>>(emptyList())
     val taskList: StateFlow<List<TeamTask>> = _taskList
 
-    fun getTeamUpdateFlow() = realtimeSyncManager.dataUpdateFlow
+    fun getTeamUpdateFlow() = realtimeSyncManager.updatesFor("teams")
 
     fun loadTasks(teamId: String) {
         loadTaskJob?.cancel()
