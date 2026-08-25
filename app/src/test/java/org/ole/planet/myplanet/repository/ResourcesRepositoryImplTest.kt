@@ -85,6 +85,71 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
+    fun `setUserLibrary returns null when user is not logged in`() = runTest {
+        coEvery { userRepository.getUserModel() } returns null
+
+        val result = repository.setUserLibrary("res-id", true)
+
+        assertEquals(null, result)
+        coVerify(exactly = 0) { myLibraryDao.getByResourceId(any()) }
+    }
+
+    @Test
+    fun `setUserLibrary returns existing library and no-ops when already added`() = runTest {
+        val mockUser = org.ole.planet.myplanet.model.UserEntity().apply { id = "user-123" }
+        coEvery { userRepository.getUserModel() } returns mockUser
+
+        val mockLibrary = MyLibrary().apply {
+            id = "res-id"
+            userId = listOf("user-123")
+        }
+        coEvery { myLibraryDao.getByResourceId("res-id") } returns mockLibrary
+
+        val result = repository.setUserLibrary("res-id", true)
+
+        assertEquals(mockLibrary, result)
+        coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+    }
+
+    @Test
+    fun `setUserLibrary returns existing library and no-ops when already removed`() = runTest {
+        val mockUser = org.ole.planet.myplanet.model.UserEntity().apply { id = "user-123" }
+        coEvery { userRepository.getUserModel() } returns mockUser
+
+        val mockLibrary = MyLibrary().apply {
+            id = "res-id"
+            userId = emptyList()
+        }
+        coEvery { myLibraryDao.getByResourceId("res-id") } returns mockLibrary
+
+        val result = repository.setUserLibrary("res-id", false)
+
+        assertEquals(mockLibrary, result)
+        coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+    }
+
+    @Test
+    fun `setUserLibrary returns updated library on successful toggle`() = runTest {
+        val mockUser = org.ole.planet.myplanet.model.UserEntity().apply { id = "user-123" }
+        coEvery { userRepository.getUserModel() } returns mockUser
+
+        val mockLibrary = MyLibrary().apply {
+            id = "res-id"
+            userId = mutableListOf()
+        }
+
+        // Mock the lookups
+        coEvery { myLibraryDao.getByResourceId("res-id") } returns mockLibrary
+        coEvery { myLibraryDao.getById("res-id") } returns mockLibrary
+
+        val result = repository.setUserLibrary("res-id", true)
+
+        // updateUserLibrary mutates and calls upsert
+        coVerify { myLibraryDao.upsert(mockLibrary) }
+        assertTrue(result?.userId?.contains("user-123") == true)
+    }
+
+    @Test
     fun `getAllLibraries returns list of MyLibrary`() = runTest {
         val mockLibrary = MyLibrary().apply { title = "Test Library" }
         coEvery { myLibraryDao.getAll() } returns listOf(mockLibrary)
