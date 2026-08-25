@@ -784,3 +784,5 @@ These are real patterns that have caused bugs in this codebase before.
 **Don't swallow `CancellationException` in coroutines** — it breaks cooperative cancellation.
 
 **Don't block the main thread** with database queries, file I/O, or network calls. Use `withContext(dispatcherProvider.io)`.
+
+**Don't add `@Index` to fields storing JSON lists (like `userId`) if queried using `LIKE` with wildcards.** B-tree indices cannot optimize leading-wildcard queries (e.g. `LIKE '%"id"%'`). Adding an index will do nothing for performance but will trigger a database version bump and destructive migration, wiping local unsynced data.
