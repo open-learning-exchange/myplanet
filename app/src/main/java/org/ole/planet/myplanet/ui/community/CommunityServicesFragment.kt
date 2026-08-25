@@ -81,15 +81,6 @@ class CommunityServicesFragment : BaseTeamFragment() {
     private fun setRecyclerView(links: List<MyTeam>) {
         val parent = binding?.llServices ?: return
 
-        val currentTitles = (0 until parent.childCount).mapNotNull { i ->
-            (parent.getChildAt(i) as? TextView)?.text?.toString()
-        }
-        val incomingTitles = links.map { it.title }
-
-        if (currentTitles == incomingTitles) {
-            return
-        }
-
         links.forEachIndexed { index, team ->
             val b: TextView
             if (index < parent.childCount) {
