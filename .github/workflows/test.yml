@@ -97,7 +97,7 @@ jobs:
         with:
           name: test-reports-${{ matrix.build }}-shard-${{ matrix.shard }}
           overwrite: true
-          if-no-files-found: warn
+          if-no-files-found: error
           path: |
             app/build/test-results/
           retention-days: 7
