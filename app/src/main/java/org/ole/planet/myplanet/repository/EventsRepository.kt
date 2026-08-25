@@ -10,7 +10,7 @@ interface EventsRepository {
     suspend fun getMeetupById(meetupId: String): Meetup?
     suspend fun getMeetupByLocalId(id: String): Meetup?
     suspend fun getJoinedMembers(meetupId: String): List<UserEntity>
-    suspend fun toggleCurrentUserAttendance(meetupId: String): Meetup?
+    suspend fun toggleAttendance(meetupId: String, userId: String): Meetup?
     suspend fun updateMeetup(meetupId: String, title: String, description: String,
                              startDate: Long, endDate: Long, startTime: String,
                              endTime: String, meetupLocation: String, meetupLink: String,

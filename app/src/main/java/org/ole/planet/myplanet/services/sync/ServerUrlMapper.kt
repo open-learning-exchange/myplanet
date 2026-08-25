@@ -52,11 +52,12 @@ class ServerUrlMapper @Inject constructor(
     }
 
     fun updateUrlPreferences(editor: SharedPreferences.Editor, uri: Uri, alternativeUrl: String, url: String, settings: SharedPreferences) {
+        val altUri = alternativeUrl.toUri()
         val urlUser: String
         val urlPwd: String
 
         if (alternativeUrl.contains("@")) {
-            val userinfo = getUserInfo(uri)
+            val userinfo = getUserInfo(altUri)
             urlUser = userinfo[0]
             urlPwd = userinfo[1]
         } else {
@@ -64,7 +65,6 @@ class ServerUrlMapper @Inject constructor(
             urlPwd = settings.getString("serverPin", "") ?: ""
         }
 
-        val altUri = alternativeUrl.toUri()
         val scheme = altUri.scheme
         val host = altUri.host
         val port = if (altUri.port == -1) {
