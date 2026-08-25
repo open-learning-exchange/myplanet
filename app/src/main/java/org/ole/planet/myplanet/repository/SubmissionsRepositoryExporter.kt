@@ -78,7 +78,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
                 canvas.drawText("Date: ${TimeUtils.getFormattedDateWithTime(submission.lastUpdateTime)}", MARGIN, yPosition, normalPaint)
                 yPosition += LINE_HEIGHT * 2
 
-                val questions = examId?.let { questionDao.getByExamId(it).map { question -> question } }.orEmpty()
+                val questions = examId?.let { questionDao.getByExamId(it) }.orEmpty()
 
                 val answersMap = submission.answers?.associateBy { it.questionId } ?: emptyMap()
 
@@ -176,7 +176,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
                 yPosition += LINE_HEIGHT * 3
 
                 val examId = getExamId(submissions.firstOrNull()?.parentId)
-                val questions = examId?.let { questionDao.getByExamId(it).map { question -> question } }.orEmpty()
+                val questions = examId?.let { questionDao.getByExamId(it) }.orEmpty()
 
                 submissions.forEachIndexed { submissionIndex, submission ->
                     if (yPosition > PAGE_HEIGHT - MARGIN - 100) {
