@@ -58,9 +58,11 @@ class DownloadWorker @AssistedInject constructor(
             var completedCount = 0
             val results = mutableListOf<Boolean>()
 
+            val authHeader = UrlUtils.header
+
             urls.forEachIndexed { index, url ->
                 try {
-                    val success = downloadFile(url, index, urls.size)
+                    val success = downloadFile(url, authHeader, index, urls.size)
                     results.add(success)
                     completedCount++
 
@@ -81,7 +83,7 @@ class DownloadWorker @AssistedInject constructor(
         }
     }
 
-    private suspend fun downloadFile(url: String, index: Int, total: Int): Boolean {
+    private suspend fun downloadFile(url: String, authHeader: String, index: Int, total: Int): Boolean {
         if (FileUtils.checkFileExist(context, url)) {
             try {
                 resourcesRepository.markResourceOfflineByUrl(url)
@@ -91,7 +93,7 @@ class DownloadWorker @AssistedInject constructor(
             return true
         }
         return try {
-            val response = downloadRepository.downloadFileResponse(url, UrlUtils.header)
+            val response = downloadRepository.downloadFileResponse(url, authHeader)
             when (response) {
                 is DownloadResult.Success -> {
                     downloadFileBody(response.body, url, index, total)

@@ -33,13 +33,15 @@ class PhotoUploader @Inject constructor(
         withContext(dispatcherProvider.io) {
             data class UploadedPhotoInfo(val photoId: String, val rev: String, val id: String)
 
+            val baseUrl = UrlUtils.getUrl()
+
             photosToUpload.chunked(BATCH_SIZE).forEach { batch ->
                 val successfulUploads = mutableListOf<UploadedPhotoInfo>()
 
                 batch.forEach { (photoId, serialized) ->
                     try {
                         val `object` = uploadRepository.postUpload(
-                            "${UrlUtils.getUrl()}/submissions", serialized
+                            "$baseUrl/submissions", serialized
                         ).body()
 
                         if (`object` != null) {
