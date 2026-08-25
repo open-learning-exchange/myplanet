@@ -333,6 +333,20 @@ class AppDatabase extends _$AppDatabase {
     await m.addColumn(table, column);
   }
 
+  /// Port of `ConfigurationsRepositoryImpl.clearAllData`, which the settings
+  /// screen's "Reset app" preference calls via `SettingsViewModel.clearAllData`.
+  /// The Kotlin uses `RoomDatabase.clearAllTables()`; drift's equivalent is a
+  /// batched `DELETE FROM` across every table. Both wipe all local data — the
+  /// next sync re-pulls the CouchDB caches; locally-authored rows are lost,
+  /// matching the Kotlin's drop-and-resync policy.
+  Future<void> clearAllData() async {
+    await transaction(() async {
+      for (final table in allTables) {
+        await delete(table).go();
+      }
+    });
+  }
+
   static LazyDatabase _openConnection() {
     return LazyDatabase(() async {
       final dir = await getApplicationDocumentsDirectory();

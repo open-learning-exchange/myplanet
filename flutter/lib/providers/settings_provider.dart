@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/background/background_work_coordinator.dart';
 import 'app_providers.dart';
+import 'session_provider.dart';
 
 /// Port of `services/ThemeManager.kt` and the `dark_mode` preference in
 /// `ui/settings/SettingsActivity.kt`.
@@ -66,6 +67,24 @@ final localeProvider = NotifierProvider<LocaleNotifier, Locale?>(
   LocaleNotifier.new,
 );
 
+/// Port of `LocaleUtils.getTextScale` / `setTextScale` and the
+/// `textSizeChanger` dialog in `SettingsActivity.SettingFragment`. The three
+/// scales match the Kotlin's `floatArrayOf(0.85f, 1.0f, 1.15f)`.
+class TextScaleNotifier extends Notifier<double> {
+  static const List<double> supportedScales = [0.85, 1.0, 1.15];
+
+  @override
+  double build() => ref.watch(planetPrefsProvider).textScale;
+
+  Future<void> select(double scale) async {
+    await ref.read(planetPrefsProvider).setTextScale(scale);
+    state = scale;
+  }
+}
+
+final textScaleProvider =
+    NotifierProvider<TextScaleNotifier, double>(TextScaleNotifier.new);
+
 class BackgroundSettings {
   const BackgroundSettings({required this.enabled, required this.interval});
 
@@ -113,3 +132,31 @@ final backgroundSettingsProvider =
     NotifierProvider<BackgroundSettingsNotifier, BackgroundSettings>(
       BackgroundSettingsNotifier.new,
     );
+
+/// Port of `SettingsViewModel.clearAllData`, wired to the settings screen's
+/// "Reset app" preference (`R.string.reset_app`). The Kotlin calls
+/// `appDatabase.clearAllTables()` + `sharedPrefManager.clearPreferences()`
+/// then restarts the app; here the DB wipe, prefs wipe, and provider-state
+/// reset happen together, and the router's `redirect` sends the user to the
+/// server-config screen — the cleared prefs leave no server or session.
+class ClearDataNotifier extends AsyncNotifier<void> {
+  @override
+  Future<void> build() async {}
+
+  Future<void> clearAllData() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final db = ref.read(appDatabaseProvider);
+      final prefs = ref.read(planetPrefsProvider);
+      await db.clearAllData();
+      await prefs.clearAllData();
+      // Reset the provider states that the router's `redirect` reads, so the
+      // navigation lands without waiting for the next read of cleared prefs.
+      ref.read(serverConfigProvider.notifier).clear();
+      await ref.read(sessionProvider.notifier).signOut();
+    });
+  }
+}
+
+final clearDataProvider =
+    AsyncNotifierProvider<ClearDataNotifier, void>(ClearDataNotifier.new);

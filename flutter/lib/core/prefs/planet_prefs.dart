@@ -90,6 +90,13 @@ class PlanetPrefs {
   static const String _keyHasShownChallengeCongrats =
       'has_shown_challenge_congrats';
 
+  /// Port of `LocaleUtils.TEXT_SCALE` — the user's font-scale preference.
+  /// The Kotlin stores 0.85 / 1.0 / 1.15 and applies it via a
+  /// `Configuration.fontScale` override; here it is read by
+  /// `textScaleProvider` and applied through a `MediaQuery` override on the
+  /// `MaterialApp.router` builder.
+  static const String _keyTextScale = 'textScale';
+
   /// `OnboardingActivity.DEEP_LINK_SECTION_KEY` / `DEEP_LINK_ID_KEY`. A section
   /// link that arrives before sign-in is stored under these and applied by the
   /// dashboard afterwards, so the link survives the login it triggered.
@@ -231,6 +238,20 @@ class PlanetPrefs {
   Future<void> clearSession() async {
     await _prefs.remove(_keyLoggedInUserId);
     await _secureStorage.delete(key: _secureKeyPassword);
+  }
+
+  /// Port of `SharedPrefManager.clearPreferences`, called by the settings
+  /// screen's "Reset app" action. Clears every preference and secret, keeping
+  /// only [onboardingComplete] so the user does not see the first-launch
+  /// slideshow again — the Kotlin keeps `FIRST_LAUNCH` and `MANUAL_CONFIG`
+  /// for the same reason.
+  Future<void> clearAllData() async {
+    final keepOnboarding = _prefs.getBool(_keyOnboardingComplete) ?? false;
+    await _prefs.clear();
+    await _secureStorage.deleteAll();
+    if (keepOnboarding) {
+      await _prefs.setBool(_keyOnboardingComplete, true);
+    }
   }
 
   /// JSON string of community leaders fetched from the server.
@@ -414,6 +435,13 @@ class PlanetPrefs {
 
   Future<void> setHasShownChallengeCongrats(bool value) =>
       _prefs.setBool(_keyHasShownChallengeCongrats, value);
+
+  /// `LocaleUtils.getTextScale` / `setTextScale`. The three scales the Kotlin
+  /// dialog offers; a missing preference defaults to 1.0 (medium).
+  double get textScale => _prefs.getDouble(_keyTextScale) ?? 1.0;
+
+  Future<void> setTextScale(double value) =>
+      _prefs.setDouble(_keyTextScale, value);
 
   /// Requested automatic-sync cadence. Android WorkManager enforces a
   /// 15-minute floor; older Kotlin preferences below that are clamped by the

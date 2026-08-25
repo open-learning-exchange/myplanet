@@ -25,6 +25,8 @@ class SettingsScreen extends ConsumerWidget {
     final background = ref.watch(backgroundSettingsProvider);
     final backgroundRun = ref.watch(planetPrefsProvider).lastBackgroundRun;
     final versionInfo = ref.watch(appVersionInfoProvider).valueOrNull;
+    final textScale = ref.watch(textScaleProvider);
+    final clearState = ref.watch(clearDataProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settings)),
@@ -57,6 +59,13 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ],
             ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.format_size_outlined),
+            title: Text(l10n.textSize),
+            subtitle: Text(_textScaleLabel(l10n, textScale)),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _showTextSizeDialog(context, l10n, ref, textScale),
           ),
           const Divider(),
           _SectionHeader(title: l10n.server),
@@ -182,6 +191,15 @@ class SettingsScreen extends ConsumerWidget {
             title: Text(l10n.appVersion(versionInfo?.version ?? '…')),
             subtitle: Text(l10n.buildNumber(versionInfo?.buildNumber ?? '…')),
           ),
+          const Divider(),
+          _SectionHeader(title: l10n.dataManagement),
+          ListTile(
+            leading: const Icon(Icons.delete_outline),
+            title: Text(l10n.resetApp),
+            subtitle: Text(l10n.clearAllDataConfirm),
+            enabled: !clearState.isLoading,
+            onTap: () => _confirmClearData(context, l10n, ref),
+          ),
         ],
       ),
     );
@@ -254,4 +272,89 @@ class _SectionHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Port of `SettingsActivity.SettingFragment.textSizeChanger` — a
+/// single-choice dialog of the three text scales, applied immediately.
+void _showTextSizeDialog(
+  BuildContext context,
+  AppLocalizations l10n,
+  WidgetRef ref,
+  double currentScale,
+) {
+  final scales = TextScaleNotifier.supportedScales;
+  final labels = [l10n.textSizeSmall, l10n.textSizeMedium, l10n.textSizeLarge];
+
+  showDialog<void>(
+    context: context,
+    builder: (context) => SimpleDialog(
+      title: Text(l10n.selectTextSize),
+      children: [
+        RadioGroup<double>(
+          groupValue: currentScale,
+          onChanged: (value) {
+            if (value != null) {
+              ref.read(textScaleProvider.notifier).select(value);
+            }
+            if (context.mounted) Navigator.of(context).pop();
+          },
+          child: Column(
+            children: [
+              for (var i = 0; i < scales.length; i++)
+                RadioListTile<double>(
+                  value: scales[i],
+                  title: Text(labels[i]),
+                ),
+            ],
+          ),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+        ),
+      ],
+    ),
+  );
+}
+
+String _textScaleLabel(AppLocalizations l10n, double scale) {
+  final scales = TextScaleNotifier.supportedScales;
+  final i = scales.indexOf(scale);
+  if (i == 0) return l10n.textSizeSmall;
+  if (i == 2) return l10n.textSizeLarge;
+  return l10n.textSizeMedium;
+}
+
+/// Port of `SettingsActivity.SettingFragment.clearDataButtonInit` — a
+/// confirmation dialog that calls `clearAllData()` on "Yes". Guest users are
+/// offered membership instead, matching the Kotlin's `guestDialog` gate.
+Future<void> _confirmClearData(
+  BuildContext context,
+  AppLocalizations l10n,
+  WidgetRef ref,
+) async {
+  final session = ref.read(sessionProvider).valueOrNull;
+  if (session != null && session.id.startsWith('guest')) {
+    showGuestDialog(context);
+    return;
+  }
+  await showDialog<void>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(l10n.areYouSure),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.no),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+            ref.read(clearDataProvider.notifier).clearAllData();
+          },
+          child: Text(l10n.yes),
+        ),
+      ],
+    ),
+  );
 }

@@ -1362,5 +1362,14 @@
         "type": "String"
       }
     }
-  }
+  },
+  "textSize": "Text size",
+  "selectTextSize": "Select text size",
+  "textSizeSmall": "Small",
+  "textSizeMedium": "Medium",
+  "textSizeLarge": "Large",
+  "resetApp": "Reset app",
+  "clearAllDataConfirm": "Are you sure you want to clear all data?",
+  "dataCleared": "All data cleared",
+  "dataManagement": "Data management"
 }

@@ -21,6 +21,7 @@ class MyPlanetApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
     final locale = ref.watch(localeProvider);
+    final textScale = ref.watch(textScaleProvider);
 
     return MaterialApp.router(
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
@@ -51,8 +52,16 @@ class MyPlanetApp extends ConsumerWidget {
       // Both wrap the whole navigator so they follow the app's lifecycle
       // rather than any one screen's: the drain on resume, and the deep-link
       // listener for the launch link and anything that arrives afterwards.
-      builder: (context, child) => OutboxDrainScope(
-        child: DeepLinkScope(child: child ?? const SizedBox.shrink()),
+      // The `MediaQuery` override applies `LocaleUtils.setTextScale` — the
+      // Kotlin recreates the activity to re-`Configuration.fontScale`; here
+      // rebuilding this builder on a `textScaleProvider` change does the same.
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          textScaler: TextScaler.linear(textScale),
+        ),
+        child: OutboxDrainScope(
+          child: DeepLinkScope(child: child ?? const SizedBox.shrink()),
+        ),
       ),
     );
   }
