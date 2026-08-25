@@ -6,7 +6,6 @@ import android.content.DialogInterface
 import android.content.res.ColorStateList
 import android.os.Build
 import android.os.Bundle
-import org.ole.planet.myplanet.utils.FileUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -134,8 +133,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     override fun onRatingChanged(type: String, id: String) {
         refreshResourcesData()
-//        viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade, state.subject, state.tagNames, state.progressFilter)
-
     }
 
     private fun refreshResourcesData() {
@@ -327,10 +324,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         } else {
             tvSelected.visibility = View.VISIBLE
         }
-//        viewModel.filterCourses(
-//            isMyCourseLib, model?.id, state.searchText, state.grade,
-//            state.subject, state.tagNames, state.progressFilter
-//        )
     }
 
     private fun openEditResource(model: ResourceListModel) {
