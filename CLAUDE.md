@@ -37,7 +37,7 @@
 myplanet/
 ├── .github/                    # CI/CD workflows and Dependabot config
 │   └── workflows/
-│       ├── automerge.yml      # Manually-dispatched queue drainer for `automerge`-labelled PRs
+│       ├── automerge.yml      # Manually-dispatched queue drainer for `automerge`-labelled PRs (conflicts get relabelled, not fatal)
 │       ├── build.yml          # Build workflow for all branches
 │       ├── playstore.yml      # Hand-started publish of a release the Play Store quota refused
 │       ├── release.yml        # Release and Play Store publishing
@@ -404,6 +404,7 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 **Automerge Workflow** (`.github/workflows/automerge.yml`)
 - Manually dispatched (`workflow_dispatch`) queue drainer for PRs labelled `automerge`
 - For each labelled PR: merges the base branch in, bumps the version, waits for build + test to pass, then squash-merges
+- A PR that conflicts with the base does **not** stop the drain: it loses the `automerge` label, gains `conflict` (`conflict_label` input, blank = drop `automerge` without marking it), and the queue moves on to the next labelled PR. Resolve the conflict and re-add `automerge` to queue it again. Both conflict detections route here — GitHub's `mergeable: CONFLICTING` and the real `git merge` — and a PR that carries a stale `conflict` label but merges cleanly gets it removed. A dry run reports the same decisions without touching labels, and no longer stops at the first conflicting PR (it stops at the first *mergeable* one, since nothing advances)
 - Logic lives in `.github/scripts/automerge.sh`; requires `AUTOMERGE_TOKEN` (the default `GITHUB_TOKEN` can't push to the protected base branch)
 - A release that never reached the Play Store stops the drain; the stop reports the estimated next save slot (eastern time, plus how many follow it) and links `playstore.yml`, which publishes that upload without a rebuild
 - A red workflow on the base is re-run before the drain gives up (`base_rerun_attempts`, default 1): every base commit is a PR head that build + test passed on just before the squash merge, so a failure there is treated as flaky until it reproduces
