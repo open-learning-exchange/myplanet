@@ -46,18 +46,81 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
   // Conditions checkboxes
   final Map<String, bool> _conditions = {};
 
+  // Custom diagnoses added by the user — port of Kotlin's `customDiag`.
+  final Set<String> _customDiagnoses = {};
+  final _otherDiagnosisController = TextEditingController();
+
   bool _selfExamination = false;
   bool _isSaving = false;
 
+  // Conditions checkboxes — port of Kotlin's R.array.diagnosis_list.
   static const List<String> _conditionOptions = [
-    'Fever',
-    'Cough',
-    'Headache',
-    'Fatigue',
-    'Nausea',
-    'Dizziness',
-    'Pain',
-    'Breathing difficulty',
+    'Acute Otitis Media',
+    'Acute Respiratory Infection',
+    'Amebiasis',
+    'Brucellosis',
+    'Cancer',
+    'Cardiovascular disorders',
+    'Chagas Disease',
+    'Chancroid',
+    'Chikungunya',
+    'Chlamydia',
+    'Chronic Kidney Disease',
+    'Cirrhosis of the liver',
+    'Conjunctivitis',
+    'COVID-19',
+    'Cryptosporidiosis',
+    'Dental Caries',
+    'Dengue',
+    'Diabetes',
+    'Diarrhoea diseases',
+    'Ebola',
+    'Emphysema',
+    'Epilepsy',
+    'FGM',
+    'Fungal Infection',
+    'Giardiasis',
+    'Gonorrhea',
+    'Heatstroke',
+    'Hepatitis A',
+    'Hepatitis B',
+    'Hepatitis C',
+    'Herpes Simplex Virus',
+    'HIV/AIDS',
+    'Human Papillomavirus',
+    'Hypertension',
+    'Influenza',
+    'Iron-Deficiency Anemia',
+    'Ischaemic heart disease',
+    'Iodine Deficiency',
+    'Leishmaniasis',
+    'Leptospirosis',
+    'Low Birth Weight',
+    'Lymphogranuloma Venereum',
+    'Malaria',
+    'Malnutrition',
+    'Maternal Hemorrhage',
+    'Measles',
+    'Meningitis',
+    'Mycoplasma genitalium',
+    'Neonatal sepsis and infections',
+    'Obesity',
+    'Pneumonia',
+    'Preeclampsia/Eclampsia',
+    'Preterm Birth Complications',
+    'Rabies',
+    'Rotavirus',
+    'Scabies',
+    'Schistosomiasis',
+    'Soil-Transmitted Helminths',
+    'Stroke',
+    'Syphilis',
+    'Trauma',
+    'Trichomoniasis',
+    'Tuberculosis',
+    'Typhoid Fever',
+    'Vitamin A Deficiency',
+    'Zika',
   ];
 
   @override
@@ -110,10 +173,14 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
       });
     }
 
-    // Load conditions
+    // Load conditions — port of Kotlin's preloadCustomDiagnosis: any
+    // condition that is checked but not in the standard list becomes a
+    // custom diagnosis chip.
     for (final entry in state.conditions.entries) {
       if (_conditions.containsKey(entry.key)) {
         setState(() => _conditions[entry.key] = entry.value);
+      } else if (entry.value) {
+        setState(() => _customDiagnoses.add(entry.key));
       }
     }
   }
@@ -136,6 +203,7 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
     _referralsController.dispose();
     _labTestController.dispose();
     _xrayController.dispose();
+    _otherDiagnosisController.dispose();
     super.dispose();
   }
 
@@ -305,6 +373,47 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
                     }).toList(),
                   ),
 
+                  const SizedBox(height: 16),
+
+                  // Other Diagnosis — port of Kotlin's ChipCloud.
+                  _SectionHeader(title: l10n.otherDiagnosis),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _otherDiagnosisController,
+                          decoration: InputDecoration(
+                            labelText: l10n.otherDiagnosis,
+                            border: const OutlineInputBorder(),
+                            isDense: true,
+                          ),
+                          onSubmitted: (_) => _addCustomDiagnosis(),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton.tonal(
+                        onPressed: _addCustomDiagnosis,
+                        child: Text(l10n.add),
+                      ),
+                    ],
+                  ),
+                  if (_customDiagnoses.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: _customDiagnoses.map((diagnosis) {
+                        return Chip(
+                          label: Text(diagnosis),
+                          onDeleted: () {
+                            setState(() => _customDiagnoses.remove(diagnosis));
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ],
+
                   const SizedBox(height: 24),
 
                   // Examination Details Section
@@ -400,6 +509,15 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
     );
   }
 
+  void _addCustomDiagnosis() {
+    final text = _otherDiagnosisController.text.trim();
+    if (text.isEmpty) return;
+    setState(() {
+      _customDiagnoses.add(text);
+      _otherDiagnosisController.clear();
+    });
+  }
+
   Future<void> _saveExamination() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -460,7 +578,10 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
             xrays: _xrayController.text.trim().isEmpty
                 ? null
                 : _xrayController.text.trim(),
-            conditions: Map.from(_conditions),
+            conditions: Map.fromEntries([
+              ..._conditions.entries,
+              for (final d in _customDiagnoses) MapEntry(d, true),
+            ]),
           );
 
       if (!mounted) return;

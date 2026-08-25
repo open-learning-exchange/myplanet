@@ -429,6 +429,8 @@
   "submissionNotFound": "Submission not found",
   "unknown": "Unknown",
   "nA": "N/A",
+  "otherDiagnosis": "Other diagnosis",
+  "add": "Add",
   "status": "Status",
   "lastUpdated": "Last updated",
   "grade": "Grade",

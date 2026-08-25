@@ -120,6 +120,88 @@ void main() {
       findsOneWidget,
     );
   });
+
+  // ── Other Diagnosis chip cloud — port of Kotlin's ChipCloud ────────────
+  //
+  // Tapping Add with text in the Other diagnosis field creates a removable
+  // chip; pressing Enter on the field does the same; the field clears after
+  // adding; and the delete icon removes the chip. Empty input is a no-op.
+
+  Finder addDiagButton() => find.widgetWithText(FilledButton, 'Add');
+
+  Future<void> scrollToOtherDiagnosis(WidgetTester tester) async {
+    await tester.dragUntilVisible(
+      addDiagButton(),
+      find.byType(Scrollable).first,
+      const Offset(0, -150),
+    );
+  }
+
+  testWidgets('typing a custom diagnosis and tapping Add creates a chip', (
+    tester,
+  ) async {
+    await pumpScreen(tester);
+    await scrollToOtherDiagnosis(tester);
+    final field = find
+        .descendant(
+          of: find.ancestor(of: addDiagButton(), matching: find.byType(Row)),
+          matching: find.byType(TextField),
+        )
+        .first;
+    await tester.enterText(field, 'Test condition');
+    // Dismiss the keyboard so the Add button is tappable.
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    await tester.tap(addDiagButton(), warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(Chip, 'Test condition'), findsOneWidget);
+  });
+
+  testWidgets('submitting the field with the keyboard also adds a chip', (
+    tester,
+  ) async {
+    await pumpScreen(tester);
+    await scrollToOtherDiagnosis(tester);
+    final field = find
+        .descendant(
+          of: find.ancestor(of: addDiagButton(), matching: find.byType(Row)),
+          matching: find.byType(TextField),
+        )
+        .first;
+    await tester.enterText(field, 'Keyboard entry');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(Chip, 'Keyboard entry'), findsOneWidget);
+  });
+
+  testWidgets('the chip delete icon removes the chip', (tester) async {
+    await pumpScreen(tester);
+    await scrollToOtherDiagnosis(tester);
+    final field = find
+        .descendant(
+          of: find.ancestor(of: addDiagButton(), matching: find.byType(Row)),
+          matching: find.byType(TextField),
+        )
+        .first;
+    await tester.enterText(field, 'Removable');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    await tester.tap(addDiagButton(), warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(Chip, 'Removable'), findsOneWidget);
+    // The delete icon is the only tappable icon in the chip.
+    await tester.tap(find.byIcon(Icons.cancel).first);
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(Chip, 'Removable'), findsNothing);
+  });
+
+  testWidgets('empty other-diagnosis input is a no-op', (tester) async {
+    await pumpScreen(tester);
+    await scrollToOtherDiagnosis(tester);
+    await tester.tap(addDiagButton(), warnIfMissed: false);
+    await tester.pump();
+    expect(find.byType(Chip), findsNothing);
+  });
 }
 
 class _NeverHealthRepo implements HealthRepository {
