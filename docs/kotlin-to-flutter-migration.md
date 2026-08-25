@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 78 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 79 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -3200,6 +3200,129 @@ and three stale "unported" claims in older sections were corrected.
 
 ---
 
+## Phase 79 — harvest audit, the 2026-08-24/25 commit batch (33 commits)
+
+The 33 commits dated 2026-08-24 and 2026-08-25 were audited. Every one is a
+refactor, a performance rewrite, or an Android-lifecycle concern with no
+behavioural port coming out of the batch.
+
+**ViewModel extractions and dependency-direction refactors.**
+
+The largest cluster moves logic from Fragments/Activities into ViewModels, or
+breaks Hilt cyclic dependencies by having the caller resolve the `UserEntity`
+and pass it in rather than the repository looking it up internally. Riverpod
+providers already sit where the Kotlin is moving logic to, so none of these
+applies to the port:
+
+- `62908f134` (chat repository search) — moves `searchChats`/`sortChats` from
+  `ChatViewModel` into `ChatRepositoryImpl`. The port has had this logic as a
+  top-level pure function (`searchChatsForMode`/`sortChatsByRecency` in
+  `chat_repository.dart`) since Phase 75; the provider calls it directly, and
+  `getChatHistoryForUser` already applies the recency sort. The matching,
+  ranking (prefix before contains, first turn before later), and normalization
+  are identical.
+- `efec5e7c6` (submissions repository exams starting) — centralizes
+  `ExamTakingFragment`'s exam-start flow into `startExamSession` with a 3-retry
+  loop for transient SQLite constraints and a "Failed to start exam session"
+  toast. The port's `TakeExamScreen` holds answers in memory and creates the
+  submission in a single `createExamDraft` transaction at submit time, so the
+  concurrent-write problem that motivated the retry does not arise; the catch
+  + `examSubmitFailed` snackbar is the user-facing equivalent of the toast.
+  Survey resume (the `recreate = false` path) is already handled by
+  `getOrCreateSurveySubmission`, which checks `latestPendingByUserAndParent`
+  first. The exam-resume path (a pending exam submission) remains a deliberate
+  divergence: the port chose in-memory answers over per-question persistence.
+- `d64e98a30` (submissions repository detail view modelling) — removes the
+  `Lazy<UserRepository>` from `SubmissionsRepositoryImpl` (breaking a Dagger
+  cycle) by having `SubmissionDetailViewModel` and `UploadConfigs` resolve the
+  user and pass it into `getSubmissionDetail`/`getExamUploadPayload`/
+  `serializeSubmission`. The port's `SubmissionsRepository` resolves user data
+  through its own providers and has no Hilt cycle to break.
+- `5587845e2` (ratings repository user querying) — removes `userRepository`
+  from `RatingsRepositoryImpl`; `submitRating` now takes a `UserEntity` rather
+  than a `userId` it looks up. `RatingSummaryProvider` takes `userId` directly.
+  Same dependency-direction refactor; the port's ratings provider already
+  resolves the user upstream.
+- `11cbb723c` (courses less ui state rating map) — drops the ratings map from
+  `CoursesUiState` and the `ratingsRepository` from `CoursesViewModel`;
+  ratings are now loaded separately through `RatingSummaryProvider`. The port's
+  courses screen loads ratings through its own provider and never carried them
+  in the courses-list state.
+- `fe2bac4b5` (community tab view modelling) — extracts `CommunityTabFragment`'s
+  direct prefs/repository reads into a `CommunityTabViewModel`. The port's
+  community tab already reads through Riverpod providers.
+- `51e602c7c` (notifications view modelling) — rewrites the mark-as-read state
+  update as a single `mapNotNull` pass instead of find + conditional filter.
+  Same behaviour; the port's notifications provider uses a different state
+  shape.
+- `9a291306f` (teams events repository detail view modelling) — changes
+  `getMembersByIds` from `getAllUsers().filter{...}` to a chunked
+  `userDao.getUsersByAnyIds` query, and renames
+  `toggleCurrentUserAttendance` to `toggleAttendance(meetupId, userId)`. The
+  port already has `toggleAttendance(meetupId, userId)` with the userId passed
+  in, and does not load all users to filter for event members.
+- `c86eb43d7`, `91ab5f8d8`, `6136f85f8` — cache colors/strings/drawables in
+  RecyclerView adapters via `lazy` delegates. No Flutter equivalent; widgets
+  resolve theme colors through `Theme.of(context)` on each build.
+
+**Regex and string-handling simplifications (no semantic change).**
+
+- `5131e6c0f` (blood pressure) — `.split("/".toRegex())` becomes `.split("/")`.
+  The port already uses `.split('/')`.
+- `606752551` (base exams regex) — `parentId?.split("@".toRegex())...get(0)`
+  becomes `parentId?.substringBefore("@")`. The port's `_examIdFromParent`
+  already uses `indexOf('@')` + `substring`.
+- `480de4a3c` (personals resources opening) — `split("\.".toRegex())` becomes
+  `substringAfterLast('.', "")` + `lowercase()`. The port's
+  `pathResourceType` already lowercases the extension.
+- `a467b034c` (concatenated links) — `toMutableSet()` becomes `toHashSet()`.
+  The port has no `concatenatedLinks` SharedPreferences path.
+
+**Performance rewrites that keep semantics.**
+
+- `8bf3206cb` (android decrypter sha utils) — replaces `String.format("%02x",
+  b)` with a manual hex char array in `bytesToHex`/`Sha256Utils`. The port's
+  `bytesToHex` uses `byte.toRadixString(16).padLeft(2, '0')`, which is already
+  the fast path; output is identical.
+- `99af9569c` (utilities toast) — caches the main-thread `Handler`. Flutter's
+  `ScaffoldMessenger` is already on the UI thread.
+- `4b27c5808` (selection utils) — drops the redundant `contains` check before
+  `remove` (`remove` is a no-op if absent). The port handles selection inline
+  in widgets.
+- `47342473d` (realtime sync mixin) — caches `getWatchedTables().toSet()`
+  instead of calling it per emission. Same filter result.
+- `862fb1c5e` (realtime table flowing) — adds an `updatesFor(table)` helper
+  that filters the SharedFlow; callers replace inline `.filter { it.table ==
+  ... }`. Convenience method, same behaviour.
+- `2cf84c298` (progress activities) — wraps `getMostOpenedResource` in
+  `withContext(dispatcherProvider.default)`. Dart is single-threaded; the port
+  runs the equivalent synchronously.
+- `c1721d7b4` (notifications repository) — drops intermediate `toSet()`
+  conversions in `markNotificationsAsRead`/`deleteNotifications`. Same result.
+
+**Android-lifecycle concerns (no Flutter equivalent).**
+
+- `2ded20c8e` (fragment manager back stack) — stores the
+  `OnBackStackChangedListener` in a field so `onDestroy` can remove it, in
+  both `DashboardActivity` and `PublicSurveyActivity`. Flutter uses `go_router`
+  for navigation; there are no Fragment back-stack listeners to leak.
+
+**No Flutter equivalent / Kotlin-side machinery.**
+
+- `7f9f80cd4` (code style guide indexing), `d0a1dc01f` (retry interceptor
+  testing), `95432de7a` (upload repository querying), `f212742a3` (pager list
+  submitting), `aea3c6bfb` (submissions exams view modelling), `c86b26671`
+  (surveys view modelling), `14a9f144a` (resources title view modelling),
+  `fe3d98cb5` (resources tagging ViewBinding), `4598e8427` (server dialog
+  pinning refactor) — RecyclerView/ViewBinding/Hilt reshuffling, CI, or
+  refactors of UI paths the port handles differently. The server dialog
+  pinning logic has no counterpart: the port uses direct URL entry, not a
+  preset-server list with pinning.
+
+The 1360-test suite passes, `flutter analyze` clean, `dart format` clean.
+
+---
+
 ## Phase 67 — tags and collections (`tags`)
 
 The Kotlin's collections feature is a single CouchDB `tags` database holding
@@ -3875,7 +3998,7 @@ The 1360-test suite passes, `flutter analyze` clean, `dart format` clean,
 
 ---
 
-**Last updated**: 2026-08-25 (Phase 78 complete — the duplicate `normalizeText` removed, so chat search folds accents the same way resource and course search do. Phases 76–77 and two unnumbered ports (blood-pressure validation, personal-note attachments) written up. Phase 75 complete — chat full-conversation
+**Last updated**: 2026-08-25 (Phase 79 complete — harvest audit of the 2026-08-24/25 upstream batch (33 commits): all refactors, performance rewrites, and Android-lifecycle concerns with no behavioural port needed. Phase 78 complete — the duplicate `normalizeText` removed, so chat search folds accents the same way resource and course search do. Phases 76–77 and two unnumbered ports (blood-pressure validation, personal-note attachments) written up. Phase 75 complete — chat full-conversation
 search ported from `ChatViewModel.searchChats`: a `ChatSearchMode` enum with ranked matching
 (prefix before contains, first conversation before later), recency sort by
 `max(createdDate, updatedDate)`, and a hand-rolled NFD decomposition because
@@ -3891,5 +4014,5 @@ leader actions, and member-detail wiring. Phase 71 — the member detail
 screen, reached by tapping a member. Phase 70 — resource list sort
 toggles. Phase 69 — the ARB derivation tool merges instead of
 regenerating. Phase 68 — achievements. Phase 67 — tags and collections.)
-**Phase**: 78 of N (27 of 28 UI packages have a screen — see Status for what that does and
+**Phase**: 79 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)
