@@ -262,5 +262,7 @@
       }
     }
   },
-  "update": "تحديث"
+  "update": "تحديث",
+  "view": "عرض",
+  "linkNotAvailable": "الرابط غير متاح"
 }

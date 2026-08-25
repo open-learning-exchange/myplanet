@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/network_status_provider.dart';
 import '../../providers/ratings_provider.dart';
 import '../../providers/session_provider.dart';
 import '../ratings/rating_dialog.dart';
@@ -54,6 +55,13 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
       }
     }
   }
+
+  /// `MyLibrary.isResourceOffline()` — the pure data check the Kotlin detail
+  /// screen's `setupDownloadButtonState` reads to pick the icon/label. The
+  /// actual file-exists check (`FileUtils.checkFileExist`) belongs to
+  /// `openResource` / the viewer, not the button state, so the detail screen
+  /// never touches the filesystem and stays testable under the fake clock.
+  bool _isResourceOffline(MyLibraryRow resource) => resource.resourceOffline;
 
   @override
   Widget build(BuildContext context) {
@@ -324,15 +332,20 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // View resource button
-        FilledButton.icon(
-          onPressed: () {
-            context.push('/resources/viewer/${resource.id}');
-          },
-          icon: const Icon(Icons.visibility),
-          label: Text(l10n.viewResource),
-        ),
-        const SizedBox(height: 12),
+        // Download/View button — the port of
+        // `ResourceDetailFragment.setupDownloadButton` /
+        // `updateDownloadButtonState`. The label and icon tell the user whether
+        // the attachment is already on disk (View/Play) or needs fetching
+        // (Download), and the button is hidden entirely when the row names no
+        // attachment and is not an HTML bundle.
+        if (_shouldShowDownloadButton(resource)) ...[
+          FilledButton.icon(
+            onPressed: () => _openOrDownload(context, resource),
+            icon: Icon(_downloadButtonIcon(resource)),
+            label: Text(_downloadButtonLabel(l10n, resource)),
+          ),
+          const SizedBox(height: 12),
+        ],
 
         // Add/Remove from library button
         if (session != null) ...[
@@ -352,6 +365,74 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
         ],
       ],
     );
+  }
+
+  /// `setupDownloadButton`'s visibility rule: the button shows for HTML
+  /// resources (which are always openable) and for any resource that names a
+  /// local address. A row with neither has nothing to fetch or open.
+  bool _shouldShowDownloadButton(MyLibraryRow resource) {
+    final isHtml = resource.mediaType?.toLowerCase() == 'html';
+    final hasLocalAddress = (resource.resourceLocalAddress ?? '').isNotEmpty;
+    return isHtml || hasLocalAddress;
+  }
+
+  /// `updateDownloadButtonState` — the icon depends on media type and whether
+  /// the file is on disk. Video also reads as "play" when the server is
+  /// reachable, since the viewer can stream it.
+  IconData _downloadButtonIcon(MyLibraryRow resource) {
+    final mediaType = (resource.mediaType ?? '').toLowerCase();
+    final fileExtension = _fileExtension(resource);
+    final isVideo = mediaType.startsWith('video') || fileExtension == 'mp4';
+    final isAudio =
+        mediaType.startsWith('audio') ||
+        fileExtension == 'mp3' ||
+        fileExtension == 'aac' ||
+        fileExtension == 'wav';
+
+    if (_isResourceOffline(resource)) {
+      return isVideo ? Icons.play_arrow : Icons.visibility;
+    }
+    if (isVideo) {
+      // Streaming is available when the server answers.
+      final status = ref.read(networkStatusProvider);
+      return status == NetworkStatus.connected
+          ? Icons.play_arrow
+          : Icons.download;
+    }
+    if (isAudio) {
+      return Icons.download;
+    }
+    return Icons.download;
+  }
+
+  String _downloadButtonLabel(AppLocalizations l10n, MyLibraryRow resource) {
+    final mediaType = (resource.mediaType ?? '').toLowerCase();
+    final fileExtension = _fileExtension(resource);
+    final isVideo = mediaType.startsWith('video') || fileExtension == 'mp4';
+
+    if (_isResourceOffline(resource)) {
+      return l10n.view;
+    }
+    if (isVideo) {
+      final status = ref.read(networkStatusProvider);
+      return status == NetworkStatus.connected ? l10n.view : l10n.download;
+    }
+    return l10n.download;
+  }
+
+  String _fileExtension(MyLibraryRow resource) =>
+      (resource.resourceLocalAddress ?? '').split('.').last.toLowerCase();
+
+  void _openOrDownload(BuildContext context, MyLibraryRow resource) {
+    final l10n = AppLocalizations.of(context);
+    final isHtml = resource.mediaType?.toLowerCase() == 'html';
+    if (!isHtml && (resource.resourceLocalAddress ?? '').isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.linkNotAvailable)));
+      return;
+    }
+    context.push('/resources/viewer/${resource.id}');
   }
 
   bool _isOnShelf(String userId) {

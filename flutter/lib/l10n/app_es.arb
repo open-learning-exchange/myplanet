@@ -255,5 +255,7 @@
   "collections": "Colecciones",
   "filterCollections": "Filtrar colecciones",
   "selectManyCollections": "Seleccionar varias colecciones",
-  "selected": "Seleccionado: "
+  "selected": "Seleccionado: ",
+  "view": "ver",
+  "linkNotAvailable": "Enlace no disponible"
 }

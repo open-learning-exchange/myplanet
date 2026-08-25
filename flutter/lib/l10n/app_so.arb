@@ -262,5 +262,7 @@
       }
     }
   },
-  "update": "Cusbooneysiin"
+  "update": "Cusbooneysiin",
+  "view": "eeg",
+  "linkNotAvailable": "Xogta lama helin"
 }

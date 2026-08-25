@@ -1221,6 +1221,8 @@
   "myLibrary": "My Library",
   "allResources": "All Resources",
   "viewResource": "View Resource",
+  "view": "View",
+  "linkNotAvailable": "Link not available",
   "noRatings": "No ratings yet",
   "@noRatings": {
     "description": "Text shown when a resource has no ratings"

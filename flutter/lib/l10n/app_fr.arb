@@ -263,5 +263,7 @@
       }
     }
   },
-  "update": "Mettre à jour"
+  "update": "Mettre à jour",
+  "view": "afficher",
+  "linkNotAvailable": "Lien non disponible"
 }

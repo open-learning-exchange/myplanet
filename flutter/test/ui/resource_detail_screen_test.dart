@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/l10n/app_localizations.dart';
 import 'package:myplanet/providers/app_providers.dart';
+import 'package:myplanet/providers/network_status_provider.dart';
 import 'package:myplanet/providers/ratings_provider.dart';
 import 'package:myplanet/providers/session_provider.dart';
 import 'package:myplanet/repository/ratings_repository.dart';
@@ -28,6 +29,9 @@ void main() {
     required String resourceId,
     required List<String> userIds,
     required String sessionUserId,
+    String? mediaType,
+    String? resourceLocalAddress,
+    bool resourceOffline = false,
   }) async {
     await db
         .into(db.myLibraryTable)
@@ -36,6 +40,9 @@ void main() {
             id: resourceId,
             title: const Value('Test Resource'),
             userId: Value(userIds),
+            mediaType: Value(mediaType),
+            resourceLocalAddress: Value(resourceLocalAddress),
+            resourceOffline: Value(resourceOffline),
           ),
         );
 
@@ -51,6 +58,7 @@ void main() {
             (ref, target) =>
                 Stream.value(const RatingSummary(average: 0, total: 0)),
           ),
+          networkStatusProvider.overrideWith(() => _DisconnectedNetwork()),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -141,6 +149,67 @@ void main() {
     // does not change and the snackbar does NOT fire.
     expect(find.text('Added to My Library'), findsNothing);
   });
+
+  testWidgets('shows Download for un-downloaded resource with attachment', (
+    tester,
+  ) async {
+    await pumpScreen(
+      tester,
+      resourceId: 'r1',
+      userIds: const [],
+      sessionUserId: 'user-a',
+      mediaType: 'pdf',
+      resourceLocalAddress: 'doc.pdf',
+    );
+
+    expect(find.text('Download'), findsOneWidget);
+  });
+
+  testWidgets('shows View for downloaded resource', (tester) async {
+    await pumpScreen(
+      tester,
+      resourceId: 'r1',
+      userIds: const [],
+      sessionUserId: 'user-a',
+      mediaType: 'pdf',
+      resourceLocalAddress: 'doc.pdf',
+      resourceOffline: true,
+    );
+
+    expect(find.text('View'), findsOneWidget);
+    expect(find.text('Download'), findsNothing);
+  });
+
+  testWidgets('hides download button when resource has no attachment', (
+    tester,
+  ) async {
+    await pumpScreen(
+      tester,
+      resourceId: 'r1',
+      userIds: const [],
+      sessionUserId: 'user-a',
+      // No mediaType and no resourceLocalAddress
+    );
+
+    expect(find.text('Download'), findsNothing);
+    expect(find.text('View'), findsNothing);
+  });
+
+  testWidgets('treats resourceOffline flag as downloaded for HTML bundle', (
+    tester,
+  ) async {
+    await pumpScreen(
+      tester,
+      resourceId: 'r1',
+      userIds: const [],
+      sessionUserId: 'user-a',
+      mediaType: 'html',
+      resourceOffline: true,
+    );
+
+    expect(find.text('View'), findsOneWidget);
+    expect(find.text('Download'), findsNothing);
+  });
 }
 
 class _StubSession extends SessionNotifier {
@@ -151,4 +220,9 @@ class _StubSession extends SessionNotifier {
   Future<UserRow?> build() async {
     return buildUserRow(id: _userId, name: 'Test User');
   }
+}
+
+class _DisconnectedNetwork extends NetworkStatusNotifier {
+  @override
+  NetworkStatus build() => NetworkStatus.disconnected;
 }
