@@ -1,24 +1,10 @@
 name: myPlanet automerge
 
-# Manually started queue drainer: for each PR labelled `automerge`, merge the
-# base in, bump the version, wait for build + test, squash merge. The label is
-# the safety rail. Logic in .github/scripts/automerge.sh.
-#
-# A conflicting PR does not stop the drain: it is relabelled and the queue
-# moves on. Re-add `automerge` once the conflict is resolved.
-#
-# Needs AUTOMERGE_TOKEN. GITHUB_TOKEN cannot merge into a protected branch,
-# and its pushes do not trigger the workflow runs the drain waits for.
-#
-# A release that never reached the playstore stops the drain, reporting when
-# the next save slot frees and the playstore workflow that publishes it.
-#
-# A commit on the base was already built and tested green as a PR head, so a
-# red workflow there is treated as flaky first: it is re-run (base_rerun_attempts
-# times) and only a second failure stops the drain. Only the base's own runs
-# count -- a sha is shared with every branch sitting on it -- and a `cancelled`
-# run is read as absent, not as red, since `cancel-in-progress` retires runs by
-# the dozen.
+# Queue drainer, started by hand: for each PR labelled `automerge`, merge the
+# base in, bump the version, wait for build + test, squash merge. A conflicting
+# PR is relabelled and skipped, not fatal. Needs AUTOMERGE_TOKEN -- GITHUB_TOKEN
+# can neither merge into a protected branch nor trigger the runs the drain waits
+# for. Logic, and the conditions that do stop it: .github/scripts/automerge.sh
 
 on:
   workflow_dispatch:
