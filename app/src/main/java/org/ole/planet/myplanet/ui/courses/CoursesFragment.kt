@@ -620,7 +620,6 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         if (type == "course" && ::adapterCourses.isInitialized) {
             refreshJobs[id]?.cancel()
             refreshJobs[id] = viewLifecycleOwner.lifecycleScope.launch {
-                viewModel.refreshCourseRatings(model?.id)
                 adapterCourses.notifyItemChangedById(id)
             }
         }

@@ -30,6 +30,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.snackbar.Snackbar
@@ -98,6 +99,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var isReady = false
     private var isFirstLaunch = false
     private lateinit var binding: ActivityDashboardBinding
+    private var backStackListener: FragmentManager.OnBackStackChangedListener? = null
     private var headerResult: AccountHeader? = null
     var user: UserEntity? = null
     var result: Drawer? = null
@@ -312,7 +314,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun setupNavigation() {
         headerResult = accountHeader
         createDrawer()
-        supportFragmentManager.addOnBackStackChangedListener {
+        backStackListener = FragmentManager.OnBackStackChangedListener {
             val frag = supportFragmentManager.findFragmentById(R.id.fragment_container)
             val idToSelect = when (frag) {
                 is BellDashboardFragment -> 0L
@@ -335,6 +337,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
             idToSelect?.let { result?.setSelection(it, false) }
         }
+        backStackListener?.let { supportFragmentManager.addOnBackStackChangedListener(it) }
         result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
         dl = result?.drawerLayout
         dl?.addDrawerListener(object : DrawerLayout.SimpleDrawerListener() {
@@ -961,6 +964,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 binding.root.viewTreeObserver.removeOnGlobalLayoutListener(it)
             }
         }
+
+        backStackListener?.let { supportFragmentManager.removeOnBackStackChangedListener(it) }
 
         unregisterSystemNotificationReceiver()
 
