@@ -407,7 +407,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         if (f is TeamDetailFragment) {
             v.text = title
             v.setOnClickListener {
-                lifecycleScope.launch {
+                viewLifecycleOwner.lifecycleScope.launch {
                     val teamObject = id?.let { viewModel.getTeamById(it) }
                     val optimizedFragment = TeamDetailFragment.newInstance(
                         teamId = id ?: "",
