@@ -134,6 +134,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     override fun onRatingChanged(type: String, id: String) {
         refreshResourcesData()
+//        viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade, state.subject, state.tagNames, state.progressFilter)
+
     }
 
     private fun refreshResourcesData() {
@@ -325,6 +327,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         } else {
             tvSelected.visibility = View.VISIBLE
         }
+//        viewModel.filterCourses(
+//            isMyCourseLib, model?.id, state.searchText, state.grade,
+//            state.subject, state.tagNames, state.progressFilter
+//        )
     }
 
     private fun openEditResource(model: ResourceListModel) {
@@ -492,16 +498,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             layoutViewToggle?.visibility = View.VISIBLE
             binding.btnCollections.visibility = View.VISIBLE
             filter.visibility = View.VISIBLE
-            clearTags.visibility = if (hasActiveFilters()) View.VISIBLE else View.GONE
+            clearTags.visibility = View.VISIBLE
             scrollChipFilter?.visibility = View.VISIBLE
         }
         hideButton()
-    }
-
-    private fun hasActiveFilters(): Boolean {
-        val hasSearchText = etSearch.text?.toString()?.trim()?.isNotEmpty() == true
-        val hasTagFilter = ::searchTags.isInitialized && searchTags.isNotEmpty()
-        return hasSearchText || hasTagFilter || selectedDownloadFilter.isNotEmpty() || subjects.isNotEmpty() || languages.isNotEmpty() || mediums.isNotEmpty() || levels.isNotEmpty()
     }
 
     private fun initArrays() {
@@ -837,7 +837,9 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             val lan = languages.isEmpty() || languages.contains(l.language)
             val med = mediums.isEmpty() || mediums.contains(l.mediaType)
 
-            val isDownloaded =  model.item.isOffline || model.isLocallyOffline || l.isResourceOffline()
+            val isDownloaded = model.item.isOffline ||
+                    adapterLibrary.getLocallyOfflineIds().contains(model.item.id) ||
+                    model.isLocallyOffline
             val passesDownloadFilter = when (selectedDownloadFilter) {
                 getString(R.string.downloaded) -> isDownloaded
                 getString(R.string.not_downloaded) -> !isDownloaded
@@ -909,7 +911,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             chip.text = label
             chip.tag = label
             chip.setOnClickListener {
-                selectedDownloadFilter = label
+                selectedDownloadFilter = if (label == options.first()) "" else label
                 renderDownloadChipSelection(chipRow)
                 applyFiltersAndUpdateUI()
             }
