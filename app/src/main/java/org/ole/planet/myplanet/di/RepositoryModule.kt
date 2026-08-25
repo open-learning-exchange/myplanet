@@ -23,6 +23,8 @@ import org.ole.planet.myplanet.repository.DictionaryRepository
 import org.ole.planet.myplanet.repository.DictionaryRepositoryImpl
 import org.ole.planet.myplanet.repository.DownloadRepository
 import org.ole.planet.myplanet.repository.DownloadRepositoryImpl
+import org.ole.planet.myplanet.repository.EnterprisesRepository
+import org.ole.planet.myplanet.repository.EnterprisesRepositoryImpl
 import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.EventsRepositoryImpl
 import org.ole.planet.myplanet.repository.EventsSyncWriter
@@ -109,6 +111,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindCoursesRepository(impl: CoursesRepositoryImpl): CoursesRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindEnterprisesRepository(impl: EnterprisesRepositoryImpl): EnterprisesRepository
 
     @Binds
     @Singleton
