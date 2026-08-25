@@ -67,7 +67,7 @@ class TeamsAdapter(
             type.text = team.teamType
             type.visibility = if (team.teamType == null) View.GONE else View.VISIBLE
             name.text = team.name
-            noOfVisits.text = root.context.getString(R.string.number_placeholder, team.visitCount)
+           noOfVisits.text = root.context.getString(R.string.visit_count_placeholder, team.visitCount)
 
             if (!team.profileImage.isNullOrBlank()) {
                 val file = File(team.profileImage)
