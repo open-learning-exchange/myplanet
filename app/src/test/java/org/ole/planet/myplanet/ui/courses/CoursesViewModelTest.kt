@@ -17,7 +17,6 @@ import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
-import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
@@ -29,7 +28,6 @@ class CoursesViewModelTest {
 
     private val coursesRepository = mockk<CoursesRepository>(relaxed = true)
     private val progressRepository = mockk<ProgressRepository>(relaxed = true)
-    private val ratingsRepository = mockk<RatingsRepository>(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
@@ -41,7 +39,6 @@ class CoursesViewModelTest {
         viewModel = CoursesViewModel(
             coursesRepository,
             progressRepository,
-            ratingsRepository,
             dispatcherProvider
         )
     }

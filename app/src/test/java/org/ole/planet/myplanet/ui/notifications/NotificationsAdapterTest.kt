@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.notifications
 
 import android.content.Context
-import android.os.Build
 import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
@@ -20,7 +19,7 @@ import org.ole.planet.myplanet.model.NotificationListItem
 import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
-@Config(sdk = [Build.VERSION_CODES.O_MR1], application = HiltTestApplication::class)
+@Config(application = HiltTestApplication::class)
 class NotificationsAdapterTest {
 
     private lateinit var context: Context
