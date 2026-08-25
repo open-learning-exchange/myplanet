@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.text.TextUtils
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -37,7 +36,7 @@ open class StepExam(
         fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, parentId: String?): StepExam {
             val examId = JsonUtils.getString("_id", exam)
             val myExam = StepExam().apply {
-                id = (if (TextUtils.isEmpty(examId)) parentId else examId).orEmpty()
+                id = (if (examId.isNullOrEmpty()) parentId else examId).orEmpty()
             }
             checkIdsAndInsert(myCoursesID, stepId, myExam)
             myExam.type = if (exam.has("type")) JsonUtils.getString("type", exam) else "exam"
@@ -52,7 +51,7 @@ open class StepExam(
             myExam.adoptionDate = JsonUtils.getLong("adoptionDate", exam)
             myExam.totalMarks = JsonUtils.getInt("totalMarks", exam)
             myExam.noOfQuestions = JsonUtils.getJsonArray("questions", exam).size()
-            myExam.isFromNation = !TextUtils.isEmpty(parentId)
+            myExam.isFromNation = !parentId.isNullOrEmpty()
             myExam.teamId = JsonUtils.getString("teamId", exam)
             myExam.isTeamShareAllowed = JsonUtils.getBoolean("teamShareAllowed", exam)
             myExam.sourceSurveyId = JsonUtils.getString("sourceSurveyId", exam)
@@ -60,10 +59,10 @@ open class StepExam(
         }
 
         private fun checkIdsAndInsert(myCoursesID: String?, stepId: String?, myExam: StepExam?) {
-            if (!TextUtils.isEmpty(myCoursesID)) {
+            if (!myCoursesID.isNullOrEmpty()) {
                 myExam?.courseId = myCoursesID
             }
-            if (!TextUtils.isEmpty(stepId)) {
+            if (!stepId.isNullOrEmpty()) {
                 myExam?.stepId = stepId
             }
         }

@@ -44,6 +44,7 @@ interface ResourcesRepository {
     suspend fun getLibraryItemsByLocalAddress(localAddress: String): List<MyLibrary>
     suspend fun getLibraryListForUser(userId: String?): List<MyLibrary>
     suspend fun getMyLibrary(userId: String?): List<MyLibrary>
+    fun getMyLibraryFlow(userId: String?): Flow<List<MyLibrary>>
     suspend fun getAllStepResources(stepId: String?): List<MyLibrary>
     fun getRecentResources(userId: String): Flow<List<MyLibrary>>
     fun getPendingDownloads(userId: String): Flow<List<String>>
@@ -55,7 +56,6 @@ interface ResourcesRepository {
     suspend fun setUserLibrary(resourceId: String, add: Boolean): MyLibrary?
     suspend fun updateLibraryItem(id: String, updater: (MyLibrary) -> Unit)
     suspend fun markResourceOfflineByUrl(url: String)
-    suspend fun markAllResourcesOffline(isOffline: Boolean)
     suspend fun saveSearchActivity(
         userName: String,
         searchText: String,
@@ -107,6 +107,7 @@ interface ResourcesRepository {
     suspend fun trackResourceOpen(item: MyLibrary)
     suspend fun getOfflineResourceItems(oleDirPath: String, extensions: Set<String>, allKnownExtensions: Set<String>): List<OfflineResourceItem>
     suspend fun deleteOfflineResources(oleDirPath: String, items: List<OfflineResourceItem>)
+    suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String>
 }
 
 sealed class ResourceUrlsResponse {

@@ -617,6 +617,10 @@
     <string name="meetup_added">Ku daray la isku day</string>
     <string name="meetup_not_added">Meetup lama darin</string>
     <string name="add_transaction">Ku daray Hawlaha</string>
+    <string name="from_date">Ka bilaabata taariikhda</string>
+    <string name="to_date">Ku egtahay taariikhda</string>
+    <string name="select_from_date">Dooro ka bilaabata taariikhda</string>
+    <string name="select_to_date">Dooro ku egtahay taariikhda</string>
     <string name="note_is_required">Fariin waa loo baahan yahay</string>
     <string name="amount_is_required">Qaddarku waa loo baahan yahay</string>
     <string name="date_is_required">Taariikhdu waa loo baahan yahay</string>

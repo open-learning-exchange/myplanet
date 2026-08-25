@@ -59,9 +59,9 @@ class SubmissionViewModel @Inject constructor(
         }.sortedByDescending { it.lastUpdateTime }
 
         if (query.isNotEmpty()) {
-            val examIds = examMap.filter { (_, exam) ->
-                exam.name?.contains(query, ignoreCase = true) == true
-            }.keys
+            val examIds = examMap.mapNotNullTo(HashSet()) { (id, exam) ->
+                if (exam.name?.contains(query, ignoreCase = true) == true) id else null
+            }
             filtered = filtered.filter { examIds.contains(it.parentId) }
         }
 

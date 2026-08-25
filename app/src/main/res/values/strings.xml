@@ -162,6 +162,7 @@
     <string name="https_protocol">https://</string>
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">Showing reply of:</string>
+    <string name="reply_count_format" translatable="false">(%1$d)</string>
     <string name="open_date">Open Date</string>
     <string name="my_survey">mySurveys</string>
     <string name="failed_to_load_course">Failed to load course</string>
@@ -609,6 +610,7 @@
     <string name="sync">sync</string>
     <string name="session_expired">Session expired.</string>
     <string name="downloading_started_please_check_notificati">Downloading started, please check notification…</string>
+    <string name="dictionary_parsing_failed">Dictionary parsing failed.</string>
     <string name="dictionary">Dictionary</string>
     <string name="list_size">List size %d</string>
     <string name="word_not_available_in_our_database">Word not available in our database.</string>
@@ -616,6 +618,10 @@
     <string name="meetup_added">Meetup added</string>
     <string name="meetup_not_added">Meetup not added</string>
     <string name="add_transaction">Add Transaction</string>
+    <string name="from_date">From Date</string>
+    <string name="to_date">To Date</string>
+    <string name="select_from_date">Select From Date</string>
+    <string name="select_to_date">Select To Date</string>
     <string name="note_is_required">Note is required</string>
     <string name="amount_is_required">Amount is required</string>
     <string name="date_is_required">Date is required</string>

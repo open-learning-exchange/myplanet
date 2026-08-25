@@ -129,4 +129,43 @@ class RatingsViewModelTest {
         assertTrue(state is RatingsViewModel.RatingUiState.Error)
         assertEquals("User not found", (state as RatingsViewModel.RatingUiState.Error).message)
     }
+
+    @Test
+    fun `submitRating updates submit state on success`() = runTest {
+        val type = "course"
+        val itemId = "item-1"
+        val userId = "user-1"
+
+        val mockUser = UserEntity().apply { id = userId }
+        val mockSummary = RatingSummary(
+            existingRating = RatingEntry("r-1", "Good", 5),
+            averageRating = 4.5f,
+            totalRatings = 10,
+            userRating = 5
+        )
+
+        coEvery { userRepository.getUserProfile() } returns mockUser
+        coEvery {
+            ratingsRepository.submitRating(
+                type = type,
+                itemId = itemId,
+                title = "Title",
+                user = mockUser,
+                rating = 4f,
+                comment = "Nice"
+            )
+        } returns mockSummary
+
+        viewModel.submitRating(
+            type = type,
+            itemId = itemId,
+            title = "Title",
+            rating = 4f,
+            comment = "Nice"
+        )
+        advanceUntilIdle()
+
+        val submitState = viewModel.submitState.value
+        assertTrue(submitState is RatingsViewModel.SubmitState.Success)
+    }
 }

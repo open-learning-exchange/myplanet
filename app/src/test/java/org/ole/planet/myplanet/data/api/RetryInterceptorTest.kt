@@ -25,7 +25,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(manifest = Config.NONE, sdk = [33], application = Application::class)
+@Config(manifest = Config.NONE, application = Application::class)
 class RetryInterceptorTest {
     private lateinit var broadcastService: BroadcastService
     private lateinit var timeProvider: TimeProvider
@@ -258,5 +258,33 @@ class RetryInterceptorTest {
 
         verify(exactly = 1) { chain.proceed(request) }
         assertTrue("Backoff should not have slept for the full delay", elapsed < 5_000L)
+    }
+
+    @Test
+    fun testCallCancelledDuringBackoffSleep() {
+        val request = Request.Builder().url("http://example.com").build()
+        val errorResponse = createResponse(request, 500)
+
+        var callCount = 0
+        val mockCall = mockk<Call> {
+            every { isCanceled() } answers {
+                callCount++
+                // Returns true on the second check, simulating cancellation after the first sleep slice.
+                callCount > 1
+            }
+        }
+        val chain = mockk<Interceptor.Chain>()
+        every { chain.request() } returns request
+        every { chain.proceed(request) } returns errorResponse
+        every { chain.call() } returns mockCall
+
+        retryInterceptor.initialDelay = 10L // Small delay to avoid burning real wall clock time
+
+        try {
+            retryInterceptor.intercept(chain)
+            fail("Expected IOException because the call was cancelled")
+        } catch (e: IOException) {
+            assertEquals("Call cancelled during retry delay", e.message)
+        }
     }
 }

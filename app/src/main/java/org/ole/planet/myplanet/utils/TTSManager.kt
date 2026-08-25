@@ -17,18 +17,33 @@ class TTSManager @Inject constructor(
     enum class State { IDLE, SPEAKING }
 
     private var tts: TextToSpeech? = null
+
+    @Volatile
     private var isInitialized = false
+    @Volatile
+    private var pendingText: String? = null
 
     private val _state = MutableStateFlow(State.IDLE)
     val state: StateFlow<State> = _state.asStateFlow()
 
     val isSpeaking get() = _state.value == State.SPEAKING
 
-    init {
-        tts = TextToSpeech(context) { status ->
+    private fun ensureTts(text: String) {
+        if (tts != null) {
+            if (isInitialized) {
+                tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, UTTERANCE_ID)
+            } else {
+                pendingText = text
+            }
+            return
+        }
+
+        pendingText = text
+        var instance: TextToSpeech? = null
+        instance = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 isInitialized = true
-                tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                instance?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String?) {
                         _state.value = State.SPEAKING
                     }
@@ -43,18 +58,28 @@ class TTSManager @Inject constructor(
                         _state.value = State.IDLE
                     }
                 })
+                pendingText?.let { instance?.speak(it, TextToSpeech.QUEUE_FLUSH, null, UTTERANCE_ID) }
+                pendingText = null
+            } else {
+                instance?.shutdown()
+                tts = null
+                pendingText = null
             }
         }
+        tts = instance
     }
 
     fun speak(text: String) {
-        if (!isInitialized || text.isBlank()) return
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, UTTERANCE_ID)
+        if (text.isBlank()) return
+        ensureTts(text)
     }
 
     fun stop() {
-        tts?.stop()
-        _state.value = State.IDLE
+        pendingText = null
+        tts?.let {
+            it.stop()
+            _state.value = State.IDLE
+        }
     }
 
     companion object {
