@@ -7,8 +7,7 @@ object ResourceSearchUtils {
     fun <T> searchList(list: List<T>, query: String, normalizedTitleSelector: (T) -> String?): List<T> {
         if (query.isEmpty()) return list
 
-        val queryParts = query.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
+        val normalizedQueryParts = query.splitToSequence(" ").filter { it.isNotEmpty() }.map { Utilities.normalizeText(it) }.toList()
         val normalizedQuery = Utilities.normalizeText(query)
 
         val startsWithQuery = mutableListOf<T>()
