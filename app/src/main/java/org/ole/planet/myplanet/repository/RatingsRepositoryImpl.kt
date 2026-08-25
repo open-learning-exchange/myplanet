@@ -16,7 +16,6 @@ import org.ole.planet.myplanet.utils.JsonUtils
 class RatingsRepositoryImpl @Inject constructor(
     private val gson: Gson,
     private val ratingDao: RatingDao,
-    private val userRepository: UserRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : RatingsRepository {
 
@@ -34,20 +33,6 @@ class RatingsRepositoryImpl @Inject constructor(
         val ratings = ratingDao.getByTypeAndItem(type, resourceId)
         val aggregated = aggregateRatings(ratings, userId)[resourceId]
         return aggregated?.toJson()
-    }
-
-
-    override suspend fun getCourseRatingSummary(courseId: String): RatingSummaryModel {
-        return withContext(dispatcherProvider.io) {
-            val user = userRepository.getUserModel()
-            val userId = user?.id
-            val summary = if (userId != null) {
-                getRatingSummary("course", courseId, userId)
-            } else {
-                null
-            }
-            RatingSummaryModel(user, summary)
-        }
     }
 
     override suspend fun getCourseRatings(userId: String?): HashMap<String?, JsonObject> {
@@ -83,12 +68,11 @@ class RatingsRepositoryImpl @Inject constructor(
         type: String,
         itemId: String,
         title: String,
-        userId: String,
+        user: UserEntity,
         rating: Float,
         comment: String,
     ): RatingSummary {
-        val resolvedUser = findUserForRating(userId)
-        val resolvedUserId = resolvedUser.id?.takeIf { it.isNotBlank() } ?: resolvedUser._id
+        val resolvedUserId = user.id?.takeIf { it.isNotBlank() } ?: user._id
         require(!resolvedUserId.isNullOrBlank()) { "Resolved user is missing an identifier" }
 
         val existingRating = ratingDao.findByTypeUserItem(type, resolvedUserId, itemId)
@@ -97,12 +81,12 @@ class RatingsRepositoryImpl @Inject constructor(
             val newRating = Rating().apply {
                 id = UUID.randomUUID().toString()
             }
-            setRatingData(newRating, resolvedUser, type, itemId, title, rating, comment)
+            setRatingData(newRating, user, type, itemId, title, rating, comment)
             ratingDao.upsert(newRating)
         } else {
             val ratingObject = ratingDao.findById(existingRating.id)
             if (ratingObject != null) {
-                setRatingData(ratingObject, resolvedUser, type, itemId, title, rating, comment)
+                setRatingData(ratingObject, user, type, itemId, title, rating, comment)
                 ratingDao.update(ratingObject)
             }
         }
@@ -153,14 +137,6 @@ class RatingsRepositoryImpl @Inject constructor(
             comment = comment,
             rate = rate,
         )
-
-    private suspend fun findUserForRating(userId: String): UserEntity {
-        require(userId.isNotBlank()) { "User ID is required to submit a rating" }
-
-        val user = userRepository.getUserById(userId)
-
-        return requireNotNull(user) { "Unable to locate user with ID '$userId'" }
-    }
 
     private fun setRatingData(
         ratingObject: Rating,

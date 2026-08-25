@@ -85,11 +85,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
                 id?.let {
                     sub = submissionsRepository.getSubmissionById(it)
                 }
-                id = if (sub?.parentId?.contains("@") == true) {
-                    sub?.parentId?.split("@".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.get(0)
-                } else {
-                    sub?.parentId
-                }
+                id = sub?.parentId?.substringBefore("@")
             }
         }
     }
