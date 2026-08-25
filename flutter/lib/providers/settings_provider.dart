@@ -82,8 +82,9 @@ class TextScaleNotifier extends Notifier<double> {
   }
 }
 
-final textScaleProvider =
-    NotifierProvider<TextScaleNotifier, double>(TextScaleNotifier.new);
+final textScaleProvider = NotifierProvider<TextScaleNotifier, double>(
+  TextScaleNotifier.new,
+);
 
 class BackgroundSettings {
   const BackgroundSettings({required this.enabled, required this.interval});
@@ -158,5 +159,6 @@ class ClearDataNotifier extends AsyncNotifier<void> {
   }
 }
 
-final clearDataProvider =
-    AsyncNotifierProvider<ClearDataNotifier, void>(ClearDataNotifier.new);
+final clearDataProvider = AsyncNotifierProvider<ClearDataNotifier, void>(
+  ClearDataNotifier.new,
+);

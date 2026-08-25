@@ -301,10 +301,7 @@ void _showTextSizeDialog(
           child: Column(
             children: [
               for (var i = 0; i < scales.length; i++)
-                RadioListTile<double>(
-                  value: scales[i],
-                  title: Text(labels[i]),
-                ),
+                RadioListTile<double>(value: scales[i], title: Text(labels[i])),
             ],
           ),
         ),

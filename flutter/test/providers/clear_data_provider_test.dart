@@ -27,15 +27,18 @@ void main() {
     db = AppDatabase.memory();
     secureStorage = _MockSecureStorage();
     registerFallbackValue('');
-    when(() => secureStorage.write(
-              key: any(named: 'key'),
-              value: any(named: 'value'),
-            ))
-        .thenAnswer((_) async {});
-    when(() => secureStorage.read(key: any(named: 'key')))
-        .thenAnswer((_) async => null);
-    when(() => secureStorage.delete(key: any(named: 'key')))
-        .thenAnswer((_) async {});
+    when(
+      () => secureStorage.write(
+        key: any(named: 'key'),
+        value: any(named: 'value'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => secureStorage.read(key: any(named: 'key')),
+    ).thenAnswer((_) async => null);
+    when(
+      () => secureStorage.delete(key: any(named: 'key')),
+    ).thenAnswer((_) async {});
     when(secureStorage.deleteAll).thenAnswer((_) async {});
     prefs = PlanetPrefs(
       await SharedPreferences.getInstance(),
@@ -75,30 +78,33 @@ void main() {
     expect(await db.userDao.getById('u1'), isNull);
   });
 
-  test('preserves onboarding complete but clears server config and session', () async {
-    await prefs.setOnboardingComplete();
-    await prefs.saveServerConfig(
-      const ServerConfig(
-        serverUrl: 'https://planet.example',
-        couchDbUrl: 'https://satellite:1234@planet.example:443',
-        pin: '1234',
-      ),
-    );
-    await prefs.setLoggedInUserId('u1');
+  test(
+    'preserves onboarding complete but clears server config and session',
+    () async {
+      await prefs.setOnboardingComplete();
+      await prefs.saveServerConfig(
+        const ServerConfig(
+          serverUrl: 'https://planet.example',
+          couchDbUrl: 'https://satellite:1234@planet.example:443',
+          pin: '1234',
+        ),
+      );
+      await prefs.setLoggedInUserId('u1');
 
-    expect(prefs.onboardingComplete, isTrue);
-    expect(prefs.serverConfig, isNotNull);
-    expect(prefs.loggedInUserId, 'u1');
+      expect(prefs.onboardingComplete, isTrue);
+      expect(prefs.serverConfig, isNotNull);
+      expect(prefs.loggedInUserId, 'u1');
 
-    final c = container();
-    await c.read(clearDataProvider.notifier).clearAllData();
+      final c = container();
+      await c.read(clearDataProvider.notifier).clearAllData();
 
-    expect(prefs.onboardingComplete, isTrue);
-    expect(prefs.serverConfig, isNull);
-    expect(prefs.loggedInUserId, isNull);
-    expect(c.read(serverConfigProvider), isNull);
-    expect(c.read(sessionProvider).valueOrNull, isNull);
-  });
+      expect(prefs.onboardingComplete, isTrue);
+      expect(prefs.serverConfig, isNull);
+      expect(prefs.loggedInUserId, isNull);
+      expect(c.read(serverConfigProvider), isNull);
+      expect(c.read(sessionProvider).valueOrNull, isNull);
+    },
+  );
 
   test('clears text scale preference', () async {
     await prefs.setTextScale(1.15);
