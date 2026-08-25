@@ -88,7 +88,6 @@ class FeedbackDetailActivity : AppCompatActivity() {
     }
 
     private fun setUpReplies() {
-        activityFeedbackDetailBinding.rvFeedbackReply.setHasFixedSize(true)
         layoutManager = LinearLayoutManager(this)
         activityFeedbackDetailBinding.rvFeedbackReply.layoutManager = layoutManager
     }

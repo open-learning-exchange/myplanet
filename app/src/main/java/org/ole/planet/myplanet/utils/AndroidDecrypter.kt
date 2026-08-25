@@ -13,6 +13,8 @@ import javax.crypto.spec.SecretKeySpec
 
 class AndroidDecrypter {
     companion object {
+        private val HEX_CHARS = "0123456789abcdef".toCharArray()
+
         @Throws(Exception::class)
         fun encrypt(plainText: String, key: String?, iv: String?): String {
             val clean = plainText.toByteArray()
@@ -44,11 +46,13 @@ class AndroidDecrypter {
         }
 
         private fun bytesToHex(hashInBytes: ByteArray): String {
-            val sb = StringBuilder()
-            for (b in hashInBytes) {
-                sb.append(String.format("%02x", b))
+            val result = CharArray(hashInBytes.size * 2)
+            for (i in hashInBytes.indices) {
+                val v = hashInBytes[i].toInt() and 0xFF
+                result[i * 2] = HEX_CHARS[v ushr 4]
+                result[i * 2 + 1] = HEX_CHARS[v and 0x0F]
             }
-            return sb.toString()
+            return String(result)
         }
 
         fun decrypt(encrypted: String?, key: String?, initVector: String?): String? {
