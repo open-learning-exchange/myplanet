@@ -144,6 +144,41 @@ class SubmissionsRepository {
     return id;
   }
 
+  /// Replaces the answer rows on an existing survey submission (resuming a
+  /// pending attempt) and marks it complete + locally updated. Unlike
+  /// [createSurveyDraft] it does not re-insert the submission or question rows
+  /// — those already exist from the original draft.
+  Future<void> updateSurveyAnswers({
+    required String submissionId,
+    required List<SurveyQuestionRow> questions,
+    required Map<String, SubmissionDraftAnswer> answers,
+  }) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await _dao.upsertAll(
+      [
+        SubmissionsCompanion(
+          id: Value(submissionId),
+          status: const Value('complete'),
+          lastUpdateTime: Value(now),
+          isUpdated: const Value(true),
+          uploaded: const Value(false),
+        ),
+      ],
+      answers: {
+        submissionId: [
+          for (final question in questions)
+            SubmissionAnswersCompanion.insert(
+              id: '$submissionId:${_rawQuestionId(question)}',
+              submissionId: submissionId,
+              questionId: Value(_rawQuestionId(question)),
+              value: Value(answers[question.id]?.value),
+              valueChoices: Value(answers[question.id]?.choices ?? const []),
+            ),
+        ],
+      },
+    );
+  }
+
   /// The server-assigned question id, or the synthetic `surveyId:index` when
   /// the document carried none. Either way it is what the answer is keyed by.
   static String _rawQuestionId(SurveyQuestionRow question) =>

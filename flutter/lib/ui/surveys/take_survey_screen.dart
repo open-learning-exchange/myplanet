@@ -13,8 +13,13 @@ import '../router.dart';
 /// Offline survey-taking form, replacing the survey mode of
 /// `ExamTakingFragment.kt` for text and single/multiple-choice questions.
 class TakeSurveyScreen extends ConsumerStatefulWidget {
-  const TakeSurveyScreen({required this.surveyId, super.key});
+  const TakeSurveyScreen({
+    required this.surveyId,
+    this.submissionId,
+    super.key,
+  });
   final String surveyId;
+  final String? submissionId;
 
   @override
   ConsumerState<TakeSurveyScreen> createState() => _TakeSurveyScreenState();
@@ -24,6 +29,7 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
   final textAnswers = <String, TextEditingController>{};
   final choiceAnswers = <String, Set<String>>{};
   bool submitting = false;
+  bool _loaded = false;
 
   @override
   void dispose() {
@@ -32,6 +38,35 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
     }
     super.dispose();
   }
+
+  Future<void> _loadExistingAnswers(List<SurveyQuestionRow> rows) async {
+    if (_loaded || widget.submissionId == null) return;
+    _loaded = true;
+    final answers = await ref
+        .read(submissionsRepositoryProvider)
+        .answersFor(widget.submissionId!);
+    for (final answer in answers) {
+      final questionId = answer.questionId;
+      if (questionId == null) continue;
+      SurveyQuestionRow? question;
+      for (final q in rows) {
+        if (_rawId(q) == questionId) {
+          question = q;
+          break;
+        }
+      }
+      if (question == null) continue;
+      if (answer.value?.isNotEmpty == true) {
+        textAnswers[question.id]?.text = answer.value!;
+      }
+      if (answer.valueChoices.isNotEmpty) {
+        choiceAnswers[question.id]?.addAll(answer.valueChoices);
+      }
+    }
+    if (mounted) setState(() {});
+  }
+
+  static String _rawId(SurveyQuestionRow q) => q.questionId ?? q.id;
 
   @override
   Widget build(BuildContext context) {
@@ -43,43 +78,50 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
       body: questions.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, _) => Center(child: Text(l10n.surveyLoadFailed)),
-        data: (rows) => rows.isEmpty
-            ? Center(child: Text(l10n.surveyHasNoQuestions))
-            : ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  if (survey.valueOrNull?.description?.isNotEmpty == true)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Text(survey.valueOrNull!.description!),
-                    ),
-                  for (var index = 0; index < rows.length; index++)
-                    _QuestionCard(
-                      number: index + 1,
-                      question: rows[index],
-                      controller: textAnswers.putIfAbsent(
-                        rows[index].id,
-                        TextEditingController.new,
+        data: (rows) {
+          if (rows.isNotEmpty && widget.submissionId != null && !_loaded) {
+            WidgetsBinding.instance.addPostFrameCallback(
+              (_) => _loadExistingAnswers(rows),
+            );
+          }
+          return rows.isEmpty
+              ? Center(child: Text(l10n.surveyHasNoQuestions))
+              : ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    if (survey.valueOrNull?.description?.isNotEmpty == true)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Text(survey.valueOrNull!.description!),
                       ),
-                      selected: choiceAnswers.putIfAbsent(
-                        rows[index].id,
-                        () => <String>{},
+                    for (var index = 0; index < rows.length; index++)
+                      _QuestionCard(
+                        number: index + 1,
+                        question: rows[index],
+                        controller: textAnswers.putIfAbsent(
+                          rows[index].id,
+                          TextEditingController.new,
+                        ),
+                        selected: choiceAnswers.putIfAbsent(
+                          rows[index].id,
+                          () => <String>{},
+                        ),
+                        onChanged: () => setState(() {}),
                       ),
-                      onChanged: () => setState(() {}),
+                    const SizedBox(height: 12),
+                    FilledButton.icon(
+                      onPressed: submitting ? null : () => _submit(rows),
+                      icon: submitting
+                          ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.send),
+                      label: Text(l10n.submitSurvey),
                     ),
-                  const SizedBox(height: 12),
-                  FilledButton.icon(
-                    onPressed: submitting ? null : () => _submit(rows),
-                    icon: submitting
-                        ? const SizedBox.square(
-                            dimension: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.send),
-                    label: Text(l10n.submitSurvey),
-                  ),
-                ],
-              ),
+                  ],
+                );
+        },
       ),
     );
   }
@@ -114,9 +156,13 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
     // still on screen but there is no way to send them.
     String? id;
     try {
-      id = await ref
-          .read(surveysRepositoryProvider)
-          .submitResponse(widget.surveyId, user.id, answers);
+      final repo = ref.read(surveysRepositoryProvider);
+      id = widget.submissionId != null
+          ? await repo.updateSurveyResponse(
+              widget.submissionId!,
+              answers: answers,
+            )
+          : await repo.submitResponse(widget.surveyId, user.id, answers);
       final config = ref.read(serverConfigProvider);
       if (id != null && config != null) {
         await ref

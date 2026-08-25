@@ -214,6 +214,27 @@ class SurveysRepository {
     );
   }
 
+  /// Resumes a pending survey submission: replaces the answer rows on the
+  /// existing submission (rather than creating a new one) and marks it
+  /// complete. Port of `ExamTakingFragment` reusing the `sub` loaded by
+  /// `BaseExamFragment.checkId` when `isMySurvey` is true.
+  Future<String?> updateSurveyResponse(
+    String submissionId, {
+    required Map<String, SubmissionDraftAnswer> answers,
+  }) async {
+    final submission = await _submissions.getById(submissionId);
+    if (submission == null) return null;
+    final surveyId = submission.parentId;
+    if (surveyId == null) return null;
+    final questions = await _dao.questionsFor(surveyId);
+    await _submissions.updateSurveyAnswers(
+      submissionId: submissionId,
+      questions: questions,
+      answers: answers,
+    );
+    return submissionId;
+  }
+
   Future<SyncResult> sync({
     required ServerConfig config,
     void Function(SyncProgress)? onProgress,

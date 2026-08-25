@@ -453,6 +453,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                         path: ':surveyId',
                         builder: (context, state) => TakeSurveyScreen(
                           surveyId: state.pathParameters['surveyId']!,
+                          submissionId: state.uri.queryParameters['submission'],
                         ),
                       ),
                     ],

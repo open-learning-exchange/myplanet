@@ -209,7 +209,11 @@ void main() {
           user: _user('user-1'),
           prefs: prefs,
           pendingSurveys: const [
-            PendingSurvey(submissionId: 'sub-1', name: 'Health check'),
+            PendingSurvey(
+              submissionId: 'sub-1',
+              surveyId: 'survey-1',
+              name: 'Health check',
+            ),
           ],
         ),
       ),
@@ -236,7 +240,11 @@ void main() {
           user: _user('user-1'),
           prefs: prefs,
           pendingSurveys: const [
-            PendingSurvey(submissionId: 'sub-1', name: 'Health check'),
+            PendingSurvey(
+              submissionId: 'sub-1',
+              surveyId: 'survey-1',
+              name: 'Health check',
+            ),
           ],
         ),
       ),
@@ -246,6 +254,36 @@ void main() {
     expect(find.text('You have 1 survey to complete'), findsNothing);
   });
 
+  testWidgets('tapping a pending survey resumes that submission', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wrapScreen(
+        const HomeScreen(),
+        overrides: await homeOverrides(
+          user: _user('user-1'),
+          pendingSurveys: const [
+            PendingSurvey(
+              submissionId: 'sub-1',
+              surveyId: 'survey-1',
+              name: 'Health check',
+            ),
+          ],
+        ),
+        pushTargets: {
+          '/life/surveys/survey-1': (_) =>
+              const Placeholder(key: Key('resume-survey')),
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Health check'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('resume-survey')), findsOneWidget);
+  });
+
   testWidgets('never shows the survey dialog to a guest', (tester) async {
     await tester.pumpWidget(
       wrapScreen(
@@ -253,7 +291,11 @@ void main() {
         overrides: await homeOverrides(
           user: _user('guest_ada'),
           pendingSurveys: const [
-            PendingSurvey(submissionId: 'sub-1', name: 'Health check'),
+            PendingSurvey(
+              submissionId: 'sub-1',
+              surveyId: 'survey-1',
+              name: 'Health check',
+            ),
           ],
         ),
       ),
@@ -430,8 +472,16 @@ void main() {
         user: _user('user-1'),
         prefs: prefs,
         pendingSurveys: const [
-          PendingSurvey(submissionId: 'sub-1', name: 'Health check'),
-          PendingSurvey(submissionId: 'sub-2', name: 'Water survey'),
+          PendingSurvey(
+            submissionId: 'sub-1',
+            surveyId: 'survey-1',
+            name: 'Health check',
+          ),
+          PendingSurvey(
+            submissionId: 'sub-2',
+            surveyId: 'survey-2',
+            name: 'Water survey',
+          ),
         ],
       );
       Future<void> mountHome() => tester.pumpWidget(
@@ -473,7 +523,11 @@ void main() {
           user: _user('user-1'),
           prefs: prefs,
           pendingSurveys: const [
-            PendingSurvey(submissionId: 'sub-1', name: 'Health check'),
+            PendingSurvey(
+              submissionId: 'sub-1',
+              surveyId: 'survey-1',
+              name: 'Health check',
+            ),
           ],
         ),
       ),

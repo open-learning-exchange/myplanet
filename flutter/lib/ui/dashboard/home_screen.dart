@@ -247,7 +247,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   title: Text(survey.name),
                   onTap: () {
                     Navigator.of(dialogContext).pop();
-                    context.push(Routes.surveys);
+                    context.push(
+                      '${Routes.surveys}/${survey.surveyId}'
+                      '?submission=${survey.submissionId}',
+                    );
                   },
                 ),
             ],

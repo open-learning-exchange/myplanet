@@ -132,6 +132,55 @@ void main() {
   });
 
   test(
+    'resuming a pending survey updates answers on the existing submission',
+    () async {
+      await database.surveyDao.upsertAll(
+        [SurveysCompanion.insert(id: 'survey-1', name: const Value('Needs'))],
+        {
+          'survey-1': [
+            SurveyQuestionsCompanion.insert(
+              id: 'survey-1:q1',
+              surveyId: 'survey-1',
+              questionId: const Value('q1'),
+              body: const Value('Your answer'),
+              position: 0,
+            ),
+          ],
+        },
+      );
+
+      // Start a pending submission (as the dashboard's bulk-send would).
+      final originalId = await repository.submitResponse('survey-1', 'user-1', {
+        'survey-1:q1': const SubmissionDraftAnswer(
+          questionId: 'survey-1:q1',
+          value: 'first attempt',
+        ),
+      });
+
+      // Resume it with a new answer — the id must stay the same.
+      final resumedId = await repository.updateSurveyResponse(
+        originalId!,
+        answers: {
+          'survey-1:q1': const SubmissionDraftAnswer(
+            questionId: 'survey-1:q1',
+            value: 'second attempt',
+          ),
+        },
+      );
+      expect(resumedId, originalId);
+
+      final submission = await database.submissionDao.getById(originalId);
+      expect(submission?.status, 'complete');
+      expect(submission?.isUpdated, isTrue);
+      expect(submission?.uploaded, isFalse);
+      expect(
+        (await database.submissionDao.answersFor(originalId)).single.value,
+        'second attempt',
+      );
+    },
+  );
+
+  test(
     'adopts a shareable survey into a team and creates upload row',
     () async {
       await database.surveyDao.upsertAll(

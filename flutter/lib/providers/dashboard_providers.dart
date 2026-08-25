@@ -158,9 +158,14 @@ final offlineLoginsProvider =
 /// One pending individual survey, deduped: the submission to open and the
 /// survey name the dialog lists.
 class PendingSurvey {
-  const PendingSurvey({required this.submissionId, required this.name});
+  const PendingSurvey({
+    required this.submissionId,
+    required this.surveyId,
+    required this.name,
+  });
 
   final String submissionId;
+  final String surveyId;
   final String name;
 }
 
@@ -194,6 +199,7 @@ final pendingSurveysProvider =
           if (surveysById[entry.key] != null)
             PendingSurvey(
               submissionId: entry.value.id,
+              surveyId: entry.key,
               name:
                   surveysById[entry.key]!.name ??
                   _nameFromParentJson(entry.value.parent),
