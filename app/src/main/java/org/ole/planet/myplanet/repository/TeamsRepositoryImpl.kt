@@ -778,6 +778,29 @@ class TeamsRepositoryImpl @Inject constructor(
         teamDao.upsert(updatedResource.requireRoomEntity())
     }
 
+    override suspend fun createLocalResourceLink(
+        teamId: String,
+        resourceId: String,
+        title: String?,
+        planetCode: String?
+    ) {
+        if (teamId.isBlank() || resourceId.isBlank()) return
+        val resolvedPlanetCode = planetCode?.takeIf { it.isNotBlank() }
+            ?: sharedPrefManager.getPlanetCode()
+        val resourceLink = MyTeam().apply {
+            _id = UUID.randomUUID().toString()
+            this.teamId = teamId
+            this.title = title
+            this.resourceId = resourceId
+            sourcePlanet = resolvedPlanetCode
+            teamType = "local"
+            teamPlanetCode = resolvedPlanetCode
+            docType = "resourceLink"
+            updated = true
+        }
+        teamDao.upsert(resourceLink.requireRoomEntity())
+    }
+
     override suspend fun getPendingTasksForUser(
         userId: String,
         start: Long,
