@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6661
-        versionName = "0.66.61"
+        versionCode = 6671
+        versionName = "0.66.71"
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }

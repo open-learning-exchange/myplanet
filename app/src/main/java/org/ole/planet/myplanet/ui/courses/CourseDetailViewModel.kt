@@ -96,11 +96,14 @@ class CourseDetailViewModel @Inject constructor(
             val currentState = _uiState.value
             if (currentState is CourseDetailUiState.Success) {
                 try {
-                    val summaryModel = ratingSummaryProvider(courseId)
-                    _uiState.value = currentState.copy(
-                        ratingSummary = summaryModel.ratingSummary,
-                        user = summaryModel.user
-                    )
+                    val user = currentState.user
+                    val userId = user?.id?.takeIf { it.isNotBlank() } ?: user?._id
+                    if (userId != null) {
+                        val summary = ratingSummaryProvider(courseId, userId)
+                        _uiState.value = currentState.copy(
+                            ratingSummary = summary
+                        )
+                    }
                 } catch (e: Exception) {
                     // Optionally handle error
                 }
