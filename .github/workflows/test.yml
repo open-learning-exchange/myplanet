@@ -48,6 +48,10 @@ jobs:
             build-dir-test-${{ matrix.build }}-shard${{ matrix.shard }}-
             build-dir-test-${{ matrix.build }}-
 
+      - name: drop stale test results from restored build dir
+        shell: bash
+        run: rm -rf app/build/test-results app/build/reports/tests
+
       - name: run unit tests
         shell: bash
         env:
