@@ -22,10 +22,11 @@ import com.bumptech.glide.Glide
 import dagger.hilt.android.AndroidEntryPoint
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.Locale
+
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.Calendar
-import java.util.Locale
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
@@ -270,7 +271,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         var debit = 0
         var credit = 0
         for (team in list) {
-            if ("credit".equals(team.type?.lowercase(Locale.getDefault()), ignoreCase = true)) {
+            if ("credit".equals(team.type, ignoreCase = true)) {
                 credit += team.amount
             } else {
                 debit += team.amount
