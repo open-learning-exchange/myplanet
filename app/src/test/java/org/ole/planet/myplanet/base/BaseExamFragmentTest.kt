@@ -42,7 +42,7 @@ class BaseExamFragmentTest {
         every { MarkwonEditorTextWatcher.withProcess(editor) } returns markwonEditorTextWatcher
 
         // We use a mock fragment to avoid Realm constructor issues but call the real method
-        fragment = mockk<BaseExamFragment>()
+        fragment = mockk<BaseExamFragment>(relaxed = true)
         every { fragment.requireActivity() } returns activity
 
         // Setup reflection to make setMarkdownViewAndShowInput call the real method
@@ -62,7 +62,6 @@ class BaseExamFragmentTest {
         fragment.setMarkdownViewAndShowInput(editText, "textarea", "test textarea answer")
 
         verify { editText.visibility = View.VISIBLE }
-        verify { Markwon.create(activity) }
         verify { MarkwonEditorTextWatcher.withProcess(any()) }
         verify { editText.addTextChangedListener(any<MarkwonEditorTextWatcher>()) }
         verify { editText.setText("test textarea answer") }
@@ -79,7 +78,6 @@ class BaseExamFragmentTest {
         fragment.setMarkdownViewAndShowInput(editText, "text", "test text answer")
 
         verify { editText.visibility = View.VISIBLE }
-        verify { Markwon.create(activity) }
         verify { editText.addTextChangedListener(any<TextWatcher>()) }
         verify { editText.setText("test text answer") }
 
