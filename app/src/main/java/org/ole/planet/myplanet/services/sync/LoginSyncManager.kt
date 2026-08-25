@@ -51,7 +51,7 @@ class LoginSyncManager @Inject constructor(
             }
 
             val userUrl = try {
-                String.format("%s/_users/%s", UrlUtils.getUrl(), "org.couchdb.user:$userName")
+                "${UrlUtils.getUrl()}/_users/org.couchdb.user:$userName"
             } catch (e: Exception) {
                 e.printStackTrace()
                 listener.onSyncFailed("Invalid server URL.")
