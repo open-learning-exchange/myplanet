@@ -76,11 +76,11 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override fun getPendingSurveysFlow(userId: String?): Flow<List<Submission>> {
-        return submissionDao.observePendingSurveys(userId).map { rows -> rows.map { it } }
+        return submissionDao.observePendingSurveys(userId)
     }
 
     override fun getSubmissionsFlow(userId: String): Flow<List<Submission>> {
-        return submissionDao.observeByUserId(userId).map { rows -> rows.map { it } }.distinctUntilChanged { old, new ->
+        return submissionDao.observeByUserId(userId).distinctUntilChanged { old, new ->
             // Assuming any meaningful mutation bumps lastUpdateTime.
             old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.lastUpdateTime == n.lastUpdateTime }
         }
