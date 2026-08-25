@@ -6,11 +6,12 @@ import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 
 import '../../providers/courses_providers.dart';
-import '../router.dart';
 import '../../providers/activities_provider.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/session_provider.dart';
 import '../ratings/rating_dialog.dart';
+import '../router.dart';
+import 'course_markdown.dart';
 
 /// Mints a local key for a new `course_progress` row. Mirrors
 /// `RatingsRepository`'s `_defaultId` — the row's identity is reused on
@@ -344,9 +345,11 @@ class _StepContent extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 16),
-          // Description
+          // Description — rendered as markdown so images and formatting
+          // authored in the step description appear, matching
+          // `CourseStepFragment`'s `prependBaseUrlToImages` + `setMarkdownText`.
           if (step.description?.isNotEmpty == true) ...[
-            Text(step.description!, style: theme.textTheme.bodyLarge),
+            CourseMarkdownBody(data: step.description!),
             const SizedBox(height: 16),
           ],
           // Resources count

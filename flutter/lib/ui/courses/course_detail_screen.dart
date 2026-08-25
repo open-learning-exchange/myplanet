@@ -10,6 +10,7 @@ import '../../providers/session_provider.dart';
 import '../../providers/ratings_provider.dart';
 import '../ratings/rating_dialog.dart';
 import '../router.dart';
+import 'course_markdown.dart';
 
 /// Port of `ui/courses/CourseDetailFragment.kt`.
 ///
@@ -95,6 +96,14 @@ class _CourseBody extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        if (course.coverFileName != null &&
+            course.coverFileName!.isNotEmpty) ...[
+          CourseDetailCoverImage(
+            courseId: course.id,
+            coverFileName: course.coverFileName!,
+          ),
+          const SizedBox(height: 16),
+        ],
         Text(course.courseTitle ?? '', style: theme.textTheme.headlineSmall),
         const SizedBox(height: 8),
         Wrap(
@@ -112,7 +121,7 @@ class _CourseBody extends ConsumerWidget {
         ),
         if (course.description != null && course.description!.isNotEmpty) ...[
           const SizedBox(height: 16),
-          Text(course.description!, style: theme.textTheme.bodyMedium),
+          CourseMarkdownBody(data: course.description!),
         ],
         const SizedBox(height: 16),
         if (userId != null)
@@ -191,7 +200,7 @@ class _StepTile extends ConsumerWidget {
           if (step.description != null && step.description!.isNotEmpty)
             Align(
               alignment: AlignmentDirectional.centerStart,
-              child: Text(step.description!),
+              child: CourseMarkdownBody(data: step.description!),
             ),
           if (exam.valueOrNull != null)
             Align(
@@ -221,3 +230,52 @@ final examForStepProvider = FutureProvider.family<ExamRow?, String>((
 ) async {
   return ref.watch(examDaoProvider).getByStepId(stepId);
 });
+
+/// The cover banner on the course detail screen — port of
+/// `CourseDetailFragment.setCourseCover`.
+///
+/// The Kotlin loads a local file (`MyCourse.getCoverImageFile`) when the sync
+/// has downloaded one, otherwise the CouchDB `courses/<id>/<cover>` attachment
+/// via Glide with the `satellite` auth header. The Flutter port reuses the
+/// authenticated [courseCoverImageProvider] (the same bytes path the grid tile
+/// uses), since a CouchDB attachment cannot be loaded with `Image.network`.
+/// The local-file branch is deferred until the cover download lands in the
+/// sync; the bytes fetch works online and shrinks on failure, matching the
+/// Kotlin's `courseCover.visibility = GONE`.
+class CourseDetailCoverImage extends ConsumerWidget {
+  const CourseDetailCoverImage({
+    required this.courseId,
+    required this.coverFileName,
+    super.key,
+  });
+
+  final String courseId;
+  final String coverFileName;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final image = ref.watch(
+      courseCoverImageProvider(
+        CourseCoverImageRequest(
+          courseId: courseId,
+          coverFileName: coverFileName,
+        ),
+      ),
+    );
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: AspectRatio(
+        aspectRatio: 16 / 9,
+        child: image.when(
+          data: (bytes) => bytes == null || bytes.isEmpty
+              ? const SizedBox.shrink()
+              : Image.memory(bytes, fit: BoxFit.cover),
+          loading: () => ColoredBox(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          ),
+          error: (_, _) => const SizedBox.shrink(),
+        ),
+      ),
+    );
+  }
+}
