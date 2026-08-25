@@ -43,6 +43,9 @@ class OnboardingActivity : AppCompatActivity() {
     lateinit var dispatcherProvider: DispatcherProvider
     private var pageChangeListener: ViewPager.OnPageChangeListener? = null
 
+    private val selectedDot by lazy { ContextCompat.getDrawable(this, R.drawable.selected_item_dot) }
+    private val unselectedDot by lazy { ContextCompat.getDrawable(this, R.drawable.non_selected_item_dot) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (!isTaskRoot) {
@@ -114,9 +117,9 @@ class OnboardingActivity : AppCompatActivity() {
 
             override fun onPageSelected(position: Int) {
                 for (i in dots.indices) {
-                    dots[i]?.setImageDrawable(ContextCompat.getDrawable(this@OnboardingActivity, R.drawable.non_selected_item_dot))
+                    dots[i]?.setImageDrawable(unselectedDot)
                 }
-                dots[position]?.setImageDrawable(ContextCompat.getDrawable(this@OnboardingActivity, R.drawable.selected_item_dot))
+                dots[position]?.setImageDrawable(selectedDot)
 
                 if (position == mAdapter.count - 1) {
                     binding.skip.visibility = View.GONE
@@ -187,7 +190,7 @@ class OnboardingActivity : AppCompatActivity() {
 
         for (i in dots.indices) {
             dots[i] = ImageView(this)
-            dots[i]?.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.non_selected_item_dot))
+            dots[i]?.setImageDrawable(unselectedDot)
 
             val params = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -197,7 +200,7 @@ class OnboardingActivity : AppCompatActivity() {
             params.setMargins(6, 0, 6, 0)
             binding.viewPagerCountDots.addView(dots[i], params)
         }
-        dots[0]?.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.selected_item_dot))
+        dots[0]?.setImageDrawable(selectedDot)
     }
 
     override fun onNewIntent(intent: Intent) {
