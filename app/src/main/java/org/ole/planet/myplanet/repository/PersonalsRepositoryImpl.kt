@@ -64,13 +64,10 @@ class PersonalsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updatePersonalResource(id: String, updater: (Personal) -> Unit) {
-        personalDao.findByDocId(id)?.let { personal ->
-            updater(personal)
-            personalDao.update(personal)
-        }
-        personalDao.findById(id)?.let { personal ->
-            updater(personal)
-            personalDao.update(personal)
+        val personal = personalDao.findByDocId(id) ?: personalDao.findById(id)
+        personal?.let {
+            updater(it)
+            personalDao.update(it)
         }
     }
 

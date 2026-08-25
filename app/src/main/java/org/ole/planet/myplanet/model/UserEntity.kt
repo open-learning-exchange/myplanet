@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.util.Base64
 import androidx.core.net.toUri
 import androidx.room.Entity
 import androidx.room.Index
@@ -120,7 +119,7 @@ open class UserEntity(
 
             inputStream?.use {
                 val bytes = it.readBytes()
-                Base64.encodeToString(bytes, Base64.NO_WRAP)
+                java.util.Base64.getEncoder().encodeToString(bytes)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -177,8 +176,8 @@ open class UserEntity(
 
     fun isGuest(): Boolean {
         val hasGuestId = _id?.startsWith("guest_") == true
-        val hasGuestRole = rolesList?.any { it?.lowercase() == "guest" } == true
-        return hasGuestId || (hasGuestRole && rolesList?.any { it?.lowercase() == "learner" } != true)
+        val hasGuestRole = rolesList?.any { it.equals("guest", ignoreCase = true) } == true
+        return hasGuestId || (hasGuestRole && rolesList?.any { it.equals("learner", ignoreCase = true) } != true)
     }
 
     override fun toString(): String {
