@@ -8,7 +8,6 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
-import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
@@ -19,6 +18,7 @@ import org.ole.planet.myplanet.databinding.FragmentLibraryDetailBinding
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyLibrary.Companion.listToString
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.FileUtils.getFileExtension
@@ -32,7 +32,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var _binding: FragmentLibraryDetailBinding? = null
     private val binding get() = _binding!!
     private var libraryId: String? = null
-    private var lastKnownRating: JsonObject? = null
+    private var lastKnownRating: RatingSummary? = null
     private lateinit var library: MyLibrary
     var userModel: UserEntity? = null
     private suspend fun fetchLibrary(libraryId: String): MyLibrary? {
@@ -264,7 +264,8 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     override fun onRatingChanged() {
         lastKnownRating?.let { setRatings(it) }
-        lifecycleScope.launch {
+        if (view == null) return
+        viewLifecycleOwner.lifecycleScope.launch {
             if (!isAdded) return@launch
             try {
                 val rating = ratingsRepository.getRatingsById("resource", library.resourceId, userModel?.id)
