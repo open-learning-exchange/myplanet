@@ -278,6 +278,9 @@ class UploadManager @Inject constructor(
                     val responseBody = response.body()
 
                     if (response.isSuccessful && responseBody != null) {
+                        if (responseBody.size() < batch.size) {
+                            Log.w(TAG, "Team bulk upload response returned ${responseBody.size()} result(s) for a batch of ${batch.size}; ${batch.size - responseBody.size()} team(s) were not processed and will retry next sync")
+                        }
                         for (i in 0 until responseBody.size()) {
                             val element = responseBody.get(i).asJsonObject
                             val id = getString("id", element)
@@ -294,7 +297,10 @@ class UploadManager @Inject constructor(
                                     if (!teamData.imageName.isNullOrEmpty() && rev.isNotEmpty()) {
                                         rev = uploadTeamImageAttachment(id, rev, teamData.imageName)
                                     }
-                                    uploadedTeams[id] = rev
+                                    // Key by the local team id, not the response id: markTeamsUploaded()
+                                    // resolves this against the local record's _id, which won't match a
+                                    // server-generated id.
+                                    uploadedTeams[teamData.teamId ?: id] = rev
                                 }
                             }
                         }
