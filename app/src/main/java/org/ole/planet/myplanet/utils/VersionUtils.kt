@@ -7,6 +7,9 @@ import android.provider.Settings
 import androidx.core.content.pm.PackageInfoCompat.getLongVersionCode
 
 object VersionUtils {
+    private const val VERSION_PREFIX = "v"
+    private const val LITE_SUFFIX = "-lite"
+
     fun getVersionCode(context: Context): Int {
         try {
             val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
@@ -41,15 +44,43 @@ object VersionUtils {
     }
 
     fun compareVersions(version1: String, version2: String): Int {
-        val parts1 = version1.removeSuffix("-lite").removePrefix("v").split(".").map { it.toInt() }
-        val parts2 = version2.removePrefix("v").split(".").map { it.toInt() }
+        val parts1 = VersionParts(version1, stripLiteSuffix = true)
+        val parts2 = VersionParts(version2, stripLiteSuffix = false)
+        var result = 0
 
-        for (i in 0 until kotlin.math.min(parts1.size, parts2.size)) {
-            if (parts1[i] != parts2[i]) {
-                return parts1[i].compareTo(parts2[i])
+        // Every part of both strings is read, even once the order is decided, so a
+        // non-numeric part still throws NumberFormatException the way splitting did.
+        while (parts1.hasNext || parts2.hasNext) {
+            val comparison = when {
+                parts1.hasNext && parts2.hasNext -> parts1.next().compareTo(parts2.next())
+                parts1.hasNext -> { parts1.next(); 1 }
+                else -> { parts2.next(); -1 }
+            }
+            if (result == 0) {
+                result = comparison
             }
         }
-        return parts1.size.compareTo(parts2.size)
+        return result
+    }
+
+    /** Walks the dot-separated parts of a version string in place, without splitting it. */
+    private class VersionParts(private val version: String, stripLiteSuffix: Boolean) {
+        private val end =
+            if (stripLiteSuffix && version.endsWith(LITE_SUFFIX)) version.length - LITE_SUFFIX.length
+            else version.length
+        private var cursor = if (version.startsWith(VERSION_PREFIX)) VERSION_PREFIX.length else 0
+
+        /** A cursor past [end] means the last part has been consumed; an empty string still has one. */
+        val hasNext: Boolean
+            get() = cursor <= end
+
+        fun next(): Int {
+            val dot = version.indexOf('.', cursor)
+            val stop = if (dot in cursor until end) dot else end
+            val part = version.substring(cursor, stop).toInt()
+            cursor = stop + 1
+            return part
+        }
     }
 
     fun parseApkVersionString(raw: String?): Int? {
