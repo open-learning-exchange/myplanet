@@ -5,6 +5,9 @@ on:
     branches:
       - '**'
       - '!master'
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
 
 concurrency:
   group: build-${{ github.ref }}
