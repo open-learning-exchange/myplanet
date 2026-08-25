@@ -767,9 +767,10 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
     private fun populateCacheFromSavedAnswers(sub: Submission?) {
         val answers = sub?.answers ?: return
+        val questionMap = questions?.associateBy { it.id } ?: emptyMap()
         answers.forEach { answer ->
             val questionId = answer.questionId ?: return@forEach
-            val question = questions?.find { it.id == questionId } ?: return@forEach
+            val question = questionMap[questionId] ?: return@forEach
             val answerData = AnswerData()
             when (question.type) {
                 "select" -> {
