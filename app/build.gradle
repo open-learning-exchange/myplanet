@@ -198,7 +198,6 @@ dependencies {
     kspAndroidTest(libs.hilt.android.compiler)
 }
 dependencies {
-    implementation libs.firebase.crashlytics.buildtools
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
     implementation platform(libs.kotlin.bom)
     implementation(libs.annotation)
