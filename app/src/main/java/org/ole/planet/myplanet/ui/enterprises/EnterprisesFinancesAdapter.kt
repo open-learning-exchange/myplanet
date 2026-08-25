@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,7 +12,6 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFinanceBinding
 import org.ole.planet.myplanet.model.MyTeam
@@ -41,7 +39,7 @@ class EnterprisesFinancesAdapter(
         val binding = holder.binding
         binding.date.text = item.date?.let { formatDate(it, "MMM dd, yyyy") } ?: ""
         binding.note.text = item.description
-        if (TextUtils.equals(item.type?.lowercase(Locale.getDefault()), "debit")) {
+        if ("debit".equals(item.type, ignoreCase = true)) {
             binding.debit.text = context.getString(R.string.number_placeholder, item.amount)
             binding.credit.text = context.getString(R.string.message_placeholder, " -")
         } else {
