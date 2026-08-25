@@ -140,6 +140,8 @@
   "areYouSure": "के तपाईं निश्चित हुनुहुन्छ?",
   "cancelAddingExamination": "Are you sure you want to cancel adding examination? The data will be lost.",
   "yesIWantToExit": "Yes, I want to exit.",
+  "inactiveMessage": "User not activated, please contact administrator or manager to activate your account.",
+  "submitFeedback": "Submit Feedback",
   "deleteSelected": "छानिएका मेटाउनुहोस्",
   "deleteAll": "सबै मेटाउनुहोस्",
   "selectAll": "सबै चयन गर्नुहोस्",

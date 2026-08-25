@@ -140,6 +140,8 @@
   "areYouSure": "هل أنت متأكد؟",
   "cancelAddingExamination": "Are you sure you want to cancel adding examination? The data will be lost.",
   "yesIWantToExit": "Yes, I want to exit.",
+  "inactiveMessage": "User not activated, please contact administrator or manager to activate your account.",
+  "submitFeedback": "Submit Feedback",
   "deleteSelected": "حذف المحدد",
   "deleteAll": "حذف الكل",
   "selectAll": "تحديد الكل",

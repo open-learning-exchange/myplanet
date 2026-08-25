@@ -24,6 +24,7 @@ import '../components/relative_time.dart';
 import '../life/life_features.dart';
 import '../router.dart';
 import 'dashboard_drawer.dart';
+import 'inactive_dashboard_screen.dart';
 
 enum _HomeMenuAction {
   sync,
@@ -326,6 +327,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               : l10n.appTitle);
 
     final isGuest = session != null && session.id.startsWith('guest');
+
+    // `DashboardActivity.handleGuestAccess`: a logged-in user with no roles
+    // and no admin flag sees the inactive dashboard instead of the full
+    // navigation. Guests fall through to the bell dashboard (their access is
+    // gated per-action via `showGuestDialog`).
+    final isInactive =
+        session != null &&
+        !isGuest &&
+        session.rolesList.isEmpty &&
+        !session.userAdmin;
+    if (isInactive) {
+      return const InactiveDashboardScreen();
+    }
 
     return Scaffold(
       drawer: const DashboardDrawer(),
