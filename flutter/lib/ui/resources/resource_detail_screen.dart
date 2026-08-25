@@ -366,6 +366,7 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
     if (session == null || _resource == null) return;
 
     final isCurrentlyOnShelf = _isOnShelf(session.id);
+    final previousUserCount = _resource!.userId.length;
 
     // Capture the messenger and theme color before the async gap
     final messenger = ScaffoldMessenger.of(context);
@@ -387,15 +388,22 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
       await _loadResource();
 
       if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            isCurrentlyOnShelf
-                ? l10n.removedFromMyLibrary
-                : l10n.addedToMyLibrary,
+      // Only toast when the membership actually changed, matching the
+      // Kotlin `setUserLibrary` size comparison (`ef80dda52`): a no-op
+      // toggle (e.g. another device already synced the same state) stays
+      // silent rather than announcing a change that didn't happen.
+      final changed = _resource?.userId.length != previousUserCount;
+      if (changed) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              isCurrentlyOnShelf
+                  ? l10n.removedFromMyLibrary
+                  : l10n.addedToMyLibrary,
+            ),
           ),
-        ),
-      );
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       messenger.showSnackBar(

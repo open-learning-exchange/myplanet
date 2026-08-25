@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 79 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 80 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
 working. Counted honestly:
 
@@ -3323,6 +3323,50 @@ The 1360-test suite passes, `flutter analyze` clean, `dart format` clean.
 
 ---
 
+## Phase 80 — resource detail toast-on-change (`ef80dda52`)
+
+The `ef80dda52` commit refactored `ResourceDetailFragment`'s add/remove-from-
+library flow into a centralized `setUserLibrary(resourceId, add)` method on
+`ResourcesRepositoryImpl`. The behavioral change that matters for the port:
+the success toast now fires **only when the shelf membership actually
+changed**, not on every button press. The Kotlin compares
+`library.userId?.size` before and after the write; a no-op toggle (e.g.
+another device already synced the same state) stays silent.
+
+The Flutter port's `_toggleLibraryMembership` always showed the snackbar.
+The port's `setShelfMembership` is already idempotent at the data level
+(rebuilding the `userId` list to the same value when the user is already
+present), but it returned `void`, so the screen had no way to know whether
+the write changed anything. The fix captures `_resource!.userId.length`
+before the async operation, reloads, and only shows the snackbar when the
+length differs — the Dart equivalent of the Kotlin's size comparison. The
+error snackbar is unchanged.
+
+Three widget tests were added (`test/ui/resource_detail_screen_test.dart`):
+add fires the snackbar, remove fires the snackbar, and a no-op (simulated by
+writing the user back into the row before the toggle runs, so
+`setShelfMembership` rebuilds to the same list) stays silent. The test
+overrides `sessionProvider` with a stub `SessionNotifier` and
+`ratingSummaryProvider` with an empty `RatingSummary` stream so the
+`LinearProgressIndicator` in the rating section doesn't spin forever.
+
+The other four new commits from the batch need no port:
+- `1404b04cd` (resources: less apply filter button is more) removes a
+  redundant "Apply" button from the Kotlin filter dialog that just called
+  `dismiss()`. The Flutter port's filter sheet uses a deliberately different
+  two-phase design (local state committed on Apply), so the button serves a
+  real purpose and stays.
+- `ce6f701bc` (gradle-wrapper bump) and `f71ab5633` (playstore quota CI)
+  are Kotlin/CI machinery with no Flutter equivalent.
+- `f66ee1454` (enterprises finances transaction view modelling) extracts a
+  `transactionCreated` SharedFlow into `EnterprisesFinancesViewModel`. The
+  port's finances screen uses Riverpod providers, so the refactor pattern
+  doesn't apply.
+
+The 1363-test suite passes, `flutter analyze` clean, `dart format` clean.
+
+---
+
 ## Phase 67 — tags and collections (`tags`)
 
 The Kotlin's collections feature is a single CouchDB `tags` database holding
@@ -3998,7 +4042,7 @@ The 1360-test suite passes, `flutter analyze` clean, `dart format` clean,
 
 ---
 
-**Last updated**: 2026-08-25 (Phase 79 complete — harvest audit of the 2026-08-24/25 upstream batch (33 commits): all refactors, performance rewrites, and Android-lifecycle concerns with no behavioural port needed. Phase 78 complete — the duplicate `normalizeText` removed, so chat search folds accents the same way resource and course search do. Phases 76–77 and two unnumbered ports (blood-pressure validation, personal-note attachments) written up. Phase 75 complete — chat full-conversation
+**Last updated**: 2026-08-25 (Phase 80 complete — ported `ef80dda52` toast-on-change behavior to the resource detail screen: the add/remove snackbar now fires only when shelf membership actually changed, not on every button press. Three widget tests added. Phase 79 complete — harvest audit of the 2026-08-24/25 upstream batch (33 commits): all refactors, performance rewrites, and Android-lifecycle concerns with no behavioural port needed. Phase 78 complete — the duplicate `normalizeText` removed, so chat search folds accents the same way resource and course search do. Phases 76–77 and two unnumbered ports (blood-pressure validation, personal-note attachments) written up. Phase 75 complete — chat full-conversation
 search ported from `ChatViewModel.searchChats`: a `ChatSearchMode` enum with ranked matching
 (prefix before contains, first conversation before later), recency sort by
 `max(createdDate, updatedDate)`, and a hand-rolled NFD decomposition because
@@ -4014,5 +4058,5 @@ leader actions, and member-detail wiring. Phase 71 — the member detail
 screen, reached by tapping a member. Phase 70 — resource list sort
 toggles. Phase 69 — the ARB derivation tool merges instead of
 regenerating. Phase 68 — achievements. Phase 67 — tags and collections.)
-**Phase**: 79 of N (27 of 28 UI packages have a screen — see Status for what that does and
+**Phase**: 80 of N (27 of 28 UI packages have a screen — see Status for what that does and
 does not mean)
