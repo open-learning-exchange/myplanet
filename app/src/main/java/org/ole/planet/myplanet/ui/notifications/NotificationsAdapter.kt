@@ -163,4 +163,4 @@ private val ICON_BY_TYPE = mapOf(
 )
 
 internal fun iconResFor(type: String): Int =
-    ICON_BY_TYPE[type.lowercase()] ?: R.drawable.ic_notifications
+    ICON_BY_TYPE[type.lowercase(Locale.ROOT)] ?: R.drawable.ic_notifications
