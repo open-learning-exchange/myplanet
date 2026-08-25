@@ -1,23 +1,21 @@
 package org.ole.planet.myplanet.ui.viewer
 
-import androidx.annotation.OptIn
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
-import junit.framework.TestCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.After
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
@@ -26,7 +24,6 @@ import org.ole.planet.myplanet.utils.TestDispatcherProvider
 internal class ResourceViewerViewModelTest {
     private val resourcesRepository = mockk<ResourcesRepository>(relaxed = true)
     private val sharedPrefManager = mockk<SharedPrefManager>(relaxed = true)
-    private val userRepository = mockk<UserRepository>(relaxed = true)
     private val ratingsRepository = mockk<RatingsRepository>(relaxed = true)
     private val configurationsRepository = mockk<ConfigurationsRepository>(relaxed = true)
     private lateinit var viewModel: ResourceViewerViewModel
@@ -40,7 +37,6 @@ internal class ResourceViewerViewModelTest {
             resourcesRepository = resourcesRepository,
             authSessionUpdaterFactory = mockk(relaxed = true),
             sharedPrefManager = sharedPrefManager,
-            userRepository = userRepository,
             ratingsRepository = ratingsRepository,
             configurationsRepository = configurationsRepository,
             dispatcherProvider = TestDispatcherProvider(mainDispatcherRule.testDispatcher)
@@ -57,8 +53,6 @@ internal class ResourceViewerViewModelTest {
         val userId = "123"
         val resourceId = "resourceId123"
 
-        val mockUser = UserEntity().apply { id = userId }
-        coEvery { userRepository.getUserModel() } returns mockUser
         every {
             sharedPrefManager.getRawString(
                 "rating_prompted_${userId}_${resourceId}",
@@ -73,9 +67,9 @@ internal class ResourceViewerViewModelTest {
                     totalRatings = 0
                 )
 
-        val result = viewModel.shouldShowResourceRatingDialog(resourceId)
+        val result = viewModel.shouldShowResourceRatingDialog(userId, resourceId)
 
-        TestCase.assertFalse(result)
+        assertFalse(result)
     }
 
     @Test
@@ -83,8 +77,6 @@ internal class ResourceViewerViewModelTest {
         val userId = "123"
         val resourceId = "resourceId123"
 
-        val mockUser = UserEntity().apply { id = userId }
-        coEvery { userRepository.getUserModel() } returns mockUser
         every {
             sharedPrefManager.getRawString(
                 "rating_prompted_${userId}_${resourceId}",
@@ -99,9 +91,9 @@ internal class ResourceViewerViewModelTest {
                     totalRatings = 0
                 )
 
-        val result = viewModel.shouldShowResourceRatingDialog(resourceId)
+        val result = viewModel.shouldShowResourceRatingDialog(userId, resourceId)
 
-        TestCase.assertTrue(result)
+        assertTrue(result)
     }
 
     @Test
@@ -109,8 +101,6 @@ internal class ResourceViewerViewModelTest {
         val userId = "123"
         val resourceId = "resourceId123"
 
-        val mockUser = UserEntity().apply { id = userId }
-        coEvery { userRepository.getUserModel() } returns mockUser
         every {
             sharedPrefManager.getRawString(
                 "rating_prompted_${userId}_${resourceId}",
@@ -118,8 +108,8 @@ internal class ResourceViewerViewModelTest {
             )
         } returns "true"
 
-        val result = viewModel.shouldShowResourceRatingDialog(resourceId)
+        val result = viewModel.shouldShowResourceRatingDialog(userId, resourceId)
 
-        TestCase.assertFalse(result)
+        assertFalse(result)
     }
 }

@@ -48,8 +48,6 @@ import androidx.media3.ui.PlayerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import java.io.File
 import java.util.regex.Pattern
 import javax.inject.Inject
@@ -80,9 +78,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
     private var _binding: FragmentResourceViewerBinding? = null
     private val binding get() = _binding!!
-    private var pdfTotalPages: Int = 0
-    private var pdfCurrentPage: Int = 0
-    private var hasPromptedPdfRating: Boolean = false
     private var resourceId: String? = null
     private var filePath: String? = null
     private var title: String? = null
@@ -91,7 +86,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private var isFullPath: Boolean = false
     private var auth: String = ""
 
-    private var imageRatingJob: Job? = null
     private var exoPlayer: ExoPlayer? = null
     private var streamingHttpDataSourceFactory: DefaultHttpDataSource.Factory? = null
     private var videoLoadingOverlay: View? = null
@@ -101,8 +95,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private lateinit var library: MyLibrary
     private var pdfText: String = ""
     private var externalFilesDir: File? = null
-    private var imageStartTime: Long = 0L
-    private var hasPromptedImageRating: Boolean = false
     private val viewModel: ResourceViewerViewModel by viewModels()
     @Inject lateinit var dispatcherProvider: DispatcherProvider
     @Inject lateinit var ttsManager: TTSManager
@@ -350,12 +342,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         return player
     }
 
-    private fun onPdfPageChanged(currentPage: Int, totalPages: Int) {
-        if (currentPage == totalPages - 1) {
-            isResourceFinished = true
-        }
-    }
-
     private fun setupAudioViewer() {
         binding.stubAudio.visibility = View.VISIBLE
         val trackTitle = binding.root.findViewById<TextView>(R.id.trackTitle)
@@ -434,8 +420,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                 page.close()
                 pdfRenderer.close()
                 fileDescriptor.close()
-                // Currently, the pdf renders page 0 directly in a linear layout
-                onPdfPageChanged(0, 1)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -468,15 +452,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val imageViewer = binding.root.findViewById<ImageView>(R.id.imageViewer)
         imageFileName.text = title
 
-        imageStartTime = System.currentTimeMillis()
-        hasPromptedImageRating = false
-
-        imageRatingJob?.cancel()
-        imageRatingJob = viewLifecycleOwner.lifecycleScope.launch {
-            if (type == ResourceType.IMAGE) {
-                isResourceFinished = true
-            }
-        }
+        isResourceFinished = true
 
         val imageFile = if (isFullPath) filePath?.let { File(it) }
                         else File(externalFilesDir, "ole/$filePath")
@@ -587,8 +563,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     }
 
     override fun onDestroyView() {
-        imageRatingJob?.cancel()
-        imageRatingJob = null
         authSessionUpdater?.stop()
         exoPlayer?.release()
         exoPlayer = null

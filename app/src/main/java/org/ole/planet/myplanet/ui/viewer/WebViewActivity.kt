@@ -28,7 +28,7 @@ import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewFeature
 import dagger.hilt.android.AndroidEntryPoint
-import jakarta.inject.Inject
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
@@ -50,6 +50,7 @@ class WebViewActivity : AppCompatActivity() {
     @Inject
     lateinit var userRepository: UserRepository
     private val viewModel: ResourceViewerViewModel by viewModels()
+    private var backNavigationHandled = false
     private lateinit var link: String
     private val trustedHosts by lazy {
         ServerConfigUtils.getTrustedServerHosts()
@@ -83,7 +84,6 @@ class WebViewActivity : AppCompatActivity() {
             if (webView.canGoBack()) {
                 webView.goBack()
             } else {
-                isEnabled = false
                 handleBackNavigation()
             }
         }
@@ -158,19 +158,21 @@ class WebViewActivity : AppCompatActivity() {
     }
 
     private fun handleBackNavigation() {
+        if (backNavigationHandled) return
         val resourceId = intent.getStringExtra("RESOURCE_ID")
         val title = activityWebViewBinding.contentWebView.webTitle.text.toString().ifBlank {
             intent.getStringExtra("title") ?: ""
         }
 
         if (!resourceId.isNullOrBlank()) {
+            backNavigationHandled = true
             lifecycleScope.launch {
                 val userId = userRepository.getUserModel()?.id?.takeIf { it.isNotBlank() }
-                if (viewModel.isRatingPrompted(userId, resourceId)) {
+                if (userId == null || viewModel.isRatingPrompted(userId, resourceId)) {
                     finish()
                     return@launch
                 }
-                val showDialog = viewModel.shouldShowResourceRatingDialog(resourceId)
+                val showDialog = viewModel.shouldShowResourceRatingDialog(userId, resourceId)
                 if (showDialog) {
                     val dialog = RatingsFragment.newInstance("resource", resourceId, title)
                     dialog.setOnDismissListener { finish() }

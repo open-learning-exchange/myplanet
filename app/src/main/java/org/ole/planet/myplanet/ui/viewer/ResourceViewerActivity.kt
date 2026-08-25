@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.ui.ratings.RatingsFragment
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
-import jakarta.inject.Inject
+import javax.inject.Inject
 import org.ole.planet.myplanet.repository.UserRepository
 
 @AndroidEntryPoint
@@ -27,6 +27,7 @@ class ResourceViewerActivity : AppCompatActivity() {
     @Inject
     lateinit var userRepository: UserRepository
     private val viewModel: ResourceViewerViewModel by viewModels()
+    private var backNavigationHandled = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -103,18 +104,20 @@ class ResourceViewerActivity : AppCompatActivity() {
     }
 
     private fun handleBackNavigation() {
+        if (backNavigationHandled) return
         val fragment = currentViewerFragment()
         val resourceId = intent.getStringExtra("resourceId")
         val title = intent.getStringExtra("RESOURCE_TITLE")
 
         if (fragment?.isResourceFinished() == true && !resourceId.isNullOrBlank()) {
+            backNavigationHandled = true
             lifecycleScope.launch {
                 val userId = userRepository.getUserModel()?.id?.takeIf { it.isNotBlank() }
-                if (viewModel.isRatingPrompted(userId, resourceId)) {
+                if (userId == null || viewModel.isRatingPrompted(userId, resourceId)) {
                     finish()
                     return@launch
                 }
-                val showDialog = viewModel.shouldShowResourceRatingDialog(resourceId)
+                val showDialog = viewModel.shouldShowResourceRatingDialog(userId, resourceId)
                 if (showDialog) {
                     val dialog = RatingsFragment.newInstance("resource", resourceId, title)
                     dialog.setOnDismissListener { finish() }
