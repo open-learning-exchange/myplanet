@@ -96,6 +96,7 @@ jobs:
         with:
           name: test-reports-${{ matrix.build }}-shard-${{ matrix.shard }}
           overwrite: true
+          if-no-files-found: error
           path: |
             app/build/reports/tests/
             app/build/test-results/
