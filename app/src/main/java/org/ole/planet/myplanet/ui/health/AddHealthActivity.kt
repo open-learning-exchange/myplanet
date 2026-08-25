@@ -3,11 +3,9 @@ package org.ole.planet.myplanet.ui.health
 import android.app.DatePickerDialog
 import android.os.Bundle
 import android.view.MenuItem
-import android.view.View
 import android.widget.ArrayAdapter
-import android.widget.ImageView
-import android.widget.Spinner
 import androidx.activity.viewModels
+import androidx.core.view.isVisible
 import androidx.appcompat.app.AppCompatActivity
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
@@ -36,16 +34,16 @@ class AddHealthActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
         userId = intent.getStringExtra("userId")
-        findViewById<View>(R.id.btn_submit).setOnClickListener {
+        binding.btnSubmit.setOnClickListener {
             createMyHealth()
         }
 
         val contactTypes = resources.getStringArray(R.array.contact_type)
         val contactAdapter = ArrayAdapter(this, R.layout.become_a_member_spinner_layout, contactTypes)
-        findViewById<Spinner>(R.id.spn_contact_type).adapter = contactAdapter
+        binding.spnContactType.adapter = contactAdapter
 
         initViews()
-        val datePickerClickListener = View.OnClickListener {
+        val datePickerClickListener = android.view.View.OnClickListener {
             val now = Calendar.getInstance()
             val dpd = DatePickerDialog(this, { _, year, month, dayOfMonth ->
                 val selectedDate = String.format(Locale.US, "%02d-%02d-%04d", dayOfMonth, month + 1, year)
@@ -55,7 +53,7 @@ class AddHealthActivity : AppCompatActivity() {
             dpd.show()
         }
         binding.etBirthdateLayout.editText?.setOnClickListener(datePickerClickListener)
-        findViewById<ImageView>(R.id.iv_date_picker).setOnClickListener(datePickerClickListener)
+        binding.ivDatePicker.setOnClickListener(datePickerClickListener)
     }
 
     private fun createMyHealth() {
@@ -97,10 +95,8 @@ class AddHealthActivity : AppCompatActivity() {
     private fun populate() {
         userId?.let { viewModel.loadHealthData(it) }
 
-        val progressBar = findViewById<View>(R.id.progressBar)
-
         collectWhenStarted(viewModel.isLoading) { isLoading ->
-            progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+            binding.progressBar.isVisible = isLoading
         }
 
         collectWhenStarted(viewModel.healthData) { healthData ->
