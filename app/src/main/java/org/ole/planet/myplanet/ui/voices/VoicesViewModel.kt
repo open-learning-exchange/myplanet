@@ -67,7 +67,7 @@ class VoicesViewModel @Inject constructor(
         observeJob?.cancel()
         observeJob = viewModelScope.launch {
             voicesRepository.getCommunityNews(userIdentifier).collect { newsList ->
-                val filtered = newsList.map { it as News? }
+                val filtered: List<News?> = newsList
                 _baseNewsList.value = filtered
                 _labels.value = collectLabels(filtered)
             }
@@ -107,7 +107,7 @@ class VoicesViewModel @Inject constructor(
             }
             list.forEach { news ->
                 news?.labels?.forEach { label ->
-                    val labelName = Constants.LABELS.entries.find { it.value == label }?.key
+                    val labelName = Constants.LABEL_VALUE_TO_NAME[label]
                         ?: VoicesLabelManager.formatLabelValue(label)
                     labelDisplayToValue.putIfAbsent(labelName, label)
                 }
@@ -203,13 +203,32 @@ class VoicesViewModel @Inject constructor(
             }
 
             news?.labels?.forEach { label ->
-                val labelName = Constants.LABELS.entries.find { it.value == label }?.key
+                val labelName = Constants.LABEL_VALUE_TO_NAME[label]
                     ?: VoicesLabelManager.formatLabelValue(label)
                 allLabels.add(labelName)
             }
         }
 
         allLabels.sorted()
+    }
+
+    fun downloadReferencedResources(list: List<News?>) {
+        val resourceIds = mutableSetOf<String>()
+        list.forEach { news ->
+            if ((news?.imagesArray?.size() ?: 0) > 0) {
+                val ob = news?.imagesArray?.get(0)?.asJsonObject
+                val resourceId = JsonUtils.getString("resourceId", ob?.asJsonObject)
+                if (!resourceId.isNullOrBlank()) {
+                    resourceIds.add(resourceId)
+                }
+            }
+        }
+        viewModelScope.launch {
+            if (resourceIds.isNotEmpty()) {
+                val libraries = resourcesRepository.getLibraryItemsByIds(resourceIds)
+                resourcesRepository.downloadResources(libraries)
+            }
+        }
     }
 
 }

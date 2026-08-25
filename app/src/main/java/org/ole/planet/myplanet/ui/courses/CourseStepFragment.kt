@@ -63,6 +63,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private var saveInProgress: Job? = null
     private var loadDataJob: Job? = null
     private var inlineResourceAdapter: InlineResourceAdapter? = null
+    private var userHasCourse = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -112,11 +113,13 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 resources = data.resources
                 stepExams = data.stepExams
                 stepSurvey = data.stepSurvey
+
                 courseTitle = step.courseId?.let { coursesRepository.getCourseTitleById(it) }
+                userHasCourse = data.userHasCourse
 
                 fragmentCourseStepBinding.btnResources.text =
                     getString(R.string.resources_size, resources.size)
-                hideTestIfNoQuestion()
+                hideTestIfNoQuestion(data.hasExam, data.hasSurvey)
                 fragmentCourseStepBinding.tvTitle.text = step.stepTitle
                 val markdownContentWithLocalPaths = prependBaseUrlToImages(
                     step.description,
@@ -131,7 +134,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                     markdownContentWithLocalPaths
                 )
 
-                if (!data.userHasCourse) {
+                if (!userHasCourse) {
                     fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
                     fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
                 }
@@ -160,7 +163,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                         textWithSpans.removeSpan(urlSpan)
                     }
                 }
-                if (data.userHasCourse) {
+                if (userHasCourse) {
                     viewLifecycleOwner.lifecycle.withResumed {
                         launchSaveCourseProgress()
                     }
@@ -234,48 +237,36 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         }
     }
 
-    private fun hideTestIfNoQuestion() {
+    private fun hideTestIfNoQuestion(isTestPresent: Boolean, isSurveyPresent: Boolean) {
         fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
         fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
-        viewLifecycleOwner.lifecycleScope.launch {
-            if (stepExams.isNotEmpty()) {
-                val firstStepId = stepExams[0].id
-                val isTestPresent = submissionsRepository.hasSubmission(firstStepId, step.courseId, user?.id, "exam")
-                fragmentCourseStepBinding.btnTakeTest.text = if (isTestPresent) {
-                    getString(R.string.retake_test, stepExams.size)
-                } else {
-                    getString(R.string.take_test, stepExams.size)
-                }
-                fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
+        if (stepExams.isNotEmpty()) {
+            fragmentCourseStepBinding.btnTakeTest.text = if (isTestPresent) {
+                getString(R.string.retake_test, stepExams.size)
+            } else {
+                getString(R.string.take_test, stepExams.size)
             }
-            if (stepSurvey.isNotEmpty()) {
-                val firstStepId = stepSurvey[0].id
-                val isSurveyPresent = submissionsRepository.hasSubmission(firstStepId, step.courseId, user?.id, "survey")
-                fragmentCourseStepBinding.btnTakeSurvey.text = if (isSurveyPresent) {
-                    getString(R.string.redo_survey)
-                } else {
-                    getString(R.string.record_survey)
-                }
-                fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE
+            fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
+        }
+        if (stepSurvey.isNotEmpty()) {
+            fragmentCourseStepBinding.btnTakeSurvey.text = if (isSurveyPresent) {
+                getString(R.string.redo_survey)
+            } else {
+                getString(R.string.record_survey)
             }
+            fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE
         }
     }
 
     override fun setMenuVisibility(visible: Boolean) {
         super.setMenuVisibility(visible)
         if (!isAdded || !::step.isInitialized) return
-        val owner = view?.let { viewLifecycleOwner } ?: return
-        owner.lifecycleScope.launch {
-            try {
-                if (visible) {
-                    val userHasCourse = coursesRepository.isMyCourse(user?.id, step.courseId)
-                    if (userHasCourse) {
-                        launchSaveCourseProgress()
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
+        try {
+            if (visible && userHasCourse) {
+                launchSaveCourseProgress()
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 

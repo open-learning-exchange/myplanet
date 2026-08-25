@@ -2,9 +2,7 @@ package org.ole.planet.myplanet.ui.courses
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.gson.JsonObject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.util.HashMap
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -20,12 +18,10 @@ import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.Tag
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
-import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 data class CoursesUiState(
     val courses: List<Course> = emptyList(),
-    val map: HashMap<String?, JsonObject> = HashMap(),
     val progressMap: Map<String, CourseProgressState>? = null,
     val tagsMap: Map<String, List<Tag>> = emptyMap()
 )
@@ -34,7 +30,6 @@ data class CoursesUiState(
 class CoursesViewModel @Inject constructor(
     private val coursesRepository: CoursesRepository,
     private val progressRepository: ProgressRepository,
-    private val ratingsRepository: RatingsRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
@@ -94,7 +89,6 @@ class CoursesViewModel @Inject constructor(
         userId: String?,
         validCourses: List<MyCourse>,
         myCourses: List<MyCourse>,
-        map: HashMap<String?, JsonObject>,
         progressMap: Map<String, CourseProgressState>?,
         tagsMap: Map<String, List<Tag>>
     ): CoursesUiState {
@@ -107,7 +101,7 @@ class CoursesViewModel @Inject constructor(
         }
 
         val mappedCourses = sortCourses(sortedCourseList.map { it.toCourse() })
-        return CoursesUiState(mappedCourses, map, progressMap, tagsMap)
+        return CoursesUiState(mappedCourses, progressMap, tagsMap)
     }
 
     fun loadCourses(isMyCourseLib: Boolean, userId: String?) {
@@ -125,18 +119,17 @@ class CoursesViewModel @Inject constructor(
 
                     val allCourseIds = validCourses.mapNotNull { it.courseId }
 
-                    val (map, progressMap) = coroutineScope {
-                        val ratingsDeferred = async { ratingsRepository.getCourseRatings(userId) }
+                    val progressMap = coroutineScope {
                         val progressDeferred = async {
                             progressRepository.getCourseProgress(allCourseIds, userId)
                         }
-                        Pair(ratingsDeferred.await(), progressDeferred.await())
+                        progressDeferred.await()
                     }
 
                     val tagsMap = coursesRepository.getCourseTagsBulk(allCourseIds)
                         .mapValues { entry -> entry.value.map { it.toTag() } }
 
-                    processCourses(isMyCourseLib, userId, validCourses, myCourses, map, progressMap, tagsMap)
+                    processCourses(isMyCourseLib, userId, validCourses, myCourses, progressMap, tagsMap)
                 } catch (e: Exception) {
                     e.printStackTrace()
                     null
@@ -145,20 +138,6 @@ class CoursesViewModel @Inject constructor(
             if (newState != null) {
                 _coursesState.value = newState
             }
-        }
-    }
-
-    suspend fun refreshCourseRatings(userId: String?) {
-        val map = withContext(dispatcherProvider.io) {
-            try {
-                ratingsRepository.getCourseRatings(userId)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
-        }
-        if (map != null) {
-            _coursesState.value = _coursesState.value.copy(map = map)
         }
     }
 
@@ -175,7 +154,6 @@ class CoursesViewModel @Inject constructor(
             val newState = withContext(dispatcherProvider.io) {
                 val filteredCourses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
                 val myCourses = coursesRepository.getMyCourses(userId, filteredCourses)
-                val map = _coursesState.value.map
                 val progressMap = _coursesState.value.progressMap
                 val tagsMap = _coursesState.value.tagsMap
 
@@ -201,9 +179,9 @@ class CoursesViewModel @Inject constructor(
                 }
 
                 if (isMyCourseLib) {
-                    processCourses(isMyCourseLib, userId, filteredCourses, progressFilteredCourses, map, progressMap, tagsMap)
+                    processCourses(isMyCourseLib, userId, filteredCourses, progressFilteredCourses, progressMap, tagsMap)
                 } else {
-                    processCourses(isMyCourseLib, userId, progressFilteredCourses, myCourses, map, progressMap, tagsMap)
+                    processCourses(isMyCourseLib, userId, progressFilteredCourses, myCourses, progressMap, tagsMap)
                 }
             }
             _coursesState.value = newState

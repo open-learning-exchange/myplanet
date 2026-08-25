@@ -272,6 +272,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             return
         }
 
+        exoPlayer?.release()
+        exoPlayer = null
         exoPlayer = createExoPlayer()
 
         val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
@@ -299,6 +301,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val mediaSource: MediaSource = ProgressiveMediaSource.Factory(httpDataSourceFactory)
             .createMediaSource(MediaItem.fromUri(uri))
 
+        exoPlayer?.release()
+        exoPlayer = null
         exoPlayer = createExoPlayer()
 
         val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
@@ -355,6 +359,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     @OptIn(UnstableApi::class)
     private fun initializeAudioPlayer(playerView: PlayerView) {
         val fullPath = resolveAudioPath(filePath)
+        exoPlayer?.release()
+        exoPlayer = null
         exoPlayer = ExoPlayer.Builder(requireContext()).build().also { player ->
             playerView.player = player
             player.setMediaItem(MediaItem.fromUri(fullPath))

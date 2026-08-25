@@ -49,6 +49,7 @@ open class MyLibrary {
     var uploadDate: String? = null
     var createdDate: Long = 0
     var openWith: String? = null
+    var openWhichFile: String? = null
     var articleDate: String? = null
     var kind: String? = null
     var language: String? = null
@@ -274,6 +275,7 @@ open class MyLibrary {
                 publisher = JsonUtils.getString("publisher", params.doc)
                 linkToLicense = JsonUtils.getString("linkToLicense", params.doc)
                 openWith = JsonUtils.getString("openWith", params.doc)
+                openWhichFile = JsonUtils.getString("openWhichFile", params.doc).takeIf { it.isNotBlank() }
                 articleDate = JsonUtils.getString("articleDate", params.doc)
                 kind = JsonUtils.getString("kind", params.doc)
                 createdDate = JsonUtils.getLong("createdDate", params.doc)

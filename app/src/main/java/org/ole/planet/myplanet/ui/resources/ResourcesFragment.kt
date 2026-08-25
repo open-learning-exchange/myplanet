@@ -77,7 +77,9 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private val clearTags get() = binding.btnClearTags
     private val selectAll get() = binding.selectAll
     private val filter get() = binding.filter
-    private val layoutViewToggle get() = binding.root.findViewById<View>(R.id.layout_view_toggle) ?: (toggleGridButton?.parent as? View)
+    private var layoutViewToggle: View? = null
+    private var toggleGridButton: ImageButton? = null
+    private var toggleListButton: ImageButton? = null
     private lateinit var searchTags: MutableList<TagEntity>
     private lateinit var config: ChipCloudConfig
     private lateinit var adapterLibrary: ResourcesAdapter
@@ -179,6 +181,9 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        toggleGridButton = view.findViewById(R.id.toggle_grid)
+        toggleListButton = view.findViewById(R.id.toggle_list)
+        layoutViewToggle = view.findViewById<View>(R.id.layout_view_toggle) ?: (toggleGridButton?.parent as? View)
         isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) ?: false
         searchTags = ArrayList()
         config = Utilities.getCloudConfig().showClose(R.color.black_overlay)
@@ -249,13 +254,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         realtimeSyncHelper.setupRealtimeSync()
     }
 
-    private val toggleGridButton get() = binding.root.findViewById<ImageButton>(R.id.toggle_grid)
-    private val toggleListButton get() = binding.root.findViewById<ImageButton>(R.id.toggle_list)
-
     private fun setupViewModeToggle() {
         updateToggleUi(prefManager.getLibraryViewMode())
-        toggleGridButton.setOnClickListener { setViewMode(ListViewMode.GRID) }
-        toggleListButton.setOnClickListener { setViewMode(ListViewMode.LIST) }
+        toggleGridButton?.setOnClickListener { setViewMode(ListViewMode.GRID) }
+        toggleListButton?.setOnClickListener { setViewMode(ListViewMode.LIST) }
         recyclerView.addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
             if (right - left != oldRight - oldLeft) {
                 recyclerView.post { updateGridSpanIfNeeded() }
@@ -272,10 +274,17 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     private fun applyRecyclerLayoutManager(mode: ListViewMode) {
-        recyclerView.layoutManager = if (mode == ListViewMode.GRID) {
-            GridLayoutManager(requireContext(), currentSpanCount())
+        val currentLayoutManager = recyclerView.layoutManager
+        if (mode == ListViewMode.GRID) {
+            if (currentLayoutManager is GridLayoutManager) {
+                currentLayoutManager.spanCount = currentSpanCount()
+            } else {
+                recyclerView.layoutManager = GridLayoutManager(requireContext(), currentSpanCount())
+            }
         } else {
-            LinearLayoutManager(requireContext())
+            if (currentLayoutManager !is LinearLayoutManager || currentLayoutManager is GridLayoutManager) {
+                recyclerView.layoutManager = LinearLayoutManager(requireContext())
+            }
         }
     }
 
@@ -297,10 +306,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val isGrid = mode == ListViewMode.GRID
         val activeColor = ContextCompat.getColor(requireContext(), android.R.color.white)
         val inactiveColor = ContextCompat.getColor(requireContext(), R.color.daynight_textColor)
-        toggleGridButton.setBackgroundResource(if (isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
-        toggleListButton.setBackgroundResource(if (!isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
-        ImageViewCompat.setImageTintList(toggleGridButton, ColorStateList.valueOf(if (isGrid) activeColor else inactiveColor))
-        ImageViewCompat.setImageTintList(toggleListButton, ColorStateList.valueOf(if (!isGrid) activeColor else inactiveColor))
+        toggleGridButton?.setBackgroundResource(if (isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
+        toggleListButton?.setBackgroundResource(if (!isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
+        toggleGridButton?.let { ImageViewCompat.setImageTintList(it, ColorStateList.valueOf(if (isGrid) activeColor else inactiveColor)) }
+        toggleListButton?.let { ImageViewCompat.setImageTintList(it, ColorStateList.valueOf(if (!isGrid) activeColor else inactiveColor)) }
         applyRecyclerLayoutManager(mode)
     }
 
@@ -698,6 +707,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         if (::adapterLibrary.isInitialized) {
             adapterLibrary.setListener(null)
         }
+
+        layoutViewToggle = null
+        toggleGridButton = null
+        toggleListButton = null
 
         _binding = null
         super.onDestroyView()

@@ -7,11 +7,13 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
+import android.content.Context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.utils.DiffUtils
 
 class ServerAddressAdapter(
+    private val context: Context,
     private val onItemClick: (ServerAddress) -> Unit,
     private val onClearDataDialog: (ServerAddress, Int) -> Unit,
     private val isServerAlreadyConfigured: Boolean, // ← simple flag instead of URL
@@ -23,6 +25,13 @@ class ServerAddressAdapter(
 ) {
     private var selectedPosition: Int = -1
     private var lastSelectedPosition: Int = -1
+
+    private val selectedColor by lazy(LazyThreadSafetyMode.NONE) {
+        ContextCompat.getColor(context, R.color.selected_color)
+    }
+    private val transparentColor by lazy(LazyThreadSafetyMode.NONE) {
+        ContextCompat.getColor(context, android.R.color.transparent)
+    }
 
     fun setSelectedPosition(position: Int) {
         val previous = selectedPosition
@@ -103,13 +112,9 @@ class ServerAddressAdapter(
         fun updateSelectionState(isSelected: Boolean) {
             button.isSelected = isSelected
             if (isSelected) {
-                button.setBackgroundColor(
-                    ContextCompat.getColor(button.context, R.color.selected_color),
-                )
+                button.setBackgroundColor(selectedColor)
             } else {
-                button.setBackgroundColor(
-                    ContextCompat.getColor(button.context, android.R.color.transparent),
-                )
+                button.setBackgroundColor(transparentColor)
             }
         }
     }
