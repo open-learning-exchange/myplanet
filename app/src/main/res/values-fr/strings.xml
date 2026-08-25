@@ -579,6 +579,8 @@
     <string name="no_data_available_please_check_and_try_again">Aucune donnée disponible, veuillez vérifier et réessayer.</string>
     <string name="no_course_matched_filter">Aucun cours correspondant au filtre</string>
     <string name="added_to_my_library">ajouté à myLibrary</string>
+    <string name="format_added_to_mylibrary">%1$s ajouté à myLibrary</string>
+    <string name="format_removed_from_mylibrary">%1$s retiré de myLibrary</string>
     <string name="added_to_my_courses">ajouté à myCourses</string>
     <string name="do_you_want_to_stay_online">Voulez-vous rester en ligne ?</string>
     <string name="device_not_connected_to_planet">Appareil non connecté à la planète.</string>
@@ -615,6 +617,10 @@
     <string name="meetup_added">Rencontre ajoutée</string>
     <string name="meetup_not_added">Rencontre non ajoutée</string>
     <string name="add_transaction">Ajouter une transaction</string>
+    <string name="from_date">Date de début</string>
+    <string name="to_date">Date de fin</string>
+    <string name="select_from_date">Sélectionner la date de début</string>
+    <string name="select_to_date">Sélectionner la date de fin</string>
     <string name="note_is_required">La note est requise</string>
     <string name="amount_is_required">Le montant est requis</string>
     <string name="date_is_required">La date est requise</string>

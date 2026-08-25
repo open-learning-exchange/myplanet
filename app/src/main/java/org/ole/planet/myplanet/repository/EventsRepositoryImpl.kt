@@ -6,6 +6,7 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
+import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.UserEntity
@@ -16,7 +17,7 @@ import org.ole.planet.myplanet.utils.TimeProvider
 class EventsRepositoryImpl @Inject constructor(
     private val timeProvider: TimeProvider,
     private val meetupDao: MeetupDao,
-    private val userRepository: UserRepository,
+    private val userDao: UserDao,
     private val gson: Gson
 ) : EventsRepository, EventsSyncWriter {
 
@@ -72,23 +73,18 @@ class EventsRepositoryImpl @Inject constructor(
         if (memberIds.isEmpty()) {
             return emptyList()
         }
-        val memberIdSet = memberIds.toSet()
-        return userRepository.getAllUsers()
-            .filter { user ->
-                memberIdSet.contains(user.id) || user._id?.let(memberIdSet::contains) == true
-            }
-            .map { it }
+
+        return memberIds.chunked(400)
+            .flatMap { chunk -> userDao.getUsersByAnyIds(chunk) }
+            .distinctBy { it.id }
     }
 
-    override suspend fun toggleCurrentUserAttendance(meetupId: String): Meetup? {
+    override suspend fun toggleAttendance(meetupId: String, userId: String): Meetup? {
         if (meetupId.isBlank()) {
             return null
         }
 
-        val currentUser = userRepository.getUserModel()
-        val currentUserId = currentUser?.id
-
-        if (currentUserId.isNullOrBlank()) {
+        if (userId.isBlank()) {
             return getMeetupById(meetupId)
         }
 
@@ -97,7 +93,7 @@ class EventsRepositoryImpl @Inject constructor(
         if (isJoined) {
             meetup.userId = ""
         } else {
-            meetup.userId = currentUserId
+            meetup.userId = userId
         }
         meetupDao.upsert(meetup)
 
