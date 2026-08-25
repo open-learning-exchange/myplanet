@@ -46,7 +46,6 @@ class ResourcesRepositoryImplTest {
     private val teamsSyncRepositoryLazy: Lazy<TeamsSyncRepository> = mockk(relaxed = true)
     private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
-    private val teamDao: TeamDao = mockk(relaxed = true)
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
 
     private lateinit var repository: ResourcesRepositoryImpl
@@ -67,7 +66,7 @@ class ResourcesRepositoryImplTest {
             teamsSyncRepositoryLazy,
             myLibraryDao,
             userRepository,
-            teamDao,
+            teamsRepositoryLazy,
             userSessionManager,
             mockk(relaxed = true),
             mockk(relaxed = true)
@@ -82,6 +81,71 @@ class ResourcesRepositoryImplTest {
         assertEquals("a e i o u", Utilities.normalizeText("á é í ó ú"))
         assertEquals("c", Utilities.normalizeText("ç"))
         assertEquals("aeiou", Utilities.normalizeText("äëïöü"))
+    }
+
+    @Test
+    fun `setUserLibrary returns null when user is not logged in`() = runTest {
+        coEvery { userRepository.getUserModel() } returns null
+
+        val result = repository.setUserLibrary("res-id", true)
+
+        assertEquals(null, result)
+        coVerify(exactly = 0) { myLibraryDao.getByResourceId(any()) }
+    }
+
+    @Test
+    fun `setUserLibrary returns existing library and no-ops when already added`() = runTest {
+        val mockUser = org.ole.planet.myplanet.model.UserEntity().apply { id = "user-123" }
+        coEvery { userRepository.getUserModel() } returns mockUser
+
+        val mockLibrary = MyLibrary().apply {
+            id = "res-id"
+            userId = listOf("user-123")
+        }
+        coEvery { myLibraryDao.getByResourceId("res-id") } returns mockLibrary
+
+        val result = repository.setUserLibrary("res-id", true)
+
+        assertEquals(mockLibrary, result)
+        coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+    }
+
+    @Test
+    fun `setUserLibrary returns existing library and no-ops when already removed`() = runTest {
+        val mockUser = org.ole.planet.myplanet.model.UserEntity().apply { id = "user-123" }
+        coEvery { userRepository.getUserModel() } returns mockUser
+
+        val mockLibrary = MyLibrary().apply {
+            id = "res-id"
+            userId = emptyList()
+        }
+        coEvery { myLibraryDao.getByResourceId("res-id") } returns mockLibrary
+
+        val result = repository.setUserLibrary("res-id", false)
+
+        assertEquals(mockLibrary, result)
+        coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+    }
+
+    @Test
+    fun `setUserLibrary returns updated library on successful toggle`() = runTest {
+        val mockUser = org.ole.planet.myplanet.model.UserEntity().apply { id = "user-123" }
+        coEvery { userRepository.getUserModel() } returns mockUser
+
+        val mockLibrary = MyLibrary().apply {
+            id = "res-id"
+            userId = mutableListOf()
+        }
+
+        // Mock the lookups
+        coEvery { myLibraryDao.getByResourceId("res-id") } returns mockLibrary
+        coEvery { myLibraryDao.getById("res-id") } returns mockLibrary
+
+        val result = repository.setUserLibrary("res-id", true)
+
+        // updateUserLibrary mutates and calls upsert
+        coVerify { myLibraryDao.upsert(mockLibrary) }
+        assertTrue(result?.userId?.contains("user-123") == true)
     }
 
     @Test
@@ -280,6 +344,18 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
+    fun `getRecentResources deduplicates byte-identical flow emissions`() = runTest {
+        val l1 = MyLibrary().apply { id = "l1"; _rev = "rev1"; resourceOffline = false; setUserId("u1") }
+        val l2 = MyLibrary().apply { id = "l1"; _rev = "rev1"; resourceOffline = false; setUserId("u1") }
+        every { myLibraryDao.getRecentForUserPatternFlow(any()) } returns flowOf(listOf(l1), listOf(l2))
+
+        val emissions = mutableListOf<List<MyLibrary>>()
+        repository.getRecentResources("u1").collect { emissions.add(it) }
+
+        assertEquals(1, emissions.size)
+    }
+
+    @Test
     fun `getPendingDownloads returns flow from dao with correct pattern`() = runTest {
         val userId = "testUser123"
         val expectedPattern = "%\"testUser123\"%"
@@ -290,6 +366,16 @@ class ResourcesRepositoryImplTest {
         val result = repository.getPendingDownloads(userId).first()
 
         assertEquals(expectedList, result)
+    }
+
+    @Test
+    fun `getPendingDownloads deduplicates byte-identical flow emissions`() = runTest {
+        every { myLibraryDao.getPendingDownloadsForUserPatternFlow(any()) } returns flowOf(listOf("d1", "d2"), listOf("d1", "d2"))
+
+        val emissions = mutableListOf<List<String>>()
+        repository.getPendingDownloads("u1").collect { emissions.add(it) }
+
+        assertEquals(1, emissions.size)
     }
 
     @Test
@@ -419,6 +505,44 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
+    fun `batchInsertResources avoids N plus one queries`() = runTest {
+        val documents = (1..5).map {
+            val doc = com.google.gson.JsonObject()
+            doc.addProperty("_id", "id_$it")
+            doc.addProperty("_rev", "1-abc")
+            doc.addProperty("title", "Title $it")
+            doc
+        }
+
+        coEvery { myLibraryDao.getByIds(any()) } returns emptyList()
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+
+        repository.batchInsertResources(documents)
+
+        coVerify(exactly = 1) { myLibraryDao.upsertAll(match { it.size == 5 }) }
+        coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+    }
+
+    @Test
+    fun `batchInsertMyLibrary avoids N plus one queries`() = runTest {
+        val documents = (1..5).map {
+            val doc = com.google.gson.JsonObject()
+            doc.addProperty("_id", "id_$it")
+            doc.addProperty("_rev", "1-abc")
+            doc.addProperty("title", "Title $it")
+            doc
+        }
+
+        coEvery { myLibraryDao.getByIds(any()) } returns emptyList()
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+
+        repository.batchInsertMyLibrary("shelfUserA", documents)
+
+        coVerify(exactly = 1) { myLibraryDao.upsertAll(match { it.size == 5 }) }
+        coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+    }
+
+    @Test
     fun `removeResourcesFromShelf batches dao calls instead of one per item`() = runTest {
         val userId = "testUser123"
         val resourceIds = (1..50).map { "resource$it" }
@@ -444,5 +568,37 @@ class ResourcesRepositoryImplTest {
         assertTrue(result.isSuccess)
         coVerify(exactly = 0) { myLibraryDao.getByResourceIds(any()) }
         coVerify(exactly = 0) { removedLogDao.insertAll(any()) }
+    }
+
+    @Test
+    fun `markResourceUploaded calls createLocalResourceLink when resource is private`() = runTest {
+        val localId = "local1"
+        val remoteId = "remote1"
+        val remoteRev = "1-rev"
+        val teamId = "team123"
+        val library = MyLibrary().apply {
+            id = localId
+            title = "Private Resource"
+            isPrivate = true
+            privateFor = teamId
+        }
+
+        val mockTeamsRepository = mockk<TeamsRepository>(relaxed = true)
+        every { teamsRepositoryLazy.get() } returns mockTeamsRepository
+        coEvery { myLibraryDao.getById(localId) } returns library
+        coEvery { myLibraryDao.upsert(any()) } returns Unit
+
+        val result = repository.markResourceUploaded(localId, remoteId, remoteRev, "planet1")
+
+        assertTrue(result)
+        coVerify { myLibraryDao.upsert(match { it._id == remoteId && it._rev == remoteRev }) }
+        coVerify {
+            mockTeamsRepository.createLocalResourceLink(
+                teamId = teamId,
+                resourceId = remoteId,
+                title = "Private Resource",
+                planetCode = "planet1"
+            )
+        }
     }
 }

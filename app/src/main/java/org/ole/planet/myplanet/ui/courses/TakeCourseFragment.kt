@@ -25,8 +25,6 @@ import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.ratings.RatingsFragment
@@ -42,10 +40,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private val binding get() = _binding!!
     @Inject
     lateinit var userSessionManager: UserSessionManager
-    @Inject
-    lateinit var coursesRepository: CoursesRepository
-    @Inject
-    lateinit var ratingsRepository: RatingsRepository
     private val viewModel: TakeCourseViewModel by viewModels()
     private var courseId: String? = null
     private var userModel: UserEntity? = null
@@ -59,6 +53,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private var pendingJoinDialog = false
     private var courseDetailContentReady = false
     private var coursesPagerAdapter: CoursesPagerAdapter? = null
+    private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -128,13 +123,14 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 courseId
             )
             binding.viewPager2.adapter = coursesPagerAdapter
-            binding.viewPager2.registerOnPageChangeCallback(object :
-                ViewPager2.OnPageChangeCallback() {
+
+            pageChangeCallback = object : ViewPager2.OnPageChangeCallback() {
                 override fun onPageSelected(position: Int) {
                     super.onPageSelected(position)
                     this@TakeCourseFragment.onPageSelected(position)
                 }
-            })
+            }
+            pageChangeCallback?.let { binding.viewPager2.registerOnPageChangeCallback(it) }
         }
         coursesPagerAdapter?.submitList(steps.mapNotNull { it?.id })
 
@@ -200,7 +196,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         binding.courseStepProgressBar.max = steps.size
         binding.courseStepProgressBar.progress = position
         viewLifecycleOwner.lifecycleScope.launch {
-            val currentProgress = coursesRepository.getCurrentProgress(steps, userModel?.id, courseId)
+            val currentProgress = viewModel.getCurrentProgress(steps, userModel?.id, courseId)
             currentCourseProgress = currentProgress
             if (currentProgress < steps.size) {
                 binding.courseProgress.secondaryProgress = currentProgress + 1
@@ -244,7 +240,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 detachedCurrentCourse?.courseId?.let { cId ->
                     detachedCurrentCourse.courseTitle?.let { courseTitle ->
                         detachedUserModel?.name?.let { userName ->
-                            coursesRepository.logCourseVisit(cId, courseTitle, userName)
+                            viewModel.logCourseVisit(cId, courseTitle, userName)
                         }
                     }
                 }
@@ -317,11 +313,11 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         if (courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
             val stepId = steps.getOrNull(position - 1)?.id
             viewLifecycleOwner.lifecycleScope.launch {
-                val stepData = stepId?.let { coursesRepository.getCourseStepData(it, userModel?.id) }
+                val stepData = stepId?.let { viewModel.getCourseStepData(it, userModel?.id) }
                 val hasExam = stepData?.stepExams?.isNotEmpty() == true
                 val hasSurvey = stepData?.stepSurvey?.isNotEmpty() == true
 
-                if (coursesRepository.isStepCompleted(stepId, userModel?.id)) {
+                if (viewModel.isStepCompleted(stepId, userModel?.id)) {
                     isNextStepLocked = false
                 } else if (hasExam || hasSurvey) {
                     isNextStepLocked = true
@@ -392,18 +388,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         val cId = courseId ?: currentCourse?.courseId
         val title = currentCourse?.courseTitle ?: ""
         val userId = userModel?.id
-        val hasRated = if (!cId.isNullOrEmpty() && !userId.isNullOrEmpty()) {
-            try {
-                val summary = ratingsRepository.getRatingSummary("course", cId, userId)
-                summary.userRating != null || summary.existingRating != null
-            } catch (e: Exception) {
-                false
-            }
-        } else {
-            false
-        }
+        val decision = viewModel.getRatingPromptDecision(cId, userId)
 
-        if (!cId.isNullOrEmpty() && !hasRated && isAdded) {
+        if (cId != null && decision == RatingPromptDecision.Show && isAdded) {
             val ratingDialog = RatingsFragment.newInstance("course", cId, title)
             ratingDialog.setOnDismissListener {
                 if (isAdded) {
@@ -419,7 +406,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private fun onFinishStep() {
         viewLifecycleOwner.lifecycleScope.launch {
             val hasUnfinishedSurvey = courseId?.let {
-                coursesRepository.hasUnfinishedSurveys(it, userModel?.id)
+                viewModel.hasUnfinishedSurveys(it, userModel?.id)
             } ?: false
 
             if (hasUnfinishedSurvey && courseId == MANDATORY_SURVEY_COURSE_ID) {
@@ -432,16 +419,16 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     private fun addRemoveCourse() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val course = courseId?.let { coursesRepository.getCourseById(it) }
+            val course = courseId?.let { viewModel.getCourseById(it) }
             val isJoined = course?.userId?.contains(userModel?.id) == true
 
             val userId = userModel?.id ?: return@launch
             val cId = courseId ?: return@launch
 
             val result = if (isJoined) {
-                coursesRepository.leaveCourse(cId, userId)
+                viewModel.leaveCourse(cId, userId)
             } else {
-                coursesRepository.joinCourse(cId, userId)
+                viewModel.joinCourse(cId, userId)
             }
 
             result.onSuccess {
@@ -484,6 +471,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     override fun onDestroyView() {
         binding.courseProgress.setOnSeekBarChangeListener(null)
+        pageChangeCallback?.let { binding.viewPager2.unregisterOnPageChangeCallback(it) }
+        pageChangeCallback = null
         lifecycleScope.coroutineContext.cancelChildren()
         joinDialog?.dismiss()
         joinDialog = null

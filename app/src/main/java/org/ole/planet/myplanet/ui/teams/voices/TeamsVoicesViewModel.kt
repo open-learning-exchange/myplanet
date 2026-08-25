@@ -16,7 +16,10 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.NotificationsRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicePostingPolicy
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.toVoicePostingPolicy
@@ -28,7 +31,10 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 class TeamsVoicesViewModel @Inject constructor(
     private val voicesRepository: VoicesRepository,
     private val teamsRepository: TeamsRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val userRepository: UserRepository,
+    private val resourcesRepository: ResourcesRepository,
+    private val notificationsRepository: NotificationsRepository
 ) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository, dispatcherProvider) {
 
     private val _teamPolicy = MutableStateFlow<Pair<MyTeam?, VoicePostingPolicy?>?>(null)
@@ -51,7 +57,7 @@ class TeamsVoicesViewModel @Inject constructor(
 
     suspend fun getFilteredNews(teamId: String): List<News?> {
         val newsList = voicesRepository.getFilteredNews(teamId)
-        voicesRepository.updateTeamNotification(teamId, newsList.size)
+        notificationsRepository.updateTeamNotification(teamId, newsList.size)
         return newsList
     }
 
@@ -76,7 +82,7 @@ class TeamsVoicesViewModel @Inject constructor(
     }
 
     suspend fun getUserById(userId: String): UserEntity? {
-        return voicesRepository.getUserById(userId)
+        return userRepository.getUserById(userId)
     }
 
     suspend fun getReplyCount(newsId: String): Int {
@@ -104,7 +110,7 @@ class TeamsVoicesViewModel @Inject constructor(
     }
 
     suspend fun getLibraryResource(resourceId: String): MyLibrary? {
-        return voicesRepository.getLibraryResource(resourceId)
+        return resourcesRepository.getLibraryItemByResourceId(resourceId)
     }
 
 }

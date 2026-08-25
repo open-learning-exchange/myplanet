@@ -1,16 +1,16 @@
 package org.ole.planet.myplanet.model
 
-import android.util.Base64
 import androidx.core.net.toUri
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import java.io.File
 import java.io.InputStream
 import org.apache.commons.lang3.StringUtils
+import org.json.JSONException
+import org.json.JSONObject
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -119,7 +119,7 @@ open class UserEntity(
 
             inputStream?.use {
                 val bytes = it.readBytes()
-                Base64.encodeToString(bytes, Base64.NO_WRAP)
+                java.util.Base64.getEncoder().encodeToString(bytes)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -157,12 +157,10 @@ open class UserEntity(
 
     fun addImageUrl(jsonDoc: JsonObject?) {
         if (jsonDoc?.has("_attachments") == true) {
-            val element = JsonParser.parseString(jsonDoc["_attachments"].asJsonObject.toString())
-            val obj = element.asJsonObject
-            val entries = obj.entrySet()
-            for ((key1) in entries) {
+            val obj = jsonDoc["_attachments"].asJsonObject
+            val key1 = obj.entrySet().firstOrNull()?.key
+            if (key1 != null) {
                 userImage = UrlUtils.getUserImageUrl(id, key1)
-                break
             }
         }
     }
@@ -178,8 +176,8 @@ open class UserEntity(
 
     fun isGuest(): Boolean {
         val hasGuestId = _id?.startsWith("guest_") == true
-        val hasGuestRole = rolesList?.any { it?.lowercase() == "guest" } == true
-        return hasGuestId || (hasGuestRole && rolesList?.any { it?.lowercase() == "learner" } != true)
+        val hasGuestRole = rolesList?.any { it.equals("guest", ignoreCase = true) } == true
+        return hasGuestId || (hasGuestRole && rolesList?.any { it.equals("learner", ignoreCase = true) } != true)
     }
 
     override fun toString(): String {
@@ -187,5 +185,36 @@ open class UserEntity(
     }
 
     companion object {
+        fun parseLeadersJson(jsonString: String): List<UserEntity> {
+            val leadersList = mutableListOf<UserEntity>()
+            try {
+                val jsonObject = JSONObject(jsonString)
+                val docsArray = jsonObject.getJSONArray("docs")
+                for (i in 0 until docsArray.length()) {
+                    val docObject = docsArray.getJSONObject(i)
+                    val user = UserEntity()
+                    user.name = docObject.getString("name")
+                    user.id = if (!docObject.isNull("_id")) {
+                        docObject.getString("_id")
+                    } else {
+                        "org.couchdb.user:${user.name}"
+                    }
+                    user.rolesList = mutableListOf()
+                    if (!docObject.isNull("firstName")) {
+                        user.firstName = docObject.getString("firstName")
+                    }
+                    if (!docObject.isNull("lastName")) {
+                        user.lastName = docObject.getString("lastName")
+                    }
+                    if (!docObject.isNull("email")) {
+                        user.email = docObject.getString("email")
+                    }
+                    leadersList.add(user)
+                }
+            } catch (e: JSONException) {
+                e.printStackTrace()
+            }
+            return leadersList
+        }
     }
 }

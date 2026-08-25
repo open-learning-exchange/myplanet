@@ -6,6 +6,10 @@ on:
       - 'master'
   workflow_dispatch:
 
+permissions:
+  contents: write
+  actions: write
+
 jobs:
   release:
     name: myPlanet release
@@ -97,6 +101,7 @@ jobs:
           status: ${{ env.PLAYSTORE_STATUS }}
 
       - name: publish AAB to playstore fallback
+        id: playstore_fallback
         if: github.event_name != 'workflow_dispatch' && matrix.build == 'lite' && steps.playstore.outcome == 'failure'
         continue-on-error: true
         uses: dogi/upload-google-play@v1.1.4
@@ -150,3 +155,10 @@ jobs:
           export discord_channel="${{ secrets.CHANNEL }}" #remote
           echo "https://github.com/open-learning-exchange/myplanet/releases/tag/v${{ env.ANDROID_VERSION_NAME }}"
           treehouses feedback "new myplanet app: <https://github.com/open-learning-exchange/myplanet/releases/tag/v${{ env.ANDROID_VERSION_NAME }}>"
+
+      - name: warn that the playstore upload failed
+        if: github.event_name != 'workflow_dispatch' && matrix.build == 'lite' && steps.playstore.outcome == 'failure' && steps.playstore_fallback.outcome == 'failure'
+        run: |
+          MESSAGE="playstore upload failed twice: ${{ env.PLAYSTORE_RELEASE_NAME }} was not published, and the automerge drain stops until it is. Publish it without a rebuild: ${{ github.server_url }}/${{ github.repository }}/actions/workflows/playstore.yml"
+          echo "::warning::${MESSAGE}"
+          echo "### ${MESSAGE}" >> $GITHUB_STEP_SUMMARY

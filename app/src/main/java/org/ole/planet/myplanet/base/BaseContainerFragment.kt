@@ -26,6 +26,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BasePermissionActivity.Companion.hasInstallPermission
@@ -39,6 +40,7 @@ import org.ole.planet.myplanet.services.UserSessionManager.Companion.KEY_RESOURC
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.viewer.WebViewActivity
 import org.ole.planet.myplanet.utils.CourseRatingUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ResourceOpener
@@ -51,6 +53,8 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     lateinit var profileDbHandler: UserSessionManager
     @Inject
     lateinit var prefData: SharedPrefManager
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
 
     private var timesRated: TextView? = null
     var rating: TextView? = null
@@ -88,13 +92,16 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
     }
 
-    private fun startDownload(urls: ArrayList<String>) {
+    private suspend fun startDownload(urls: ArrayList<String>) {
         if (isAdded) {
-            DownloadUtils.openPriorityDownloadService(requireContext(), urls)
+            val ctx = requireContext()
+            withContext(dispatcherProvider.io) {
+                DownloadUtils.openPriorityDownloadService(ctx, urls)
+            }
         }
     }
 
-    fun startDownloadWithAutoOpen(urls: ArrayList<String>, libraryToOpen: MyLibrary? = null) {
+    suspend fun startDownloadWithAutoOpen(urls: ArrayList<String>, libraryToOpen: MyLibrary? = null) {
         if (libraryToOpen != null) {
             pendingAutoOpenLibrary = libraryToOpen
             shouldAutoOpenAfterDownload = true
@@ -111,16 +118,20 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 shouldAutoOpenAfterDownload = false
                 pendingAutoOpenLibrary = null
 
-                val isDownloaded = if (library.mediaType == "HTML") {
-                    val directory = File(context?.getExternalFilesDir(null), "ole/${library.resourceId}")
-                    val indexFile = File(directory, "index.html")
-                    indexFile.exists()
-                } else {
-                    library.isResourceOffline() || FileUtils.checkFileExist(requireContext(), UrlUtils.getUrl(library))
-                }
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val ctx = context ?: return@launch
+                    val isDownloaded = withContext(dispatcherProvider.io) {
+                        if (library.mediaType == "HTML") {
+                            val directory = File(ctx.getExternalFilesDir(null), "ole/${library.resourceId}")
+                            FileUtils.resolveHtmlEntryFile(directory, library.openWhichFile)?.exists() == true
+                        } else {
+                            library.isResourceOffline() || FileUtils.checkFileExist(ctx, UrlUtils.getUrl(library))
+                        }
+                    }
 
-                if (isDownloaded) {
-                    openResource(library)
+                    if (isDownloaded) {
+                        openResource(library)
+                    }
                 }
             }
         }
@@ -178,22 +189,23 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     private fun openHtmlResource(items: MyLibrary) {
-        val directory = File(context?.getExternalFilesDir(null), "ole/${items.resourceId}")
-        val indexFile = File(directory, "index.html")
-
-        if (indexFile.exists()) {
-            viewLifecycleOwner.lifecycleScope.launch {
-                resourcesRepository.trackResourceOpen(items)
-            }
-            val intent = Intent(activity, WebViewActivity::class.java)
-            intent.putExtra("RESOURCE_ID", items.id)
-            intent.putExtra("LOCAL_ADDRESS", items.resourceLocalAddress)
-            intent.putExtra("title", items.title)
-            startActivity(intent)
-            return
-        }
-
         viewLifecycleOwner.lifecycleScope.launch {
+            val indexExists = withContext(dispatcherProvider.io) {
+                val directory = File(context?.getExternalFilesDir(null), "ole/${items.resourceId}")
+                FileUtils.resolveHtmlEntryFile(directory, items.openWhichFile)?.exists() == true
+            }
+
+            if (indexExists) {
+                resourcesRepository.trackResourceOpen(items)
+                val intent = Intent(activity, WebViewActivity::class.java)
+                intent.putExtra("RESOURCE_ID", items.id)
+                intent.putExtra("LOCAL_ADDRESS", items.resourceLocalAddress)
+                intent.putExtra("OPEN_WHICH_FILE", items.openWhichFile)
+                intent.putExtra("title", items.title)
+                startActivity(intent)
+                return@launch
+            }
+
             val resourceId = items.resourceId
             if (resourceId == null) {
                 Utilities.toast(activity, getString(R.string.resource_not_found_in_database))

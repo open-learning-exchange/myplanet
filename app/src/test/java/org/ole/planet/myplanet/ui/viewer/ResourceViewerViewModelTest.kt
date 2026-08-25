@@ -13,12 +13,14 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.MainDispatcherRule
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class ResourceViewerViewModelTest {
@@ -26,6 +28,7 @@ internal class ResourceViewerViewModelTest {
     private val sharedPrefManager = mockk<SharedPrefManager>(relaxed = true)
     private val userRepository = mockk<UserRepository>(relaxed = true)
     private val ratingsRepository = mockk<RatingsRepository>(relaxed = true)
+    private val configurationsRepository = mockk<ConfigurationsRepository>(relaxed = true)
     private lateinit var viewModel: ResourceViewerViewModel
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
@@ -33,12 +36,14 @@ internal class ResourceViewerViewModelTest {
     @Before
     fun setup() {
         viewModel = ResourceViewerViewModel(
+            context = mockk(relaxed = true),
             resourcesRepository = resourcesRepository,
             authSessionUpdaterFactory = mockk(relaxed = true),
-            serverUrlMapper = mockk(relaxed = true),
             sharedPrefManager = sharedPrefManager,
             userRepository = userRepository,
-            ratingsRepository = ratingsRepository
+            ratingsRepository = ratingsRepository,
+            configurationsRepository = configurationsRepository,
+            dispatcherProvider = TestDispatcherProvider(mainDispatcherRule.testDispatcher)
         )
     }
 

@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6451
-        versionName = "0.64.51"
+        versionCode = 6702
+        versionName = "0.67.2"
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
@@ -23,6 +23,22 @@ android {
                 test.maxParallelForks = requested ? requested.toInteger()
                     : Math.min(Runtime.runtime.availableProcessors(), 4)
                 test.maxHeapSize = "1536m"
+                def shardTotal = (project.findProperty('testShardTotal') ?: '1').toInteger()
+                def shardIndex = (project.findProperty('testShardIndex') ?: '0').toInteger()
+                if (shardTotal < 1 || shardIndex < 0 || shardIndex >= shardTotal) {
+                    throw new GradleException("Invalid test shard config: testShardIndex=$shardIndex must be in [0, testShardTotal=$shardTotal); a bad index would silently deselect every test")
+                }
+                if (shardTotal > 1) {
+                    test.include { element ->
+                        if (element.directory) return true
+                        def path = element.relativePath.pathString
+                        if (!path.endsWith('.class')) return true
+                        def topLevel = path.substring(0, path.length() - 6)
+                        def dollar = topLevel.indexOf('$')
+                        if (dollar >= 0) topLevel = topLevel.substring(0, dollar)
+                        return (topLevel.hashCode() & Integer.MAX_VALUE) % shardTotal == shardIndex
+                    }
+                }
             }
         }
     }
@@ -148,6 +164,14 @@ android {
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
     }
 }
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.buildConfigFields.put('VERSION_CODE',
+            new com.android.build.api.variant.BuildConfigField('int', '1', 'pinned; real version lives in the manifest'))
+        variant.buildConfigFields.put('VERSION_NAME',
+            new com.android.build.api.variant.BuildConfigField('String', '"pinned"', 'pinned; real version lives in the manifest'))
+    }
+}
 dependencies {
     testImplementation(libs.test.junit)
     testImplementation(libs.test.mockk)
@@ -228,4 +252,48 @@ dependencies {
     implementation(libs.tink.android)
     implementation(libs.webkit)
     implementation(libs.pdfbox.android) { exclude group: 'org.bouncycastle' }
+}
+// From DefaultSdkProvider; dependabot cannot bump these. See docs/TESTING.md.
+def robolectricSdkJarsFrom = '4.16.1'
+def robolectricPinned = libs.versions.robolectric.get()
+def robolectricSdkJars = [
+    26: '8.0.0_r4-robolectric-r1-i7',
+    27: '8.1.0-robolectric-4611349-i7',
+    28: '9-robolectric-4913185-2-i7',
+    30: '11-robolectric-6757853-i7',
+    31: '12-robolectric-7732740-i7',
+    32: '12.1-robolectric-8229987-i7',
+    33: '13-robolectric-9030017-i7',
+    34: '14-robolectric-10818077-i7',
+    36: '16-robolectric-13921718-i7',
+]
+// One per level: nine versions of one module would collapse to the newest.
+robolectricSdkJars.each { apiLevel, jarVersion ->
+    configurations.create("robolectricSdk$apiLevel")
+    dependencies.add("robolectricSdk$apiLevel", "org.robolectric:android-all-instrumented:$jarVersion")
+}
+// Outside app/build: that cache is keyed per commit, Gradle's dependency cache is not.
+def robolectricSdkDir = new File(rootDir, 'build/robolectric-sdks')
+def fetchRobolectricSdks = tasks.register('fetchRobolectricSdks', Sync) {
+    description = 'Stages the android-all jars Robolectric would otherwise fetch inside the test forks'
+    robolectricSdkJars.keySet().each { apiLevel -> from configurations.getByName("robolectricSdk$apiLevel") }
+    into robolectricSdkDir
+    doLast {
+        if (robolectricPinned != robolectricSdkJarsFrom) {
+            throw new GradleException("robolectricSdkJars was read from Robolectric $robolectricSdkJarsFrom, but the catalog now pins $robolectricPinned - refresh every version from its DefaultSdkProvider")
+        }
+        def missing = robolectricSdkJars
+            .collect { apiLevel, jarVersion -> "android-all-instrumented-${jarVersion}.jar" }
+            .findAll { !new File(robolectricSdkDir, it).isFile() }
+        if (missing) {
+            throw new GradleException("Missing from $robolectricSdkDir: ${missing.join(', ')}")
+        }
+    }
+}
+if ((project.findProperty('robolectricOffline') ?: 'false').toString().toBoolean()) {
+    tasks.withType(Test).configureEach {
+        dependsOn fetchRobolectricSdks
+        systemProperty 'robolectric.offline', 'true'
+        systemProperty 'robolectric.dependency.dir', robolectricSdkDir.absolutePath
+    }
 }

@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.databinding.ActivityWebViewBinding
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.ratings.RatingsFragment
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ServerConfigUtils
 import org.ole.planet.myplanet.utils.WebViewSafety
 
@@ -88,10 +89,13 @@ class WebViewActivity : AppCompatActivity() {
         }
 
         if (resourceDirectory != null) {
-            val indexFile = File(resourceDirectory, "index.html")
+            val entryRelativePath = intent.getStringExtra("OPEN_WHICH_FILE")
+            val indexFile = FileUtils.resolveHtmlEntryFile(resourceDirectory, entryRelativePath)
 
-            if (indexFile.exists()) {
-                activityWebViewBinding.contentWebView.wv.loadUrl("https://appassets.androidplatform.net/assets/index.html")
+            if (indexFile?.exists() == true) {
+                val entryPath = indexFile.relativeTo(resourceDirectory).invariantSeparatorsPath
+                val encodedEntryPath = entryPath.split("/").joinToString("/") { Uri.encode(it) }
+                activityWebViewBinding.contentWebView.wv.loadUrl("https://appassets.androidplatform.net/assets/$encodedEntryPath")
             }
         } else {
             activityWebViewBinding.contentWebView.wv.loadUrl(link)

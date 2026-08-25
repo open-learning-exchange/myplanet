@@ -5,7 +5,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UploadRepository
@@ -17,7 +16,6 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 class PhotoUploader @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
-    private val apiInterface: ApiInterface,
     private val dispatcherProvider: DispatcherProvider,
     @ApplicationScope scope: CoroutineScope,
     private val uploadRepository: UploadRepository
@@ -35,14 +33,15 @@ class PhotoUploader @Inject constructor(
         withContext(dispatcherProvider.io) {
             data class UploadedPhotoInfo(val photoId: String, val rev: String, val id: String)
 
+            val baseUrl = UrlUtils.getUrl()
+
             photosToUpload.chunked(BATCH_SIZE).forEach { batch ->
                 val successfulUploads = mutableListOf<UploadedPhotoInfo>()
 
                 batch.forEach { (photoId, serialized) ->
                     try {
-                        val `object` = apiInterface.postDoc(
-                            UrlUtils.header, "application/json",
-                            "${UrlUtils.getUrl()}/submissions", serialized
+                        val `object` = uploadRepository.postUpload(
+                            "$baseUrl/submissions", serialized
                         ).body()
 
                         if (`object` != null) {

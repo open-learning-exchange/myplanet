@@ -27,6 +27,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import javax.inject.Inject
+import javax.inject.Provider
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -68,7 +69,7 @@ class DownloadService : Service() {
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
 
-    private var data = ByteArray(1024 * 4)
+    private var data = ByteArray(BUFFER_SIZE)
     private var outputFile: File? = null
     private var notificationBuilder: NotificationCompat.Builder? = null
     private var notificationManager: NotificationManager? = null
@@ -76,7 +77,8 @@ class DownloadService : Service() {
 
     @Inject
     @DownloadPreferences
-    lateinit var preferences: SharedPreferences
+    lateinit var preferencesProvider: Provider<SharedPreferences>
+    private val preferences: SharedPreferences by lazy { preferencesProvider.get() }
 
     @Inject
     @ApplicationScope
@@ -415,7 +417,6 @@ class DownloadService : Service() {
 
             if (readCount > 0) {
                 total += readCount
-                val current = (total / 1024.0).roundToInt().toDouble()
 
                 if (fileSize > 0) {
                     val progress = (total * 100 / fileSize).toInt()
@@ -425,7 +426,8 @@ class DownloadService : Service() {
 
                 val now = SystemClock.elapsedRealtime()
                 if (now - lastNotificationUpdateTime >= NOTIFICATION_UPDATE_INTERVAL_MS) {
-                    download.currentFileSize = current.toInt()
+                    val current = (total / 1024.0).roundToInt()
+                    download.currentFileSize = current
                     sendNotification(download)
                     lastNotificationUpdateTime = now
                 }
@@ -449,13 +451,13 @@ class DownloadService : Service() {
         val url = currentDownloadUrl
         if (url.isBlank()) return
 
-        download.fileName = "Downloading: ${getFileNameFromUrl(url)}"
+        val fileName = getFileNameFromUrl(url)
+        download.fileName = "Downloading: $fileName"
         download.fileUrl = originalDownloadUrl.ifEmpty { url }
         sendIntent(download, fromSync)
 
         if (NotificationManagerCompat.from(this).areNotificationsEnabled()) {
             notificationBuilder?.apply {
-                val fileName = getFileNameFromUrl(url)
                 val remaining = getRemainingCount()
                 val progressText = if (currentFileProgress in 0..100) {
                     "$fileName ($currentFileProgress%)"
@@ -542,6 +544,7 @@ class DownloadService : Service() {
     companion object {
         private const val TAG = "DownloadService"
         private const val STORAGE_HEADROOM_BYTES = 100L * 1024 * 1024
+        private const val BUFFER_SIZE = 1024 * 16
         const val PREFS_NAME = "MyPrefsFile"
         const val MESSAGE_PROGRESS = "message_progress"
         const val RESOURCE_NOT_FOUND_ACTION = "resource_not_found_action"
@@ -564,10 +567,10 @@ class DownloadService : Service() {
             isPriority: Boolean
         ): QueuedUrl? {
             val urls = preferences.getStringSet(key, emptySet()) ?: emptySet()
-            val queue = urls.sorted()
+            return urls
                 .filter { it !in processedUrls && it.isNotBlank() }
-                .map { QueuedUrl(it, isPriority) }
-            return getNextPriorityUrl(queue)
+                .minOrNull()
+                ?.let { QueuedUrl(it, isPriority) }
         }
 
         fun startService(context: Context, urlsKey: String, fromSync: Boolean) {

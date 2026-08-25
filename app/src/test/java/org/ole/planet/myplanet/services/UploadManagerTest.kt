@@ -33,12 +33,9 @@ import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.ChatRepository
-import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.TeamUploadData
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -127,18 +124,14 @@ class UploadManagerTest {
     private lateinit var uploadManager: UploadManager
     private val context: Context = mockk(relaxed = true)
     private val submissionsRepository: SubmissionsRepository = mockk(relaxed = true)
-    private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
     private val uploadCoordinator: UploadCoordinator = mockk(relaxed = true)
     private val uploadRepository: UploadRepository = mockk(relaxed = true)
     private val retryQueue: RetryQueue = mockk(relaxed = true)
-    private val personalsRepository: PersonalsRepository = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
-    private val chatRepository: ChatRepository = mockk(relaxed = true)
     private val voicesRepository: VoicesRepository = mockk(relaxed = true)
     private val uploadConfigs: UploadConfigs = mockk(relaxed = true)
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
-    private val teamsRepository: Lazy<TeamsRepository> = mockk(relaxed = true)
     private val teamsSyncRepository: Lazy<TeamsSyncRepository> = mockk(relaxed = true)
     private val apiInterface: ApiInterface = mockk(relaxed = true)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
@@ -160,26 +153,21 @@ class UploadManagerTest {
         every { Log.e(any(), any()) } returns 0
         every { Log.e(any(), any(), any()) } returns 0
 
-        photoUploader = PhotoUploader(submissionsRepository, apiInterface, TestDispatcherProvider(testDispatcher), testScope, uploadRepository)
+        photoUploader = PhotoUploader(submissionsRepository, TestDispatcherProvider(testDispatcher), testScope, uploadRepository)
 
         uploadManager = spyk(
             UploadManager(
                 context,
                 submissionsRepository,
-                sharedPrefManager,
                 gson,
                 uploadCoordinator,
                 uploadRepository,
                 retryQueue,
-                personalsRepository,
                 userRepository,
-                chatRepository,
                 voicesRepository,
                 uploadConfigs,
                 resourcesRepository,
-                teamsRepository,
                 teamsSyncRepository,
-                apiInterface,
                 activitiesRepository,
                 TestDispatcherProvider(testDispatcher),
                 testScope,
@@ -331,7 +319,7 @@ class UploadManagerTest {
         }
 
         coEvery { submissionsRepository.getUnuploadedPhotos() } returns mockPhotosList
-        coEvery { apiInterface.postDoc(any(), any(), any(), mockSerialized) } returns retrofit2.Response.success(mockResponseObject)
+        coEvery { uploadRepository.postUpload(any(), mockSerialized) } returns retrofit2.Response.success(mockResponseObject)
         coEvery { submissionsRepository.getPhotosByIds(arrayOf(photoId)) } returns emptyList()
 
         val listener: OnSuccessListener = mockk(relaxed = true)

@@ -10,7 +10,6 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -23,10 +22,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.ChatRepository
-import org.ole.planet.myplanet.repository.CommunityRepository
+import org.ole.planet.myplanet.repository.ChatSyncWriter
+import org.ole.planet.myplanet.repository.CommunitySyncWriter
 import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.FeedbackSyncWriter
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
@@ -34,7 +33,6 @@ import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TagsRepository
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
@@ -90,10 +88,10 @@ class TransactionSyncManagerCheckpointTest {
         every { UrlUtils.getUrl() } returns "http://mockurl"
         every { UrlUtils.header } returns "Basic mockHeader"
 
-        mockkObject(SyncTimeLogger)
-        every { SyncTimeLogger.logApiCall(any(), any(), any(), any()) } returns Unit
-        every { SyncTimeLogger.logRealmOperation(any(), any(), any(), any()) } returns Unit
-        every { SyncTimeLogger.logDetail(any(), any()) } returns Unit
+        val mockSyncTimeLogger = mockk<SyncTimeLogger>(relaxed = true)
+        every { mockSyncTimeLogger.logApiCall(any(), any(), any(), any()) } returns Unit
+        every { mockSyncTimeLogger.logDbOperation(any(), any(), any(), any()) } returns Unit
+        every { mockSyncTimeLogger.logDetail(any(), any()) } returns Unit
 
         every { dispatcherProvider.io } returns Dispatchers.Unconfined
         every { dispatcherProvider.main } returns Dispatchers.Unconfined
@@ -103,41 +101,37 @@ class TransactionSyncManagerCheckpointTest {
         every { prefs.edit() } returns editor
         every { editor.putInt(any(), capture(putValues)) } returns editor
         every { editor.remove(any()) } returns editor
-        every { editor.commit() } returns true
+        every { editor.apply() } returns Unit
 
         transactionSyncManager = TransactionSyncManager(
             apiInterface,
             mockk(relaxed = true),
             mockk<VoicesRepository>(relaxed = true),
-            mockk<ChatRepository>(relaxed = true),
-            mockk<FeedbackRepository>(relaxed = true),
+            mockk<ChatSyncWriter>(relaxed = true),
+            mockk<FeedbackSyncWriter>(relaxed = true),
             sharedPrefManager,
             mockk<UserRepository>(relaxed = true),
             mockk<UserSyncRepository>(relaxed = true),
             mockk<ActivitiesRepository>(relaxed = true),
-            mockk<Lazy<TeamsRepository>>(relaxed = true),
             mockk<Lazy<TeamsSyncRepository>>(relaxed = true),
             mockk<NotificationsRepository>(relaxed = true),
             mockk<TagsRepository>(relaxed = true),
             ratingsRepository,
             mockk<SubmissionsRepository>(relaxed = true),
             mockk<CoursesRepository>(relaxed = true),
-            mockk<CommunityRepository>(relaxed = true),
+            mockk<CommunitySyncWriter>(relaxed = true),
             mockk<HealthRepository>(relaxed = true),
             mockk<ProgressRepository>(relaxed = true),
             mockk<SurveysRepository>(relaxed = true),
-            // syncDb confines its work to dispatcherProvider.io, not this scope; a throwaway
-            // scope is enough and keeps each test isolated (no shared leaked-exception state).
-            CoroutineScope(Dispatchers.Unconfined),
             dispatcherProvider,
-            mockk<org.ole.planet.myplanet.services.UserSessionManager>(relaxed = true)
+            mockk<org.ole.planet.myplanet.services.UserSessionManager>(relaxed = true),
+            mockSyncTimeLogger
         )
     }
 
     @After
     fun tearDown() {
         unmockkObject(UrlUtils)
-        unmockkObject(SyncTimeLogger)
     }
 
     @Test

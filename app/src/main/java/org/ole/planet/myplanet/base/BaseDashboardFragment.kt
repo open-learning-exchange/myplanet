@@ -13,9 +13,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
@@ -58,6 +56,9 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 open class BaseDashboardFragment : DashboardPluginFragment() {
     private val viewModel: DashboardViewModel by viewModels()
     private val newsViewModel: NewsViewModel by viewModels()
+    protected var userLibrary: List<MyLibrary> = emptyList()
+    protected var userCourses: List<MyCourse> = emptyList()
+    protected var userTeams: List<MyTeam> = emptyList()
     private var fullName: String? = null
     private val params: FlexboxLayout.LayoutParams by lazy {
         FlexboxLayout.LayoutParams(
@@ -68,7 +69,6 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         }
     }
     private var di: DialogUtils.CustomProgressDialog? = null
-
 
     @Inject
     lateinit var lifeRepository: LifeRepository
@@ -117,51 +117,25 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     }
 
     private fun observeUiState() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    viewModel.uiState
-                        .map { it.library }
-                        .distinctUntilChanged()
-                        .collect { library ->
-                            renderMyLibrary(library)
-                        }
-                }
-                launch {
-                    viewModel.uiState
-                        .map { it.courses }
-                        .distinctUntilChanged()
-                        .collect { courses ->
-                            renderMyCourses(courses)
-                        }
-                }
-                launch {
-                    viewModel.uiState
-                        .map { it.teams }
-                        .distinctUntilChanged()
-                        .collect { teams ->
-                            renderMyTeams(teams)
-                        }
-                }
-                launch {
-                    viewModel.uiState
-                        .map { it.fullName to it.offlineLogins }
-                        .distinctUntilChanged()
-                        .collect { (fullName, offlineLogins) ->
-                            view?.findViewById<TextView>(R.id.txtFullName)?.text =
-                                getString(R.string.user_name, fullName, offlineLogins)
-                        }
-                }
-                launch {
-                    newsViewModel.privateImageUrls.collect { urls ->
-                        if (urls.isNotEmpty()) {
-                            Utilities.toast(activity, getString(R.string.downloading_images_please_check_notification))
-                            DownloadUtils.openDownloadService(activity, ArrayList(urls), false)
-                        } else {
-                            Utilities.toast(activity, getString(R.string.no_images_to_download))
-                        }
-                    }
-                }
+        collectWhenStarted(viewModel.uiState.map { it.library }.distinctUntilChanged()) { library ->
+            renderMyLibrary(library)
+        }
+        collectWhenStarted(viewModel.uiState.map { it.courses }.distinctUntilChanged()) { courses ->
+            renderMyCourses(courses)
+        }
+        collectWhenStarted(viewModel.uiState.map { it.teams }.distinctUntilChanged()) { teams ->
+            renderMyTeams(teams)
+        }
+        collectWhenStarted(viewModel.uiState.map { it.fullName to it.offlineLogins }.distinctUntilChanged()) { (fullName, offlineLogins) ->
+            view?.findViewById<TextView>(R.id.txtFullName)?.text =
+                getString(R.string.user_name, fullName, offlineLogins)
+        }
+        collectWhenStarted(newsViewModel.privateImageUrls) { urls ->
+            if (urls.isNotEmpty()) {
+                Utilities.toast(activity, getString(R.string.downloading_images_please_check_notification))
+                DownloadUtils.openDownloadService(activity, ArrayList(urls), false)
+            } else {
+                Utilities.toast(activity, getString(R.string.no_images_to_download))
             }
         }
     }
@@ -187,6 +161,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     }
 
     private fun renderMyLibrary(dbMylibrary: List<MyLibrary>) {
+        userLibrary = dbMylibrary
         val flexboxLayout = view?.findViewById<FlexboxLayout>(R.id.flexboxLayout)
         flexboxLayout?.removeAllViews()
         flexboxLayout?.flexDirection = FlexDirection.ROW
@@ -198,7 +173,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
                     if (model?.id?.startsWith("guest") == true) {
                         DialogUtils.guestDialog(requireContext())
                     } else {
-                        homeItemClickListener?.openMyFragment(ResourcesFragment())
+                        homeItemClickListener?.openCallFragment(ResourcesFragment())
                     }
                 }
             }
@@ -228,6 +203,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutCourse) ?: return
         flexboxLayout.removeAllViews()
         val filteredCourses = courses.filter { !it.courseTitle.isNullOrBlank() }
+        userCourses = filteredCourses
         setCountText(filteredCourses.size, MyCourse::class.java, requireView())
         if (filteredCourses.isEmpty()) {
             renderPlaceholder(flexboxLayout, getString(R.string.no_courses_joined_yet)) {
@@ -246,17 +222,13 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     }
 
     private suspend fun renderMyTeams(teams: List<MyTeam>) {
+        userTeams = teams
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutTeams) ?: return
         flexboxLayout.removeAllViews()
         setCountText(teams.size, MyTeam::class.java, requireView())
         if (teams.isEmpty()) {
             renderPlaceholder(flexboxLayout, getString(R.string.no_teams_joined_yet)) {
-                val fragment = org.ole.planet.myplanet.ui.teams.TeamFragment().apply {
-                    arguments = android.os.Bundle().apply {
-                        putBoolean("fromDashboard", true)
-                    }
-                }
-                homeItemClickListener?.openMyFragment(fragment)
+                homeItemClickListener?.openCallFragment(TeamFragment())
             }
             return
         }

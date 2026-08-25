@@ -4,19 +4,28 @@ on:
   push:
     branches:
       - '**'
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: test-${{ github.ref }}-${{ github.ref == 'refs/heads/master' && github.run_id || 'branch' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   test:
-    name: myPlanet test
+    name: myPlanet test (${{ matrix.build }}, shard ${{ matrix.shard }}/${{ strategy.job-total }})
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
         build: [default]
+        shard: [1, 2]
     steps:
       - name: checkout repository code
         uses: actions/checkout@v7
@@ -27,6 +36,23 @@ jobs:
         uses: gradle/actions/setup-gradle@v6.3.0
         with:
           gradle-version: wrapper
+          cache-read-only: false
+
+      - name: restore project build dir
+        uses: actions/cache@v6
+        with:
+          path: |
+            app/build
+            .gradle/*
+            !.gradle/configuration-cache
+          key: build-dir-test-${{ matrix.build }}-shard${{ matrix.shard }}-${{ github.sha }}
+          restore-keys: |
+            build-dir-test-${{ matrix.build }}-shard${{ matrix.shard }}-
+            build-dir-test-${{ matrix.build }}-
+
+      - name: drop stale test results from restored build dir
+        shell: bash
+        run: rm -rf app/build/test-results app/build/reports/tests
 
       - name: run unit tests
         shell: bash
@@ -34,10 +60,26 @@ jobs:
           GRADLE_BUILD_CACHE_URL: ${{ secrets.GRADLE_BUILD_CACHE_URL }}
           GRADLE_BUILD_CACHE_USER: ${{ secrets.GRADLE_BUILD_CACHE_USER }}
           GRADLE_BUILD_CACHE_PASS: ${{ secrets.GRADLE_BUILD_CACHE_PASS }}
-          GRADLE_BUILD_CACHE_PUSH: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/claude/') || startsWith(github.ref, 'refs/heads/jules/') || startsWith(github.ref, 'refs/heads/codex/') || startsWith(github.ref, 'refs/heads/copilot/') }}
+          GRADLE_BUILD_CACHE_PUSH: 'true'
         run: |
           FLAVOR=${{ matrix.build }}
-          ./gradlew test${FLAVOR^}DebugUnitTest --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
+          SHARD=${{ matrix.shard }}
+          ./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=${{ strategy.job-total }} -PtestShardIndex=$((SHARD - 1)) -ProbolectricOffline=true --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
+
+      - name: check the offline robolectric runtime took effect
+        if: always()
+        shell: bash
+        run: |
+          staged=$(find build/robolectric-sdks -name '*.jar' 2>/dev/null | wc -l || true)
+          size=$(du -sh build/robolectric-sdks 2>/dev/null | cut -f1 || true)
+          echo "staged android-all jars: ${staged:-0} (${size:-0})" | tee -a "$GITHUB_STEP_SUMMARY"
+          # Nothing else writes here, so a jar means -ProbolectricOffline missed the forks.
+          fetched=$(find "$HOME/.m2/repository/org/robolectric" -name '*.jar' 2>/dev/null || true)
+          if [ -n "$fetched" ]; then
+            echo "offline mode did not take effect: a test fork resolved an android-all jar at runtime" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "$fetched" | sed 's|.*/|  - |' | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
 
       - name: summarise slowest tests
         if: always()
@@ -49,15 +91,16 @@ jobs:
             echo "No test results found in $RESULTS" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          # tee so the breakdown is in the job log too, not only the run summary page
-          python3 .github/scripts/test_timing_summary.py "$RESULTS" | tee -a "$GITHUB_STEP_SUMMARY"
+          python3 .github/scripts/test_timing_summary.py "$RESULTS" \
+            --shard "${{ matrix.shard }}/${{ strategy.job-total }}" --warn-over 400 | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: upload test reports
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-reports-${{ matrix.build }}
+          name: test-reports-${{ matrix.build }}-shard-${{ matrix.shard }}
+          overwrite: true
+          if-no-files-found: error
           path: |
-            app/build/reports/tests/
             app/build/test-results/
           retention-days: 7

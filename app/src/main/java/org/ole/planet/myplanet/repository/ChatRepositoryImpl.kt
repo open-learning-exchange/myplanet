@@ -1,15 +1,18 @@
 package org.ole.planet.myplanet.repository
 
 import androidx.annotation.VisibleForTesting
+import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import java.util.Date
 import javax.inject.Inject
+import javax.inject.Singleton
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.data.room.dao.ChatDao
+import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatRequest
@@ -17,17 +20,30 @@ import org.ole.planet.myplanet.model.ContentData
 import org.ole.planet.myplanet.model.ContinueChatRequest
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.Data
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.Utilities
 
+@Singleton
 class ChatRepositoryImpl @Inject constructor(
     private val chatDao: ChatDao,
     private val chatApiService: ChatApiService,
     private val serverUrlMapper: ServerUrlMapper,
-    private val sharedPrefManager: SharedPrefManager
-) : ChatRepository {
+    private val sharedPrefManager: SharedPrefManager,
+    private val dispatcherProvider: DispatcherProvider,
+    @PlainGson private val gson: Gson
+) : ChatRepository, ChatSyncWriter {
+
+    private data class PrecomputedChat(
+        val chat: ChatHistory,
+        val normalizedTitle: String?,
+        val normalizedQueries: List<String?>,
+        val normalizedResponses: List<String?>
+    )
 
     @VisibleForTesting
     internal var reachabilityCheck: suspend (String) -> Boolean = { url ->
@@ -41,7 +57,7 @@ class ChatRepositoryImpl @Inject constructor(
     ): ChatResult {
         return try {
             val chatData = ChatRequest(data = ContentData(user ?: "", query, aiProvider), save = true)
-            val jsonContent = JsonUtils.gson.toJson(chatData)
+            val jsonContent = gson.toJson(chatData)
             val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
             val response = chatApiService.sendChatRequest(requestBody)
             val responseBody = response.body()
@@ -84,7 +100,7 @@ class ChatRepositoryImpl @Inject constructor(
     ): ChatResult {
         return try {
             val continueChatData = ContinueChatRequest(data = Data(user ?: "", message, aiProvider, id, rev), save = true)
-            val jsonContent = JsonUtils.gson.toJson(continueChatData)
+            val jsonContent = gson.toJson(continueChatData)
             val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
             val response = chatApiService.sendChatRequest(requestBody)
             val responseBody = response.body()
@@ -115,7 +131,87 @@ class ChatRepositoryImpl @Inject constructor(
         if (userName.isNullOrEmpty()) {
             return emptyList()
         }
-        return chatDao.getByUser(userName)
+        val chats = chatDao.getByUser(userName)
+        return sortChats(chats)
+    }
+
+    private fun sortChats(chats: List<ChatHistory>): List<ChatHistory> {
+        return chats.sortedByDescending { chat ->
+            maxOf(chat.createdDate?.toLongOrNull() ?: 0L, chat.updatedDate?.toLongOrNull() ?: 0L)
+        }
+    }
+
+    private suspend fun buildPrecomputedChats(chats: List<ChatHistory>): List<PrecomputedChat> = withContext(dispatcherProvider.default) {
+        chats.map { chat ->
+            val title = if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
+                chat.conversations?.get(0)?.query?.let { Utilities.normalizeText(it) }
+            } else {
+                chat.title?.let { Utilities.normalizeText(it) }
+            }
+            val queries = chat.conversations?.map { it?.query?.let { q -> Utilities.normalizeText(q) } } ?: emptyList()
+            val responses = chat.conversations?.map { it?.response?.let { r -> Utilities.normalizeText(r) } } ?: emptyList()
+            PrecomputedChat(chat, title, queries, responses)
+        }
+    }
+
+    override suspend fun searchChats(query: String, mode: ChatSearchMode, chats: List<ChatHistory>): List<ChatHistory> {
+        val precomputedChats = buildPrecomputedChats(chats)
+        return if (mode == ChatSearchMode.TITLE) {
+            searchByTitle(query, precomputedChats)
+        } else {
+            fullConvoSearch(query, isQuestion = (mode == ChatSearchMode.QUESTION), precomputedChats)
+        }
+    }
+
+    private suspend fun fullConvoSearch(s: String, isQuestion: Boolean, precomputedChats: List<PrecomputedChat>): List<ChatHistory> = withContext(dispatcherProvider.default) {
+        var conversation: String?
+        val queryParts = s.split(" ").filterNot { it.isEmpty() }
+        val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
+        val normalizedQuery = Utilities.normalizeText(s)
+        val inTitleStartQuery = mutableListOf<ChatHistory>()
+        val inTitleContainsQuery = mutableListOf<ChatHistory>()
+        val startsWithQuery = mutableListOf<ChatHistory>()
+        val containsQuery = mutableListOf<ChatHistory>()
+        for (pChat in precomputedChats) {
+            val conversations = pChat.chat.conversations
+            if (!conversations.isNullOrEmpty()) {
+                for (i in 0 until conversations.size) {
+                    conversation = if (isQuestion) {
+                        pChat.normalizedQueries[i]
+                    } else {
+                        pChat.normalizedResponses[i]
+                    }
+                    if (conversation == null) continue
+                    if (conversation.startsWith(normalizedQuery, ignoreCase = true)) {
+                        if (i == 0) inTitleStartQuery.add(pChat.chat) else startsWithQuery.add(pChat.chat)
+                        break
+                    } else if (normalizedQueryParts.all { conversation.contains(it, ignoreCase = true) }) {
+                        if (i == 0) inTitleContainsQuery.add(pChat.chat) else containsQuery.add(pChat.chat)
+                        break
+                    }
+                }
+            }
+        }
+        inTitleStartQuery + inTitleContainsQuery + startsWithQuery + containsQuery
+    }
+
+    private suspend fun searchByTitle(s: String, precomputedChats: List<PrecomputedChat>): List<ChatHistory> = withContext(dispatcherProvider.default) {
+        var title: String?
+        val queryParts = s.split(" ").filterNot { it.isEmpty() }
+        val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
+        val normalizedQuery = Utilities.normalizeText(s)
+        val startsWithQuery = mutableListOf<ChatHistory>()
+        val containsQuery = mutableListOf<ChatHistory>()
+        for (pChat in precomputedChats) {
+            title = pChat.normalizedTitle
+            if (title == null) continue
+            if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+                startsWithQuery.add(pChat.chat)
+            } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
+                containsQuery.add(pChat.chat)
+            }
+        }
+        startsWithQuery + containsQuery
     }
 
     override suspend fun getLatestRev(id: String): String? {
@@ -165,7 +261,7 @@ class ChatRepositoryImpl @Inject constructor(
                 aiProvider = JsonUtils.getString("aiProvider", json)
                 val conversationsArray = JsonUtils.getJsonArray("conversations", json)
                 conversations = conversationsArray.map {
-                    JsonUtils.gson.fromJson(it, Conversation::class.java)
+                    gson.fromJson(it, Conversation::class.java)
                 }
                 lastUsed = Date().time
             }
@@ -198,7 +294,7 @@ class ChatRepositoryImpl @Inject constructor(
                 else {
                     val ids = newsEntries.flatMap { news ->
                         try {
-                            val array = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
+                            val array = gson.fromJson(news.viewIn, JsonArray::class.java)
                             val list = mutableListOf<String>()
                             for (i in 0 until array.size()) {
                                 val elem = array.get(i) as JsonElement

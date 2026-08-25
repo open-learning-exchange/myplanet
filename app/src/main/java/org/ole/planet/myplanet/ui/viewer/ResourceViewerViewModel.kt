@@ -1,24 +1,36 @@
 package org.ole.planet.myplanet.ui.viewer
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.text.PDFTextStripper
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
 import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.DownloadUtils
+import org.ole.planet.myplanet.utils.FileUtils
 
 @HiltViewModel
 class ResourceViewerViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val resourcesRepository: ResourcesRepository,
     private val authSessionUpdaterFactory: AuthSessionUpdater.Factory,
-    private val serverUrlMapper: ServerUrlMapper,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
-    private val ratingsRepository: RatingsRepository
+    private val ratingsRepository: RatingsRepository,
+    private val configurationsRepository: ConfigurationsRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     companion object {
@@ -56,13 +68,7 @@ class ResourceViewerViewModel @Inject constructor(
     }
 
     suspend fun ensureServerUrlUpdated() {
-        val serverUrl = sharedPrefManager.getServerUrl()
-        val mapping = serverUrlMapper.processUrl(serverUrl)
-        if (mapping.alternativeUrl != null) {
-            serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
-                serverUrlMapper.isUrlDirectlyReachable(url)
-            }
-        }
+        configurationsRepository.ensureServerUrlUpdated()
     }
 
     fun getAuthSessionUpdater(callback: AuthSessionUpdater.AuthCallback): AuthSessionUpdater {
@@ -75,5 +81,24 @@ class ResourceViewerViewModel @Inject constructor(
 
     suspend fun updateLibraryItemTranslationAudioPath(id: String, outputFile: String?) {
         resourcesRepository.updateLibraryItem(id) { it.translationAudioPath = outputFile }
+    }
+
+    suspend fun getExternalFilesDir(): File? = withContext(dispatcherProvider.io) {
+        context.getExternalFilesDir(null)
+    }
+
+    suspend fun downloadResource(url: String) = withContext(dispatcherProvider.io) {
+        if (!FileUtils.checkFileExist(context, url)) {
+            DownloadUtils.openDownloadService(context, arrayListOf(url), false)
+        }
+    }
+
+    suspend fun extractPdfText(file: File): String = withContext(dispatcherProvider.io) {
+        try {
+            PDFBoxResourceLoader.init(context)
+            PDDocument.load(file).use {
+                PDFTextStripper().getText(it).trim()
+            }
+        } catch (e: Exception) { "" }
     }
 }

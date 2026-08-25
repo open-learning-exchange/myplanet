@@ -33,7 +33,7 @@ import org.robolectric.annotation.Config
  * batched existing-row dedup (the former N+1), and the top-level/reply queries the UI relies on.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(application = Application::class, sdk = [26])
+@Config(application = Application::class)
 class VoicesRepositoryNewsSyncTest {
 
     private lateinit var db: AppDatabase
@@ -74,11 +74,10 @@ class VoicesRepositoryNewsSyncTest {
         repository = VoicesRepositoryImpl(
             mockk<DispatcherProvider>(relaxed = true),
             Gson(),
+            Gson(),
             sharedPrefManager,
-            mockk<dagger.Lazy<UserRepository>>(relaxed = true),
-            mockk<TeamNotificationDao>(relaxed = true),
             newsDao,
-            mockk<MyLibraryDao>(relaxed = true),
+            mockk<org.ole.planet.myplanet.data.room.dao.NewsLogDao>(relaxed = true)
         )
     }
 

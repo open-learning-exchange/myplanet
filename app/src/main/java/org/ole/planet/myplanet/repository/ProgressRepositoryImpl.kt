@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.CourseProgress
+import org.ole.planet.myplanet.model.CourseProgressState
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -30,7 +31,7 @@ class ProgressRepositoryImpl @Inject constructor(
     private val answerDao: AnswerDao,
     private val questionDao: QuestionDao
 ) : ProgressRepository {
-    override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): HashMap<String?, JsonObject> {
+    override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): Map<String, CourseProgressState> = withContext(dispatcherProvider.default) {
         val allSteps = if (courseIds.isEmpty()) {
             emptyList()
         } else {
@@ -41,16 +42,16 @@ class ProgressRepositoryImpl @Inject constructor(
         val stepsByCourseId = allSteps.groupBy { it.courseId }
         val progressesByCourseId = allProgresses.groupBy { it.courseId }
 
-        val map = HashMap<String?, JsonObject>()
+        val map = HashMap<String, CourseProgressState>()
         for (courseId in courseIds) {
-            val progressObject = JsonObject()
             val steps = stepsByCourseId[courseId] ?: emptyList()
             val progresses = progressesByCourseId[courseId] ?: emptyList()
-            progressObject.addProperty("max", steps.size)
-            progressObject.addProperty("current", calculateCurrentProgress(steps, progresses))
-            map[courseId] = progressObject
+            map[courseId] = CourseProgressState(
+                max = steps.size,
+                current = calculateCurrentProgress(steps, progresses)
+            )
         }
-        return map
+        map
     }
 
     override suspend fun fetchCourseData(userId: String?): JsonArray {
@@ -65,15 +66,33 @@ class ProgressRepositoryImpl @Inject constructor(
             examDao.getByCourseIds(courseIds).map { it }
         }
         val examsByCourseId = allExams.groupBy { it.courseId }
+        val courseIdsSet = courseIds.toHashSet()
         val submissionsByCourseId = submissionDao.getExamSubmissionsByUser(userId)
             .map { it }
-            .groupBy { submission -> courseIds.firstOrNull { courseId -> submission.parentId?.contains(courseId) == true } }
+            .groupBy { submission ->
+                val parentId = submission.parentId
+                if (parentId != null) {
+                    val parts = parentId.split("@")
+                    parts.lastOrNull { courseIdsSet.contains(it) }
+                } else {
+                    null
+                }
+            }
 
         mycourses.forEach { course ->
             val obj = JsonObject()
             obj.addProperty("courseName", course.courseTitle)
             obj.addProperty("courseId", course.courseId)
-            obj.add("progress", courseProgress[course.courseId])
+
+            val progressState = courseProgress[course.courseId]
+            if (progressState != null) {
+                val progressObj = JsonObject()
+                progressObj.addProperty("max", progressState.max)
+                progressObj.addProperty("current", progressState.current)
+                obj.add("progress", progressObj)
+            } else {
+                obj.add("progress", null)
+            }
 
             val submissions = submissionsByCourseId[course.courseId].orEmpty()
 
@@ -117,6 +136,13 @@ class ProgressRepositoryImpl @Inject constructor(
     private suspend fun submissionMap(
         submissions: List<Submission>, examIds: List<String>, obj: JsonObject
     ) {
+        val examIndexMap = HashMap<String, String>()
+        examIds.forEachIndexed { index, id ->
+            if (!examIndexMap.containsKey(id)) {
+                examIndexMap[id] = index.toString()
+            }
+        }
+
         val submissionIds = submissions.mapNotNull { it.id }
         val allAnswers = if (submissionIds.isEmpty()) emptyList() else answerDao.getBySubmissionIds(submissionIds).map { it }
 
@@ -133,10 +159,12 @@ class ProgressRepositoryImpl @Inject constructor(
             answers.forEach { r ->
                 r.questionId?.let { questionId ->
                     val question = questionsMap[questionId]
-                    if (question != null && examIds.contains(question.examId)) {
-                        totalMistakes += r.mistakes
-                        val examIndexKey = examIds.indexOf(question.examId).toString()
-                        mistakesMap[examIndexKey] = (mistakesMap[examIndexKey] ?: 0) + r.mistakes
+                    if (question != null) {
+                        val examIndexKey = examIndexMap[question.examId]
+                        if (examIndexKey != null) {
+                            totalMistakes += r.mistakes
+                            mistakesMap[examIndexKey] = (mistakesMap[examIndexKey] ?: 0) + r.mistakes
+                        }
                     }
                 }
             }
@@ -287,5 +315,13 @@ class ProgressRepositoryImpl @Inject constructor(
             }
         }
         return null
+    }
+
+    override suspend fun getPendingCourseProgressUploads(): List<CourseProgress> {
+        return courseProgressDao.getPendingUploads()
+    }
+
+    override suspend fun markCourseProgressUploaded(localId: String, remoteId: String, rev: String): Boolean {
+        return courseProgressDao.markUploaded(localId, remoteId, rev) != 0
     }
 }

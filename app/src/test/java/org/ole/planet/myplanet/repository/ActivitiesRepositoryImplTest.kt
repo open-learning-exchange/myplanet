@@ -17,6 +17,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
@@ -31,6 +33,8 @@ import org.ole.planet.myplanet.model.UserChallengeActions
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -46,6 +50,10 @@ class ActivitiesRepositoryImplTest {
     private lateinit var resourceActivityDao: ResourceActivityDao
     private lateinit var offlineActivityDao: OfflineActivityDao
     private lateinit var removedLogDao: RemovedLogDao
+    private lateinit var searchActivityDao: org.ole.planet.myplanet.data.room.dao.SearchActivityDao
+    private lateinit var dispatcherProvider: DispatcherProvider
+    private val testDispatcher = StandardTestDispatcher()
+    private val testScope = TestScope(testDispatcher)
 
     private lateinit var repository: ActivitiesRepositoryImpl
 
@@ -63,9 +71,12 @@ class ActivitiesRepositoryImplTest {
         resourceActivityDao = mockk(relaxed = true)
         offlineActivityDao = mockk(relaxed = true)
         removedLogDao = mockk(relaxed = true)
+        searchActivityDao = mockk(relaxed = true)
+        dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
         repository = ActivitiesRepositoryImpl(
             context,
+            dispatcherProvider,
             lazyUserRepository,
             apiInterface,
             sharedPrefManager,
@@ -74,7 +85,8 @@ class ActivitiesRepositoryImplTest {
             courseActivityDao,
             resourceActivityDao,
             offlineActivityDao,
-            removedLogDao
+            removedLogDao,
+            searchActivityDao
         )
     }
 
@@ -198,14 +210,14 @@ class ActivitiesRepositoryImplTest {
     }
 
     @Test
-    fun `getMostOpenedResource returns null when no activities`() = runTest {
+    fun `getMostOpenedResource returns null when no activities`() = testScope.runTest {
         coEvery { resourceActivityDao.getByUserAndType("john", "pdf") } returns emptyList()
         val result = repository.getMostOpenedResource("john", "pdf")
         assertNull(result)
     }
 
     @Test
-    fun `getMostOpenedResource returns correct pair`() = runTest {
+    fun `getMostOpenedResource returns correct pair`() = testScope.runTest {
         val activities = listOf(
             ResourceActivity().apply { resourceId = "res1"; title = "Res 1" },
             ResourceActivity().apply { resourceId = "res1"; title = "Res 1" },

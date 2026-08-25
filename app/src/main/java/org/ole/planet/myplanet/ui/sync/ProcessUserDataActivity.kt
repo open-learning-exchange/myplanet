@@ -31,7 +31,6 @@ import org.ole.planet.myplanet.repository.SyncRepository
 import org.ole.planet.myplanet.repository.SyncUiState
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.Constants
@@ -50,9 +49,6 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
     @Inject
     lateinit var prefData: SharedPrefManager
-
-    @Inject
-    lateinit var uploadManager: UploadManager
 
     @Inject
     lateinit var uploadToShelfService: UploadToShelfService
@@ -82,7 +78,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     fun checkDownloadResult(download: Download?) {
-        lifecycleScope.launch(dispatcherProvider.main) {
+        lifecycleScope.launch {
             if (!isFinishing && !isDestroyed) {
                 customProgressDialog.show()
                 customProgressDialog.setText("${getString(R.string.downloading)} ${download?.progress}% ${getString(R.string.complete)}")

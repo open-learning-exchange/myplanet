@@ -7,7 +7,6 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
-import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -36,12 +35,14 @@ import org.ole.planet.myplanet.utils.UrlUtils
 @Singleton
 class SyncRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val apiInterface: ApiInterface,
     private val dispatcherProvider: DispatcherProvider,
     private val resourcesRepository: ResourcesRepository,
     private val coursesRepository: CoursesRepository,
-    private val eventsRepository: EventsRepository,
+    private val eventsRepository: EventsSyncWriter,
     private val teamsSyncRepository: TeamsSyncRepository,
-    private val transactionSyncManager: dagger.Lazy<TransactionSyncManager>
+    private val transactionSyncManager: dagger.Lazy<TransactionSyncManager>,
+    private val syncTimeLogger: SyncTimeLogger
 ) : SyncRepository {
     override fun uploadLoginData(): Flow<SyncUiState> {
         val workRequest = OneTimeWorkRequest.Builder(UserDataWorker::class.java)
@@ -86,7 +87,7 @@ class SyncRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun processShelfParallel(shelfId: String, apiInterface: ApiInterface): Int {
+    override suspend fun processShelfParallel(shelfId: String): Int {
         var processedItems = 0
 
         try {
@@ -113,7 +114,7 @@ class SyncRepositoryImpl @Inject constructor(
                     val array = getJsonArray(shelfData.key, shelfDoc)
                     if (array.size() > 0) {
                         async(dispatcherProvider.io) {
-                            processShelfDataOptimizedSync(shelfId, shelfData, shelfDoc, apiInterface)
+                            processShelfDataOptimizedSync(shelfId, shelfData, shelfDoc)
                         }
                     } else null
                 }
@@ -127,9 +128,9 @@ class SyncRepositoryImpl @Inject constructor(
         return processedItems
     }
 
-    private suspend fun processShelfDataOptimizedSync(shelfId: String?, shelfData: Constants.ShelfData, shelfDoc: JsonObject?, apiInterface: ApiInterface): Int {
+    private suspend fun processShelfDataOptimizedSync(shelfId: String?, shelfData: Constants.ShelfData, shelfDoc: JsonObject?): Int {
         var processedCount = 0
-        val logger = SyncTimeLogger
+        val logger = syncTimeLogger
 
         try {
             val array = getJsonArray(shelfData.key, shelfDoc)
@@ -157,7 +158,7 @@ class SyncRepositoryImpl @Inject constructor(
                 i = end
 
                 val keysObject = JsonObject()
-                keysObject.add("keys", gson.fromJson(gson.toJson(batch), JsonArray::class.java))
+                keysObject.add("keys", gson.toJsonTree(batch))
 
                 // API call
                 val apiStartTime = SystemClock.elapsedRealtime()
@@ -199,7 +200,7 @@ class SyncRepositoryImpl @Inject constructor(
                         "teams" -> processedCount += teamsSyncRepository.batchInsertMyTeams(documentsToProcess)
                     }
                     val realmDuration = SystemClock.elapsedRealtime() - realmStartTime
-                    logger.logRealmOperation("shelf_insert", shelfData.type, realmDuration, documentsToProcess.size)
+                    logger.logDbOperation("shelf_insert", shelfData.type, realmDuration, documentsToProcess.size)
                 }
 
                 val batchDuration = SystemClock.elapsedRealtime() - batchStartTime

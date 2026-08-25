@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.Gson
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
@@ -10,6 +11,7 @@ import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.data.room.dao.ChatDao
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatRepositoryTest {
@@ -18,6 +20,8 @@ class ChatRepositoryTest {
     private val chatApiService: ChatApiService = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
+    private val testDispatcher = kotlinx.coroutines.test.StandardTestDispatcher()
+    private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
     @Before
     fun setup() {
@@ -26,7 +30,9 @@ class ChatRepositoryTest {
             chatDao,
             chatApiService,
             serverUrlMapper,
-            sharedPrefManager
+            sharedPrefManager,
+            dispatcherProvider,
+            Gson()
         )
     }
 

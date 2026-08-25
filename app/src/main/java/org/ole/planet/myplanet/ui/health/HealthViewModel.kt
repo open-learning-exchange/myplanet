@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -101,26 +103,31 @@ class HealthViewModel @Inject constructor(
     fun loadHealthData(userId: String) {
         viewModelScope.launch {
             _isLoading.value = true
-            val userModel = userRepository.getUserById(userId)
-            val decodedHealth = userRepository.getHealthProfile(userId)
+            coroutineScope {
+                val userModelDeferred = async { userRepository.getUserById(userId) }
+                val decodedHealthDeferred = async { healthRepository.getHealthProfile(userId) }
 
-            _healthData.value = HealthData(
-                decodedHealth,
-                userModel?.firstName,
-                userModel?.middleName,
-                userModel?.lastName,
-                userModel?.email,
-                userModel?.phoneNumber,
-                userModel?.dob,
-                userModel?.birthPlace
-            )
+                val userModel = userModelDeferred.await()
+                val decodedHealth = decodedHealthDeferred.await()
+
+                _healthData.value = HealthData(
+                    decodedHealth,
+                    userModel?.firstName,
+                    userModel?.middleName,
+                    userModel?.lastName,
+                    userModel?.email,
+                    userModel?.phoneNumber,
+                    userModel?.dob,
+                    userModel?.birthPlace
+                )
+            }
             _isLoading.value = false
         }
     }
 
     fun saveHealthData(userId: String, userData: Map<String, Any?>) {
         viewModelScope.launch {
-            userRepository.updateUserHealthProfile(userId, userData)
+            healthRepository.updateUserHealthProfile(userId, userData)
             _isSaved.value = true
         }
     }

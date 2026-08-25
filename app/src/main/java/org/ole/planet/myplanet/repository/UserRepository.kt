@@ -7,7 +7,6 @@ import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.DashboardProfile
 import org.ole.planet.myplanet.model.MemberInfo
-import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
 
@@ -16,8 +15,6 @@ interface UserRepository {
     suspend fun getSavedUsers(): List<User>
     suspend fun upsertSavedUser(name: String?, encryptedPassword: String?, source: String, userProfile: String?, userName: String?)
     suspend fun resetGuestAsMember(username: String?)
-    suspend fun getHealthProfile(userId: String): MyHealth?
-    suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>)
 
     suspend fun getUserById(userId: String): UserEntity?
     suspend fun getDashboardProfile(userId: String): DashboardProfile
@@ -32,7 +29,8 @@ interface UserRepository {
     suspend fun getAllUsers(): List<UserEntity>
     suspend fun getUsersSortedBy(fieldName: String, descending: Boolean): List<UserEntity>
     suspend fun getPendingSyncUsers(limit: Int): List<UserEntity>
-    fun parseLeadersJson(jsonString: String): List<UserEntity>
+    suspend fun searchUsers(query: String, sortField: String, descending: Boolean): List<UserEntity>
+    suspend fun saveUser(user: UserEntity)
     suspend fun ensureUserSecurityKeys(userId: String): UserEntity?
     suspend fun fetchUserSecurityData(name: String)
     suspend fun updateSecurityData(
@@ -81,6 +79,7 @@ interface UserRepository {
     suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): UserEntity?
     suspend fun hasAtLeastOneUser(): Boolean
     suspend fun hasUserSyncAction(userId: String?): Boolean
+    suspend fun hasActiveUserSyncAction(): Boolean
     suspend fun initializeAchievement(achievementId: String): Achievement?
     suspend fun updateAchievement(
         achievementId: String,

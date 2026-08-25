@@ -47,9 +47,6 @@ import androidx.media3.ui.DefaultTimeBar
 import androidx.media3.ui.PlayerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
-import com.tom_roush.pdfbox.pdmodel.PDDocument
-import com.tom_roush.pdfbox.text.PDFTextStripper
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -57,7 +54,6 @@ import java.io.File
 import java.util.regex.Pattern
 import javax.inject.Inject
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
@@ -67,7 +63,6 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.AudioRecorder
 import org.ole.planet.myplanet.ui.ratings.RatingsFragment
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.IntentUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils
@@ -105,7 +100,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private lateinit var audioRecorder: AudioRecorder
     private lateinit var library: MyLibrary
     private var pdfText: String = ""
-    private var isExtractingText = false
     private var externalFilesDir: File? = null
     private var imageStartTime: Long = 0L
     private var hasPromptedImageRating: Boolean = false
@@ -128,7 +122,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             Utilities.toast(requireContext(), getString(R.string.recording_stopped))
             NotificationUtils.cancelAll(requireContext())
             if (::library.isInitialized) {
-                lifecycleScope.launch {
+                viewLifecycleOwner.lifecycleScope.launch {
                     val id = library.id ?: return@launch
                     viewModel.updateLibraryItemTranslationAudioPath(id, outputFile)
                 }
@@ -179,9 +173,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         audioRecorder.setCaller(requireActivity(), requireContext())
 
         viewLifecycleOwner.lifecycleScope.launch {
-            externalFilesDir = withContext(dispatcherProvider.io) {
-                requireContext().getExternalFilesDir(null)
-            }
+            externalFilesDir = viewModel.getExternalFilesDir()
             resourceId?.let {
                 library = viewModel.getLibraryItemById(it) ?: return@launch
             }
@@ -290,6 +282,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             return
         }
 
+        exoPlayer?.release()
+        exoPlayer = null
         exoPlayer = createExoPlayer()
 
         val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
@@ -317,6 +311,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val mediaSource: MediaSource = ProgressiveMediaSource.Factory(httpDataSourceFactory)
             .createMediaSource(MediaItem.fromUri(uri))
 
+        exoPlayer?.release()
+        exoPlayer = null
         exoPlayer = createExoPlayer()
 
         val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
@@ -380,6 +376,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     @OptIn(UnstableApi::class)
     private fun initializeAudioPlayer(playerView: PlayerView) {
         val fullPath = resolveAudioPath(filePath)
+        exoPlayer?.release()
+        exoPlayer = null
         exoPlayer = createExoPlayer().also { player ->
             playerView.player = player
             player.setMediaItem(MediaItem.fromUri(fullPath))
@@ -447,16 +445,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private fun extractPdfText() {
         val file = File(externalFilesDir, "ole/$filePath")
         if (!file.exists()) return
-        isExtractingText = true
-        lifecycleScope.launch(dispatcherProvider.io) {
-            pdfText = try {
-                PDFBoxResourceLoader.init(requireContext().applicationContext)
-                val document = PDDocument.load(file)
-                val text = PDFTextStripper().getText(document).trim()
-                document.close()
-                text
-            } catch (e: Exception) { "" }
-            withContext(dispatcherProvider.main) { isExtractingText = false }
+        viewLifecycleOwner.lifecycleScope.launch {
+            pdfText = viewModel.extractPdfText(file)
         }
     }
 
@@ -530,11 +520,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                 streamingHttpDataSourceFactory?.setDefaultRequestProperties(hashMapOf("Cookie" to auth))
             }
             if (isOnline) {
-                withContext(dispatcherProvider.io) {
-                    if (!FileUtils.checkFileExist(requireContext(), url)) {
-                        DownloadUtils.openDownloadService(requireContext(), arrayListOf(url), false)
-                    }
-                }
+                viewModel.downloadResource(url)
             }
         }
     }
