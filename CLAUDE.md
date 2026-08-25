@@ -284,6 +284,22 @@ note. And three passages, the headline Status section among them, still called
 `ChallengeDialog` "built and called from nowhere" after Phase 81 gave it a
 caller; `CustomDropdown` genuinely is still uncalled, so only that half changed.
 
+Phase 91 gives `ResourceViewerScreen` its first tests — 1052 lines that had none,
+the port's largest untested surface for five rounds. Eight cover the load and
+missing-resource states, the title and its fallback, and every branch of the
+download prompt including the stale-offline-flag repair. **If you write tests for
+this screen, know the trap:** it resolves attachments through `ResourceFiles`
+(real `dart:io`) while a widget test's zone is fake-async, so the file futures
+never complete, the screen sits on its `CircularProgressIndicator`, and
+`pumpAndSettle` spins on that animation for its ten-minute default — a failure
+that looks exactly like a hang. Yield wall-clock time with `runAsync` and *then*
+`pump`; pumping inside `runAsync` does not work. Rendering an attachment that
+exists is still uncovered: the text/CSV/markdown renderers read the file in
+their own `initState` and stall the suite, so four such tests were withdrawn
+rather than shipped flaky — that needs a seam handing the renderer bytes instead
+of a path. The video/PDF/WebView renderers need platform views no widget test
+can serve.
+
 ### Documentation Map
 
 | Document | Read it when… |
