@@ -15,14 +15,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.repository.TeamsSyncRepository
+import org.ole.planet.myplanet.repository.TeamsMembersRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 
 @ExperimentalCoroutinesApi
 class RequestsViewModelTest {
 
-    private lateinit var teamsRepository: TeamsRepository
+    private lateinit var teamsRepository: TeamsMembersRepository
     private lateinit var userSessionManager: UserSessionManager
     private lateinit var viewModel: RequestsViewModel
     private val testDispatcher = StandardTestDispatcher()

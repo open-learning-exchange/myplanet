@@ -111,5 +111,4 @@ interface TeamsRepository : TeamsFinancesRepository, TeamsMembersRepository {
 
     suspend fun getLastVisit(userName: String?, teamId: String?): Long?
     fun getTeamNameFromPrefs(): String?
-    suspend fun recordTeamActivity()
 }
