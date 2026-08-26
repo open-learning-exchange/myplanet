@@ -59,7 +59,7 @@ import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.GridSpanCalculator
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.ListViewMode
-import org.ole.planet.myplanet.utils.ResourceSearchUtils
+import org.ole.planet.myplanet.utils.ResourcesSearchUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
@@ -105,6 +105,14 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private var refreshJob: Job? = null
     private var searchJob: Job? = null
 
+    private val spanUpdateRunnable = Runnable { updateGridSpanIfNeeded() }
+    private val layoutChangeListener = View.OnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
+        if (right - left != oldRight - oldLeft) {
+            recyclerView.removeCallbacks(spanUpdateRunnable)
+            recyclerView.post(spanUpdateRunnable)
+        }
+    }
+
     internal val addResourceLauncher = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -133,8 +141,9 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private fun refreshResourcesData() {
         if (!isAdded || requireActivity().isFinishing) return
+        if (view == null) return
         refreshJob?.cancel()
-        refreshJob = lifecycleScope.launch {
+        refreshJob = viewLifecycleOwner.lifecycleScope.launch {
             try {
                 allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
                 lastSearchQuery = null
@@ -257,11 +266,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         updateToggleUi(prefManager.getLibraryViewMode())
         toggleGridButton?.setOnClickListener { setViewMode(ListViewMode.GRID) }
         toggleListButton?.setOnClickListener { setViewMode(ListViewMode.LIST) }
-        recyclerView.addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
-            if (right - left != oldRight - oldLeft) {
-                recyclerView.post { updateGridSpanIfNeeded() }
-            }
-        }
+        recyclerView.addOnLayoutChangeListener(layoutChangeListener)
     }
 
     private fun setViewMode(mode: ListViewMode) {
@@ -297,7 +302,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private fun updateGridSpanIfNeeded() {
         val layoutManager = recyclerView.layoutManager
         if (layoutManager is GridLayoutManager) {
-            layoutManager.spanCount = currentSpanCount()
+            val currentSpan = currentSpanCount()
+            if (layoutManager.spanCount != currentSpan) {
+                layoutManager.spanCount = currentSpan
+            }
         }
     }
 
@@ -690,7 +698,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override fun onResume() {
         super.onResume()
         selectAll.isChecked = false
-        recyclerView.post { updateGridSpanIfNeeded() }
+        if (::recyclerView.isInitialized) {
+            recyclerView.removeCallbacks(spanUpdateRunnable)
+            recyclerView.post(spanUpdateRunnable)
+        }
     }
 
     override fun onPause() {
@@ -699,6 +710,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     override fun onDestroyView() {
+        if (::recyclerView.isInitialized) {
+            recyclerView.removeOnLayoutChangeListener(layoutChangeListener)
+            recyclerView.removeCallbacks(spanUpdateRunnable)
+        }
         if (confirmation?.isShowing == true) {
             confirmation?.dismiss()
         }
@@ -802,7 +817,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     private fun filterLocalLibraryByTag(models: List<ResourceListModel>, s: String, tags: List<TagEntity>): List<ResourceListModel> {
-        var filteredList = ResourceSearchUtils.searchLocalModels(models, s)
+        var filteredList = ResourcesSearchUtils.searchLocalModels(models, s)
 
         if (tags.isNotEmpty()) {
             filteredList = filteredList.filter { model ->
@@ -851,7 +866,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val itemsToAdd = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToAdd.isNotEmpty()) {
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 try {
                     viewModel.addResourcesToUserLibrary(itemsToAdd, userId)
                         .onSuccess {
