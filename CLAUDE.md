@@ -403,6 +403,7 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 
 **Automerge Workflow** (`.github/workflows/automerge.yml`)
 - Manually dispatched (`workflow_dispatch`) queue drainer for PRs labelled `automerge`
+- Order is priority tier then PR number: PRs also labelled `priority` (`priority_label` input, blank = no tier) drain first, lowest number first within each tier
 - For each labelled PR: merges the base branch in, bumps the version, waits for build + test to pass, then squash-merges
 - A conflicting PR does not stop the drain (either detection: `mergeable: CONFLICTING` or the real `git merge`): it loses `automerge`, gains `conflict` (`conflict_label` input, blank = only drop `automerge`), and the queue moves on — re-add `automerge` once resolved.
 - Logic lives in `.github/scripts/automerge.sh`; requires `AUTOMERGE_TOKEN` (the default `GITHUB_TOKEN` can't push to the protected base branch)

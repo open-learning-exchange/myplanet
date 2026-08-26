@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# Drain the automerge queue. Per PR labelled $LABEL, lowest number first:
+# Drain the automerge queue. Per PR labelled $LABEL -- those also labelled
+# $PRIORITY_LABEL first, then lowest number within each tier:
 #
 #   1. merge $BASE into the PR branch          (a conflict relabels it and moves on)
 #   2. bump the version on the PR branch
@@ -12,6 +13,7 @@ REPO="${REPO:?}"
 BASE="${BASE:?}"
 LABEL="${LABEL:?}"
 CONFLICT_LABEL="${CONFLICT_LABEL-conflict}"
+PRIORITY_LABEL="${PRIORITY_LABEL-priority}"
 GRADLE_FILE="${GRADLE_FILE:?}"
 VERSION_SH="${VERSION_SH:?}"
 COAUTHORS_SH="${COAUTHORS_SH:?}"
@@ -62,12 +64,16 @@ pick_pr() {
         --base "$BASE" \
         --label "$LABEL" \
         --limit 100 \
-        --json number,title,isDraft,headRefName,headRefOid,headRepositoryOwner \
-      | jq -c --arg skip "$skip_numbers" '
+        --json number,title,isDraft,headRefName,headRefOid,headRepositoryOwner,labels \
+      | jq -c --arg skip "$skip_numbers" --arg prio "$PRIORITY_LABEL" '
             [ $skip | split(" ")[] | select(length > 0) | tonumber ] as $done
             | map(select(.isDraft | not))
             | map(select(.number as $n | $done | index($n) | not))
-            | sort_by(.number) | first'
+            | map(. + { priority: (
+                  ($prio | length > 0)
+                  and (((.labels // []) | map(.name) | index($prio)) != null)
+              ) })
+            | sort_by([ (if .priority then 0 else 1 end), .number ]) | first'
 }
 
 pr_state()  { gh pr view "$1" --repo "$REPO" --json state --jq '.state' 2>/dev/null || echo ''; }
@@ -380,8 +386,8 @@ push_with_retry() {
     return 1
 }
 
-log "draining '$LABEL' into $BASE (dry_run=$DRY_RUN)"
-summary "### automerge: draining \`$LABEL\` into \`$BASE\`"
+log "draining '$LABEL' into $BASE${PRIORITY_LABEL:+, '$PRIORITY_LABEL' first} (dry_run=$DRY_RUN)"
+summary "### automerge: draining \`$LABEL\` into \`$BASE\`${PRIORITY_LABEL:+, \`$PRIORITY_LABEL\` first}"
 summary ""
 summary "| PR | version | result |"
 summary "|---|---|---|"
@@ -425,8 +431,12 @@ while :; do
     HEAD=$(jq   -r '.headRefName'               <<<"$pr_json")
     SHA=$(jq    -r '.headRefOid'                <<<"$pr_json")
     OWNER=$(jq  -r '.headRepositoryOwner.login' <<<"$pr_json")
+    PRIORITY=$(jq -r '.priority'                <<<"$pr_json")
 
-    log "picked #$NUMBER ($HEAD @ ${SHA:0:7}): $TITLE"
+    TIER=""
+    if [ "$PRIORITY" = true ]; then TIER=" $PRIORITY_LABEL"; fi
+
+    log "picked$TIER #$NUMBER ($HEAD @ ${SHA:0:7}): $TITLE"
 
     if [ "$OWNER" != "${REPO%%/*}" ]; then
         log "  #$NUMBER comes from fork $OWNER -- cannot push a version bump to it"

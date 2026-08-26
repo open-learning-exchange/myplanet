@@ -13,6 +13,11 @@ on:
         required: false
         default: 'automerge'
         type: string
+      priority_label:
+        description: 'PRs with this label are drained before the rest; lowest number first within each tier (blank = no priority tier)'
+        required: false
+        default: 'priority'
+        type: string
       conflict_label:
         description: 'label put on a PR that conflicts with the base, whose automerge label is then dropped (blank = drop the label without marking it)'
         required: false
@@ -114,6 +119,7 @@ jobs:
           BASE: ${{ inputs.base || env.DEFAULT_BASE }}
           LABEL: ${{ inputs.label }}
           CONFLICT_LABEL: ${{ inputs.conflict_label }}
+          PRIORITY_LABEL: ${{ inputs.priority_label }}
           REQUIRE_CHECKS: ${{ inputs.require_checks }}
           REQUIRED_WORKFLOWS: ${{ inputs.required_workflows }}
           PUBLISH_JOB: ${{ inputs.publish_job }}
