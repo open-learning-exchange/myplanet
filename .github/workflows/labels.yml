@@ -1,4 +1,4 @@
-name: myPlanet pr size
+name: myPlanet labels
 
 on:
   pull_request_target:
@@ -19,7 +19,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: pr-size-${{ inputs.pr || github.event.pull_request.number }}
+  group: labels-${{ inputs.pr || github.event.pull_request.number }}
   cancel-in-progress: true
 
 env:
@@ -30,7 +30,7 @@ env:
 
 jobs:
   size:
-    name: myPlanet pr size
+    name: myPlanet labels
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:

@@ -39,8 +39,8 @@ myplanet/
 │   └── workflows/
 │       ├── automerge.yml      # Manually-dispatched queue drainer for `automerge`-labelled PRs
 │       ├── build.yml          # Build workflow for all branches
+│       ├── labels.yml         # Size-labels each PR on open and on every push
 │       ├── playstore.yml      # Hand-started publish of a release the Play Store quota refused
-│       ├── pr-size.yml        # Size-labels each PR on open and on every push
 │       ├── release.yml        # Release and Play Store publishing
 │       └── test.yml           # Unit test workflow
 ├── app/                       # Main application module
@@ -411,7 +411,7 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 - A release that never reached the Play Store stops the drain; the stop reports the estimated next save slot (eastern time, plus how many follow it) and links `playstore.yml`, which publishes that upload without a rebuild
 - A red workflow on the base is re-run before the drain gives up (`base_rerun_attempts`, default 1): every base commit is a PR head that build + test passed on just before the squash merge, so a failure there is treated as flaky until it reproduces
 
-**PR Size Workflow** (`.github/workflows/pr-size.yml`)
+**Labels Workflow** (`.github/workflows/labels.yml`)
 - Runs on `pull_request_target` (`opened`, `synchronize`, `reopened`, `ready_for_review`), so it re-labels on every push and works on fork and Dependabot PRs, where a `pull_request` token would be read-only. It never checks out PR code — it only reads diff numbers through the API
 - Two independent rules, both from `.github/scripts/pr-size.sh`:
   - **size** from additions + deletions — `small` ≤ 60, `medium` ≤ 100, `large` ≤ 200, `enormous` above that (`SMALL_MAX`/`MEDIUM_MAX`/`LARGE_MAX`)
