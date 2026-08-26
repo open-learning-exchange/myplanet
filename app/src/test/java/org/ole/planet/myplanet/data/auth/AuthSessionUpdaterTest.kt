@@ -14,9 +14,11 @@ import org.junit.After
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import io.mockk.mockkStatic
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import android.util.Log
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AuthSessionUpdaterTest {
@@ -38,6 +40,8 @@ class AuthSessionUpdaterTest {
         every { mockDispatcherProvider.main } returns testDispatcher
         every { mockDispatcherProvider.default } returns testDispatcher
         every { mockDispatcherProvider.unconfined } returns testDispatcher
+        mockkStatic(Log::class)
+        every { Log.w(any<String>(), any<String>(), any<Throwable>()) } returns 0
     }
 
     @After

@@ -5,11 +5,11 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineScope
+
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
-import org.ole.planet.myplanet.di.ApplicationScope
+
 import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.services.SharedPrefManager
 
@@ -22,8 +22,7 @@ data class CachedMyLifeItem(
 class LifeRepositoryImpl @Inject constructor(
     private val myLifeDao: MyLifeDao,
     private val sharedPrefManager: SharedPrefManager,
-    private val gson: Gson,
-    @ApplicationScope private val appScope: CoroutineScope
+    private val gson: Gson
 ) : LifeRepository {
 
     private val MY_LIFE_CACHE_PREFIX = "myLifeCache_"
@@ -81,7 +80,7 @@ class LifeRepositoryImpl @Inject constructor(
         val effectiveUserId = userId.ifEmpty { null }
         val allForUser = getMyLifeByUserId(effectiveUserId, ensureLatest = false)
         if (allForUser.isNotEmpty()) {
-            return allForUser.filter { it.isVisible }.distinctBy { it.dedupKey() }
+            return allForUser.filter { it.isVisible }
         }
 
         val json = sharedPrefManager.rawPreferences.getString("$MY_LIFE_CACHE_PREFIX$userId", null)
@@ -105,7 +104,7 @@ class LifeRepositoryImpl @Inject constructor(
         seedMyLifeIfEmpty(effectiveUserId, seedBase)
         val seeded = getMyLifeByUserId(effectiveUserId, ensureLatest = true)
         if (userId.isNotEmpty()) cacheMyLifeItems(userId, seeded)
-        return seeded.filter { it.isVisible }.distinctBy { it.dedupKey() }
+        return seeded.filter { it.isVisible }
     }
 
     private fun cacheMyLifeItems(userId: String, items: List<MyLife>) {
