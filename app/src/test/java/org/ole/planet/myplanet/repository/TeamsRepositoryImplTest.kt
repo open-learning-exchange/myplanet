@@ -142,6 +142,26 @@ class TeamsRepositoryImplTest {
     }
 
     @Test
+    fun `test recordTeamActivity delegates to syncTeamActivities`() = runTest(testDispatcher) {
+        io.mockk.mockkObject(org.ole.planet.myplanet.MainApplication.Companion)
+        coEvery { org.ole.planet.myplanet.MainApplication.Companion.isServerReachable(any()) } returns true
+
+        coEvery { uploadManager.uploadResource(any()) } returns Unit
+        coEvery { uploadManager.uploadTeams() } returns Unit
+        coEvery { uploadManager.uploadTeamActivities() } returns Unit
+
+        teamsRepository.recordTeamActivity()
+
+        advanceUntilIdle()
+
+        coVerify { uploadManager.uploadResource(null) }
+        coVerify { uploadManager.uploadTeams() }
+        coVerify { uploadManager.uploadTeamActivities() }
+
+        io.mockk.unmockkObject(org.ole.planet.myplanet.MainApplication.Companion)
+    }
+
+    @Test
     fun `test syncTeamActivities uses dispatcherProvider io`() = runTest(testDispatcher) {
         io.mockk.mockkObject(org.ole.planet.myplanet.MainApplication.Companion)
         coEvery { org.ole.planet.myplanet.MainApplication.Companion.isServerReachable(any()) } returns true
@@ -330,6 +350,31 @@ class TeamsRepositoryImplTest {
         io.mockk.unmockkStatic(android.text.TextUtils::class)
         io.mockk.unmockkObject(NetworkUtils)
         io.mockk.unmockkObject(org.ole.planet.myplanet.MainApplication.Companion)
+    }
+
+    @Test
+    fun `createLocalResourceLink upserts resourceLink MyTeam row`() = runTest(testDispatcher) {
+        val teamId = "team_1"
+        val resourceId = "res_1"
+        val title = "Test Resource"
+        val planetCode = "planet_code"
+
+        coEvery { teamDao.upsert(any()) } returns Unit
+
+        teamsRepository.createLocalResourceLink(teamId, resourceId, title, planetCode)
+
+        val slot = io.mockk.slot<MyTeam>()
+        coVerify { teamDao.upsert(capture(slot)) }
+
+        val captured = slot.captured
+        assertEquals(teamId, captured.teamId)
+        assertEquals(resourceId, captured.resourceId)
+        assertEquals(title, captured.title)
+        assertEquals("resourceLink", captured.docType)
+        assertEquals("local", captured.teamType)
+        assertEquals(planetCode, captured.sourcePlanet)
+        assertEquals(planetCode, captured.teamPlanetCode)
+        assertEquals(true, captured.updated)
     }
 
     @Test
