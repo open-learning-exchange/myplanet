@@ -2,7 +2,7 @@
 #
 # Drain the automerge queue. Per PR labelled $LABEL, lowest number first:
 #
-#   1. merge $BASE into the PR branch          (a conflict stops the drain)
+#   1. merge $BASE into the PR branch          (a conflict relabels it and moves on)
 #   2. bump the version on the PR branch
 #   3. push, and wait for build + test on that prepared commit
 #   4. wait for $BASE to be settled and green, then squash merge
@@ -11,6 +11,7 @@ set -euo pipefail
 REPO="${REPO:?}"
 BASE="${BASE:?}"
 LABEL="${LABEL:?}"
+CONFLICT_LABEL="${CONFLICT_LABEL-conflict}"
 GRADLE_FILE="${GRADLE_FILE:?}"
 VERSION_SH="${VERSION_SH:?}"
 COAUTHORS_SH="${COAUTHORS_SH:?}"
@@ -44,6 +45,8 @@ summary() { [ -n "${GITHUB_STEP_SUMMARY:-}" ] && printf '%s\n' "$*" >> "$GITHUB_
 
 merged_count=0
 merged_list=""
+conflict_count=0
+conflict_list=""
 skip_numbers=""
 last_base_sha=""
 
@@ -79,12 +82,42 @@ check_mergeable() {
     done
     case "$state" in
         MERGEABLE) ;;
-        CONFLICTING)
-            log "  #$pr conflicts with $BASE -- needs a human"
-            return 1 ;;
+        CONFLICTING) return 1 ;;
         *)
             log "  #$pr mergeability is ${state:-unavailable} -- letting step 1 decide" ;;
     esac
+}
+
+add_conflict_label() {
+    local pr=$1
+    gh pr edit "$pr" --repo "$REPO" --add-label "$CONFLICT_LABEL" >/dev/null 2>&1 && return 0
+    gh label create "$CONFLICT_LABEL" --repo "$REPO" \
+        --color BD8652 --description 'merge conflict' >/dev/null 2>&1 || true
+    gh pr edit "$pr" --repo "$REPO" --add-label "$CONFLICT_LABEL" >/dev/null 2>&1
+}
+
+handle_conflict() {
+    local pr=$1
+    conflict_count=$(( conflict_count + 1 ))
+    conflict_list="$conflict_list #$pr"
+
+    if [ "$DRY_RUN" = 'true' ]; then
+        log "  dry run: #$pr conflicts with $BASE -- would relabel it and move on"
+        summary "| #$pr | | dry run: **conflicts** with \`$BASE\` |"
+        return 0
+    fi
+
+    log "  #$pr conflicts with $BASE -- dropping '$LABEL', moving on to the next PR"
+    if [ -n "$CONFLICT_LABEL" ] && ! add_conflict_label "$pr"; then
+        log "  #$pr: could not add '$CONFLICT_LABEL'"
+    fi
+    if gh pr edit "$pr" --repo "$REPO" --remove-label "$LABEL" >/dev/null 2>&1; then
+        summary "| #$pr | | **conflicts** with \`$BASE\`: dropped \`$LABEL\`${CONFLICT_LABEL:+, added \`$CONFLICT_LABEL\`} |"
+    else
+        log "  #$pr: could not remove '$LABEL' -- skipped for this drain only"
+        summary "| #$pr | | **conflicts** with \`$BASE\`: \`$LABEL\` could not be removed |"
+    fi
+    return 0
 }
 
 wait_pr_merged() {
@@ -417,7 +450,11 @@ while :; do
             continue ;;
     esac
 
-    check_mergeable "$NUMBER" || { summary "| #$NUMBER | | **stopped**: conflicts with \`$BASE\` |"; exit 1; }
+    if ! check_mergeable "$NUMBER"; then
+        handle_conflict "$NUMBER"
+        skip_numbers="$skip_numbers $NUMBER"
+        continue
+    fi
 
     git show "origin/$BASE:$GRADLE_FILE" > /tmp/base-build.gradle
     eval "$("$VERSION_SH" next /tmp/base-build.gradle | sed 's/^/new_/')"
@@ -432,21 +469,23 @@ while :; do
             log "           wait for ${REQUIRED_WORKFLOWS:-the triggered workflows}, then squash merge #$NUMBER"
             summary "| #$NUMBER | → \`$new_name\` | dry run: would merge |"
         else
-            git merge --abort || true
-            log "  dry run: #$NUMBER conflicts with $BASE -- needs a human"
-            summary "| #$NUMBER | | dry run: **conflicts** with \`$BASE\` |"
+            git merge --abort 2>/dev/null || git reset --quiet --hard HEAD
+            handle_conflict "$NUMBER"
+            skip_numbers="$skip_numbers $NUMBER"
+            continue
         fi
-        log "dry run stops after one PR (nothing advances)"
+        log "dry run stops after one mergeable PR (nothing advances)"
         break
     fi
 
     git checkout --quiet -B "$HEAD" "origin/$HEAD"
 
     if ! git merge --quiet --no-edit "origin/$BASE"; then
-        git merge --abort || true
-        log "  #$NUMBER conflicts with $BASE -- needs a human"
-        summary "| #$NUMBER | | **stopped**: conflicts with \`$BASE\` |"
-        exit 1
+        git merge --abort 2>/dev/null || git reset --quiet --hard HEAD
+        git checkout --quiet --detach "origin/$BASE" || true
+        handle_conflict "$NUMBER"
+        skip_numbers="$skip_numbers $NUMBER"
+        continue
     fi
 
     pre_bump_sha=$(git rev-parse HEAD)
@@ -576,3 +615,12 @@ done
 log "done: merged $merged_count PR(s):${merged_list:- none}"
 summary ""
 summary "**merged $merged_count PR(s)**:${merged_list:- none}"
+if [ "$conflict_count" -ne 0 ]; then
+    log "left for a human, conflicting with $BASE:$conflict_list"
+    summary ""
+    if [ "$DRY_RUN" = 'true' ]; then
+        summary "**$conflict_count PR(s) conflict with \`$BASE\`**:$conflict_list -- a real run would drop \`$LABEL\`${CONFLICT_LABEL:+ and add \`$CONFLICT_LABEL\`} and keep draining."
+    else
+        summary "**$conflict_count PR(s) conflict with \`$BASE\`**:$conflict_list -- \`$LABEL\` dropped${CONFLICT_LABEL:+, \`$CONFLICT_LABEL\` added}. Resolve the conflict and re-add \`$LABEL\` to queue it again."
+    fi
+fi

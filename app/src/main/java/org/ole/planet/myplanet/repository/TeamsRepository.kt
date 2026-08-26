@@ -68,6 +68,7 @@ interface TeamsRepository : TeamsFinancesRepository, TeamsMembersRepository, Tea
     fun getTasksFlow(userId: String?): Flow<List<TeamTask>>
     suspend fun addResourceLinks(teamId: String, resources: List<TeamResourceDto>, userId: String?)
     suspend fun removeResourceLink(teamId: String, resourceId: String)
+    suspend fun createLocalResourceLink(teamId: String, resourceId: String, title: String?, planetCode: String?)
     suspend fun deleteTask(taskId: String)
     suspend fun createTask(title: String, description: String, deadline: Long, teamId: String, assigneeId: String?)
     suspend fun updateTask(taskId: String, title: String, description: String, deadline: Long, assigneeId: String?)
