@@ -43,6 +43,8 @@ jobs:
         with:
           path: |
             app/build
+            !app/build/test-results/**
+            !app/build/reports/**
             .gradle/*
             !.gradle/configuration-cache
           key: build-dir-test-${{ matrix.build }}-shard${{ matrix.shard }}-${{ github.sha }}
