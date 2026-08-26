@@ -4237,6 +4237,16 @@ The 1444-test suite passes, `flutter analyze` clean, `dart format` clean,
 
 ## Phase 92 — harvest audit, the 2026-08-25 commit batch (38 commits), and the courses shelf split
 
+> **Addendum (same round, post-harvest review):** `readTextContent` shipped
+> without the try/catch the renderers it replaced had. `readAsString` throws on
+> undecodable bytes — a binary file behind a `.txt` name, or a corrupted
+> download — and with the renderers' own `_error` state removed in the same
+> commit, that exception escaped `initState` unhandled and left the screen on
+> its spinner forever. The seam now catches and returns `null`, so unusable
+> content renders as the not-found message (which the old `e.toString()` body
+> text was not an improvement on anyway); a unit test with an invalid UTF-8
+> sequence pins it, verified to fail without the catch.
+
 The 38 commits after `efec5e7c6` (Phase 79's last covered commit, up to
 `cfa883770`, the current tip of `master`) were audited. One had a behavioural
 port; the rest are refactors, performance rewrites, Kotlin-idiom cleanups,

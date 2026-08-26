@@ -61,7 +61,18 @@ class ResourceFiles {
   }) async {
     final file = await existingFileFor(docId: docId, filename: filename);
     if (file == null) return null;
-    return file.readAsString();
+    try {
+      return await file.readAsString();
+    } catch (_) {
+      // `readAsString` throws on undecodable bytes (a binary file behind a
+      // .txt name, or a corrupted download) and on I/O failure. The renderers
+      // treat null as "file not found", which is the honest state for content
+      // that cannot be shown — before this catch the exception escaped their
+      // `initState` unhandled and the screen sat on its spinner forever. The
+      // renderers used to render `e.toString()`; a stack-trace-ish string is
+      // not better UI than the not-found message.
+      return null;
+    }
   }
 
   /// The `<base>/ole/<docId>` directory a resource's files live under.

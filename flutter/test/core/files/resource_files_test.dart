@@ -192,5 +192,32 @@ void main() {
       );
       expect(content, isNull);
     });
+
+    test('returns null for undecodable bytes instead of throwing', () async {
+      // A binary file behind a .txt name (or a corrupted download) makes
+      // `readAsString` throw a FormatException. The renderers call this from
+      // `initState` and treat null as "file not found"; an escaping exception
+      // there is unhandled and leaves the screen on its spinner forever.
+      final original = ResourceFiles.baseDirectory;
+      final tmp = await Directory.systemTemp.createTemp('rf_read_binary_');
+      ResourceFiles.baseDirectory = () async => tmp;
+      final file = await ResourceFiles.fileFor(
+        docId: 'doc1',
+        filename: 'notes.txt',
+      );
+      await file.parent.create(recursive: true);
+      // 0xC3 opens a two-byte UTF-8 sequence; 0x28 cannot continue it.
+      await file.writeAsBytes([0xC3, 0x28, 0xFF, 0xFE]);
+      addTearDown(() {
+        ResourceFiles.baseDirectory = original;
+        tmp.deleteSync(recursive: true);
+      });
+
+      final content = await ResourceFiles.readTextContent(
+        docId: 'doc1',
+        filename: 'notes.txt',
+      );
+      expect(content, isNull);
+    });
   });
 }
