@@ -6,7 +6,8 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
+import androidx.fragment.app.viewModels
+import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarEntry
@@ -14,23 +15,17 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import dagger.hilt.android.AndroidEntryPoint
 import java.text.DateFormatSymbols
 import java.util.Calendar
-import javax.inject.Inject
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentActivitiesBinding
 import org.ole.planet.myplanet.model.OfflineActivity
-import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class ActivitiesFragment : Fragment() {
     private var _binding: FragmentActivitiesBinding? = null
     private val binding get() = _binding!!
-    @Inject
-    lateinit var userSessionManager: UserSessionManager
-    @Inject
-    lateinit var activitiesRepository: ActivitiesRepository
+    private val months = DateFormatSymbols().months
+    private val viewModel: ActivitiesViewModel by viewModels()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentActivitiesBinding.inflate(inflater, container, false)
@@ -44,32 +39,27 @@ class ActivitiesFragment : Fragment() {
         val endMillis = Calendar.getInstance().timeInMillis
         val startMillis = Calendar.getInstance().apply { add(Calendar.YEAR, -1) }.timeInMillis
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val userName = userSessionManager.getUserModel()?.name ?: return@launch
-            val loginsFlow = activitiesRepository.getOfflineLogins(userName)
-            collectLatestWhenStarted(loginsFlow) { logins ->
-                val monthlyCounts = computeMonthlyCounts(logins, startMillis, endMillis)
-                renderChart(monthlyCounts, daynightTextColor)
-            }
+        collectLatestWhenStarted(viewModel.offlineLogins) { logins ->
+            val monthlyCounts = computeMonthlyCounts(logins, startMillis, endMillis)
+            renderChart(monthlyCounts, daynightTextColor)
         }
     }
 
-    private fun computeMonthlyCounts(
+    internal fun computeMonthlyCounts(
         logins: List<OfflineActivity>,
         startMillis: Long,
         endMillis: Long
     ): Map<Int, Int> {
         val calendar = Calendar.getInstance()
-        return logins
-            .mapNotNull { it.loginTime }
-            .filter { it in startMillis..endMillis }
-            .map { loginTime ->
+        return logins.fold(mutableMapOf<Int, Int>()) { acc, activity ->
+            val loginTime = activity.loginTime
+            if (loginTime != null && loginTime in startMillis..endMillis) {
                 calendar.timeInMillis = loginTime
-                calendar.get(Calendar.MONTH)
+                val month = calendar.get(Calendar.MONTH)
+                acc[month] = (acc[month] ?: 0) + 1
             }
-            .groupingBy { it }
-            .eachCount()
-            .toSortedMap()
+            acc
+        }.toSortedMap()
     }
 
     private fun renderChart(monthlyCounts: Map<Int, Int>, textColor: Int) {
@@ -92,22 +82,37 @@ class ActivitiesFragment : Fragment() {
         binding.chart.apply {
             description.isEnabled = false
             data = barData
-            xAxis.valueFormatter = object : ValueFormatter() {
-                override fun getFormattedValue(value: Float): String {
-                    return getMonth(value.toInt())
+            setFitBars(true)
+            setExtraOffsets(8f, 8f, 8f, 8f)
+            xAxis.apply {
+                position = XAxis.XAxisPosition.BOTTOM
+                setDrawGridLines(false)
+                granularity = 1f
+                this.textColor = textColor
+                valueFormatter = object : ValueFormatter() {
+                    override fun getFormattedValue(value: Float): String {
+                        return getMonth(value.toInt())
+                    }
                 }
             }
-            xAxis.textColor = textColor
-            axisLeft.textColor = textColor
-            axisRight.textColor = textColor
-            legend.textColor = textColor
+            axisLeft.apply {
+                axisMinimum = 0f
+                granularity = 1f
+                this.textColor = textColor
+            }
+            axisRight.isEnabled = false
+            legend.apply {
+                this.textColor = textColor
+                isWordWrapEnabled = true
+            }
             this.data.setValueTextColor(textColor)
+            this.data.setValueTextSize(10f)
             invalidate()
         }
     }
 
-    fun getMonth(month: Int): String {
-        return DateFormatSymbols().months[month]
+    internal fun getMonth(month: Int): String {
+        return months[month]
     }
 
     override fun onDestroyView() {

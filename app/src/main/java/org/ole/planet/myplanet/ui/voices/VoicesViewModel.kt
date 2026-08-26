@@ -20,7 +20,9 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.utils.Constants
@@ -31,7 +33,9 @@ import org.ole.planet.myplanet.utils.JsonUtils
 class VoicesViewModel @Inject constructor(
     private val voicesRepository: VoicesRepository,
     private val teamsRepository: TeamsRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val userRepository: UserRepository,
+    private val resourcesRepository: ResourcesRepository
 ) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository, dispatcherProvider) {
 
     private val _searchQuery = MutableStateFlow("")
@@ -63,7 +67,7 @@ class VoicesViewModel @Inject constructor(
         observeJob?.cancel()
         observeJob = viewModelScope.launch {
             voicesRepository.getCommunityNews(userIdentifier).collect { newsList ->
-                val filtered = newsList.map { it as News? }
+                val filtered: List<News?> = newsList
                 _baseNewsList.value = filtered
                 _labels.value = collectLabels(filtered)
             }
@@ -103,7 +107,7 @@ class VoicesViewModel @Inject constructor(
             }
             list.forEach { news ->
                 news?.labels?.forEach { label ->
-                    val labelName = Constants.LABELS.entries.find { it.value == label }?.key
+                    val labelName = Constants.LABEL_VALUE_TO_NAME[label]
                         ?: VoicesLabelManager.formatLabelValue(label)
                     labelDisplayToValue.putIfAbsent(labelName, label)
                 }
@@ -159,7 +163,7 @@ class VoicesViewModel @Inject constructor(
     // Note: The following are read-only suspend functions designed to be called directly from
     // the UI's lifecycleScope, avoiding intermediate MutableStateFlow caching for point-in-time reads.
     suspend fun getUserById(userId: String): UserEntity? {
-        return voicesRepository.getUserById(userId)
+        return userRepository.getUserById(userId)
     }
 
     suspend fun getReplyCount(newsId: String): Int {
@@ -171,7 +175,7 @@ class VoicesViewModel @Inject constructor(
     }
 
     suspend fun getLibraryResource(resourceId: String): MyLibrary? {
-        return voicesRepository.getLibraryResource(resourceId)
+        return resourcesRepository.getLibraryItemByResourceId(resourceId)
     }
 
     suspend fun isTeamLeader(teamId: String?, userId: String?): Boolean {
@@ -199,13 +203,32 @@ class VoicesViewModel @Inject constructor(
             }
 
             news?.labels?.forEach { label ->
-                val labelName = Constants.LABELS.entries.find { it.value == label }?.key
+                val labelName = Constants.LABEL_VALUE_TO_NAME[label]
                     ?: VoicesLabelManager.formatLabelValue(label)
                 allLabels.add(labelName)
             }
         }
 
         allLabels.sorted()
+    }
+
+    fun downloadReferencedResources(list: List<News?>) {
+        val resourceIds = mutableSetOf<String>()
+        list.forEach { news ->
+            if ((news?.imagesArray?.size() ?: 0) > 0) {
+                val ob = news?.imagesArray?.get(0)?.asJsonObject
+                val resourceId = JsonUtils.getString("resourceId", ob?.asJsonObject)
+                if (!resourceId.isNullOrBlank()) {
+                    resourceIds.add(resourceId)
+                }
+            }
+        }
+        viewModelScope.launch {
+            if (resourceIds.isNotEmpty()) {
+                val libraries = resourcesRepository.getLibraryItemsByIds(resourceIds)
+                resourcesRepository.downloadResources(libraries)
+            }
+        }
     }
 
 }

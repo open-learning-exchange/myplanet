@@ -1,17 +1,29 @@
 package org.ole.planet.myplanet.services
 
+import android.app.Activity
+import android.app.ActivityManager
+import android.app.Application
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.os.Build
 import android.util.Log
+import androidx.core.content.ContextCompat
+import androidx.test.core.app.ApplicationProvider
+import androidx.work.OneTimeWorkRequest
+import androidx.work.WorkRequest
+import androidx.work.impl.WorkManagerImpl
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.spyk
-import io.mockk.unmockkObject
-import io.mockk.unmockkStatic
+import io.mockk.unmockkAll
+import io.mockk.verify
+import java.lang.reflect.Field
+import javax.inject.Provider
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,14 +33,17 @@ import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.ole.planet.myplanet.utils.DownloadUtils
-import java.lang.reflect.Field
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.util.ReflectionHelpers
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [Build.VERSION_CODES.UPSIDE_DOWN_CAKE], application = Application::class)
 class DownloadServiceTest {
 
     private lateinit var mockPreferences: SharedPreferences
@@ -36,6 +51,7 @@ class DownloadServiceTest {
     @Before
     fun setUp() {
         mockPreferences = mockk(relaxed = true)
+        mockkStatic(ContextCompat::class)
         mockkObject(DownloadUtils)
         mockkStatic(Log::class)
         every { Log.d(any(), any()) } returns 0
@@ -47,117 +63,115 @@ class DownloadServiceTest {
 
     @After
     fun tearDown() {
-        unmockkObject(DownloadUtils)
-        unmockkStatic(Log::class)
+        unmockkAll()
+        // Reset SDK version for other tests that might run in same VM
+        ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", 0)
     }
 
-    // --- Tests for getNextUrl (testing both Priority and Pending paths) ---
+    // --- Tests for startService ---
 
     @Test
-    fun `test getNextUrl returns null when no urls`() {
-        every { mockPreferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet()) } returns emptySet()
-        val result = DownloadService.getNextUrl(mockPreferences, DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet(), true)
-        assertNull(result)
-    }
+    fun `test startService starts foreground service when API is less than S`() {
+        val mContext = mockk<Context>(relaxed = true)
+        every { ContextCompat.startForegroundService(any(), any()) } returns mockk()
+        ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", Build.VERSION_CODES.R)
 
-    @Test
-    fun `test getNextUrl returns first valid url deterministically`() {
-        val urlSet = setOf("http://example.com/file2", "http://example.com/file1")
-        every { mockPreferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet()) } returns urlSet
+        DownloadService.startService(mContext, "test_urls", false)
 
-        val result = DownloadService.getNextUrl(mockPreferences, DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet(), true)
-        assertNotNull(result)
-
-        assertEquals("http://example.com/file1", result?.url)
-        assertEquals(true, result?.isPriority)
+        verify { ContextCompat.startForegroundService(mContext, any()) }
     }
 
     @Test
-    fun `test getNextUrl skips processed urls`() {
-        val urlSet = setOf("http://example.com/file1", "http://example.com/file2")
-        every { mockPreferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet()) } returns urlSet
+    fun `test startService starts foreground service for Activity context on Android S and above`() {
+        val mockActivity: Activity = mockk(relaxed = true)
+        every { ContextCompat.startForegroundService(any(), any()) } returns mockk()
+        ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", Build.VERSION_CODES.S)
 
-        val processedUrls = setOf("http://example.com/file1")
-        val result = DownloadService.getNextUrl(mockPreferences, DownloadService.PRIORITY_DOWNLOADS_KEY, processedUrls, true)
+        DownloadService.startService(mockActivity, "test_urls", false)
 
-        assertNotNull(result)
-        assertEquals("http://example.com/file2", result?.url)
+        verify { ContextCompat.startForegroundService(mockActivity, any()) }
     }
 
     @Test
-    fun `test getNextUrl returns null if all urls are processed`() {
-        val urlSet = setOf("http://example.com/file1", "http://example.com/file2")
-        every { mockPreferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet()) } returns urlSet
+    fun `test startService starts foreground service on Android 14 when background restricted is false`() {
+        val applicationContext = ApplicationProvider.getApplicationContext<Context>()
+        val mockActivityManager = mockk<ActivityManager>(relaxed = true)
+        val context = mockk<Context>(relaxed = true)
+        every { context.applicationContext } returns applicationContext
+        every { context.getSystemService(Context.ACTIVITY_SERVICE) } returns mockActivityManager
+        every { mockActivityManager.isBackgroundRestricted } returns false
+        every { ContextCompat.startForegroundService(any(), any()) } returns mockk()
+        ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 
-        val processedUrls = setOf("http://example.com/file1", "http://example.com/file2")
-        val result = DownloadService.getNextUrl(mockPreferences, DownloadService.PRIORITY_DOWNLOADS_KEY, processedUrls, true)
+        DownloadService.startService(context, "test_urls", false)
 
-        assertNull(result)
+        verify { ContextCompat.startForegroundService(context, any()) }
     }
 
     @Test
-    fun `test getNextUrl skips blank urls`() {
-        val urlSet = setOf("   ", "http://example.com/file1")
-        every { mockPreferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet()) } returns urlSet
+    fun `test startService enqueues worker on Android 14 when background restricted is true`() {
+        val mockActivityManager = mockk<ActivityManager>(relaxed = true)
+        val context = mockk<Context>(relaxed = true)
+        val app = ApplicationProvider.getApplicationContext<Application>()
 
-        val result = DownloadService.getNextUrl(mockPreferences, DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet(), true)
-        assertNotNull(result)
-        assertEquals("http://example.com/file1", result?.url)
+        val mockWorkManager = mockk<WorkManagerImpl>(relaxed = true)
+        mockkStatic(WorkManagerImpl::class)
+        every { WorkManagerImpl.getInstance(any()) } returns mockWorkManager
+        val slotRequest = slot<WorkRequest>()
+        every { mockWorkManager.enqueue(capture(slotRequest)) } returns mockk()
+
+        every { context.applicationContext } returns app
+        every { context.getSystemService(Context.ACTIVITY_SERVICE) } returns mockActivityManager
+        every { mockActivityManager.isBackgroundRestricted } returns true
+
+        every { ContextCompat.startForegroundService(any(), any()) } returns mockk()
+
+        ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+
+        DownloadService.startService(context, "test_urls_from_background", false)
+
+        verify(exactly = 0) { ContextCompat.startForegroundService(any(), any()) }
+        verify { mockWorkManager.enqueue(any<WorkRequest>()) }
+
+        val req = slotRequest.captured as OneTimeWorkRequest
+        assertEquals("test_urls_from_background", req.workSpec.input.getString("urls_key"))
+        assertEquals(false, req.workSpec.input.getBoolean("fromSync", true))
     }
 
     @Test
-    fun `test getNextUrl handles pending urls correctly`() {
-        val urlSet = setOf("http://example.com/file2", "http://example.com/file1")
-        every { mockPreferences.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, emptySet()) } returns urlSet
+    fun `test startService enqueues worker if startForegroundService throws exception`() {
+        val mockActivityManager = mockk<ActivityManager>(relaxed = true)
+        val context = mockk<Context>(relaxed = true)
+        val app = ApplicationProvider.getApplicationContext<Application>()
 
-        val result = DownloadService.getNextUrl(mockPreferences, DownloadService.PENDING_DOWNLOADS_KEY, emptySet(), false)
-        assertNotNull(result)
+        val mockWorkManager = mockk<WorkManagerImpl>(relaxed = true)
+        mockkStatic(WorkManagerImpl::class)
+        every { WorkManagerImpl.getInstance(any()) } returns mockWorkManager
+        val slotRequest = slot<WorkRequest>()
+        every { mockWorkManager.enqueue(capture(slotRequest)) } returns mockk()
 
-        assertEquals("http://example.com/file1", result?.url)
-        assertEquals(false, result?.isPriority)
-    }
+        every { context.applicationContext } returns app
+        every { context.getSystemService(Context.ACTIVITY_SERVICE) } returns mockActivityManager
+        every { mockActivityManager.isBackgroundRestricted } returns false
 
-    // --- Tests for getNextPriorityUrl ---
+        // Throw exception to trigger fallback
+        every { ContextCompat.startForegroundService(any(), any()) } throws IllegalStateException("Foreground exception")
+        every { context.startService(any()) } throws IllegalStateException("Service exception")
 
-    @Test
-    fun `test getNextPriorityUrl returns null when queue is empty`() {
-        val result = DownloadService.getNextPriorityUrl(emptyList())
-        assertNull(result)
-    }
+        ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 
-    @Test
-    fun `test getNextPriorityUrl returns single item`() {
-        val queue = listOf(DownloadService.QueuedUrl("url1", true, 5))
-        val result = DownloadService.getNextPriorityUrl(queue)
-        assertNotNull(result)
-        assertEquals("url1", result?.url)
-        assertEquals(5, result?.priority)
-    }
+        try {
+            DownloadService.startService(context, "test_urls_fallback", true)
+        } catch (e: Exception) {
+            // expected
+        }
 
-    @Test
-    fun `test getNextPriorityUrl returns item with highest priority`() {
-        val queue = listOf(
-            DownloadService.QueuedUrl("url1", true, 5),
-            DownloadService.QueuedUrl("url2", true, 10),
-            DownloadService.QueuedUrl("url3", true, 3)
-        )
-        val result = DownloadService.getNextPriorityUrl(queue)
-        assertNotNull(result)
-        assertEquals("url2", result?.url)
-        assertEquals(10, result?.priority)
-    }
+        verify { ContextCompat.startForegroundService(any(), any()) }
+        verify { mockWorkManager.enqueue(any<WorkRequest>()) }
 
-    @Test
-    fun `test getNextPriorityUrl returns first item if multiple have same max priority`() {
-        val queue = listOf(
-            DownloadService.QueuedUrl("url1", true, 10),
-            DownloadService.QueuedUrl("url2", true, 10),
-            DownloadService.QueuedUrl("url3", true, 5)
-        )
-        val result = DownloadService.getNextPriorityUrl(queue)
-        assertNotNull(result)
-        assertEquals("url1", result?.url)
-        assertEquals(10, result?.priority)
+        val req = slotRequest.captured as OneTimeWorkRequest
+        assertEquals("test_urls_fallback", req.workSpec.input.getString("urls_key"))
+        assertEquals(true, req.workSpec.input.getBoolean("fromSync", false))
     }
 
     @Test
@@ -179,9 +193,9 @@ class DownloadServiceTest {
 
         val testScope = CoroutineScope(job + Dispatchers.IO + exceptionHandler)
 
-        val prefsField: Field = DownloadService::class.java.getDeclaredField("preferences")
+        val prefsField: Field = DownloadService::class.java.getDeclaredField("preferencesProvider")
         prefsField.isAccessible = true
-        prefsField.set(service, mockPreferences)
+        prefsField.set(service, Provider { mockPreferences })
 
         val appScopeField: Field = DownloadService::class.java.getDeclaredField("appScope")
         appScopeField.isAccessible = true

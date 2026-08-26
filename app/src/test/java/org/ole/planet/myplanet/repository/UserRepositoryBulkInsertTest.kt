@@ -30,11 +30,11 @@ class UserRepositoryBulkInsertTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
-            mockk(relaxed = true),
             userDao,
             mockk(relaxed = true)
         )
-        coEvery { userDao.getAll() } returns emptyList()
+        coEvery { userDao.getUsersByAnyIds(any()) } returns emptyList()
+        coEvery { userDao.getGuestUsersByNames(any()) } returns emptyList()
 
         val jsonArray = JsonArray()
         for (i in 1..10) {
@@ -76,7 +76,6 @@ class UserRepositoryBulkInsertTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
-            mockk(relaxed = true),
             userDao,
             mockk(relaxed = true)
         )
@@ -86,7 +85,8 @@ class UserRepositoryBulkInsertTest {
             _id = "guest_123"
             name = "Guest User"
         }
-        coEvery { userDao.getAll() } returns listOf(existingGuest)
+        coEvery { userDao.getUsersByAnyIds(any()) } returns emptyList()
+        coEvery { userDao.getGuestUsersByNames(any()) } returns listOf(existingGuest)
 
         val list = mutableListOf<JsonObject>()
         val jObj = JsonObject()
@@ -122,11 +122,11 @@ class UserRepositoryBulkInsertTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
-            mockk(relaxed = true),
             userDao,
             mockk(relaxed = true)
         )
-        coEvery { userDao.getAll() } returns emptyList()
+        coEvery { userDao.getUsersByAnyIds(any()) } returns emptyList()
+        coEvery { userDao.getGuestUsersByNames(any()) } returns emptyList()
 
         val list = mutableListOf<JsonObject>()
         for (i in 1..2) {

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.content.Context
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
@@ -11,7 +10,7 @@ import org.ole.planet.myplanet.utils.NetworkUtils
  * [org.ole.planet.myplanet.data.room.dao.ApkLogDao] and uploaded through the Room upload path
  * (`UploadConfigs.CrashLog`). A row with a null `_rev` is considered pending upload.
  */
-@Entity(tableName = "apk_log")
+@Entity(tableName = "apk_log", indices = [androidx.room.Index("_rev")])
 open class ApkLog {
     @PrimaryKey
     var id: String = ""
@@ -28,7 +27,7 @@ open class ApkLog {
     companion object {
         const val ERROR_TYPE_CRASH = "crash"
 
-        fun serialize(log: ApkLog, context: Context): JsonObject {
+        fun serialize(log: ApkLog, customDeviceName: String): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("type", log.type)
             `object`.addProperty("error", log.error)
@@ -39,7 +38,7 @@ open class ApkLog {
             `object`.addProperty("createdOn", log.createdOn)
             `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
-            `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+            `object`.addProperty("customDeviceName", customDeviceName)
             `object`.addProperty("parentCode", log.parentCode)
             return `object`
         }

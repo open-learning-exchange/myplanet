@@ -1,22 +1,20 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import android.os.Bundle
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.TextView
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
+import org.ole.planet.myplanet.databinding.ItemCourseHomeBinding
 import org.ole.planet.myplanet.databinding.ItemMyLifeBinding
 import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
-import org.ole.planet.myplanet.ui.events.EventsDetailFragment
 import org.ole.planet.myplanet.ui.health.MyHealthFragment
 import org.ole.planet.myplanet.ui.personals.PersonalsFragment
 import org.ole.planet.myplanet.ui.references.ReferencesFragment
@@ -94,38 +92,15 @@ open class DashboardPluginFragment : BaseContainerFragment() {
         }
     }
 
-    fun setTextViewProperties(textViewArray: Array<TextView?>, itemCnt: Int, obj: DashboardItem?) {
-        textViewArray[itemCnt] = TextView(context)
-        textViewArray[itemCnt]?.setPadding(20, 10, 20, 10)
-        textViewArray[itemCnt]?.textAlignment = View.TEXT_ALIGNMENT_CENTER
-        textViewArray[itemCnt]?.gravity = Gravity.CENTER_VERTICAL or Gravity.CENTER_HORIZONTAL
-        when (obj?.type) {
-            ItemType.LIBRARY -> {
-                textViewArray[itemCnt]?.text = obj.title
-            }
-            ItemType.COURSE -> {
-                textViewArray[itemCnt]?.let {
-                    handleClick(obj.id, obj.title, TakeCourseFragment(), it)
-                }
-            }
-            ItemType.MEETUP -> {
-                textViewArray[itemCnt]?.let {
-                    handleClick(obj.id, obj.title, EventsDetailFragment(), it)
-                }
-            }
-            else -> {}
-        }
+    fun createCourseChip(obj: DashboardItem?): View {
+        val itemCourseHomeBinding = ItemCourseHomeBinding.inflate(LayoutInflater.from(activity))
+        handleClick(obj?.id, obj?.title, TakeCourseFragment(), itemCourseHomeBinding.title)
+        return itemCourseHomeBinding.root
     }
 
-    fun setTextColor(textView: TextView, itemCnt: Int) {
-        textView.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-        setBackgroundColor(textView, itemCnt)
-    }
-
-    fun getLayout(itemCnt: Int, obj: DashboardItem, surveyCount: Int? = null): View {
+    fun getLayout(obj: DashboardItem, surveyCount: Int? = null): View {
         val itemMyLifeBinding = ItemMyLifeBinding.inflate(LayoutInflater.from(activity))
         val v = itemMyLifeBinding.root
-        setBackgroundColor(v, itemCnt)
 
         val title = obj.title
         val imageResId = imageResourceMap[obj.imageId] ?: R.drawable.ic_myhealth
@@ -146,12 +121,4 @@ open class DashboardPluginFragment : BaseContainerFragment() {
     }
 
     fun getMyLifeListBase(userId: String?): List<MyLife> = MyLife.defaultItems(requireContext(), userId)
-
-    fun setBackgroundColor(v: View, count: Int) {
-        if (count % 2 == 0) {
-            v.setBackgroundResource(R.drawable.light_rect)
-        } else {
-            v.setBackgroundResource(R.color.dashboard_item_alternative)
-        }
-    }
 }

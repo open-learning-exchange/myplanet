@@ -6,7 +6,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
-import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
@@ -16,7 +15,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.androidDecrypter
@@ -28,7 +26,6 @@ import org.ole.planet.myplanet.utils.UrlUtils
 class LoginSyncManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val sharedPrefManager: SharedPrefManager,
-    private val userRepository: UserRepository,
     private val userSyncRepository: UserSyncRepository,
     private val apiInterface: ApiInterface,
     @ApplicationScope private val applicationScope: CoroutineScope,
@@ -178,7 +175,12 @@ class LoginSyncManager @Inject constructor(
 
     private fun isManager(jsonDoc: JsonObject?): Boolean {
         val roles = jsonDoc?.get("roles")?.asJsonArray
-        val isManager = roles.toString().lowercase(Locale.getDefault()).contains("manager")
+        var isManager = false
+        roles?.forEach { role ->
+            if (role.isJsonPrimitive && role.asString.equals("manager", ignoreCase = true)) {
+                isManager = true
+            }
+        }
         return jsonDoc?.get("isUserAdmin")?.asBoolean == true || isManager
     }
 }

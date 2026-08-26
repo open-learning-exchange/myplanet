@@ -5,7 +5,7 @@ on:
     branches:
       - '**'
       - '!master'
-    # Mirrors the `paths` filter in flutter.yml. The Flutter port under
+# Mirrors the `paths` filter in flutter.yml. The Flutter port under
     # flutter/ cannot affect a Gradle build, so a push that touches only it
     # (or documentation) skips this workflow instead of spending ~10 minutes
     # rebuilding both Kotlin flavours. A push that touches app/, gradle/ or
@@ -14,12 +14,21 @@ on:
       - 'flutter/**'
       - 'docs/**'
       - '**.md'
+      - '**/*.md'
       - '.github/workflows/flutter.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     name: myPlanet build
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -34,13 +43,25 @@ jobs:
         uses: gradle/actions/setup-gradle@v6.3.0
         with:
           gradle-version: wrapper
+          cache-read-only: false
+
+      - name: restore project build dir
+        uses: actions/cache@v6
+        with:
+          path: |
+            app/build
+            .gradle/*
+            !.gradle/configuration-cache
+          key: build-dir-build-${{ matrix.build }}-${{ github.sha }}
+          restore-keys: |
+            build-dir-build-${{ matrix.build }}-
 
       - name: build debug as test
         env:
           GRADLE_BUILD_CACHE_URL: ${{ secrets.GRADLE_BUILD_CACHE_URL }}
           GRADLE_BUILD_CACHE_USER: ${{ secrets.GRADLE_BUILD_CACHE_USER }}
           GRADLE_BUILD_CACHE_PASS: ${{ secrets.GRADLE_BUILD_CACHE_PASS }}
-          GRADLE_BUILD_CACHE_PUSH: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/claude/') || startsWith(github.ref, 'refs/heads/jules/') || startsWith(github.ref, 'refs/heads/codex/') || startsWith(github.ref, 'refs/heads/copilot/') }}
+          GRADLE_BUILD_CACHE_PUSH: 'true'
         run: |
           FLAVOR=${{ matrix.build }}
           ./gradlew assemble${FLAVOR^}Debug --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4

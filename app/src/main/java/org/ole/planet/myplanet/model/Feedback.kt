@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.text.TextUtils
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
@@ -17,7 +16,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
  * are stored as a JSON array string in [messages]; the derived [messageList]/[message] views are
  * ignored by Room.
  */
-@Entity(tableName = "feedback")
+@Entity(tableName = "feedback", indices = [androidx.room.Index("openTime"), androidx.room.Index("owner"), androidx.room.Index("isUploaded")])
 open class Feedback {
     // @JvmField on id/_id so Room does not see ambiguous getId/get_id accessors.
     @PrimaryKey
@@ -47,7 +46,7 @@ open class Feedback {
     @get:Ignore
     val messageList: List<FeedbackReply>?
         get() {
-            if (TextUtils.isEmpty(messages)) return null
+            if (messages.isNullOrEmpty()) return null
             val feedbackReplies: MutableList<FeedbackReply> = ArrayList()
 
             val stringReader = StringReader(messages)
@@ -73,7 +72,7 @@ open class Feedback {
     @get:Ignore
     val message: String
         get() {
-            if (TextUtils.isEmpty(messages)) return ""
+            if (messages.isNullOrEmpty()) return ""
 
             val stringReader = StringReader(messages)
             val jsonReader = JsonReader(stringReader)

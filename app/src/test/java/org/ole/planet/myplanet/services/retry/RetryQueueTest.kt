@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.services.retry
 
-import android.content.Context
 import android.util.Log
 import com.google.gson.JsonObject
 import io.mockk.MockKAnnotations
@@ -10,12 +9,9 @@ import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.After
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -30,9 +26,6 @@ class RetryQueueTest {
     @MockK
     lateinit var retryRepository: RetryRepository
 
-    @MockK
-    lateinit var context: Context
-
     private lateinit var retryQueue: RetryQueue
 
     @Before
@@ -45,7 +38,7 @@ class RetryQueueTest {
         every { Log.e(any<String>(), any<String>()) } returns 0
         every { Log.e(any<String>(), any<String>(), any<Throwable>()) } returns 0
 
-        retryQueue = RetryQueue(retryRepository, context)
+        retryQueue = RetryQueue(retryRepository)
     }
 
     @After

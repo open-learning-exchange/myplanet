@@ -30,11 +30,11 @@ import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
+import org.ole.planet.myplanet.repository.SyncRepository
+import org.ole.planet.myplanet.repository.SyncUiState
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.repository.SyncRepository
-import org.ole.planet.myplanet.repository.SyncUiState
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -117,7 +117,7 @@ class DashboardViewModelTest {
         val secondCoursesFlow = MutableSharedFlow<List<MyCourse>>()
 
         coEvery { userRepository.getDashboardProfile(userId) } returns DashboardProfile("John Doe", 0)
-        coEvery { resourcesRepository.getMyLibrary(userId) } returns emptyList()
+        coEvery { resourcesRepository.getMyLibraryFlow(userId) } returns kotlinx.coroutines.flow.flowOf(emptyList())
         coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(emptyList())
 
         // First call
@@ -156,7 +156,7 @@ class DashboardViewModelTest {
         coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(emptyList())
 
         // Library throws CancellationException, simulating its job being cancelled
-        coEvery { resourcesRepository.getMyLibrary(userId) } throws CancellationException("Test cancel")
+        coEvery { resourcesRepository.getMyLibraryFlow(userId) } throws CancellationException("Test cancel")
         coEvery { coursesRepository.getMyCoursesFlow(userId) } returns coursesFlow
 
         viewModel.loadUserContent(userId)
@@ -175,7 +175,7 @@ class DashboardViewModelTest {
     fun `loadUserContent updates uiState for users, teams, courses, and offline logins`() = runTest(testDispatcher) {
         val userId = "user1"
 
-        coEvery { resourcesRepository.getMyLibrary(userId) } returns listOf(MyLibrary().apply { title = "Lib1" })
+        coEvery { resourcesRepository.getMyLibraryFlow(userId) } returns kotlinx.coroutines.flow.flowOf(listOf(MyLibrary().apply { title = "Lib1" }))
         coEvery { coursesRepository.getMyCoursesFlow(userId) } returns flowOf(listOf(MyCourse().apply { courseTitle = "Course1" }))
         coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(listOf(MyTeam().apply { name = "Team1" }))
         coEvery { userRepository.getDashboardProfile(userId) } returns DashboardProfile("John Doe", 2)

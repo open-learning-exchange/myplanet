@@ -1,42 +1,35 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.pdf.PdfRenderer
-import android.media.MediaMetadataRetriever
-import android.os.ParcelFileDescriptor
-import android.util.LruCache
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
-import androidx.core.graphics.createBitmap
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.opencsv.CSVParserBuilder
-import com.opencsv.CSVReaderBuilder
 import java.io.File
-import java.io.FileReader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemInlineResourceBinding
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.PdfThumbnailLoader
 import org.ole.planet.myplanet.utils.ResourceOpener
+import org.ole.planet.myplanet.utils.ResourcesPreviewLoader
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 class InlineResourceAdapter(
+    private val previewLoader: ResourcesPreviewLoader,
     private val dispatcherProvider: DispatcherProvider,
     private val onResourceClick: (MyLibrary) -> Unit
 ) : ListAdapter<MyLibrary, InlineResourceAdapter.ViewHolder>(
@@ -59,13 +52,6 @@ class InlineResourceAdapter(
 
     private var externalFilesDir: File? = null
     private val textCache = mutableMapOf<String, String>()
-    private val maxMemory = (Runtime.getRuntime().maxMemory() / 1024).toInt()
-    private val cacheSize = maxMemory / 8
-    private val bitmapCache = object : LruCache<String, Bitmap>(cacheSize) {
-        override fun sizeOf(key: String, bitmap: Bitmap): Int {
-            return bitmap.byteCount / 1024
-        }
-    }
 
     private var adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
 
@@ -98,10 +84,10 @@ class InlineResourceAdapter(
         previousList.forEach { prev ->
             val current = currentMap[prev.id]
             if (current == null || current.resourceLocalAddress != prev.resourceLocalAddress) {
-                val file = File(dir, "ole/${prev.id}/${prev.resourceLocalAddress}")
+                val address = prev.resourceLocalAddress ?: return@forEach
+                val file = FileUtils.getLibraryFile(dir, prev.id, address)
                 val prefix = file.absolutePath
-                textCache.keys.filter { it.startsWith(prefix) }.forEach { textCache.remove(it) }
-                bitmapCache.snapshot().keys.filter { it.startsWith(prefix) }.forEach { bitmapCache.remove(it) }
+                textCache.keys.removeAll { it.startsWith(prefix) }
             }
         }
     }
@@ -118,7 +104,6 @@ class InlineResourceAdapter(
         super.onDetachedFromRecyclerView(recyclerView)
         adapterScope.cancel()
         textCache.clear()
-        bitmapCache.evictAll()
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
@@ -240,28 +225,10 @@ class InlineResourceAdapter(
 
     private suspend fun showPdfPreview(holder: ViewHolder, file: File) {
         if (!file.exists()) return
-        val cacheKey = getCacheKey(file)
-        val cachedBitmap = bitmapCache.get(cacheKey)
-        val bitmap = if (cachedBitmap != null) {
-            cachedBitmap
-        } else {
-            withContext(dispatcherProvider.io) {
-                try {
-                    ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { fd ->
-                        PdfRenderer(fd).use { renderer ->
-                            renderer.openPage(0).use { page ->
-                                val scale = 2
-                                createBitmap(page.width * scale, page.height * scale).also {
-                                    page.render(it, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                                }
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    null
-                }
-            }?.also { bitmapCache.put(cacheKey, it) }
-        }
+        val context = holder.itemView.context
+        val targetWidthPx = (PDF_PREVIEW_WIDTH_DP * context.resources.displayMetrics.density).toInt()
+        Glide.with(context).clear(holder.binding.ivResourcePreview)
+        val bitmap = PdfThumbnailLoader.firstPageBitmap(file, dispatcherProvider, targetWidthPx)
         if (bitmap != null) {
             holder.binding.ivResourcePreview.visibility = View.VISIBLE
             holder.binding.ivResourcePreview.scaleType = ImageView.ScaleType.FIT_CENTER
@@ -278,19 +245,7 @@ class InlineResourceAdapter(
         val durationText = if (cachedDuration != null) {
             cachedDuration
         } else {
-            withContext(dispatcherProvider.io) {
-                val retriever = MediaMetadataRetriever()
-                try {
-                    retriever.setDataSource(file.absolutePath)
-                    val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
-                    val totalSeconds = durationMs / 1000
-                    String.format("%d:%02d", totalSeconds / 60, totalSeconds % 60)
-                } catch (e: Exception) {
-                    ""
-                } finally {
-                    retriever.release()
-                }
-            }.also { textCache[cacheKey] = it }
+            previewLoader.getAudioPreview(file).also { textCache[cacheKey] = it }
         }
         holder.binding.tvAudioDuration.text = durationText
     }
@@ -302,24 +257,7 @@ class InlineResourceAdapter(
         val preview = if (cachedPreview != null) {
             cachedPreview
         } else {
-            withContext(dispatcherProvider.io) {
-                try {
-                    val sb = StringBuilder()
-                    CSVReaderBuilder(FileReader(file))
-                        .withCSVParser(CSVParserBuilder().withSeparator(',').withQuoteChar('"').build())
-                        .build().use { reader ->
-                            var count = 0
-                            for (row in reader) {
-                                if (count >= 5) break
-                                sb.appendLine(row.joinToString("  |  "))
-                                count++
-                            }
-                        }
-                    sb.toString().trimEnd().takeIf { it.isNotEmpty() }
-                } catch (e: Exception) {
-                    null
-                }
-            }?.also { textCache[cacheKey] = it }
+            previewLoader.getCsvPreview(file)?.also { textCache[cacheKey] = it }
         }
         if (!preview.isNullOrEmpty()) {
             holder.binding.tvTextPreview.visibility = View.VISIBLE
@@ -334,13 +272,7 @@ class InlineResourceAdapter(
         val text = if (cachedText != null) {
             cachedText
         } else {
-            withContext(dispatcherProvider.io) {
-                try {
-                    file.bufferedReader().useLines { it.take(8).joinToString("\n") }.takeIf { it.isNotEmpty() }
-                } catch (e: Exception) {
-                    null
-                }
-            }?.also { textCache[cacheKey] = it }
+            previewLoader.getTextPreview(file)?.also { textCache[cacheKey] = it }
         }
         if (!text.isNullOrEmpty()) {
             holder.binding.tvTextPreview.visibility = View.VISIBLE
@@ -354,5 +286,6 @@ class InlineResourceAdapter(
         const val PAYLOAD_TITLE = "PAYLOAD_TITLE"
         const val PAYLOAD_ADDRESS = "PAYLOAD_ADDRESS"
         const val PAYLOAD_STATUS = "PAYLOAD_STATUS"
+        private const val PDF_PREVIEW_WIDTH_DP = 240
     }
 }

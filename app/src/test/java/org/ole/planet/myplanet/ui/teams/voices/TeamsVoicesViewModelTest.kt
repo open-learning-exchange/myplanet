@@ -27,11 +27,14 @@ class TeamsVoicesViewModelTest {
     private lateinit var viewModel: TeamsVoicesViewModel
     private val voicesRepository: VoicesRepository = mockk(relaxed = true)
     private val teamsRepository: TeamsRepository = mockk(relaxed = true)
+    private val userRepository: org.ole.planet.myplanet.repository.UserRepository = mockk(relaxed = true)
+    private val resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository = mockk(relaxed = true)
+    private val notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository = mockk(relaxed = true)
     private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
     @Before
     fun setup() {
-        viewModel = TeamsVoicesViewModel(voicesRepository, teamsRepository, dispatcherProvider)
+        viewModel = TeamsVoicesViewModel(voicesRepository, teamsRepository, dispatcherProvider, userRepository, resourcesRepository, notificationsRepository)
     }
 
     @Test

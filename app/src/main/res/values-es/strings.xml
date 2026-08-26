@@ -358,7 +358,8 @@
     <string-array name="sort_by_date">        
         <item>Ordenar por fecha - Desc</item>
         <item>Ordenar por fecha - Asc</item>
-        <item>Ordenar por título</item>
+        <item>Ordenar por título - Asc</item>
+        <item>Ordenar por título - Desc</item>
     </string-array>
 
     <string-array name="sort_member">
@@ -578,6 +579,8 @@
     <string name="no_data_available_please_check_and_try_again">No hay datos disponibles, por favor verifica e intenta de nuevo.</string>
     <string name="no_course_matched_filter">No hay cursos que coincidan con el filtro</string>
     <string name="added_to_my_library">agregado a myLibrary</string>
+    <string name="format_added_to_mylibrary">%1$s agregado a myLibrary</string>
+    <string name="format_removed_from_mylibrary">%1$s eliminado de myLibrary</string>
     <string name="added_to_my_courses">agregado a myCourses</string>
     <string name="do_you_want_to_stay_online">¿Deseas permanecer en línea?</string>
     <string name="device_not_connected_to_planet">Dispositivo no conectado a Planet.</string>
@@ -614,6 +617,10 @@
     <string name="meetup_added">Encuentro agregado</string>
     <string name="meetup_not_added">Encuentro no agregado</string>
     <string name="add_transaction">Agregar transacción</string>
+    <string name="from_date">Desde fecha</string>
+    <string name="to_date">Hasta fecha</string>
+    <string name="select_from_date">Seleccionar desde fecha</string>
+    <string name="select_to_date">Seleccionar hasta fecha</string>
     <string name="note_is_required">Se requiere una nota</string>
     <string name="amount_is_required">Se requiere una cantidad</string>
     <string name="date_is_required">Se requiere una fecha</string>
@@ -779,6 +786,7 @@
     <string name="unable_to_clear_files">No se pueden eliminar los archivos</string>
     <string name="last_synced_never">nunca sincronizado</string>
     <string name="last_synced_colon">"última sincronización: "</string>
+    <string name="dashboard_sync_status">Sincronización · %1$s</string>
 
     <string name="disclaimer">
     <![CDATA[

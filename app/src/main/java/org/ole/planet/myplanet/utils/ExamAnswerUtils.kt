@@ -1,8 +1,9 @@
 package org.ole.planet.myplanet.utils
 
-import android.util.LruCache
+import androidx.annotation.VisibleForTesting
 import com.google.gson.JsonObject
 import java.util.Arrays
+import java.util.Collections
 import java.util.Locale
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.utils.JsonUtils.getStringAsJsonArray
@@ -10,7 +11,16 @@ import org.ole.planet.myplanet.utils.JsonUtils.getStringAsJsonArray
 object ExamAnswerUtils {
     // Process-lifetime cache mapping a stringified choices JSON to a Map of id -> text.
     // Using choices as the key prevents stale mapping if the question's choices are updated from the server.
-    private val choicesCache = LruCache<String, Map<String, String>>(100)
+    private val choicesCache = Collections.synchronizedMap(
+        object : LinkedHashMap<String, Map<String, String>>(134, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Map<String, String>>): Boolean {
+                return size > 100
+            }
+        }
+    )
+
+    @VisibleForTesting
+    internal fun cacheSize(): Int = choicesCache.size
 
     fun choiceDisplayValue(choice: JsonObject): String? {
         return JsonUtils.getString("text", choice).ifBlank {
@@ -73,9 +83,12 @@ object ExamAnswerUtils {
     }
 
     private fun checkTextAnswer(ans: String, correctChoices: List<String>?): Boolean {
-        return correctChoices?.any {
-            ans.lowercase(Locale.getDefault()).contains(it.lowercase(Locale.getDefault()))
-        } == true
+        if (correctChoices == null) return false
+        val locale = Locale.getDefault()
+        val normalizedAns = ans.lowercase(locale)
+        return correctChoices.any {
+            normalizedAns.contains(it.lowercase(locale))
+        }
     }
 
     private fun isEqual(ar1: Array<String>?, ar2: Array<String>?): Boolean {

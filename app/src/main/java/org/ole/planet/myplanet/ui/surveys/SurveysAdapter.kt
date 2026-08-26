@@ -7,13 +7,10 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnDiffRefreshListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnSurveyAdoptListener
 import org.ole.planet.myplanet.databinding.RowSurveyBinding
-import org.ole.planet.myplanet.model.StepExam
-import org.ole.planet.myplanet.model.SurveyFormState
-import org.ole.planet.myplanet.model.SurveyInfo
+import org.ole.planet.myplanet.model.SurveyRow
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
 
@@ -22,22 +19,18 @@ class SurveysAdapter(
     private val userId: String?,
     private val isTeam: Boolean,
     val teamId: String?,
-    private val onAdoptSurveyListener: OnSurveyAdoptListener,
-    private val surveyInfoMap: Map<String, SurveyInfo>,
-    private val bindingDataMap: Map<String, SurveyFormState>
-) : ListAdapter<StepExam, SurveysAdapter.SurveysViewHolder>(DiffUtils.itemCallback(
-    { oldItem, newItem -> oldItem.id == newItem.id },
+    private val onAdoptSurveyListener: OnSurveyAdoptListener
+) : ListAdapter<SurveyRow, SurveysAdapter.SurveysViewHolder>(DiffUtils.itemCallback(
+    { oldItem, newItem -> oldItem.exam.id == newItem.exam.id },
     { oldItem, newItem ->
-        oldItem.name == newItem.name &&
-                oldItem.description == newItem.description &&
-                oldItem.isTeamShareAllowed == newItem.isTeamShareAllowed &&
-                oldItem.isFromNation == newItem.isFromNation
+        oldItem.exam.name == newItem.exam.name &&
+                oldItem.exam.description == newItem.exam.description &&
+                oldItem.exam.isTeamShareAllowed == newItem.exam.isTeamShareAllowed &&
+                oldItem.exam.isFromNation == newItem.exam.isFromNation &&
+                oldItem.surveyInfo == newItem.surveyInfo &&
+                oldItem.formState == newItem.formState
     }
-)), OnDiffRefreshListener {
-    override fun refreshWithDiff() {
-        submitList(currentList.toList())
-    }
-
+)) {
     private var listener: OnHomeItemClickListener? = null
 
     init {
@@ -61,11 +54,12 @@ class SurveysAdapter(
             binding.sendSurvey.visibility = View.GONE
             binding.sendSurvey.setOnClickListener {
                 val current = getItem(bindingAdapterPosition)
-                listener?.sendSurvey(current)
+                listener?.sendSurvey(current.exam)
             }
         }
 
-        fun bind(exam: StepExam) {
+        fun bind(row: SurveyRow) {
+            val exam = row.exam
             binding.apply {
                 startSurvey.visibility = View.VISIBLE
                 tvTitle.text = exam.name
@@ -74,7 +68,7 @@ class SurveysAdapter(
                     tvDescription.text = exam.description
                 }
 
-                val bindingData = bindingDataMap[exam.id]
+                val bindingData = row.formState
                 val teamSubmission = bindingData?.teamSubmission
                 val questionCount = bindingData?.questionCount ?: 0
 
@@ -104,7 +98,7 @@ class SurveysAdapter(
                     startSurvey.visibility = View.GONE
                 }
 
-                val surveyInfo = surveyInfoMap[exam.id]
+                val surveyInfo = row.surveyInfo
                 tvNoSubmissions.text = surveyInfo?.submissionCount ?: ""
                 tvDateCompleted.text = surveyInfo?.lastSubmissionDate ?: ""
                 tvDate.text = surveyInfo?.creationDate ?: ""

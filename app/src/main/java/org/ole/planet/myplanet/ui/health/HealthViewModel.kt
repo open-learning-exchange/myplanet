@@ -4,18 +4,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.MyHealth
-import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.repository.HealthRepository
-import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.HealthRecord
-import android.text.TextUtils
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import org.ole.planet.myplanet.model.MyHealth
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.HealthRepository
+import org.ole.planet.myplanet.repository.UserRepository
 
 @HiltViewModel
 class HealthViewModel @Inject constructor(
@@ -49,6 +50,7 @@ class HealthViewModel @Inject constructor(
     val loggedInUser: StateFlow<UserEntity?> = _loggedInUser.asStateFlow()
 
     private var searchJob: Job? = null
+    private var selectPatientJob: Job? = null
 
     fun loadPatients(sortBy: String = "joinDate", descending: Boolean = true) {
         viewModelScope.launch {
@@ -84,7 +86,8 @@ class HealthViewModel @Inject constructor(
     }
 
     fun selectPatient(userId: String) {
-        viewModelScope.launch {
+        selectPatientJob?.cancel()
+        selectPatientJob = viewModelScope.launch {
             _isLoading.value = true
             val user = healthRepository.getPatientById(userId)
             if (user != null) {
@@ -100,26 +103,31 @@ class HealthViewModel @Inject constructor(
     fun loadHealthData(userId: String) {
         viewModelScope.launch {
             _isLoading.value = true
-            val userModel = userRepository.getUserById(userId)
-            val decodedHealth = userRepository.getHealthProfile(userId)
+            coroutineScope {
+                val userModelDeferred = async { userRepository.getUserById(userId) }
+                val decodedHealthDeferred = async { healthRepository.getHealthProfile(userId) }
 
-            _healthData.value = HealthData(
-                decodedHealth,
-                userModel?.firstName,
-                userModel?.middleName,
-                userModel?.lastName,
-                userModel?.email,
-                userModel?.phoneNumber,
-                userModel?.dob,
-                userModel?.birthPlace
-            )
+                val userModel = userModelDeferred.await()
+                val decodedHealth = decodedHealthDeferred.await()
+
+                _healthData.value = HealthData(
+                    decodedHealth,
+                    userModel?.firstName,
+                    userModel?.middleName,
+                    userModel?.lastName,
+                    userModel?.email,
+                    userModel?.phoneNumber,
+                    userModel?.dob,
+                    userModel?.birthPlace
+                )
+            }
             _isLoading.value = false
         }
     }
 
     fun saveHealthData(userId: String, userData: Map<String, Any?>) {
         viewModelScope.launch {
-            userRepository.updateUserHealthProfile(userId, userData)
+            healthRepository.updateUserHealthProfile(userId, userData)
             _isSaved.value = true
         }
     }

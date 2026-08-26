@@ -29,7 +29,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
 import dagger.hilt.android.AndroidEntryPoint
-import java.io.File
 import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.delay
@@ -37,7 +36,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
@@ -62,7 +60,6 @@ import org.ole.planet.myplanet.utils.DialogUtils.showSnack
 import org.ole.planet.myplanet.utils.DialogUtils.showWifiSettingDialog
 import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utils.DownloadUtils.openDownloadService
-import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName
@@ -121,6 +118,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     var serverAddressAdapter: ServerAddressAdapter? = null
     var serverListAddresses: List<ServerAddress> = emptyList()
     private var isProgressDialogShowing = false
+    private var lastSyncStatus: SyncManager.SyncStatus? = null
     @Inject
     lateinit var configurationsRepository: ConfigurationsRepository
 
@@ -149,6 +147,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         super.onCreate(savedInstanceState)
         initSyncConfigurationCoordinator()
         collectWhenStarted(syncManager.syncStatus) { status ->
+            if (status == lastSyncStatus) return@collectWhenStarted
+            lastSyncStatus = status
             when (status) {
                 is SyncManager.SyncStatus.Idle -> {
                     // Do nothing
@@ -288,19 +288,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             }
             .setCancelable(false)
             .show()
-    }
-
-    private fun clearInternalStorage() {
-        val myDir = File(FileUtils.getOlePath(this))
-        if (myDir.isDirectory) {
-            val children = myDir.list()
-            if (children != null) {
-                for (i in children.indices) {
-                    File(myDir, children[i]).delete()
-                }
-            }
-        }
-        prefData.setFirstRun(false)
     }
 
     fun sync(binding: DialogServerUrlBinding) {
@@ -544,7 +531,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                         prefData.setIsAlternativeUrl(false)
                     }
 
-                    downloadAdditionalResources()
+                    val links = configurationsRepository.getQueuedDownloads()
+                    if (links.isNotEmpty()) {
+                        openDownloadService(context, ArrayList(links), true)
+                    }
 
                     val betaAutoDownload = prefData.getBetaAutoDownload()
                     if (betaAutoDownload) {
@@ -575,14 +565,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             "ar" -> getString(R.string.arabic)
             "fr" -> getString(R.string.french)
             else -> getString(R.string.english)
-        }
-    }
-
-    private fun downloadAdditionalResources() {
-        val storedJsonConcatenatedLinks = prefData.getConcatenatedLinks()
-        if (storedJsonConcatenatedLinks != null) {
-            val storedConcatenatedLinks: ArrayList<String> = Json.decodeFromString(storedJsonConcatenatedLinks)
-            openDownloadService(context, storedConcatenatedLinks, true)
         }
     }
 
@@ -719,11 +701,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             }
 
             isSync = true
-            if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && prefData.getFirstRun()) {
-                clearInternalStorage()
-            }
 
             lifecycleScope.launch {
+                configurationsRepository.clearFirstRunStorageAndSetFlag(checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE))
                 isServerReachable(processedUrl, "sync")
             }
         }

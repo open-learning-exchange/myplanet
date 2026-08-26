@@ -37,8 +37,8 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 class ProgressRepositoryImplTest {
 
     private lateinit var repository: ProgressRepositoryImpl
-    private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
+    private val dispatcherProvider: DispatcherProvider = org.ole.planet.myplanet.utils.TestDispatcherProvider(testDispatcher)
     private val testScope = TestScope(testDispatcher)
     private lateinit var mockCoursesRepository: CoursesRepository
     private val courseProgressDao: CourseProgressDao = mockk(relaxed = true)
@@ -50,7 +50,6 @@ class ProgressRepositoryImplTest {
 
     @Before
     fun setUp() {
-        every { dispatcherProvider.io } returns testDispatcher
         mockCoursesRepository = mockk<CoursesRepository>()
         coEvery { mockCoursesRepository.getMyCourses(any()) } returns emptyList()
         repository = spyk(
@@ -259,11 +258,11 @@ class ProgressRepositoryImplTest {
         advanceUntilIdle()
 
         assertEquals(2, result.size)
-        assertEquals(1, result["course1"]?.get("max")?.asInt)
-        assertEquals(1, result["course1"]?.get("current")?.asInt)
+        assertEquals(1, result["course1"]?.max)
+        assertEquals(1, result["course1"]?.current)
 
-        assertEquals(2, result["course2"]?.get("max")?.asInt)
-        assertEquals(0, result["course2"]?.get("current")?.asInt)
+        assertEquals(2, result["course2"]?.max)
+        assertEquals(0, result["course2"]?.current)
     }
 
     @Test
@@ -485,6 +484,84 @@ class ProgressRepositoryImplTest {
 
         val result = repository.findProgressForCourse(jsonArray, "course1")
         assertNull(result)
+    }
+
+
+    @Test
+    fun testFetchCourseData_SubmissionsGrouping() = testScope.runTest {
+        val myCourses = listOf(
+            MyCourse().apply {
+                courseId = "course1"
+                courseTitle = "Course 1"
+            },
+            MyCourse().apply {
+                courseId = "course10"
+                courseTitle = "Course 10"
+            }
+        )
+
+        val exams = listOf(
+            StepExam().apply { id = "exam1"; courseId = "course1" },
+            StepExam().apply { id = "exam10"; courseId = "course10" }
+        )
+
+        val questions = listOf(
+            ExamQuestion().apply { id = "q1"; examId = "exam1" },
+            ExamQuestion().apply { id = "q10"; examId = "exam10" }
+        )
+
+        val submissions = listOf(
+            // Normal parent (course1) -> sub1 (5 mistakes)
+            Submission().apply {
+                id = "sub1"
+                userId = "user1"
+                parentId = "exam1@course1"
+                type = "exam"
+            },
+            // Missing parent -> sub3
+            Submission().apply {
+                id = "sub3"
+                userId = "user1"
+                parentId = null
+                type = "exam"
+            },
+            // Substring collision (course10, which contains "course1") -> sub4 (20 mistakes)
+            Submission().apply {
+                id = "sub4"
+                userId = "user1"
+                parentId = "exam10@course10"
+                type = "exam"
+            }
+        )
+
+        val answers = listOf(
+            Answer().apply { id = "a1"; submissionId = "sub1"; questionId = "q1"; mistakes = 5 },
+            Answer().apply { id = "a4"; submissionId = "sub4"; questionId = "q10"; mistakes = 20 }
+        )
+
+        coEvery { mockCoursesRepository.getMyCourses(any()) } returns myCourses
+        coEvery { courseProgressDao.getByUserAndCourseIds(any(), any()) } returns emptyList()
+        coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
+        coEvery { examDao.getByCourseIds(listOf("course1", "course10")) } returns exams
+        coEvery { submissionDao.getExamSubmissionsByUser("user1") } returns submissions
+        coEvery { answerDao.getBySubmissionIds(any()) } returns answers
+        coEvery { questionDao.getByIds(any()) } returns questions
+
+        val data = repository.fetchCourseData("user1")
+        advanceUntilIdle()
+
+        assertEquals(2, data.size())
+
+        // Under correct grouping, course1 gets sub1 (5) = 5 mistakes.
+        val obj1 = data[0].asJsonObject
+        assertEquals("course1", obj1.get("courseId").asString)
+        assertEquals(5, obj1.get("mistakes")?.asInt ?: 0)
+
+        // Under correct grouping, course10 gets sub4 = 20 mistakes.
+        // If substring collision fails, course10 might lose sub4 -> 0 mistakes.
+        val obj10 = data[1].asJsonObject
+        assertEquals("course10", obj10.get("courseId").asString)
+        assertEquals(20, obj10.get("mistakes")?.asInt ?: 0)
     }
 
     @Test

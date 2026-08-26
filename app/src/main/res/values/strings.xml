@@ -162,6 +162,7 @@
     <string name="https_protocol">https://</string>
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">Showing reply of:</string>
+    <string name="reply_count_format" translatable="false">(%1$d)</string>
     <string name="open_date">Open Date</string>
     <string name="my_survey">mySurveys</string>
     <string name="failed_to_load_course">Failed to load course</string>
@@ -357,7 +358,8 @@
     <string-array name="sort_by_date">
         <item>Order By Date - Desc</item>
         <item>Order By Date - Asc</item>
-        <item>Order By Title</item>
+        <item>Order By Title - Asc</item>
+        <item>Order By Title - Desc</item>
     </string-array>
 
     <string-array name="sort_member">
@@ -577,6 +579,8 @@
     <string name="no_data_available_please_check_and_try_again">No data available, please check and try again.</string>
     <string name="no_course_matched_filter">No courses matched filter</string>
     <string name="added_to_my_library">added to myLibrary</string>
+    <string name="format_added_to_mylibrary">%1$s added to myLibrary</string>
+    <string name="format_removed_from_mylibrary">%1$s removed from myLibrary</string>
     <string name="added_to_my_courses">added to myCourses</string>
     <string name="do_you_want_to_stay_online">Do you want to stay online?</string>
     <string name="device_not_connected_to_planet">Device not connected to planet.</string>
@@ -606,6 +610,7 @@
     <string name="sync">sync</string>
     <string name="session_expired">Session expired.</string>
     <string name="downloading_started_please_check_notificati">Downloading started, please check notification…</string>
+    <string name="dictionary_parsing_failed">Dictionary parsing failed.</string>
     <string name="dictionary">Dictionary</string>
     <string name="list_size">List size %d</string>
     <string name="word_not_available_in_our_database">Word not available in our database.</string>
@@ -613,6 +618,10 @@
     <string name="meetup_added">Meetup added</string>
     <string name="meetup_not_added">Meetup not added</string>
     <string name="add_transaction">Add Transaction</string>
+    <string name="from_date">From Date</string>
+    <string name="to_date">To Date</string>
+    <string name="select_from_date">Select From Date</string>
+    <string name="select_to_date">Select To Date</string>
     <string name="note_is_required">Note is required</string>
     <string name="amount_is_required">Amount is required</string>
     <string name="date_is_required">Date is required</string>
@@ -777,7 +786,8 @@
     <string name="are_you_sure_want_to_delete_all_the_files">Are you sure want to delete all the files?</string>
     <string name="unable_to_clear_files">Unable to clear files</string>
     <string name="last_synced_never">Never synced</string>
-    <string name="last_synced_colon">Last synced: </string>
+    <string name="last_synced_colon">"Last synced: "</string>
+    <string name="dashboard_sync_status">Sync · %1$s</string>
     <string name="last_login_message">This is your last login before you need to become a member.</string>
 
     <string name="disclaimer">

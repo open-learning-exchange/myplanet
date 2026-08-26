@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
@@ -27,7 +28,6 @@ import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.ExamQuestion
@@ -51,7 +51,6 @@ class SubmissionsRepositoryImplTest {
     private val answerDao: AnswerDao = mockk(relaxed = true)
     private val examDao: ExamDao = mockk(relaxed = true)
     private val questionDao: QuestionDao = mockk(relaxed = true)
-    private val userDao: UserDao = mockk(relaxed = true)
     private lateinit var repository: SubmissionsRepositoryImpl
 
     @Before
@@ -74,7 +73,7 @@ class SubmissionsRepositoryImplTest {
             answerDao,
             examDao,
             questionDao,
-            userDao
+            Gson()
         ), recordPrivateCalls = true)
     }
 
@@ -220,26 +219,70 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `getSubmissionsByUserId returns correctly`() = runTest {
-        coEvery { submissionDao.getByUserId("test") } returns listOf(Submission(id = "submission1", userId = "test"))
-        coEvery { answerDao.getBySubmissionIds(listOf("submission1")) } returns emptyList()
+    fun `createBulkSurveySubmissions with empty list does not query or insert`() = runTest {
+        val examId = "examId"
+        coEvery { examDao.getById(examId) } returns StepExam(id = examId, courseId = "courseId")
 
-        val result = repository.getSubmissionsByUserId("test")
-        assertEquals(1, result.size)
+        repository.createBulkSurveySubmissions(examId, emptyList())
+
+        coVerify(exactly = 0) { submissionDao.getPendingByUsersAndParent(any(), any()) }
+        coVerify(exactly = 0) { submissionDao.upsertAll(any()) }
     }
 
     @Test
-    fun `createBulkSurveySubmissions calls getOrCreateSubmission for all users`() = runTest {
+    fun `createBulkSurveySubmissions with all new users bulk inserts all`() = runTest {
         val examId = "examId"
         val userIds = listOf("user1", "user2")
+        val parentId = "examId@courseId"
         coEvery { examDao.getById(examId) } returns StepExam(id = examId, courseId = "courseId")
-
-        coEvery { repository.getOrCreateSubmission(any(), any()) } returns mockk()
+        coEvery { submissionDao.getPendingByUsersAndParent(userIds, parentId) } returns emptyList()
 
         repository.createBulkSurveySubmissions(examId, userIds)
 
-        coVerify(exactly = 1) { repository.getOrCreateSubmission("user1", "examId@courseId") }
-        coVerify(exactly = 1) { repository.getOrCreateSubmission("user2", "examId@courseId") }
+        coVerify(exactly = 1) { submissionDao.getPendingByUsersAndParent(userIds, parentId) }
+        coVerify(exactly = 1) {
+            submissionDao.upsertAll(match {
+                it.size == 2 &&
+                it.map { sub -> sub.userId }.containsAll(userIds) &&
+                it.all { sub -> sub.parentId == parentId && sub.status == "pending" && sub.type == "survey" }
+            })
+        }
+    }
+
+    @Test
+    fun `createBulkSurveySubmissions with mixed users only inserts new users`() = runTest {
+        val examId = "examId"
+        val userIds = listOf("user1", "user2", "user3")
+        val parentId = "examId@courseId"
+        coEvery { examDao.getById(examId) } returns StepExam(id = examId, courseId = "courseId")
+        val existingSubmission = Submission().apply { userId = "user2"; this.parentId = parentId; status = "pending" }
+        coEvery { submissionDao.getPendingByUsersAndParent(userIds, parentId) } returns listOf(existingSubmission)
+
+        repository.createBulkSurveySubmissions(examId, userIds)
+
+        coVerify(exactly = 1) { submissionDao.getPendingByUsersAndParent(userIds, parentId) }
+        coVerify(exactly = 1) {
+            submissionDao.upsertAll(match {
+                it.size == 2 &&
+                it.map { sub -> sub.userId }.containsAll(listOf("user1", "user3"))
+            })
+        }
+    }
+
+    @Test
+    fun `createBulkSurveySubmissions with all existing users does not insert`() = runTest {
+        val examId = "examId"
+        val userIds = listOf("user1", "user2")
+        val parentId = "examId@courseId"
+        coEvery { examDao.getById(examId) } returns StepExam(id = examId, courseId = "courseId")
+        val existing1 = Submission().apply { userId = "user1"; this.parentId = parentId; status = "pending" }
+        val existing2 = Submission().apply { userId = "user2"; this.parentId = parentId; status = "pending" }
+        coEvery { submissionDao.getPendingByUsersAndParent(userIds, parentId) } returns listOf(existing1, existing2)
+
+        repository.createBulkSurveySubmissions(examId, userIds)
+
+        coVerify(exactly = 1) { submissionDao.getPendingByUsersAndParent(userIds, parentId) }
+        coVerify(exactly = 0) { submissionDao.upsertAll(any()) }
     }
 
     @Test
@@ -368,6 +411,95 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
+    fun `startExamSession with deleteStale true deletes and creates new submission`() = runTest {
+        val exam = StepExam().apply {
+            id = "exam_id"
+            courseId = "course_id"
+        }
+        val request = CreateExamSubmissionRequest("user", "dob", "gender", exam, "exam", null)
+
+        coEvery { submissionDao.getByParentUserAndStatus(any(), any(), any()) } returns emptyList()
+        coEvery { answerDao.deleteBySubmissionIds(any()) } returns 1
+
+        val result = repository.startExamSession("exam_id", "parentId", "user", request, recreate = true, deleteStale = true)
+
+        assertEquals("exam_id@course_id", result.parentId)
+        coVerify { submissionDao.getByParentUserAndStatus("exam_id@course_id", "user", null) }
+        coVerify { submissionDao.upsertAll(match { it.single().parentId == "exam_id@course_id" }) }
+    }
+
+    @Test
+    fun `startExamSession with recreate true throws IllegalStateException on max retries`() = runTest {
+        val exam = StepExam().apply {
+            id = "exam_id"
+            courseId = "course_id"
+        }
+        val request = CreateExamSubmissionRequest("user", "dob", "gender", exam, "exam", null)
+
+        coEvery { submissionDao.upsertAll(any<List<Submission>>()) } throws RuntimeException("SQLite constraint")
+
+        val exception = org.junit.Assert.assertThrows(IllegalStateException::class.java) {
+            kotlinx.coroutines.runBlocking {
+                repository.startExamSession("exam_id", "parentId", "user", request, recreate = true, deleteStale = true)
+            }
+        }
+        assertTrue(exception.message?.contains("Failed to start exam session after 3 attempts") == true)
+
+        coVerify(exactly = 3) { submissionDao.upsertAll(any<List<Submission>>()) }
+    }
+
+    @Test
+    fun `startExamSession with recreate false returns pending if exists`() = runTest {
+        val exam = StepExam().apply {
+            id = "exam_id"
+            courseId = "course_id"
+        }
+        val request = CreateExamSubmissionRequest("user", "dob", "gender", exam, "survey", null)
+        val existingSubmission = Submission().apply { id = "existing_id" }
+
+        coEvery { submissionDao.getByParentUserAndStatus("parentId", "user", "pending") } returns listOf(existingSubmission)
+
+        val result = repository.startExamSession("exam_id", "parentId", "user", request, recreate = false)
+
+        assertEquals("existing_id", result.id)
+        coVerify(exactly = 0) { submissionDao.upsertAll(any<List<Submission>>()) }
+    }
+
+    @Test
+    fun `startExamSession with recreate false creates new if no pending exists`() = runTest {
+        val exam = StepExam().apply {
+            id = "exam_id"
+            courseId = "course_id"
+        }
+        val request = CreateExamSubmissionRequest("user", "dob", "gender", exam, "survey", null)
+
+        coEvery { submissionDao.getByParentUserAndStatus("parentId", "user", "pending") } returns emptyList()
+        coEvery { answerDao.deleteBySubmissionIds(any()) } returns 1
+
+        val result = repository.startExamSession("exam_id", "parentId", "user", request, recreate = false)
+
+        assertEquals("exam_id@course_id", result.parentId)
+        coVerify { submissionDao.upsertAll(match { it.single().parentId == "exam_id@course_id" }) }
+    }
+
+    @Test
+    fun `startExamSession with recreate true and deleteStale false creates without deleting`() = runTest {
+        val exam = StepExam().apply {
+            id = "exam_id"
+            courseId = "course_id"
+        }
+        val request = CreateExamSubmissionRequest("user", "dob", "gender", exam, "survey", "team_id")
+
+        coEvery { submissionDao.getByParentUserAndStatus(any(), any(), any()) } returns emptyList()
+
+        val result = repository.startExamSession("exam_id", "parentId", "user", request, recreate = true, deleteStale = false)
+
+        assertEquals("exam_id@course_id", result.parentId)
+        coVerify(exactly = 0) { submissionDao.getByParentUserAndStatus("exam_id@course_id", "user", null) }
+        coVerify { submissionDao.upsertAll(match { it.single().parentId == "exam_id@course_id" }) }
+    }
+
+    @Test
     fun `createExamSubmission creates and returns new submission`() = runTest {
         val exam = StepExam().apply {
             id = "exam_id"
@@ -418,14 +550,13 @@ class SubmissionsRepositoryImplTest {
         // blob, whose _attachments were stripped for storage safety.
         val freshUser = mockk<UserEntity>()
         every { freshUser.serialize() } returns JsonObject().apply { addProperty("_id", "fresh_user") }
-        coEvery { userDao.getById("u1") } returns freshUser
 
         val submission = Submission().apply {
             id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
             user = "{\"_id\":\"stored_user\"}"
         }
 
-        val result = repository.serializeSubmission(submission, context, "planet", "parent")
+        val result = repository.serializeSubmission(submission, "planet", "parent", freshUser)
 
         assertEquals("fresh_user", result.getAsJsonObject("user").get("_id").asString)
     }
@@ -437,14 +568,12 @@ class SubmissionsRepositoryImplTest {
         every { NetworkUtils.getDeviceName() } returns "device"
         every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
 
-        coEvery { userDao.getById(any()) } returns null
-
         val submission = Submission().apply {
             id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
             user = "{\"_id\":\"stored_user\"}"
         }
 
-        val result = repository.serializeSubmission(submission, context, "planet", "parent")
+        val result = repository.serializeSubmission(submission, "planet", "parent", null)
 
         assertEquals("stored_user", result.getAsJsonObject("user").get("_id").asString)
     }

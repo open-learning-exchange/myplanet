@@ -10,7 +10,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
-import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.ImageViewCompat
@@ -35,7 +34,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.base.DefaultBaseAdapterFactory
@@ -73,11 +71,15 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private val binding get() = _binding!!
     private val tvAddToLib get() = binding.tvAdd
     private val tvSelected get() = binding.tvSelected
+    private val layoutSearch get() = binding.layoutSearch.root
     private val etSearch get() = binding.layoutSearch.etSearch
     private val flexBoxTags get() = binding.layoutSearch.flexboxTags
     private val clearTags get() = binding.btnClearTags
     private val selectAll get() = binding.selectAll
     private val filter get() = binding.filter
+    private var layoutViewToggle: View? = null
+    private var toggleGridButton: ImageButton? = null
+    private var toggleListButton: ImageButton? = null
     private lateinit var searchTags: MutableList<TagEntity>
     private lateinit var config: ChipCloudConfig
     private lateinit var adapterLibrary: ResourcesAdapter
@@ -96,12 +98,20 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     lateinit var prefManager: SharedPrefManager
 
     private val viewModel: ResourcesViewModel by viewModels()
-    
     @Inject
     lateinit var realtimeSyncManager: RealtimeSyncManager
 
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private var refreshJob: Job? = null
+    private var searchJob: Job? = null
+
+    private val spanUpdateRunnable = Runnable { updateGridSpanIfNeeded() }
+    private val layoutChangeListener = View.OnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
+        if (right - left != oldRight - oldLeft) {
+            recyclerView.removeCallbacks(spanUpdateRunnable)
+            recyclerView.post(spanUpdateRunnable)
+        }
+    }
 
     internal val addResourceLauncher = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
@@ -131,8 +141,9 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private fun refreshResourcesData() {
         if (!isAdded || requireActivity().isFinishing) return
+        if (view == null) return
         refreshJob?.cancel()
-        refreshJob = lifecycleScope.launch {
+        refreshJob = viewLifecycleOwner.lifecycleScope.launch {
             try {
                 allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
                 lastSearchQuery = null
@@ -147,15 +158,23 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
 
         val user = userRepository.getUserModel()
-        val factory = adapterFactory ?: DefaultBaseAdapterFactory()
-        adapterLibrary = factory.createResourcesAdapter(
-            context = requireActivity(),
-            isGuest = user?.isGuest() == true,
-            openedResourceIds = emptySet(),
-            currentUserName = user?.name,
-            viewMode = prefManager.getLibraryViewMode(),
-            onEditClick = { model -> openEditResource(model) }
-        )
+        // The adapter caches the Context (Activity) which outlives onCreateView,
+        // but Fragments and their host Activities are re-created together so this is safe from leaks.
+        if (!::adapterLibrary.isInitialized) {
+            val factory = adapterFactory ?: DefaultBaseAdapterFactory()
+            adapterLibrary = factory.createResourcesAdapter(
+                context = requireActivity(),
+                isGuest = user?.isGuest() == true,
+                openedResourceIds = emptySet(),
+                currentUserName = user?.name,
+                viewMode = prefManager.getLibraryViewMode(),
+                dispatcherProvider = dispatcherProvider,
+                onEditClick = { model -> openEditResource(model) }
+            )
+        } else {
+            adapterLibrary.setViewMode(prefManager.getLibraryViewMode())
+            adapterLibrary.updateIdentity(user?.isGuest() == true, user?.name)
+        }
 
         adapterLibrary.setListener(this)
 
@@ -170,6 +189,9 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        toggleGridButton = view.findViewById(R.id.toggle_grid)
+        toggleListButton = view.findViewById(R.id.toggle_list)
+        layoutViewToggle = view.findViewById<View>(R.id.layout_view_toggle) ?: (toggleGridButton?.parent as? View)
         isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) ?: false
         searchTags = ArrayList()
         config = Utilities.getCloudConfig().showClose(R.color.black_overlay)
@@ -205,10 +227,11 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                 }
             }
         }
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             userModel = userRepository.getUserModel()
-            setupGuestUserRestrictions()
-
+            if (::adapterLibrary.isInitialized && _binding != null) {
+                checkList()
+            }
             val userId = userModel?.id
             if (userId != null) {
                 viewModel.observeOpenedResourceIds(userId)
@@ -239,18 +262,11 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         realtimeSyncHelper.setupRealtimeSync()
     }
 
-    private val toggleGridButton get() = binding.root.findViewById<ImageButton>(R.id.toggle_grid)
-    private val toggleListButton get() = binding.root.findViewById<ImageButton>(R.id.toggle_list)
-
     private fun setupViewModeToggle() {
         updateToggleUi(prefManager.getLibraryViewMode())
-        toggleGridButton.setOnClickListener { setViewMode(ListViewMode.GRID) }
-        toggleListButton.setOnClickListener { setViewMode(ListViewMode.LIST) }
-        recyclerView.addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
-            if (right - left != oldRight - oldLeft) {
-                recyclerView.post { updateGridSpanIfNeeded() }
-            }
-        }
+        toggleGridButton?.setOnClickListener { setViewMode(ListViewMode.GRID) }
+        toggleListButton?.setOnClickListener { setViewMode(ListViewMode.LIST) }
+        recyclerView.addOnLayoutChangeListener(layoutChangeListener)
     }
 
     private fun setViewMode(mode: ListViewMode) {
@@ -262,10 +278,17 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     private fun applyRecyclerLayoutManager(mode: ListViewMode) {
-        recyclerView.layoutManager = if (mode == ListViewMode.GRID) {
-            GridLayoutManager(requireContext(), currentSpanCount())
+        val currentLayoutManager = recyclerView.layoutManager
+        if (mode == ListViewMode.GRID) {
+            if (currentLayoutManager is GridLayoutManager) {
+                currentLayoutManager.spanCount = currentSpanCount()
+            } else {
+                recyclerView.layoutManager = GridLayoutManager(requireContext(), currentSpanCount())
+            }
         } else {
-            LinearLayoutManager(requireContext())
+            if (currentLayoutManager !is LinearLayoutManager || currentLayoutManager is GridLayoutManager) {
+                recyclerView.layoutManager = LinearLayoutManager(requireContext())
+            }
         }
     }
 
@@ -279,7 +302,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private fun updateGridSpanIfNeeded() {
         val layoutManager = recyclerView.layoutManager
         if (layoutManager is GridLayoutManager) {
-            layoutManager.spanCount = currentSpanCount()
+            val currentSpan = currentSpanCount()
+            if (layoutManager.spanCount != currentSpan) {
+                layoutManager.spanCount = currentSpan
+            }
         }
     }
 
@@ -287,10 +313,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val isGrid = mode == ListViewMode.GRID
         val activeColor = ContextCompat.getColor(requireContext(), android.R.color.white)
         val inactiveColor = ContextCompat.getColor(requireContext(), R.color.daynight_textColor)
-        toggleGridButton.setBackgroundResource(if (isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
-        toggleListButton.setBackgroundResource(if (!isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
-        ImageViewCompat.setImageTintList(toggleGridButton, ColorStateList.valueOf(if (isGrid) activeColor else inactiveColor))
-        ImageViewCompat.setImageTintList(toggleListButton, ColorStateList.valueOf(if (!isGrid) activeColor else inactiveColor))
+        toggleGridButton?.setBackgroundResource(if (isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
+        toggleListButton?.setBackgroundResource(if (!isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
+        toggleGridButton?.let { ImageViewCompat.setImageTintList(it, ColorStateList.valueOf(if (isGrid) activeColor else inactiveColor)) }
+        toggleListButton?.let { ImageViewCompat.setImageTintList(it, ColorStateList.valueOf(if (!isGrid) activeColor else inactiveColor)) }
         applyRecyclerLayoutManager(mode)
     }
 
@@ -299,13 +325,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             tvSelected.visibility = View.GONE
         } else {
             tvSelected.visibility = View.VISIBLE
-        }
-    }
-
-    private fun setupGuestUserRestrictions() {
-        if(userModel?.isGuest() == true){
-            tvAddToLib.visibility = View.GONE
-            selectAll.visibility = View.GONE
         }
     }
 
@@ -441,7 +460,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val count = selectedItems?.size ?: 0
         tvDelete?.isEnabled = count != 0
         tvAddToLib.isEnabled = count != 0
-        if(count != 0){
+        if(count != 0 && userModel?.isGuest() != true){
             if(isMyCourseLib) tvDelete?.visibility = View.VISIBLE
             else tvAddToLib.visibility = View.VISIBLE
         } else {
@@ -452,23 +471,26 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private fun checkList(listSize: Int = if (::adapterLibrary.isInitialized) adapterLibrary.currentList.size else 0) {
         val hasAnyLibraryData = allResourceModels.isNotEmpty()
+        val isGuest = userModel?.isGuest() == true
 
         if (!hasAnyLibraryData && listSize == 0) {
             selectAll.visibility = View.GONE
-            etSearch.visibility = View.GONE
-            tvAddToLib.visibility = View.GONE
+            layoutSearch.visibility = View.GONE
+            layoutViewToggle?.visibility = View.GONE
             tvSelected.visibility = View.GONE
             binding.btnCollections.visibility = View.GONE
             filter.visibility = View.GONE
             clearTags.visibility = View.GONE
             tvDelete?.visibility = View.GONE
         } else {
-            selectAll.visibility = View.VISIBLE
-            etSearch.visibility = View.VISIBLE
+            selectAll.visibility = if (isGuest) View.GONE else View.VISIBLE
+            layoutSearch.visibility = View.VISIBLE
+            layoutViewToggle?.visibility = View.VISIBLE
             binding.btnCollections.visibility = View.VISIBLE
             filter.visibility = View.VISIBLE
             clearTags.visibility = if (hasActiveFilters()) View.VISIBLE else View.GONE
         }
+        hideButton()
     }
 
     private fun hasActiveFilters(): Boolean {
@@ -547,7 +569,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             mediums.clear()
             subjects.clear()
             languages.clear()
-            viewLifecycleOwner.lifecycleScope.launch {
+            searchJob?.cancel()
+            searchJob = viewLifecycleOwner.lifecycleScope.launch {
                 applyFiltersAndUpdateUI()
             }
         }
@@ -597,7 +620,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         if (!searchTags.any { it.name == tag.name }) searchTags.add(tag)
         chipCloud.addChips(searchTags)
         showTagText(searchTags, tvSelected)
-        viewLifecycleOwner.lifecycleScope.launch {
+        searchJob?.cancel()
+        searchJob = viewLifecycleOwner.lifecycleScope.launch {
             applyFiltersAndUpdateUI()
         }
     }
@@ -608,7 +632,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         li.add(tag)
         searchTags = li
         tvSelected.text = getString(R.string.tag_selected, tag.name)
-        viewLifecycleOwner.lifecycleScope.launch {
+        searchJob?.cancel()
+        searchJob = viewLifecycleOwner.lifecycleScope.launch {
             applyFiltersAndUpdateUI()
         }
     }
@@ -616,7 +641,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override fun onOkClicked(list: List<TagEntity>?) {
         if (list?.isEmpty() == true) {
             searchTags.clear()
-            viewLifecycleOwner.lifecycleScope.launch {
+            searchJob?.cancel()
+            searchJob = viewLifecycleOwner.lifecycleScope.launch {
                 applyFiltersAndUpdateUI()
             }
         } else {
@@ -627,7 +653,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     private fun changeButtonStatus() {
-        tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
         if (adapterLibrary.areAllSelected()) {
             selectAll.isChecked = true
             selectAll.text = getString(R.string.unselect_all)
@@ -639,7 +664,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     override fun chipDeleted(i: Int, s: String) {
         searchTags.removeAt(i)
-        viewLifecycleOwner.lifecycleScope.launch {
+        searchJob?.cancel()
+        searchJob = viewLifecycleOwner.lifecycleScope.launch {
             applyFiltersAndUpdateUI()
         }
     }
@@ -649,14 +675,15 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         this.languages = languages
         this.mediums = mediums
         this.levels = levels
-        viewLifecycleOwner.lifecycleScope.launch {
+        searchJob?.cancel()
+        searchJob = viewLifecycleOwner.lifecycleScope.launch {
             applyFiltersAndUpdateUI()
         }
     }
 
     override suspend fun getData(): Map<String, Set<String>> {
         // Keep facet options stable so applying one filter does not hide other available options.
-        return resourcesRepository.getFilterFacets(allResourceModels.map { it.library })
+        return viewModel.getFilterFacets(allResourceModels.map { it.library })
     }
 
     override fun getSelectedFilter(): Map<String, Set<String>> {
@@ -671,7 +698,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override fun onResume() {
         super.onResume()
         selectAll.isChecked = false
-        recyclerView.post { updateGridSpanIfNeeded() }
+        if (::recyclerView.isInitialized) {
+            recyclerView.removeCallbacks(spanUpdateRunnable)
+            recyclerView.post(spanUpdateRunnable)
+        }
     }
 
     override fun onPause() {
@@ -680,6 +710,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     override fun onDestroyView() {
+        if (::recyclerView.isInitialized) {
+            recyclerView.removeOnLayoutChangeListener(layoutChangeListener)
+            recyclerView.removeCallbacks(spanUpdateRunnable)
+        }
         if (confirmation?.isShowing == true) {
             confirmation?.dismiss()
         }
@@ -687,6 +721,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         if (::adapterLibrary.isInitialized) {
             adapterLibrary.setListener(null)
         }
+
+        layoutViewToggle = null
+        toggleGridButton = null
+        toggleListButton = null
 
         _binding = null
         super.onDestroyView()
@@ -704,12 +742,12 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val planetCode = model?.planetCode
         val parentCode = model?.parentCode
 
-        lifecycleScope.launch(dispatcherProvider.io) {
+        viewLifecycleOwner.lifecycleScope.launch {
             if (!filterApplied(searchText) || userName == null || planetCode == null || parentCode == null) {
                 return@launch
             }
 
-            resourcesRepository.saveSearchActivity(
+            viewModel.saveSearchActivity(
                 userName,
                 searchText,
                 planetCode,
@@ -805,16 +843,20 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val itemsToDelete = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToDelete.isNotEmpty()) {
-            lifecycleScope.launch(dispatcherProvider.io) {
-                resourcesRepository.removeResourcesFromShelf(itemsToDelete, userId)
-                withContext(dispatcherProvider.main) {
-                    _binding ?: return@withContext
-                    Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
-                    refreshResourcesData()
-                    selectedItems?.clear()
-                    changeButtonStatus()
-                    hideButton()
-                }
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewModel.removeResourcesFromShelf(itemsToDelete, userId)
+                    .onSuccess {
+                        _binding ?: return@onSuccess
+                        Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+                        refreshResourcesData()
+                        selectedItems?.clear()
+                        changeButtonStatus()
+                        hideButton()
+                    }
+                    .onFailure {
+                        _binding ?: return@onFailure
+                        Utilities.toast(activity, getString(R.string.error, it.message))
+                    }
             }
         }
     }
@@ -824,7 +866,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val itemsToAdd = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToAdd.isNotEmpty()) {
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 try {
                     viewModel.addResourcesToUserLibrary(itemsToAdd, userId)
                         .onSuccess {

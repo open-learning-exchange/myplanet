@@ -66,8 +66,13 @@ class UploadCoordinator @Inject constructor(
                         )
                     }
 
-                    val actuallySucceeded = succeeded.filter { it !in dbFailed }
-                    allSucceeded.addAll(actuallySucceeded)
+                    if (dbFailed.isEmpty()) {
+                        allSucceeded.addAll(succeeded)
+                    } else {
+                        val dbFailedIds = dbFailed.map { it.localId }.toHashSet()
+                        val actuallySucceeded = succeeded.filter { it.localId !in dbFailedIds }
+                        allSucceeded.addAll(actuallySucceeded)
+                    }
                 }
 
                 allFailed.addAll(failed)
@@ -112,9 +117,7 @@ class UploadCoordinator @Inject constructor(
             val serialized = try {
                 when (val serializer = config.serializer) {
                     is UploadSerializer.Simple -> serializer.serialize(copiedItem)
-                    is UploadSerializer.WithContext -> serializer.serialize(copiedItem, context)
                     is UploadSerializer.Async -> null
-                    is UploadSerializer.AsyncContext -> null
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Serialization failed for item", e)
@@ -128,7 +131,6 @@ class UploadCoordinator @Inject constructor(
             val serialized = try {
                 when (val serializer = config.serializer) {
                     is UploadSerializer.Async -> serializer.serialize(copiedItem)
-                    is UploadSerializer.AsyncContext -> serializer.serialize(copiedItem, context)
                     else -> preSerialized ?: return@mapNotNull null
                 }
             } catch (e: Exception) {
@@ -152,6 +154,7 @@ class UploadCoordinator @Inject constructor(
     ): Pair<List<UploadedItem>, List<UploadError>> {
         val succeeded = mutableListOf<UploadedItem>()
         val failed = mutableListOf<UploadError>()
+        val baseUrl = UrlUtils.getUrl()
 
         batch.forEach { preparedItem ->
             coroutineContext.ensureActive()
@@ -160,9 +163,9 @@ class UploadCoordinator @Inject constructor(
                 config.beforeUpload?.invoke(preparedItem.item)
 
                 val requestUrl = if (preparedItem.dbId.isNullOrEmpty()) {
-                    "${UrlUtils.getUrl()}/${config.endpoint}"
+                    "$baseUrl/${config.endpoint}"
                 } else {
-                    "${UrlUtils.getUrl()}/${config.endpoint}/${preparedItem.dbId}"
+                    "$baseUrl/${config.endpoint}/${preparedItem.dbId}"
                 }
 
                 val response = if (preparedItem.dbId.isNullOrEmpty()) {
@@ -190,7 +193,7 @@ class UploadCoordinator @Inject constructor(
                 } else if (response.code() == 409) {
                     try {
                         val docId = preparedItem.dbId ?: preparedItem.localId
-                        val getResponse = uploadRepository.fetchExistingDoc("${UrlUtils.getUrl()}/${config.endpoint}/$docId")
+                        val getResponse = uploadRepository.fetchExistingDoc("$baseUrl/${config.endpoint}/$docId")
                         val existingDoc = getResponse.body()
                         if (getResponse.isSuccessful && existingDoc != null) {
                             val uploadedItem = normalizeUploadResult(
@@ -257,8 +260,11 @@ class UploadCoordinator @Inject constructor(
 
         val failedResults = uploadRepository.markUploaded(updateContract, itemResults)
 
+        if (failedResults.isEmpty()) return emptyList()
+
+        val succeededMap = succeeded.associateBy { it.localId }
         val failedLocally = failedResults.mapNotNull { failedResult ->
-            succeeded.find { it.localId == failedResult.localId }
+            succeededMap[failedResult.localId]
         }
 
         return failedLocally
@@ -325,7 +331,12 @@ class UploadCoordinator @Inject constructor(
                     dbFailedErrors = dbFailed.map { failedItem ->
                         UploadError(failedItem.localId, Exception("Local DB update failed"), retryable = false)
                     }
-                    allSucceeded.addAll(succeeded.filter { it !in dbFailed })
+                    if (dbFailed.isEmpty()) {
+                        allSucceeded.addAll(succeeded)
+                    } else {
+                        val dbFailedIds = dbFailed.map { it.localId }.toHashSet()
+                        allSucceeded.addAll(succeeded.filter { it.localId !in dbFailedIds })
+                    }
                 }
 
                 allFailed.addAll(failed)
@@ -355,9 +366,7 @@ class UploadCoordinator @Inject constructor(
             val serialized = try {
                 when (val serializer = config.serializer) {
                     is UploadSerializer.Simple -> serializer.serialize(item)
-                    is UploadSerializer.WithContext -> serializer.serialize(item, context)
                     is UploadSerializer.Async -> serializer.serialize(item)
-                    is UploadSerializer.AsyncContext -> serializer.serialize(item, context)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Serialization failed for item", e)
@@ -378,6 +387,7 @@ class UploadCoordinator @Inject constructor(
     ): Pair<List<UploadedItem>, List<UploadError>> {
         val succeeded = mutableListOf<UploadedItem>()
         val failed = mutableListOf<UploadError>()
+        val baseUrl = UrlUtils.getUrl()
 
         batch.forEach { preparedItem ->
             coroutineContext.ensureActive()
@@ -385,9 +395,9 @@ class UploadCoordinator @Inject constructor(
                 config.beforeUpload?.invoke(preparedItem.item)
 
                 val requestUrl = if (preparedItem.dbId.isNullOrEmpty()) {
-                    "${UrlUtils.getUrl()}/${config.endpoint}"
+                    "$baseUrl/${config.endpoint}"
                 } else {
-                    "${UrlUtils.getUrl()}/${config.endpoint}/${preparedItem.dbId}"
+                    "$baseUrl/${config.endpoint}/${preparedItem.dbId}"
                 }
 
                 val response = if (preparedItem.dbId.isNullOrEmpty()) {
@@ -407,7 +417,7 @@ class UploadCoordinator @Inject constructor(
                     succeeded.add(uploadedItem)
                 } else if (response.code() == 409) {
                     val docId = preparedItem.dbId ?: preparedItem.localId
-                    val getResponse = uploadRepository.fetchExistingDoc("${UrlUtils.getUrl()}/${config.endpoint}/$docId")
+                    val getResponse = uploadRepository.fetchExistingDoc("$baseUrl/${config.endpoint}/$docId")
                     val existingDoc = getResponse.body()
                     if (getResponse.isSuccessful && existingDoc != null) {
                         val uploadedItem = normalizeUploadResult(preparedItem.localId, existingDoc, "_id", "_rev")
@@ -442,8 +452,11 @@ class UploadCoordinator @Inject constructor(
             UploadedItemResult(it.localId, it.remoteId, it.remoteRev, it.response)
         }
         val failedResults = config.markUploaded(itemResults)
+        if (failedResults.isEmpty()) return emptyList()
+
+        val succeededMap = succeeded.associateBy { it.localId }
         return failedResults.mapNotNull { failedResult ->
-            succeeded.find { it.localId == failedResult.localId }
+            succeededMap[failedResult.localId]
         }
     }
 

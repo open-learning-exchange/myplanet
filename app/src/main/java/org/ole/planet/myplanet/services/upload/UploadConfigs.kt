@@ -1,14 +1,10 @@
 package org.ole.planet.myplanet.services.upload
 
+import android.content.Context
 import dagger.Lazy
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
-import org.ole.planet.myplanet.data.room.dao.ApkLogDao
-import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
-import org.ole.planet.myplanet.data.room.dao.NewsLogDao
-import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
-import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
-import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.CourseProgress
@@ -26,8 +22,10 @@ import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.DiagnosticsRepository
 import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -36,9 +34,11 @@ import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 @Singleton
 class UploadConfigs @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val voicesRepository: VoicesRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val activitiesRepository: ActivitiesRepository,
@@ -50,22 +50,18 @@ class UploadConfigs @Inject constructor(
     private val ratingsRepository: RatingsRepository,
     private val eventsRepository: EventsRepository,
     private val resourcesRepository: ResourcesRepository,
-    private val apkLogDao: ApkLogDao,
-    private val searchActivityDao: SearchActivityDao,
-    private val courseProgressDao: CourseProgressDao,
-    private val resourceActivityDao: ResourceActivityDao,
-    private val submitPhotosDao: SubmitPhotosDao,
-    private val newsLogDao: NewsLogDao
+    private val diagnosticsRepository: DiagnosticsRepository,
+    private val progressRepository: ProgressRepository
 ) {
     val NewsActivities = RoomUploadConfig(
         endpoint = "myplanet_activities",
         modelClassName = "NewsLog",
-        fetchPendingItems = { newsLogDao.getPendingUploads() },
+        fetchPendingItems = { voicesRepository.getPendingNewsLogUploads() },
         serializer = UploadSerializer.Simple(NewsLog::serialize),
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
-                newsLogDao.markUploaded(result.localId, result.remoteId, result.remoteRev) == 0
+                !voicesRepository.markNewsLogUploaded(result.localId, result.remoteId, result.remoteRev)
             }
         }
     )
@@ -73,12 +69,12 @@ class UploadConfigs @Inject constructor(
     val CourseProgress = RoomUploadConfig(
         endpoint = "courses_progress",
         modelClassName = "CourseProgress",
-        fetchPendingItems = { courseProgressDao.getPendingUploads() },
+        fetchPendingItems = { progressRepository.getPendingCourseProgressUploads() },
         serializer = UploadSerializer.Simple(org.ole.planet.myplanet.model.CourseProgress::serializeProgress),
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
-                courseProgressDao.markUploaded(result.localId, result.remoteId, result.remoteRev) == 0
+                !progressRepository.markCourseProgressUploaded(result.localId, result.remoteId, result.remoteRev)
             }
         }
     )
@@ -103,7 +99,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "team_activities",
         modelClassName = "TeamLog",
         fetchPendingItems = { teamsSyncRepository.get().getPendingTeamLogUploads() },
-        serializer = UploadSerializer.WithContext { log, context -> teamsSyncRepository.get().serializeTeamActivities(log, context) },
+        serializer = UploadSerializer.Simple { log -> teamsSyncRepository.get().serializeTeamActivities(log) },
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
@@ -115,16 +111,16 @@ class UploadConfigs @Inject constructor(
     val SearchActivity = RoomUploadConfig(
         endpoint = "search_activities",
         modelClassName = "SearchActivity",
-        fetchPendingItems = { searchActivityDao.getPendingUploads() },
+        fetchPendingItems = { activitiesRepository.getPendingSearchActivityUploads() },
         serializer = UploadSerializer.Simple { it.serialize() },
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
-                searchActivityDao.markUploaded(
+                !activitiesRepository.markSearchActivityUploaded(
                     localId = result.localId,
                     remoteId = result.remoteId,
                     rev = result.remoteRev
-                ) == 0
+                )
             }
         }
     )
@@ -132,12 +128,12 @@ class UploadConfigs @Inject constructor(
     val ResourceActivities = RoomUploadConfig(
         endpoint = "resource_activities",
         modelClassName = "ResourceActivity",
-        fetchPendingItems = { resourceActivityDao.getPendingUploads() },
+        fetchPendingItems = { activitiesRepository.getPendingResourceActivityUploads() },
         serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
-                resourceActivityDao.markUploaded(result.localId, result.remoteId, result.remoteRev) == 0
+                !activitiesRepository.markResourceActivityUploaded(result.localId, result.remoteId, result.remoteRev)
             }
         }
     )
@@ -145,12 +141,12 @@ class UploadConfigs @Inject constructor(
     val ResourceActivitiesSync = RoomUploadConfig(
         endpoint = "admin_activities",
         modelClassName = "ResourceActivity",
-        fetchPendingItems = { resourceActivityDao.getPendingSyncUploads() },
+        fetchPendingItems = { activitiesRepository.getPendingResourceActivitySyncUploads() },
         serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
-                resourceActivityDao.markUploaded(result.localId, result.remoteId, result.remoteRev) == 0
+                !activitiesRepository.markResourceActivityUploaded(result.localId, result.remoteId, result.remoteRev)
             }
         }
     )
@@ -215,25 +211,25 @@ class UploadConfigs @Inject constructor(
     val CrashLog = RoomUploadConfig(
         endpoint = "apk_logs",
         modelClassName = "ApkLog",
-        fetchPendingItems = { apkLogDao.getPending() },
-        serializer = UploadSerializer.WithContext(ApkLog::serialize),
+        fetchPendingItems = { diagnosticsRepository.getPendingApkLogs() },
+        serializer = UploadSerializer.Simple { log -> ApkLog.serialize(log, NetworkUtils.getCustomDeviceName(context)) },
         idExtractor = { it.id },
         markUploaded = { results ->
             // A row is "pending" until it has a _rev; set it here. Rows that no longer exist
             // (0 updated) are reported back as local failures.
-            results.filter { result -> apkLogDao.markUploaded(result.localId, result.remoteRev) == 0 }
+            results.filter { result -> !diagnosticsRepository.markApkLogUploaded(result.localId, result.remoteRev) }
         }
     )
 
     val SubmitPhotos = RoomUploadConfig(
         endpoint = "submissions",
         modelClassName = "SubmitPhotos",
-        fetchPendingItems = { submitPhotosDao.getUnuploaded() },
+        fetchPendingItems = { submissionsRepository.getPendingSubmitPhotosUploads() },
         serializer = UploadSerializer.Simple(org.ole.planet.myplanet.model.SubmitPhotos::serialize),
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
-                submitPhotosDao.markUploaded(result.localId, result.remoteRev, result.remoteId) == 0
+                !submissionsRepository.markSubmitPhotosUploaded(result.localId, result.remoteId, result.remoteRev)
             }
         }
     )
@@ -245,7 +241,8 @@ class UploadConfigs @Inject constructor(
         endpoint = "submissions",
         fetchPendingItems = { submissionsRepository.getPendingExamResults() },
         serializer = UploadSerializer.Async { submission ->
-            submissionsRepository.getExamUploadPayload(submission)
+            val user = submission.userId?.let { userRepository.getUserById(it) }
+            submissionsRepository.getExamUploadPayload(submission, user)
         },
         idExtractor = { it.id },
         dbIdExtractor = { it._id },
@@ -257,8 +254,9 @@ class UploadConfigs @Inject constructor(
         modelClass = Submission::class,
         endpoint = "submissions",
         fetchPendingItems = { submissionsRepository.getPendingSubmissionsForUpload() },
-        serializer = UploadSerializer.AsyncContext { submission, context ->
-            submissionsRepository.serializeSubmission(submission, context, sharedPrefManager.getPlanetCode(), sharedPrefManager.getParentCode())
+        serializer = UploadSerializer.Async { submission ->
+            val user = submission.userId?.let { userRepository.getUserById(it) }
+            submissionsRepository.serializeSubmission(submission, sharedPrefManager.getPlanetCode(), sharedPrefManager.getParentCode(), user)
         },
         idExtractor = { it.id },
         dbIdExtractor = { it._id },

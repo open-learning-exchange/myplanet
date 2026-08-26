@@ -23,9 +23,9 @@ import com.applandeo.materialcalendarview.listeners.OnCalendarDayClickListener
 import dagger.hilt.android.AndroidEntryPoint
 import java.net.MalformedURLException
 import java.net.URL
-import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Locale
 import kotlinx.coroutines.launch
@@ -38,8 +38,8 @@ import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.ui.events.EventsAdapter
 import org.ole.planet.myplanet.utils.TimeUtils
-import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class TeamCalendarFragment : BaseTeamFragment() {
@@ -60,8 +60,6 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private val viewModel: TeamCalendarViewModel by viewModels()
     private var cachedCardHeight: Int? = null
     private var lastWidthPixels: Int? = null
-    private var dateFormat: SimpleDateFormat? = null
-    private var lastLocale: Locale? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentEnterpriseCalendarBinding.inflate(inflater, container, false)
@@ -319,7 +317,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 else -> "none"
             }
 
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 val success = viewModel.updateMeetup(
                     meetupId = meetup.id ?: return@launch,
                     title = newTitle,
@@ -395,14 +393,17 @@ class TeamCalendarFragment : BaseTeamFragment() {
         llImage?.removeAllViews()
     }
 
-    private fun getDateFormat(): SimpleDateFormat {
+    private var dateFormatter: DateTimeFormatter? = null
+    private var lastLocale: Locale? = null
+
+    private fun getDateFormatter(): DateTimeFormatter {
         val currentLocale = Locale.getDefault()
-        val cached = dateFormat
+        val cached = dateFormatter
         if (cached != null && lastLocale == currentLocale) {
             return cached
         }
-        return SimpleDateFormat("EEE, MMM d, yyyy", currentLocale).also {
-            dateFormat = it
+        return DateTimeFormatter.ofPattern("EEE, MMM d, yyyy", currentLocale).withZone(ZoneId.systemDefault()).also {
+            dateFormatter = it
             lastLocale = currentLocale
         }
     }
@@ -427,9 +428,9 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private fun showMeetupDialog(meetupList: List<Meetup>) {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.meetup_dialog, null)
         val recyclerView = dialogView.findViewById<RecyclerView>(R.id.rvMeetups)
+        recyclerView.setHasFixedSize(true)
         val dialogTitle = dialogView.findViewById< TextView>(R.id.tvTitle)
-        val formatter = getDateFormat()
-        dialogTitle.text = formatter.format(clickedCalendar.time)
+        dialogTitle.text = getDateFormatter().format(clickedCalendar.toInstant())
         val extraHeight = TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP, 12f, resources.displayMetrics
         ).toInt()

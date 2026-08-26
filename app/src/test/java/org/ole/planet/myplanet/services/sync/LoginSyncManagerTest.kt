@@ -25,7 +25,6 @@ import org.junit.Test
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter
@@ -40,7 +39,6 @@ class LoginSyncManagerTest {
     private lateinit var loginSyncManager: LoginSyncManager
     private val context: Context = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
-    private val userRepository: UserRepository = mockk(relaxed = true)
     private val userSyncRepository: UserSyncRepository = mockk(relaxed = true)
     private val apiInterface: ApiInterface = mockk(relaxed = true)
     private val testDispatcher = UnconfinedTestDispatcher()
@@ -65,7 +63,6 @@ class LoginSyncManagerTest {
         loginSyncManager = LoginSyncManager(
             context,
             sharedPrefManager,
-            userRepository,
             userSyncRepository,
             apiInterface,
             testScope,
@@ -158,6 +155,78 @@ class LoginSyncManagerTest {
         val jsonDoc = JsonObject()
         jsonDoc.addProperty("derived_key", "test_derived_key")
         jsonDoc.addProperty("salt", "test_salt")
+
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
+        every { AndroidDecrypter.androidDecrypter(any(), any(), any(), any()) } returns true
+        every { context.getString(R.string.user_verification_in_progress) } returns "Verification in progress"
+
+        loginSyncManager.login("testUser", "testPass", listener)
+
+        verify { listener.onSyncFailed("Verification in progress") }
+    }
+
+    @Test
+    fun `login with valid credentials and capital Manager role`() = runTest {
+        val jsonDoc = JsonObject()
+        jsonDoc.addProperty("derived_key", "test_derived_key")
+        jsonDoc.addProperty("salt", "test_salt")
+        val roles = JsonArray()
+        roles.add("Manager")
+        jsonDoc.add("roles", roles)
+
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
+
+        every { AndroidDecrypter.androidDecrypter("testUser", "testPass", "test_derived_key", "test_salt") } returns true
+        coEvery { userSyncRepository.saveUser(any(), any(), any()) } returns mockk(relaxed = true)
+
+        loginSyncManager.login("testUser", "testPass", listener)
+
+        verify { listener.onSyncStarted() }
+        verify { listener.onSyncComplete() }
+    }
+
+    @Test
+    fun `login with valid credentials and managerial role`() = runTest {
+        val jsonDoc = JsonObject()
+        jsonDoc.addProperty("derived_key", "test_derived_key")
+        jsonDoc.addProperty("salt", "test_salt")
+        val roles = JsonArray()
+        roles.add("managerial")
+        jsonDoc.add("roles", roles)
+
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
+        every { AndroidDecrypter.androidDecrypter(any(), any(), any(), any()) } returns true
+        every { context.getString(R.string.user_verification_in_progress) } returns "Verification in progress"
+
+        loginSyncManager.login("testUser", "testPass", listener)
+
+        verify { listener.onSyncFailed("Verification in progress") }
+    }
+
+    @Test
+    fun `login with valid credentials and admin without manager role`() = runTest {
+        val jsonDoc = JsonObject()
+        jsonDoc.addProperty("derived_key", "test_derived_key")
+        jsonDoc.addProperty("salt", "test_salt")
+        jsonDoc.addProperty("isUserAdmin", true)
+
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
+
+        every { AndroidDecrypter.androidDecrypter("testUser", "testPass", "test_derived_key", "test_salt") } returns true
+        coEvery { userSyncRepository.saveUser(any(), any(), any()) } returns mockk(relaxed = true)
+
+        loginSyncManager.login("testUser", "testPass", listener)
+
+        verify { listener.onSyncStarted() }
+        verify { listener.onSyncComplete() }
+    }
+
+    @Test
+    fun `login with valid credentials and null roles`() = runTest {
+        val jsonDoc = JsonObject()
+        jsonDoc.addProperty("derived_key", "test_derived_key")
+        jsonDoc.addProperty("salt", "test_salt")
+        // Note: roles property is intentionally omitted
 
         coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
         every { AndroidDecrypter.androidDecrypter(any(), any(), any(), any()) } returns true

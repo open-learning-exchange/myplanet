@@ -30,6 +30,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.snackbar.Snackbar
@@ -98,6 +99,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var isReady = false
     private var isFirstLaunch = false
     private lateinit var binding: ActivityDashboardBinding
+    private var backStackListener: FragmentManager.OnBackStackChangedListener? = null
     private var headerResult: AccountHeader? = null
     var user: UserEntity? = null
     var result: Drawer? = null
@@ -126,6 +128,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var systemNotificationReceiver: BroadcastReceiver? = null
     private var onGlobalLayoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
     private var exitSnackbar: Snackbar? = null
+    private var lastSyncStatus: SyncManager.SyncStatus? = null
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleUtils.onAttach(base))
@@ -242,6 +245,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
 
         collectWhenStarted(syncManager.syncStatus) { status ->
+            if (status == lastSyncStatus) return@collectWhenStarted
+            lastSyncStatus = status
             if (status is SyncManager.SyncStatus.Success) {
                 updateLastSyncStatus()
             }
@@ -266,6 +271,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         binding.root.viewTreeObserver.addOnGlobalLayoutListener(onGlobalLayoutListener)
         binding.appBarBell.ivSetting.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
+        }
+        binding.dashboardSyncNow.setOnClickListener {
+            logSyncInSharedPrefs()
         }
     }
 
@@ -306,7 +314,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun setupNavigation() {
         headerResult = accountHeader
         createDrawer()
-        supportFragmentManager.addOnBackStackChangedListener {
+        backStackListener = FragmentManager.OnBackStackChangedListener {
             val frag = supportFragmentManager.findFragmentById(R.id.fragment_container)
             val idToSelect = when (frag) {
                 is BellDashboardFragment -> 0L
@@ -329,6 +337,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
             idToSelect?.let { result?.setSelection(it, false) }
         }
+        backStackListener?.let { supportFragmentManager.addOnBackStackChangedListener(it) }
         result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
         dl = result?.drawerLayout
         dl?.addDrawerListener(object : DrawerLayout.SimpleDrawerListener() {
@@ -578,13 +587,17 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun updateLastSyncStatus() {
+        val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        binding.dashboardSyncBanner.visibility = if (isLandscape) View.GONE else View.VISIBLE
+        if (isLandscape) return
+
         val lastSyncMillis = prefData.getLastSync()
-        val statusText = if (lastSyncMillis <= 0L) {
-            getString(R.string.last_synced_colon) + getString(R.string.last_synced_never)
+        val timeText = if (lastSyncMillis <= 0L) {
+            getString(R.string.last_synced_never)
         } else {
-            getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSyncMillis, timeProvider)
+            TimeUtils.getRelativeTime(lastSyncMillis, timeProvider)
         }
-        binding.dashboardLastSyncStatus.text = statusText
+        binding.dashboardLastSyncStatus.text = getString(R.string.dashboard_sync_status, timeText)
     }
 
     private fun onRealmDataChange() {
@@ -951,6 +964,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 binding.root.viewTreeObserver.removeOnGlobalLayoutListener(it)
             }
         }
+
+        backStackListener?.let { supportFragmentManager.removeOnBackStackChangedListener(it) }
 
         unregisterSystemNotificationReceiver()
 

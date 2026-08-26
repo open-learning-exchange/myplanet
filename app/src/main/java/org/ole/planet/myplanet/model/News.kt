@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.text.TextUtils
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
@@ -75,6 +74,12 @@ open class News {
     var rawConversations: String? = null
     @Ignore
     var rawImageUrls: List<String>? = null
+    @Ignore
+    var rawImages: String? = null
+    @Ignore
+    var parsedImagesArray: JsonArray? = null
+    @Ignore
+    var parsedSharedTeamName: String? = null
 
     @get:Ignore
     val imagesArray: JsonArray
@@ -132,7 +137,7 @@ open class News {
     fun calculateSortDate(): Long {
         try {
             if (!viewIn.isNullOrEmpty()) {
-                val ar = JsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
+                val ar = parsedViewIn ?: JsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
                 for (elem in ar) {
                     val obj = elem.asJsonObject
                     if (JsonUtils.getString("section", obj).equals("community", true) && obj.has("sharedDate")) {
@@ -230,7 +235,7 @@ open class News {
 
         fun getViewInJson(map: HashMap<String?, String>): String {
             val viewInArray = JsonArray()
-            if (!TextUtils.isEmpty(map["viewInId"])) {
+            if (!map["viewInId"].isNullOrEmpty()) {
                 val `object` = JsonObject()
                 `object`.addProperty("_id", map["viewInId"])
                 `object`.addProperty("section", map["viewInSection"])

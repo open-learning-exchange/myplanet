@@ -358,7 +358,8 @@
     <string-array name="sort_by_date">
         <item>Ururinta Tariikhda - Desc</item>
         <item>Ururinta Tariikhda - Asc</item>
-        <item>Ururinta Magaca</item>
+        <item>Ururinta Cinwaanka - Asc</item>
+        <item>Ururinta Cinwaanka - Desc</item>
     </string-array>
 
     <string-array name="sort_member">
@@ -578,6 +579,8 @@
     <string name="no_data_available_please_check_and_try_again">Ma jiro wax macluumaad, fadlan mari karo oo isku day.</string>
     <string name="no_course_matched_filter">Ma jiro kursiga laga cabsi qabo</string>
     <string name="added_to_my_library">lagu daray myLibrary</string>
+    <string name="format_added_to_mylibrary">%1$s lagu daray myLibrary</string>
+    <string name="format_removed_from_mylibrary">%1$s laga saaray myLibrary</string>
     <string name="added_to_my_courses">lagu daray myCourses</string>
     <string name="do_you_want_to_stay_online">Ma rabtid inaad joogto internetka?</string>
     <string name="device_not_connected_to_planet">Qalabka aan la xidhiidhin Geedka.</string>
@@ -614,6 +617,10 @@
     <string name="meetup_added">Ku daray la isku day</string>
     <string name="meetup_not_added">Meetup lama darin</string>
     <string name="add_transaction">Ku daray Hawlaha</string>
+    <string name="from_date">Ka bilaabata taariikhda</string>
+    <string name="to_date">Ku egtahay taariikhda</string>
+    <string name="select_from_date">Dooro ka bilaabata taariikhda</string>
+    <string name="select_to_date">Dooro ku egtahay taariikhda</string>
     <string name="note_is_required">Fariin waa loo baahan yahay</string>
     <string name="amount_is_required">Qaddarku waa loo baahan yahay</string>
     <string name="date_is_required">Taariikhdu waa loo baahan yahay</string>
@@ -779,6 +786,7 @@
     <string name="unable_to_clear_files">Lama xarigo faylasha</string>
     <string name="last_synced_never">waligeyn la isku midayn</string>
     <string name="last_synced_colon">"Kor u kac: "</string>
+    <string name="dashboard_sync_status">Isku-dari · %1$s</string>
 
     <string name="disclaimer">
     <![CDATA[
