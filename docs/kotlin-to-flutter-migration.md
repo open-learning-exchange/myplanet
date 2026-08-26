@@ -4434,13 +4434,29 @@ app's `minSdk` is now pinned to 26 with a comment naming the Kotlin source.
 
 **Version drift now fails the suite.** Phase 93 caught pubspec five releases
 behind `app/build.gradle` by hand. `test/version_parity_test.dart` reads the
-Kotlin gradle file — the release train both apps ride — and pins pubspec's
-`version:` (name and build number) and
-`ConfigurationsRepository.defaultAppVersion` to it. Verified in both
-directions: bumping pubspec one patch down fails both keys by name. The next
-Kotlin release bump makes the Flutter suite red until the port follows, which
-converts a silent lockout (stale runtime version vs. a moved server `minapk`)
-into a one-line fix at the moment it becomes true.
+Kotlin gradle file — the release train both apps ride — and checks the port
+against it.
+
+> **Amended immediately after CI.** The first cut asserted pubspec == the Kotlin
+> `versionName` exactly, and it was wrong about this repo's cadence.
+> `automerge.yml` bumps the version on **every PR it merges**, so master went
+> 0.67.14 → 0.67.25 within the hour. The branch's own push run stayed green;
+> the *pull-request* run went red, because a PR run tests the merge with master
+> and therefore sees master's newer gradle file. Exact equality against a target
+> that moves several times an hour is a permanently-red build, and a
+> permanently-red build teaches everyone to ignore it — strictly worse than no
+> test.
+>
+> The rule now splits in two. The strict half is internal and always valid:
+> pubspec's version and `ConfigurationsRepository.defaultAppVersion` must agree
+> with **each other**. The external half tolerates patch lag and fails on a
+> **minor** version behind, which is where the risk becomes real — servers set
+> `minapk` to force upgrades of genuinely old clients, not to the newest patch
+> (a server demanding the current patch would lock out everyone who had not
+> updated in the last hour). Verified in both directions: the 0.67.25-vs-0.67.14
+> patch lag that broke CI now passes, and the actual Phase 93 drift
+> (0.62.98 against 0.67.25) fails with the two lines to change. The test carries
+> a note asking the next reader not to tighten it back to equality.
 
 The 1448-test suite passes, `flutter analyze` clean, `dart format` clean,
 `flutter build apk --debug` green with the plugin in the registrant.
