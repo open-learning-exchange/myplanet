@@ -143,10 +143,27 @@ class PersonalsRepositoryImplTest {
     }
 
     @Test
-    fun `updatePersonalResource calls updater on matched _id and id`() = runTest {
+    fun `updatePersonalResource uses _id if found and updates once`() = runTest {
         val personalByDocId = Personal().apply { title = "Old" }
-        val personalById = Personal().apply { title = "Old" }
         coEvery { personalDao.findByDocId("test-id") } returns personalByDocId
+        coEvery { personalDao.findById("test-id") } returns null
+
+        var updateCount = 0
+        repository.updatePersonalResource("test-id") { personal ->
+            personal.title = "New Title"
+            updateCount++
+        }
+
+        assertEquals(1, updateCount)
+        assertEquals("New Title", personalByDocId.title)
+        coVerify(exactly = 1) { personalDao.update(personalByDocId) }
+        coVerify(exactly = 0) { personalDao.findById(any()) }
+    }
+
+    @Test
+    fun `updatePersonalResource falls back to id if _id is not found and updates once`() = runTest {
+        val personalById = Personal().apply { title = "Old" }
+        coEvery { personalDao.findByDocId("test-id") } returns null
         coEvery { personalDao.findById("test-id") } returns personalById
 
         var updateCount = 0
@@ -155,11 +172,9 @@ class PersonalsRepositoryImplTest {
             updateCount++
         }
 
-        assertEquals(2, updateCount)
-        assertEquals("New Title", personalByDocId.title)
+        assertEquals(1, updateCount)
         assertEquals("New Title", personalById.title)
-        coVerify { personalDao.update(personalByDocId) }
-        coVerify { personalDao.update(personalById) }
+        coVerify(exactly = 1) { personalDao.update(personalById) }
     }
 
     @Test

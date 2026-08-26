@@ -102,8 +102,9 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
     override fun onMemberSelected(userModel: UserEntity?) {
         if (!isAdded) return
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             val fragment = VoicesActions.showMemberDetails(userModel, activitiesRepository) ?: return@launch
+            if (!isAdded) return@launch
             FragmentNavigator.replaceFragment(
                 requireActivity().supportFragmentManager,
                 R.id.fragment_container,

@@ -79,8 +79,7 @@ class VoicesLabelManager(
                 chipCloud.setDeleteListener { _: Int, labelText: String? ->
                     val selectedLabel = when {
                         labelText == null -> null
-                        Constants.LABELS.containsKey(labelText) -> Constants.LABELS[labelText]
-                        else -> labels.firstOrNull { getLabel(it) == labelText }
+                        else -> Constants.LABELS[labelText] ?: labels.firstOrNull { getLabel(it) == labelText }
                     }
                     val voiceId = voice.id
                     if (selectedLabel != null && voiceId != null) {
