@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Label one pull request by its diff: additions + deletions pick one of small,
-# medium, large, enormous, and a pull request that only removes code also gets
-# `less` alongside that size label.
+# Label one pull request by its diff: additions + deletions
+# pick one of small, medium, large, enormous,
+# and on only removals code also gets `less` alongside that size label.
 set -euo pipefail
 
 REPO="${REPO:?}"
