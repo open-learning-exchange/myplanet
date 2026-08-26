@@ -8,7 +8,7 @@ import org.ole.planet.myplanet.model.TeamTask
 
 @Dao
 interface TeamTaskDao {
-    @Query("SELECT * FROM team_tasks WHERE (status IS NULL OR status != 'archived') AND completed = 0 AND assignee = :userId")
+    @Query("SELECT * FROM team_tasks WHERE (status IS NULL OR status != 'archived') AND completed = 0 AND assignee IS :userId")
     fun getOpenTasksForUser(userId: String?): Flow<List<TeamTask>>
 
     @Query("SELECT * FROM team_tasks WHERE completed = 0 AND assignee = :userId AND isNotified = 0 AND deadline BETWEEN :start AND :end")

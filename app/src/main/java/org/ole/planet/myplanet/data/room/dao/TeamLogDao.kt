@@ -18,7 +18,7 @@ interface TeamLogDao {
     @Query("SELECT * FROM team_log WHERE type = 'teamVisit' AND teamId = :teamId AND user IN (:userNames)")
     suspend fun getTeamVisitsForUsers(teamId: String, userNames: List<String>): List<TeamLog>
 
-    @Query("SELECT MAX(time) FROM team_log WHERE type = 'teamVisit' AND user = :userName AND teamId = :teamId")
+    @Query("SELECT MAX(time) FROM team_log WHERE type = 'teamVisit' AND user IS :userName AND teamId IS :teamId")
     suspend fun getLastVisit(userName: String?, teamId: String?): Long?
 
     @Query("SELECT * FROM team_log WHERE _id IN (:ids)")
