@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -51,7 +52,7 @@ class BellDashboardViewModelTest {
 
         viewModel = BellDashboardViewModel(
             progressRepository, teamsRepository, surveysRepository,
-            submissionsRepository, userRepository, coursesRepository, timeProvider
+            submissionsRepository, userRepository, coursesRepository, timeProvider, TestDispatcherProvider(testDispatcher)
         )
     }
 
@@ -123,7 +124,7 @@ class BellDashboardViewModelTest {
 
         viewModel = BellDashboardViewModel(
             progressRepository, teamsRepository, surveysRepository,
-            submissionsRepository, userRepository, coursesRepository, timeProvider
+            submissionsRepository, userRepository, coursesRepository, timeProvider, TestDispatcherProvider(testDispatcher)
         )
 
         val emitted = mutableListOf<SurveyPrompt?>()

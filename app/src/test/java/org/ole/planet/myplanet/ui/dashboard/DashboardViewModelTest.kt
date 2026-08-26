@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class DashboardViewModelTest {
@@ -75,8 +76,8 @@ class DashboardViewModelTest {
             surveysRepository,
             progressRepository,
             voicesRepository,
-            dispatcherProvider,
-            syncRepository
+            syncRepository,
+            TestDispatcherProvider(testDispatcher)
         )
     }
 

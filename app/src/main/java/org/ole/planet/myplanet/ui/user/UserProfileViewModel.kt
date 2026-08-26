@@ -13,7 +13,9 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 sealed class ProfileUpdateState {
     object Idle : ProfileUpdateState()
@@ -25,7 +27,8 @@ sealed class ProfileUpdateState {
 class UserProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val userSessionManager: UserSessionManager,
-    private val activitiesRepository: ActivitiesRepository
+    private val activitiesRepository: ActivitiesRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     private val _userModel = MutableStateFlow<UserEntity?>(null)
@@ -38,7 +41,7 @@ class UserProfileViewModel @Inject constructor(
         viewModelScope.launch {
             val userId = userRepository.getActiveUserIdSuspending()
             if (userId.isBlank()) return@launch
-            _userModel.value = userRepository.getUserByAnyId(userId)
+            _userModel.value = withContext(dispatcherProvider.io) { userRepository.getUserByAnyId(userId) }
         }
     }
 
@@ -65,18 +68,20 @@ class UserProfileViewModel @Inject constructor(
             }
 
             runCatching {
-                userRepository.updateUserDetails(
-                    userId = userId,
-                    firstName = firstName,
-                    lastName = lastName,
-                    middleName = middleName,
-                    email = email,
-                    phoneNumber = phoneNumber,
-                    level = level,
-                    language = language,
-                    gender = gender,
-                    dob = dob,
-                )
+                withContext(dispatcherProvider.io) {
+                    userRepository.updateUserDetails(
+                        userId = userId,
+                        firstName = firstName,
+                        lastName = lastName,
+                        middleName = middleName,
+                        email = email,
+                        phoneNumber = phoneNumber,
+                        level = level,
+                        language = language,
+                        gender = gender,
+                        dob = dob,
+                    )
+                }
             }.onSuccess { updatedUser ->
                 updatedUser?.let { _userModel.value = it }
                 _updateState.value = ProfileUpdateState.Success
@@ -96,7 +101,7 @@ class UserProfileViewModel @Inject constructor(
                 return@launch
             }
 
-            runCatching { userRepository.updateUserImage(userId, imagePath) }
+            runCatching { withContext(dispatcherProvider.io) { userRepository.updateUserImage(userId, imagePath) } }
                 .onSuccess { updatedUser ->
                     updatedUser?.let { _userModel.value = it }
                     _updateState.value = ProfileUpdateState.Success

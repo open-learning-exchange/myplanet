@@ -20,12 +20,15 @@ import org.ole.planet.myplanet.model.Notification
 import org.ole.planet.myplanet.model.NotificationListItem
 import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.TaskNotificationResult
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.repository.NotificationsRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class NotificationsViewModel @Inject constructor(
     private val notificationsRepository: NotificationsRepository,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     private val _notifications = MutableStateFlow<List<Notification>>(emptyList())
@@ -59,40 +62,46 @@ class NotificationsViewModel @Inject constructor(
         viewModelScope.launch {
             val payloadNotifications = notificationsRepository.getNotifications(userId, filter, isAdmin)
 
-            val byLoweredType = payloadNotifications.groupBy { it.type.lowercase() }
-            val taskNotifications = byLoweredType["task"] ?: emptyList()
-            val joinRequestNotifications = byLoweredType["join_request"] ?: emptyList()
+            val (notifications, unreadCount) = withContext(dispatcherProvider.default) {
+                val byLoweredType = payloadNotifications.groupBy { it.type.lowercase() }
+                val taskNotifications = byLoweredType["task"] ?: emptyList()
+                val joinRequestNotifications = byLoweredType["join_request"] ?: emptyList()
 
-            val taskIds = taskNotifications
-                .mapNotNull { it.relatedId }
-                .distinct()
-            val taskTeamNames = notificationsRepository.getTaskTeamNamesByTaskIds(taskIds).toMutableMap()
+                val taskIds = taskNotifications
+                    .mapNotNull { it.relatedId }
+                    .distinct()
+                val taskTeamNames = notificationsRepository.getTaskTeamNamesByTaskIds(taskIds).toMutableMap()
 
-            val taskTitles = taskNotifications
-                .filter { it.relatedId.isNullOrEmpty() || !taskTeamNames.containsKey(it.relatedId) }
-                .mapNotNull { parseTaskDate(it.message)?.first }
-                .distinct()
-            if (taskTitles.isNotEmpty()) {
-                val teamNamesByTitle = notificationsRepository.getTaskTeamNamesByTaskTitles(taskTitles)
-                taskTeamNames.putAll(teamNamesByTitle)
+                val taskTitles = taskNotifications
+                    .filter { it.relatedId.isNullOrEmpty() || !taskTeamNames.containsKey(it.relatedId) }
+                    .mapNotNull { parseTaskDate(it.message)?.first }
+                    .distinct()
+                if (taskTitles.isNotEmpty()) {
+                    val teamNamesByTitle = notificationsRepository.getTaskTeamNamesByTaskTitles(taskTitles)
+                    taskTeamNames.putAll(teamNamesByTitle)
+                }
+
+                val joinRequestIds = joinRequestNotifications
+                    .mapNotNull { it.relatedId }
+                    .distinct()
+                val joinRequestDetails = notificationsRepository.getJoinRequestDetailsBatch(joinRequestIds).toMutableMap()
+
+                val joinRequestsWithoutRelatedId = joinRequestNotifications
+                    .filter { it.relatedId.isNullOrEmpty() }
+                if (joinRequestsWithoutRelatedId.isNotEmpty()) {
+                    val fallbackDetail = notificationsRepository.getJoinRequestDetails(null)
+                    joinRequestDetails[""] = fallbackDetail
+                }
+
+                val formatted = payloadNotifications.map {
+                    formatNotification(it, taskTeamNames, joinRequestDetails)
+                }
+                val count = notificationsRepository.getUnreadCount(userId, isAdmin)
+                Pair(formatted, count)
             }
 
-            val joinRequestIds = joinRequestNotifications
-                .mapNotNull { it.relatedId }
-                .distinct()
-            val joinRequestDetails = notificationsRepository.getJoinRequestDetailsBatch(joinRequestIds).toMutableMap()
-
-            val joinRequestsWithoutRelatedId = joinRequestNotifications
-                .filter { it.relatedId.isNullOrEmpty() }
-            if (joinRequestsWithoutRelatedId.isNotEmpty()) {
-                val fallbackDetail = notificationsRepository.getJoinRequestDetails(null)
-                joinRequestDetails[""] = fallbackDetail
-            }
-
-            _notifications.value = payloadNotifications.map {
-                formatNotification(it, taskTeamNames, joinRequestDetails)
-            }
-            _unreadCount.value = notificationsRepository.getUnreadCount(userId, isAdmin)
+            _notifications.value = notifications
+            _unreadCount.value = unreadCount
         }
     }
 

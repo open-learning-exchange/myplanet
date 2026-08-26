@@ -14,7 +14,9 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 sealed interface RatingPromptDecision {
     object Show : RatingPromptDecision
@@ -37,7 +39,8 @@ class TakeCourseViewModel @Inject constructor(
     private val coursesRepository: CoursesRepository,
     private val progressRepository: ProgressRepository,
     private val userSessionManager: UserSessionManager,
-    private val ratingsRepository: RatingsRepository
+    private val ratingsRepository: RatingsRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<TakeCourseUiState>(TakeCourseUiState.Loading)
@@ -113,8 +116,11 @@ class TakeCourseViewModel @Inject constructor(
                     return@launch
                 }
 
-                val steps = coursesRepository.getCourseSteps(courseId)
-                val progressMap = progressRepository.getCourseProgress(listOf(courseId), userModel?.id)
+                val (steps, progressMap) = withContext(dispatcherProvider.default) {
+                    val stepsResult = coursesRepository.getCourseSteps(courseId)
+                    val progressResult = progressRepository.getCourseProgress(listOf(courseId), userModel?.id)
+                    Pair(stepsResult, progressResult)
+                }
                 val progress = progressMap[courseId]?.current ?: 0
 
                 _uiState.value = TakeCourseUiState.Success(course, steps, userModel, progress)

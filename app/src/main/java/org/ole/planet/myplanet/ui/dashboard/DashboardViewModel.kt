@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
@@ -76,8 +77,8 @@ class DashboardViewModel @Inject constructor(
     private val surveysRepository: SurveysRepository,
     private val progressRepository: ProgressRepository,
     private val voicesRepository: VoicesRepository,
-    private val dispatcherProvider: DispatcherProvider,
     private val syncRepository: SyncRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
@@ -287,7 +288,7 @@ class DashboardViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                val dialogData = coroutineScope {
+                val dialogData = withContext(dispatcherProvider.default) { coroutineScope {
                     val courseDataDeferred = async { progressRepository.fetchCourseData(userId) }
                     val uniqueDatesDeferred = async { voicesRepository.getCommunityVoiceDates(startTime, endTime, userId) }
                     val allUniqueDatesDeferred = async { voicesRepository.getCommunityVoiceDates(startTime, endTime, null) }
@@ -327,7 +328,7 @@ class DashboardViewModel @Inject constructor(
                     } else {
                         null
                     }
-                }
+                } }
 
                 if (dialogData != null) {
                     _challengeDialogEvent.emit(dialogData)

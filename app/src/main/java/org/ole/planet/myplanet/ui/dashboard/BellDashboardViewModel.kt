@@ -22,6 +22,8 @@ import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 
 @HiltViewModel
@@ -32,7 +34,8 @@ class BellDashboardViewModel @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val userRepository: UserRepository,
     private val coursesRepository: CoursesRepository,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     companion object {
@@ -66,21 +69,23 @@ class BellDashboardViewModel @Inject constructor(
     }
 
     private suspend fun handleDueReminders(remindersToShow: List<String>) {
-        val allSurveyIds = remindersToShow.flatMap { it.split(",") }.filter { it.isNotBlank() }.distinct()
-        if (allSurveyIds.isEmpty()) return
+        withContext(dispatcherProvider.default) {
+            val allSurveyIds = remindersToShow.flatMap { it.split(",") }.filter { it.isNotBlank() }.distinct()
+            if (allSurveyIds.isEmpty()) return@withContext
 
-        val allSubmissions = submissionsRepository.getSubmissionsByIds(allSurveyIds)
-        val submissionsById = allSubmissions.associateBy { it.id }
+            val allSubmissions = submissionsRepository.getSubmissionsByIds(allSurveyIds)
+            val submissionsById = allSubmissions.associateBy { it.id }
 
-        for (surveyIds in remindersToShow) {
-            val surveyIdList = surveyIds.split(",").filter { it.isNotBlank() }
-            if (surveyIdList.isEmpty()) continue
+            for (surveyIds in remindersToShow) {
+                val surveyIdList = surveyIds.split(",").filter { it.isNotBlank() }
+                if (surveyIdList.isEmpty()) continue
 
-            val pendingSurveys = surveyIdList.mapNotNull { submissionsById[it] }.filter { it.status == "pending" }
+                val pendingSurveys = surveyIdList.mapNotNull { submissionsById[it] }.filter { it.status == "pending" }
 
-            if (pendingSurveys.isNotEmpty()) {
-                val surveyTitles = submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
-                _surveyPrompt.emit(SurveyPrompt(pendingSurveys, surveyTitles, isReminder = true))
+                if (pendingSurveys.isNotEmpty()) {
+                    val surveyTitles = submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
+                    _surveyPrompt.emit(SurveyPrompt(pendingSurveys, surveyTitles, isReminder = true))
+                }
             }
         }
     }
@@ -90,12 +95,14 @@ class BellDashboardViewModel @Inject constructor(
             val lastShown = surveysRepository.getLastSurveyDialogShown()
             if (timeProvider.now() - lastShown < SURVEY_DIALOG_INTERVAL_MS) return@launch
 
-            val pendingSurveys = submissionsRepository.getUniquePendingSurveys(userId)
-            if (pendingSurveys.isNotEmpty()) {
-                val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
-                if (surveysRepository.isReminderScheduled(surveyIds)) return@launch
-                val surveyTitles = submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
-                _surveyPrompt.emit(SurveyPrompt(pendingSurveys, surveyTitles, isReminder = false))
+            withContext(dispatcherProvider.default) {
+                val pendingSurveys = submissionsRepository.getUniquePendingSurveys(userId)
+                if (pendingSurveys.isNotEmpty()) {
+                    val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
+                    if (surveysRepository.isReminderScheduled(surveyIds)) return@withContext
+                    val surveyTitles = submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
+                    _surveyPrompt.emit(SurveyPrompt(pendingSurveys, surveyTitles, isReminder = false))
+                }
             }
         }
     }
@@ -116,7 +123,7 @@ class BellDashboardViewModel @Inject constructor(
 
     fun loadCompletedCourses(userId: String) {
         viewModelScope.launch {
-            _completedCourses.value = progressRepository.getCompletedCourses(userId)
+            _completedCourses.value = withContext(dispatcherProvider.io) { progressRepository.getCompletedCourses(userId) }
         }
     }
 

@@ -5,6 +5,7 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -56,7 +57,7 @@ class TakeCourseViewModelTest {
 
     @Before
     fun setUp() {
-        viewModel = TakeCourseViewModel(coursesRepository, progressRepository, userSessionManager, ratingsRepository)
+        viewModel = TakeCourseViewModel(coursesRepository, progressRepository, userSessionManager, ratingsRepository, TestDispatcherProvider(testDispatcher))
     }
 
     @Test

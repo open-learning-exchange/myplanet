@@ -6,6 +6,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
@@ -36,7 +37,7 @@ class NotificationsViewModelTest {
     @Before
     fun setup() {
         repository = mockk(relaxed = true)
-        viewModel = NotificationsViewModel(repository, mockk<Context>(relaxed = true))
+        viewModel = NotificationsViewModel(repository, mockk<Context>(relaxed = true), TestDispatcherProvider(testDispatcher))
     }
 
     @Test
