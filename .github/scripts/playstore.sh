@@ -71,7 +71,6 @@ track_code() {
     printf '%s\n' "$code"
 }
 
-# versionCode from a versionName, the way version.sh derives it.
 code_for() {
     local name=$1
     [[ "$name" =~ ^([0-9]{1,3})\.([0-9]{1,2})\.([0-9]{1,2})$ ]] || return 1
@@ -81,8 +80,9 @@ code_for() {
 # 0 = the newest release run on $BASE warned (or cannot say), 1 = it published.
 release_run_warned() {
     local run job_id concl
-    run=$(gh api "repos/$REPO/actions/workflows/$RELEASE_WORKFLOW/runs?branch=$BASE&event=push&per_page=1" \
-            --jq '.workflow_runs[0] | "\(.id)\t\(.status)"' 2>/dev/null) || return 0
+    # a page and max_by, because per_page=1 is not reliably the newest run
+    run=$(gh api "repos/$REPO/actions/workflows/$RELEASE_WORKFLOW/runs?branch=$BASE&event=push&per_page=20" \
+            --jq '[.workflow_runs[]?] | max_by(.id) | select(. != null) | "\(.id)\t\(.status)"' 2>/dev/null) || return 0
     [ -n "$run" ] && [ "$run" != "null" ] || { note "no $RELEASE_WORKFLOW run found on $BASE"; return 0; }
 
     local id=${run%%$'\t'*} status=${run##*$'\t'}
