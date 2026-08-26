@@ -10,6 +10,7 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/health_provider.dart';
 import '../../providers/sync_state.dart';
+import '../components/profile_avatar.dart';
 import '../router.dart';
 
 /// Port of `ui/health/MyHealthFragment.kt`.
@@ -38,7 +39,10 @@ class MyHealthScreen extends ConsumerWidget {
                 ? null
                 : () async {
                     await ref.read(healthSyncProvider.notifier).sync();
-                    ref.invalidate(patientDetailProvider);
+                    // `refresh`, not `invalidate`: see
+                    // `PatientDetailNotifier.refresh` — invalidating rebuilds
+                    // the notifier and resets a provider's chosen patient.
+                    await ref.read(patientDetailProvider.notifier).refresh();
                   },
           ),
           IconButton(
@@ -53,7 +57,7 @@ class MyHealthScreen extends ConsumerWidget {
           : _buildBody(context, ref, detail, l10n),
       floatingActionButton: isHealthProvider
           ? FloatingActionButton.extended(
-              onPressed: () => _showPatientPicker(context, ref),
+              onPressed: () => _showPatientPicker(context),
               icon: const Icon(Icons.person_search),
               label: Text(l10n.newPatient),
             )
@@ -86,7 +90,7 @@ class MyHealthScreen extends ConsumerWidget {
     return _HealthContent(data: data);
   }
 
-  void _showPatientPicker(BuildContext context, WidgetRef ref) {
+  void _showPatientPicker(BuildContext context) {
     showDialog<void>(
       context: context,
       builder: (dialogContext) => const _PatientPickerDialog(),
@@ -94,12 +98,12 @@ class MyHealthScreen extends ConsumerWidget {
   }
 }
 
-class _HealthContent extends StatelessWidget {
+class _HealthContent extends ConsumerWidget {
   const _HealthContent({required this.data});
   final HealthData data;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final user = data.user;
     final examination = data.examination;
@@ -111,9 +115,11 @@ class _HealthContent extends StatelessWidget {
     }
 
     return RefreshIndicator(
-      onRefresh: () async {
-        // Refresh health data
-      },
+      // Kotlin's `MyHealthFragment` has no `SwipeRefreshLayout`, so this
+      // gesture is the port's own addition — which is why its handler was
+      // left empty, advertising a refresh that did nothing. Re-reading the
+      // selected patient is what the affordance already promises.
+      onRefresh: () => ref.read(patientDetailProvider.notifier).refresh(),
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -126,22 +132,20 @@ class _HealthContent extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      CircleAvatar(
-                        radius: 32,
-                        backgroundImage: user.userImage != null
-                            ? NetworkImage(user.userImage!)
-                            : null,
-                        child: user.userImage == null
-                            ? Text(_getInitials(user))
-                            : null,
-                      ),
+                      // `users.userImage` is a CouchDB attachment *name*, not a
+                      // URL, and the attachment sits behind Basic auth — this
+                      // used to hand the bare name to `NetworkImage`, so the
+                      // photo could never load. `ProfileAvatar` resolves it
+                      // through the authenticated bytes path (and handles a
+                      // locally-picked file path), falling back to initials.
+                      ProfileAvatar(user: user, radius: 32),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _getDisplayName(user),
+                              displayName(user),
                               style: Theme.of(context).textTheme.titleLarge,
                             ),
                             if (user.email != null)
@@ -296,7 +300,15 @@ class _HealthContent extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
-                      height: 140,
+                      // A horizontal list has to be given a bounded height, so
+                      // this cannot size to its content. 140 was 8px short of
+                      // an examination carrying date, examiner, temperature,
+                      // pulse, blood pressure *and* the has-info icon, which
+                      // struck a RenderFlex overflow — a yellow-and-black
+                      // stripe on a device. Sized for that fullest card with
+                      // headroom; the card body scrolls if a large text scale
+                      // still outgrows it.
+                      height: 168,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: examinations.length,
@@ -323,24 +335,30 @@ class _HealthContent extends StatelessWidget {
       ),
     );
   }
+}
 
-  String _getDisplayName(UserRow user) {
-    final parts = [
-      user.firstName?.trim(),
-      user.middleName?.trim(),
-      user.lastName?.trim(),
-    ].where((p) => p != null && p.isNotEmpty).toList();
-    if (parts.isEmpty) return user.name ?? 'Unknown';
-    return parts.join(' ');
+/// The examiner's display name for [createdBy].
+///
+/// A known user renders as their name; an unknown creator id falls back to the
+/// text after the `:` (`org.couchdb.user:provider-1` reads as `provider-1`),
+/// and then to the raw id. Kept as one function because the card and its
+/// detail dialog both need it and had identical copies.
+String resolveCreatorName(String createdBy, Map<String, UserRow> userMap) {
+  final user = userMap[createdBy];
+  if (user != null) {
+    final parts = [user.firstName, user.middleName, user.lastName]
+        .whereType<String>()
+        .map((part) => part.trim())
+        .where((part) => part.isNotEmpty);
+    final fullName = parts.join(' ');
+    if (fullName.isNotEmpty) return fullName;
+    return user.name ?? createdBy;
   }
-
-  String _getInitials(UserRow user) {
-    final name = _getDisplayName(user);
-    final parts = name.split(' ');
-    if (parts.isEmpty) return '?';
-    if (parts.length == 1) return parts[0][0].toUpperCase();
-    return '${parts[0][0]}${parts.last[0]}'.toUpperCase();
+  final colonIndex = createdBy.indexOf(':');
+  if (colonIndex >= 0 && colonIndex + 1 < createdBy.length) {
+    return createdBy.substring(colonIndex + 1).trim();
   }
+  return createdBy;
 }
 
 class _InfoRow extends StatelessWidget {
@@ -434,7 +452,7 @@ class _ExaminationCard extends ConsumerWidget {
         createdBy == null || createdBy.isEmpty || createdBy == userId;
     final creatorName = isSelfExam
         ? l10n.selfExamination
-        : _resolveCreatorName(createdBy);
+        : resolveCreatorName(createdBy, userMap);
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final selfColor = isDark
@@ -455,71 +473,58 @@ class _ExaminationCard extends ConsumerWidget {
           border: Border.all(color: Theme.of(context).colorScheme.outline),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              date != null
-                  ? '${date.day}/${date.month}/${date.year}'
-                  : l10n.unknown,
-              style: Theme.of(context).textTheme.labelMedium,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              creatorName,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).colorScheme.outline,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 6),
-            if (exam.temperature > 0)
+        // The strip's height is fixed, so a text scale larger than the one the
+        // height was measured against would overflow the card. Scrolling the
+        // body degrades that into a scrollable card instead of a striped one.
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                '${l10n.temp}: ${exam.temperature}°C',
-                style: Theme.of(context).textTheme.bodySmall,
+                date != null
+                    ? '${date.day}/${date.month}/${date.year}'
+                    : l10n.unknown,
+                style: Theme.of(context).textTheme.labelMedium,
               ),
-            if (exam.pulse > 0)
+              const SizedBox(height: 4),
               Text(
-                '${l10n.pulse}: ${exam.pulse} bpm',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            if (exam.bp != null && exam.bp!.isNotEmpty)
-              Text(
-                '${l10n.bp}: ${exam.bp}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            if (exam.hasInfo)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Icon(
-                  Icons.info_outline,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.primary,
+                creatorName,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.outline,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-          ],
+              const SizedBox(height: 6),
+              if (exam.temperature > 0)
+                Text(
+                  '${l10n.temp}: ${exam.temperature}°C',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              if (exam.pulse > 0)
+                Text(
+                  '${l10n.pulse}: ${exam.pulse} bpm',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              if (exam.bp != null && exam.bp!.isNotEmpty)
+                Text(
+                  '${l10n.bp}: ${exam.bp}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              if (exam.hasInfo)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
-  }
-
-  String _resolveCreatorName(String createdBy) {
-    final user = userMap[createdBy];
-    if (user != null) {
-      final parts = [
-        user.firstName?.trim(),
-        user.middleName?.trim(),
-        user.lastName?.trim(),
-      ].where((p) => p != null && p.isNotEmpty).toList();
-      if (parts.isNotEmpty) return parts.join(' ');
-      return user.name ?? createdBy;
-    }
-    final colonIndex = createdBy.indexOf(':');
-    if (colonIndex >= 0 && colonIndex + 1 < createdBy.length) {
-      return createdBy.substring(colonIndex + 1).trim();
-    }
-    return createdBy;
   }
 
   void _showDetail(BuildContext context, WidgetRef ref) {
@@ -565,7 +570,7 @@ class _ExaminationDetailDialog extends ConsumerWidget {
         createdBy == null || createdBy.isEmpty || createdBy == userId;
     final creatorName = isSelfExam
         ? l10n.selfExamination
-        : _resolveCreatorName(createdBy);
+        : resolveCreatorName(createdBy, userMap);
 
     final title = '$dateText — $creatorName';
 
@@ -660,24 +665,6 @@ class _ExaminationDetailDialog extends ConsumerWidget {
         ),
       ],
     );
-  }
-
-  String _resolveCreatorName(String createdBy) {
-    final user = userMap[createdBy];
-    if (user != null) {
-      final parts = [
-        user.firstName?.trim(),
-        user.middleName?.trim(),
-        user.lastName?.trim(),
-      ].where((p) => p != null && p.isNotEmpty).toList();
-      if (parts.isNotEmpty) return parts.join(' ');
-      return user.name ?? createdBy;
-    }
-    final colonIndex = createdBy.indexOf(':');
-    if (colonIndex >= 0 && colonIndex + 1 < createdBy.length) {
-      return createdBy.substring(colonIndex + 1).trim();
-    }
-    return createdBy;
   }
 
   String _formatDouble(double v) => v == 0 ? '' : v.toString();
@@ -904,18 +891,14 @@ class _PatientPickerDialogState extends ConsumerState<_PatientPickerDialog> {
                     itemCount: patients.length,
                     itemBuilder: (context, index) {
                       final user = patients[index];
-                      final name = _getDisplayName(user);
                       return ListTile(
-                        leading: CircleAvatar(child: Text(_getInitials(name))),
-                        title: Text(name),
+                        leading: ProfileAvatar(user: user, radius: 20),
+                        title: Text(displayName(user)),
                         subtitle: user.email != null ? Text(user.email!) : null,
                         onTap: () {
-                          final uid = (user.couchId ?? '').isNotEmpty
-                              ? user.couchId!
-                              : user.id;
                           ref
                               .read(patientDetailProvider.notifier)
-                              .selectPatient(uid.trim());
+                              .selectPatient(patientIdOf(user));
                           Navigator.of(context).pop();
                         },
                       );
@@ -934,22 +917,5 @@ class _PatientPickerDialogState extends ConsumerState<_PatientPickerDialog> {
         ),
       ],
     );
-  }
-
-  String _getDisplayName(UserRow user) {
-    final parts = [
-      user.firstName?.trim(),
-      user.middleName?.trim(),
-      user.lastName?.trim(),
-    ].where((p) => p != null && p.isNotEmpty).toList();
-    if (parts.isEmpty) return user.name ?? 'Unknown';
-    return parts.join(' ');
-  }
-
-  String _getInitials(String name) {
-    final parts = name.split(' ');
-    if (parts.isEmpty) return '?';
-    if (parts.length == 1) return parts[0][0].toUpperCase();
-    return '${parts[0][0]}${parts.last[0]}'.toUpperCase();
   }
 }

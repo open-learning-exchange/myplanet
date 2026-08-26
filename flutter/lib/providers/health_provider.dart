@@ -481,6 +481,17 @@ class PatientListNotifier extends StateNotifier<AsyncValue<List<UserRow>>> {
   Future<void> refresh() => _load();
 }
 
+/// The id a health record is keyed by: the CouchDB `_users` document id when
+/// the row has one, else the local row id.
+///
+/// Port of `HealthViewModel`'s
+/// `if (currentUser?._id.isNullOrEmpty()) currentUser?.id else currentUser?._id`
+/// — `_id` wins when present, because the health documents are keyed by it.
+String patientIdOf(UserRow user) {
+  final couchId = user.couchId ?? '';
+  return (couchId.isNotEmpty ? couchId : user.id).trim();
+}
+
 /// The currently selected patient's full health record (profile +
 /// examinations + creator user map). Null until a patient is chosen.
 final patientDetailProvider =
@@ -499,12 +510,24 @@ class PatientDetailNotifier extends StateNotifier<PatientDetailState> {
   Future<void> _loadInitial() async {
     final currentUser = await _ref.read(loggedInUserProvider.future);
     if (currentUser == null) return;
-    final uid = (currentUser.couchId ?? '').isNotEmpty
-        ? currentUser.couchId!
-        : currentUser.id;
-    final trimmed = uid.trim();
-    if (trimmed.isNotEmpty) {
-      await selectPatient(trimmed);
+    final uid = patientIdOf(currentUser);
+    if (uid.isNotEmpty) {
+      await selectPatient(uid);
+    }
+  }
+
+  /// Re-reads the currently selected patient's record, keeping the selection.
+  ///
+  /// Deliberately not `ref.invalidate(patientDetailProvider)`: recreating the
+  /// notifier reruns [_loadInitial], which resolves the *logged-in* user — so a
+  /// health provider who had selected another patient would be silently bounced
+  /// back to their own record.
+  Future<void> refresh() async {
+    final current = state.user;
+    if (current == null) return;
+    final uid = patientIdOf(current);
+    if (uid.isNotEmpty) {
+      await selectPatient(uid);
     }
   }
 

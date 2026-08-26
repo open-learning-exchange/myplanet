@@ -310,6 +310,38 @@ real read — a real file still has to exist on disk for `_getLocalFilePath` to 
 the screen into the viewer, and that file write runs inside `runAsync`. The
 video/PDF/WebView renderers need platform views no widget test can serve.
 
+Phase 95 gives `MyHealthScreen` its first 13 tests — 955 lines, the largest
+untested hand-written surface after the viewer — and they found five defects,
+four of which failed on the pre-fix code. The screen hand-rolled three helpers
+that `ui/components/profile_avatar.dart` already provides, and its copies were
+broken: the avatar passed `users.userImage` to `NetworkImage`, but that column
+holds a CouchDB **attachment name** (`UserMapper` says so where it writes it),
+not a URL, and the attachment is behind Basic auth that `Image.network` cannot
+send — so the photo could never load; and `_getInitials` did `parts[0][0]` on
+`name.split(' ')` behind an `if (parts.isEmpty)` guard that is **dead code**,
+since `''.split(' ')` is `['']`. Because the display-name fallback returns
+`user.name` untrimmed, a synced `"name": " jane "` with no first/last name threw
+`RangeError` out of `build` and took the screen down. **When you need a user's
+avatar, name, or initials, use `ProfileAvatar` / `displayName`; do not hand-roll
+them** — same shape as the Phase 78 `normalizeText` duplicate. The other three:
+a hardcoded `'Unknown'` in a file that already reads `l10n.unknown`; a
+`RefreshIndicator.onRefresh` that was an empty async body (Kotlin has no
+`SwipeRefreshLayout` here, so the gesture is the port's own and had never been
+wired); and a 140px examination-history strip that overflowed by 8px on a card
+carrying date, examiner, temperature, pulse, blood pressure *and* the has-info
+icon. Wiring the refresh exposed a sixth: the sync button called
+`ref.invalidate(patientDetailProvider)`, which reruns `_loadInitial` and
+resolves the **logged-in** user, so a health provider silently lost their
+selected patient on every sync — hence `PatientDetailNotifier.refresh()`.
+**A note for writing tests here:** the body is a `ListView(children: [...])`,
+which builds child widgets eagerly but only *mounts* those in the viewport, and
+`find.text` searches the element tree — so a card below the 600px test fold
+reports "Found 0 widgets" for content that renders fine on a device. Scroll
+first. The same phase merged 26 master commits; they are all "smoother X"
+refactors, and the two that do carry behaviour have no port counterpart (the
+PDF word-wrap the port delegates to `package:pdf`, and an image-viewer
+http/https branch `course_markdown.dart` already has).
+
 ### Documentation Map
 
 | Document | Read it when… |
@@ -1013,6 +1045,6 @@ Note: SYSTEM_ALERT_WINDOW is **not** declared (removed at some point; older docs
 
 ---
 
-**Last Updated**: 2026-08-25
+**Last Updated**: 2026-08-26
 **Version**: 0.67.14
 **Maintainer**: Open Learning Exchange
