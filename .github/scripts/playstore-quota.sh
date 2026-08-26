@@ -4,15 +4,7 @@
 #
 # Estimates the playstore save quota from the release history: one master
 # release is one save, LIMIT slots, each freeing 24h + LAG after its own use.
-# Advisory, and it drifts: hand uploads spend slots leaving no release,
-# refusals leave releases holding no slot, and a release published by hand is
-# dated from its stamp rather than the later save that spent the slot.
-#
-# LIMIT 50 and LAG 300s are measured, not guessed. On 2026-08-26 6714 was
-# refused as the 51st release in its window (run 32930850241), then refused at
-# 08:11:16Z and accepted at 08:12:17Z -- 290s past its binding save's stamp
-# plus 24h (runs 32946419090, 32946497961). LAG applies to the window too, so
-# the count and the forecast cannot disagree. Re-measure it the same way.
+# Advisory -- hand uploads and refusals drift it.
 set -euo pipefail
 
 REPO="${REPO:?}"

@@ -317,8 +317,7 @@ quota_note() {
     status=$("$QUOTA_SH" status 2>/dev/null) || return 0
     eval "$(sed -n "s/^report=/quota_report=/p; s/^next_free_local=/quota_eta=/p" <<<"$status")" || return 0
 
-    # the whole forecast: slots come back in the shape of yesterday's merges,
-    # so a resume can wall again within the hour
+    # the whole forecast: the refill rate decides whether a resume keeps pace
     while IFS= read -r line; do
         log "  $line"
     done < <("$QUOTA_SH" forecast 2>/dev/null || printf '%s\n' "$quota_report")
