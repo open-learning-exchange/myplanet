@@ -1,10 +1,5 @@
 name: myPlanet labels
 
-# Size labels went on by hand, so they went stale when a pull request grew and
-# were skipped on pull requests the maintainer did not open. This puts them on
-# at open and again on every push, through pull_request_target so that fork and
-# Dependabot pull requests get one too.
-
 on:
   pull_request_target:
     types: [opened, synchronize, reopened, ready_for_review]
