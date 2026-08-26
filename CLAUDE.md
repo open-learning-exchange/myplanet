@@ -85,6 +85,23 @@ needs no port — `CoursesRepositoryImpl.search(query)` is in the interface but
 uncalled; the screen uses `filterCourses` (a plain `contains`) which the
 port already mirrors.
 
+Phase 96 deepened the same systematic Kotlin-vs-Flutter search/filter/sort
+audit and closed three more gaps. **Resource catalog visibility**:
+`getEnrichedLibraries`'s `getMyLibrary`/`getPublicNotUserPattern`/`getPublic`
+three-way split is now mirrored by `MyLibraryDao.watchResources(myLibrary:)`
+— the catalog excludes private resources (`isPrivate = 0`) and the signed-in
+user's own shelf items (`userId IS NULL OR userId NOT LIKE`, so no
+duplication between catalog and My Library), while My Library includes the
+user's private team resources (`userId LIKE`). **Survey search**:
+`SurveysViewModel.filter` is the same ranked algorithm as
+`ResourcesSearchUtils.searchList` (startsWith-before-contains-all-words,
+word-split, accent-folded, `name` only); the port's flat
+`toLowerCase().contains` on name+description is replaced by a `searchSurveys`
+pure function. **Survey sort date**: `SurveysViewModel.getSortDate` prefers
+`adoptionDate` over `createdDate` for adopted surveys (those with a
+`sourceSurveyId`); a `surveySortDate` pure function ports it. 14 new tests,
+1474 pass.
+
 Phase 47 localised the other four languages: `tool/arb_from_strings_xml.dart` derives `app_ar.arb`,
 `app_fr.arb`, `app_ne.arb` and `app_so.arb` from the Kotlin `values-*/strings.xml` (195–196 of 727
 keys each, nothing machine-translated), which also made the language picker's four dead entries

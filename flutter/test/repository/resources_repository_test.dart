@@ -365,6 +365,68 @@ void main() {
           .first;
       expect(matches.map((r) => r.title), ['Basic Mathematics']);
     });
+
+    test('catalog excludes private resources', () async {
+      stubCount(1);
+      stubPage(0, 100, [row('res-1', 'Public')]);
+      await repository.sync(config: config);
+      // A private resource owned by another team — it must never reach the
+      // public catalog (the Kotlin `getPublic` filters `isPrivate = 0`).
+      await db.myLibraryDao.upsertAll([
+        MyLibraryTableCompanion.insert(
+          id: 'res-private',
+          title: const Value('Secret'),
+          isPrivate: const Value(true),
+        ),
+      ]);
+
+      final catalog = await repository.watchResources().first;
+      expect(catalog.map((r) => r.title), ['Public']);
+    });
+
+    test('catalog excludes resources already on the user\'s shelf', () async {
+      stubCount(1);
+      stubPage(0, 100, [row('res-1', 'On Shelf')]);
+      await repository.sync(config: config);
+      await repository.setShelfMembership('res-1', 'user-1', joined: true);
+      // Add a second public resource not on the shelf.
+      await db.myLibraryDao.upsertAll([
+        MyLibraryTableCompanion.insert(
+          id: 'res-2',
+          title: const Value('Catalog Only'),
+        ),
+      ]);
+
+      final catalog = await repository
+          .watchResources(shelfUserId: 'user-1', myLibrary: false)
+          .first;
+      expect(catalog.map((r) => r.title), ['Catalog Only']);
+    });
+
+    test('My Library includes the user\'s private team resources', () async {
+      stubCount(0);
+      stubPage(0, 100, const []);
+      await repository.sync(config: config);
+      await db.myLibraryDao.upsertAll([
+        MyLibraryTableCompanion.insert(
+          id: 'res-1',
+          title: const Value('Team Private'),
+          isPrivate: const Value(true),
+          userId: const Value(['user-1']),
+        ),
+        MyLibraryTableCompanion.insert(
+          id: 'res-2',
+          title: const Value('Someone Else\'s Private'),
+          isPrivate: const Value(true),
+          userId: const Value(['user-2']),
+        ),
+      ]);
+
+      final shelf = await repository
+          .watchResources(shelfUserId: 'user-1', myLibrary: true)
+          .first;
+      expect(shelf.map((r) => r.title), ['Team Private']);
+    });
   });
 
   group('setShelfMembership', () {

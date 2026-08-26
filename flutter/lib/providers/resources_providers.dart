@@ -95,19 +95,17 @@ List<MyLibraryRow> applyResourceSort(
 /// [resourceSearchQueryProvider] re-runs the query; a background sync writing to
 /// `my_library` pushes a fresh list into the same stream. When
 /// [resourceShelfOnlyProvider] is on, the list is scoped to the signed-in
-/// user's shelf (`watchResources(shelfUserId:)`), the `isMyCourseLib` view.
+/// user's shelf (`watchResources(shelfUserId:, myLibrary:)`, the `isMyCourseLib`
+/// view, private team resources included); otherwise it is the public catalog
+/// (`getPublicNotUserPattern`), which excludes resources already on the user's
+/// shelf so they are not duplicated between the catalog and My Library.
 final resourcesStreamProvider = StreamProvider<List<MyLibraryRow>>((ref) {
   final query = ref.watch(resourceSearchQueryProvider);
   final shelfOnly = ref.watch(resourceShelfOnlyProvider);
-  if (shelfOnly) {
-    final userId = ref.watch(sessionProvider).valueOrNull?.id;
-    if (userId != null && userId.isNotEmpty) {
-      return ref
-          .watch(resourcesRepositoryProvider)
-          .watchResources(query: query, shelfUserId: userId);
-    }
-  }
-  return ref.watch(resourcesRepositoryProvider).watchResources(query: query);
+  final userId = ref.watch(sessionProvider).valueOrNull?.id;
+  return ref
+      .watch(resourcesRepositoryProvider)
+      .watchResources(query: query, shelfUserId: userId, myLibrary: shelfOnly);
 });
 
 class ResourceShelfActions {

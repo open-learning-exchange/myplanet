@@ -8,6 +8,7 @@ import '../core/sync/adaptive_batch_processor.dart';
 import '../core/sync/server_url_mapper.dart';
 import '../core/sync/sync_result.dart';
 import '../core/utils/json_utils.dart';
+import '../core/utils/text_utils.dart' as text;
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
@@ -562,3 +563,42 @@ String _trimTrailingSlash(String url) {
 
 bool _typeEquals(String? type, String other) =>
     type?.toLowerCase() == other.toLowerCase();
+
+/// Port of `SurveysViewModel.filter` — the same ranked algorithm
+/// `ResourcesSearchUtils.searchList` / `CoursesRepositoryImpl.search` use:
+/// titles whose normalized form *starts with* the whole query rank ahead of
+/// titles that merely *contain every whitespace-separated word*. Only `name`
+/// is searched (the Kotlin never searches `description`), and accents fold via
+/// `normalizeText` so "cafe" finds "Café".
+List<SurveyRow> searchSurveys(List<SurveyRow> items, String query) {
+  final trimmed = query.trim();
+  if (trimmed.isEmpty) return List.of(items);
+
+  final queryParts = trimmed.split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
+  final normalizedParts = queryParts.map(text.normalizeText).toList();
+  final normalizedQuery = text.normalizeText(trimmed);
+
+  final startsWithQuery = <SurveyRow>[];
+  final containsQuery = <SurveyRow>[];
+  for (final item in items) {
+    final name = item.name;
+    if (name == null || name.isEmpty) continue;
+    final title = text.normalizeText(name);
+    if (title.startsWith(normalizedQuery)) {
+      startsWithQuery.add(item);
+    } else if (normalizedParts.every((part) => title.contains(part))) {
+      containsQuery.add(item);
+    }
+  }
+  return startsWithQuery..addAll(containsQuery);
+}
+
+/// Port of `SurveysViewModel.getSortDate`: an adopted survey (one with a
+/// `sourceSurveyId`) sorts by its `adoptionDate` when set, falling back to
+/// `createdDate`; a native survey sorts by `createdDate`.
+int surveySortDate(SurveyRow survey) {
+  if (survey.sourceSurveyId != null && survey.adoptionDate > 0) {
+    return survey.adoptionDate;
+  }
+  return survey.createdDate;
+}

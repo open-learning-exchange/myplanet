@@ -19,8 +19,9 @@ import 'app_providers.dart';
 /// here and keeps the card current after a shelf edit.
 final myLibraryStreamProvider =
     StreamProvider.family<List<MyLibraryRow>, String>(
-      (ref, userId) =>
-          ref.watch(myLibraryDaoProvider).watchResources(shelfUserId: userId),
+      (ref, userId) => ref
+          .watch(myLibraryDaoProvider)
+          .watchResources(shelfUserId: userId, myLibrary: true),
     );
 
 /// The user's joined courses — `coursesRepository.getMyCoursesFlow(userId)`,

@@ -37,16 +37,18 @@ class ResourcesRepository {
   final RemovedLogDao _removedLogDao;
 
   /// Reactive, offline-first resource list. Pass [shelfUserId] to scope the
-  /// stream to the user's shelf (joined resources), the `isMyCourseLib` view.
-  /// Text matching uses [searchResources] (a port of `ResourcesSearchUtils`),
-  /// not a SQL `LIKE`, so prefix matches rank ahead of contains-all-words
-  /// matches and the query is split on spaces — the same ranking the Kotlin
-  /// applies in memory.
+  /// stream: in [myLibrary] mode it is the user's shelf (`isMyCourseLib`),
+  /// private team resources included; in catalog mode it is the public list
+  /// minus the signed-in user's shelf items. Text matching uses
+  /// [searchResources] (a port of `ResourcesSearchUtils`), not a SQL `LIKE`,
+  /// so prefix matches rank ahead of contains-all-words matches and the query
+  /// is split on spaces — the same ranking the Kotlin applies in memory.
   Stream<List<MyLibraryRow>> watchResources({
     String? query,
     String? shelfUserId,
+    bool myLibrary = false,
   }) => _dao
-      .watchResources(shelfUserId: shelfUserId)
+      .watchResources(shelfUserId: shelfUserId, myLibrary: myLibrary)
       .map((items) => searchResources(items, query ?? ''));
 
   Future<int> localCount() => _dao.count();

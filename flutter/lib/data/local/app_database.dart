@@ -833,14 +833,31 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
   /// `searchList`) ranks prefix matches ahead of contains-all-words matches and
   /// splits the query on spaces, neither of which a SQL `LIKE` can express, so
   /// the matching lives in `ResourcesRepository.searchResources` against
-  /// [MyLibraryTable.titleNormal]. [shelfUserId] is a structural scope, not a
-  /// text search, and stays in SQL.
-  Stream<List<MyLibraryRow>> watchResources({String? shelfUserId}) {
+  /// [MyLibraryTable.titleNormal].
+  ///
+  /// Visibility mirrors `ResourcesRepositoryImpl.getEnrichedLibraries`: in
+  /// [myLibrary] mode the shelf is shown (`userId LIKE %"userId"%`, including
+  /// the user's private team resources); in catalog mode only public resources
+  /// not already on the signed-in user's shelf are shown (`isPrivate = 0 AND
+  /// (userId IS NULL OR userId NOT LIKE %"userId"%)`), and with no user (guest)
+  /// every public resource is shown.
+  Stream<List<MyLibraryRow>> watchResources({
+    String? shelfUserId,
+    bool myLibrary = false,
+  }) {
     final statement = select(myLibraryTable);
 
-    if (shelfUserId != null && shelfUserId.isNotEmpty) {
-      // Mirrors the Room `LIKE` containment check against the JSON userId column.
+    if (myLibrary && shelfUserId != null && shelfUserId.isNotEmpty) {
+      // `getMyLibrary` — the user's shelf, private team resources included.
       statement.where((r) => r.userId.like('%"$shelfUserId"%'));
+    } else {
+      // `getPublic` / `getPublicNotUserPattern` — the catalog.
+      statement.where((r) => r.isPrivate.equals(false));
+      if (shelfUserId != null && shelfUserId.isNotEmpty) {
+        statement.where(
+          (r) => r.userId.isNull() | r.userId.like('%"$shelfUserId"%').not(),
+        );
+      }
     }
 
     statement.orderBy([
