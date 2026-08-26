@@ -29,7 +29,6 @@ num PLAYSTORE_FORECAST_COUNT "$COUNT"
 
 HOLD_SEC=$((WINDOW_SEC + LAG))
 
-# RELEASES_JSON points tests at a captured fixture.
 save_epochs() {
     local raw
     if [ -n "$RELEASES_JSON" ]; then
