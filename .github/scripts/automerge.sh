@@ -291,8 +291,7 @@ wait_base_green() {
     done
 }
 
-# The warn annotation is permanent, so a build published later by hand still
-# reads as failed -- ask playstore.sh whether the track actually owes anything.
+# The warn annotation laterreads as failed -- ask playstore.sh whether the track actually is ok.
 publish_failed() {
     local sha=$1 run_id job_id note
     [ -n "$PUBLISH_JOB" ] || return 1
