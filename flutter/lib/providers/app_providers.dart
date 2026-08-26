@@ -10,6 +10,7 @@ import '../core/sync/server_url_mapper.dart';
 import '../core/system/app_version_info.dart';
 import '../core/system/device_stats.dart';
 import '../core/system/device_identity.dart';
+import '../core/files/resource_files.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
@@ -336,6 +337,20 @@ final resourceDownloaderProvider = Provider<ResourceDownloader>(
       ref.watch(backgroundSchedulerProvider),
     ),
   ),
+);
+
+/// Reads a text/CSV/markdown attachment's contents as a string.
+///
+/// The text renderers in `ResourceViewerScreen` call this instead of
+/// `File.readAsString` so a widget test can override it (returning a fixed
+/// string) and exercise the rendering pipeline without real `dart:io`, which
+/// hangs under the test binding's fake clock. Production delegates to
+/// `ResourceFiles.readTextContent`.
+typedef ResourceContentReader =
+    Future<String?> Function({required String docId, required String filename});
+
+final resourceContentReaderProvider = Provider<ResourceContentReader>(
+  (_) => ResourceFiles.readTextContent,
 );
 
 final chatDaoProvider = Provider<ChatDao>(

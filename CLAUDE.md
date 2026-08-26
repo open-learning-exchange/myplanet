@@ -293,12 +293,14 @@ this screen, know the trap:** it resolves attachments through `ResourceFiles`
 never complete, the screen sits on its `CircularProgressIndicator`, and
 `pumpAndSettle` spins on that animation for its ten-minute default — a failure
 that looks exactly like a hang. Yield wall-clock time with `runAsync` and *then*
-`pump`; pumping inside `runAsync` does not work. Rendering an attachment that
-exists is still uncovered: the text/CSV/markdown renderers read the file in
-their own `initState` and stall the suite, so four such tests were withdrawn
-rather than shipped flaky — that needs a seam handing the renderer bytes instead
-of a path. The video/PDF/WebView renderers need platform views no widget test
-can serve.
+`pump`; pumping inside `runAsync` does not work. Phase 92 closes the gap the
+four withdrawn tests were written for: the text/CSV/markdown renderers now take
+their bytes from `resourceContentReaderProvider` (a `ResourceFiles.readTextContent`
+seam) instead of calling `File.readAsString` in their own `initState`, so four
+rendering tests (plain text, the title row, the CSV table, markdown) run without a
+real read — a real file still has to exist on disk for `_getLocalFilePath` to route
+the screen into the viewer, and that file write runs inside `runAsync`. The
+video/PDF/WebView renderers need platform views no widget test can serve.
 
 ### Documentation Map
 

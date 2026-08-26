@@ -129,4 +129,68 @@ void main() {
       expect(dir.path, p.join(tmp.path, 'ole', 'etc'));
     });
   });
+
+  group('readTextContent', () {
+    test('returns null when the attachment is absent', () async {
+      final original = ResourceFiles.baseDirectory;
+      final tmp = await Directory.systemTemp.createTemp('rf_read_absent_');
+      ResourceFiles.baseDirectory = () async => tmp;
+      addTearDown(() {
+        ResourceFiles.baseDirectory = original;
+        tmp.deleteSync(recursive: true);
+      });
+
+      final content = await ResourceFiles.readTextContent(
+        docId: 'doc1',
+        filename: 'notes.txt',
+      );
+      expect(content, isNull);
+    });
+
+    test('reads an attachment that exists', () async {
+      final original = ResourceFiles.baseDirectory;
+      final tmp = await Directory.systemTemp.createTemp('rf_read_present_');
+      ResourceFiles.baseDirectory = () async => tmp;
+      final file = await ResourceFiles.fileFor(
+        docId: 'doc1',
+        filename: 'notes.txt',
+      );
+      await file.parent.create(recursive: true);
+      await file.writeAsString('hello world');
+      addTearDown(() {
+        ResourceFiles.baseDirectory = original;
+        tmp.deleteSync(recursive: true);
+      });
+
+      final content = await ResourceFiles.readTextContent(
+        docId: 'doc1',
+        filename: 'notes.txt',
+      );
+      expect(content, 'hello world');
+    });
+
+    test('returns null for a zero-length file', () async {
+      // A failed download leaves an empty file behind; `readTextContent` must
+      // not hand the renderer an empty string and call it content.
+      final original = ResourceFiles.baseDirectory;
+      final tmp = await Directory.systemTemp.createTemp('rf_read_empty_');
+      ResourceFiles.baseDirectory = () async => tmp;
+      final file = await ResourceFiles.fileFor(
+        docId: 'doc1',
+        filename: 'notes.txt',
+      );
+      await file.parent.create(recursive: true);
+      await file.writeAsString('');
+      addTearDown(() {
+        ResourceFiles.baseDirectory = original;
+        tmp.deleteSync(recursive: true);
+      });
+
+      final content = await ResourceFiles.readTextContent(
+        docId: 'doc1',
+        filename: 'notes.txt',
+      );
+      expect(content, isNull);
+    });
+  });
 }

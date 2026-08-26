@@ -201,11 +201,25 @@ class ResourcesRepository {
   /// re-add the resource — which is the bug the Kotlin fixed by making its
   /// removal insert `RemovedLog` rows. Joining clears any stale record so a
   /// re-add beats an old removal, matching the courses path.
+  ///
+  /// Idempotent as of `ef80dda52` (#16143): when the row already reflects the
+  /// desired membership — e.g. another device synced the same state first —
+  /// the write (and the `removed_log` record/clear it would fire) is skipped,
+  /// so a no-op remove no longer leaves a spurious `removed_log` entry that
+  /// the next shelf push would carry to the server. Phase 80 ported the
+  /// toast-on-change the same commit drives; this closes the underlying write.
   Future<void> setShelfMembership(
     String resourceId,
     String userId, {
     required bool joined,
-  }) => setShelfMemberships([resourceId], userId, joined: joined);
+  }) async {
+    final row = await _dao.getById(resourceId);
+    if (row != null) {
+      final contains = row.userId.contains(userId);
+      if (joined == contains) return;
+    }
+    await setShelfMemberships([resourceId], userId, joined: joined);
+  }
 
   /// Applies a catalog multi-selection as one atomic shelf mutation.
   Future<void> setShelfMemberships(

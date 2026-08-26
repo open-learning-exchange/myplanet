@@ -16,21 +16,17 @@ import '../../support/widget_harness.dart';
 /// in the port, and until now the only one with none at all.
 ///
 /// What is covered: the load / missing-resource states, the app-bar title and
-/// its untitled fallback, and the whole download-prompt state machine, which is
-/// the part a user meets when a resource has not been fetched yet.
+/// its untitled fallback, the whole download-prompt state machine, which is
+/// the part a user meets when a resource has not been fetched yet, and the
+/// text/CSV/markdown renderers.
 ///
-/// What is not, and why. The screen resolves its attachment through
-/// `ResourceFiles` — genuine `dart:io` — and a widget test's zone is
-/// fake-async, so real file futures only complete inside `runAsync` (see
-/// [settleViewer]). That much works. What does not is rendering an attachment
-/// that exists: `_TextViewer`, `_CsvContent` and `_MarkdownViewer` each read the
-/// file in their own `initState`, and a test that writes a real file and pumps
-/// them hangs indefinitely rather than failing — the stall is reported against
-/// the file rather than the test, and survives a best-effort teardown, so it is
-/// not simply an open handle on the temp directory. Four such tests were
-/// written and withdrawn: a suite that stalls CI is worse than a gap that is
-/// written down. They need a seam that hands the renderer its bytes instead of
-/// a path, which is a change to the screen rather than to its test.
+/// The renderers (`_TextViewer`, `_CsvContent`, `_MarkdownViewer`) read their
+/// bytes through `resourceContentReaderProvider` (added for these tests) rather
+/// than calling `File.readAsString` in their own `initState`, which a widget
+/// test's fake clock cannot drive. A real file still has to exist on disk for
+/// the screen's `_getLocalFilePath` to route into the viewer rather than the
+/// download prompt, but that file write runs inside `runAsync` and the bytes
+/// the renderer displays come from the override.
 ///
 /// The three media renderers (`video_player`, `pdfx`, `webview_flutter`) are
 /// out of reach for a different and more permanent reason: each wants a texture
@@ -104,8 +100,8 @@ void main() {
   /// (The harness prefers provider overrides to `runAsync`, but `ResourceFiles`
   /// is a static seam rather than a provider, and a real file on disk is
   /// precisely what these tests are here to exercise.)
-  Future<void> settleViewer(WidgetTester tester) async {
-    for (var round = 0; round < 3; round++) {
+  Future<void> settleViewer(WidgetTester tester, {int rounds = 5}) async {
+    for (var round = 0; round < rounds; round++) {
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 50)),
       );
@@ -129,6 +125,57 @@ void main() {
       ),
     );
     if (settle) await settleViewer(tester);
+  }
+
+  /// Writes an attachment to the temp directory the screen resolves through.
+  Future<void> writeAttachment(
+    String docId,
+    String filename,
+    String content,
+  ) async {
+    final file = await ResourceFiles.fileFor(docId: docId, filename: filename);
+    await file.parent.create(recursive: true);
+    await file.writeAsString(content);
+  }
+
+  /// Pumps the viewer with a [resourceContentReaderProvider] override that
+  /// hands the text/CSV/markdown renderers their content directly, so the
+  /// rendering pipeline is exercised without a real `File.readAsString` (which
+  /// a widget test's fake clock cannot drive). A real file still has to exist
+  /// on disk for `_getLocalFilePath` to route the screen into the viewer rather
+  /// than the download prompt — see [writeAttachment].
+  Future<void> pumpViewerWithContent(
+    WidgetTester tester, {
+    required String content,
+    String filename = 'notes.txt',
+    String resourceId = 'res-1',
+    String? title,
+  }) async {
+    // `writeAttachment` does real `dart:io`, which a `testWidgets` body's
+    // fake-async zone cannot drive — it must run inside `runAsync`, or the
+    // write Future never completes and the test hangs.
+    await tester.runAsync(() => writeAttachment(resourceId, filename, content));
+    await seedResource(
+      id: resourceId,
+      couchId: resourceId,
+      title: title,
+      filename: filename,
+      offline: true,
+    );
+    await tester.pumpWidget(
+      wrapScreen(
+        ResourceViewerScreen(resourceId: resourceId),
+        overrides: [
+          appDatabaseProvider.overrideWith((ref) => db),
+          serverConfigProvider.overrideWith(() => _TestServerConfig(server)),
+          resourceContentReaderProvider.overrideWith(
+            (_) =>
+                ({required docId, required filename}) async => content,
+          ),
+        ],
+      ),
+    );
+    await settleViewer(tester);
   }
 
   AppLocalizations l10nOf(WidgetTester tester) =>
@@ -219,6 +266,66 @@ void main() {
       expect(find.text(l10nOf(tester).resourceNotDownloaded), findsOneWidget);
       final row = await db.myLibraryDao.getById('res-1');
       expect(row!.resourceOffline, isFalse);
+    });
+  });
+
+  group('text/CSV/markdown renderers', () {
+    // These were the four withdrawn tests from Phase 91. They now run because
+    // the renderers take their content from `resourceContentReaderProvider`
+    // (an injectable seam) rather than calling `File.readAsString` in their own
+    // `initState`, which the test binding's fake clock cannot drive. A real file
+    // still has to exist on disk — the screen's `_getLocalFilePath` checks it to
+    // decide between the viewer and the download prompt — but the bytes the
+    // renderer displays come from the override.
+
+    testWidgets('renders a text attachment as selectable text', (tester) async {
+      await pumpViewerWithContent(
+        tester,
+        content: 'Hello, plain text.',
+        filename: 'notes.txt',
+      );
+
+      expect(find.text('Hello, plain text.'), findsOneWidget);
+    });
+
+    testWidgets('renders the title above a text attachment', (tester) async {
+      await pumpViewerWithContent(
+        tester,
+        content: 'body',
+        filename: 'notes.txt',
+        title: 'Field Notes',
+      );
+
+      // The title shows in the app bar and again in the renderer's header, so
+      // both are present.
+      expect(find.text('Field Notes'), findsNWidgets(2));
+    });
+
+    testWidgets('renders a CSV attachment as a data table', (tester) async {
+      await pumpViewerWithContent(
+        tester,
+        content: 'name,age\nAda,36\nAlan,41',
+        filename: 'people.csv',
+      );
+
+      expect(find.byType(DataTable), findsOneWidget);
+      // Header + two rows.
+      expect(find.text('name'), findsOneWidget);
+      expect(find.text('Ada'), findsOneWidget);
+      expect(find.text('Alan'), findsOneWidget);
+    });
+
+    testWidgets('renders a markdown attachment as markdown', (tester) async {
+      await pumpViewerWithContent(
+        tester,
+        content: '# Heading',
+        filename: 'readme.md',
+      );
+
+      // flutter_markdown renders the heading text in a larger style, not the
+      // raw "# Heading" markup.
+      expect(find.text('# Heading'), findsNothing);
+      expect(find.text('Heading'), findsOneWidget);
     });
   });
 }

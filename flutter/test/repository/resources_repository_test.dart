@@ -388,6 +388,9 @@ void main() {
       stubCount(1);
       stubPage(0, 100, [row('res-1', 'Algebra')]);
       await repository.sync(config: config);
+      // Join first so the subsequent removal is a real change that records a
+      // `removed_log` row — the stale record the re-join must clear.
+      await repository.setShelfMembership('res-1', 'user-1', joined: true);
       await repository.setShelfMembership('res-1', 'user-1', joined: false);
 
       await repository.setShelfMembership('res-1', 'user-1', joined: true);
@@ -399,6 +402,51 @@ void main() {
         isEmpty,
       );
     });
+
+    test(
+      'a no-op add when already a member skips the write (ef80dda52)',
+      () async {
+        stubCount(1);
+        stubPage(0, 100, [row('res-1', 'Algebra')]);
+        await repository.sync(config: config);
+        await repository.setShelfMembership('res-1', 'user-1', joined: true);
+        final firstCount = (await db.myLibraryDao.getById(
+          'res-1',
+        ))!.userId.length;
+
+        // A second add with the same state is a no-op: no write, no
+        // removed_log clear (there is nothing to clear), and the userId list
+        // is untouched.
+        await repository.setShelfMembership('res-1', 'user-1', joined: true);
+
+        expect(
+          (await db.myLibraryDao.getById('res-1'))!.userId.length,
+          firstCount,
+        );
+      },
+    );
+
+    test(
+      'a no-op remove when not a member skips the write (ef80dda52)',
+      () async {
+        stubCount(1);
+        stubPage(0, 100, [row('res-1', 'Algebra')]);
+        await repository.sync(config: config);
+        // The user was never on the shelf, so a remove is a no-op: it must
+        // NOT record a spurious `removed_log` entry that the next shelf push
+        // would carry to the server.
+        await repository.setShelfMembership('res-1', 'user-1', joined: false);
+
+        expect(
+          (await db.myLibraryDao.getById('res-1'))!.userId,
+          isNot(contains('user-1')),
+        );
+        expect(
+          await db.removedLogDao.removedDocIds('resources', 'user-1'),
+          isEmpty,
+        );
+      },
+    );
   });
 
   group('offline storage management', () {

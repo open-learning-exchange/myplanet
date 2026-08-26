@@ -152,6 +152,21 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
     return file?.path;
   }
 
+  /// Reads a text/CSV/markdown attachment's contents through the
+  /// [resourceContentReaderProvider] seam. Routing the read through a
+  /// provider (rather than each renderer calling `File.readAsString` itself)
+  /// is what makes the rendering pipeline testable: a widget test overrides
+  /// the provider with a fixed string and pumps without real `dart:io`,
+  /// which the test binding's fake clock cannot drive.
+  Future<String?> _readTextContent() async {
+    final resource = _resource;
+    if (resource == null) return null;
+    return ref.read(resourceContentReaderProvider)(
+      docId: resource.couchId ?? resource.id,
+      filename: resource.filename ?? '',
+    );
+  }
+
   Future<void> _download() async {
     final resource = _resource;
     final config = ref.read(serverConfigProvider);
@@ -310,14 +325,11 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
       case ResourceType.markdown:
         return _MarkdownViewer(
           resource: _resource!,
-          getLocalFilePath: _getLocalFilePath,
+          getContent: _readTextContent,
         );
       case ResourceType.text:
       case ResourceType.csv:
-        return _TextViewer(
-          resource: _resource!,
-          getLocalFilePath: _getLocalFilePath,
-        );
+        return _TextViewer(resource: _resource!, getContent: _readTextContent);
       case ResourceType.html:
         return _HtmlViewer(
           resource: _resource!,
@@ -757,10 +769,10 @@ class _ImageViewer extends StatelessWidget {
 }
 
 class _TextViewer extends StatefulWidget {
-  const _TextViewer({required this.resource, required this.getLocalFilePath});
+  const _TextViewer({required this.resource, required this.getContent});
 
   final MyLibraryRow resource;
-  final Future<String?> Function() getLocalFilePath;
+  final Future<String?> Function() getContent;
 
   @override
   State<_TextViewer> createState() => _TextViewerState();
@@ -769,7 +781,6 @@ class _TextViewer extends StatefulWidget {
 class _TextViewerState extends State<_TextViewer> {
   String? _content;
   bool _loading = true;
-  String? _error;
   bool _fileMissing = false;
 
   @override
@@ -779,34 +790,13 @@ class _TextViewerState extends State<_TextViewer> {
   }
 
   Future<void> _loadContent() async {
-    try {
-      final path = await widget.getLocalFilePath();
-      if (path == null) {
-        if (mounted) {
-          setState(() {
-            _fileMissing = true;
-            _loading = false;
-          });
-        }
-        return;
-      }
-
-      final file = File(path);
-      final content = await file.readAsString();
-
-      if (mounted) {
-        setState(() {
-          _content = content;
-          _loading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.toString();
-          _loading = false;
-        });
-      }
+    final content = await widget.getContent();
+    if (mounted) {
+      setState(() {
+        _content = content;
+        _fileMissing = content == null;
+        _loading = false;
+      });
     }
   }
 
@@ -819,10 +809,6 @@ class _TextViewerState extends State<_TextViewer> {
 
     if (_fileMissing) {
       return Center(child: Text(l10n.fileNotFound));
-    }
-
-    if (_error != null) {
-      return Center(child: Text(_error!));
     }
 
     final isCsv =
@@ -888,13 +874,10 @@ class _CsvContent extends StatelessWidget {
 }
 
 class _MarkdownViewer extends StatefulWidget {
-  const _MarkdownViewer({
-    required this.resource,
-    required this.getLocalFilePath,
-  });
+  const _MarkdownViewer({required this.resource, required this.getContent});
 
   final MyLibraryRow resource;
-  final Future<String?> Function() getLocalFilePath;
+  final Future<String?> Function() getContent;
 
   @override
   State<_MarkdownViewer> createState() => _MarkdownViewerState();
@@ -903,7 +886,6 @@ class _MarkdownViewer extends StatefulWidget {
 class _MarkdownViewerState extends State<_MarkdownViewer> {
   String? _content;
   bool _loading = true;
-  String? _error;
   bool _fileMissing = false;
 
   @override
@@ -913,34 +895,13 @@ class _MarkdownViewerState extends State<_MarkdownViewer> {
   }
 
   Future<void> _loadContent() async {
-    try {
-      final path = await widget.getLocalFilePath();
-      if (path == null) {
-        if (mounted) {
-          setState(() {
-            _fileMissing = true;
-            _loading = false;
-          });
-        }
-        return;
-      }
-
-      final file = File(path);
-      final content = await file.readAsString();
-
-      if (mounted) {
-        setState(() {
-          _content = content;
-          _loading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.toString();
-          _loading = false;
-        });
-      }
+    final content = await widget.getContent();
+    if (mounted) {
+      setState(() {
+        _content = content;
+        _fileMissing = content == null;
+        _loading = false;
+      });
     }
   }
 
@@ -953,10 +914,6 @@ class _MarkdownViewerState extends State<_MarkdownViewer> {
 
     if (_fileMissing) {
       return Center(child: Text(l10n.fileNotFound));
-    }
-
-    if (_error != null) {
-      return Center(child: Text(_error!));
     }
 
     if (_content == null) {

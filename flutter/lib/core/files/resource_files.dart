@@ -47,6 +47,23 @@ class ResourceFiles {
     return file;
   }
 
+  /// Reads a text/CSV/markdown attachment's contents, or `null` when it is
+  /// absent or empty.
+  ///
+  /// The text renderers (`_TextViewer`, `_MarkdownViewer`) used to take a path
+  /// from [existingFileFor] and call `File.readAsString` themselves, which
+  /// hangs a widget test's fake-clock zone. Routing the read through here lets
+  /// a provider seam hand the renderer its bytes instead of a path, so the
+  /// rendering pipeline is testable without real `dart:io`.
+  static Future<String?> readTextContent({
+    required String docId,
+    required String filename,
+  }) async {
+    final file = await existingFileFor(docId: docId, filename: filename);
+    if (file == null) return null;
+    return file.readAsString();
+  }
+
   /// The `<base>/ole/<docId>` directory a resource's files live under.
   ///
   /// Used by the HTML viewer to resolve the entry file via
