@@ -297,9 +297,6 @@ class UploadManager @Inject constructor(
                                     if (!teamData.imageName.isNullOrEmpty() && rev.isNotEmpty()) {
                                         rev = uploadTeamImageAttachment(id, rev, teamData.imageName)
                                     }
-                                    // Key by the local team id, not the response id: markTeamsUploaded()
-                                    // resolves this against the local record's _id, which won't match a
-                                    // server-generated id.
                                     uploadedTeams[teamData.teamId ?: id] = rev
                                 }
                             }
