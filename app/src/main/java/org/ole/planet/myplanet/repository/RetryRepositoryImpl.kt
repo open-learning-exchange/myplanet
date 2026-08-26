@@ -58,18 +58,11 @@ class RetryRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markInProgress(operationId: String) {
-        retryDao.findById(operationId)?.let { op ->
-            op.status = RetryOperation.STATUS_IN_PROGRESS
-            retryDao.update(op)
-        }
+        retryDao.markInProgress(operationId)
     }
 
     override suspend fun markCompleted(operationId: String) {
-        retryDao.findById(operationId)?.let { op ->
-            op.status = RetryOperation.STATUS_COMPLETED
-            op.lastAttemptTime = timeProvider.now()
-            retryDao.update(op)
-        }
+        retryDao.markCompleted(operationId, timeProvider.now())
     }
 
     override suspend fun markFailed(operationId: String, errorMessage: String?, httpCode: Int?) {
