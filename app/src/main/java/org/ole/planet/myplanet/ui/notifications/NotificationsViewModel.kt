@@ -359,7 +359,7 @@ class NotificationsViewModel @Inject constructor(
                 )
             }
             "join_request" -> {
-                if (notification.type.lowercase() != "join_request") {
+                if (!notification.type.equals("join_request", ignoreCase = true)) {
                     // Server notification with pre-formatted message
                     notification.message
                 } else {
