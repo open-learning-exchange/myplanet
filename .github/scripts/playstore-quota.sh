@@ -26,6 +26,7 @@ num PLAYSTORE_DAILY_LIMIT "$LIMIT"
 num PLAYSTORE_SLOT_LAG "$LAG"
 num PLAYSTORE_FORECAST_COUNT "$COUNT"
 [ "$LIMIT" -gt 0 ] || die "PLAYSTORE_DAILY_LIMIT must be greater than 0"
+[ "$COUNT" -gt 0 ] || die "PLAYSTORE_FORECAST_COUNT must be greater than 0"
 
 HOLD_SEC=$((WINDOW_SEC + LAG))
 

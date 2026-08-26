@@ -64,7 +64,7 @@ pick_pr() {
         --state open \
         --base "$BASE" \
         --label "$LABEL" \
-        --limit 100 \
+        --limit 1000 \
         --json number,title,isDraft,headRefName,headRefOid,headRepositoryOwner,labels \
       | jq -c --arg skip "$skip_numbers" --arg prio "$PRIORITY_LABEL" '
             [ $skip | split(" ")[] | select(length > 0) | tonumber ] as $done
@@ -307,7 +307,7 @@ publish_failed() {
             log "  $note"
             local pend=""
             [ -n "$PLAYSTORE_SH" ] && [ -x "$PLAYSTORE_SH" ] \
-                && pend=$(GITHUB_OUTPUT= PLAYSTORE_FORCE=true "$PLAYSTORE_SH" pending 2>/dev/null || true)
+                && pend=$(GITHUB_OUTPUT='' PLAYSTORE_FORCE=true "$PLAYSTORE_SH" pending 2>/dev/null || true)
             # pending=false also means "could not tell" -- no release, no tag, no
             # asset, an API hiccup. Only the branch that actually read the track
             # emits track_code, so demand that too before clearing the block.

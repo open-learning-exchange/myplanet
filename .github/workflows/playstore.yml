@@ -93,6 +93,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          case "$WAIT_MINUTES" in *[!0-9]*|"") echo "wait_minutes must be a non-negative integer, got '$WAIT_MINUTES'" >&2; exit 1 ;; esac
           # defaults: an unreadable estimate must not hold up the upload
           next_free_epoch=0
           next_free_local='now'
@@ -159,6 +160,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          case "$RETRY_MINUTES" in *[!0-9]*|"") echo "retry_minutes must be a non-negative integer, got '$RETRY_MINUTES'" >&2; exit 1 ;; esac
           # re-read: the refusal is evidence the pre-upload estimate was early
           next_free_epoch=0
           next_free_local='now'
