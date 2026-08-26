@@ -67,7 +67,7 @@ class VoicesViewModel @Inject constructor(
         observeJob?.cancel()
         observeJob = viewModelScope.launch {
             voicesRepository.getCommunityNews(userIdentifier).collect { newsList ->
-                val filtered = newsList.map { it as News? }
+                val filtered: List<News?> = newsList
                 _baseNewsList.value = filtered
                 _labels.value = collectLabels(filtered)
             }

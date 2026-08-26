@@ -71,7 +71,6 @@ class DownloadServiceTest {
     // --- Tests for startService ---
 
     @Test
-    @Config(sdk = [Build.VERSION_CODES.R])
     fun `test startService starts foreground service when API is less than S`() {
         val mContext = mockk<Context>(relaxed = true)
         every { ContextCompat.startForegroundService(any(), any()) } returns mockk()
@@ -83,7 +82,6 @@ class DownloadServiceTest {
     }
 
     @Test
-    @Config(sdk = [Build.VERSION_CODES.S])
     fun `test startService starts foreground service for Activity context on Android S and above`() {
         val mockActivity: Activity = mockk(relaxed = true)
         every { ContextCompat.startForegroundService(any(), any()) } returns mockk()

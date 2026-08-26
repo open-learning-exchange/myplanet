@@ -87,7 +87,7 @@ class InlineResourceAdapter(
                 val address = prev.resourceLocalAddress ?: return@forEach
                 val file = FileUtils.getLibraryFile(dir, prev.id, address)
                 val prefix = file.absolutePath
-                textCache.keys.filter { it.startsWith(prefix) }.forEach { textCache.remove(it) }
+                textCache.keys.removeAll { it.startsWith(prefix) }
             }
         }
     }
