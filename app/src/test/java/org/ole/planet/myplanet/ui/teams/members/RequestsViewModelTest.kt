@@ -15,26 +15,23 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.repository.TeamsSyncRepository
+import org.ole.planet.myplanet.repository.TeamsMembersRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 
 @ExperimentalCoroutinesApi
 class RequestsViewModelTest {
 
-    private lateinit var teamsRepository: TeamsRepository
-    private lateinit var teamsSyncRepository: TeamsSyncRepository
+    private lateinit var teamsRepository: TeamsMembersRepository
     private lateinit var userSessionManager: UserSessionManager
-        private lateinit var viewModel: RequestsViewModel
+    private lateinit var viewModel: RequestsViewModel
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         teamsRepository = mockk()
-        teamsSyncRepository = mockk()
         userSessionManager = mockk()
-                viewModel = RequestsViewModel(teamsRepository, teamsSyncRepository, userSessionManager)
+        viewModel = RequestsViewModel(teamsRepository, userSessionManager)
     }
 
     @After
@@ -85,7 +82,7 @@ class RequestsViewModelTest {
         assertEquals(2, viewModel.uiState.value.members.size)
 
         coEvery { teamsRepository.respondToMemberRequest(teamId, user1.id!!, true) } returns Result.success(Unit)
-        coEvery { teamsSyncRepository.syncTeamActivities() } returns Unit
+        coEvery { teamsRepository.recordTeamActivity() } returns Unit
 
         // Setup fetchMembers for the success path
         val newMembers = listOf(user2)

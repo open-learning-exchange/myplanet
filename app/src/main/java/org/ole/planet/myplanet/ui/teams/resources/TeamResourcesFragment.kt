@@ -120,7 +120,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
                     viewLifecycleOwner.lifecycleScope.launch {
                         teamsRepository.addResourceLinks(teamId, selectedResources, user?.id)
                         showLibraryList()
-                        teamsSyncRepository.syncTeamActivities()
+                        teamsRepository.recordTeamActivity()
                     }
                 }
                 .setNeutralButton(R.string.create_new_resource) { _: DialogInterface?, _: Int ->
@@ -188,7 +188,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
                 teamsRepository.removeResourceLink(teamId, resourceId)
             }.onSuccess {
                 adapterLibrary.removeResourceAt(position)
-                teamsSyncRepository.syncTeamActivities()
+                teamsRepository.recordTeamActivity()
             }.onFailure {
                 onResourceUpdateFailed(R.string.failed_to_remove_resource)
             }
