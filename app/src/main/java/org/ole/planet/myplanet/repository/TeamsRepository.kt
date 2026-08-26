@@ -33,18 +33,6 @@ data class TeamMemberStatus(
     val hasPendingRequest: Boolean
 )
 
-data class TeamLabelInfo(
-    val teamId: String,
-    val name: String,
-    val type: String
-)
-
-data class JoinRequestInfo(
-    val id: String,
-    val teamId: String,
-    val userId: String
-)
-
 data class JoinRequestNotification(
     val requesterName: String,
     val teamName: String,
@@ -58,7 +46,7 @@ data class TeamUploadData(
     val imageName: String? = null
 )
 
-interface TeamsRepository : TeamsFinancesRepository, TeamsMembersRepository {
+interface TeamsRepository : TeamsFinancesRepository, TeamsMembersRepository, TeamsNotificationsRepository {
     suspend fun getAllActiveTeams(): List<MyTeam>
     suspend fun getMyTeamsFlow(userId: String): Flow<List<MyTeam>>
     suspend fun getTeamSummaries(userId: String?): List<TeamSummary>
@@ -77,14 +65,10 @@ interface TeamsRepository : TeamsFinancesRepository, TeamsMembersRepository {
     suspend fun getTeamSummaryById(teamId: String): TeamSummary?
     suspend fun getTaskTeamInfo(taskId: String): Triple<String, String, String>?
     suspend fun getJoinRequestTeamId(requestId: String): String?
-    suspend fun getTeamLabelInfo(teamId: String): TeamLabelInfo?
-    suspend fun getJoinRequestInfo(requestId: String?): JoinRequestInfo?
-    suspend fun getJoinRequestsInfo(requestIds: List<String>): List<JoinRequestInfo>
-
-    suspend fun getTeamNamesByIds(ids: List<String>): Map<String, String>
     fun getTasksFlow(userId: String?): Flow<List<TeamTask>>
     suspend fun addResourceLinks(teamId: String, resources: List<TeamResourceDto>, userId: String?)
     suspend fun removeResourceLink(teamId: String, resourceId: String)
+    suspend fun createLocalResourceLink(teamId: String, resourceId: String, title: String?, planetCode: String?)
     suspend fun deleteTask(taskId: String)
     suspend fun createTask(title: String, description: String, deadline: Long, teamId: String, assigneeId: String?)
     suspend fun updateTask(taskId: String, title: String, description: String, deadline: Long, assigneeId: String?)
