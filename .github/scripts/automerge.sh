@@ -291,7 +291,7 @@ wait_base_green() {
     done
 }
 
-# The warn annotation laterreads as failed -- ask playstore.sh whether the track actually is ok.
+# cause the warn annotation later reads as failed -- ask playstore.sh whether the track actually is ok.
 publish_failed() {
     local sha=$1 run_id job_id note
     [ -n "$PUBLISH_JOB" ] || return 1
