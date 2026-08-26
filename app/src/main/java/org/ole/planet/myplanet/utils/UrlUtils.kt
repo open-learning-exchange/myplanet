@@ -131,7 +131,7 @@ object UrlUtils {
 
     fun getHealthAccessUrl(spm: SharedPrefManager): String {
         val url = baseUrl(spm)
-        return String.format("%s/healthaccess?p=%s", url, spm.getServerPin().ifEmpty { "0000" })
+        return "$url/healthaccess?p=${spm.getServerPin().ifEmpty { "0000" }}"
     }
 
     fun getApkVersionUrl(spm: SharedPrefManager): String {

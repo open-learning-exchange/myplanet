@@ -144,14 +144,9 @@ class HealthExaminationAdapter(
         try {
             val conditionsMap = JsonUtils.gson.fromJson(realmExamination.conditions, JsonObject::class.java)
             if (conditionsMap != null) {
-                val keys = conditionsMap.keySet()
-                val conditionsBuilder = StringBuilder()
-                for (key in keys) {
-                    if (conditionsMap[key].asBoolean) {
-                        conditionsBuilder.append("$key, ")
-                    }
-                }
-                conditionsText = conditionsBuilder.toString()
+                conditionsText = conditionsMap.keySet()
+                    .filter { conditionsMap[it].asBoolean }
+                    .joinToString(", ")
             }
         } catch (e: Exception) {
             // Ignore parsing errors and leave empty

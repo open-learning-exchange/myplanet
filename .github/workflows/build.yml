@@ -5,6 +5,12 @@ on:
     branches:
       - '**'
       - '!master'
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+
+permissions:
+  contents: read
 
 concurrency:
   group: build-${{ github.ref }}
@@ -14,6 +20,7 @@ jobs:
   build:
     name: myPlanet build
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
