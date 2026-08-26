@@ -38,7 +38,7 @@ class LifeViewModel @Inject constructor(
                     lifeRepository.seedMyLifeIfEmpty(userId, MyLife.defaultItems(userId, context::getString))
                     myLifeList = lifeRepository.getMyLifeByUserId(userId)
                 }
-                myLifeList.distinctBy { it.imageId ?: it.title }
+                myLifeList
             }
             _myLifeList.value = list
         }
