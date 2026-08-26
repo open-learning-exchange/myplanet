@@ -1,5 +1,6 @@
 # CodeRabbit for myPlanet. Reviews are opt-in: label a PR `review` and it gets
-# reviewed, then re-reviewed on each push. Unlabelled PRs are never reviewed.
+# reviewed, then re-reviewed on each push. An unlabelled PR is never reviewed
+# automatically -- `@coderabbitai review` still summons one by hand.
 # At ~24 merges a day the OSS allowance (1-10 reviews an hour, by stars) would
 # otherwise go on autopilot. Since a review only runs when asked for, ceremony
 # is off and substance is up -- a labelled PR answered "LGTM" wasted the ask.
@@ -24,6 +25,11 @@ reviews:
   suggested_reviewers: false
   in_progress_fortune: false
   review_status: false  # else a "Review skipped" notice on every unlabelled PR
+
+  # The one decoration that already defaults off. Pinned anyway: this file's
+  # whole claim is that a labelled review is worth reading, and a haiku
+  # arriving because a default flipped would undercut it silently.
+  poem: false
 
   # How a Claude or Codex session applies a finding without a human retyping it.
   enable_prompt_for_ai_agents: true
@@ -73,7 +79,19 @@ reviews:
     enabled: false
     labels: ["review"]
     auto_incremental_review: true
+    # Defaults to 5: after five reviewed commits CodeRabbit pauses the
+    # incremental reviews the line above just turned on -- observed live twice
+    # (see AGENT_SPELLBOOK field notes). 0 keeps every push reviewed.
+    auto_pause_after_reviewed_commits: 0
     drafts: true
+
+  # These all default on, so this block changes nothing today. gitleaks is
+  # pinned rather than inherited because gradle.properties is tracked and holds
+  # real PLANET_*_PIN CouchDB credentials (CLAUDE.md, Security Considerations):
+  # secret scanning is not a setting to discover has drifted off.
+  tools:
+    gitleaks:
+      enabled: true
 
 chat:
   auto_reply: true
