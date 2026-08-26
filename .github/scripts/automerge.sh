@@ -305,9 +305,13 @@ publish_failed() {
                  --jq "[.[] | select(.annotation_level == \"warning\") | .message | select(startswith(\"$PUBLISH_FAIL_MARKER\"))] | first" 2>/dev/null || true)
         if [ -n "$note" ] && [ "$note" != "null" ]; then
             log "  $note"
-            if [ -n "$PLAYSTORE_SH" ] && [ -x "$PLAYSTORE_SH" ] \
-               && GITHUB_OUTPUT= PLAYSTORE_FORCE=true "$PLAYSTORE_SH" pending 2>/dev/null \
-                  | grep -qx 'pending=false'; then
+            local pend=""
+            [ -n "$PLAYSTORE_SH" ] && [ -x "$PLAYSTORE_SH" ] \
+                && pend=$(GITHUB_OUTPUT= PLAYSTORE_FORCE=true "$PLAYSTORE_SH" pending 2>/dev/null || true)
+            # pending=false also means "could not tell" -- no release, no tag, no
+            # asset, an API hiccup. Only the branch that actually read the track
+            # emits track_code, so demand that too before clearing the block.
+            if grep -qx 'pending=false' <<<"$pend" && grep -qE '^track_code=[0-9]+$' <<<"$pend"; then
                 log "  the $BASE track carries it now -- the warning is stale, carrying on"
                 return 1
             fi
