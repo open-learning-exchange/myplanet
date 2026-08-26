@@ -174,25 +174,22 @@ class VoicesFragment : BaseVoicesFragment() {
         if (binding.rvNews.adapter == null) {
             changeLayoutManager(resources.configuration.orientation, binding.rvNews)
             voicesViewModel.downloadReferencedResources(sortedList)
-            setupVoicesAdapter(sortedList.filterNotNull())
+            setupVoicesAdapter(sortedList)
         } else {
-            (binding.rvNews.adapter as? VoicesAdapter)?.submitList(sortedList.filterNotNull()) {
+            (binding.rvNews.adapter as? VoicesAdapter)?.submitList(sortedList) {
                 if (shouldScrollToTopNextUpdate) {
                     scrollToTop()
                     shouldScrollToTopNextUpdate = false
                 }
             }
         }
-        showNoData(binding.tvMessage, sortedList.filterNotNull().size, currentEmptyStateSource)
+        showNoData(binding.tvMessage, sortedList.size, currentEmptyStateSource)
     }
 
-    private fun sortNews(list: List<News?>): List<News?> {
-        val updatedListAsMutable: MutableList<News?> = list.toMutableList()
+    private fun sortNews(list: List<News?>): List<News> {
         Trace.beginSection("VoicesFragment.sort")
         return try {
-            updatedListAsMutable.sortedWith(compareByDescending { news ->
-                news?.sortDate ?: 0L
-            })
+            list.filterNotNull().sortedByDescending { it.sortDate }
         } finally {
             Trace.endSection()
         }
