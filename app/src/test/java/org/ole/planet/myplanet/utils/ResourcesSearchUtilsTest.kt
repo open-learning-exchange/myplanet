@@ -7,7 +7,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 
-class ResourceSearchUtilsTest {
+class ResourcesSearchUtilsTest {
 
 
     @Test
@@ -33,19 +33,19 @@ class ResourceSearchUtilsTest {
 
         val models = listOf(model1, model2, model3)
 
-        val resultEmpty = ResourceSearchUtils.searchLocalModels(models, "")
+        val resultEmpty = ResourcesSearchUtils.searchLocalModels(models, "")
         assertEquals(3, resultEmpty.size)
 
-        val resultApple = ResourceSearchUtils.searchLocalModels(models, "apple")
+        val resultApple = ResourcesSearchUtils.searchLocalModels(models, "apple")
         assertEquals(2, resultApple.size)
         assertEquals("Apple Pie Recipe", resultApple[0].item.title)
         assertEquals("Apple Juice", resultApple[1].item.title)
 
-        val resultBread = ResourceSearchUtils.searchLocalModels(models, "bread")
+        val resultBread = ResourcesSearchUtils.searchLocalModels(models, "bread")
         assertEquals(1, resultBread.size)
         assertEquals("Banana Bread", resultBread[0].item.title)
 
-        val resultCaseInsensitive = ResourceSearchUtils.searchLocalModels(models, "BANANA")
+        val resultCaseInsensitive = ResourcesSearchUtils.searchLocalModels(models, "BANANA")
         assertEquals(1, resultCaseInsensitive.size)
         assertEquals("Banana Bread", resultCaseInsensitive[0].item.title)
     }
