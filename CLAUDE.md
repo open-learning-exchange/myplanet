@@ -40,6 +40,7 @@ myplanet/
 │       ├── automerge.yml      # Manually-dispatched queue drainer for `automerge`-labelled PRs
 │       ├── build.yml          # Build workflow for all branches
 │       ├── playstore.yml      # Hand-started publish of a release the Play Store quota refused
+│       ├── pr-size.yml        # Size-labels each PR on open and on every push
 │       ├── release.yml        # Release and Play Store publishing
 │       └── test.yml           # Unit test workflow
 ├── app/                       # Main application module
@@ -409,6 +410,15 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 - Logic lives in `.github/scripts/automerge.sh`; requires `AUTOMERGE_TOKEN` (the default `GITHUB_TOKEN` can't push to the protected base branch)
 - A release that never reached the Play Store stops the drain; the stop reports the estimated next save slot (eastern time, plus how many follow it) and links `playstore.yml`, which publishes that upload without a rebuild
 - A red workflow on the base is re-run before the drain gives up (`base_rerun_attempts`, default 1): every base commit is a PR head that build + test passed on just before the squash merge, so a failure there is treated as flaky until it reproduces
+
+**PR Size Workflow** (`.github/workflows/pr-size.yml`)
+- Runs on `pull_request_target` (`opened`, `synchronize`, `reopened`, `ready_for_review`), so it re-labels on every push and works on fork and Dependabot PRs, where a `pull_request` token would be read-only. It never checks out PR code — it only reads diff numbers through the API
+- Two independent rules, both from `.github/scripts/pr-size.sh`:
+  - **size** from additions + deletions — `small` ≤ 60, `medium` ≤ 100, `large` ≤ 200, `enormous` above that (`SMALL_MAX`/`MEDIUM_MAX`/`LARGE_MAX`)
+  - **`less`** when the PR only removes code (0 additions, some deletions). It sits *alongside* the size label (`small` + `less`), matching how the label has been used by hand
+- Two exclusions, and both are load-bearing. `EXCLUDE_PATHS` drops `values-*/strings.xml`, because one translated string lands in all five and would count 6×. The version-only lines `automerge.sh` writes into `app/build.gradle` are discounted, because that bump takes a pure deletion from 0 additions to 2 — without the discount, draining the queue would strip `less` from exactly the PRs that earned it
+- Only writes when a label actually changes, so a drain's per-PR pushes don't spam the timeline. `workflow_dispatch` takes a `pr` number (plus `dry_run`) to re-label one by hand
+- Measured against the 100 commits before it existed: the size ladder reproduces the hand-applied label on ~94% of them, and `less` on all of them. The gaps it closes are stale labels on PRs that grew after being labelled, and PRs from contributors other than the maintainer, which were usually left unlabelled
 
 **Dependabot** (`.github/dependabot.yml`)
 - Daily checks for GitHub Actions updates (max 10 open PRs)
