@@ -106,7 +106,8 @@ jobs:
           cp .github/scripts/automerge.sh \
              .github/scripts/version.sh \
              .github/scripts/coauthors.sh \
-             .github/scripts/playstore-quota.sh "$RUNNER_TEMP/scripts/"
+             .github/scripts/playstore-quota.sh \
+             .github/scripts/playstore.sh "$RUNNER_TEMP/scripts/"
           chmod +x "$RUNNER_TEMP/scripts/"*.sh
           echo "dir=$RUNNER_TEMP/scripts" >> "$GITHUB_OUTPUT"
 
@@ -114,6 +115,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
+          SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           USING_PAT: ${{ secrets.AUTOMERGE_TOKEN != '' }}
           REPO: ${{ github.repository }}
           BASE: ${{ inputs.base || env.DEFAULT_BASE }}
@@ -131,5 +133,6 @@ jobs:
           VERSION_SH: ${{ steps.stage.outputs.dir }}/version.sh
           COAUTHORS_SH: ${{ steps.stage.outputs.dir }}/coauthors.sh
           QUOTA_SH: ${{ steps.stage.outputs.dir }}/playstore-quota.sh
+          PLAYSTORE_SH: ${{ steps.stage.outputs.dir }}/playstore.sh
           OWNER_LOGIN: ${{ inputs.owner_login }}
         run: '${{ steps.stage.outputs.dir }}/automerge.sh'

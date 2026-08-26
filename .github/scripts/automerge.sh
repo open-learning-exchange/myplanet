@@ -18,6 +18,7 @@ GRADLE_FILE="${GRADLE_FILE:?}"
 VERSION_SH="${VERSION_SH:?}"
 COAUTHORS_SH="${COAUTHORS_SH:?}"
 QUOTA_SH="${QUOTA_SH:-}"
+PLAYSTORE_SH="${PLAYSTORE_SH:-}"
 REQUIRE_CHECKS="${REQUIRE_CHECKS:-true}"
 REQUIRED_WORKFLOWS="${REQUIRED_WORKFLOWS:-}"
 PUBLISH_JOB="${PUBLISH_JOB:-}"
@@ -290,6 +291,8 @@ wait_base_green() {
     done
 }
 
+# The warn annotation is permanent, so a build published later by hand still
+# reads as failed -- ask playstore.sh whether the track actually owes anything.
 publish_failed() {
     local sha=$1 run_id job_id note
     [ -n "$PUBLISH_JOB" ] || return 1
@@ -302,6 +305,12 @@ publish_failed() {
                  --jq "[.[] | select(.annotation_level == \"warning\") | .message | select(startswith(\"$PUBLISH_FAIL_MARKER\"))] | first" 2>/dev/null || true)
         if [ -n "$note" ] && [ "$note" != "null" ]; then
             log "  $note"
+            if [ -n "$PLAYSTORE_SH" ] && [ -x "$PLAYSTORE_SH" ] \
+               && GITHUB_OUTPUT= PLAYSTORE_FORCE=true "$PLAYSTORE_SH" pending 2>/dev/null \
+                  | grep -qx 'pending=false'; then
+                log "  the $BASE track carries it now -- the warning is stale, carrying on"
+                return 1
+            fi
             return 0
         fi
     done
