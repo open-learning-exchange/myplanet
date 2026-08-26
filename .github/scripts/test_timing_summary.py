@@ -21,7 +21,6 @@ import xml.etree.ElementTree as ET
 
 TOP_N = 15
 
-
 def _parse_time(time_str: str | None, path: str) -> float:
     try:
         if time_str is None:
@@ -34,7 +33,6 @@ def _parse_time(time_str: str | None, path: str) -> float:
     except ValueError:
         print(f"Warning: malformed time '{time_str}' in {os.path.basename(path)}, defaulting to 0.0", file=sys.stderr)
         return 0.0
-
 
 def main() -> int:
     parser = argparse.ArgumentParser()
