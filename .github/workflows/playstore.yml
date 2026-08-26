@@ -1,7 +1,7 @@
 name: myPlanet playstore
 
 # The release workflow uploads every master build to the playstore internal
-# track. Play holds about 48 save slots, each freeing 24h after its own use,
+# track. Play holds about 50 save slots, each freeing 24h after its own use,
 # and refuses the next save with "Daily save quota exceeded." -- that build
 # stays released on GitHub but off the track, and the automerge drain stops.
 
@@ -18,7 +18,7 @@ on:
       daily_limit:
         description: 'saves playstore allows per day (only used to estimate the next free slot)'
         required: false
-        default: '48'
+        default: '50'
         type: string
       force:
         description: 'check the track even when the last release run reported a successful publish'
@@ -59,7 +59,7 @@ jobs:
       BASE: master
       PLAYSTORE_PACKAGE_NAME: org.ole.planet.myplanet
       PLAYSTORE_TRACK: ${{ inputs.track || 'internal' }}
-      PLAYSTORE_DAILY_LIMIT: ${{ inputs.daily_limit || '48' }}
+      PLAYSTORE_DAILY_LIMIT: ${{ inputs.daily_limit || '50' }}
       PLAYSTORE_FORCE: ${{ inputs.force || false }}
       WAIT_MINUTES: ${{ inputs.wait_minutes || '0' }}
       DRY_RUN: ${{ inputs.dry_run || false }}
