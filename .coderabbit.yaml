@@ -1,20 +1,23 @@
 # CodeRabbit configuration for myPlanet
-# Goal: maximum signal, minimum scroll — short reviews that humans and
-# AI agents can act on without burning tokens on decoration.
+# Reviews are opt-in: add the `review` label and CodeRabbit picks the PR up,
+# then re-reviews each push. An unlabelled PR is never reviewed.
+#
+# Because a review only happens when somebody asks for one, ceremony and
+# substance point opposite ways here: every decorative section is off, and the
+# review itself is turned up. A labelled PR answered with "LGTM" wasted the ask.
 # Reference: https://docs.coderabbit.ai/reference/configuration
 language: "en-US"
 
 tone_instructions: >-
-  Be concise. Only flag functional bugs, security issues, data-loss risks,
-  and clear violations of project conventions in CLAUDE.md. No style
-  nitpicks, no compliments, no restating the diff.
+  Correctness first: bugs, security, data loss. Then the conventions in
+  CLAUDE.md. Skip whatever detekt and the Gradle build already report. No
+  compliments, no restating the diff.
 
 reviews:
-  profile: chill
-  high_level_summary: true
-  collapse_walkthrough: true
+  # Somebody asked for this one, so hand over the findings, nitpicks included.
+  profile: assertive
 
-  # Decorative sections off — they bloat every PR thread.
+  # Ceremony off. None of it is why anyone reaches for the label.
   sequence_diagrams: false
   changed_files_summary: false
   estimate_code_review_effort: false
@@ -22,12 +25,12 @@ reviews:
   related_prs: false
   suggested_labels: false
   suggested_reviewers: false
-  poem: false
-  review_status: false
   in_progress_fortune: false
+  # ...including the "Review skipped" notice the gate posts on every other PR.
+  review_status: false
 
-  # Keep the collapsible "Prompt for AI agents" block so Claude/Codex
-  # sessions can apply a finding directly.
+  # Keep the collapsible "Prompt for AI agents" block: it is how a Claude or
+  # Codex session applies a finding without a human retyping it.
   enable_prompt_for_ai_agents: true
 
   path_filters:
@@ -39,68 +42,47 @@ reviews:
   path_instructions:
     - path: "app/src/main/java/**"
       instructions: >-
-        All persistence must go through Room DAOs or DatabaseService — flag
+        All persistence must go through Room DAOs or DatabaseService -- flag
         raw SQLite or Realm usage. Flag hard-coded Dispatchers.* (inject
-        DispatcherProvider instead) and hard-coded user-facing strings
-        (must be string resources). Schema changes must bump the version in
+        DispatcherProvider instead) and hard-coded user-facing strings (must
+        be string resources). Schema changes must bump the version in
         AppDatabase (drop-and-resync strategy, no hand-written migrations).
     - path: "app/src/test/**"
       instructions: >-
-        Tests use MockK, runTest, MainDispatcherRule and
-        TestDispatcherProvider. Flag Mockito usage, Thread.sleep, or
-        hard-coded dispatchers in tests.
+        Tests use MockK, runTest, MainDispatcherRule and TestDispatcherProvider.
+        Flag Mockito usage, Thread.sleep, or hard-coded dispatchers in tests.
+    - path: "app/build.gradle"
+      instructions: >-
+        Every merge bumps versionCode and versionName here, so that hunk is
+        expected -- review the rest of the file and say nothing about the bump.
 
   auto_review:
-    # Reviews are opt-in: add the `review` label and CodeRabbit picks the PR
-    # up. With enabled false a positive label match still triggers a review,
-    # and auto_incremental_review keeps the per-push re-reviews after that.
-    # myplanet merges ~24 PRs a day against an OSS allowance of 1-10 reviews
-    # an hour, so reviewing every PR spends that budget on autopilot.
+    # `review` is planet's trigger word too. enabled false plus a positive
+    # label is CodeRabbit's documented opt-in idiom: the label starts the
+    # review, auto_incremental_review keeps it following each push after that.
+    # At ~24 merges a day, reviewing every PR would spend the OSS allowance
+    # (1-10 reviews an hour, scaled by stars) on autopilot instead of on ask.
     enabled: false
     labels: ["review"]
     auto_incremental_review: true
-    drafts: false
-    # Dependency bumps are gated by CI already; reviewing them is noise.
-    ignore_usernames:
-      - "dependabot[bot]"
+    # Labelling a draft is a deliberate act, so honour it: open a draft, ask
+    # for a review, fix, then mark ready.
+    drafts: true
 
-  # Finishing touches are ON-DEMAND only (checkbox or @coderabbitai command)
-  # — zero noise when idle, full devops arsenal when summoned.
+  # Finishing touches stay on-demand (checkbox or @coderabbitai command):
+  # docstrings, unit_tests, autofix, fix_ci and resolve_merge_conflict are all
+  # enabled by default, so only `simplify` needs opting in.
   finishing_touches:
-    docstrings:
-      enabled: true # @coderabbitai generate docstrings
-    unit_tests:
-      enabled: true # @coderabbitai generate unit tests (conventions: see code_generation)
     simplify:
-      enabled: true # off by default upstream; opt in
-    autofix:
-      enabled: true # @coderabbitai autofix — applies its own review findings
-    fix_ci:
-      enabled: true # @coderabbitai fix-ci — commits a fix for failing CI
-    resolve_merge_conflict:
-      enabled: true # @coderabbitai resolve merge conflict
+      enabled: true
 
   pre_merge_checks:
-    # KDoc coverage is not a project goal — a perpetual 80% warning is pure noise.
+    # KDoc coverage is not a project goal; a standing 80% warning is pure noise.
     docstring_coverage:
       mode: "off"
 
-  tools:
-    detekt:
-      enabled: true
-    gitleaks:
-      enabled: true
-    actionlint:
-      enabled: true
-    yamllint:
-      enabled: true
-    github-checks:
-      enabled: true
-      timeout_ms: 90000
-
 chat:
   auto_reply: true
-  # art stays on (default): emoji are high signal per character.
 
 knowledge_base:
   code_guidelines:
@@ -113,8 +95,8 @@ code_generation:
     path_instructions:
       - path: "app/src/test/**"
         instructions: >-
-          Use MockK (mockk, coEvery, coVerify) — never Mockito. Coroutine
+          Use MockK (mockk, coEvery, coVerify) -- never Mockito. Coroutine
           tests use runTest with MainDispatcherRule and inject
-          TestDispatcherProvider. Use Robolectric only when Android
-          framework classes are required. Place tests mirroring the main
-          package path so CI (testDefaultDebugUnitTest) picks them up.
+          TestDispatcherProvider. Use Robolectric only when Android framework
+          classes are required. Place tests mirroring the main package path so
+          CI (testDefaultDebugUnitTest) picks them up.
