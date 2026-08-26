@@ -81,10 +81,8 @@ code_for() {
 # 0 = the newest release run on $BASE warned (or cannot say), 1 = it published.
 release_run_warned() {
     local run job_id concl
-    # per_page=1 is not a reliable "newest": on 2026-08-26 it handed back run
-    # 32825129811, days stale, whose warn step was skipped -- so this reported
-    # nothing pending and the publish silently no-opped (run 32946316738).
-    # Take a page and pick the highest id instead.
+    # per_page=1 is not reliably the newest run -- on 2026-08-26 it returned a
+    # days-stale one and this no-opped the publish (run 32946316738).
     run=$(gh api "repos/$REPO/actions/workflows/$RELEASE_WORKFLOW/runs?branch=$BASE&event=push&per_page=20" \
             --jq '[.workflow_runs[]?] | max_by(.id) | select(. != null) | "\(.id)\t\(.status)"' 2>/dev/null) || return 0
     [ -n "$run" ] && [ "$run" != "null" ] || { note "no $RELEASE_WORKFLOW run found on $BASE"; return 0; }

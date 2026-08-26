@@ -93,13 +93,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # a quota estimate that cannot be read must not hold up the upload
+          # defaults: an unreadable estimate must not hold up the upload
           next_free_epoch=0
           next_free_local='now'
           eval "$(.github/scripts/playstore-quota.sh status || true)"
           .github/scripts/playstore-quota.sh forecast || true
-          # next_free_epoch already carries the measured slot lag -- adding
-          # another cushion here would just double-count it
+          # no cushion here: next_free_epoch already carries the slot lag
           wait=$(( next_free_epoch - $(date -u +%s) ))
           if [ "$wait" -le 0 ]; then
             echo "a slot should be free now -- not waiting"
@@ -160,8 +159,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # the refusal we just took is itself evidence: the slot was not there
-          # yet, so re-read the forecast rather than trusting the pre-upload one
+          # re-read: the refusal is evidence the pre-upload estimate was early
           next_free_epoch=0
           next_free_local='now'
           eval "$(.github/scripts/playstore-quota.sh status || true)"
@@ -231,14 +229,11 @@ jobs:
 
           if [ '${{ steps.confirm.outputs.published }}' = 'true' ] || [ '${{ steps.confirm_retry.outputs.published }}' = 'true' ]; then
             echo "### playstore: published $PENDING to ${{ env.PLAYSTORE_TRACK }}" >> "$GITHUB_STEP_SUMMARY"
-            # what the pool looks like now that this save is spent -- the next
-            # slots decide whether a resumed drain keeps pace or walls again
             .github/scripts/playstore-quota.sh forecast >> "$GITHUB_STEP_SUMMARY" || echo "$QUOTA" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 
-          # a refused publish is a failed job: green in the run list would
-          # read as "the track is current" to anyone not opening the summary
+          # fail the job: green would read as "the track is current"
           QUOTA_NOW=$(.github/scripts/playstore-quota.sh report || echo "$QUOTA")
           MESSAGE="playstore still refused $PENDING. $QUOTA_NOW. Start this workflow again then: $WORKFLOW_URL"
           echo "::error::${MESSAGE}"
