@@ -80,10 +80,17 @@ class CommunityServicesFragment : BaseTeamFragment() {
 
     private fun setRecyclerView(links: List<MyTeam>) {
         val parent = binding?.llServices ?: return
-        parent.removeAllViews()
-        links.forEach { team ->
-            val b: TextView = LayoutInflater.from(activity).inflate(R.layout.button_single, parent, false) as TextView
-            b.setPadding(8, 8, 8, 8)
+
+        links.forEachIndexed { index, team ->
+            val b: TextView
+            if (index < parent.childCount) {
+                b = parent.getChildAt(index) as TextView
+            } else {
+                b = LayoutInflater.from(activity).inflate(R.layout.button_single, parent, false) as TextView
+                b.setPadding(8, 8, 8, 8)
+                parent.addView(b)
+            }
+
             b.text = team.title
             b.setOnClickListener {
                 val rawRoute = team.route ?: return@setOnClickListener
@@ -119,7 +126,11 @@ class CommunityServicesFragment : BaseTeamFragment() {
                     })
                 }
             }
-            parent.addView(b)
+        }
+
+        val childCount = parent.childCount
+        if (links.size < childCount) {
+            parent.removeViews(links.size, childCount - links.size)
         }
     }
 }
