@@ -33,18 +33,6 @@ data class TeamMemberStatus(
     val hasPendingRequest: Boolean
 )
 
-data class TeamLabelInfo(
-    val teamId: String,
-    val name: String,
-    val type: String
-)
-
-data class JoinRequestInfo(
-    val id: String,
-    val teamId: String,
-    val userId: String
-)
-
 data class JoinRequestNotification(
     val requesterName: String,
     val teamName: String,
@@ -58,7 +46,7 @@ data class TeamUploadData(
     val imageName: String? = null
 )
 
-interface TeamsRepository : TeamsFinancesRepository, TeamsMembersRepository, TeamsInfoLookup {
+interface TeamsRepository : TeamsFinancesRepository, TeamsMembersRepository, TeamsNotificationsRepository {
     suspend fun getAllActiveTeams(): List<MyTeam>
     suspend fun getMyTeamsFlow(userId: String): Flow<List<MyTeam>>
     suspend fun getTeamSummaries(userId: String?): List<TeamSummary>

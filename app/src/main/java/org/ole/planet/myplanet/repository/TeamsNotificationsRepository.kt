@@ -1,6 +1,18 @@
 package org.ole.planet.myplanet.repository
 
-interface TeamsInfoLookup {
+data class TeamLabelInfo(
+    val teamId: String,
+    val name: String,
+    val type: String
+)
+
+data class JoinRequestInfo(
+    val id: String,
+    val teamId: String,
+    val userId: String
+)
+
+interface TeamsNotificationsRepository {
     suspend fun getTeamLabelInfo(teamId: String): TeamLabelInfo?
     suspend fun getJoinRequestInfo(requestId: String?): JoinRequestInfo?
     suspend fun getJoinRequestsInfo(requestIds: List<String>): List<JoinRequestInfo>

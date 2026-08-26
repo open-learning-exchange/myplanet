@@ -54,8 +54,8 @@ import org.ole.planet.myplanet.repository.SyncRepositoryImpl
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.repository.TagsRepositoryImpl
 import org.ole.planet.myplanet.repository.TeamsFinancesRepository
-import org.ole.planet.myplanet.repository.TeamsInfoLookup
 import org.ole.planet.myplanet.repository.TeamsMembersRepository
+import org.ole.planet.myplanet.repository.TeamsNotificationsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsRepositoryImpl
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
@@ -181,11 +181,11 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindTeamsInfoLookup(impl: TeamsRepositoryImpl): TeamsInfoLookup
+    abstract fun bindTeamsMembersRepository(impl: TeamsRepositoryImpl): TeamsMembersRepository
 
     @Binds
     @Singleton
-    abstract fun bindTeamsMembersRepository(impl: TeamsRepositoryImpl): TeamsMembersRepository
+    abstract fun bindTeamsNotificationsRepository(impl: TeamsRepositoryImpl): TeamsNotificationsRepository
 
     @Binds
     @Singleton
