@@ -2,8 +2,8 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.app.Application
 import android.content.Context
-import android.os.Build
 import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -14,7 +14,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [Build.VERSION_CODES.P], application = Application::class)
+@Config(application = Application::class)
 class CoursesProgressAdapterTest {
 
     private lateinit var context: Context
@@ -62,9 +62,21 @@ class CoursesProgressAdapterTest {
 
         adapter.onBindViewHolder(holder, 0)
         assertEquals(3, holder.binding.llProgress.childCount)
+        var row = holder.binding.llProgress.getChildAt(0) as LinearLayout
+        assertEquals("1", (row.getChildAt(0) as TextView).text)
+        assertEquals("1", (row.getChildAt(1) as TextView).text)
+        row = holder.binding.llProgress.getChildAt(1) as LinearLayout
+        assertEquals("2", (row.getChildAt(0) as TextView).text)
+        assertEquals("2", (row.getChildAt(1) as TextView).text)
+        row = holder.binding.llProgress.getChildAt(2) as LinearLayout
+        assertEquals("3", (row.getChildAt(0) as TextView).text)
+        assertEquals("3", (row.getChildAt(1) as TextView).text)
 
         adapter.onBindViewHolder(holder, 1)
         assertEquals(1, holder.binding.llProgress.childCount)
+        row = holder.binding.llProgress.getChildAt(0) as LinearLayout
+        assertEquals("1", (row.getChildAt(0) as TextView).text)
+        assertEquals("5", (row.getChildAt(1) as TextView).text)
 
         adapter.onBindViewHolder(holder, 2)
         assertEquals(0, holder.binding.llProgress.childCount)

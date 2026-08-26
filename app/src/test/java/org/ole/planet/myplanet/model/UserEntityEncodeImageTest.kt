@@ -77,14 +77,13 @@ class UserEntityEncodeImageTest {
 
         every { imagePath.toUri() } returns mockUri
         every { mockContentResolver.openInputStream(mockUri) } returns mockInputStream
-        every { Base64.encodeToString(any(), Base64.NO_WRAP) } returns "encoded_base64_string"
+        val expectedBase64 = java.util.Base64.getEncoder().encodeToString("test image data".toByteArray())
 
         val result = realmUser.encodeImageToBase64(imagePath)
 
-        assertEquals("encoded_base64_string", result)
+        assertEquals(expectedBase64, result)
         verify { imagePath.toUri() }
         verify { mockContentResolver.openInputStream(mockUri) }
-        verify { Base64.encodeToString(any(), Base64.NO_WRAP) }
     }
 
     @Test
@@ -95,12 +94,11 @@ class UserEntityEncodeImageTest {
 
         try {
             val imagePath = tempFile.absolutePath
-            every { Base64.encodeToString(any(), Base64.NO_WRAP) } returns "encoded_file_string"
+            val expectedBase64 = java.util.Base64.getEncoder().encodeToString("test file data".toByteArray())
 
             val result = realmUser.encodeImageToBase64(imagePath)
 
-            assertEquals("encoded_file_string", result)
-            verify { Base64.encodeToString(any(), Base64.NO_WRAP) }
+            assertEquals(expectedBase64, result)
         } finally {
             tempFile.delete()
         }

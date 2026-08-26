@@ -96,7 +96,8 @@ class TransactionSyncManagerTest {
             progressRepository,
             surveysRepository,
             dispatcherProvider,
-            userSessionManager
+            userSessionManager,
+            mockk(relaxed = true)
         )
     }
 

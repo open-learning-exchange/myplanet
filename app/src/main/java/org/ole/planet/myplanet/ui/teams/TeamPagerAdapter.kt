@@ -51,7 +51,7 @@ class TeamPagerAdapter(
             areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
             areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
         )
-        pages = newPages.toList()
+        pages = newPages
         diffResult.dispatchUpdatesTo(this)
     }
 
