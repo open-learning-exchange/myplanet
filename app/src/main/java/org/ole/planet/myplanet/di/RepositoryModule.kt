@@ -19,8 +19,12 @@ import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.CoursesRepositoryImpl
 import org.ole.planet.myplanet.repository.DiagnosticsRepository
 import org.ole.planet.myplanet.repository.DiagnosticsRepositoryImpl
+import org.ole.planet.myplanet.repository.DictionaryRepository
+import org.ole.planet.myplanet.repository.DictionaryRepositoryImpl
 import org.ole.planet.myplanet.repository.DownloadRepository
 import org.ole.planet.myplanet.repository.DownloadRepositoryImpl
+import org.ole.planet.myplanet.repository.EnterprisesRepository
+import org.ole.planet.myplanet.repository.EnterprisesRepositoryImpl
 import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.EventsRepositoryImpl
 import org.ole.planet.myplanet.repository.EventsSyncWriter
@@ -51,6 +55,9 @@ import org.ole.planet.myplanet.repository.SyncRepository
 import org.ole.planet.myplanet.repository.SyncRepositoryImpl
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.repository.TagsRepositoryImpl
+import org.ole.planet.myplanet.repository.TeamsFinancesRepository
+import org.ole.planet.myplanet.repository.TeamsMembersRepository
+import org.ole.planet.myplanet.repository.TeamsNotificationsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsRepositoryImpl
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
@@ -73,6 +80,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindDiagnosticsRepository(impl: DiagnosticsRepositoryImpl): DiagnosticsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindDictionaryRepository(impl: DictionaryRepositoryImpl): DictionaryRepository
 
     @Binds
     @Singleton
@@ -101,6 +112,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindCoursesRepository(impl: CoursesRepositoryImpl): CoursesRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindEnterprisesRepository(impl: EnterprisesRepositoryImpl): EnterprisesRepository
 
     @Binds
     @Singleton
@@ -165,6 +180,18 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindTagsRepository(impl: TagsRepositoryImpl): TagsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTeamsFinancesRepository(impl: TeamsRepositoryImpl): TeamsFinancesRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTeamsMembersRepository(impl: TeamsRepositoryImpl): TeamsMembersRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTeamsNotificationsRepository(impl: TeamsRepositoryImpl): TeamsNotificationsRepository
 
     @Binds
     @Singleton

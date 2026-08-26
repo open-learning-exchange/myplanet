@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDashboardFragment
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.CourseCompletion
+import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -228,6 +229,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
         val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
         recyclerView.layoutManager = LinearLayoutManager(requireActivity())
+        recyclerView.setHasFixedSize(true)
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.markSurveyDialogShown()
@@ -316,14 +318,20 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun declareElements() {
-        binding.homeCardTeams.llHomeTeam.setOnClickListener {
-            val fragment = TeamFragment().apply {
-                arguments = Bundle().apply {
-                    putBoolean("fromDashboard", true)
+        val openTeamsAction = {
+            if (userTeams.isNotEmpty()) {
+                val fragment = TeamFragment().apply {
+                    arguments = Bundle().apply {
+                        putBoolean("fromDashboard", true)
+                    }
                 }
+                homeItemClickListener?.openMyFragment(fragment)
+            } else {
+                homeItemClickListener?.openCallFragment(TeamFragment())
             }
-            homeItemClickListener?.openMyFragment(fragment)
         }
+        binding.homeCardTeams.llHomeTeam.setOnClickListener { openTeamsAction() }
+        binding.homeCardTeams.myTeamsImageButton.setOnClickListener { openTeamsAction() }
         val openLibraryAction = {
             if (user?.id?.startsWith("guest") == true) {
                 guestDialog(requireContext())
@@ -335,15 +343,20 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 }
             }
         }
-        binding.homeCardLibrary.llHomeLibrary.setOnClickListener { openLibraryAction() }
-        binding.homeCardLibrary.myLibraryImageButton.setOnClickListener { openLibraryAction() }
-        binding.homeCardCourses.myCoursesImageButton.setOnClickListener {
+        val openCoursesAction = {
             if (user?.id?.startsWith("guest") == true) {
                 guestDialog(requireContext())
             } else {
-                homeItemClickListener?.openMyFragment(CoursesFragment())
+                if (userCourses.isNotEmpty()) {
+                    homeItemClickListener?.openMyFragment(CoursesFragment())
+                } else {
+                    homeItemClickListener?.openCallFragment(CoursesFragment())
+                }
             }
         }
+        binding.homeCardLibrary.llHomeLibrary.setOnClickListener { openLibraryAction() }
+        binding.homeCardLibrary.myLibraryImageButton.setOnClickListener { openLibraryAction() }
+        binding.homeCardCourses.myCoursesImageButton.setOnClickListener { openCoursesAction() }
         binding.fabMyActivity.setOnClickListener { openHelperFragment(ActivitiesFragment()) }
         binding.homeCardMyLife.myLifeImageButton.setOnClickListener { homeItemClickListener?.openCallFragment(LifeFragment()) }
     }
@@ -394,7 +407,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         if (f is TeamDetailFragment) {
             v.text = title
             v.setOnClickListener {
-                lifecycleScope.launch {
+                viewLifecycleOwner.lifecycleScope.launch {
                     val teamObject = id?.let { viewModel.getTeamById(it) }
                     val optimizedFragment = TeamDetailFragment.newInstance(
                         teamId = id ?: "",

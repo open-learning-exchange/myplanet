@@ -180,7 +180,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         var dialogSelectedItem: UserEntity? = filteredUserList.firstOrNull()
 
         val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
-        val adapter = UserArrayAdapter { selectedUser ->
+        val adapter = UserArrayAdapter(requireContext()) { selectedUser ->
             dialogSelectedItem = selectedUser
         }
         alertUsersSpinnerBinding.rvUser.layoutManager = LinearLayoutManager(requireContext())
@@ -297,7 +297,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         refreshJob?.cancel()
         refreshJob = viewLifecycleOwner.lifecycleScope.launch {
             val knownAssigneeIds = adapterTask.getKnownAssigneeIds()
-            val tasksSnapshot = teamViewModel.taskList.value.toList()
+            val tasksSnapshot = teamViewModel.taskList.value
 
             val (taskList, fetchedNames, currentSnapshot) = withContext(dispatcherProvider.io) {
                 val list = when (currentTab) {
@@ -367,7 +367,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
             var dialogSelectedItem: UserEntity? = filteredUserList.firstOrNull()
 
             val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
-            val adapter = UserArrayAdapter { selectedUser ->
+            val adapter = UserArrayAdapter(requireContext()) { selectedUser ->
                 dialogSelectedItem = selectedUser
             }
             alertUsersSpinnerBinding.rvUser.layoutManager = LinearLayoutManager(requireContext())
