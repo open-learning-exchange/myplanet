@@ -307,6 +307,7 @@ publish_failed() {
             local pend=""
             [ -n "$PLAYSTORE_SH" ] && [ -x "$PLAYSTORE_SH" ] \
                 && pend=$(GITHUB_OUTPUT='' PLAYSTORE_FORCE=true "$PLAYSTORE_SH" pending 2>/dev/null || true)
+            # pending=false also means "could not tell" -- only the track-read branch emits track_code
             if grep -qx 'pending=false' <<<"$pend" && grep -qE '^track_code=[0-9]+$' <<<"$pend"; then
                 log "  the $BASE track carries it now -- the warning is stale, carrying on"
                 return 1
