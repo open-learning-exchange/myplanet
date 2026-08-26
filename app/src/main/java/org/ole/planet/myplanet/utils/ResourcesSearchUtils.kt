@@ -2,7 +2,7 @@ package org.ole.planet.myplanet.utils
 
 import org.ole.planet.myplanet.model.ResourceListModel
 
-object ResourceSearchUtils {
+object ResourcesSearchUtils {
     // Requires normalizedTitleSelector to return a pre-normalized (and lowercased) string
     fun <T> searchList(list: List<T>, query: String, normalizedTitleSelector: (T) -> String?): List<T> {
         if (query.isEmpty()) return list
