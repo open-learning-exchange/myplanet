@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDashboardFragment
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.CourseCompletion
+import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -342,15 +343,20 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 }
             }
         }
-        binding.homeCardLibrary.llHomeLibrary.setOnClickListener { openLibraryAction() }
-        binding.homeCardLibrary.myLibraryImageButton.setOnClickListener { openLibraryAction() }
-        binding.homeCardCourses.myCoursesImageButton.setOnClickListener {
+        val openCoursesAction = {
             if (user?.id?.startsWith("guest") == true) {
                 guestDialog(requireContext())
             } else {
-                homeItemClickListener?.openMyFragment(CoursesFragment())
+                if (userCourses.isNotEmpty()) {
+                    homeItemClickListener?.openMyFragment(CoursesFragment())
+                } else {
+                    homeItemClickListener?.openCallFragment(CoursesFragment())
+                }
             }
         }
+        binding.homeCardLibrary.llHomeLibrary.setOnClickListener { openLibraryAction() }
+        binding.homeCardLibrary.myLibraryImageButton.setOnClickListener { openLibraryAction() }
+        binding.homeCardCourses.myCoursesImageButton.setOnClickListener { openCoursesAction() }
         binding.fabMyActivity.setOnClickListener { openHelperFragment(ActivitiesFragment()) }
         binding.homeCardMyLife.myLifeImageButton.setOnClickListener { homeItemClickListener?.openCallFragment(LifeFragment()) }
     }
@@ -401,7 +407,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         if (f is TeamDetailFragment) {
             v.text = title
             v.setOnClickListener {
-                lifecycleScope.launch {
+                viewLifecycleOwner.lifecycleScope.launch {
                     val teamObject = id?.let { viewModel.getTeamById(it) }
                     val optimizedFragment = TeamDetailFragment.newInstance(
                         teamId = id ?: "",
