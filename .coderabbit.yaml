@@ -51,7 +51,14 @@ reviews:
         hard-coded dispatchers in tests.
 
   auto_review:
-    enabled: true
+    # Reviews are opt-in: add the `review` label and CodeRabbit picks the PR
+    # up. With enabled false a positive label match still triggers a review,
+    # and auto_incremental_review keeps the per-push re-reviews after that.
+    # myplanet merges ~24 PRs a day against an OSS allowance of 1-10 reviews
+    # an hour, so reviewing every PR spends that budget on autopilot.
+    enabled: false
+    labels: ["review"]
+    auto_incremental_review: true
     drafts: false
     # Dependency bumps are gated by CI already; reviewing them is noise.
     ignore_usernames:
