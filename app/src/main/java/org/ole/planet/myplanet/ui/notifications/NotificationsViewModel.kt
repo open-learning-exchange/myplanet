@@ -59,9 +59,15 @@ class NotificationsViewModel @Inject constructor(
         viewModelScope.launch {
             val payloadNotifications = notificationsRepository.getNotifications(userId, filter, isAdmin)
 
-            val byLoweredType = payloadNotifications.groupBy { it.type.lowercase() }
-            val taskNotifications = byLoweredType["task"] ?: emptyList()
-            val joinRequestNotifications = byLoweredType["join_request"] ?: emptyList()
+            val taskNotifications = mutableListOf<NotificationPayload>()
+            val joinRequestNotifications = mutableListOf<NotificationPayload>()
+            for (notification in payloadNotifications) {
+                if (notification.type.equals("task", ignoreCase = true)) {
+                    taskNotifications.add(notification)
+                } else if (notification.type.equals("join_request", ignoreCase = true)) {
+                    joinRequestNotifications.add(notification)
+                }
+            }
 
             val taskIds = taskNotifications
                 .mapNotNull { it.relatedId }
@@ -353,7 +359,7 @@ class NotificationsViewModel @Inject constructor(
                 )
             }
             "join_request" -> {
-                if (notification.type.lowercase() != "join_request") {
+                if (!notification.type.equals("join_request", ignoreCase = true)) {
                     // Server notification with pre-formatted message
                     notification.message
                 } else {
