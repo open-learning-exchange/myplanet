@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.text.TextUtils
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
@@ -45,7 +44,7 @@ open class Feedback {
     @get:Ignore
     val messageList: List<FeedbackReply>?
         get() {
-            if (TextUtils.isEmpty(messages)) return null
+            if (messages.isNullOrEmpty()) return null
             val feedbackReplies: MutableList<FeedbackReply> = ArrayList()
 
             val ar = JsonParser.parseString(messages).asJsonArray
@@ -67,7 +66,7 @@ open class Feedback {
     @get:Ignore
     val message: String
         get() {
-            if (TextUtils.isEmpty(messages)) return ""
+            if (messages.isNullOrEmpty()) return ""
 
             val ar = JsonParser.parseString(messages).asJsonArray
             if (ar.size() > 0) {
