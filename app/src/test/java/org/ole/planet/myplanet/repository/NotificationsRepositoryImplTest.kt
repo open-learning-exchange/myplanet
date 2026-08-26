@@ -31,7 +31,7 @@ import org.robolectric.annotation.Config
 class NotificationsRepositoryImplTest {
 
     private lateinit var userRepository: dagger.Lazy<UserRepository>
-    private lateinit var teamsRepository: dagger.Lazy<TeamsRepository>
+    private lateinit var teamsRepository: dagger.Lazy<TeamsNotificationsRepository>
     private lateinit var repository: NotificationsRepositoryImpl
     private lateinit var teamNotificationDao: TeamNotificationDao
     private lateinit var notificationDao: NotificationDao
