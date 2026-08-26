@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 #
-# Drain the automerge queue. Per PR labelled $LABEL, lowest number first:
+# Drain the automerge queue. Per PR labelled $LABEL -- those also labelled
+# $PRIORITY_LABEL first, then lowest number within each tier:
 #
-#   1. merge $BASE into the PR branch          (a conflict stops the drain)
+#   1. merge $BASE into the PR branch          (a conflict relabels it and moves on)
 #   2. bump the version on the PR branch
 #   3. push, and wait for build + test on that prepared commit
 #   4. wait for $BASE to be settled and green, then squash merge
@@ -11,10 +12,13 @@ set -euo pipefail
 REPO="${REPO:?}"
 BASE="${BASE:?}"
 LABEL="${LABEL:?}"
+CONFLICT_LABEL="${CONFLICT_LABEL-conflict}"
+PRIORITY_LABEL="${PRIORITY_LABEL-priority}"
 GRADLE_FILE="${GRADLE_FILE:?}"
 VERSION_SH="${VERSION_SH:?}"
 COAUTHORS_SH="${COAUTHORS_SH:?}"
 QUOTA_SH="${QUOTA_SH:-}"
+PLAYSTORE_SH="${PLAYSTORE_SH:-}"
 REQUIRE_CHECKS="${REQUIRE_CHECKS:-true}"
 REQUIRED_WORKFLOWS="${REQUIRED_WORKFLOWS:-}"
 PUBLISH_JOB="${PUBLISH_JOB:-}"
@@ -44,6 +48,8 @@ summary() { [ -n "${GITHUB_STEP_SUMMARY:-}" ] && printf '%s\n' "$*" >> "$GITHUB_
 
 merged_count=0
 merged_list=""
+conflict_count=0
+conflict_list=""
 skip_numbers=""
 last_base_sha=""
 
@@ -58,13 +64,17 @@ pick_pr() {
         --state open \
         --base "$BASE" \
         --label "$LABEL" \
-        --limit 100 \
-        --json number,title,isDraft,headRefName,headRefOid,headRepositoryOwner \
-      | jq -c --arg skip "$skip_numbers" '
+        --limit 1000 \
+        --json number,title,isDraft,headRefName,headRefOid,headRepositoryOwner,labels \
+      | jq -c --arg skip "$skip_numbers" --arg prio "$PRIORITY_LABEL" '
             [ $skip | split(" ")[] | select(length > 0) | tonumber ] as $done
             | map(select(.isDraft | not))
             | map(select(.number as $n | $done | index($n) | not))
-            | sort_by(.number) | first'
+            | map(. + { priority: (
+                  ($prio | length > 0)
+                  and (((.labels // []) | map(.name) | index($prio)) != null)
+              ) })
+            | sort_by([ (if .priority then 0 else 1 end), .number ]) | first'
 }
 
 pr_state()  { gh pr view "$1" --repo "$REPO" --json state --jq '.state' 2>/dev/null || echo ''; }
@@ -79,12 +89,42 @@ check_mergeable() {
     done
     case "$state" in
         MERGEABLE) ;;
-        CONFLICTING)
-            log "  #$pr conflicts with $BASE -- needs a human"
-            return 1 ;;
+        CONFLICTING) return 1 ;;
         *)
             log "  #$pr mergeability is ${state:-unavailable} -- letting step 1 decide" ;;
     esac
+}
+
+add_conflict_label() {
+    local pr=$1
+    gh pr edit "$pr" --repo "$REPO" --add-label "$CONFLICT_LABEL" >/dev/null 2>&1 && return 0
+    gh label create "$CONFLICT_LABEL" --repo "$REPO" \
+        --color BD8652 --description 'merge conflict' >/dev/null 2>&1 || true
+    gh pr edit "$pr" --repo "$REPO" --add-label "$CONFLICT_LABEL" >/dev/null 2>&1
+}
+
+handle_conflict() {
+    local pr=$1
+    conflict_count=$(( conflict_count + 1 ))
+    conflict_list="$conflict_list #$pr"
+
+    if [ "$DRY_RUN" = 'true' ]; then
+        log "  dry run: #$pr conflicts with $BASE -- would relabel it and move on"
+        summary "| #$pr | | dry run: **conflicts** with \`$BASE\` |"
+        return 0
+    fi
+
+    log "  #$pr conflicts with $BASE -- dropping '$LABEL', moving on to the next PR"
+    if [ -n "$CONFLICT_LABEL" ] && ! add_conflict_label "$pr"; then
+        log "  #$pr: could not add '$CONFLICT_LABEL'"
+    fi
+    if gh pr edit "$pr" --repo "$REPO" --remove-label "$LABEL" >/dev/null 2>&1; then
+        summary "| #$pr | | **conflicts** with \`$BASE\`: dropped \`$LABEL\`${CONFLICT_LABEL:+, added \`$CONFLICT_LABEL\`} |"
+    else
+        log "  #$pr: could not remove '$LABEL' -- skipped for this drain only"
+        summary "| #$pr | | **conflicts** with \`$BASE\`: \`$LABEL\` could not be removed |"
+    fi
+    return 0
 }
 
 wait_pr_merged() {
@@ -251,6 +291,7 @@ wait_base_green() {
     done
 }
 
+# Cause the warn annotation later reads as failed -- ask playstore.sh whether the track actually is ok.
 publish_failed() {
     local sha=$1 run_id job_id note
     [ -n "$PUBLISH_JOB" ] || return 1
@@ -263,6 +304,14 @@ publish_failed() {
                  --jq "[.[] | select(.annotation_level == \"warning\") | .message | select(startswith(\"$PUBLISH_FAIL_MARKER\"))] | first" 2>/dev/null || true)
         if [ -n "$note" ] && [ "$note" != "null" ]; then
             log "  $note"
+            local pend=""
+            [ -n "$PLAYSTORE_SH" ] && [ -x "$PLAYSTORE_SH" ] \
+                && pend=$(GITHUB_OUTPUT='' PLAYSTORE_FORCE=true "$PLAYSTORE_SH" pending 2>/dev/null || true)
+            # pending=false also means "could not tell" -- only the track-read branch emits track_code
+            if grep -qx 'pending=false' <<<"$pend" && grep -qE '^track_code=[0-9]+$' <<<"$pend"; then
+                log "  the $BASE track carries it now -- the warning is stale, carrying on"
+                return 1
+            fi
             return 0
         fi
     done
@@ -274,11 +323,15 @@ quota_note() {
     quota_eta=""
     [ -n "$QUOTA_SH" ] && [ -x "$QUOTA_SH" ] || return 0
 
-    local status
+    local status line
     status=$("$QUOTA_SH" status 2>/dev/null) || return 0
     eval "$(sed -n "s/^report=/quota_report=/p; s/^next_free_local=/quota_eta=/p" <<<"$status")" || return 0
 
-    [ -n "$quota_report" ] && log "  $quota_report"
+    # the whole forecast: the refill rate decides whether a resume keeps pace
+    while IFS= read -r line; do
+        log "  $line"
+    done < <("$QUOTA_SH" forecast 2>/dev/null || printf '%s\n' "$quota_report")
+
     [ -n "$quota_eta" ] && log "  publish it without a rebuild: ${GITHUB_SERVER_URL:-https://github.com}/$REPO/actions/workflows/playstore.yml"
     return 0
 }
@@ -347,8 +400,8 @@ push_with_retry() {
     return 1
 }
 
-log "draining '$LABEL' into $BASE (dry_run=$DRY_RUN)"
-summary "### automerge: draining \`$LABEL\` into \`$BASE\`"
+log "draining '$LABEL' into $BASE${PRIORITY_LABEL:+, '$PRIORITY_LABEL' first} (dry_run=$DRY_RUN)"
+summary "### automerge: draining \`$LABEL\` into \`$BASE\`${PRIORITY_LABEL:+, \`$PRIORITY_LABEL\` first}"
 summary ""
 summary "| PR | version | result |"
 summary "|---|---|---|"
@@ -392,8 +445,12 @@ while :; do
     HEAD=$(jq   -r '.headRefName'               <<<"$pr_json")
     SHA=$(jq    -r '.headRefOid'                <<<"$pr_json")
     OWNER=$(jq  -r '.headRepositoryOwner.login' <<<"$pr_json")
+    PRIORITY=$(jq -r '.priority'                <<<"$pr_json")
 
-    log "picked #$NUMBER ($HEAD @ ${SHA:0:7}): $TITLE"
+    TIER=""
+    if [ "$PRIORITY" = true ]; then TIER=" $PRIORITY_LABEL"; fi
+
+    log "picked$TIER #$NUMBER ($HEAD @ ${SHA:0:7}): $TITLE"
 
     if [ "$OWNER" != "${REPO%%/*}" ]; then
         log "  #$NUMBER comes from fork $OWNER -- cannot push a version bump to it"
@@ -417,7 +474,11 @@ while :; do
             continue ;;
     esac
 
-    check_mergeable "$NUMBER" || { summary "| #$NUMBER | | **stopped**: conflicts with \`$BASE\` |"; exit 1; }
+    if ! check_mergeable "$NUMBER"; then
+        handle_conflict "$NUMBER"
+        skip_numbers="$skip_numbers $NUMBER"
+        continue
+    fi
 
     git show "origin/$BASE:$GRADLE_FILE" > /tmp/base-build.gradle
     eval "$("$VERSION_SH" next /tmp/base-build.gradle | sed 's/^/new_/')"
@@ -432,21 +493,23 @@ while :; do
             log "           wait for ${REQUIRED_WORKFLOWS:-the triggered workflows}, then squash merge #$NUMBER"
             summary "| #$NUMBER | → \`$new_name\` | dry run: would merge |"
         else
-            git merge --abort || true
-            log "  dry run: #$NUMBER conflicts with $BASE -- needs a human"
-            summary "| #$NUMBER | | dry run: **conflicts** with \`$BASE\` |"
+            git merge --abort 2>/dev/null || git reset --quiet --hard HEAD
+            handle_conflict "$NUMBER"
+            skip_numbers="$skip_numbers $NUMBER"
+            continue
         fi
-        log "dry run stops after one PR (nothing advances)"
+        log "dry run stops after one mergeable PR (nothing advances)"
         break
     fi
 
     git checkout --quiet -B "$HEAD" "origin/$HEAD"
 
     if ! git merge --quiet --no-edit "origin/$BASE"; then
-        git merge --abort || true
-        log "  #$NUMBER conflicts with $BASE -- needs a human"
-        summary "| #$NUMBER | | **stopped**: conflicts with \`$BASE\` |"
-        exit 1
+        git merge --abort 2>/dev/null || git reset --quiet --hard HEAD
+        git checkout --quiet --detach "origin/$BASE" || true
+        handle_conflict "$NUMBER"
+        skip_numbers="$skip_numbers $NUMBER"
+        continue
     fi
 
     pre_bump_sha=$(git rev-parse HEAD)
@@ -576,3 +639,12 @@ done
 log "done: merged $merged_count PR(s):${merged_list:- none}"
 summary ""
 summary "**merged $merged_count PR(s)**:${merged_list:- none}"
+if [ "$conflict_count" -ne 0 ]; then
+    log "left for a human, conflicting with $BASE:$conflict_list"
+    summary ""
+    if [ "$DRY_RUN" = 'true' ]; then
+        summary "**$conflict_count PR(s) conflict with \`$BASE\`**:$conflict_list -- a real run would drop \`$LABEL\`${CONFLICT_LABEL:+ and add \`$CONFLICT_LABEL\`} and keep draining."
+    else
+        summary "**$conflict_count PR(s) conflict with \`$BASE\`**:$conflict_list -- \`$LABEL\` dropped${CONFLICT_LABEL:+, \`$CONFLICT_LABEL\` added}. Resolve the conflict and re-add \`$LABEL\` to queue it again."
+    fi
+fi

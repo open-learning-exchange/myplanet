@@ -153,7 +153,7 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
     override fun onParentTagClicked(parent: TagData.Parent) {
         parent.isExpanded = !parent.isExpanded
         currentTagDataList = buildTagDataList(list).toMutableList()
-        adapter.submitList(currentTagDataList.toList())
+        adapter.submitList(currentTagDataList)
     }
 
     override fun onCheckboxTagSelected(tag: TagEntity) {

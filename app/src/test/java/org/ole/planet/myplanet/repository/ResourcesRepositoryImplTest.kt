@@ -46,7 +46,6 @@ class ResourcesRepositoryImplTest {
     private val teamsSyncRepositoryLazy: Lazy<TeamsSyncRepository> = mockk(relaxed = true)
     private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
-    private val teamDao: TeamDao = mockk(relaxed = true)
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
 
     private lateinit var repository: ResourcesRepositoryImpl
@@ -67,7 +66,7 @@ class ResourcesRepositoryImplTest {
             teamsSyncRepositoryLazy,
             myLibraryDao,
             userRepository,
-            teamDao,
+            teamsRepositoryLazy,
             userSessionManager,
             mockk(relaxed = true),
             mockk(relaxed = true)
@@ -569,5 +568,37 @@ class ResourcesRepositoryImplTest {
         assertTrue(result.isSuccess)
         coVerify(exactly = 0) { myLibraryDao.getByResourceIds(any()) }
         coVerify(exactly = 0) { removedLogDao.insertAll(any()) }
+    }
+
+    @Test
+    fun `markResourceUploaded calls createLocalResourceLink when resource is private`() = runTest {
+        val localId = "local1"
+        val remoteId = "remote1"
+        val remoteRev = "1-rev"
+        val teamId = "team123"
+        val library = MyLibrary().apply {
+            id = localId
+            title = "Private Resource"
+            isPrivate = true
+            privateFor = teamId
+        }
+
+        val mockTeamsRepository = mockk<TeamsRepository>(relaxed = true)
+        every { teamsRepositoryLazy.get() } returns mockTeamsRepository
+        coEvery { myLibraryDao.getById(localId) } returns library
+        coEvery { myLibraryDao.upsert(any()) } returns Unit
+
+        val result = repository.markResourceUploaded(localId, remoteId, remoteRev, "planet1")
+
+        assertTrue(result)
+        coVerify { myLibraryDao.upsert(match { it._id == remoteId && it._rev == remoteRev }) }
+        coVerify {
+            mockTeamsRepository.createLocalResourceLink(
+                teamId = teamId,
+                resourceId = remoteId,
+                title = "Private Resource",
+                planetCode = "planet1"
+            )
+        }
     }
 }

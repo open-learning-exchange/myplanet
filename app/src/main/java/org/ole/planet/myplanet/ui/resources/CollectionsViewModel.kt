@@ -46,9 +46,12 @@ class CollectionsViewModel @Inject constructor(
             try {
                 val tagsWithChildren = tagsRepository.getTagsWithChildren(dbType)
                 val list = tagsWithChildren.keys.toList()
-                val childMap = tagsWithChildren.entries
-                    .filter { it.value.isNotEmpty() }
-                    .associate { (it.key.id ?: "") to it.value }
+                val childMap = LinkedHashMap<String, List<TagEntity>>()
+                for ((key, value) in tagsWithChildren) {
+                    if (value.isNotEmpty()) {
+                        childMap[key.id ?: ""] = value
+                    }
+                }
 
                 if (list.isEmpty() && childMap.isEmpty()) {
                     _state.value = CollectionsState.Empty
