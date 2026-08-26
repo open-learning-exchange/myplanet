@@ -7,7 +7,11 @@
 # after its own use, not a midnight reset -- 6514 was refused at 02:57 Pacific
 # on 2026-08-18 after only 10 saves that Pacific day. Advisory, and nothing
 # gates on it: hand uploads and re-runs spend slots that leave no release
-# behind, refusals leave releases that hold no slot. Eastern times.
+# behind, refusals leave releases that hold no slot, and a release published
+# by hand later is dated from its release stamp rather than from the save that
+# actually spent the slot -- 6714 was stamped 05:30Z on 2026-08-26 and saved at
+# 08:12Z, so its slot reads as freeing 2h42m earlier than it will. Eastern
+# times.
 #
 # LIMIT is 50: 6714 was refused on 2026-08-26 as the 51st release in its 24h
 # window (run 32930850241), and the 50 before it -- 6664 (Aug 25 07:58Z)

@@ -231,7 +231,9 @@ jobs:
 
           if [ '${{ steps.confirm.outputs.published }}' = 'true' ] || [ '${{ steps.confirm_retry.outputs.published }}' = 'true' ]; then
             echo "### playstore: published $PENDING to ${{ env.PLAYSTORE_TRACK }}" >> "$GITHUB_STEP_SUMMARY"
-            echo "$QUOTA" >> "$GITHUB_STEP_SUMMARY"
+            # what the pool looks like now that this save is spent -- the next
+            # slots decide whether a resumed drain keeps pace or walls again
+            .github/scripts/playstore-quota.sh forecast >> "$GITHUB_STEP_SUMMARY" || echo "$QUOTA" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 

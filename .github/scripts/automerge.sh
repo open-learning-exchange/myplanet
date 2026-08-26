@@ -313,11 +313,17 @@ quota_note() {
     quota_eta=""
     [ -n "$QUOTA_SH" ] && [ -x "$QUOTA_SH" ] || return 0
 
-    local status
+    local status line
     status=$("$QUOTA_SH" status 2>/dev/null) || return 0
     eval "$(sed -n "s/^report=/quota_report=/p; s/^next_free_local=/quota_eta=/p" <<<"$status")" || return 0
 
-    [ -n "$quota_report" ] && log "  $quota_report"
+    # the forecast, not just the next slot: whoever restarts the drain needs to
+    # know how fast the pool refills, since the slots come back in the shape of
+    # yesterday's merges and a resume can wall again within the hour
+    while IFS= read -r line; do
+        log "  $line"
+    done < <("$QUOTA_SH" forecast 2>/dev/null || printf '%s\n' "$quota_report")
+
     [ -n "$quota_eta" ] && log "  publish it without a rebuild: ${GITHUB_SERVER_URL:-https://github.com}/$REPO/actions/workflows/playstore.yml"
     return 0
 }
