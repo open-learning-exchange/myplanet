@@ -46,7 +46,6 @@ import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.SyncUiState
 import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -633,10 +632,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     MainApplication.applicationScope.launch {
                         val canReachServer = MainApplication.isServerReachable(serverUrl)
                         if (canReachServer) {
-                            syncRepository.uploadLoginData().collect { state ->
-                                if (state is SyncUiState.Success) {
-                                    prefData.setLastUsageUploaded(Date().time)
-                                }
+                            withContext(dispatcherProvider.main) {
+                                startUpload("login")
                             }
                             transactionSyncManager.syncDb("login_activities")
                         }
