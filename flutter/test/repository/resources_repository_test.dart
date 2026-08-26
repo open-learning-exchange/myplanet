@@ -339,6 +339,32 @@ void main() {
 
       expect((await repository.watchResources(query: '  ').first).length, 2);
     });
+
+    test('ranks a prefix match ahead of a substring match', () async {
+      stubCount(2);
+      stubPage(0, 100, [
+        row('res-1', 'Advanced Math'),
+        row('res-2', 'Math Basics'),
+      ]);
+      await repository.sync(config: config);
+
+      final matches = await repository.watchResources(query: 'math').first;
+      expect(matches.map((r) => r.title), ['Math Basics', 'Advanced Math']);
+    });
+
+    test('splits the query into words so order does not matter', () async {
+      stubCount(2);
+      stubPage(0, 100, [
+        row('res-1', 'Basic Mathematics'),
+        row('res-2', 'Chemistry'),
+      ]);
+      await repository.sync(config: config);
+
+      final matches = await repository
+          .watchResources(query: 'math basic')
+          .first;
+      expect(matches.map((r) => r.title), ['Basic Mathematics']);
+    });
   });
 
   group('setShelfMembership', () {

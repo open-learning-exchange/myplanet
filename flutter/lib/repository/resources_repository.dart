@@ -9,6 +9,7 @@ import '../core/network/network_result.dart';
 import '../core/sync/adaptive_batch_processor.dart';
 import '../core/sync/sync_result.dart';
 import '../core/utils/json_utils.dart';
+import '../core/utils/text_utils.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
@@ -37,10 +38,16 @@ class ResourcesRepository {
 
   /// Reactive, offline-first resource list. Pass [shelfUserId] to scope the
   /// stream to the user's shelf (joined resources), the `isMyCourseLib` view.
+  /// Text matching uses [searchResources] (a port of `ResourcesSearchUtils`),
+  /// not a SQL `LIKE`, so prefix matches rank ahead of contains-all-words
+  /// matches and the query is split on spaces — the same ranking the Kotlin
+  /// applies in memory.
   Stream<List<MyLibraryRow>> watchResources({
     String? query,
     String? shelfUserId,
-  }) => _dao.watchResources(query: query, shelfUserId: shelfUserId);
+  }) => _dao
+      .watchResources(shelfUserId: shelfUserId)
+      .map((items) => searchResources(items, query ?? ''));
 
   Future<int> localCount() => _dao.count();
 
@@ -523,3 +530,39 @@ class ResourcesRepository {
 
 String _randomResourceId() =>
     '${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 32)}';
+
+/// Port of `ResourcesSearchUtils.searchList` / `searchLocalModels`
+/// (`49617105e`, refined `1e41d3353`): rank resources whose normalized title
+/// *starts with* the whole query ahead of those that merely *contain* every
+/// whitespace-separated word.
+///
+/// The Kotlin loads the full resource list and filters in memory; the port
+/// does the same against the diacritic-folded `titleNormal` column. A flat SQL
+/// `LIKE '%query%'` cannot split the query into words (so "math basic" would
+/// only match the literal contiguous substring) nor rank a prefix match above a
+/// substring match, so the matching is done here, in Dart, after the reactive
+/// SQL read. Within each bucket the input order — offline-first, then
+/// alphabetical — is preserved, matching `getResourceListModels`'s sort.
+List<MyLibraryRow> searchResources(List<MyLibraryRow> items, String query) {
+  final trimmed = query.trim();
+  if (trimmed.isEmpty) return items;
+
+  final normalizedQuery = normalizeText(trimmed);
+  final parts = trimmed
+      .split(' ')
+      .where((s) => s.isNotEmpty)
+      .map(normalizeText)
+      .toList();
+
+  final startsWith = <MyLibraryRow>[];
+  final contains = <MyLibraryRow>[];
+  for (final item in items) {
+    final title = item.titleNormal ?? normalizeText(item.title ?? '');
+    if (title.startsWith(normalizedQuery)) {
+      startsWith.add(item);
+    } else if (parts.every(title.contains)) {
+      contains.add(item);
+    }
+  }
+  return [...startsWith, ...contains];
+}

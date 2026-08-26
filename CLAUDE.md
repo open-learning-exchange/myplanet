@@ -69,6 +69,22 @@ version behind**: `automerge.yml` bumps the Kotlin version on every merge (0.67.
 within an hour), and the first cut's exact-equality rule turned every pull-request run red,
 because a PR run tests the merge with master. Do not tighten it back.
 
+Phase 95 audited the 26 upstream commits after `ba794f4bb` (master
+0.67.14 → 0.67.40) — all refactors and CI/build work, no new behavioural
+port — and closed a pre-existing gap the audit surfaced: the ranked resource
+search. The Kotlin resources screen filters with `ResourcesSearchUtils`
+(`49617105e`/`1e41d3353`), ranking titles that **start with** the whole
+query ahead of those that **contain every whitespace-separated word**; the
+port had been using a flat SQL `LIKE '%query%'` since the first resources
+slice, which can neither rank nor word-split. `MyLibraryDao.watchResources`
+drops the text-search `LIKE` (the shelf `userId` scope stays in SQL);
+`ResourcesRepository.watchResources` maps the stream through a top-level
+`searchResources` pure function ported from `searchList`, reusing
+`text_utils.normalizeText` (the single one, Phase 78). The courses analogue
+needs no port — `CoursesRepositoryImpl.search(query)` is in the interface but
+uncalled; the screen uses `filterCourses` (a plain `contains`) which the
+port already mirrors.
+
 Phase 47 localised the other four languages: `tool/arb_from_strings_xml.dart` derives `app_ar.arb`,
 `app_fr.arb`, `app_ne.arb` and `app_so.arb` from the Kotlin `values-*/strings.xml` (195–196 of 727
 keys each, nothing machine-translated), which also made the language picker's four dead entries

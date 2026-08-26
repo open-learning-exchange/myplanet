@@ -829,18 +829,15 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
   /// pushes a new list whenever `my_library` changes, so a background sync
   /// updates the UI with no explicit notification channel.
   ///
-  /// [query] matches against [MyLibraryTable.titleNormal], the diacritic-folded
-  /// column, so "cafe" finds "Café".
-  Stream<List<MyLibraryRow>> watchResources({
-    String? query,
-    String? shelfUserId,
-  }) {
+  /// Text search is *not* applied here. The Kotlin (`ResourcesSearchUtils`
+  /// `searchList`) ranks prefix matches ahead of contains-all-words matches and
+  /// splits the query on spaces, neither of which a SQL `LIKE` can express, so
+  /// the matching lives in `ResourcesRepository.searchResources` against
+  /// [MyLibraryTable.titleNormal]. [shelfUserId] is a structural scope, not a
+  /// text search, and stays in SQL.
+  Stream<List<MyLibraryRow>> watchResources({String? shelfUserId}) {
     final statement = select(myLibraryTable);
 
-    final trimmed = query?.trim().toLowerCase();
-    if (trimmed != null && trimmed.isNotEmpty) {
-      statement.where((r) => r.titleNormal.like('%$trimmed%'));
-    }
     if (shelfUserId != null && shelfUserId.isNotEmpty) {
       // Mirrors the Room `LIKE` containment check against the JSON userId column.
       statement.where((r) => r.userId.like('%"$shelfUserId"%'));
