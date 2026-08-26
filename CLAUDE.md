@@ -57,9 +57,14 @@ Phase 45 hardened both: the download queue moved from a preference list to a pre
 at schema v33, and device identity gained a UI-primed cache for headless WorkManager engines.
 Phase 46 applied that same cache to `disk_stats`, where the missing headless channel had been
 silently disabling the deadline notifier's storage-warning step — the only caller of
-`updateStorageNotification`, so the row was never written at all. Both channels still live in
-`MainActivity`; moving them into a `FlutterPlugin` registered for every engine is the real fix and
-is not done.
+`updateStorageNotification`, so the row was never written at all. **Phase 94 lands the real
+fix**: both channels moved into the in-tree `planet_platform_channels` plugin
+(`flutter/packages/`), which `GeneratedPluginRegistrant` attaches to every engine — headless
+WorkManager ones included — and `MainActivity` is a bare `FlutterActivity` again. The UI-primed
+caches stay as fallback. The same phase aligned the port's `minSdk` to the Kotlin app's 26 (it
+had silently claimed 24) and added `version_parity_test.dart`, which fails the suite when
+pubspec or the `minapk` fallback constant drifts from `app/build.gradle` — the drift Phase 93
+caught by hand after five missed releases.
 
 Phase 47 localised the other four languages: `tool/arb_from_strings_xml.dart` derives `app_ar.arb`,
 `app_fr.arb`, `app_ne.arb` and `app_so.arb` from the Kotlin `values-*/strings.xml` (195–196 of 727

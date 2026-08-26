@@ -24,7 +24,10 @@ android {
         applicationId = "org.ole.planet.myplanet"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // The Kotlin app ships minSdk 26 (see ../app/build.gradle), and the
+        // planet_platform_channels plugin uses API-26 StorageStatsManager, so
+        // the port must not claim to support anything older than its sibling.
+        minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

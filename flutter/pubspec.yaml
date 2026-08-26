@@ -90,6 +90,13 @@ dependencies:
   # task deadlines while the app is not running. Only the Android side is used;
   # the shipping app is Android-only.
   flutter_local_notifications: ^22.3.0
+  # In-tree plugin carrying the `disk_stats`/`device_stats` method channels.
+  # Being a plugin (rather than MainActivity registrations) puts them in
+  # GeneratedPluginRegistrant, so headless WorkManager engines get them too —
+  # closing the MissingPluginException gap Phases 45–46 papered over with
+  # UI-primed preference caches.
+  planet_platform_channels:
+    path: packages/planet_platform_channels
   # Runtime app version/build number — replaces `BuildConfig.VERSION_NAME` /
   # `BuildConfig.VERSION_CODE` for the About and Settings version lines. The
   # port had been hardcoding `0.62.97` / `Build 6297`, which drifts from the
