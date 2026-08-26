@@ -31,8 +31,7 @@ object NetworkUtils {
 
     // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
     private val sharedPrefManager: SharedPrefManager by lazy {
-        val entryPoint = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
-        entryPoint.sharedPrefManager()
+        coreEntryPoint.sharedPrefManager()
     }
 
     // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
