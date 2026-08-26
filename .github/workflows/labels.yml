@@ -24,8 +24,6 @@ concurrency:
 
 env:
   GRADLE_FILE: app/build.gradle
-  # a translated string lands in all five values-<lang> files, so counting them
-  # measures translation volume rather than the change itself
   EXCLUDE_PATHS: app/src/main/res/values-*/strings.xml
 
 jobs:
@@ -34,8 +32,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      # pull_request_target checks out the base branch, never the pull request's
-      # code -- this job only reads diff numbers through the api, it never builds
       - name: checkout repository code
         uses: actions/checkout@v7
         with:

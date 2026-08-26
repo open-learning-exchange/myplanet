@@ -1,20 +1,6 @@
 #!/usr/bin/env bash
-#
-# Label one pull request by the size of its diff.
-#
-#   size -- additions + deletions, bucketed: <=$SMALL_MAX small, <=$MEDIUM_MAX medium,
-#           <=$LARGE_MAX large, anything above that enormous
-#   less -- added when the pull request only removes code (0 additions, some deletions)
-#
-# The two rules are independent: a pure deletion keeps its size label and gains
-# $LESS_LABEL alongside it, which is how the labels have been used by hand.
-#
-# Both rules ignore $EXCLUDE_PATHS and the version-only lines automerge.sh writes
-# into $GRADLE_FILE, so draining the queue cannot change a label: without that,
-# the bump takes a pure deletion from 0 additions to 2 and strips $LESS_LABEL.
-#
-# Local dry run against a real pull request:
-#   REPO=open-learning-exchange/myplanet PR=16105 DRY_RUN=true .github/scripts/labels.sh
+# Size-label one pull request; the rules live in CLAUDE.md, Labels Workflow.
+# Dry run: REPO=<owner/repo> PR=<n> DRY_RUN=true .github/scripts/labels.sh
 set -euo pipefail
 
 REPO="${REPO:?}"
@@ -34,7 +20,6 @@ GRADLE_FILE="${GRADLE_FILE:-app/build.gradle}"
 EXCLUDE_PATHS="${EXCLUDE_PATHS:-app/src/main/res/values-*/strings.xml}"
 DRY_RUN="${DRY_RUN:-false}"
 
-# test seams: skip the two API reads when the caller already has the answers
 FILES_JSON="${FILES_JSON:-}"
 CURRENT_LABELS="${CURRENT_LABELS-}"
 
@@ -46,13 +31,12 @@ summary() { [ -n "${GITHUB_STEP_SUMMARY:-}" ] && printf '%s\n' "$*" >> "$GITHUB_
 excluded() {
     local path="$1" pattern
     for pattern in $EXCLUDE_PATHS; do
-        # shellcheck disable=SC2053  # the pattern is meant to glob
+        # shellcheck disable=SC2053
         [[ "$path" == $pattern ]] && return 0
     done
     return 1
 }
 
-# filename \t additions \t deletions \t base64(patch), one line per changed file
 read_files() {
     if [ -n "$FILES_JSON" ]; then
         cat "$FILES_JSON"
@@ -61,12 +45,10 @@ read_files() {
     fi | jq -r '.[] | [.filename, (.additions // 0), (.deletions // 0), ((.patch // "") | @base64)] | @tsv'
 }
 
-# the automerge bump rewrites versionCode and versionName and nothing else
 version_lines() {
     printf '%s\n' "$1" | grep -cE "^\\$2[[:space:]]*version(Code|Name)[[:space:]]*=" || true
 }
 
-# up front, so a failed api read stops the run instead of reading as an empty diff
 changed_files=$(read_files)
 
 adds=0
