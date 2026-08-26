@@ -42,9 +42,11 @@ reviews:
     description: { mode: "off" }
     issue_assessment: { mode: "off" }
 
-  # Drops the "Finishing Touches" checkbox block. autofix, fix_ci and
-  # resolve_merge_conflict stay on: those only render when they apply.
-  # simplify is the one off by default, so it is opted into here.
+  # Drops the docstrings and unit-test checkboxes. The block itself survives
+  # in Simplify-only form: simplify is the one entry off by default, and
+  # opting into it keeps "Finishing Touches" rendering. Set it false as well
+  # if the block should go entirely. autofix, fix_ci and resolve_merge_conflict
+  # stay on: those only render when they apply.
   finishing_touches:
     docstrings: { enabled: false }
     unit_tests: { enabled: false }
