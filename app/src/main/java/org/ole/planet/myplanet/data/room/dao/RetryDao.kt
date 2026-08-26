@@ -48,4 +48,10 @@ interface RetryDao {
 
     @Query("UPDATE retry_operation SET status = 'pending', nextRetryTime = :retryTime WHERE status = 'in_progress'")
     suspend fun recoverStuck(retryTime: Long)
+
+    @Query("UPDATE retry_operation SET status = 'in_progress' WHERE id = :id")
+    suspend fun markInProgress(id: String): Int
+
+    @Query("UPDATE retry_operation SET status = 'completed', lastAttemptTime = :timestamp WHERE id = :id")
+    suspend fun markCompleted(id: String, timestamp: Long): Int
 }
