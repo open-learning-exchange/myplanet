@@ -5,8 +5,11 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -20,6 +23,9 @@ class EnterprisesFinancesViewModel @Inject constructor(
 
     private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
     val transactions: StateFlow<List<Transaction>> = _transactions.asStateFlow()
+
+    private val _transactionCreated = MutableSharedFlow<Result<Unit>>(extraBufferCapacity = 1)
+    val transactionCreated: SharedFlow<Result<Unit>> = _transactionCreated.asSharedFlow()
 
     private var transactionsJob: Job? = null
 
@@ -39,6 +45,33 @@ class EnterprisesFinancesViewModel @Inject constructor(
             ).collectLatest { results ->
                 _transactions.value = results
             }
+        }
+    }
+
+    fun createTransaction(
+        teamId: String,
+        type: String,
+        note: String,
+        amount: Int,
+        date: Long,
+        parentCode: String?,
+        planetCode: String?,
+        imageName: String?,
+        imageData: ByteArray?
+    ) {
+        viewModelScope.launch {
+            val result = teamsRepository.createTransaction(
+                teamId = teamId,
+                type = type,
+                note = note,
+                amount = amount,
+                date = date,
+                parentCode = parentCode,
+                planetCode = planetCode,
+                imageName = imageName,
+                imageData = imageData
+            )
+            _transactionCreated.emit(result)
         }
     }
 }
