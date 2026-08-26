@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
+import android.util.Log
 
 @Singleton
 class ChatApiService @Inject constructor(
@@ -45,7 +46,7 @@ class ChatApiService @Inject constructor(
                 object : TypeToken<Map<String, Boolean>>() {}.type
             )
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w("ChatApiService", "Failed to fetch AI providers from: ${UrlUtils.hostUrl}checkProviders/", e)
             null
         }
     }

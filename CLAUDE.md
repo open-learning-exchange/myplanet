@@ -39,6 +39,7 @@ myplanet/
 │   └── workflows/
 │       ├── automerge.yml      # Manually-dispatched queue drainer for `automerge`-labelled PRs
 │       ├── build.yml          # Build workflow for all branches
+│       ├── labels.yml         # Size-labels each PR on open and on every push
 │       ├── playstore.yml      # Hand-started publish of a release the Play Store quota refused
 │       ├── release.yml        # Release and Play Store publishing
 │       └── test.yml           # Unit test workflow
@@ -399,15 +400,23 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 **Playstore Workflow** (`.github/workflows/playstore.yml`)
 - **Never scheduled** — the *Run workflow* button (linked from the release warning and the automerge stop), `gh workflow run playstore.yml`, or a `repository_dispatch` with `event_type: playstore`. `wait_minutes` waits on a runner for the next slot; `resume_automerge: true` dispatches the drain once the release lands
 - If the internal track is behind the newest GitHub release, re-uploads that release's signed `myPlanet-lite.aab` — the bundle the release workflow already built, so no rebuild and no new version code. It touches the Play Store only when the newest `release.yml` run warned that its publish failed (`force: true` overrides). Logic in `.github/scripts/playstore.sh`; track reads never commit their edit, so they spend no save quota
-- The quota is a pool of about 48 slots each freeing 24h after its own use, not a midnight reset (6514 refused at 02:57 Pacific on 2026-08-18 after 10 saves that Pacific day, run 32123984765) — at ~6 min per release a drain eats it in an afternoon. `playstore-quota.sh` estimates the next slot as the oldest one in use plus 24h, in eastern time
+- The quota is a pool of about 50 slots each freeing 24h after its own use, not a midnight reset (6514 refused at 02:57 Pacific on 2026-08-18 after 10 saves that Pacific day, run 32123984765; 6714 refused on 2026-08-26 as the 51st release in its window, run 32930850241) — at ~6 min per release a drain eats it in an afternoon. `playstore-quota.sh` estimates the next slot as the oldest one still held plus 24h plus a measured ~300s lag (6714 was refused at 08:11:16Z on 2026-08-26 and accepted at 08:12:17Z, where crisp-24h predicted 08:07:27Z), and `forecast` prints the next 10 slots in eastern time
 
 **Automerge Workflow** (`.github/workflows/automerge.yml`)
 - Manually dispatched (`workflow_dispatch`) queue drainer for PRs labelled `automerge`
+- Order is priority tier then PR number: PRs also labelled `priority` (`priority_label` input, blank = no tier) drain first, lowest number first within each tier
 - For each labelled PR: merges the base branch in, bumps the version, waits for build + test to pass, then squash-merges
 - A conflicting PR does not stop the drain (either detection: `mergeable: CONFLICTING` or the real `git merge`): it loses `automerge`, gains `conflict` (`conflict_label` input, blank = only drop `automerge`), and the queue moves on — re-add `automerge` once resolved.
 - Logic lives in `.github/scripts/automerge.sh`; requires `AUTOMERGE_TOKEN` (the default `GITHUB_TOKEN` can't push to the protected base branch)
 - A release that never reached the Play Store stops the drain; the stop reports the estimated next save slot (eastern time, plus how many follow it) and links `playstore.yml`, which publishes that upload without a rebuild
 - A red workflow on the base is re-run before the drain gives up (`base_rerun_attempts`, default 1): every base commit is a PR head that build + test passed on just before the squash merge, so a failure there is treated as flaky until it reproduces
+
+**Labels Workflow** (`.github/workflows/labels.yml`)
+- Runs on `pull_request_target` (`opened`, `synchronize`, `reopened`, `ready_for_review`), so it re-labels on every push and works on fork and Dependabot PRs, where a `pull_request` token would be read-only. It never checks out PR code — it only reads diff numbers through the API
+- Two independent rules, both from `.github/scripts/labels.sh`:
+  - **size** from additions + deletions — `small` ≤ 60, `medium` ≤ 100, `large` ≤ 200, `enormous` above that (`SMALL_MAX`/`MEDIUM_MAX`/`LARGE_MAX`)
+  - **`less`** when the PR only removes code (0 additions, some deletions). It sits *alongside* the size label (`small` + `less`), matching how the label has been used by hand
+- Two exclusions, and both are load-bearing. `EXCLUDE_PATHS` drops `values-*/strings.xml`, because one translated string lands in all five and would count 6×. The version-only lines `automerge.sh` writes into `app/build.gradle` are discounted, because that bump takes a pure deletion from 0 additions to 2 — without the discount, draining the queue would strip `less` from exactly the PRs that earned it
 
 **Dependabot** (`.github/dependabot.yml`)
 - Daily checks for GitHub Actions updates (max 10 open PRs)

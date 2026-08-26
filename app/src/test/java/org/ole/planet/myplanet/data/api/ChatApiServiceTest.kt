@@ -18,6 +18,9 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
+import android.util.Log
 import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -39,11 +42,14 @@ class ChatApiServiceTest {
         // Parallel tests would be flaky due to this shared state.
         // It's a limitation due to the production code using the static/singleton UrlUtils directly.
         mockkObject(UrlUtils)
+        mockkStatic(Log::class)
+        every { Log.w(any<String>(), any<String>(), any()) } returns 0
     }
 
     @After
     fun tearDown() {
         unmockkObject(UrlUtils)
+        unmockkStatic(Log::class)
     }
 
     @Test

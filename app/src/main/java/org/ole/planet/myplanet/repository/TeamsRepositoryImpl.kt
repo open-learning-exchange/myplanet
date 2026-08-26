@@ -899,6 +899,10 @@ class TeamsRepositoryImpl @Inject constructor(
         return true
     }
 
+    override suspend fun recordTeamActivity() {
+        syncTeamActivities()
+    }
+
     override suspend fun syncTeamActivities() {
         val updateUrl = sharedPrefManager.getServerUrl()
         val mapping = serverUrlMapper.processUrl(updateUrl)
