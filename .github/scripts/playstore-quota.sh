@@ -43,7 +43,6 @@ save_epochs() {
 }
 
 fmt() { TZ="$QUOTA_TZ" date -d "@$1" '+%a %b %-d %H:%M %Z'; }
-iso() { date -u -d "@$1" '+%Y-%m-%dT%H:%M:%SZ'; }
 
 in_words() {
     local d=$(( $1 - NOW_EPOCH ))
@@ -101,25 +100,13 @@ status() {
         [ "$soon" -gt 0 ] && report="$report, then $soon more within the hour"
     fi
 
-    local -a up=()
-    for e in "${slot_epochs[@]}"; do
-        [ "$e" -gt "$NOW_EPOCH" ] || continue
-        up+=("$e")
-        [ "${#up[@]}" -ge "$COUNT" ] && break
-    done
-
     echo "limit=$LIMIT"
-    echo "lag_seconds=$LAG"
     echo "used=$used"
     echo "held=$held"
     echo "free=$free"
-    echo "free_now=$([ "$free" -gt 0 ] && echo true || echo false)"
     echo "next_free_epoch=$next"
-    echo "next_free_iso=$(iso "$next")"
     echo "next_free_local='$(fmt "$next")'"
     echo "frees_within_hour=$soon"
-    echo "upcoming_count=${#up[@]}"
-    echo "upcoming_epochs='${up[*]-}'"
     echo "report='$report'"
 }
 
