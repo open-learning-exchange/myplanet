@@ -1,9 +1,3 @@
-# CodeRabbit for myPlanet. Reviews are opt-in: label a PR `review` and it gets
-# reviewed, then re-reviewed on each push. An unlabelled PR is never reviewed
-# automatically -- `@coderabbitai review` still summons one by hand.
-# At ~24 merges a day the OSS allowance (1-10 reviews an hour, by stars) would
-# otherwise go on autopilot. Since a review only runs when asked for, ceremony
-# is off and substance is up -- a labelled PR answered "LGTM" wasted the ask.
 # https://docs.coderabbit.ai/reference/configuration
 language: "en-US"
 
@@ -14,8 +8,6 @@ tone_instructions: >-
 
 reviews:
   profile: assertive
-
-  # Each defaults on; none is why anyone labels a PR.
   sequence_diagrams: false
   changed_files_summary: false
   estimate_code_review_effort: false
@@ -25,28 +17,15 @@ reviews:
   suggested_reviewers: false
   in_progress_fortune: false
   review_status: false  # else a "Review skipped" notice on every unlabelled PR
-
-  # The one decoration that already defaults off. Pinned anyway: this file's
-  # whole claim is that a labelled review is worth reading, and a haiku
-  # arriving because a default flipped would undercut it silently.
   poem: false
-
-  # How a Claude or Codex session applies a finding without a human retyping it.
   enable_prompt_for_ai_agents: true
 
-  # The pre-merge table, all four rows. The key is `docstrings`, not
-  # `docstring_coverage` -- unknown keys here validate silently and do nothing.
   pre_merge_checks:
     docstrings: { mode: "off" }
     title: { mode: "off" }
     description: { mode: "off" }
     issue_assessment: { mode: "off" }
 
-  # Drops the docstrings and unit-test checkboxes. The block itself survives
-  # in Simplify-only form: simplify is the one entry off by default, and
-  # opting into it keeps "Finishing Touches" rendering. Set it false as well
-  # if the block should go entirely. autofix, fix_ci and resolve_merge_conflict
-  # stay on: those only render when they apply.
   finishing_touches:
     docstrings: { enabled: false }
     unit_tests: { enabled: false }
@@ -76,21 +55,12 @@ reviews:
         expected -- review the rest of the file and say nothing about the bump.
 
   auto_review:
-    # enabled false + a positive label is CodeRabbit's opt-in idiom: the label
-    # starts the review, auto_incremental_review follows each push after that.
     enabled: false
     labels: ["review"]
     auto_incremental_review: true
-    # Defaults to 5: after five reviewed commits CodeRabbit pauses the
-    # incremental reviews the line above just turned on -- observed live twice
-    # (see AGENT_SPELLBOOK field notes). 0 keeps every push reviewed.
     auto_pause_after_reviewed_commits: 0
     drafts: true
 
-  # These all default on, so this block changes nothing today. gitleaks is
-  # pinned rather than inherited because gradle.properties is tracked and holds
-  # real PLANET_*_PIN CouchDB credentials (CLAUDE.md, Security Considerations):
-  # secret scanning is not a setting to discover has drifted off.
   tools:
     gitleaks:
       enabled: true
