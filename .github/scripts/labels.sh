@@ -33,7 +33,6 @@ summary() { [ -n "${GITHUB_STEP_SUMMARY:-}" ] && printf '%s\n' "$*" >> "$GITHUB_
 excluded() {
     local path="$1" pattern
     for pattern in $EXCLUDE_PATHS; do
-        # shellcheck disable=SC2053
         [[ "$path" == $pattern ]] && return 0
     done
     return 1
