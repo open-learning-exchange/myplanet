@@ -17,7 +17,6 @@ import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
@@ -30,7 +29,6 @@ sealed class TeamActionResult {
 @HiltViewModel
 class TeamViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
-    private val teamsSyncRepository: TeamsSyncRepository,
     private val dispatcherProvider: DispatcherProvider,
     private val realtimeSyncManager: RealtimeSyncManager
 ) : ViewModel() {
@@ -137,7 +135,7 @@ class TeamViewModel @Inject constructor(
 
         viewModelScope.launch {
             teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
-            teamsSyncRepository.syncTeamActivities()
+            teamsRepository.recordTeamActivity()
             loadTeams(currentFromDashboard, currentType, currentUserId)
         }
     }
@@ -148,7 +146,7 @@ class TeamViewModel @Inject constructor(
             loadTeams(currentFromDashboard, currentType, currentUserId)
         }
         viewModelScope.launch {
-            teamsSyncRepository.syncTeamActivities()
+            teamsRepository.recordTeamActivity()
         }
     }
 
