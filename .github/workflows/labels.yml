@@ -49,5 +49,5 @@ jobs:
           PR: ${{ inputs.pr || github.event.pull_request.number }}
           DRY_RUN: ${{ inputs.dry_run || false }}
         run: |
-          chmod +x .github/scripts/pr-size.sh
-          .github/scripts/pr-size.sh
+          chmod +x .github/scripts/labels.sh
+          .github/scripts/labels.sh

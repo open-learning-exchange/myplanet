@@ -14,7 +14,7 @@
 # the bump takes a pure deletion from 0 additions to 2 and strips $LESS_LABEL.
 #
 # Local dry run against a real pull request:
-#   REPO=open-learning-exchange/myplanet PR=16105 DRY_RUN=true .github/scripts/pr-size.sh
+#   REPO=open-learning-exchange/myplanet PR=16105 DRY_RUN=true .github/scripts/labels.sh
 set -euo pipefail
 
 REPO="${REPO:?}"
