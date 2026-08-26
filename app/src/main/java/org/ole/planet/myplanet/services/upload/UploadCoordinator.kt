@@ -57,22 +57,9 @@ class UploadCoordinator @Inject constructor(
                 var dbFailedErrors = emptyList<UploadError>()
                 if (succeeded.isNotEmpty()) {
                     val dbFailed = updateDatabaseBatch(succeeded, config)
-
-                    dbFailedErrors = dbFailed.map { failedItem ->
-                        UploadError(
-                            itemId = failedItem.localId,
-                            exception = Exception("Local DB update failed"),
-                            retryable = false
-                        )
-                    }
-
-                    if (dbFailed.isEmpty()) {
-                        allSucceeded.addAll(succeeded)
-                    } else {
-                        val dbFailedIds = dbFailed.map { it.localId }.toHashSet()
-                        val actuallySucceeded = succeeded.filter { it.localId !in dbFailedIds }
-                        allSucceeded.addAll(actuallySucceeded)
-                    }
+                    val (actuallySucceeded, dbErrors) = reconcileDbFailures(succeeded, dbFailed)
+                    dbFailedErrors = dbErrors
+                    allSucceeded.addAll(actuallySucceeded)
                 }
 
                 allFailed.addAll(failed)
@@ -293,6 +280,28 @@ class UploadCoordinator @Inject constructor(
             }
         }
     }
+    private fun reconcileDbFailures(
+        succeeded: List<UploadedItem>,
+        dbFailed: List<UploadedItem>
+    ): Pair<List<UploadedItem>, List<UploadError>> {
+        val dbFailedErrors = dbFailed.map { failedItem ->
+            UploadError(
+                itemId = failedItem.localId,
+                exception = Exception("Local DB update failed"),
+                retryable = false
+            )
+        }
+
+        val actuallySucceeded = if (dbFailed.isEmpty()) {
+            succeeded
+        } else {
+            val dbFailedIds = dbFailed.map { it.localId }.toHashSet()
+            succeeded.filter { it.localId !in dbFailedIds }
+        }
+
+        return actuallySucceeded to dbFailedErrors
+    }
+
 
     private fun normalizeUploadResult(localId: String, responseBody: JsonObject, idField: String, revField: String): UploadedItem {
         return UploadedItem(
@@ -328,15 +337,9 @@ class UploadCoordinator @Inject constructor(
                 var dbFailedErrors = emptyList<UploadError>()
                 if (succeeded.isNotEmpty()) {
                     val dbFailed = updateDatabaseBatchRoom(succeeded, config)
-                    dbFailedErrors = dbFailed.map { failedItem ->
-                        UploadError(failedItem.localId, Exception("Local DB update failed"), retryable = false)
-                    }
-                    if (dbFailed.isEmpty()) {
-                        allSucceeded.addAll(succeeded)
-                    } else {
-                        val dbFailedIds = dbFailed.map { it.localId }.toHashSet()
-                        allSucceeded.addAll(succeeded.filter { it.localId !in dbFailedIds })
-                    }
+                    val (actuallySucceeded, dbErrors) = reconcileDbFailures(succeeded, dbFailed)
+                    dbFailedErrors = dbErrors
+                    allSucceeded.addAll(actuallySucceeded)
                 }
 
                 allFailed.addAll(failed)
