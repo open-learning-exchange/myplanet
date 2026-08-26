@@ -11,6 +11,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
+import org.json.JSONObject
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
@@ -120,7 +121,6 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
                 document.close()
             }
         } catch (e: Exception) {
-                e.printStackTrace()
                 null
             }
     }
@@ -238,7 +238,6 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
                 document.close()
             }
         } catch (e: Exception) {
-                e.printStackTrace()
                 null
             }
     }
@@ -246,23 +245,31 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
     private fun drawMultilineText(canvas: Canvas, text: String, x: Float, y: Float, paint: Paint, maxWidth: Float): Float {
         var currentY = y
         val words = text.split(" ")
-        var line = ""
+        val line = java.lang.StringBuilder()
+        var lineWidth = 0f
 
         words.forEach { word ->
-            val testLine = if (line.isEmpty()) word else "$line $word"
-            val width = paint.measureText(testLine)
-
-            if (width > maxWidth && line.isNotEmpty()) {
-                canvas.drawText(line, x, currentY, paint)
-                currentY += LINE_HEIGHT
-                line = word
+            if (line.isEmpty()) {
+                line.append(word)
+                lineWidth = paint.measureText(word)
             } else {
-                line = testLine
+                val addition = " $word"
+                val additionWidth = paint.measureText(addition)
+                if (lineWidth + additionWidth > maxWidth) {
+                    canvas.drawText(line.toString(), x, currentY, paint)
+                    currentY += LINE_HEIGHT
+                    line.clear()
+                    line.append(word)
+                    lineWidth = paint.measureText(word)
+                } else {
+                    line.append(addition)
+                    lineWidth += additionWidth
+                }
             }
         }
 
         if (line.isNotEmpty()) {
-            canvas.drawText(line, x, currentY, paint)
+            canvas.drawText(line.toString(), x, currentY, paint)
             currentY += LINE_HEIGHT
         }
 
@@ -278,7 +285,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
             !choices.isNullOrEmpty() -> {
                 choices.joinToString(", ") { choice ->
                     try {
-                        val choiceObj = org.json.JSONObject(choice)
+                        val choiceObj = JSONObject(choice)
                         choiceObj.optString("text", choice)
                     } catch (e: Exception) {
                         choice

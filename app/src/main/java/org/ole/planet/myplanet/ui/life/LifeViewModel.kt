@@ -35,7 +35,7 @@ class LifeViewModel @Inject constructor(
                 val userId = sharedPrefManager.getUserId().ifEmpty { userRepository.getUserModel()?.id }
                 var myLifeList = lifeRepository.getMyLifeByUserId(userId)
                 if (myLifeList.isEmpty()) {
-                    lifeRepository.seedMyLifeIfEmpty(userId, MyLife.defaultItems(context, userId))
+                    lifeRepository.seedMyLifeIfEmpty(userId, MyLife.defaultItems(userId, context::getString))
                     myLifeList = lifeRepository.getMyLifeByUserId(userId)
                 }
                 myLifeList
