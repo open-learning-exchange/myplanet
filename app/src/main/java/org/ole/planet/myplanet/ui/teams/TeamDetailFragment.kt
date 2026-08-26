@@ -442,7 +442,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
 
     private fun setupRealtimeSync() {
         collectWhenStarted(
-            teamViewModel.getTeamUpdateFlow().filter { it.table == "teams" }
+            teamViewModel.getTeamUpdateFlow()
         ) { update ->
             if (update.shouldRefreshUI) {
                 refreshTeamDetails()

@@ -57,6 +57,8 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     private val viewModel: DashboardViewModel by viewModels()
     private val newsViewModel: NewsViewModel by viewModels()
     protected var userLibrary: List<MyLibrary> = emptyList()
+    protected var userCourses: List<MyCourse> = emptyList()
+    protected var userTeams: List<MyTeam> = emptyList()
     private var fullName: String? = null
     private val params: FlexboxLayout.LayoutParams by lazy {
         FlexboxLayout.LayoutParams(
@@ -201,6 +203,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutCourse) ?: return
         flexboxLayout.removeAllViews()
         val filteredCourses = courses.filter { !it.courseTitle.isNullOrBlank() }
+        userCourses = filteredCourses
         setCountText(filteredCourses.size, MyCourse::class.java, requireView())
         if (filteredCourses.isEmpty()) {
             renderPlaceholder(flexboxLayout, getString(R.string.no_courses_joined_yet)) {
@@ -219,17 +222,13 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     }
 
     private suspend fun renderMyTeams(teams: List<MyTeam>) {
+        userTeams = teams
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutTeams) ?: return
         flexboxLayout.removeAllViews()
         setCountText(teams.size, MyTeam::class.java, requireView())
         if (teams.isEmpty()) {
             renderPlaceholder(flexboxLayout, getString(R.string.no_teams_joined_yet)) {
-                val fragment = org.ole.planet.myplanet.ui.teams.TeamFragment().apply {
-                    arguments = android.os.Bundle().apply {
-                        putBoolean("fromDashboard", true)
-                    }
-                }
-                homeItemClickListener?.openMyFragment(fragment)
+                homeItemClickListener?.openCallFragment(TeamFragment())
             }
             return
         }

@@ -47,7 +47,7 @@ class RequestsViewModelTest {
         val members = listOf(user1, user2)
 
         coEvery { teamsRepository.getRequestedMembers(teamId) } returns members
-        coEvery { teamsRepository.getJoinedMembers(teamId) } returns listOf(user1)
+        coEvery { teamsRepository.getJoinedMemberCount(teamId) } returns 1
 
         val currentUser = UserEntity().apply { id = "currentUser" }
         coEvery { userSessionManager.getUserModel() } returns currentUser
@@ -72,7 +72,7 @@ class RequestsViewModelTest {
         val members = listOf(user1, user2)
 
         coEvery { teamsRepository.getRequestedMembers(teamId) } returns members
-        coEvery { teamsRepository.getJoinedMembers(teamId) } returns emptyList()
+        coEvery { teamsRepository.getJoinedMemberCount(teamId) } returns 0
         coEvery { userSessionManager.getUserModel() } returns null
         coEvery { teamsRepository.isTeamLeader(teamId, null) } returns false
 
@@ -111,7 +111,7 @@ class RequestsViewModelTest {
         val members = listOf(user1, user2)
 
         coEvery { teamsRepository.getRequestedMembers(teamId) } returns members
-        coEvery { teamsRepository.getJoinedMembers(teamId) } returns emptyList()
+        coEvery { teamsRepository.getJoinedMemberCount(teamId) } returns 0
         coEvery { userSessionManager.getUserModel() } returns null
         coEvery { teamsRepository.isTeamLeader(teamId, null) } returns false
 

@@ -11,6 +11,7 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.ceil
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -21,9 +22,7 @@ import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
-import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.MyLibrary
-import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.ResourceItem
@@ -39,6 +38,7 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.distinctByContent
 
 class ResourcesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -52,7 +52,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val teamsSyncRepositoryLazy: dagger.Lazy<TeamsSyncRepository>,
     private val myLibraryDao: MyLibraryDao,
     private val userRepository: UserRepository,
-    private val teamDao: TeamDao,
+    private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository>,
     private val userSessionManager: UserSessionManager,
     private val configurationsRepository: ConfigurationsRepository,
     private val dispatcherProvider: DispatcherProvider
@@ -199,6 +199,11 @@ class ResourcesRepositoryImpl @Inject constructor(
         return myLibraryDao.getForUserPattern(userIdPattern(userId))
     }
 
+    override fun getMyLibraryFlow(userId: String?): Flow<List<MyLibrary>> {
+        if (userId.isNullOrBlank()) return flowOf(emptyList())
+        return myLibraryDao.getForUserPatternFlow(userIdPattern(userId))
+    }
+
     override suspend fun getAllStepResources(stepId: String?): List<MyLibrary> {
         if (stepId == null) return emptyList()
         return myLibraryDao.getByStepId(stepId)
@@ -276,6 +281,18 @@ class ResourcesRepositoryImpl @Inject constructor(
         activitiesRepository.markResourceAdded(userId, resourceId)
     }
 
+    override suspend fun setUserLibrary(resourceId: String, add: Boolean): MyLibrary? {
+        val userId = userRepository.getUserModel()?.id ?: return null
+        val library = getLibraryItemByResourceId(resourceId) ?: getLibraryItemById(resourceId)
+        if (library != null) {
+            val contains = library.userId?.contains(userId) == true
+            if (add && contains) return library
+            if (!add && !contains) return library
+        }
+        val updated = updateUserLibrary(resourceId, userId, add) ?: return null
+        return if ((updated.userId?.contains(userId) == true) == add) updated else null
+    }
+
     override suspend fun updateUserLibrary(
         resourceId: String,
         userId: String,
@@ -323,15 +340,16 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override fun getRecentResources(userId: String): Flow<List<MyLibrary>> {
-        return myLibraryDao.getRecentForUserPatternFlow(userIdPattern(userId))
+        return myLibraryDao.getRecentForUserPatternFlow(userIdPattern(userId)).distinctByContent { a, b ->
+            // Compare CouchDB sync markers alongside fields editable/mutable locally (title, description, offline state, local path)
+            a.id == b.id && a._rev == b._rev && a.title == b.title && a.description == b.description &&
+                a.resourceOffline == b.resourceOffline && a.downloadedRev == b.downloadedRev &&
+                a.resourceLocalAddress == b.resourceLocalAddress && a.userId == b.userId
+        }
     }
 
     override fun getPendingDownloads(userId: String): Flow<List<String>> {
-        return myLibraryDao.getPendingDownloadsForUserPatternFlow(userIdPattern(userId))
-    }
-
-    override suspend fun markAllResourcesOffline(isOffline: Boolean) {
-        myLibraryDao.setAllOffline(isOffline)
+        return myLibraryDao.getPendingDownloadsForUserPatternFlow(userIdPattern(userId)).distinctUntilChanged()
     }
 
     override suspend fun saveSearchActivity(
@@ -520,11 +538,23 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
     }
 
     override suspend fun getFilterFacets(libraries: List<MyLibrary>): Map<String, Set<String>> {
+        val languages = mutableSetOf<String>()
+        val subjects = mutableSetOf<String>()
+        val mediums = mutableSetOf<String>()
+        val levels = mutableSetOf<String>()
+
+        libraries.forEach { library ->
+            library.language?.takeIf { it.isNotBlank() }?.let { languages.add(it) }
+            library.subject?.let { subjects.addAll(it) }
+            library.mediaType?.takeIf { it.isNotBlank() }?.let { mediums.add(it) }
+            library.level?.let { levels.addAll(it) }
+        }
+
         return mapOf(
-            "languages" to libraries.mapNotNull { it.language }.filterNot { it.isBlank() }.toSet(),
-            "subjects" to libraries.flatMap { it.subject ?: emptyList() }.toSet(),
-            "mediums" to libraries.mapNotNull { it.mediaType }.filterNot { it.isBlank() }.toSet(),
-            "levels" to libraries.flatMap { it.level ?: emptyList() }.toSet()
+            "languages" to languages,
+            "subjects" to subjects,
+            "mediums" to mediums,
+            "levels" to levels
         )
     }
 
@@ -677,11 +707,7 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
 
     override suspend fun markResourcesAsNotOffline(resourceIds: Collection<String>) {
         if (resourceIds.isEmpty()) return
-        val results = myLibraryDao.getOfflineByResourceIds(resourceIds.toList())
-        results.forEach { it.resourceOffline = false }
-        if (results.isNotEmpty()) {
-            myLibraryDao.upsertAll(results)
-        }
+        myLibraryDao.markAsNotOfflineByResourceIds(resourceIds.toList())
     }
 
     override suspend fun getPendingResourceUploads(): List<MyLibrary> {
@@ -699,22 +725,13 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
         library._rev = remoteRev
         myLibraryDao.upsert(library)
 
-        // Private resources also create a local team-resource link (still a Realm model).
+        // Private resources also create a local team-resource link.
         if (library.isPrivate && !library.privateFor.isNullOrBlank()) {
-            val resolvedPlanetCode = planetCode?.takeIf { it.isNotBlank() }
-                ?: sharedPrefManager.getPlanetCode()
-            teamDao.upsert(
-                MyTeam(
-                    _id = UUID.randomUUID().toString(),
-                    teamId = library.privateFor,
-                    title = library.title,
-                    resourceId = remoteId,
-                    sourcePlanet = resolvedPlanetCode,
-                    teamType = "local",
-                    teamPlanetCode = resolvedPlanetCode,
-                    docType = "resourceLink",
-                    updated = true,
-                )
+            teamsRepositoryLazy.get().createLocalResourceLink(
+                teamId = library.privateFor!!,
+                resourceId = remoteId,
+                title = library.title,
+                planetCode = planetCode
             )
         }
         return true
@@ -766,5 +783,10 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
         }
         val deletedIds = items.map { it.resourceId }.toSet()
         markResourcesAsNotOffline(deletedIds)
+    }
+
+    override suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String> {
+        return myLibraryDao.getPrivateImagesCreatedAfter(timestamp)
+            .mapNotNull { it.resourceRemoteAddress }
     }
 }
