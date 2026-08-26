@@ -292,5 +292,18 @@ void main() {
     test('false for a plain learner', () {
       expect(UserMapper.isManager(userWith(roles: ['learner'])), isFalse);
     });
+
+    test('a role merely containing "manager" does not count', () {
+      // Pins Kotlin `770d6608c` (#16154): `LoginSyncManager.isManager` used to
+      // stringify the roles array and substring-match "manager", so a role
+      // like "comanager" — or any future role with the word in it — opened the
+      // manager door. The port always element-matched, which meant the two
+      // apps *disagreed* about who a manager was until that fix; they agree
+      // now, and this keeps a refactor toward `contains` from re-splitting
+      // them.
+      expect(UserMapper.isManager(userWith(roles: ['comanager'])), isFalse);
+      expect(UserMapper.isManager(userWith(roles: ['managers'])), isFalse);
+      expect(UserMapper.isManager(userWith(roles: ['team manager'])), isFalse);
+    });
   });
 }
