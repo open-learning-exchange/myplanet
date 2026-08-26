@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.courses
 
+import android.app.Activity
 import android.content.Context
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
@@ -247,13 +248,13 @@ class CoursesAdapter(
 
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
         super.onViewRecycled(holder)
-        when (holder) {
-            is GridViewHolder -> {
-                Glide.with(context).clear(holder.binding.ivCover)
-            }
-            is ListViewHolder -> {
-                Glide.with(context).clear(holder.binding.ivCover)
-            }
+        val targetView = when (holder) {
+            is GridViewHolder -> holder.binding.ivCover
+            is ListViewHolder -> holder.binding.ivCover
+            else -> null
+        }
+        targetView?.let { view ->
+            Glide.with(context.applicationContext).clear(view)
         }
     }
 
