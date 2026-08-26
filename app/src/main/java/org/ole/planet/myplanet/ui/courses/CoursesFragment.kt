@@ -76,6 +76,14 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
 
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
 
+    private val spanUpdateRunnable = Runnable { updateGridSpanIfNeeded() }
+    private val layoutChangeListener = View.OnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
+        if (right - left != oldRight - oldLeft) {
+            recyclerView.removeCallbacks(spanUpdateRunnable)
+            recyclerView.post(spanUpdateRunnable)
+        }
+    }
+
     override fun getLayout(): Int = R.layout.fragment_my_course
 
     private fun scrollToTop() {
@@ -351,11 +359,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         updateToggleUi(sharedPrefManager.getCourseViewMode())
         toggleGridButton?.setOnClickListener { setViewMode(ListViewMode.GRID) }
         toggleListButton?.setOnClickListener { setViewMode(ListViewMode.LIST) }
-        recyclerView.addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
-            if (right - left != oldRight - oldLeft) {
-                recyclerView.post { updateGridSpanIfNeeded() }
-            }
-        }
+        recyclerView.addOnLayoutChangeListener(layoutChangeListener)
     }
 
     private fun setViewMode(mode: ListViewMode) {
@@ -391,7 +395,10 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     private fun updateGridSpanIfNeeded() {
         val layoutManager = recyclerView.layoutManager
         if (layoutManager is GridLayoutManager) {
-            layoutManager.spanCount = currentSpanCount()
+            val currentSpan = currentSpanCount()
+            if (layoutManager.spanCount != currentSpan) {
+                layoutManager.spanCount = currentSpan
+            }
         }
     }
 
@@ -567,7 +574,8 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     override fun onResume() {
         super.onResume()
         if (::recyclerView.isInitialized) {
-            recyclerView.post { updateGridSpanIfNeeded() }
+            recyclerView.removeCallbacks(spanUpdateRunnable)
+            recyclerView.post(spanUpdateRunnable)
         }
     }
 
@@ -592,6 +600,10 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     }
 
     override fun onDestroyView() {
+        if (::recyclerView.isInitialized) {
+            recyclerView.removeOnLayoutChangeListener(layoutChangeListener)
+            recyclerView.removeCallbacks(spanUpdateRunnable)
+        }
         if (::filterController.isInitialized) {
             filterController.detach()
         }
