@@ -2,10 +2,7 @@
 #
 # Label one pull request by its diff: additions + deletions pick one of small,
 # medium, large, enormous, and a pull request that only removes code also gets
-# `less` alongside that size label. Two things stay out of the count -- the
-# five values-<lang> strings.xml, where one translated string would count six
-# times, and the version-only lines automerge.sh writes into the gradle file,
-# which take a pure deletion from 0 additions to 2 and would strip `less`.
+# `less` alongside that size label.
 set -euo pipefail
 
 REPO="${REPO:?}"
