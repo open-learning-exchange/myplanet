@@ -46,6 +46,7 @@ import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.SyncUiState
 import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -67,11 +68,11 @@ import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utils.NotificationUtils.cancelAll
 import org.ole.planet.myplanet.utils.RetryUtils
 import org.ole.planet.myplanet.utils.ServerConfigUtils
-import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
+import kotlin.time.Duration.Companion.milliseconds
 
 @AndroidEntryPoint
 abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepository.CheckVersionCallback {
@@ -133,8 +134,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     @Inject
     lateinit var syncManager: SyncManager
-    @Inject
-    override lateinit var timeProvider: TimeProvider
 
     @Inject
     lateinit var transactionSyncManager: TransactionSyncManager
@@ -156,19 +155,22 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
                 is SyncManager.SyncStatus.Syncing -> {
                     withContext(dispatcherProvider.main) {
-                        val s = status
-                        if (s.phase.isEmpty()) {
+                        if (status.phase.isEmpty()) {
                             onSyncStarted()
                         } else {
                             customProgressDialog.setSyncPhase(
-                                s.phase, s.phaseIndex, s.totalPhases,
-                                getString(R.string.sync_step_of, s.phaseIndex, s.totalPhases)
+                                status.phase, status.phaseIndex, status.totalPhases,
+                                getString(R.string.sync_step_of, status.phaseIndex,
+                                    status.totalPhases)
                             )
-                            val label = s.countLabel.ifEmpty {
-                                if (s.itemsTotal > 0) getString(R.string.sync_items_of, s.itemsDone, s.itemsTotal) else ""
+                            val label = status.countLabel.ifEmpty {
+                                if (status.itemsTotal > 0) getString(R.string.sync_items_of,
+                                    status.itemsDone, status.itemsTotal) else ""
                             }
-                            if (label.isNotEmpty() && s.itemsTotal > 0) {
-                                customProgressDialog.setSyncItemProgress(s.itemsDone, s.itemsTotal, label)
+                            if (label.isNotEmpty() && status.itemsTotal > 0) {
+                                customProgressDialog.setSyncItemProgress(
+                                    status.itemsDone,
+                                    status.itemsTotal, label)
                             }
                         }
                     }
@@ -273,7 +275,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                         prefData.setManualConfig(config)
                         prefData.clearPreferences()
 
-                        delay(500)
+                        delay(500.milliseconds)
                         restartApp()
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -375,7 +377,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         prefData.setAutoSync(syncSwitch.isChecked)
         prefData.setAutoSyncInterval(syncTimeInterval[spinner.selectedItemPosition])
         prefData.setAutoSyncPosition(spinner.selectedItemPosition)
-        (applicationContext as? org.ole.planet.myplanet.MainApplication)?.applyAutoSyncSettings()
+        (applicationContext as? MainApplication)?.applyAutoSyncSettings()
     }
 
     suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): Boolean {
@@ -631,8 +633,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     MainApplication.applicationScope.launch {
                         val canReachServer = MainApplication.isServerReachable(serverUrl)
                         if (canReachServer) {
-                            withContext(dispatcherProvider.main) {
-                                startUpload("login")
+                            syncRepository.uploadLoginData().collect { state ->
+                                if (state is SyncUiState.Success) {
+                                    prefData.setLastUsageUploaded(Date().time)
+                                }
                             }
                             transactionSyncManager.syncDb("login_activities")
                         }
