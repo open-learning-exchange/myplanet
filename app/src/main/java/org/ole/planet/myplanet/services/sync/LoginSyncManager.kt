@@ -6,7 +6,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
-import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
@@ -176,7 +175,12 @@ class LoginSyncManager @Inject constructor(
 
     private fun isManager(jsonDoc: JsonObject?): Boolean {
         val roles = jsonDoc?.get("roles")?.asJsonArray
-        val isManager = roles.toString().lowercase(Locale.getDefault()).contains("manager")
+        var isManager = false
+        roles?.forEach { role ->
+            if (role.isJsonPrimitive && role.asString.equals("manager", ignoreCase = true)) {
+                isManager = true
+            }
+        }
         return jsonDoc?.get("isUserAdmin")?.asBoolean == true || isManager
     }
 }
