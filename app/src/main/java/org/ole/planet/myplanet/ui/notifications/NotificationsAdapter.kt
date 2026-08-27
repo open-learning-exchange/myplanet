@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.notifications
 
+import android.text.Html
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -110,7 +111,10 @@ class NotificationsAdapter(
 
         fun bind(item: NotificationListItem.Item) {
             val notification = item.notification
-            binding.title.text = item.parsedText
+            binding.title.text = Html.fromHtml(
+                notification.formattedText.toString(),
+                Html.FROM_HTML_MODE_LEGACY
+            )
             binding.timestamp.text = formatRelativeTime(notification.createdAt)
             binding.root.alpha = if (notification.isRead) 0.6f else 1.0f
 
