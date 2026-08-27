@@ -80,20 +80,52 @@ object FileUtils {
     }
 
     fun getSDPathFromUrl(context: Context, url: String?): File {
-        return createFilePath(context, "/ole/${getIdFromUrl(url)}", getResourceRelativePathFromUrl(url))
+        val segments = try {
+            url?.toUri()?.pathSegments
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+        return createFilePath(context, "/ole/${getIdFromSegments(segments)}", getResourceRelativePathFromSegments(segments))
     }
 
-    private fun getResourceRelativePathFromUrl(url: String?): String {
+    private fun getIdFromSegments(segments: List<String>?): String {
+        if (segments == null) return ""
+        val idx = segments.indexOf("resources")
+        return if (idx != -1 && idx + 1 < segments.size) segments[idx + 1] else ""
+    }
+
+    private fun getResourceRelativePathFromSegments(segments: List<String>?): String {
+        if (segments == null) return ""
         return try {
-            val segments = url?.toUri()?.pathSegments ?: return getFileNameFromUrl(url)
             val idx = segments.indexOf("resources")
             if (idx != -1 && idx + 2 < segments.size) {
                 segments.subList(idx + 2, segments.size).joinToString("/") {
                     URLDecoder.decode(it, StandardCharsets.UTF_8.name())
                 }
             } else {
-                getFileNameFromUrl(url)
+                getFileNameFromSegments(segments)
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            getFileNameFromSegments(segments)
+        }
+    }
+
+    private fun getFileNameFromSegments(segments: List<String>?): String {
+        val lastSegment = segments?.lastOrNull() ?: return ""
+        return try {
+            URLDecoder.decode(lastSegment, StandardCharsets.UTF_8.name())
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ""
+        }
+    }
+
+    private fun getResourceRelativePathFromUrl(url: String?): String {
+        return try {
+            val segments = url?.toUri()?.pathSegments
+            getResourceRelativePathFromSegments(segments)
         } catch (e: Exception) {
             e.printStackTrace()
             getFileNameFromUrl(url)
@@ -137,9 +169,8 @@ object FileUtils {
 
     fun getFileNameFromUrl(url: String?): String {
         return try {
-            url?.toUri()?.lastPathSegment?.let {
-                URLDecoder.decode(it, StandardCharsets.UTF_8.name())
-            } ?: ""
+            val segments = url?.toUri()?.pathSegments
+            getFileNameFromSegments(segments)
         } catch (e: Exception) {
             e.printStackTrace()
             ""
@@ -148,10 +179,8 @@ object FileUtils {
 
     fun getIdFromUrl(url: String?): String {
         return try {
-            url?.toUri()?.pathSegments?.let { segments ->
-                val idx = segments.indexOf("resources")
-                if (idx != -1 && idx + 1 < segments.size) segments[idx + 1] else ""
-            } ?: ""
+            val segments = url?.toUri()?.pathSegments
+            getIdFromSegments(segments)
         } catch (e: Exception) {
             e.printStackTrace()
             ""
