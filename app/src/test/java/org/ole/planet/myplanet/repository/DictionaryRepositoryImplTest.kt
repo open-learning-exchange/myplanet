@@ -7,9 +7,11 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -87,6 +89,27 @@ class DictionaryRepositoryImplTest {
         val result = dictionaryRepository.insertDictionaryData()
 
         assertTrue(result is DictionaryLoad.Inserted)
+        coVerify(exactly = 1) { dictionaryDao.insertAll(any()) }
+    }
+
+    @Test
+    fun `concurrent insertDictionaryData calls only insert once`() = runTest(testDispatcher) {
+        every { FileUtils.checkFileExist(context, Constants.DICTIONARY_URL) } returns true
+        every { FileUtils.getSDPathFromUrl(context, Constants.DICTIONARY_URL) } returns mockk()
+        val validJson = """[{"code": "1", "language": "en", "advance_code": "2", "word": "hello", "meaning": "greeting", "definition": "A greeting", "synonym": "hi", "antonoym": "bye"}]"""
+        every { FileUtils.getStringFromFile(any()) } returns validJson
+
+        val inserted = java.util.concurrent.atomic.AtomicBoolean(false)
+        coEvery { dictionaryDao.count() } answers { if (inserted.get()) 1L else 0L }
+        coEvery { dictionaryDao.insertAll(any()) } answers { inserted.set(true) }
+
+        val results = listOf(
+            async { dictionaryRepository.insertDictionaryData() },
+            async { dictionaryRepository.insertDictionaryData() }
+        ).map { it.await() }
+
+        assertEquals(1, results.count { it is DictionaryLoad.Inserted })
+        assertEquals(1, results.count { it is DictionaryLoad.AlreadyPopulated })
         coVerify(exactly = 1) { dictionaryDao.insertAll(any()) }
     }
 }
