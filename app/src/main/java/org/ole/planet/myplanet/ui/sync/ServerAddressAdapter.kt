@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.sync
 
+import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -7,7 +8,6 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
-import android.content.Context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.utils.DiffUtils

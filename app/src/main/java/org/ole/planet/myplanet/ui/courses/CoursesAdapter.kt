@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.utils.CourseSubjectClassifier
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ListViewMode
 import org.ole.planet.myplanet.utils.SelectionUtils
+import org.ole.planet.myplanet.utils.StableIdGenerator
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class CoursesAdapter(
@@ -123,6 +124,13 @@ class CoursesAdapter(
         if (context is OnHomeItemClickListener) {
             homeItemClickListener = context
         }
+        setHasStableIds(true)
+    }
+
+    override fun getItemId(position: Int): Long {
+        val item = getItem(position)
+        val id = StableIdGenerator.generateStringId(item.courseId)
+        return if (id != RecyclerView.NO_ID) id else StableIdGenerator.generateFallbackId(item)
     }
 
     fun setViewMode(mode: ListViewMode, onChanged: (() -> Unit)? = null) {
@@ -247,13 +255,13 @@ class CoursesAdapter(
 
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
         super.onViewRecycled(holder)
-        when (holder) {
-            is GridViewHolder -> {
-                Glide.with(context).clear(holder.binding.ivCover)
-            }
-            is ListViewHolder -> {
-                Glide.with(context).clear(holder.binding.ivCover)
-            }
+        val targetView = when (holder) {
+            is GridViewHolder -> holder.binding.ivCover
+            is ListViewHolder -> holder.binding.ivCover
+            else -> null
+        }
+        targetView?.let { view ->
+            Glide.with(context.applicationContext).clear(view)
         }
     }
 

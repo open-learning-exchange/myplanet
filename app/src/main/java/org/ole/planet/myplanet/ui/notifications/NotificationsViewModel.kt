@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.Locale
 import java.util.regex.Pattern
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -59,9 +60,15 @@ class NotificationsViewModel @Inject constructor(
         viewModelScope.launch {
             val payloadNotifications = notificationsRepository.getNotifications(userId, filter, isAdmin)
 
-            val byLoweredType = payloadNotifications.groupBy { it.type.lowercase() }
-            val taskNotifications = byLoweredType["task"] ?: emptyList()
-            val joinRequestNotifications = byLoweredType["join_request"] ?: emptyList()
+            val taskNotifications = mutableListOf<NotificationPayload>()
+            val joinRequestNotifications = mutableListOf<NotificationPayload>()
+            for (notification in payloadNotifications) {
+                if (notification.type.equals("task", ignoreCase = true)) {
+                    taskNotifications.add(notification)
+                } else if (notification.type.equals("join_request", ignoreCase = true)) {
+                    joinRequestNotifications.add(notification)
+                }
+            }
 
             val taskIds = taskNotifications
                 .mapNotNull { it.relatedId }
@@ -223,7 +230,7 @@ class NotificationsViewModel @Inject constructor(
         if (notifications.isEmpty()) return emptyList()
         // Normalize any unrecognized type to "notification" for a single Other group
         val grouped = notifications.groupBy { notif ->
-            val t = notif.type.lowercase()
+            val t = notif.type.lowercase(Locale.ROOT)
             if (t in KNOWN_TYPES) t else "notification"
         }
         val orderedTypes = (TYPE_ORDER.filter { grouped.containsKey(it) } +
@@ -249,8 +256,8 @@ class NotificationsViewModel @Inject constructor(
     }
 
     private fun resolveType(type: String, message: String, subType: String? = null): String {
-        if (type.lowercase() in KNOWN_TYPES) return type.lowercase()
-        val lower = message.lowercase()
+        if (type.lowercase(Locale.ROOT) in KNOWN_TYPES) return type.lowercase(Locale.ROOT)
+        val lower = message.lowercase(Locale.ROOT)
         // Raw server type "team" covers every team-related event (message/request/added/rejected/removed) in
         // whatever language the server rendered the message in, so classify structurally first and only fall
         // back to English message-sniffing to pick a more specific sub-bucket when it's recognizable.
@@ -278,7 +285,7 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
-    internal fun typeLabelFor(type: String): String = when (type.lowercase()) {
+    internal fun typeLabelFor(type: String): String = when (type.lowercase(Locale.ROOT)) {
         "join_request" -> context.getString(R.string.notif_group_join_requests)
         "team_join" -> context.getString(R.string.notif_group_team_updates)
         "task" -> context.getString(R.string.tasks)
@@ -353,7 +360,7 @@ class NotificationsViewModel @Inject constructor(
                 )
             }
             "join_request" -> {
-                if (notification.type.lowercase() != "join_request") {
+                if (!notification.type.equals("join_request", ignoreCase = true)) {
                     // Server notification with pre-formatted message
                     notification.message
                 } else {

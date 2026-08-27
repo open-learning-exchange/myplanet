@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.utils.LibraryType
 import org.ole.planet.myplanet.utils.LibraryTypeClassifier
 import org.ole.planet.myplanet.utils.ListViewMode
 import org.ole.planet.myplanet.utils.PdfThumbnailLoader
+import org.ole.planet.myplanet.utils.StableIdGenerator
 import org.ole.planet.myplanet.utils.Utilities
 
 class ResourcesAdapter(
@@ -52,6 +53,16 @@ class ResourcesAdapter(
     private val locallyOfflineIds = mutableSetOf<String>()
     private val externalFilesDir: File? by lazy { FileUtils.getExternalFilesDir(context) }
     private var adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
+
+    init {
+        setHasStableIds(true)
+    }
+
+    override fun getItemId(position: Int): Long {
+        val listModel = getItem(position)
+        val id = StableIdGenerator.generateStringId(listModel.item.id)
+        return if (id != RecyclerView.NO_ID) id else StableIdGenerator.generateFallbackId(listModel)
+    }
 
     companion object {
         const val PAYLOAD_SELECTION = "PAYLOAD_SELECTION"
@@ -199,6 +210,8 @@ class ResourcesAdapter(
             is ListViewHolder -> bindList(holder, model)
         }
     }
+
+    fun getLocallyOfflineIds(): Set<String> = locallyOfflineIds.toSet()
 
     override fun onBindViewHolder(
         holder: RecyclerView.ViewHolder,

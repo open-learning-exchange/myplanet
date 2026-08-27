@@ -10,6 +10,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.ImageViewCompat
@@ -31,6 +33,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -59,7 +62,7 @@ import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.GridSpanCalculator
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.ListViewMode
-import org.ole.planet.myplanet.utils.ResourceSearchUtils
+import org.ole.planet.myplanet.utils.ResourcesSearchUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
@@ -100,7 +103,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private val viewModel: ResourcesViewModel by viewModels()
     @Inject
     lateinit var realtimeSyncManager: RealtimeSyncManager
-
+    private var selectedDownloadFilterIndex: Int = 0   // 0 = All
+    private var lastDownloadFilterIndex: Int = 0
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private var refreshJob: Job? = null
     private var searchJob: Job? = null
@@ -157,7 +161,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override suspend fun getAdapter(): ListAdapter<*, *> {
         allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
 
-        val user = userRepository.getUserModel()
+        val user = viewModel.getCurrentUser()
         // The adapter caches the Context (Activity) which outlives onCreateView,
         // but Fragments and their host Activities are re-created together so this is safe from leaks.
         if (!::adapterLibrary.isInitialized) {
@@ -201,6 +205,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         initArrays()
         hideButton()
 
+        setupDownloadFilterChips()
+
         childFragmentManager.setFragmentResultListener("resource_added", viewLifecycleOwner) { _, _ ->
             refreshResourcesData()
         }
@@ -228,18 +234,25 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             }
         }
         viewLifecycleOwner.lifecycleScope.launch {
-            userModel = userRepository.getUserModel()
-            if (::adapterLibrary.isInitialized && _binding != null) {
-                checkList()
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.currentUser.filterNotNull().collectLatest { user ->
+                    userModel = user
+                    if (::adapterLibrary.isInitialized && _binding != null) {
+                        checkList()
+                    }
+                    val userId = userModel?.id
+                    if (userId != null) {
+                        viewModel.observeOpenedResourceIds(userId)
+                    }
+                }
             }
-            val userId = userModel?.id
-            if (userId != null) {
-                viewModel.observeOpenedResourceIds(userId)
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    viewModel.openedResourceIds.collectLatest { openedResourceIds ->
-                        if (::adapterLibrary.isInitialized) {
-                            adapterLibrary.setOpenedResourceIds(openedResourceIds)
-                        }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.openedResourceIds.collectLatest { openedResourceIds ->
+                    if (::adapterLibrary.isInitialized) {
+                        adapterLibrary.setOpenedResourceIds(openedResourceIds)
                     }
                 }
             }
@@ -389,10 +402,13 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             subjects == lastSubjects &&
             levels == lastLevels &&
             languages == lastLanguages &&
-            mediums == lastMediums
+            mediums == lastMediums &&
+            selectedDownloadFilterIndex == lastDownloadFilterIndex
         ) {
             return
         }
+
+        lastDownloadFilterIndex = selectedDownloadFilterIndex
 
         lastSearchQuery = searchQuery
         lastSearchTags = searchTagIds
@@ -472,6 +488,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private fun checkList(listSize: Int = if (::adapterLibrary.isInitialized) adapterLibrary.currentList.size else 0) {
         val hasAnyLibraryData = allResourceModels.isNotEmpty()
         val isGuest = userModel?.isGuest() == true
+        val scrollChipFilter = binding.root.findViewById<View>(R.id.scroll_chip_filter)
 
         if (!hasAnyLibraryData && listSize == 0) {
             selectAll.visibility = View.GONE
@@ -482,6 +499,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             filter.visibility = View.GONE
             clearTags.visibility = View.GONE
             tvDelete?.visibility = View.GONE
+            scrollChipFilter?.visibility = View.GONE
         } else {
             selectAll.visibility = if (isGuest) View.GONE else View.VISIBLE
             layoutSearch.visibility = View.VISIBLE
@@ -489,15 +507,19 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             binding.btnCollections.visibility = View.VISIBLE
             filter.visibility = View.VISIBLE
             clearTags.visibility = if (hasActiveFilters()) View.VISIBLE else View.GONE
+            scrollChipFilter?.visibility = View.VISIBLE
         }
         hideButton()
     }
 
-    private fun hasActiveFilters(): Boolean {
-        val hasSearchText = etSearch.text?.toString()?.trim()?.isNotEmpty() == true
-        val hasTagFilter = ::searchTags.isInitialized && searchTags.isNotEmpty()
-        return hasSearchText || hasTagFilter || subjects.isNotEmpty() || languages.isNotEmpty() || mediums.isNotEmpty() || levels.isNotEmpty()
-    }
+    private fun hasActiveFilters(): Boolean =
+        etSearch.text?.isNotBlank() == true ||
+                searchTags.isNotEmpty() ||
+                subjects.isNotEmpty() ||
+                levels.isNotEmpty() ||
+                languages.isNotEmpty() ||
+                mediums.isNotEmpty() ||
+                selectedDownloadFilterIndex != 0
 
     private fun initArrays() {
         subjects = HashSet()
@@ -562,6 +584,11 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private fun clearTagsButton() {
         clearTags.setOnClickListener {
             saveSearchActivity()
+            selectedDownloadFilterIndex = 0
+            val chipRow = binding.chipFilterRow
+            if (chipRow != null) {
+                renderDownloadChipSelection(chipRow)
+            }
             searchTags.clear()
             etSearch.setText(R.string.empty_text)
             tvSelected.text = getString(R.string.empty_text)
@@ -761,7 +788,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
     }
 
-
     private fun additionalSetup() {
         val bottomSheet = binding.cardFilter
         filter.setOnClickListener {
@@ -817,7 +843,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     private fun filterLocalLibraryByTag(models: List<ResourceListModel>, s: String, tags: List<TagEntity>): List<ResourceListModel> {
-        var filteredList = ResourceSearchUtils.searchLocalModels(models, s)
+        var filteredList = ResourcesSearchUtils.searchLocalModels(models, s)
 
         if (tags.isNotEmpty()) {
             filteredList = filteredList.filter { model ->
@@ -828,13 +854,24 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     private fun applyFilterModels(models: List<ResourceListModel>): List<ResourceListModel> {
+        val locallyOfflineIds = if (::adapterLibrary.isInitialized) adapterLibrary.getLocallyOfflineIds() else emptySet()
         return models.filter { model ->
             val l = model.library
             val sub = subjects.isEmpty() || subjects.let { l.subject?.containsAll(it) } == true
             val lev = levels.isEmpty() || l.level?.containsAll(levels) == true
             val lan = languages.isEmpty() || languages.contains(l.language)
             val med = mediums.isEmpty() || mediums.contains(l.mediaType)
-            sub && lev && lan && med
+
+            val isDownloaded = model.item.isOffline ||
+                    locallyOfflineIds.contains(model.item.id) ||
+                    model.isLocallyOffline
+            val passesDownloadFilter = when (selectedDownloadFilterIndex) {
+                1 -> isDownloaded
+                2 -> !isDownloaded
+                else -> true
+            }
+
+            sub && lev && lan && med && passesDownloadFilter
         }
     }
 
@@ -887,6 +924,35 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             }
         } else {
             onComplete?.invoke()
+        }
+    }
+
+    private fun setupDownloadFilterChips() {
+        val chipRow = binding.chipFilterRow
+        chipRow.removeAllViews()
+        val options = requireContext().resources.getStringArray(R.array.download_filter)
+        options.indices.forEach { label ->
+            val chip = layoutInflater.inflate(R.layout.item_filter_chip, chipRow, false) as TextView
+            chip.text = options[label]
+            chip.tag = label
+            chip.setOnClickListener {
+                selectedDownloadFilterIndex = label
+                renderDownloadChipSelection(chipRow)
+                applyFiltersAndUpdateUI()
+            }
+            chipRow.addView(chip)
+        }
+        renderDownloadChipSelection(chipRow)
+    }
+
+    private fun renderDownloadChipSelection(chipRow: LinearLayout) {
+        val selected = selectedDownloadFilterIndex
+        for (i in 0 until chipRow.childCount) {
+            val chip = chipRow.getChildAt(i) as? TextView ?: continue
+            val isSelected = (chip.tag as? Int) == selected
+            chip.setBackgroundResource(if (isSelected) R.drawable.bg_chip_selected else R.drawable.bg_chip_unselected)
+            chip.setTextColor(ContextCompat.getColor(requireContext(),
+                if (isSelected) R.color.chip_selected_text else R.color.daynight_textColor))
         }
     }
 }

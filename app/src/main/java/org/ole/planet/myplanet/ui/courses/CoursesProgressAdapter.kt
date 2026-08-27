@@ -43,11 +43,10 @@ class CoursesProgressAdapter(private val context: Context) : ListAdapter<Courses
 
         if (stepMistake != null && stepMistake.isNotEmpty()) {
             binding.llHeader.visibility = View.VISIBLE
-            val keys = stepMistake.keys.toList()
             val textColor = ContextCompat.getColor(context, R.color.daynight_textColor)
 
             val currentChildCount = binding.llProgress.childCount
-            val requiredChildCount = keys.size
+            val requiredChildCount = stepMistake.size
 
             if (currentChildCount > requiredChildCount) {
                 binding.llProgress.removeViews(requiredChildCount, currentChildCount - requiredChildCount)
@@ -81,14 +80,15 @@ class CoursesProgressAdapter(private val context: Context) : ListAdapter<Courses
                 }
             }
 
-            for (i in keys.indices) {
-                val stepKey = keys[i]
+            var i = 0
+            stepMistake.forEach { (stepKey, mistakes) ->
                 val row = binding.llProgress.getChildAt(i) as LinearLayout
                 val stepView = row.getChildAt(0) as TextView
                 val mistakeView = row.getChildAt(1) as TextView
 
                 stepView.text = "${stepKey.toInt().plus(1)}"
-                mistakeView.text = "${stepMistake[stepKey]}"
+                mistakeView.text = "$mistakes"
+                i++
             }
         } else {
             binding.llHeader.visibility = View.GONE

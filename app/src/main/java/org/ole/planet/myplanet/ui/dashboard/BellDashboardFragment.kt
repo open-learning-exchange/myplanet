@@ -26,7 +26,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDashboardFragment
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.CourseCompletion
-import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper

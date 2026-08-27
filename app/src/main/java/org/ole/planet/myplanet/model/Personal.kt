@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.content.Context
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -33,7 +32,7 @@ open class Personal {
     var path: String? = null
 
     companion object {
-        fun serialize(personal: Personal, context: Context): JsonObject {
+        fun serialize(personal: Personal, customDeviceName: String): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("title", personal.title)
             `object`.addProperty("uploadDate", Date().time)
@@ -47,7 +46,7 @@ open class Personal {
             val object1 = JsonObject()
             `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
-            `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+            `object`.addProperty("customDeviceName", customDeviceName)
             object1.addProperty("users", personal.userId)
             `object`.add("privateFor", object1)
             return `object`

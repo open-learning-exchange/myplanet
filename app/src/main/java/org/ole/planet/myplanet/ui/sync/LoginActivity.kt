@@ -602,16 +602,16 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                     binding.inputName.setText(user.name)
                     binding.inputPassword.requestFocus()
                 } else {
-                    submitForm(user.name, decrypted ?: password)
+                    lifecycleScope.launch {
+                        submitForm(user.name, decrypted ?: password)
+                    }
                 }
             }
         }
     }
 
-    private fun submitForm(name: String?, password: String?) {
-        lifecycleScope.launch {
-            AuthUtils.login(this@LoginActivity, loginSyncManager, name, password, dispatcherProvider.io)
-        }
+    private suspend fun submitForm(name: String?, password: String?) {
+        AuthUtils.login(this@LoginActivity, loginSyncManager, name, password, dispatcherProvider.io)
     }
 
     internal fun showGuestDialog(username: String) {
