@@ -85,12 +85,7 @@ class EnterprisesRepositoryImpl @Inject constructor(
     }
 
     override fun getReportsFlow(teamId: String): Flow<List<MyTeam>> {
-        return teamDao.observeByTeamIdAndDocType(teamId, "report")
-            .map { entities ->
-                entities.filter {
-                    it.status != "archived"
-                }.sortedByDescending { it.createdDate }
-            }
+        return teamDao.observeNonArchivedReportsByTeamId(teamId)
             .distinctUntilChanged { old, new ->
                 if (old.size != new.size) return@distinctUntilChanged false
                 old.zip(new).all { (o, n) -> o._id == n._id && o._rev == n._rev }

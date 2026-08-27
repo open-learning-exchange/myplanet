@@ -1,7 +1,12 @@
 package org.ole.planet.myplanet.repository
 
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -16,11 +21,38 @@ class EnterprisesRepositoryImplTest {
 
     private val teamDao: TeamDao = mockk()
     private val timeProvider: TimeProvider = mockk()
-    private val dispatcherProvider: DispatcherProvider = mockk()
+    private val testDispatcher = UnconfinedTestDispatcher()
+    private val dispatcherProvider: DispatcherProvider = mockk {
+        every { default } returns testDispatcher
+        every { io } returns testDispatcher
+        every { main } returns testDispatcher
+    }
 
     private val repository = EnterprisesRepositoryImpl(
         teamDao, timeProvider, dispatcherProvider
     )
+
+    @Test
+    fun `getReportsFlow delegates to observeNonArchivedReportsByTeamId`() = runTest {
+        val teamId = "team123"
+        val expectedReports = listOf(
+            MyTeam().apply {
+                _id = "report1"
+                createdDate = 2000L
+            },
+            MyTeam().apply {
+                _id = "report2"
+                createdDate = 1000L
+            }
+        )
+
+        every { teamDao.observeNonArchivedReportsByTeamId(teamId) } returns flowOf(expectedReports)
+
+        val result = repository.getReportsFlow(teamId).first()
+
+        assertEquals(expectedReports, result)
+        verify(exactly = 1) { teamDao.observeNonArchivedReportsByTeamId(teamId) }
+    }
 
     @Test
     fun `exportReportsAsCsv calculates correct profitLoss and endingBalance`() = runTest {
