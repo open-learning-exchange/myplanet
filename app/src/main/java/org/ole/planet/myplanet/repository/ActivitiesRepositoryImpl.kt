@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.distinctByContent
 
 class ActivitiesRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -62,8 +63,9 @@ class ActivitiesRepositoryImpl @Inject constructor(
         return offlineActivityDao.countByUserNameAndType(userName, UserSessionManager.KEY_LOGIN)
     }
 
-    override suspend fun getOfflineLogins(userName: String): Flow<List<OfflineActivity>> {
+    override fun getOfflineLogins(userName: String): Flow<List<OfflineActivity>> {
         return offlineActivityDao.observeByUserNameAndType(userName, UserSessionManager.KEY_LOGIN)
+            .distinctByContent { a, b -> a.id == b.id && a.loginTime == b.loginTime }
     }
 
     override suspend fun markResourceAdded(userId: String?, resourceId: String) {
