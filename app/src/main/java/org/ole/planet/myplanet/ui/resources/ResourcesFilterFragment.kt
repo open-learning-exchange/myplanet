@@ -117,10 +117,11 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
             subjects = data?.get("subjects")
             mediums = data?.get("mediums")
             levels = data?.get("levels")
-            selectedLvls = filterListener?.getSelectedFilter()?.get("levels") as MutableSet<String>
-            selectedSubs = filterListener?.getSelectedFilter()?.get("subjects") as MutableSet<String>
-            selectedMeds = filterListener?.getSelectedFilter()?.get("mediums") as MutableSet<String>
-            selectedLang = filterListener?.getSelectedFilter()?.get("languages") as MutableSet<String>
+            val selectedFilter = filterListener?.getSelectedFilter()
+            selectedLvls = selectedFilter?.get("levels")?.toMutableSet() ?: selectedLvls
+            selectedSubs = selectedFilter?.get("subjects")?.toMutableSet() ?: selectedSubs
+            selectedMeds = selectedFilter?.get("mediums")?.toMutableSet() ?: selectedMeds
+            selectedLang = selectedFilter?.get("languages")?.toMutableSet() ?: selectedLang
             setAdapter(binding.listLevel, levels, selectedLvls)
             setAdapter(binding.listLang, languages, selectedLang)
             setAdapter(binding.listMedium, mediums, selectedMeds)

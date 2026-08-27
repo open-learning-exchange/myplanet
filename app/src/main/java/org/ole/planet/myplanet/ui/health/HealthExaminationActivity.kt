@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.health
 
 import android.content.DialogInterface
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.MenuItem
 import android.view.View
 import android.widget.CheckBox
@@ -305,15 +304,15 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     }
 
     private val hasInfo: Boolean
-        get() = !TextUtils.isEmpty("${binding.etAllergies.text}") ||
-                !TextUtils.isEmpty("${binding.etDiag.text}") ||
-                !TextUtils.isEmpty("${binding.etImmunization.text}") ||
-                !TextUtils.isEmpty("${binding.etMedications.text}") ||
-                !TextUtils.isEmpty("${binding.etObservation.text}") ||
-                !TextUtils.isEmpty("${binding.etReferrals.text}") ||
-                !TextUtils.isEmpty("${binding.etLabtest.text}") ||
-                !TextUtils.isEmpty("${binding.etTreatments.text}") ||
-                !TextUtils.isEmpty("${binding.etXray.text}")
+        get() = "${binding.etAllergies.text}".isNotBlank() ||
+                "${binding.etDiag.text}".isNotBlank() ||
+                "${binding.etImmunization.text}".isNotBlank() ||
+                "${binding.etMedications.text}".isNotBlank() ||
+                "${binding.etObservation.text}".isNotBlank() ||
+                "${binding.etReferrals.text}".isNotBlank() ||
+                "${binding.etLabtest.text}".isNotBlank() ||
+                "${binding.etTreatments.text}".isNotBlank() ||
+                "${binding.etXray.text}".isNotBlank()
     private val isValidInput: Boolean
         get() {
             val scrollView = binding.rootScrollView
