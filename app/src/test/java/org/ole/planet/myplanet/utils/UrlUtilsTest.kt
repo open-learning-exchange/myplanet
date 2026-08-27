@@ -291,4 +291,15 @@ class UrlUtilsTest {
         val result = UrlUtils.dbUrl(spm)
         assertEquals(expected, result)
     }
+
+    @Test
+    fun testBasicAuthHeader_withPaddingAndNoPadding() {
+        // "user:pass" -> "dXNlcjpwYXNz" (no padding needed)
+        val result1 = UrlUtils.basicAuthHeader("user", "pass")
+        assertEquals("Basic dXNlcjpwYXNz", result1)
+
+        // "user:password" -> "dXNlcjpwYXNzd29yZA==" (with '=' padding)
+        val result2 = UrlUtils.basicAuthHeader("user", "password")
+        assertEquals("Basic dXNlcjpwYXNzd29yZA==", result2)
+    }
 }
