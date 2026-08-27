@@ -135,6 +135,47 @@ class MembersAdapterTest {
     }
 
     @Test
+    fun testOnBindViewHolder_bindsMemberDisplayName() {
+        val user = UserEntity(
+            id = "user1",
+            name = "Alice Example"
+        )
+        val list = listOf(
+            JoinedMemberData(user, 0, null, "", "", true)
+        )
+
+        adapter.submitList(list) {
+            val parent = FrameLayout(ApplicationProvider.getApplicationContext())
+            val viewHolder = adapter.onCreateViewHolder(parent, 0)
+
+            adapter.onBindViewHolder(viewHolder, 0)
+
+            assertEquals("Alice Example", viewHolder.binding.tvTitle.text.toString())
+        }
+    }
+
+    @Test
+    fun testOnBindViewHolder_bindsWhitespaceNameFallbackToName() {
+        val user = UserEntity(
+            id = "user1",
+            name = " "
+        )
+        val list = listOf(
+            JoinedMemberData(user, 0, null, "", "", true)
+        )
+
+        adapter.submitList(list) {
+            val parent = FrameLayout(ApplicationProvider.getApplicationContext())
+            val viewHolder = adapter.onCreateViewHolder(parent, 0)
+
+            adapter.onBindViewHolder(viewHolder, 0)
+
+            // When toString() yields " ", the fallback branch uses member.name (" ")
+            assertEquals(" ", viewHolder.binding.tvTitle.text.toString())
+        }
+    }
+
+    @Test
     fun testOnBindViewHolder_withUnknownPayload_fallsBackToFullBind() {
         val user1 = UserEntity(
             id = "user1",

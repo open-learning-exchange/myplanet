@@ -103,7 +103,8 @@ class MembersAdapter(
         val member = memberData.user
         val binding = holder.binding
 
-        binding.tvTitle.text = if (member.toString() == " ") member.name else member.toString()
+        val memberDisplayName = member.toString()
+        binding.tvTitle.text = if (memberDisplayName == " ") member.name else memberDisplayName
         binding.tvDescription.text = context.getString(
             R.string.member_description,
             member.getRoleAsString(),
