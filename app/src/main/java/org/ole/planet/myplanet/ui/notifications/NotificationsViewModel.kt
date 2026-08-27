@@ -245,7 +245,7 @@ class NotificationsViewModel @Inject constructor(
                     type in collapsedGroups -> false
                     else -> unreadCount > 0
                 }
-                add(NotificationListItem.Header(type, typeLabelFor(type), unreadCount, isExpanded))
+                add(NotificationListItem.Header(type, notificationsRepository.typeLabelFor(type), unreadCount, isExpanded))
                 if (isExpanded) {
                     items.forEach { notification ->
                         add(NotificationListItem.Item(notification, notification.id in selectedIds, inSelectionMode))
@@ -253,47 +253,6 @@ class NotificationsViewModel @Inject constructor(
                 }
             }
         }
-    }
-
-    private fun resolveType(type: String, message: String, subType: String? = null): String {
-        if (type.lowercase(Locale.ROOT) in KNOWN_TYPES) return type.lowercase(Locale.ROOT)
-        val lower = message.lowercase(Locale.ROOT)
-        // Raw server type "team" covers every team-related event (message/request/added/rejected/removed) in
-        // whatever language the server rendered the message in, so classify structurally first and only fall
-        // back to English message-sniffing to pick a more specific sub-bucket when it's recognizable.
-        if (type == "team") {
-            if (subType != null) return subType
-            return when {
-                lower.contains("requested to join") || lower.contains("wants to join") ||
-                    lower.contains("solicitado unirse") -> "join_request"
-                lower.contains("posted a message on") || lower.contains("posted a new voice") ||
-                    lower.contains("new voice in") || lower.contains("posted in") -> "chat"
-                else -> "team_join"
-            }
-        }
-        if (type == "newTask") return "task"
-        if (type == "newResource") return "resource"
-        return when {
-            lower.contains("requested to join") || lower.contains("wants to join") -> "join_request"
-            lower.contains("added you to") || lower.contains("you've been added") || lower.contains("you have been added") -> "team_join"
-            lower.contains("replied to your") || lower.contains("replied on your") || lower.contains("new reply to") -> "voice_reply"
-            lower.contains("posted a new voice") || lower.contains("new voice in") || lower.contains("posted in") -> "chat"
-            lower.contains("is due") || lower.contains("due:") -> "task"
-            lower.contains("storage") -> "storage"
-            lower.contains("resource") -> "resource"
-            else -> "notification"
-        }
-    }
-
-    internal fun typeLabelFor(type: String): String = when (type.lowercase(Locale.ROOT)) {
-        "join_request" -> context.getString(R.string.notif_group_join_requests)
-        "team_join" -> context.getString(R.string.notif_group_team_updates)
-        "task" -> context.getString(R.string.tasks)
-        "chat" -> context.getString(R.string.notif_group_new_voices)
-        "voice_reply" -> context.getString(R.string.notif_group_voice_replies)
-        "resource" -> context.getString(R.string.resources)
-        "storage" -> context.getString(R.string.notification_group_system)
-        else -> context.getString(R.string.notification_group_other)
     }
 
     companion object {
@@ -337,7 +296,7 @@ class NotificationsViewModel @Inject constructor(
         taskTeamNames: Map<String, String> = emptyMap(),
         joinRequestDetails: Map<String, Pair<String, String>> = emptyMap()
     ): Notification {
-        val resolvedType = resolveType(notification.type, notification.message, notification.subType)
+        val resolvedType = notificationsRepository.resolveType(notification.type, notification.message, notification.subType)
         val formattedText = when (resolvedType) {
             "task" -> {
                 val parsedDate = parseTaskDate(notification.message)

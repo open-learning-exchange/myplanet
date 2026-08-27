@@ -1,12 +1,16 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.Context
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Calendar
 import java.util.Date
+import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
@@ -22,6 +26,7 @@ import org.ole.planet.myplanet.utils.TimeProvider
 private const val STORAGE_WARNING_AVAILABLE_PERCENT = 10
 
 class NotificationsRepositoryImpl @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val userRepository: Lazy<UserRepository>,
     private val teamsRepository: Lazy<TeamsNotificationsRepository>,
     private val timeProvider: TimeProvider,
@@ -342,6 +347,47 @@ class NotificationsRepositoryImpl @Inject constructor(
         notificationDao.markSynced(syncResults)
     }
 
+    override fun resolveType(type: String, message: String, subType: String?): String {
+        if (type.lowercase(Locale.ROOT) in KNOWN_TYPES) return type.lowercase(Locale.ROOT)
+        val lower = message.lowercase(Locale.ROOT)
+        // Raw server type "team" covers every team-related event (message/request/added/rejected/removed) in
+        // whatever language the server rendered the message in, so classify structurally first and only fall
+        // back to English message-sniffing to pick a more specific sub-bucket when it's recognizable.
+        if (type == "team") {
+            if (subType != null) return subType
+            return when {
+                lower.contains("requested to join") || lower.contains("wants to join") ||
+                    lower.contains("solicitado unirse") -> "join_request"
+                lower.contains("posted a message on") || lower.contains("posted a new voice") ||
+                    lower.contains("new voice in") || lower.contains("posted in") -> "chat"
+                else -> "team_join"
+            }
+        }
+        if (type == "newTask") return "task"
+        if (type == "newResource") return "resource"
+        return when {
+            lower.contains("requested to join") || lower.contains("wants to join") -> "join_request"
+            lower.contains("added you to") || lower.contains("you've been added") || lower.contains("you have been added") -> "team_join"
+            lower.contains("replied to your") || lower.contains("replied on your") || lower.contains("new reply to") -> "voice_reply"
+            lower.contains("posted a new voice") || lower.contains("new voice in") || lower.contains("posted in") -> "chat"
+            lower.contains("is due") || lower.contains("due:") -> "task"
+            lower.contains("storage") -> "storage"
+            lower.contains("resource") -> "resource"
+            else -> "notification"
+        }
+    }
+
+    override fun typeLabelFor(type: String): String = when (type.lowercase(Locale.ROOT)) {
+        "join_request" -> context.getString(R.string.notif_group_join_requests)
+        "team_join" -> context.getString(R.string.notif_group_team_updates)
+        "task" -> context.getString(R.string.tasks)
+        "chat" -> context.getString(R.string.notif_group_new_voices)
+        "voice_reply" -> context.getString(R.string.notif_group_voice_replies)
+        "resource" -> context.getString(R.string.resources)
+        "storage" -> context.getString(R.string.notification_group_system)
+        else -> context.getString(R.string.notification_group_other)
+    }
+
     private fun parseNotification(doc: JsonObject): AppNotification? {
         val id = doc.get("_id")?.asString ?: return null
         val rawType = doc.get("type")?.asString ?: ""
@@ -434,5 +480,9 @@ class NotificationsRepositoryImpl @Inject constructor(
             }
         }
         notificationDao.upsertAll(parsedList)
+    }
+
+    companion object {
+        val KNOWN_TYPES = setOf("join_request", "team_join", "task", "chat", "voice_reply", "resource", "storage")
     }
 }

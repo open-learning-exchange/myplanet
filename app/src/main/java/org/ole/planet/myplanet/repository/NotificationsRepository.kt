@@ -30,4 +30,6 @@ interface NotificationsRepository {
     suspend fun bulkInsertFromSync(jsonArray: JsonArray)
     suspend fun insert(doc: JsonObject)
     suspend fun deleteNotifications(ids: Set<String>): Set<String>
+    fun resolveType(type: String, message: String, subType: String?): String
+    fun typeLabelFor(type: String): String
 }
