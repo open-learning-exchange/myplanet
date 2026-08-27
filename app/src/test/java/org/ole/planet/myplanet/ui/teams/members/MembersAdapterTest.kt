@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -13,6 +14,7 @@ import org.ole.planet.myplanet.callback.OnMemberActionListener
 import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.teams.members.MembersAdapter.Companion.PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED
+import org.ole.planet.myplanet.utils.TimeUtils
 
 @RunWith(AndroidJUnit4::class)
 class MembersAdapterTest {
@@ -158,6 +160,52 @@ class MembersAdapterTest {
 
             // Title should be updated if full bind is correctly called as a fallback
             assertEquals("User 1", viewHolder.binding.tvTitle.text.toString())
+        }
+    }
+
+    @Test
+    fun testOnBindViewHolder_lastVisitDate_usesSharedTimeUtilsFormatter() {
+        val user1 = UserEntity(
+            id = "user1",
+            name = "User 1"
+        )
+        // March 11, 2024, 00:00:00 UTC
+        val timestamp = 1710115200000L
+        val list = listOf(
+            JoinedMemberData(user1, 0, timestamp, "", "", false)
+        )
+
+        adapter.submitList(list) {
+            val parent = FrameLayout(ApplicationProvider.getApplicationContext())
+            val viewHolder = adapter.onCreateViewHolder(parent, 0)
+
+            adapter.onBindViewHolder(viewHolder, 0)
+
+            val expected = TimeUtils.getFormattedDate(timestamp)
+            assertTrue(viewHolder.binding.tvLastVisit.text.toString().contains(expected))
+        }
+    }
+
+    @Test
+    fun testOnBindViewHolder_nullLastVisitDate_showsNoVisit() {
+        val user1 = UserEntity(
+            id = "user1",
+            name = "User 1"
+        )
+        val list = listOf(
+            JoinedMemberData(user1, 0, null, "", "", false)
+        )
+
+        adapter.submitList(list) {
+            val parent = FrameLayout(ApplicationProvider.getApplicationContext())
+            val viewHolder = adapter.onCreateViewHolder(parent, 0)
+
+            adapter.onBindViewHolder(viewHolder, 0)
+
+            // When lastVisitDate is null, no_visit string is used, not a formatted date.
+            val expected = ApplicationProvider.getApplicationContext<android.content.Context>()
+                .getString(org.ole.planet.myplanet.R.string.no_visit)
+            assertTrue(viewHolder.binding.tvLastVisit.text.toString().contains(expected))
         }
     }
 }
