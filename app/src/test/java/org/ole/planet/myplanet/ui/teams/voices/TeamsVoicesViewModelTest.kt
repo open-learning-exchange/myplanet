@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.teams.voices
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -11,6 +12,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
@@ -53,5 +55,20 @@ class TeamsVoicesViewModelTest {
         assertEquals(mockTeam, team)
         assertEquals(teamId, policy?.teamId)
         assertEquals(true, policy?.isPublic)
+    }
+
+    @Test
+    fun `getFilteredNews derives notification count from countTeamChats and returns the list`() = runTest(testDispatcher) {
+        val teamId = "team123"
+        val newsList = listOf<News>(mockk(relaxed = true), mockk(relaxed = true))
+        coEvery { voicesRepository.getFilteredNews(teamId) } returns newsList
+        coEvery { voicesRepository.countTeamChats(teamId) } returns 7L
+
+        val result = viewModel.getFilteredNews(teamId)
+
+        assertEquals(newsList, result)
+        coVerify(exactly = 1) { voicesRepository.countTeamChats(teamId) }
+        coVerify(exactly = 1) { notificationsRepository.updateTeamNotification(teamId, 7) }
+        coVerify(exactly = 0) { notificationsRepository.updateTeamNotification(teamId, newsList.size) }
     }
 }
