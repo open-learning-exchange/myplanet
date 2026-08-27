@@ -120,21 +120,23 @@ class VoicesLabelManager(
 
     companion object {
         private val reverseLabels by lazy { Constants.LABELS.entries.associate { it.value to it.key } }
+        private val separatorRegex by lazy { Regex("[_-]") }
+        private val whitespaceRegex by lazy { Regex("\\s+") }
 
         internal fun formatLabelValue(raw: String): String {
-            val cleaned = raw.replace("_", " ").replace("-", " ")
+            val cleaned = raw.replace(separatorRegex, " ")
             if (cleaned.isBlank()) {
                 return raw
             }
+            val locale = Locale.getDefault()
             return cleaned
                 .trim()
                 .split(whitespaceRegex)
                 .joinToString(" ") { part ->
-                    part.lowercase(Locale.getDefault()).replaceFirstChar { ch ->
-                        if (ch.isLowerCase()) ch.titlecase(Locale.getDefault()) else ch.toString()
+                    part.lowercase(locale).replaceFirstChar { ch ->
+                        if (ch.isLowerCase()) ch.titlecase(locale) else ch.toString()
                     }
                 }
         }
-        private val whitespaceRegex by lazy { Regex("\\s+") }
     }
 }
