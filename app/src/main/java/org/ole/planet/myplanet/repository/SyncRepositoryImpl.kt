@@ -44,28 +44,19 @@ class SyncRepositoryImpl @Inject constructor(
     private val transactionSyncManager: dagger.Lazy<TransactionSyncManager>,
     private val syncTimeLogger: SyncTimeLogger
 ) : SyncRepository {
-    override fun uploadLoginData(): Flow<SyncUiState> {
-        val workRequest = OneTimeWorkRequest.Builder(UserDataWorker::class.java)
-            .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to UserDataWorker.UPLOAD_TYPE_LOGIN))
-            .build()
-        val workManager = WorkManager.getInstance(context)
-        workManager.enqueueUniqueWork(
-            "UploadUserData_Login",
-            ExistingWorkPolicy.REPLACE,
-            workRequest
-        )
-        return workManager.getWorkInfoByIdFlow(workRequest.id).map { workInfo ->
-            mapWorkInfoToState(workInfo)
-        }
-    }
+    override fun uploadLoginData(): Flow<SyncUiState> =
+        enqueueUserDataUpload("UploadUserData_Login", UserDataWorker.UPLOAD_TYPE_LOGIN)
 
-    override fun uploadBulkData(): Flow<SyncUiState> {
+    override fun uploadBulkData(): Flow<SyncUiState> =
+        enqueueUserDataUpload("UploadUserData_Bulk", UserDataWorker.UPLOAD_TYPE_BULK)
+
+    private fun enqueueUserDataUpload(uniqueWorkName: String, uploadType: String): Flow<SyncUiState> {
         val workRequest = OneTimeWorkRequest.Builder(UserDataWorker::class.java)
-            .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to UserDataWorker.UPLOAD_TYPE_BULK))
+            .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to uploadType))
             .build()
         val workManager = WorkManager.getInstance(context)
         workManager.enqueueUniqueWork(
-            "UploadUserData_Bulk",
+            uniqueWorkName,
             ExistingWorkPolicy.REPLACE,
             workRequest
         )
