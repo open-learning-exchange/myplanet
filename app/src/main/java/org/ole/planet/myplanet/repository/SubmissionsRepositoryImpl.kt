@@ -6,7 +6,6 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.util.Date
@@ -76,11 +75,11 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override fun getPendingSurveysFlow(userId: String?): Flow<List<Submission>> {
-        return submissionDao.observePendingSurveys(userId).map { rows -> rows.map { it } }
+        return submissionDao.observePendingSurveys(userId)
     }
 
     override fun getSubmissionsFlow(userId: String): Flow<List<Submission>> {
-        return submissionDao.observeByUserId(userId).map { rows -> rows.map { it } }.distinctUntilChanged { old, new ->
+        return submissionDao.observeByUserId(userId).distinctUntilChanged { old, new ->
             // Assuming any meaningful mutation bumps lastUpdateTime.
             old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.lastUpdateTime == n.lastUpdateTime }
         }
@@ -409,6 +408,32 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         )
     }
 
+    override suspend fun startExamSession(examId: String, parentId: String?, userId: String?, request: CreateExamSubmissionRequest, recreate: Boolean, deleteStale: Boolean): Submission {
+        if (!recreate) {
+            val submission = getSubmissionsByParentId(parentId, userId, "pending").firstOrNull()
+            if (submission != null) {
+                return submission
+            }
+        }
+
+        var retries = 0
+        var lastException: Exception? = null
+        while (retries < 3) {
+            try {
+                if (deleteStale) {
+                    deleteExamSubmissions(examId, request.exam.courseId, userId)
+                }
+                return createExamSubmission(request)
+            } catch (e: Exception) {
+                // Retry local Room writes to handle potential transient SQLite constraints during rapid operations
+                e.printStackTrace()
+                lastException = e
+                retries++
+            }
+        }
+        throw IllegalStateException("Failed to start exam session after 3 attempts", lastException)
+    }
+
     override suspend fun createExamSubmission(request: CreateExamSubmissionRequest): Submission {
         val (userId, userDob, userGender, exam, type, teamId) = request
         val team = if (!teamId.isNullOrEmpty()) {
@@ -463,10 +488,20 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun saveExamAnswer(answerData: ExamAnswerData): Boolean {
-        val (submission, question, ans, listAns, otherText, otherVisible, type, index, total, isExplicitSubmission) = answerData
+        val (submission, question, ans, listAns, otherText, otherVisible, type, index, total, isExplicitSubmission, userId) = answerData
+
         val submissionRow = submission?.id?.let { submissionDao.getByIdOrRemoteId(it) }
             ?: submission
-            ?: submissionDao.getLatestPendingByUser(submission?.userId)
+            ?: run {
+                val parentId = question.examId?.let { eId ->
+                    val exam = examDao.getById(eId)
+                    if (!exam?.courseId.isNullOrEmpty()) "$eId@${exam?.courseId}" else eId
+                }
+                if (parentId != null) {
+                    getSubmissionsByParentId(parentId, userId ?: submission?.userId, "pending").firstOrNull()
+                } else null
+            }
+            ?: submissionDao.getLatestPendingByUser(userId ?: submission?.userId)
         val submissionId = submissionRow?.id
         val questionId = question.id
         

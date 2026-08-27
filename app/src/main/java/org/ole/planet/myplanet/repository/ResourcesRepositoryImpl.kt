@@ -22,9 +22,7 @@ import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
-import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.MyLibrary
-import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.ResourceItem
@@ -54,7 +52,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val teamsSyncRepositoryLazy: dagger.Lazy<TeamsSyncRepository>,
     private val myLibraryDao: MyLibraryDao,
     private val userRepository: UserRepository,
-    private val teamDao: TeamDao,
+    private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository>,
     private val userSessionManager: UserSessionManager,
     private val configurationsRepository: ConfigurationsRepository,
     private val dispatcherProvider: DispatcherProvider
@@ -281,6 +279,18 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun markResourceAdded(userId: String?, resourceId: String) {
         activitiesRepository.markResourceAdded(userId, resourceId)
+    }
+
+    override suspend fun setUserLibrary(resourceId: String, add: Boolean): MyLibrary? {
+        val userId = userRepository.getUserModel()?.id ?: return null
+        val library = getLibraryItemByResourceId(resourceId) ?: getLibraryItemById(resourceId)
+        if (library != null) {
+            val contains = library.userId?.contains(userId) == true
+            if (add && contains) return library
+            if (!add && !contains) return library
+        }
+        val updated = updateUserLibrary(resourceId, userId, add) ?: return null
+        return if ((updated.userId?.contains(userId) == true) == add) updated else null
     }
 
     override suspend fun updateUserLibrary(
@@ -715,22 +725,13 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
         library._rev = remoteRev
         myLibraryDao.upsert(library)
 
-        // Private resources also create a local team-resource link (still a Realm model).
+        // Private resources also create a local team-resource link.
         if (library.isPrivate && !library.privateFor.isNullOrBlank()) {
-            val resolvedPlanetCode = planetCode?.takeIf { it.isNotBlank() }
-                ?: sharedPrefManager.getPlanetCode()
-            teamDao.upsert(
-                MyTeam(
-                    _id = UUID.randomUUID().toString(),
-                    teamId = library.privateFor,
-                    title = library.title,
-                    resourceId = remoteId,
-                    sourcePlanet = resolvedPlanetCode,
-                    teamType = "local",
-                    teamPlanetCode = resolvedPlanetCode,
-                    docType = "resourceLink",
-                    updated = true,
-                )
+            teamsRepositoryLazy.get().createLocalResourceLink(
+                teamId = library.privateFor!!,
+                resourceId = remoteId,
+                title = library.title,
+                planetCode = planetCode
             )
         }
         return true

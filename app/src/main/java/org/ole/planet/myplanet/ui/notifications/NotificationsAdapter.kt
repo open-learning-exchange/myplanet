@@ -152,13 +152,15 @@ class NotificationsAdapter(
     }
 }
 
-internal fun iconResFor(type: String): Int = when (type.lowercase()) {
-    "join_request" -> R.drawable.ic_join_request
-    "team_join" -> R.drawable.ic_activity
-    "task" -> R.drawable.ic_date
-    "chat" -> R.drawable.ic_mic
-    "voice_reply" -> R.drawable.ic_send
-    "resource" -> R.drawable.ic_folder
-    "storage" -> R.drawable.ic_warn
-    else -> R.drawable.ic_notifications
-}
+private val ICON_BY_TYPE = mapOf(
+    "join_request" to R.drawable.ic_join_request,
+    "team_join" to R.drawable.ic_activity,
+    "task" to R.drawable.ic_date,
+    "chat" to R.drawable.ic_mic,
+    "voice_reply" to R.drawable.ic_send,
+    "resource" to R.drawable.ic_folder,
+    "storage" to R.drawable.ic_warn
+)
+
+internal fun iconResFor(type: String): Int =
+    ICON_BY_TYPE[type.lowercase(Locale.ROOT)] ?: R.drawable.ic_notifications

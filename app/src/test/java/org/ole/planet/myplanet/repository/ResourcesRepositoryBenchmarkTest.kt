@@ -13,7 +13,6 @@ import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
-import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -32,7 +31,7 @@ class ResourcesRepositoryBenchmarkTest {
     private val teamsSyncRepositoryLazy: dagger.Lazy<TeamsSyncRepository> = mockk(relaxed = true)
     private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
-    private val teamDao: TeamDao = mockk(relaxed = true)
+    private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository> = mockk(relaxed = true)
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
     private val configurationsRepository: ConfigurationsRepository = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
@@ -51,7 +50,7 @@ class ResourcesRepositoryBenchmarkTest {
             teamsSyncRepositoryLazy,
             myLibraryDao,
             userRepository,
-            teamDao,
+            teamsRepositoryLazy,
             userSessionManager,
             configurationsRepository,
             dispatcherProvider
