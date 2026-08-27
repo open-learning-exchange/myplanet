@@ -12,7 +12,10 @@ import org.ole.planet.myplanet.model.TableDataUpdate
 @Singleton
 class RealtimeSyncManager @Inject constructor() {
     
-    private val _dataUpdateFlow = MutableSharedFlow<TableDataUpdate>(extraBufferCapacity = 1)
+    private val _dataUpdateFlow = MutableSharedFlow<TableDataUpdate>(
+        replay = 16,
+        extraBufferCapacity = 64
+    )
     val dataUpdateFlow: SharedFlow<TableDataUpdate> = _dataUpdateFlow.asSharedFlow()
 
     fun updatesFor(table: String): Flow<TableDataUpdate> {

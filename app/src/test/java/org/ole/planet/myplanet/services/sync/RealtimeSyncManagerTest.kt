@@ -59,4 +59,45 @@ class RealtimeSyncManagerTest {
         manager.notifyTableUpdated(TableDataUpdate("no_collectors", 0, 0))
         assertTrue(true)
     }
+
+    @Test
+    fun testBurstTableUpdatesNotDropped() = runTest {
+        val manager = RealtimeSyncManager()
+        val results = mutableListOf<TableDataUpdate>()
+
+        val job = launch(UnconfinedTestDispatcher()) {
+            manager.dataUpdateFlow.collect { results.add(it) }
+        }
+
+        val updates = List(30) { index ->
+            TableDataUpdate("table_$index", index, 0, false)
+        }
+
+        updates.forEach { update ->
+            manager.notifyTableUpdated(update)
+        }
+
+        assertEquals(30, results.size)
+        assertEquals(updates, results)
+        job.cancel()
+    }
+
+    @Test
+    fun testNewSubscriberReceivesReplayedUpdates() = runTest {
+        val manager = RealtimeSyncManager()
+        val updates = List(5) { index ->
+            TableDataUpdate("replay_table_$index", index, 1, false)
+        }
+
+        updates.forEach { manager.notifyTableUpdated(it) }
+
+        val results = mutableListOf<TableDataUpdate>()
+        val job = launch(UnconfinedTestDispatcher()) {
+            manager.dataUpdateFlow.collect { results.add(it) }
+        }
+
+        assertEquals(5, results.size)
+        assertEquals(updates, results)
+        job.cancel()
+    }
 }
