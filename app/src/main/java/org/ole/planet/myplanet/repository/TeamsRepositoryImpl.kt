@@ -899,6 +899,10 @@ class TeamsRepositoryImpl @Inject constructor(
         return true
     }
 
+    override suspend fun recordTeamActivity() {
+        syncTeamActivities()
+    }
+
     override suspend fun syncTeamActivities() {
         val updateUrl = sharedPrefManager.getServerUrl()
         val mapping = serverUrlMapper.processUrl(updateUrl)
@@ -1075,11 +1079,7 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getNextLeaderCandidate(teamId: String, excludeUserId: String?): UserEntity? {
-        val members = teamDao.getByTeamIdAndDocType(teamId, "membership").filter {
-            !it.isLeader &&
-                it.status != "archived" &&
-                (excludeUserId == null || it.userId != excludeUserId)
-        }
+        val members = teamDao.getEligibleNextLeaderCandidates(teamId, excludeUserId)
         if (members.isEmpty()) return null
 
         val userIds = members.mapNotNull { it.userId }

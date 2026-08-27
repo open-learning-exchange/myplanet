@@ -142,6 +142,26 @@ class TeamsRepositoryImplTest {
     }
 
     @Test
+    fun `test recordTeamActivity delegates to syncTeamActivities`() = runTest(testDispatcher) {
+        io.mockk.mockkObject(org.ole.planet.myplanet.MainApplication.Companion)
+        coEvery { org.ole.planet.myplanet.MainApplication.Companion.isServerReachable(any()) } returns true
+
+        coEvery { uploadManager.uploadResource(any()) } returns Unit
+        coEvery { uploadManager.uploadTeams() } returns Unit
+        coEvery { uploadManager.uploadTeamActivities() } returns Unit
+
+        teamsRepository.recordTeamActivity()
+
+        advanceUntilIdle()
+
+        coVerify { uploadManager.uploadResource(null) }
+        coVerify { uploadManager.uploadTeams() }
+        coVerify { uploadManager.uploadTeamActivities() }
+
+        io.mockk.unmockkObject(org.ole.planet.myplanet.MainApplication.Companion)
+    }
+
+    @Test
     fun `test syncTeamActivities uses dispatcherProvider io`() = runTest(testDispatcher) {
         io.mockk.mockkObject(org.ole.planet.myplanet.MainApplication.Companion)
         coEvery { org.ole.planet.myplanet.MainApplication.Companion.isServerReachable(any()) } returns true
