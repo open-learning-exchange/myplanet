@@ -10,6 +10,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.callback.OnStartDragListener
 import org.ole.planet.myplanet.model.MyLife
+import org.robolectric.shadows.ShadowLooper
 
 @RunWith(AndroidJUnit4::class)
 class LifeAdapterTest {
@@ -27,6 +28,10 @@ class LifeAdapterTest {
         override fun onStartDrag(viewHolder: RecyclerView.ViewHolder?) {}
     }
 
+    private fun flushMainThread() {
+        ShadowLooper.runUiThreadTasks()
+    }
+
     @Test
     fun `onItemMove swaps positions and onItemMoveFinished invokes reorderCallback and submitList`() {
         var receivedList: List<MyLife>? = null
@@ -40,9 +45,11 @@ class LifeAdapterTest {
         )
 
         adapter.submitList(listOf(lifeItem("a", 0), lifeItem("b", 1), lifeItem("c", 2)))
+        flushMainThread()
         val moved = adapter.onItemMove(0, 2)
         assertEquals(true, moved)
         adapter.onItemMoveFinished()
+        flushMainThread()
 
         assertNotNull(receivedList)
         assertEquals(listOf("b", "c", "a"), receivedList!!.map { it.title })
@@ -61,7 +68,9 @@ class LifeAdapterTest {
         )
 
         adapter.submitList(listOf(lifeItem("a", 0), lifeItem("b", 1)))
+        flushMainThread()
         adapter.onItemMoveFinished()
+        flushMainThread()
         assertEquals(listOf("a", "b"), adapter.currentList.map { it.title })
     }
 
@@ -77,8 +86,10 @@ class LifeAdapterTest {
         )
 
         adapter.submitList(listOf(lifeItem("a", 0), lifeItem("b", 1)))
+        flushMainThread()
         adapter.onItemMove(0, 1)
         adapter.onItemMoveFinished()
+        flushMainThread()
 
         assertNotNull(receivedList)
         assertEquals(listOf("b", "a"), receivedList!!.map { it.title })
