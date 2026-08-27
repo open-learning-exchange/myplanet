@@ -86,7 +86,7 @@ object MarkdownUtils {
     ): String {
         val matcher = markdownContent?.let { imagePattern.matcher(it) }
             ?: return markdownContent.orEmpty()
-        val result = StringBuffer()
+        val result = StringBuilder()
         while (matcher.find()) {
             val relativePath = matcher.group(1)
             val modifiedPath = if (relativePath != null && relativePath.startsWith("resources/")) {
