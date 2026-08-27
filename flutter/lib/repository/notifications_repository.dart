@@ -1,5 +1,12 @@
 import 'package:drift/drift.dart';
 
+import '../core/config/server_config.dart';
+import '../core/network/network_result.dart';
+import '../core/sync/adaptive_batch_processor.dart';
+import '../core/sync/sync_result.dart';
+import '../core/utils/json_utils.dart';
+import '../core/utils/url_utils.dart';
+import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
 
 /// Offline notification read/actions from `NotificationsRepositoryImpl`.
@@ -10,10 +17,12 @@ class NotificationsRepository {
     required NewsDao newsDao,
     required TeamTaskDao teamTaskDao,
     DateTime Function()? now,
+    PlanetApi? api,
   }) : _teamNotificationDao = teamNotificationDao,
        _newsDao = newsDao,
        _teamTaskDao = teamTaskDao,
-       _now = now ?? DateTime.now;
+       _now = now ?? DateTime.now,
+       _api = api;
 
   static const int storageWarningPercent = 10;
 
@@ -25,15 +34,257 @@ class NotificationsRepository {
   final NewsDao _newsDao;
   final TeamTaskDao _teamTaskDao;
   final DateTime Function() _now;
+  final PlanetApi? _api;
 
-  Stream<List<NotificationRow>> watch(String userId, {String filter = 'all'}) =>
-      _dao.watchForUser(userId, filter: filter);
+  Stream<List<NotificationRow>> watch(
+    String userId, {
+    String filter = 'all',
+    bool isAdmin = false,
+  }) => _dao.watchForUser(userId, filter: filter, isAdmin: isAdmin);
 
-  Stream<int> watchUnreadCount(String userId) => _dao.watchUnreadCount(userId);
+  Stream<int> watchUnreadCount(String userId, {bool isAdmin = false}) =>
+      _dao.watchUnreadCount(userId, isAdmin: isAdmin);
 
   Future<int> markAsRead(Iterable<String> ids) => _dao.markAsRead(ids);
+
+  /// Port of `NotificationsRepositoryImpl.markNotificationAsRead` — a
+  /// `summary_`-prefixed id marks every notification of that type for [userId]
+  /// read (the dashboard's "mark all" by type); any other id marks a single
+  /// row. Server-originated rows are flagged for read-state upload.
+  Future<int> markNotificationAsRead(String id, String? userId) {
+    if (id.startsWith('summary_')) {
+      return _dao.markSummaryAsRead(userId, id.substring('summary_'.length));
+    }
+    return _dao.markAsRead([id]);
+  }
+
   Future<int> markAllAsRead(String userId) => _dao.markAllAsRead(userId);
   Future<int> delete(String id) => _dao.deleteById(id);
+
+  /// Port of `TransactionSyncManager.syncNotificationReads`.
+  ///
+  /// PUTs each server-originated notification marked for read-state upload
+  /// back to `{dbUrl}/notifications/{id}` and records the fresh `rev` the
+  /// server returns. Without this the local "read" never reaches the server,
+  /// so a notification read on one device re-surfaces as unread on the next
+  /// sync. Swallows per-row failures (the Kotlin `e.printStackTrace()` does
+  /// the same) so one bad row cannot strand the rest.
+  Future<void> syncNotificationReads(ServerConfig config) async {
+    final api = _api;
+    if (api == null) return;
+    final pending = await _dao.getPendingSyncNotifications();
+    if (pending.isEmpty) return;
+
+    final endpoint = Uri.parse(UrlUtils.credentialFreeDbUrl(config));
+    final base =
+        '${endpoint.scheme}://${endpoint.host}'
+        '${endpoint.hasPort ? ':${endpoint.port}' : ''}/notifications';
+    final authHeader = UrlUtils.authHeader(config);
+
+    for (final notification in pending) {
+      final rev = notification.rev;
+      if (rev == null) continue;
+      final body = <String, dynamic>{
+        '_id': notification.id,
+        '_rev': rev,
+        'status': 'read',
+        'user': notification.userId,
+        'message': notification.message,
+        'type': notification.type,
+        'priority': notification.priority,
+        'time': notification.createdAt,
+        if (notification.link != null) 'link': notification.link,
+      };
+      try {
+        final result = await api.putJsonObject(
+          '$base/${notification.id}',
+          body,
+          authHeader: authHeader,
+        );
+        if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
+          await _dao.markSynced(notification.id, data['rev'] as String?);
+        }
+      } catch (_) {
+        // Mirrors Kotlin's `e.printStackTrace()` — one failed row must not
+        // abort the remaining read-state uploads.
+      }
+    }
+  }
+
+  /// Port of `TransactionSyncManager`'s `"notifications"` sync-in: a paginated
+  /// `_all_docs` walk over the `notifications` database that upserts each
+  /// server document. Unlike the other sync repositories this one does **not**
+  /// run `deleteNotIn` afterwards — the Kotlin walk never does either, and a
+  /// prune would evict the locally-authored `userId:resource:count` and
+  /// `userId:storage` rows that have no server document. Stale server rows
+  /// linger until individually deleted, matching Kotlin.
+  Future<SyncResult> sync({
+    required ServerConfig config,
+    void Function(SyncProgress)? onProgress,
+  }) async {
+    final api = _api;
+    if (api == null) {
+      return const SyncFailed('notifications sync not available offline');
+    }
+    final dbUrl = UrlUtils.dbUrl(config);
+    final auth = UrlUtils.authHeader(config);
+    final countResult = await api.getJsonObject(
+      '$dbUrl/notifications/_all_docs?limit=0',
+      authHeader: auth,
+    );
+    if (countResult is! NetworkSuccess<Map<String, dynamic>>) {
+      return SyncFailed(describeNetworkFailure(countResult));
+    }
+    final total = JsonUtils.getInt('total_rows', countResult.data);
+    if (total == 0) {
+      onProgress?.call(const SyncProgress(completed: 0, total: 0));
+      return const SyncComplete(0);
+    }
+
+    final batchSizer = AdaptiveBatchProcessor(initialSize: 100);
+    var savedCount = 0;
+    var skip = 0;
+    while (skip < total) {
+      final size = batchSizer.currentSize;
+      final timer = Stopwatch()..start();
+      final result = await api.getJsonObject(
+        '$dbUrl/notifications/_all_docs?include_docs=true&limit=$size&skip=$skip',
+        authHeader: auth,
+      );
+      timer.stop();
+      if (result is! NetworkSuccess<Map<String, dynamic>>) {
+        batchSizer.recordFailure();
+        return SyncFailed(describeNetworkFailure(result));
+      }
+      batchSizer.recordSuccess(timer.elapsedMilliseconds);
+      final rows = result.data['rows'];
+      if (rows is! List || rows.isEmpty) break;
+      final documents = rows
+          .whereType<Map<String, dynamic>>()
+          .map((row) => JsonUtils.getObject('doc', row))
+          .whereType<Map<String, dynamic>>()
+          .where((doc) {
+            final id = JsonUtils.getString('_id', doc);
+            return id.isNotEmpty && !id.startsWith('_design');
+          })
+          .toList(growable: false);
+      savedCount += await _bulkInsertFromSync(documents);
+      skip += rows.length;
+      onProgress?.call(
+        SyncProgress(completed: skip.clamp(0, total), total: total),
+      );
+    }
+    return SyncComplete(savedCount);
+  }
+
+  /// Port of `NotificationsRepositoryImpl.bulkInsertFromSync` — upserts the
+  /// parsed documents, preserving `needsSync`/`isRead` for a row whose read
+  /// state changed locally but has not been uploaded yet (a re-pull would
+  /// otherwise clobber the local "read" with the server's stale "unread").
+  Future<int> _bulkInsertFromSync(List<Map<String, dynamic>> documents) async {
+    final parsed = documents
+        .map(_parseNotification)
+        .whereType<NotificationsCompanion>()
+        .toList(growable: false);
+    if (parsed.isEmpty) return 0;
+    final existing = await _dao.getByIds(
+      parsed.map((c) => c.id.value).toList(),
+    );
+    final merged = <NotificationsCompanion>[];
+    for (final companion in parsed) {
+      final id = companion.id.value;
+      final prior = existing[id];
+      if (prior != null && prior.needsSync) {
+        merged.add(
+          companion.copyWith(
+            needsSync: const Value(true),
+            isRead: Value(prior.isRead),
+          ),
+        );
+      } else {
+        merged.add(companion);
+      }
+    }
+    await _dao.upsertAll(merged);
+    return merged.length;
+  }
+
+  /// Port of `NotificationsRepositoryImpl.parseNotification`. Maps the
+  /// CouchDB notification document to the local row, stamping `isFromServer`
+  /// and carrying `_rev` so the read-state upload can PUT without a 409.
+  NotificationsCompanion? _parseNotification(Map<String, dynamic> doc) {
+    final id = JsonUtils.getString('_id', doc);
+    if (id.isEmpty) return null;
+    final rawType = JsonUtils.getString('type', doc);
+    final message = JsonUtils.getString('message', doc);
+    final link = JsonUtils.getStringOrNull('link', doc);
+    return NotificationsCompanion.insert(
+      id: id,
+      userId: JsonUtils.getString('user', doc),
+      message: Value(message),
+      type: Value(rawType),
+      subType: Value(_extractTeamSubtype(rawType, doc)),
+      relatedId: Value(_extractRelatedId(rawType, link, doc)),
+      link: link == null ? const Value.absent() : Value(link),
+      isRead: Value(JsonUtils.getString('status', doc) != 'unread'),
+      createdAt: _notificationCreatedAt(doc),
+      priority: Value(JsonUtils.getInt('priority', doc)),
+      isFromServer: const Value(true),
+      rev: Value(JsonUtils.getStringOrNull('_rev', doc)),
+    );
+  }
+
+  // `time` is the server's ms epoch; missing/zero falls back to now, matching
+  // Kotlin's `doc.get("time")?.let { Date(it.asLong) } ?: Date()`.
+  int _notificationCreatedAt(Map<String, dynamic> doc) {
+    final time = JsonUtils.getLong('time', doc);
+    return time > 0 ? time : _now().millisecondsSinceEpoch;
+  }
+
+  /// Port of `NotificationsRepositoryImpl.extractTeamSubtype`.
+  String? _extractTeamSubtype(String rawType, Map<String, dynamic> doc) {
+    if (rawType != 'team') return null;
+    final linkParams = JsonUtils.getObject('linkParams', doc);
+    final activeTab = JsonUtils.getString('activeTab', linkParams);
+    return activeTab == 'applicantTab' ? 'join_request' : null;
+  }
+
+  /// Port of `NotificationsRepositoryImpl.extractRelatedId`.
+  String? _extractRelatedId(
+    String rawType,
+    String? link,
+    Map<String, dynamic> doc,
+  ) {
+    switch (rawType) {
+      case 'team':
+        return JsonUtils.getStringOrNull('item', doc);
+      case 'replyMessage':
+        return JsonUtils.getStringOrNull('replyTo', doc);
+      case 'newTask':
+        return _extractIdFromLink(link);
+      default:
+        return null;
+    }
+  }
+
+  /// Port of `NotificationsRepositoryImpl.extractIdFromLink`. Mirrors
+  /// Kotlin's `link.trim('/').split('/')`: only leading/trailing slashes are
+  /// trimmed (not whitespace), and empty mid-segments are kept, so the
+  /// `view` index lines up with the Kotlin walk exactly.
+  String? _extractIdFromLink(String? link) {
+    if (link == null || link.trim().isEmpty) return null;
+    var trimmed = link;
+    while (trimmed.startsWith('/')) {
+      trimmed = trimmed.substring(1);
+    }
+    while (trimmed.endsWith('/')) {
+      trimmed = trimmed.substring(0, trimmed.length - 1);
+    }
+    final segments = trimmed.split('/');
+    final viewIndex = segments.indexOf('view');
+    if (viewIndex < 0 || viewIndex >= segments.length - 1) return null;
+    return segments[viewIndex + 1];
+  }
 
   Future<void> updateResourceNotification(String userId, int count) async {
     final id = '$userId:resource:count';

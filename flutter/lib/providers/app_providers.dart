@@ -518,6 +518,7 @@ final notificationsRepositoryProvider = Provider<NotificationsRepository>(
     teamNotificationDao: ref.watch(teamNotificationDaoProvider),
     newsDao: ref.watch(newsDaoProvider),
     teamTaskDao: ref.watch(teamTaskDaoProvider),
+    api: ref.watch(planetApiProvider),
   ),
 );
 

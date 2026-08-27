@@ -8,6 +8,7 @@ import 'courses_providers.dart';
 import 'events_provider.dart';
 import 'feedback_provider.dart';
 import 'health_provider.dart';
+import 'notifications_provider.dart';
 import 'resources_providers.dart';
 import 'surveys_provider.dart';
 import 'sync_state.dart';
@@ -25,6 +26,7 @@ enum DashboardSyncArea {
   chat,
   health,
   activities,
+  notifications,
 }
 
 enum DashboardSyncStatus { waiting, running, succeeded, failed }
@@ -128,6 +130,13 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
       await _syncArea(area);
     }
 
+    // Port of `SyncManager`'s `transactionSyncManager.syncNotificationReads()`
+    // phase - runs after the table pulls and before `recordSyncActivity`,
+    // so a read state that landed during the sync uploads in the same pass.
+    // Swallowed: a failed upload must not flip a successful sync to failed
+    // (the Kotlin calls it in a fire-and-collect `async`/`awaitAll`).
+    await _syncNotificationReads();
+
     await _recordSyncActivity();
     await _uploadMyPlanetActivities();
     await _queueSearchActivities();
@@ -197,7 +206,24 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
           .read(searchActivityUploaderProvider)
           .queuePending(config: config, userId: user?.id);
     } catch (_) {
-      // Deliberately ignored — see above.
+      // Deliberately ignored - see above.
+    }
+  }
+
+  /// Port of `SyncManager`'s `syncNotificationReads` phase. Unlike
+  /// [_uploadMyPlanetActivities] this runs even on a fully-failed pull pass:
+  /// read-state upload is independent of whether any table pulled, so a row
+  /// marked read before a failed sync still uploads. Swallowed on error for
+  /// the same reason as the telemetry uploads above.
+  Future<void> _syncNotificationReads() async {
+    final config = ref.read(serverConfigProvider);
+    if (config == null) return;
+    try {
+      await ref
+          .read(notificationsRepositoryProvider)
+          .syncNotificationReads(config);
+    } catch (_) {
+      // Deliberately ignored - see above.
     }
   }
 
@@ -226,6 +252,8 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
       DashboardSyncArea.health => ref.read(healthSyncProvider.notifier).sync(),
       DashboardSyncArea.activities =>
         ref.read(activitiesSyncProvider.notifier).sync(),
+      DashboardSyncArea.notifications =>
+        ref.read(notificationsSyncProvider.notifier).sync(),
     };
 
     final result = switch (area) {
@@ -239,6 +267,7 @@ class DashboardSyncNotifier extends Notifier<DashboardSyncState> {
       DashboardSyncArea.chat => ref.read(chatSyncProvider),
       DashboardSyncArea.health => ref.read(healthSyncProvider),
       DashboardSyncArea.activities => ref.read(activitiesSyncProvider),
+      DashboardSyncArea.notifications => ref.read(notificationsSyncProvider),
     };
 
     _replace(

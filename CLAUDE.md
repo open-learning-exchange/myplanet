@@ -102,6 +102,30 @@ pure function. **Survey sort date**: `SurveysViewModel.getSortDate` prefers
 `sourceSurveyId`); a `surveySortDate` pure function ports it. 14 new tests,
 1474 pass.
 
+Phase 97 closed the notifications domain's missing half: the **sync-in
+(pull) direction**. `TransactionSyncManager`'s `"notifications"` walk had
+never ported, so a server-side notification (join request, new task, reply)
+never reached the local cache — the bell only ever showed rows the
+**upload** direction had authored (`userId:resource:count`,
+`userId:storage`, team watermarks). The `Notifications` table gains `rev`
++ `needsSync` (schema v44, pure cache so no preservation test);
+`NotificationDao` gains `markSummaryAsRead`/`getPendingSyncNotifications`/
+`upsertAll`/`getByIds`/`deleteByIds`/`markSynced` plus the Phase 53
+`watchForUser`/`watchUnreadCount` type-error fixes. `NotificationsRepository.sync`
+ports the `_all_docs` walk and `parseNotification`; `_bulkInsertFromSync`
+preserves a locally-read row's `isRead` + `needsSync` across a re-pull (the
+same round-trip shape as Phase 56's security-data fix and Phase 74's
+reactions) so a re-sync cannot undo a read. `_design` docs are skipped
+(`!id.startsWith("_design")`, no trailing slash). Unlike every other sync
+repository this one runs **no** `deleteNotIn` — the Kotlin walk never does
+either, and a prune would evict the locally-authored count/storage rows
+that have no server document. The **read-state round-trip** closes too:
+`markNotificationAsRead` flags server-originated rows `needsSync = true`,
+and `syncNotificationReads` PUTs each pending row back with the carried
+`rev` then calls `markSynced`. A new `DashboardSyncArea.notifications` +
+`NotificationsSyncNotifier` wire the bell-list refresh into the sync
+center. 4 new tests, 1478 pass.
+
 Phase 47 localised the other four languages: `tool/arb_from_strings_xml.dart` derives `app_ar.arb`,
 `app_fr.arb`, `app_ne.arb` and `app_so.arb` from the Kotlin `values-*/strings.xml` (195–196 of 727
 keys each, nothing machine-translated), which also made the language picker's four dead entries

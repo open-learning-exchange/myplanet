@@ -476,9 +476,10 @@ final teamMembershipActionsProvider = Provider<TeamMembershipActions>(
 final teamsProvider = StreamProvider<List<TeamRow>>((ref) async* {
   final search = ref.watch(teamsSearchProvider).trim().toLowerCase();
   final type = ref.watch(teamsTypeProvider);
-  await for (final rows
-      in ref.watch(teamsRepositoryProvider).watchCatalog(type: type)) {
-    yield rows
+  final userId = ref.watch(sessionProvider).valueOrNull?.id;
+  final repo = ref.watch(teamsRepositoryProvider);
+  await for (final rows in repo.watchCatalog(type: type)) {
+    final filtered = rows
         .where(
           (row) =>
               search.isEmpty ||
@@ -486,6 +487,14 @@ final teamsProvider = StreamProvider<List<TeamRow>>((ref) async* {
               (row.description ?? '').toLowerCase().contains(search),
         )
         .toList();
+    // Port of `TeamsRepositoryImpl.mapToTeamDetails`'s sort: leader > member
+    // > non-member, then 30-day visit count DESC. Without it the catalog was
+    // alphabetical (`name ASC`) and a user's own teams floated nowhere near
+    // the top, diverging from the Kotlin list.
+    final ids = filtered.map((r) => r.id).toList();
+    final statuses = await repo.memberStatuses(userId, ids);
+    final visits = await repo.recentVisitCounts(ids);
+    yield sortTeamsCatalog(filtered, statuses, visits);
   }
 });
 

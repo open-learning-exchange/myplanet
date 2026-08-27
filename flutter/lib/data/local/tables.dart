@@ -257,6 +257,12 @@ class Notifications extends Table {
   BoolColumn get isFromServer => boolean().withDefault(const Constant(false))();
   BoolColumn get needsSync => boolean().withDefault(const Constant(false))();
 
+  /// The CouchDB `_rev` of the notification document, set when a server
+  /// notification is pulled. Read-state upload PUTs the doc back, so it needs
+  /// a rev to avoid a 409 conflict; `getPendingSyncNotifications` filters on
+  /// `rev IS NOT NULL` so a locally-authored row (no rev yet) is not sent.
+  TextColumn get rev => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }

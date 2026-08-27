@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/sync/sync_result.dart';
 import '../data/local/app_database.dart';
 import '../ui/notifications/notification_grouping.dart';
 import 'app_providers.dart';
 import 'session_provider.dart';
+import 'sync_state.dart';
 
 /// Port of `ui/notifications/NotificationsViewModel.kt`.
 ///
@@ -22,13 +24,15 @@ final notificationsProvider = StreamProvider<List<NotificationRow>>((ref) {
   final filter = ref.watch(notificationFilterProvider);
   return ref
       .watch(notificationsRepositoryProvider)
-      .watch(user.id, filter: filter.name);
+      .watch(user.id, filter: filter.name, isAdmin: user.userAdmin);
 });
 
 final unreadNotificationCountProvider = StreamProvider<int>((ref) {
   final user = ref.watch(sessionProvider).valueOrNull;
   if (user == null) return Stream.value(0);
-  return ref.watch(notificationsRepositoryProvider).watchUnreadCount(user.id);
+  return ref
+      .watch(notificationsRepositoryProvider)
+      .watchUnreadCount(user.id, isAdmin: user.userAdmin);
 });
 
 class NotificationActions {
@@ -37,7 +41,10 @@ class NotificationActions {
   final Ref ref;
 
   Future<void> markAsRead(String id) async {
-    await ref.read(notificationsRepositoryProvider).markAsRead([id]);
+    final userId = ref.read(sessionProvider).valueOrNull?.id;
+    await ref
+        .read(notificationsRepositoryProvider)
+        .markNotificationAsRead(id, userId);
   }
 
   Future<void> markAllAsRead() async {
@@ -115,3 +122,20 @@ final notificationExpansionProvider =
       NotificationExpansionNotifier,
       NotificationExpansionState
     >((ref) => NotificationExpansionNotifier());
+
+/// Port of `TransactionSyncManager`'s `"notifications"` sync-in direction:
+/// pulls server notification documents into the local cache so they surface in
+/// the bell list, and so read-state upload (`syncNotificationReads`) has rows
+/// with a `rev` to PUT back.
+class NotificationsSyncNotifier extends SyncNotifier {
+  @override
+  Future<SyncResult> runSync(config, void Function(SyncProgress) onProgress) =>
+      ref
+          .read(notificationsRepositoryProvider)
+          .sync(config: config, onProgress: onProgress);
+}
+
+final notificationsSyncProvider =
+    NotifierProvider<NotificationsSyncNotifier, SyncUiState>(
+      NotificationsSyncNotifier.new,
+    );

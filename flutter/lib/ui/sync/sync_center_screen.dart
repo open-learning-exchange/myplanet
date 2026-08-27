@@ -222,4 +222,9 @@ class _SyncAreaTile extends StatelessWidget {
     description: l10n.syncActivitiesDescription,
     icon: Icons.history_outlined,
   ),
+  DashboardSyncArea.notifications => (
+    label: l10n.notifications,
+    description: l10n.syncNotificationsDescription,
+    icon: Icons.notifications_outlined,
+  ),
 };
