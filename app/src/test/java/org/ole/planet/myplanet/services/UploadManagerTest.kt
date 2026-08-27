@@ -85,6 +85,25 @@ class UploadManagerTest {
     }
 
     @Test
+    fun `uploadTeams keys uploadedTeams by local team id when response id differs`() = testScope.runTest {
+        val mockTeam = TeamUploadData("localTeam1", JsonObject(), false, null)
+        val mockRepo = io.mockk.mockk<TeamsSyncRepository>(relaxed = true)
+        every { teamsSyncRepository.get() } returns mockRepo
+        coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam)
+
+        val bulkResponse = com.google.gson.JsonArray().apply {
+            add(JsonObject().apply { addProperty("id", "serverGeneratedId1"); addProperty("rev", "rev1") })
+        }
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns retrofit2.Response.success(bulkResponse)
+        coEvery { mockRepo.markTeamsUploaded(any()) } returns Unit
+
+        uploadManager.uploadTeams()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { mockRepo.markTeamsUploaded(mapOf("localTeam1" to "rev1")) }
+    }
+
+    @Test
     fun `uploadTeams handles bulk network failure`() = testScope.runTest {
         val mockRepo = io.mockk.mockk<TeamsSyncRepository>(relaxed = true)
         every { teamsSyncRepository.get() } returns mockRepo
