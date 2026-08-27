@@ -155,6 +155,19 @@ class LifeRepositoryImplTest {
     }
 
     @Test
+    fun getMyLifeForDashboard_returnsVisibleItemsFromDao() = runTest {
+        val userId = "123"
+        val item1 = MyLife().apply { weight = 1; this.userId = userId; isVisible = true }
+        coEvery { myLifeDao.getVisibleByUserId(userId) } returns listOf(item1)
+
+        val result = repository.getMyLifeForDashboard(userId, emptyList())
+
+        assertEquals(1, result.size)
+        assertEquals(1, result[0].weight)
+        coVerify(exactly = 1) { myLifeDao.getVisibleByUserId(userId) }
+    }
+
+    @Test
     fun getMyLifeForDashboard_validJson() = runTest {
         val userId = "123"
         val expectedItems = listOf(
@@ -163,7 +176,7 @@ class LifeRepositoryImplTest {
         )
         val json = Gson().toJson(expectedItems)
         every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns json
-        coEvery { myLifeDao.getByUserId(userId) } returns emptyList()
+        coEvery { myLifeDao.getVisibleByUserId(userId) } returns emptyList()
 
         val result = repository.getMyLifeForDashboard(userId, emptyList())
 
@@ -181,6 +194,7 @@ class LifeRepositoryImplTest {
 
         val item1 = MyLife().apply { weight = 1; this.userId = userId; this.isVisible = true }
         val item2 = MyLife().apply { weight = 2; this.userId = userId; this.isVisible = true }
+        coEvery { myLifeDao.getVisibleByUserId(userId) } returns emptyList()
         coEvery { myLifeDao.getByUserId(userId) } returns listOf(item1, item2)
 
         val result = repository.getMyLifeForDashboard(userId, emptyList())
