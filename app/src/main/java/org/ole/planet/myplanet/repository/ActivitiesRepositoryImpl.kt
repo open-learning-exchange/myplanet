@@ -353,17 +353,26 @@ class ActivitiesRepositoryImpl @Inject constructor(
         }
         if (documentList.isEmpty()) return
 
-        val ids = documentList.map { JsonUtils.getString("_id", it) }.filter { it.isNotEmpty() }.distinct()
+        val ids = LinkedHashSet<String>()
+        val loginTimes = LinkedHashSet<Long>()
+        val userNames = LinkedHashSet<String>()
+        for (jsonDoc in documentList) {
+            val id = JsonUtils.getString("_id", jsonDoc)
+            if (id.isNotEmpty()) ids.add(id)
+            val loginTime = JsonUtils.getLong("loginTime", jsonDoc)
+            if (loginTime > 0) loginTimes.add(loginTime)
+            val userName = JsonUtils.getString("user", jsonDoc)
+            if (userName.isNotEmpty()) userNames.add(userName)
+        }
+
         val existingActivitiesMap = if (ids.isNotEmpty()) {
-            offlineActivityDao.getByRemoteIds(ids).associateBy { it._id ?: "" }.toMutableMap()
+            offlineActivityDao.getByRemoteIds(ids.toList()).associateBy { it._id ?: "" }.toMutableMap()
         } else {
             mutableMapOf()
         }
 
-        val loginTimes = documentList.map { JsonUtils.getLong("loginTime", it) }.filter { it > 0 }.distinct()
-        val userNames = documentList.map { JsonUtils.getString("user", it) }.filter { it.isNotEmpty() }.distinct()
         val fallbackActivitiesMap = if (loginTimes.isNotEmpty() && userNames.isNotEmpty()) {
-            offlineActivityDao.getByLoginTimesAndUserNames(loginTimes, userNames)
+            offlineActivityDao.getByLoginTimesAndUserNames(loginTimes.toList(), userNames.toList())
                 .associateBy { "${it.loginTime}_${it.userName}" }
                 .toMutableMap()
         } else {
