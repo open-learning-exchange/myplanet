@@ -319,7 +319,7 @@ class MyHealthFragment : Fragment() {
             .drop(1)
             .debounce(SEARCH_DEBOUNCE_MS)
             .distinctUntilChanged()
-            .onEach { query -> viewModel.searchPatients(query ?: "", "joinDate", true) }
+            .onEach { query -> viewModel.searchPatients(query?.toString() ?: "", "joinDate", true) }
             .launchIn(viewLifecycleOwner.lifecycleScope)
     }
 

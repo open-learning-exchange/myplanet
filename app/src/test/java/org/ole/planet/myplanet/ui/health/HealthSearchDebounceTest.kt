@@ -64,7 +64,7 @@ class HealthSearchDebounceTest {
             .drop(1)
             .debounce(300)
             .distinctUntilChanged()
-            .onEach { query -> viewModel.searchPatients(query ?: "", "joinDate", true) }
+            .onEach { query -> viewModel.searchPatients(query?.toString() ?: "", "joinDate", true) }
             .launchIn(this)
 
         for (fragment in listOf("J", "Jo", "Joh", "John")) {
