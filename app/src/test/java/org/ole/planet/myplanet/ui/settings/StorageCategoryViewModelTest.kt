@@ -12,6 +12,7 @@ import io.mockk.unmockkAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -126,7 +127,7 @@ class StorageCategoryViewModelTest {
         assertEquals(Unit, viewModel.deleteCompleteEvent.first())
     }
 
-    private fun loadItems(items: List<OfflineResourceItem>) {
+    private suspend fun TestScope.loadItems(items: List<OfflineResourceItem>) {
         coEvery {
             resourcesRepository.getOfflineResourceItems(olePath, any(), any())
         } returns items
