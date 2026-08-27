@@ -55,8 +55,10 @@ object SecurePrefs {
     }
     
     fun warmUp(context: Context) {
-        if (cachedAead == null) getAead(context)
-        if (cachedSecureStore == null) getSecureStore(context)
+        runCatching {
+            if (cachedAead == null) getAead(context)
+            if (cachedSecureStore == null) getSecureStore(context)
+        }
     }
 
     @Suppress("DEPRECATION")

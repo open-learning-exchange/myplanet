@@ -105,7 +105,8 @@ object TimeUtils {
 
     fun formatDateForCsv(date: Long): String =
         try {
-            csvDateFormatter.format(Instant.ofEpochMilli(date))
+            val formatter = formatterFor("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)", ZoneId.systemDefault(), Locale.US)
+            formatter.format(Instant.ofEpochMilli(date))
         } catch (e: Exception) {
             e.printStackTrace()
             ""
