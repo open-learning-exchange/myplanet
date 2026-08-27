@@ -1,10 +1,19 @@
 package org.ole.planet.myplanet.utils
 
+import android.app.Application
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import java.io.ByteArrayOutputStream
+import java.io.PrintStream
 
+@RunWith(RobolectricTestRunner::class)
+@Config(application = Application::class)
 class JsonUtilsTest {
 
     @Test
@@ -102,4 +111,34 @@ class JsonUtilsTest {
         assertEquals(JsonObject(), JsonUtils.getJsonObject("missing", obj))
         assertEquals(JsonObject(), JsonUtils.getJsonObject("wrongType", obj))
     }
+
+    @Test
+    fun testTypeMismatchesAreQuietOnStderr() {
+        val obj = JsonObject()
+        obj.add("wrongType", JsonObject())
+        val array = com.google.gson.JsonArray()
+        array.add(JsonObject())
+        obj.add("wrongArr", array)
+
+        val originalErr = System.err
+        val captured = ByteArrayOutputStream()
+        System.setErr(PrintStream(captured, true))
+        try {
+            JsonUtils.getInt("wrongType", obj)
+            JsonUtils.getFloat("wrongType", obj)
+            JsonUtils.getString(array, 0)
+            JsonUtils.getJsonArray("wrongType", obj)
+            JsonUtils.getJsonObject("wrongArr", obj)
+            JsonUtils.getLong("wrongType", obj)
+        } finally {
+            System.setErr(originalErr)
+        }
+
+        val output = captured.toString()
+        assertTrue(
+            "safeGet must not dump stack traces on expected type mismatches, but stderr was:\n$output",
+            output.isBlank(),
+        )
+    }
 }
+

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utils
 
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
@@ -9,6 +10,8 @@ import com.google.gson.JsonParser.parseString
 import org.ole.planet.myplanet.model.News
 
 object JsonUtils {
+    private const val TAG = "JsonUtils"
+
     val gson: Gson by lazy {
         Gson()
     }
@@ -17,7 +20,7 @@ object JsonUtils {
         return try {
             block()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.d(TAG, "expected type mismatch, using fallback", e)
             default()
         }
     }
@@ -28,7 +31,7 @@ object JsonUtils {
             try {
                 gson.fromJson(news.viewIn, JsonArray::class.java)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.d(TAG, "failed to parse viewIn, ignoring", e)
                 null
             }
         } else null
