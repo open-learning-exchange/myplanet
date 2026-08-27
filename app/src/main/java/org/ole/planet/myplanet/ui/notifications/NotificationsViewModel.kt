@@ -256,13 +256,14 @@ class NotificationsViewModel @Inject constructor(
     }
 
     private fun resolveType(type: String, message: String, subType: String? = null): String {
-        if (type.lowercase(Locale.ROOT) in KNOWN_TYPES) return type.lowercase(Locale.ROOT)
+        val lowerType = type.lowercase(Locale.ROOT)
+        if (lowerType in KNOWN_TYPES) return lowerType
         val lower = message.lowercase(Locale.ROOT)
         // Raw server type "team" covers every team-related event (message/request/added/rejected/removed) in
         // whatever language the server rendered the message in, so classify structurally first and only fall
         // back to English message-sniffing to pick a more specific sub-bucket when it's recognizable.
-        if (type == "team") {
-            if (subType != null) return subType
+        if (lowerType == "team") {
+            if (subType != null) return subType.lowercase(Locale.ROOT)
             return when {
                 lower.contains("requested to join") || lower.contains("wants to join") ||
                     lower.contains("solicitado unirse") -> "join_request"
@@ -271,8 +272,8 @@ class NotificationsViewModel @Inject constructor(
                 else -> "team_join"
             }
         }
-        if (type == "newTask") return "task"
-        if (type == "newResource") return "resource"
+        if (lowerType == "newtask") return "task"
+        if (lowerType == "newresource") return "resource"
         return when {
             lower.contains("requested to join") || lower.contains("wants to join") -> "join_request"
             lower.contains("added you to") || lower.contains("you've been added") || lower.contains("you have been added") -> "team_join"
@@ -285,15 +286,18 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
-    internal fun typeLabelFor(type: String): String = when (type.lowercase(Locale.ROOT)) {
-        "join_request" -> context.getString(R.string.notif_group_join_requests)
-        "team_join" -> context.getString(R.string.notif_group_team_updates)
-        "task" -> context.getString(R.string.tasks)
-        "chat" -> context.getString(R.string.notif_group_new_voices)
-        "voice_reply" -> context.getString(R.string.notif_group_voice_replies)
-        "resource" -> context.getString(R.string.resources)
-        "storage" -> context.getString(R.string.notification_group_system)
-        else -> context.getString(R.string.notification_group_other)
+    internal fun typeLabelFor(type: String): String {
+        val lowerType = type.lowercase(Locale.ROOT)
+        return when (lowerType) {
+            "join_request" -> context.getString(R.string.notif_group_join_requests)
+            "team_join" -> context.getString(R.string.notif_group_team_updates)
+            "task" -> context.getString(R.string.tasks)
+            "chat" -> context.getString(R.string.notif_group_new_voices)
+            "voice_reply" -> context.getString(R.string.notif_group_voice_replies)
+            "resource" -> context.getString(R.string.resources)
+            "storage" -> context.getString(R.string.notification_group_system)
+            else -> context.getString(R.string.notification_group_other)
+        }
     }
 
     companion object {

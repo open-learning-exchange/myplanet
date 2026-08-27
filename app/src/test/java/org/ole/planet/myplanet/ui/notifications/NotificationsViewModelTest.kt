@@ -178,6 +178,22 @@ class NotificationsViewModelTest {
     }
 
     @Test
+    fun testResolveTypeLowercasesSubType() = runTest(testDispatcher) {
+        val payload = notification(id = "1", type = "team", isRead = false, message = "غير معروف", subType = "Join_Request")
+        loadNotifications(payload)
+
+        assertEquals("join_request", item("1").notification.type)
+    }
+
+    @Test
+    fun testResolveTypeClassifiesKnownTypeCaseInsensitively() = runTest(testDispatcher) {
+        val payload = notification(id = "1", type = "TASK", isRead = false, message = "do something")
+        loadNotifications(payload)
+
+        assertEquals("task", item("1").notification.type)
+    }
+
+    @Test
     fun testResolveTypeClassifiesRawTeamTypeAsChatForPostedMessage() = runTest(testDispatcher) {
         val payload = notification(id = "1", type = "team", isRead = false, message = "Bhushan Nim has posted a message on \"test GT\" team.")
         loadNotifications(payload)
