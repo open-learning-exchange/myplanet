@@ -579,6 +579,8 @@
     <string name="no_data_available_please_check_and_try_again">Aucune donnée disponible, veuillez vérifier et réessayer.</string>
     <string name="no_course_matched_filter">Aucun cours correspondant au filtre</string>
     <string name="added_to_my_library">ajouté à myLibrary</string>
+    <string name="format_added_to_mylibrary">%1$s ajouté à myLibrary</string>
+    <string name="format_removed_from_mylibrary">%1$s retiré de myLibrary</string>
     <string name="added_to_my_courses">ajouté à myCourses</string>
     <string name="do_you_want_to_stay_online">Voulez-vous rester en ligne ?</string>
     <string name="device_not_connected_to_planet">Appareil non connecté à la planète.</string>
@@ -1266,6 +1268,7 @@
     <string name="current_cv">CV actuel : %s</string>
     <string name="select_pdf_only">Veuillez sélectionner un fichier PDF</string>
     <string name="file_not_found">Fichier introuvable : %s</string>
+    <string name="text_content_truncated">Le fichier est trop volumineux pour être affiché en entier — seule la première partie est affichée</string>
     <string name="chat_already_shared_to_destination">Cette discussion a déjà été partagée vers cette destination</string>
     <string name="load_earlier_messages">Charger les messages précédents</string>
     <string name="already_shared">Déjà partagé</string>

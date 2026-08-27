@@ -49,6 +49,7 @@ import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.JsonUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utils.KeyboardUtils.hideSoftKeyboard
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
+import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.Utilities.toast
 
 @AndroidEntryPoint
@@ -101,7 +102,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
             questions = surveysRepository.getExamQuestions(exam?.id ?: "")
             binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
             val parentId = computeParentId()
-            if (sub == null) {
+            if (type != "exam" && sub == null) {
                 val submissions = submissionsRepository.getSubmissionsByParentId(
                     parentId, user?.id, "pending"
                 )
@@ -116,70 +117,63 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
             if ((questions?.size ?: 0) > 0) {
                 if (type == "exam") {
-                    val examIdValue = exam?.id
-                    val examCourseIdValue = exam?.courseId
-                    val userIdValue = user?.id
-
-                    viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
-                        try {
-                            submissionsRepository.deleteExamSubmissions(
-                                examIdValue ?: id ?: "", examCourseIdValue, userIdValue
-                            )
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-
-                        withContext(dispatcherProvider.main) {
-                            answerCache.clear()
-                            clearAnswer()
-                            ans = ""
-                            listAns?.clear()
-                            sub = null
-                        }
-
-                        val currentExam = exam
-                        if (currentExam != null) {
-                            val newSub = submissionsRepository.createExamSubmission(
-                                CreateExamSubmissionRequest(
+                    val currentExam = exam
+                    if (currentExam != null) {
+                        viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
+                            try {
+                                val request = CreateExamSubmissionRequest(
                                     user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
                                 )
-                            )
-                            withContext(dispatcherProvider.main) {
-                                sub = newSub
-                                startExam(questions?.get(currentIndex))
-                                updateNavButtons()
+                                val newSub = submissionsRepository.startExamSession(currentExam.id, parentId, user?.id, request, recreate = true)
+
+                                withContext(dispatcherProvider.main) {
+                                    answerCache.clear()
+                                    clearAnswer()
+                                    ans = ""
+                                    listAns?.clear()
+                                    sub = newSub
+                                    startExam(questions?.get(currentIndex))
+                                    updateNavButtons()
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                withContext(dispatcherProvider.main) {
+                                    Utilities.toast(requireContext(), "Failed to start exam session. Please retry.")
+                                }
                             }
                         }
                     }
                 } else {
                     val currentExam = exam
                     if (currentExam != null) {
-                        if (sub == null || isTeam) {
-                            sub = submissionsRepository.createExamSubmission(
-                                CreateExamSubmissionRequest(
+                        try {
+                            if (sub == null || isTeam) {
+                                val request = CreateExamSubmissionRequest(
                                     user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
                                 )
-                            )
-                        } else {
-                            val resume = askResumeOrRestart()
-                            if (resume) {
-                                populateCacheFromSavedAnswers(sub)
-                                currentIndex = findFirstUnansweredIndex()
+                                sub = submissionsRepository.startExamSession(currentExam.id, parentId, user?.id, request, recreate = isTeam, deleteStale = false)
                             } else {
-                                submissionsRepository.deleteExamSubmissions(
-                                    exam?.id ?: id ?: "", exam?.courseId, user?.id
-                                )
-                                answerCache.clear()
-                                currentIndex = 0
-                                sub = submissionsRepository.createExamSubmission(
-                                    CreateExamSubmissionRequest(
+                                val resume = askResumeOrRestart()
+                                if (resume) {
+                                    populateCacheFromSavedAnswers(sub)
+                                    currentIndex = findFirstUnansweredIndex()
+                                } else {
+                                    answerCache.clear()
+                                    currentIndex = 0
+                                    val request = CreateExamSubmissionRequest(
                                         user?.id, user?.dob, user?.gender, currentExam, type, null
                                     )
-                                )
+                                    sub = submissionsRepository.startExamSession(
+                                        currentExam.id, parentId, user?.id, request, recreate = true
+                                    )
+                                }
                             }
+                            startExam(questions?.get(currentIndex))
+                            updateNavButtons()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            Utilities.toast(requireContext(), "Failed to start exam session. Please retry.")
                         }
-                        startExam(questions?.get(currentIndex))
-                        updateNavButtons()
                     }
                 }
             } else {
@@ -680,17 +674,12 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
             null
         }
 
-        if (sub == null) {
-            val parentId = computeParentId()
-            sub = submissionsRepository.getSubmissionsByParentId(parentId, user?.id, "pending")
-                .firstOrNull()
-        }
-
         val result = submissionsRepository.saveExamAnswer(
             ExamAnswerData(
                 sub, currentQuestion, ans, listAns, otherText,
                 binding.etAnswer.isVisible, type ?: "exam", currentIndex,
-                questions?.size ?: 0, isExplicitSubmission
+                questions?.size ?: 0, isExplicitSubmission,
+                user?.id
             )
         )
         return result

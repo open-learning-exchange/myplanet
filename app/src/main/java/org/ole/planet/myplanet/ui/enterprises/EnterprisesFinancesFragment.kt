@@ -13,7 +13,6 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -38,6 +37,7 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class EnterprisesFinancesFragment : BaseTeamFragment() {
@@ -256,6 +256,15 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             transactions = results
             updatedFinanceList(results)
         }
+        collectWhenStarted(viewModel.transactionCreated) { result ->
+            if (result.isSuccess) {
+                Utilities.toast(activity, getString(R.string.transaction_added))
+            } else {
+                val errorMessage = result.exceptionOrNull()?.localizedMessage
+                    ?: getString(R.string.no_data_available_please_check_and_try_again)
+                Utilities.toast(activity, errorMessage)
+            }
+        }
 
         observeTransactions()
     }
@@ -270,7 +279,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         var debit = 0
         var credit = 0
         for (team in list) {
-            if ("credit".equals(team.type?.lowercase(Locale.getDefault()), ignoreCase = true)) {
+            if ("credit".equals(team.type, ignoreCase = true)) {
                 credit += team.amount
             } else {
                 debit += team.amount
@@ -305,27 +314,18 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
                     val imageUri = selectedImageUri
                     val imageName = imageUri?.let { FileUtils.getDisplayName(requireContext(), it, timeProvider) }
                     val imageData = imageUri?.let { FileUtils.readBytesFromUri(requireContext(), it) }
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        val capturedDate = date ?: return@launch
-                        val result = teamsRepository.createTransaction(
-                            teamId = teamId,
-                            type = type,
-                            note = note,
-                            amount = amountValue,
-                            date = capturedDate.timeInMillis,
-                            parentCode = user?.parentCode,
-                            planetCode = user?.planetCode,
-                            imageName = imageName,
-                            imageData = imageData,
-                        )
-                        if (result.isSuccess) {
-                            Utilities.toast(activity, getString(R.string.transaction_added))
-                        } else {
-                            val errorMessage = result.exceptionOrNull()?.localizedMessage
-                                ?: getString(R.string.no_data_available_please_check_and_try_again)
-                            Utilities.toast(activity, errorMessage)
-                        }
-                    }
+                    val capturedDate = date ?: return@setPositiveButton
+                    viewModel.createTransaction(
+                        teamId = teamId,
+                        type = type,
+                        note = note,
+                        amount = amountValue,
+                        date = capturedDate.timeInMillis,
+                        parentCode = user?.parentCode,
+                        planetCode = user?.planetCode,
+                        imageName = imageName,
+                        imageData = imageData,
+                    )
                 }
             }.setNegativeButton("Cancel", null).show()
     }

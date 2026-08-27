@@ -6,7 +6,6 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.roundToInt
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.UserEntity
@@ -29,10 +28,9 @@ class RatingsRepositoryImpl @Inject constructor(
         return map
     }
 
-    override suspend fun getRatingsById(type: String, resourceId: String?, userId: String?): JsonObject? {
-        val ratings = ratingDao.getByTypeAndItem(type, resourceId)
-        val aggregated = aggregateRatings(ratings, userId)[resourceId]
-        return aggregated?.toJson()
+    override suspend fun getRatingsById(type: String, resourceId: String?, userId: String?): RatingSummary? {
+        if (resourceId == null) return null
+        return getRatingSummary(type, resourceId, userId)
     }
 
     override suspend fun getCourseRatings(userId: String?): HashMap<String?, JsonObject> {
@@ -46,7 +44,7 @@ class RatingsRepositoryImpl @Inject constructor(
     override suspend fun getRatingSummary(
         type: String,
         itemId: String,
-        userId: String,
+        userId: String?,
     ): RatingSummary {
         val results = ratingDao.getByTypeAndItem(type, itemId)
         val totalRatings = results.size
@@ -55,7 +53,7 @@ class RatingsRepositoryImpl @Inject constructor(
         } else {
             0f
         }
-        val existingRating = results.firstOrNull { it.userId == userId }
+        val existingRating = if (userId != null) results.firstOrNull { it.userId == userId } else null
         return RatingSummary(
             existingRating = existingRating?.toRatingEntry(),
             averageRating = averageRating,

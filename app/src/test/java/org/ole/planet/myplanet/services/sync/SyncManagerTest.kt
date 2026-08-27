@@ -63,7 +63,8 @@ class SyncManagerTest {
             TestTimeProvider(),
             teamsRepository,
             mockk(),
-            mockk()
+            mockk(),
+            mockk(relaxed = true)
         )
     }
 

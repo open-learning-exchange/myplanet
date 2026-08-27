@@ -4,16 +4,13 @@ import android.content.Context
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFinanceBinding
 import org.ole.planet.myplanet.model.MyTeam
@@ -41,7 +38,7 @@ class EnterprisesFinancesAdapter(
         val binding = holder.binding
         binding.date.text = item.date?.let { formatDate(it, "MMM dd, yyyy") } ?: ""
         binding.note.text = item.description
-        if (TextUtils.equals(item.type?.lowercase(Locale.getDefault()), "debit")) {
+        if (item.type.equals("debit", ignoreCase = true)) {
             binding.debit.text = context.getString(R.string.number_placeholder, item.amount)
             binding.credit.text = context.getString(R.string.message_placeholder, " -")
         } else {
@@ -50,7 +47,7 @@ class EnterprisesFinancesAdapter(
         }
         binding.balance.text = item.balance.toString()
         bindFinanceImage(binding, item)
-        updateBackgroundColor(binding.llayout, position)
+        updateBackgroundColor(holder, position)
     }
 
     override fun onViewRecycled(holder: FinanceViewHolder) {
@@ -77,20 +74,25 @@ class EnterprisesFinancesAdapter(
         }
     }
 
-    private fun updateBackgroundColor(layout: LinearLayout, position: Int) {
+    private fun updateBackgroundColor(holder: FinanceViewHolder, position: Int) {
         if (position % 2 < 1) {
-            val border = GradientDrawable()
-            border.setColor(-0x1) //white background
-            border.setStroke(1, ContextCompat.getColor(context, R.color.black_overlay))
-            border.gradientType = GradientDrawable.LINEAR_GRADIENT
-            val layers = arrayOf<Drawable>(border)
-            val layerDrawable = LayerDrawable(layers)
-            layerDrawable.setLayerInset(0, -10, 0, -10, 0)
-            layout.background = layerDrawable
+            holder.binding.llayout.background = holder.alternateColor
+        } else {
+            holder.binding.llayout.background = null
         }
     }
 
     class FinanceViewHolder(val binding: RowFinanceBinding) : RecyclerView.ViewHolder(
         binding.root
-    )
+    ) {
+        val alternateColor: Drawable by lazy {
+            val border = GradientDrawable()
+            border.setColor(-0x1) //white background
+            border.setStroke(1, ContextCompat.getColor(binding.root.context, R.color.black_overlay))
+            border.gradientType = GradientDrawable.LINEAR_GRADIENT
+            val layerDrawable = LayerDrawable(arrayOf<Drawable>(border))
+            layerDrawable.setLayerInset(0, -10, 0, -10, 0)
+            layerDrawable.mutate()
+        }
+    }
 }
