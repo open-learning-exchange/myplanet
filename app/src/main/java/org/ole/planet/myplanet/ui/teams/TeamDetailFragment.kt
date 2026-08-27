@@ -276,7 +276,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                     teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
                     binding.btnLeave.text = getString(R.string.requested)
                     binding.btnLeave.isEnabled = false
-                    teamsSyncRepository.syncTeamActivities()
+                    teamsRepository.recordTeamActivity()
                 }
             }
         }
@@ -442,7 +442,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
 
     private fun setupRealtimeSync() {
         collectWhenStarted(
-            teamViewModel.getTeamUpdateFlow().filter { it.table == "teams" }
+            teamViewModel.getTeamUpdateFlow()
         ) { update ->
             if (update.shouldRefreshUI) {
                 refreshTeamDetails()

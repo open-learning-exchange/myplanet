@@ -6,8 +6,25 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeFalse
 import org.junit.Test
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
+import org.junit.Before
+import org.junit.After
+import io.mockk.every
+import android.util.Log
 
 class Sha256UtilsTest {
+
+    @Before
+    fun setUp() {
+        mockkStatic(Log::class)
+        every { Log.w(any<String>(), any<String>(), any()) } returns 0
+    }
+
+    @After
+    fun tearDown() {
+        unmockkStatic(Log::class)
+    }
 
     @Test
     fun getCheckSumFromFile_validFile_returnsChecksum() {

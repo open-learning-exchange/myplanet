@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - '**'
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
   workflow_dispatch:
 
 permissions:
@@ -17,6 +20,7 @@ jobs:
   test:
     name: myPlanet test (${{ matrix.build }}, shard ${{ matrix.shard }}/${{ strategy.job-total }})
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -39,6 +43,8 @@ jobs:
         with:
           path: |
             app/build
+            !app/build/test-results/**
+            !app/build/reports/**
             .gradle/*
             !.gradle/configuration-cache
           key: build-dir-test-${{ matrix.build }}-shard${{ matrix.shard }}-${{ github.sha }}
@@ -60,7 +66,22 @@ jobs:
         run: |
           FLAVOR=${{ matrix.build }}
           SHARD=${{ matrix.shard }}
-          ./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=${{ strategy.job-total }} -PtestShardIndex=$((SHARD - 1)) --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
+          ./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=${{ strategy.job-total }} -PtestShardIndex=$((SHARD - 1)) -ProbolectricOffline=true --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
+
+      - name: check the offline robolectric runtime took effect
+        if: always()
+        shell: bash
+        run: |
+          staged=$(find build/robolectric-sdks -name '*.jar' 2>/dev/null | wc -l || true)
+          size=$(du -sh build/robolectric-sdks 2>/dev/null | cut -f1 || true)
+          echo "staged android-all jars: ${staged:-0} (${size:-0})" | tee -a "$GITHUB_STEP_SUMMARY"
+          # Nothing else writes here, so a jar means -ProbolectricOffline missed the forks.
+          fetched=$(find "$HOME/.m2/repository/org/robolectric" -name '*.jar' 2>/dev/null || true)
+          if [ -n "$fetched" ]; then
+            echo "offline mode did not take effect: a test fork resolved an android-all jar at runtime" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "$fetched" | sed 's|.*/|  - |' | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
 
       - name: summarise slowest tests
         if: always()
@@ -77,11 +98,11 @@ jobs:
 
       - name: upload test reports
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-reports-${{ matrix.build }}-shard-${{ matrix.shard }}
           overwrite: true
+          if-no-files-found: error
           path: |
-            app/build/reports/tests/
             app/build/test-results/
           retention-days: 7
