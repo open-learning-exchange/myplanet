@@ -26,7 +26,6 @@ import org.ole.planet.myplanet.model.Examination
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.encrypt
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv

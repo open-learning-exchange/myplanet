@@ -9,7 +9,6 @@ import io.mockk.mockk
 import io.mockk.slot
 import java.util.logging.Level
 import java.util.logging.Logger
-
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals

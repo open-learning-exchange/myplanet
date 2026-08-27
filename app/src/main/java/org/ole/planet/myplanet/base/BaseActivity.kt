@@ -4,10 +4,10 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Bundle
+import android.util.Log
 import android.view.MenuItem
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utils.LocaleUtils
-import android.util.Log
 
 abstract class BaseActivity : SyncActivity() {
     override fun attachBaseContext(newBase: Context) {
