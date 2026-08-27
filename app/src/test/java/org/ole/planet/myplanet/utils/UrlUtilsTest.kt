@@ -291,4 +291,43 @@ class UrlUtilsTest {
         val result = UrlUtils.dbUrl(spm)
         assertEquals(expected, result)
     }
+
+    @Test
+    fun `header memoizes basic auth header and invalidates when requested`() {
+        every { mockSpm.getUrlUser() } returns "user1"
+        every { mockSpm.getUrlPwd() } returns "pass1"
+
+        val firstHeader = UrlUtils.header
+        val secondHeader = UrlUtils.header
+
+        assertEquals(firstHeader, secondHeader)
+        io.mockk.verify(exactly = 1) { mockSpm.getUrlUser() }
+        io.mockk.verify(exactly = 1) { mockSpm.getUrlPwd() }
+
+        every { mockSpm.getUrlUser() } returns "user2"
+        every { mockSpm.getUrlPwd() } returns "pass2"
+
+        UrlUtils.invalidateHeaderCache()
+        val thirdHeader = UrlUtils.header
+
+        io.mockk.verify(exactly = 2) { mockSpm.getUrlUser() }
+        io.mockk.verify(exactly = 2) { mockSpm.getUrlPwd() }
+        assert(firstHeader != thirdHeader)
+    }
+
+    @Test
+    fun `resetForTesting clears cached header`() {
+        every { mockSpm.getUrlUser() } returns "user1"
+        every { mockSpm.getUrlPwd() } returns "pass1"
+
+        val firstHeader = UrlUtils.header
+
+        UrlUtils.resetForTesting()
+        UrlUtils.init(mockSpm)
+
+        val secondHeader = UrlUtils.header
+
+        assertEquals(firstHeader, secondHeader)
+        io.mockk.verify(exactly = 2) { mockSpm.getUrlUser() }
+    }
 }

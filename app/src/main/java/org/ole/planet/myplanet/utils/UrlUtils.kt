@@ -12,6 +12,9 @@ object UrlUtils {
     @Volatile
     private var spmInstance: SharedPrefManager? = null
 
+    @Volatile
+    private var cachedHeader: String? = null
+
     fun init(sharedPrefManager: SharedPrefManager) {
         spmInstance = sharedPrefManager
     }
@@ -21,15 +24,26 @@ object UrlUtils {
             ?: error("UrlUtils.init(SharedPrefManager) must be called before using UrlUtils")
     }
 
+    fun invalidateHeaderCache() {
+        cachedHeader = null
+    }
+
     @VisibleForTesting
     internal fun resetForTesting() {
         spmInstance = null
+        cachedHeader = null
     }
 
     val header: String
         get() {
-            val spm = spm()
-            return basicAuthHeader(spm.getUrlUser(), spm.getUrlPwd())
+            return cachedHeader ?: synchronized(this) {
+                cachedHeader ?: run {
+                    val spm = spm()
+                    val computed = basicAuthHeader(spm.getUrlUser(), spm.getUrlPwd())
+                    cachedHeader = computed
+                    computed
+                }
+            }
         }
 
     fun basicAuthHeader(username: String, password: String): String {
