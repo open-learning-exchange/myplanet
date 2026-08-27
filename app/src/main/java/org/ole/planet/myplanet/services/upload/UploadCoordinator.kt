@@ -263,9 +263,12 @@ class UploadCoordinator @Inject constructor(
         preparedUploads: List<PreparedUpload<T>>
     ) {
         val uploadType = config.modelClass.simpleName ?: "Unknown"
+        val retryableErrors = errors.filter { it.retryable }
+        if (retryableErrors.isEmpty()) return
+
         val payloadMap = preparedUploads.associateBy { it.localId }
 
-        errors.filter { it.retryable }.forEach { error ->
+        retryableErrors.forEach { error ->
             val preparedUpload = payloadMap[error.itemId]
             if (preparedUpload != null) {
                 retryQueue.queueFailedOperation(
@@ -468,8 +471,11 @@ class UploadCoordinator @Inject constructor(
         errors: List<UploadError>,
         preparedUploads: List<PreparedUpload<T>>
     ) {
+        val retryableErrors = errors.filter { it.retryable }
+        if (retryableErrors.isEmpty()) return
+
         val payloadMap = preparedUploads.associateBy { it.localId }
-        errors.filter { it.retryable }.forEach { error ->
+        retryableErrors.forEach { error ->
             val preparedUpload = payloadMap[error.itemId]
             if (preparedUpload != null) {
                 retryQueue.queueFailedOperation(
