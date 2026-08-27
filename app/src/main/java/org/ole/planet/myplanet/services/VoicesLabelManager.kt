@@ -6,6 +6,7 @@ import android.widget.PopupMenu
 import androidx.appcompat.view.ContextThemeWrapper
 import fisk.chipcloud.ChipCloud
 import java.util.Locale
+import java.util.WeakHashMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -23,6 +24,11 @@ class VoicesLabelManager(
     private val addLabelFn: suspend (String, String) -> Unit,
     private val removeLabelFn: suspend (String, String) -> Unit
 ) {
+    // Per-row cache of the last labels + manage-permission actually rendered, so identical rebinds
+    // (scroll fling-back, payload-driven updates) skip rebuilding the chip cloud. Weak keys let
+    // recycled/destroyed bindings be garbage-collected instead of leaking via this cache.
+    private val renderedStateCache = WeakHashMap<RowNewsBinding, RenderedState>()
+
     fun setupAddLabelMenu(binding: RowNewsBinding, voice: News?, canManageLabels: Boolean) {
         binding.btnAddLabel.setOnClickListener(null)
         binding.btnAddLabel.isEnabled = canManageLabels
@@ -61,9 +67,18 @@ class VoicesLabelManager(
     }
 
     fun showChips(binding: RowNewsBinding, voice: News, canManageLabels: Boolean) {
-        binding.fbChips.removeAllViews()
-
         val labels = voice.labels ?: emptyList()
+
+        // Skip the teardown-and-rebuild when the labels and manage-permission are unchanged from
+        // the previous bind for this row. During community-voices scroll and payload-driven rebinds
+        // (e.g. PAYLOAD_LABELS_CHANGED) the same row is re-bound with identical state, so rebuilding
+        // the ChipCloudConfig + ChipCloud every time is wasted work.
+        val renderedState = RenderedState(labels, canManageLabels)
+        if (renderedStateCache[binding] == renderedState) {
+            return
+        }
+
+        binding.fbChips.removeAllViews()
 
         if (labels.isNotEmpty()) {
             val chipConfig = Utilities.getCloudConfig().apply {
@@ -95,8 +110,11 @@ class VoicesLabelManager(
             }
         }
 
+        renderedStateCache[binding] = renderedState
         updateAddLabelVisibility(binding, voice, canManageLabels)
     }
+
+    private data class RenderedState(val labels: List<String>, val canManageLabels: Boolean)
 
     private fun updateAddLabelVisibility(
         binding: RowNewsBinding,
