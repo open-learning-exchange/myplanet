@@ -9,7 +9,9 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Test
 
@@ -162,5 +164,57 @@ class FeedbackTest {
 
         // When an exception is thrown, the "messages" property is not added
         assertNull(jsonObject.get("messages"))
+    }
+
+    @Test
+    fun testMessagesCachedAcrossAccesses() {
+        val feedback = Feedback()
+        val messageString = """
+            [
+              {"message": "First message", "user": "user0", "time": "time0"},
+              {"message": "Second message", "user": "user1", "time": "time1"}
+            ]
+        """.trimIndent()
+        feedback.messages = messageString
+
+        val cacheField = Feedback::class.java.getDeclaredField("cachedMessages").apply { isAccessible = true }
+
+        // Before any access the cache is empty.
+        assertNull(cacheField.get(feedback))
+
+        // Prime the cache by reading a derived view.
+        assertEquals("First message", feedback.message)
+        val cached = cacheField.get(feedback)
+        assertNotNull(cached)
+
+        // Repeated reads reuse the same cached instance, never re-parsing.
+        repeat(5) { feedback.messageList }
+        repeat(5) { feedback.message }
+        assertSame(cached, cacheField.get(feedback))
+    }
+
+    @Test
+    fun testCacheInvalidatedOnMessagesChange() {
+        val feedback = Feedback()
+        feedback.messages = """[{"message": "first", "user": "u", "time": "t"}]"""
+        // Prime the cache.
+        assertEquals("first", feedback.message)
+
+        feedback.messages = """[{"message": "second", "user": "u", "time": "t"}]"""
+        // After reassigning messages the cache must be invalidated.
+        assertEquals("second", feedback.message)
+    }
+
+    @Test
+    fun testCacheInvalidatedOnSetMessages() {
+        val feedback = Feedback()
+        feedback.messages = """[{"message": "first", "user": "u", "time": "t"}]"""
+        assertEquals("first", feedback.message)
+
+        val jsonArray = JsonArray().apply {
+            add(JsonObject().apply { addProperty("message", "second"); addProperty("user", "u"); addProperty("time", "t") })
+        }
+        feedback.setMessages(jsonArray)
+        assertEquals("second", feedback.message)
     }
 }

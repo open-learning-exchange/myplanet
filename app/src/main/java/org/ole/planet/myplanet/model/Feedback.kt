@@ -12,7 +12,9 @@ import org.ole.planet.myplanet.utils.JsonUtils
  * Room replacement for the former `Feedback` model. Uploaded (Room upload path) and
  * synced; persistence goes through [org.ole.planet.myplanet.data.room.dao.FeedbackDao]. The replies
  * are stored as a JSON array string in [messages]; the derived [messageList]/[message] views are
- * ignored by Room.
+ * ignored by Room. The parsed [JsonArray] is memoized in [cachedMessages] (ignored by Room) and
+ * invalidated whenever [messages] is reassigned (including via [setMessages]), so repeated reads
+ * don't re-parse the JSON string.
  */
 @Entity(tableName = "feedback", indices = [androidx.room.Index("openTime"), androidx.room.Index("owner"), androidx.room.Index("isUploaded")])
 open class Feedback {
@@ -33,9 +35,26 @@ open class Feedback {
     var isUploaded = false
     var _rev: String? = null
     var messages: String? = null
+        set(value) {
+            field = value
+            cachedMessages = null
+        }
     var item: String? = null
     var parentCode: String? = null
     var state: String? = null
+
+    @get:Ignore
+    @Ignore
+    @Transient
+    private var cachedMessages: JsonArray? = null
+
+    private fun parsedMessages(): JsonArray {
+        if (messages.isNullOrEmpty()) return JsonArray()
+        cachedMessages?.let { return it }
+        val ar = JsonParser.parseString(messages).asJsonArray
+        cachedMessages = ar
+        return ar
+    }
 
     fun setMessages(messages: JsonArray?) {
         this.messages = JsonUtils.gson.toJson(messages)
@@ -47,7 +66,7 @@ open class Feedback {
             if (messages.isNullOrEmpty()) return null
             val feedbackReplies: MutableList<FeedbackReply> = ArrayList()
 
-            val ar = JsonParser.parseString(messages).asJsonArray
+            val ar = parsedMessages()
             if (ar.size() > 0) {
                 for (i in 1 until ar.size()) {
                     val ob = ar[i].asJsonObject
@@ -68,7 +87,7 @@ open class Feedback {
         get() {
             if (messages.isNullOrEmpty()) return ""
 
-            val ar = JsonParser.parseString(messages).asJsonArray
+            val ar = parsedMessages()
             if (ar.size() > 0) {
                 val ob = ar[0].asJsonObject
                 return ob["message"].asString
