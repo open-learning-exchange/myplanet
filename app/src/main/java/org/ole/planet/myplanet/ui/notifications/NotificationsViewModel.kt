@@ -75,9 +75,13 @@ class NotificationsViewModel @Inject constructor(
                 .distinct()
             val taskTeamNames = notificationsRepository.getTaskTeamNamesByTaskIds(taskIds).toMutableMap()
 
+            // Parse each task notification's date once and reuse it for both the team-name lookup and rendering.
+            val parsedTaskDates: Map<String, Pair<String, String>?> =
+                taskNotifications.associateBy({ it.id }, { parseTaskDate(it.message) })
+
             val taskTitles = taskNotifications
                 .filter { it.relatedId.isNullOrEmpty() || !taskTeamNames.containsKey(it.relatedId) }
-                .mapNotNull { parseTaskDate(it.message)?.first }
+                .mapNotNull { parsedTaskDates[it.id]?.first }
                 .distinct()
             if (taskTitles.isNotEmpty()) {
                 val teamNamesByTitle = notificationsRepository.getTaskTeamNamesByTaskTitles(taskTitles)
@@ -97,7 +101,7 @@ class NotificationsViewModel @Inject constructor(
             }
 
             _notifications.value = payloadNotifications.map {
-                formatNotification(it, taskTeamNames, joinRequestDetails)
+                formatNotification(it, taskTeamNames, joinRequestDetails, parsedTaskDates)
             }
             _unreadCount.value = notificationsRepository.getUnreadCount(userId, isAdmin)
         }
@@ -335,12 +339,13 @@ class NotificationsViewModel @Inject constructor(
     private fun formatNotification(
         notification: NotificationPayload,
         taskTeamNames: Map<String, String> = emptyMap(),
-        joinRequestDetails: Map<String, Pair<String, String>> = emptyMap()
+        joinRequestDetails: Map<String, Pair<String, String>> = emptyMap(),
+        parsedTaskDates: Map<String, Pair<String, String>?> = emptyMap()
     ): Notification {
         val resolvedType = resolveType(notification.type, notification.message, notification.subType)
         val formattedText = when (resolvedType) {
             "task" -> {
-                val parsedDate = parseTaskDate(notification.message)
+                val parsedDate = parsedTaskDates[notification.id] ?: parseTaskDate(notification.message)
                 if (parsedDate != null) {
                     formatTaskNotification(parsedDate.first, parsedDate.second, notification.relatedId, taskTeamNames)
                 } else {
