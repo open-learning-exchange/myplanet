@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.utils
 
 import android.app.Activity
 import android.app.Application
+import android.content.res.Configuration
+import android.content.res.Resources
 import android.view.View
 import android.view.Window
 import androidx.core.view.ViewCompat
@@ -27,6 +29,7 @@ class EdgeToEdgeUtilsTest {
     private lateinit var mockWindow: Window
     private lateinit var mockRootView: View
     private lateinit var mockInsetsController: WindowInsetsControllerCompat
+    private lateinit var mockResources: Resources
 
     @Before
     fun setup() {
@@ -34,8 +37,13 @@ class EdgeToEdgeUtilsTest {
         mockWindow = mockk(relaxed = true)
         mockRootView = mockk(relaxed = true)
         mockInsetsController = mockk(relaxed = true)
+        mockResources = mockk()
 
         every { mockActivity.window } returns mockWindow
+        every { mockResources.configuration } returns Configuration().apply {
+            uiMode = Configuration.UI_MODE_NIGHT_NO
+        }
+        every { mockActivity.resources } returns mockResources
 
         mockkStatic(WindowCompat::class)
         every { WindowCompat.setDecorFitsSystemWindows(any(), any()) } returns Unit
