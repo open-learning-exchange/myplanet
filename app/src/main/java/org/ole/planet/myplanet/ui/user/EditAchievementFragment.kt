@@ -113,6 +113,9 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     }
 
     private fun setListeners() {
+        binding.toolbar.setNavigationOnClickListener {
+            FragmentNavigator.popBackStack(parentFragmentManager)
+        }
         binding.btnUpdate.setOnClickListener {
             val firstName = binding.etFname.text.toString().trim()
             val lastName = binding.etLname.text.toString().trim()
