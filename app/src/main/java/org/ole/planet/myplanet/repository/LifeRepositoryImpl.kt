@@ -31,7 +31,7 @@ class LifeRepositoryImpl @Inject constructor(
         val managedLives = myLifeDao.getByIds(listOf(myLifeId))
         val userId = managedLives.firstOrNull()?.userId ?: sharedPrefManager.getUserId()
         if (userId.isNotEmpty()) {
-            val updatedLives = getMyLifeByUserId(userId, ensureLatest = true)
+            val updatedLives = getMyLifeByUserId(userId)
             cacheMyLifeItems(userId, updatedLives)
         }
     }
@@ -56,7 +56,7 @@ class LifeRepositoryImpl @Inject constructor(
         if (changed.isNotEmpty()) {
             myLifeDao.update(changed)
             if (userId != null) {
-                val updatedLives = getMyLifeByUserId(userId, ensureLatest = true)
+                val updatedLives = getMyLifeByUserId(userId)
                 cacheMyLifeItems(userId, updatedLives)
             }
         }
@@ -69,14 +69,19 @@ class LifeRepositoryImpl @Inject constructor(
             ?: System.identityHashCode(this)
     }
 
-    override suspend fun getMyLifeByUserId(userId: String?, ensureLatest: Boolean): List<MyLife> {
+    override suspend fun getMyLifeByUserId(userId: String?, defaultItems: List<MyLife>): List<MyLife> {
         val effectiveUserId = userId?.ifEmpty { null }
+        val items = myLifeDao.getByUserId(effectiveUserId).distinctBy { it.dedupKey() }
+        if (items.isNotEmpty() || defaultItems.isEmpty()) {
+            return items
+        }
+        seedMyLifeIfEmpty(effectiveUserId, defaultItems)
         return myLifeDao.getByUserId(effectiveUserId).distinctBy { it.dedupKey() }
     }
 
     override suspend fun getMyLifeForDashboard(userId: String, seedBase: List<MyLife>): List<MyLife> {
         val effectiveUserId = userId.ifEmpty { null }
-        val allForUser = getMyLifeByUserId(effectiveUserId, ensureLatest = false)
+        val allForUser = getMyLifeByUserId(effectiveUserId)
         if (allForUser.isNotEmpty()) {
             return allForUser.filter { it.isVisible }
         }
@@ -100,7 +105,7 @@ class LifeRepositoryImpl @Inject constructor(
         }
 
         seedMyLifeIfEmpty(effectiveUserId, seedBase)
-        val seeded = getMyLifeByUserId(effectiveUserId, ensureLatest = true)
+        val seeded = getMyLifeByUserId(effectiveUserId)
         if (userId.isNotEmpty()) cacheMyLifeItems(userId, seeded)
         return seeded.filter { it.isVisible }
     }
