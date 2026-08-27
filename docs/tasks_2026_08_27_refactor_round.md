@@ -152,5 +152,5 @@ self-check:
 - [x] no task under 15 lines
 - [x] no task touches a file from the open-PR list
 - [x] one tasks markdown document written to `docs/`
-- [ ] dedicated branch created, committed, and pushed (to be done)
-- [ ] response terminates with the full URL to the markdown document on the pushed branch (to be done)
+- [x] dedicated branch created, committed, and pushed
+- [x] response terminates with the full URL to the markdown document on the pushed branch
