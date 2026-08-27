@@ -280,7 +280,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         var debit = 0
         var credit = 0
         for (team in list) {
-            if ("credit".equals(team.type?.lowercase(Locale.getDefault()), ignoreCase = true)) {
+            if ("credit".equals(team.type, ignoreCase = true)) {
                 credit += team.amount
             } else {
                 debit += team.amount
