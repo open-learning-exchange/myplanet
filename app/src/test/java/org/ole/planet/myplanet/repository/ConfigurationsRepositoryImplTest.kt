@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -12,10 +13,13 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import java.io.File
+import java.io.IOException
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.CoroutineScope
@@ -25,6 +29,7 @@ import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -74,6 +79,9 @@ class ConfigurationsRepositoryImplTest {
     @Before
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
+        mockkStatic(Log::class)
+        every { Log.e(any<String>(), any<String>()) } returns 0
+        every { Log.e(any<String>(), any<String>(), any<Throwable>()) } returns 0
         repository = ConfigurationsRepositoryImpl(
             context,
             apiInterface,
@@ -85,6 +93,11 @@ class ConfigurationsRepositoryImplTest {
             TestTimeProvider(),
             Gson()
         )
+    }
+
+    @After
+    fun tearDown() {
+        unmockkStatic(Log::class)
     }
 
     @Test
@@ -109,6 +122,26 @@ class ConfigurationsRepositoryImplTest {
 
         coVerify { apiInterface.healthAccess(healthUrl) }
         assertEquals("Success", result)
+    }
+
+    @Test
+    fun `checkHealth logs tagged error and returns network message when the request throws`() = runTest(testDispatcher) {
+        val healthUrl = "http://test.url/healthaccess?p=1234"
+
+        val rawPrefs: SharedPreferences = mockk()
+        every { sharedPrefManager.rawPreferences } returns rawPrefs
+        every { rawPrefs.getString(any(), any()) } returns "http://test.url"
+        every { sharedPrefManager.getServerUrl() } returns "http://test.url"
+        every { sharedPrefManager.isAlternativeUrl() } returns false
+        every { sharedPrefManager.getCouchdbUrl() } returns "http://test.url"
+        every { sharedPrefManager.getServerPin() } returns "1234"
+
+        coEvery { apiInterface.healthAccess(any()) } throws IOException("boom")
+
+        val result = repository.checkHealth()
+
+        assertEquals("Network connection error", result)
+        verify { Log.e("ConfigurationsRepositoryImpl", "Health access request failed", any<Throwable>()) }
     }
 
     @Test
