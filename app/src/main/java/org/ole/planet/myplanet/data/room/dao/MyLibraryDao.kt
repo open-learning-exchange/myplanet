@@ -79,8 +79,17 @@ interface MyLibraryDao {
     @Query("SELECT COUNT(*) FROM my_library WHERE title = :title COLLATE NOCASE")
     suspend fun countByTitle(title: String): Int
 
-    @Query("SELECT * FROM my_library WHERE resourceOffline = 0")
+    @Query(
+        "SELECT * FROM my_library " +
+            "WHERE (resourceOffline = 0 OR (resourceLocalAddress IS NOT NULL AND _rev IS NOT downloadedRev))"
+    )
     suspend fun getSyncable(): List<MyLibrary>
+
+    @Query(
+        "SELECT * FROM my_library WHERE isPrivate = 0 " +
+            "AND (resourceOffline = 0 OR (resourceLocalAddress IS NOT NULL AND _rev IS NOT downloadedRev))"
+    )
+    suspend fun getPublicNeedingUpdate(): List<MyLibrary>
 
     @Query("SELECT * FROM my_library WHERE _rev IS NULL")
     suspend fun getPendingUploads(): List<MyLibrary>
@@ -101,6 +110,20 @@ interface MyLibraryDao {
 
     @Query("SELECT * FROM my_library WHERE isPrivate = 0 AND userId LIKE :userPattern ESCAPE '\\'")
     suspend fun getPublicForUserPattern(userPattern: String): List<MyLibrary>
+
+    @Query(
+        "SELECT * FROM my_library WHERE isPrivate = 0 " +
+            "AND userId LIKE :userPattern ESCAPE '\\' " +
+            "AND (resourceOffline = 0 OR (resourceLocalAddress IS NOT NULL AND _rev IS NOT downloadedRev))"
+    )
+    suspend fun getPublicNeedingUpdateForUserPattern(userPattern: String): List<MyLibrary>
+
+    @Query(
+        "SELECT COUNT(*) FROM my_library WHERE isPrivate = 0 " +
+            "AND userId LIKE :userPattern ESCAPE '\\' " +
+            "AND (resourceOffline = 0 OR (resourceLocalAddress IS NOT NULL AND _rev IS NOT downloadedRev))"
+    )
+    suspend fun countPublicNeedingUpdateForUserPattern(userPattern: String): Int
 
     @Query(
         "SELECT * FROM my_library WHERE isPrivate = 0 " +

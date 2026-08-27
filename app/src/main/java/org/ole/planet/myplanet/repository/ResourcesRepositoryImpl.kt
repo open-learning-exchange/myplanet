@@ -190,8 +190,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun getLibraryListForUser(userId: String?): List<MyLibrary> {
         if (userId == null) return emptyList()
-        return myLibraryDao.getPublicForUserPattern(userIdPattern(userId))
-            .filter { it.needToUpdate() }
+        return myLibraryDao.getPublicNeedingUpdateForUserPattern(userIdPattern(userId))
     }
 
     override suspend fun getMyLibrary(userId: String?): List<MyLibrary> {
@@ -211,8 +210,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun countLibrariesNeedingUpdate(userId: String?): Int {
         if (userId == null) return 0
-        return myLibraryDao.getPublicForUserPattern(userIdPattern(userId))
-            .count { it.needToUpdate() }
+        return myLibraryDao.countPublicNeedingUpdateForUserPattern(userIdPattern(userId))
     }
 
     override suspend fun resourceTitleExists(title: String): Boolean {
@@ -428,7 +426,7 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
     }
 
     override suspend fun getAllLibrariesToSync(): List<MyLibrary> {
-        return myLibraryDao.getSyncable().filter { it.needToUpdate() }
+        return myLibraryDao.getSyncable()
     }
 
     override suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String): Result<Unit> {
@@ -460,14 +458,13 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
         val targetUserId = userId ?: sharedPrefManager.getUserId().ifEmpty { null }
 
         if (!targetUserId.isNullOrBlank()) {
-            val userLibrariesNeedingUpdate = myLibraryDao.getPublicForUserPattern(userIdPattern(targetUserId))
-                .filter { it.needToUpdate() }
+            val userLibrariesNeedingUpdate = myLibraryDao.getPublicNeedingUpdateForUserPattern(userIdPattern(targetUserId))
             if (userLibrariesNeedingUpdate.isNotEmpty()) {
                 return userLibrariesNeedingUpdate
             }
         }
 
-        return myLibraryDao.getPublic().filter { it.needToUpdate() }
+        return myLibraryDao.getPublicNeedingUpdate()
     }
 
     override suspend fun removeDeletedResources(currentIds: List<String?>) {
