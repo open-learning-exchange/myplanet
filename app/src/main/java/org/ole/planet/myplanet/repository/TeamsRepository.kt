@@ -46,6 +46,34 @@ data class TeamUploadData(
     val imageName: String? = null
 )
 
+/**
+ * The composite team data contract.
+ *
+ * This interface is the union of three narrowly-scoped sub-interfaces, each owned
+ * by a single responsibility:
+ *  * [TeamsFinancesRepository] — team transactions and balances
+ *  * [TeamsMembersRepository] — join/leave, leadership, and roster queries
+ *  * [TeamsNotificationsRepository] — label and join-request lookups for notifications
+ *
+ * ## Why the split?
+ *
+ * The sub-interfaces exist so that each consuming layer can depend on only the
+ * capability it needs — a notification worker has no compile-time dependency on
+ * finance methods, and a finance screen never learns about membership mutation.
+ * This mirrors the interface-segregation principle and keeps the consumer's
+ * surface area proportional to what it actually calls.
+ *
+ * ## KMP rationale
+ *
+ * Although myPlanet ships as an Android-only app today, the team domain is the
+ * part of the model most likely to be shared with a future Kotlin Multiplatform
+ * (KMP) target (a JVM/JS dashboard or a shared ViewModel layer). The split lets
+ * the shared `commonMain` module declare only the sub-interfaces it needs and
+ * lets each platform provide its own `expect`/`actual` implementation, while the
+ * Android app composes them back together here. Keep new team methods on the
+ * narrow sub-interface that owns that concern; only add directly here when a
+ * capability spans more than one sub-concern.
+ */
 interface TeamsRepository : TeamsFinancesRepository, TeamsMembersRepository, TeamsNotificationsRepository {
     suspend fun getAllActiveTeams(): List<MyTeam>
     suspend fun getMyTeamsFlow(userId: String): Flow<List<MyTeam>>
