@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import dagger.Lazy
 import java.util.Calendar
 import java.util.Date
+import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
@@ -22,7 +23,7 @@ private const val STORAGE_WARNING_AVAILABLE_PERCENT = 10
 
 class NotificationsRepositoryImpl @Inject constructor(
     private val userRepository: Lazy<UserRepository>,
-    private val teamsRepository: Lazy<TeamsRepository>,
+    private val teamsRepository: Lazy<TeamsNotificationsRepository>,
     private val timeProvider: TimeProvider,
     private val teamNotificationDao: TeamNotificationDao,
     private val notificationDao: NotificationDao,
@@ -112,10 +113,10 @@ class NotificationsRepositoryImpl @Inject constructor(
     override suspend fun markNotificationsAsRead(notificationIds: Set<String>): Set<String> {
         if (notificationIds.isEmpty()) return emptySet()
 
-        val existingIds = notificationDao.getByIds(notificationIds.toList()).map { it.id }.toSet()
+        val existingIds = notificationDao.getByIds(notificationIds.toList()).map { it.id }
         if (existingIds.isEmpty()) return emptySet()
-        notificationDao.markAsRead(existingIds.toList(), Date())
-        return existingIds
+        notificationDao.markAsRead(existingIds, Date())
+        return existingIds.toSet()
     }
 
     override suspend fun markAllUnreadAsRead(userId: String?): Set<String> {
@@ -277,6 +278,22 @@ class NotificationsRepositoryImpl @Inject constructor(
         return map
     }
 
+    override suspend fun updateTeamNotification(teamId: String, count: Int) {
+        val existing = teamNotificationDao.findByParentAndType(teamId, "chat")
+        if (existing != null) {
+            existing.lastCount = count
+            teamNotificationDao.update(existing)
+        } else {
+            val notification = TeamNotification().apply {
+                id = UUID.randomUUID().toString()
+                parentId = teamId
+                type = "chat"
+                lastCount = count
+            }
+            teamNotificationDao.insert(notification)
+        }
+    }
+
     override suspend fun getTeamNotifications(teamIds: List<String>, userId: String): Map<String, TeamNotificationInfo> {
         if (teamIds.isEmpty()) {
             return emptyMap()
@@ -322,9 +339,7 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun markNotificationsSynced(syncResults: List<Pair<String, String?>>) {
         if (syncResults.isEmpty()) return
-        syncResults.forEach { (id, rev) ->
-            notificationDao.markSynced(id, rev)
-        }
+        notificationDao.markSynced(syncResults)
     }
 
     private fun parseNotification(doc: JsonObject): AppNotification? {
@@ -388,11 +403,11 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun deleteNotifications(ids: Set<String>): Set<String> {
         if (ids.isEmpty()) return emptySet()
-        val deletedIds = notificationDao.getByIds(ids.toList()).map { it.id }.toSet()
+        val deletedIds = notificationDao.getByIds(ids.toList()).map { it.id }
         if (deletedIds.isNotEmpty()) {
-            notificationDao.deleteByIds(deletedIds.toList())
+            notificationDao.deleteByIds(deletedIds)
         }
-        return deletedIds
+        return deletedIds.toSet()
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {

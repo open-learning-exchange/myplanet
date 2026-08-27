@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
 import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
@@ -24,16 +25,19 @@ import org.ole.planet.myplanet.model.TagData
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.utils.KeyboardUtils
+import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
 class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton.OnCheckedChangeListener {
     private var _binding: FragmentCollectionsBinding? = null
     private val binding get() = _binding!!
-    @Inject
-    lateinit var tagsRepository: TagsRepository
-    private lateinit var list: List<TagEntity>
-    private lateinit var childMap: HashMap<String, List<TagEntity>>
+
+    private val viewModel: CollectionsViewModel by viewModels()
+
+    private var list: List<TagEntity> = emptyList()
+    private var childMap: Map<String, List<TagEntity>> = emptyMap()
     private var filteredList: ArrayList<TagEntity> = ArrayList()
     private lateinit var adapter: ResourcesTagsAdapter
     private var dbType: String? = null
@@ -55,7 +59,36 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setListAdapter()
+
+        adapter = ResourcesTagsAdapter(this@CollectionsFragment)
+        binding.listTags.adapter = adapter
+        selectedItemsList = ArrayList(recentList)
+
+        viewModel.loadTags(dbType)
+
+        collectLatestWhenStarted(viewModel.state) { state ->
+            when (state) {
+                is CollectionsState.Success -> {
+                    list = state.list
+                    childMap = state.childMap
+                    currentTagDataList = buildTagDataList(list).toMutableList()
+                    adapter.submitList(currentTagDataList)
+                    binding.btnOk.visibility = View.VISIBLE
+                }
+                is CollectionsState.Empty -> {
+                    Utilities.toast(requireContext(), getString(R.string.no_data_available))
+                    dismiss()
+                }
+                is CollectionsState.Error -> {
+                    Utilities.toast(requireContext(), state.message)
+                    dismiss()
+                }
+                is CollectionsState.Loading, CollectionsState.Idle -> {
+                    // Ignore transient states without UI representation
+                }
+            }
+        }
+
         setListeners()
     }
 
@@ -68,7 +101,7 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
             .debounce(300L)
             .distinctUntilChanged()
             .onEach { charSequence ->
-                if (!::adapter.isInitialized || !::list.isInitialized) return@onEach
+                if (!::adapter.isInitialized) return@onEach
                 charSequence?.let { filterTags(it.toString()) }
             }
             .launchIn(viewLifecycleOwner.lifecycleScope)
@@ -86,33 +119,25 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
         adapter.submitList(currentTagDataList)
     }
 
-    private fun setListAdapter() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val tagsWithChildren = tagsRepository.getTagsWithChildren(dbType)
-            list = tagsWithChildren.keys.toList()
-            selectedItemsList = ArrayList(recentList)
-            childMap = tagsWithChildren.entries.filter { it.value.isNotEmpty() }.associate { (it.key.id ?: "") to it.value }.toMap(HashMap())
-            adapter = ResourcesTagsAdapter(this@CollectionsFragment)
-            binding.listTags.adapter = adapter
-            currentTagDataList = buildTagDataList(list).toMutableList()
-            adapter.submitList(currentTagDataList)
-            binding.btnOk.visibility = View.VISIBLE
-        }
-    }
-
     private fun buildTagDataList(parents: List<TagEntity>): List<TagData> {
         val tagDataList = mutableListOf<TagData>()
         val isSelectMultiple = MainApplication.isCollectionSwitchOn
+        val selectedIds = selectedItemsList.mapNotNull { it.id }.toHashSet()
+        val parentMap = HashMap<String, TagData.Parent>()
+        currentTagDataList.forEach {
+            if (it is TagData.Parent && !parentMap.containsKey(it.tag.id)) {
+                parentMap[it.tag.id] = it
+            }
+        }
         for (parentTag in parents) {
-            val isSelected = selectedItemsList.any { it.id == parentTag.id }
-            val parent = (currentTagDataList.find { it is TagData.Parent && it.tag.id == parentTag.id } as? TagData.Parent)
-                ?: TagData.Parent(parentTag, false, isSelected, isSelectMultiple)
+            val isSelected = selectedIds.contains(parentTag.id)
+            val parent = parentMap[parentTag.id] ?: TagData.Parent(parentTag, false, isSelected, isSelectMultiple)
 
             tagDataList.add(parent.copy(isSelected = isSelected, isSelectMultiple = isSelectMultiple))
 
             if (parent.isExpanded) {
                 childMap[parent.tag.id]?.forEach { childTag ->
-                    val isChildSelected = selectedItemsList.any { it.id == childTag.id }
+                    val isChildSelected = selectedIds.contains(childTag.id)
                     tagDataList.add(TagData.Child(childTag, isChildSelected, isSelectMultiple))
                 }
             }
@@ -128,7 +153,7 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
     override fun onParentTagClicked(parent: TagData.Parent) {
         parent.isExpanded = !parent.isExpanded
         currentTagDataList = buildTagDataList(list).toMutableList()
-        adapter.submitList(currentTagDataList.toList())
+        adapter.submitList(currentTagDataList)
     }
 
     override fun onCheckboxTagSelected(tag: TagEntity) {

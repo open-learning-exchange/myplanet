@@ -88,10 +88,10 @@ class TransactionSyncManagerCheckpointTest {
         every { UrlUtils.getUrl() } returns "http://mockurl"
         every { UrlUtils.header } returns "Basic mockHeader"
 
-        mockkObject(SyncTimeLogger)
-        every { SyncTimeLogger.logApiCall(any(), any(), any(), any()) } returns Unit
-        every { SyncTimeLogger.logRealmOperation(any(), any(), any(), any()) } returns Unit
-        every { SyncTimeLogger.logDetail(any(), any()) } returns Unit
+        val mockSyncTimeLogger = mockk<SyncTimeLogger>(relaxed = true)
+        every { mockSyncTimeLogger.logApiCall(any(), any(), any(), any()) } returns Unit
+        every { mockSyncTimeLogger.logDbOperation(any(), any(), any(), any()) } returns Unit
+        every { mockSyncTimeLogger.logDetail(any(), any()) } returns Unit
 
         every { dispatcherProvider.io } returns Dispatchers.Unconfined
         every { dispatcherProvider.main } returns Dispatchers.Unconfined
@@ -101,7 +101,6 @@ class TransactionSyncManagerCheckpointTest {
         every { prefs.edit() } returns editor
         every { editor.putInt(any(), capture(putValues)) } returns editor
         every { editor.remove(any()) } returns editor
-        every { editor.commit() } returns true
         every { editor.apply() } returns Unit
 
         transactionSyncManager = TransactionSyncManager(
@@ -125,14 +124,14 @@ class TransactionSyncManagerCheckpointTest {
             mockk<ProgressRepository>(relaxed = true),
             mockk<SurveysRepository>(relaxed = true),
             dispatcherProvider,
-            mockk<org.ole.planet.myplanet.services.UserSessionManager>(relaxed = true)
+            mockk<org.ole.planet.myplanet.services.UserSessionManager>(relaxed = true),
+            mockSyncTimeLogger
         )
     }
 
     @After
     fun tearDown() {
         unmockkObject(UrlUtils)
-        unmockkObject(SyncTimeLogger)
     }
 
     @Test

@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.health
 
 import android.content.DialogInterface
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.MenuItem
 import android.view.View
 import android.widget.CheckBox
@@ -19,6 +18,7 @@ import fisk.chipcloud.ChipCloudConfig
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityHealthExaminationBinding
@@ -44,9 +44,6 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
     @Inject
     lateinit var userSessionManager: UserSessionManager
-
-    @Inject
-    lateinit var healthRepository: HealthRepository
 
     private val viewModel: HealthExaminationViewModel by viewModels()
     private lateinit var binding: ActivityHealthExaminationBinding
@@ -99,21 +96,16 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
         viewModel.loadData(userId, intent.getStringExtra("id"))
 
         lifecycleScope.launch {
-            viewModel.state.collect { state ->
-                if (!state.isLoading) {
-                    user = state.user
-                    pojo = state.pojo
-                    health = state.health
-                    examination = state.examination
+            val state = viewModel.state.first { !it.isLoading }
+            user = state.user
+            pojo = state.pojo
+            health = state.health
+            examination = state.examination
+            conditionsMap = state.conditionsMap
 
-                    lifecycleScope.launch {
-                        conditionsMap = healthRepository.getExaminationConditions(examination)
-                        initExamination()
-                        validateFields()
-                        btnSave.isEnabled = true
-                    }
-                }
-            }
+            initExamination()
+            validateFields()
+            btnSave.isEnabled = true
         }
 
         collectWhenStarted(viewModel.isSaving) { isSaving ->
@@ -163,7 +155,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             } else {
                 val sysDia = "${binding.etBloodpressure.text}"
                     .trim { it <= ' ' }
-                    .split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                    .split("/").dropLastWhile { it.isEmpty() }.toTypedArray()
                 if (sysDia.size > 2 || sysDia.isEmpty()) {
                     binding.etBloodpressure.error = getString(R.string.blood_pressure_should_be_systolic_diastolic)
                     allowSubmission = false
@@ -312,15 +304,15 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     }
 
     private val hasInfo: Boolean
-        get() = !TextUtils.isEmpty("${binding.etAllergies.text}") ||
-                !TextUtils.isEmpty("${binding.etDiag.text}") ||
-                !TextUtils.isEmpty("${binding.etImmunization.text}") ||
-                !TextUtils.isEmpty("${binding.etMedications.text}") ||
-                !TextUtils.isEmpty("${binding.etObservation.text}") ||
-                !TextUtils.isEmpty("${binding.etReferrals.text}") ||
-                !TextUtils.isEmpty("${binding.etLabtest.text}") ||
-                !TextUtils.isEmpty("${binding.etTreatments.text}") ||
-                !TextUtils.isEmpty("${binding.etXray.text}")
+        get() = "${binding.etAllergies.text}".isNotBlank() ||
+                "${binding.etDiag.text}".isNotBlank() ||
+                "${binding.etImmunization.text}".isNotBlank() ||
+                "${binding.etMedications.text}".isNotBlank() ||
+                "${binding.etObservation.text}".isNotBlank() ||
+                "${binding.etReferrals.text}".isNotBlank() ||
+                "${binding.etLabtest.text}".isNotBlank() ||
+                "${binding.etTreatments.text}".isNotBlank() ||
+                "${binding.etXray.text}".isNotBlank()
     private val isValidInput: Boolean
         get() {
             val scrollView = binding.rootScrollView

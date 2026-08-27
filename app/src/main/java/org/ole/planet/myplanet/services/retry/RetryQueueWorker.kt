@@ -114,6 +114,9 @@ class RetryQueueWorker @AssistedInject constructor(
 
             Log.i(TAG, "RETRY_QUEUE: Processing ${pendingOperations.size} pending operations")
 
+            val baseUrl = UrlUtils.getUrl()
+            val authHeader = UrlUtils.header
+
             var successCount = 0
             var failureCount = 0
 
@@ -127,7 +130,7 @@ class RetryQueueWorker @AssistedInject constructor(
                     }
 
                     batch.forEach { operation ->
-                        val success = processOperation(operation)
+                        val success = processOperation(operation, baseUrl, authHeader)
                         if (success) successCount++ else failureCount++
                     }
                 }
@@ -149,11 +152,15 @@ class RetryQueueWorker @AssistedInject constructor(
         }
     }
 
-    private suspend fun processOperation(operation: RetryOperation): Boolean {
+    private suspend fun processOperation(
+        operation: RetryOperation,
+        baseUrl: String,
+        authHeader: String
+    ): Boolean {
         return try {
             // Timeout for individual operation (30 seconds)
             withTimeout(30_000L) {
-                processOperationInternal(operation)
+                processOperationInternal(operation, baseUrl, authHeader)
             }
         } catch (e: TimeoutCancellationException) {
             Log.w(TAG, "Operation ${operation.id} timed out")
@@ -166,7 +173,11 @@ class RetryQueueWorker @AssistedInject constructor(
         }
     }
 
-    private suspend fun processOperationInternal(operation: RetryOperation): Boolean {
+    private suspend fun processOperationInternal(
+        operation: RetryOperation,
+        baseUrl: String,
+        authHeader: String
+    ): Boolean {
         return try {
             retryQueue.markInProgress(operation.id)
 
@@ -178,21 +189,21 @@ class RetryQueueWorker @AssistedInject constructor(
                 return false
             }
             val requestUrl = if (operation.dbId.isNullOrEmpty()) {
-                "${UrlUtils.getUrl()}/${operation.endpoint}"
+                "$baseUrl/${operation.endpoint}"
             } else {
-                "${UrlUtils.getUrl()}/${operation.endpoint}/${operation.dbId}"
+                "$baseUrl/${operation.endpoint}/${operation.dbId}"
             }
 
             val response = if (operation.httpMethod == "PUT" && !operation.dbId.isNullOrEmpty()) {
                 apiInterface.putDoc(
-                    UrlUtils.header,
+                    authHeader,
                     "application/json",
                     requestUrl,
                     payload
                 )
             } else {
                 apiInterface.postDoc(
-                    UrlUtils.header,
+                    authHeader,
                     "application/json",
                     requestUrl,
                     payload

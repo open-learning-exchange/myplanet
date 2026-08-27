@@ -76,7 +76,8 @@ class TransactionSyncManager @Inject constructor(
     private val progressRepository: ProgressRepository,
     private val surveysRepository: SurveysRepository,
     private val dispatcherProvider: DispatcherProvider,
-    private val userSessionManager: UserSessionManager
+    private val userSessionManager: UserSessionManager,
+    private val syncTimeLogger: SyncTimeLogger
 ) {
     // The heavy tables are fetched in parallel (see SyncManager), but SQLite has a single
     // writer, so running ~14 batch inserts concurrently just thrashes the write lock/WAL — the
@@ -210,7 +211,7 @@ class TransactionSyncManager @Inject constructor(
                     syncCompletedFully = true
                     break
                 }
-                SyncTimeLogger.logApiCall(
+                syncTimeLogger.logApiCall(
                     "$url/$table/_all_docs (batch $batchNumber)",
                     batchApiDuration,
                     response.isSuccessful,
@@ -279,7 +280,7 @@ class TransactionSyncManager @Inject constructor(
                             }
                         }
                         val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
-                        SyncTimeLogger.logRealmOperation(
+                        syncTimeLogger.logDbOperation(
                             "insert_batch",
                             table,
                             insertDuration,
@@ -311,7 +312,7 @@ class TransactionSyncManager @Inject constructor(
                 Log.d("SyncPerf", "    $table batch $batchNumber: ${arr.size()} docs in ${batchDuration}ms (total: $totalDocs)")
                 // Show progress for slow syncs
                 if (table in listOf("ratings", "submissions")) {
-                    SyncTimeLogger.logDetail(table, "Progress: $totalDocs documents synced so far...")
+                    syncTimeLogger.logDetail(table, "Progress: $totalDocs documents synced so far...")
                 }
                 // If we got less than pageSize, we're done
                 if (arr.size() < pageSize) {
@@ -320,7 +321,7 @@ class TransactionSyncManager @Inject constructor(
                 }
             }
             if (useCheckpoint && syncCompletedFully) {
-                sharedPrefManager.rawPreferences.edit().remove(checkpointKey).commit()
+                sharedPrefManager.rawPreferences.edit().remove(checkpointKey).apply()
             }
             val totalDuration = SystemClock.elapsedRealtime() - syncStartTime
             Log.d("SyncPerf", "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms")
@@ -343,7 +344,7 @@ class TransactionSyncManager @Inject constructor(
         val insertStartTime = SystemClock.elapsedRealtime()
         dbWriteMutex.withLock { insert() }
         val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
-        SyncTimeLogger.logRealmOperation(
+        syncTimeLogger.logDbOperation(
             "insert_batch",
             table,
             insertDuration,

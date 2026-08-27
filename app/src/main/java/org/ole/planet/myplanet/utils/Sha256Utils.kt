@@ -2,9 +2,14 @@ package org.ole.planet.myplanet.utils
 
 import java.io.File
 import java.io.FileInputStream
+import android.util.Log
 import java.security.MessageDigest
 
 class Sha256Utils {
+    companion object {
+        private val HEX_CHARS = "0123456789abcdef".toCharArray()
+    }
+
     fun getCheckSumFromFile(file: File): String {
         return try {
             val digest = MessageDigest.getInstance("SHA-512")
@@ -16,9 +21,15 @@ class Sha256Utils {
                 }
             }
             val hash = digest.digest()
-            hash.joinToString(separator = "") { "%02x".format(it) }
+            val result = CharArray(hash.size * 2)
+            for (i in hash.indices) {
+                val v = hash[i].toInt() and 0xFF
+                result[i * 2] = HEX_CHARS[v ushr 4]
+                result[i * 2 + 1] = HEX_CHARS[v and 0x0F]
+            }
+            String(result)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w("Sha256Utils", "Failed to get checksum for file: ${file.absolutePath}", e)
             ""
         }
     }

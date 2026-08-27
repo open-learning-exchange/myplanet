@@ -59,7 +59,7 @@ import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.GridSpanCalculator
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.ListViewMode
-import org.ole.planet.myplanet.utils.ResourceSearchUtils
+import org.ole.planet.myplanet.utils.ResourcesSearchUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
@@ -77,7 +77,9 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private val clearTags get() = binding.btnClearTags
     private val selectAll get() = binding.selectAll
     private val filter get() = binding.filter
-    private val layoutViewToggle get() = binding.root.findViewById<View>(R.id.layout_view_toggle) ?: (toggleGridButton?.parent as? View)
+    private var layoutViewToggle: View? = null
+    private var toggleGridButton: ImageButton? = null
+    private var toggleListButton: ImageButton? = null
     private lateinit var searchTags: MutableList<TagEntity>
     private lateinit var config: ChipCloudConfig
     private lateinit var adapterLibrary: ResourcesAdapter
@@ -102,6 +104,14 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private var refreshJob: Job? = null
     private var searchJob: Job? = null
+
+    private val spanUpdateRunnable = Runnable { updateGridSpanIfNeeded() }
+    private val layoutChangeListener = View.OnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
+        if (right - left != oldRight - oldLeft) {
+            recyclerView.removeCallbacks(spanUpdateRunnable)
+            recyclerView.post(spanUpdateRunnable)
+        }
+    }
 
     internal val addResourceLauncher = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
@@ -131,8 +141,9 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private fun refreshResourcesData() {
         if (!isAdded || requireActivity().isFinishing) return
+        if (view == null) return
         refreshJob?.cancel()
-        refreshJob = lifecycleScope.launch {
+        refreshJob = viewLifecycleOwner.lifecycleScope.launch {
             try {
                 allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
                 lastSearchQuery = null
@@ -178,6 +189,9 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        toggleGridButton = view.findViewById(R.id.toggle_grid)
+        toggleListButton = view.findViewById(R.id.toggle_list)
+        layoutViewToggle = view.findViewById<View>(R.id.layout_view_toggle) ?: (toggleGridButton?.parent as? View)
         isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) ?: false
         searchTags = ArrayList()
         config = Utilities.getCloudConfig().showClose(R.color.black_overlay)
@@ -248,18 +262,11 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         realtimeSyncHelper.setupRealtimeSync()
     }
 
-    private val toggleGridButton get() = binding.root.findViewById<ImageButton>(R.id.toggle_grid)
-    private val toggleListButton get() = binding.root.findViewById<ImageButton>(R.id.toggle_list)
-
     private fun setupViewModeToggle() {
         updateToggleUi(prefManager.getLibraryViewMode())
-        toggleGridButton.setOnClickListener { setViewMode(ListViewMode.GRID) }
-        toggleListButton.setOnClickListener { setViewMode(ListViewMode.LIST) }
-        recyclerView.addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
-            if (right - left != oldRight - oldLeft) {
-                recyclerView.post { updateGridSpanIfNeeded() }
-            }
-        }
+        toggleGridButton?.setOnClickListener { setViewMode(ListViewMode.GRID) }
+        toggleListButton?.setOnClickListener { setViewMode(ListViewMode.LIST) }
+        recyclerView.addOnLayoutChangeListener(layoutChangeListener)
     }
 
     private fun setViewMode(mode: ListViewMode) {
@@ -271,10 +278,17 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     private fun applyRecyclerLayoutManager(mode: ListViewMode) {
-        recyclerView.layoutManager = if (mode == ListViewMode.GRID) {
-            GridLayoutManager(requireContext(), currentSpanCount())
+        val currentLayoutManager = recyclerView.layoutManager
+        if (mode == ListViewMode.GRID) {
+            if (currentLayoutManager is GridLayoutManager) {
+                currentLayoutManager.spanCount = currentSpanCount()
+            } else {
+                recyclerView.layoutManager = GridLayoutManager(requireContext(), currentSpanCount())
+            }
         } else {
-            LinearLayoutManager(requireContext())
+            if (currentLayoutManager !is LinearLayoutManager || currentLayoutManager is GridLayoutManager) {
+                recyclerView.layoutManager = LinearLayoutManager(requireContext())
+            }
         }
     }
 
@@ -288,7 +302,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private fun updateGridSpanIfNeeded() {
         val layoutManager = recyclerView.layoutManager
         if (layoutManager is GridLayoutManager) {
-            layoutManager.spanCount = currentSpanCount()
+            val currentSpan = currentSpanCount()
+            if (layoutManager.spanCount != currentSpan) {
+                layoutManager.spanCount = currentSpan
+            }
         }
     }
 
@@ -296,10 +313,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val isGrid = mode == ListViewMode.GRID
         val activeColor = ContextCompat.getColor(requireContext(), android.R.color.white)
         val inactiveColor = ContextCompat.getColor(requireContext(), R.color.daynight_textColor)
-        toggleGridButton.setBackgroundResource(if (isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
-        toggleListButton.setBackgroundResource(if (!isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
-        ImageViewCompat.setImageTintList(toggleGridButton, ColorStateList.valueOf(if (isGrid) activeColor else inactiveColor))
-        ImageViewCompat.setImageTintList(toggleListButton, ColorStateList.valueOf(if (!isGrid) activeColor else inactiveColor))
+        toggleGridButton?.setBackgroundResource(if (isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
+        toggleListButton?.setBackgroundResource(if (!isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
+        toggleGridButton?.let { ImageViewCompat.setImageTintList(it, ColorStateList.valueOf(if (isGrid) activeColor else inactiveColor)) }
+        toggleListButton?.let { ImageViewCompat.setImageTintList(it, ColorStateList.valueOf(if (!isGrid) activeColor else inactiveColor)) }
         applyRecyclerLayoutManager(mode)
     }
 
@@ -681,7 +698,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override fun onResume() {
         super.onResume()
         selectAll.isChecked = false
-        recyclerView.post { updateGridSpanIfNeeded() }
+        if (::recyclerView.isInitialized) {
+            recyclerView.removeCallbacks(spanUpdateRunnable)
+            recyclerView.post(spanUpdateRunnable)
+        }
     }
 
     override fun onPause() {
@@ -690,6 +710,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     override fun onDestroyView() {
+        if (::recyclerView.isInitialized) {
+            recyclerView.removeOnLayoutChangeListener(layoutChangeListener)
+            recyclerView.removeCallbacks(spanUpdateRunnable)
+        }
         if (confirmation?.isShowing == true) {
             confirmation?.dismiss()
         }
@@ -697,6 +721,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         if (::adapterLibrary.isInitialized) {
             adapterLibrary.setListener(null)
         }
+
+        layoutViewToggle = null
+        toggleGridButton = null
+        toggleListButton = null
 
         _binding = null
         super.onDestroyView()
@@ -789,7 +817,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     private fun filterLocalLibraryByTag(models: List<ResourceListModel>, s: String, tags: List<TagEntity>): List<ResourceListModel> {
-        var filteredList = ResourceSearchUtils.searchLocalModels(models, s)
+        var filteredList = ResourcesSearchUtils.searchLocalModels(models, s)
 
         if (tags.isNotEmpty()) {
             filteredList = filteredList.filter { model ->
@@ -838,7 +866,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val itemsToAdd = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToAdd.isNotEmpty()) {
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 try {
                     viewModel.addResourcesToUserLibrary(itemsToAdd, userId)
                         .onSuccess {
