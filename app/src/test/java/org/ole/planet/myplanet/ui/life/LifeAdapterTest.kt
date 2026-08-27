@@ -24,7 +24,7 @@ class LifeAdapterTest {
     }
 
     private val noopDrag = object : OnStartDragListener {
-        override fun onStartDrag(viewHolder: RecyclerView.ViewHolder) {}
+        override fun onStartDrag(viewHolder: RecyclerView.ViewHolder?) {}
     }
 
     @Test
