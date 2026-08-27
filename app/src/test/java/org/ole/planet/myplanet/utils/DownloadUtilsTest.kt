@@ -184,7 +184,7 @@ class DownloadUtilsTest {
     }
 
     @Test
-    fun downloadAllFiles resolves base url once and builds urls against it() {
+    fun `downloadAllFiles resolves base url once and builds urls against it`() {
         unmockkObject(DownloadUtils)
         UrlUtils.resetForTesting()
         val spm = mockk<SharedPrefManager>(relaxed = true)
@@ -204,7 +204,7 @@ class DownloadUtilsTest {
     }
 
     @Test
-    fun downloadAllFiles returns empty list for empty input() {
+    fun `downloadAllFiles returns empty list for empty input`() {
         unmockkObject(DownloadUtils)
         UrlUtils.resetForTesting()
         val spm = mockk<SharedPrefManager>(relaxed = true)
