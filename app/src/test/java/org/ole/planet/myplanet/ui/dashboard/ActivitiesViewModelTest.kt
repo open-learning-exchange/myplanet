@@ -21,12 +21,12 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.OfflineActivity
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.repository.UserRepository
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ActivitiesViewModelTest {
 
-    private val userSessionManager = mockk<UserSessionManager>()
+    private val userRepository = mockk<UserRepository>()
     private val activitiesRepository = mockk<ActivitiesRepository>()
     private val testDispatcher = StandardTestDispatcher()
 
@@ -42,9 +42,9 @@ class ActivitiesViewModelTest {
 
     @Test
     fun `offlineLogins emits empty list and nothing else when user is null`() = runTest {
-        coEvery { userSessionManager.getUserModel() } returns null
+        coEvery { userRepository.getUserModel() } returns null
 
-        val viewModel = ActivitiesViewModel(userSessionManager, activitiesRepository)
+        val viewModel = ActivitiesViewModel(userRepository, activitiesRepository)
 
         val emissions = mutableListOf<List<OfflineActivity>>()
         val job = launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -67,10 +67,10 @@ class ActivitiesViewModelTest {
         }
         val mockActivities = listOf(OfflineActivity().apply { _id = "1" }, OfflineActivity().apply { _id = "2" })
 
-        coEvery { userSessionManager.getUserModel() } returns mockUser
+        coEvery { userRepository.getUserModel() } returns mockUser
         every { activitiesRepository.getOfflineLogins(userName) } returns flowOf(mockActivities)
 
-        val viewModel = ActivitiesViewModel(userSessionManager, activitiesRepository)
+        val viewModel = ActivitiesViewModel(userRepository, activitiesRepository)
 
         val emissions = mutableListOf<List<OfflineActivity>>()
         val job = launch(UnconfinedTestDispatcher(testScheduler)) {

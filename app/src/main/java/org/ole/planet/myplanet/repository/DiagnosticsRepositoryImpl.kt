@@ -6,16 +6,15 @@ import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.model.ApkLog
-import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.CrashLogStore
 import org.ole.planet.myplanet.utils.VersionUtils
 
 class DiagnosticsRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val apkLogDao: ApkLogDao,
-    private val sharedPrefManager: SharedPrefManager,
-    private val userSessionManager: UserSessionManager
+    private val userRepository: UserRepository
 ) : DiagnosticsRepository {
 
     override suspend fun getPendingApkLogs(): List<ApkLog> {
@@ -27,17 +26,16 @@ class DiagnosticsRepositoryImpl @Inject constructor(
     }
 
     private fun buildApkLog(
-        spm: SharedPrefManager,
-        modelId: String?,
+        model: UserEntity?,
         time: String,
         type: String,
         error: String
     ): ApkLog {
         return ApkLog().apply {
             id = "${UUID.randomUUID()}"
-            parentCode = spm.getParentCode()
-            createdOn = spm.getPlanetCode()
-            modelId?.let { userId = it }
+            parentCode = model?.parentCode
+            createdOn = model?.planetCode
+            model?.id?.let { userId = it }
             this.time = time
             page = ""
             version = VersionUtils.getVersionName(context)
@@ -50,8 +48,8 @@ class DiagnosticsRepositoryImpl @Inject constructor(
 
     override suspend fun saveLogToRoom(type: String, error: String, time: String): Boolean {
         return try {
-            val model = userSessionManager.getUserModel()
-            val log = buildApkLog(sharedPrefManager, model?.id, time, type, error)
+            val model = userRepository.getUserModel()
+            val log = buildApkLog(model, time, type, error)
             apkLogDao.insert(log)
             true
         } catch (e: Exception) {
@@ -63,16 +61,14 @@ class DiagnosticsRepositoryImpl @Inject constructor(
     override suspend fun saveLogsToRoom(pendingLogs: List<CrashLogStore.PendingLog>): Boolean {
         if (pendingLogs.isEmpty()) return true
         return try {
-            val model = userSessionManager.getUserModel()
+            val model = userRepository.getUserModel()
             val versionName = VersionUtils.getVersionName(context)
-            val parentCode = sharedPrefManager.getParentCode()
-            val planetCode = sharedPrefManager.getPlanetCode()
 
             val logsToInsert = pendingLogs.map { pending ->
                 ApkLog().apply {
                     id = "${UUID.randomUUID()}"
-                    this.parentCode = parentCode
-                    this.createdOn = planetCode
+                    this.parentCode = model?.parentCode
+                    this.createdOn = model?.planetCode
                     model?.let { userId = it.id }
                     this.time = pending.time
                     page = ""
