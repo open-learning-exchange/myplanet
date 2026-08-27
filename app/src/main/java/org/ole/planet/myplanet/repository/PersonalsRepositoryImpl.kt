@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.distinctByContent
 
@@ -82,7 +83,7 @@ class PersonalsRepositoryImpl @Inject constructor(
     override suspend fun uploadPersonalDocument(personal: Personal): Pair<String, String>? {
         val response = apiInterface.postDoc(
             UrlUtils.header, "application/json",
-            "${UrlUtils.getUrl()}/resources", Personal.serialize(personal, context)
+            "${UrlUtils.getUrl()}/resources", Personal.serialize(personal, NetworkUtils.getCustomDeviceName(context))
         )
 
         val `object` = response.body()
