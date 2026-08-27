@@ -78,4 +78,24 @@ class NewsViewModelTest {
 
         assertEquals(expectedUrls, capturedResult)
     }
+
+    @Test
+    fun `subscribing after query completes receives current StateFlow value`() = runTest {
+        val timestamp = 123456789L
+        val expectedUrls = listOf("url1", "url2")
+        coEvery { resourcesRepository.getPrivateImageUrlsCreatedAfter(timestamp) } returns expectedUrls
+
+        viewModel.getPrivateImageUrlsCreatedAfter(timestamp)
+        advanceUntilIdle()
+
+        var capturedResult: List<String>? = null
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.privateImageUrls.collect { urls ->
+                capturedResult = urls
+            }
+        }
+
+        assertEquals(expectedUrls, capturedResult)
+        assertEquals(expectedUrls, viewModel.privateImageUrls.value)
+    }
 }
