@@ -60,8 +60,7 @@ class PersonalsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deletePersonalResource(id: String) {
-        personalDao.deleteByDocId(id)
-        personalDao.deleteById(id)
+        personalDao.deleteByIdOrDocId(id)
     }
 
     override suspend fun updatePersonalResource(id: String, updater: (Personal) -> Unit) {
