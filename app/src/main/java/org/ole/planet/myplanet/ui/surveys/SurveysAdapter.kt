@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.databinding.RowSurveyBinding
 import org.ole.planet.myplanet.model.SurveyRow
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.StableIdGenerator
 
 class SurveysAdapter(
     private val context: Context,
@@ -37,6 +38,13 @@ class SurveysAdapter(
         if (context is OnHomeItemClickListener) {
             listener = context
         }
+        setHasStableIds(true)
+    }
+
+    override fun getItemId(position: Int): Long {
+        val item = getItem(position)
+        val id = StableIdGenerator.generateStringId(item.exam.id)
+        return if (id != RecyclerView.NO_ID) id else StableIdGenerator.generateFallbackId(item)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SurveysViewHolder {
