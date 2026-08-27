@@ -146,11 +146,6 @@ class ChatHistoryFragment : Fragment() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        refreshChatHistory()
-    }
-
     fun refreshChatHistory() {
         sharedViewModel.loadChatHistoryScreenData(
             sharedPrefManager.getUserId(),
