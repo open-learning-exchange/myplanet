@@ -6,6 +6,7 @@ import android.content.Context
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ApplicationProvider
+import org.ole.planet.myplanet.model.ChatMessage
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
