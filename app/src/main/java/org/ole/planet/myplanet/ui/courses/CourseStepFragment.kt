@@ -229,12 +229,10 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private fun refreshInlineResources() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val updatedResources = resourcesRepository.getAllStepResources(stepId)
-            resources = updatedResources
-            inlineResourceAdapter?.submitList(updatedResources)
-            fragmentCourseStepBinding.resourceDownloadProgress.visibility = View.GONE
+        if (::resources.isInitialized) {
+            inlineResourceAdapter?.submitList(resources)
         }
+        fragmentCourseStepBinding.resourceDownloadProgress.visibility = View.GONE
     }
 
     private fun hideTestIfNoQuestion(isTestPresent: Boolean, isSurveyPresent: Boolean) {
