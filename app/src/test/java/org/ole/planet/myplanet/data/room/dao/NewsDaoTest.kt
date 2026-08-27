@@ -114,4 +114,77 @@ class NewsDaoTest {
         assertTrue(ids.contains("reply2"))
         assertTrue(ids.contains("reply3"))
     }
+
+    @Test
+    fun countDistinctCommunityVoiceDates_returns_unique_day_count() = runBlocking {
+        // 2024-12-27 00:00 UTC
+        val day1 = News().apply {
+            id = UUID.randomUUID().toString()
+            time = 1735257600000L
+            viewIn = "[{\"section\":\"community\",\"_id\":\"planet@parent\"}]"
+        }
+        // 2024-12-28 00:00 UTC
+        val day2 = News().apply {
+            id = UUID.randomUUID().toString()
+            time = 1735344000000L
+            viewIn = "[{\"section\":\"community\",\"_id\":\"planet@parent\"}]"
+        }
+        // Same UTC calendar day as day2 -> collapses into one distinct date.
+        val day2SameDay = News().apply {
+            id = UUID.randomUUID().toString()
+            time = 1735344000000L + 3_600_000L // 2024-12-28 01:00 UTC
+            viewIn = "[{\"section\":\"community\",\"_id\":\"planet@parent\"}]"
+        }
+        // Non-community post -> excluded even though it shares day1's timestamp.
+        val teamPost = News().apply {
+            id = UUID.randomUUID().toString()
+            time = 1735257600000L
+            viewIn = "[{\"section\":\"teams\",\"_id\":\"team_123\"}]"
+        }
+
+        newsDao.upsertAll(listOf(day1, day2, day2SameDay, teamPost))
+
+        val count = newsDao.countDistinctCommunityVoiceDates(1735257600000L, 1735430400000L)
+        assertEquals(2, count)
+    }
+
+    @Test
+    fun countDistinctCommunityVoiceDatesForUser_scopes_by_userId() = runBlocking {
+        // 2024-12-27 00:00 UTC
+        val user1Day1 = News().apply {
+            id = UUID.randomUUID().toString()
+            time = 1735257600000L
+            userId = "user1"
+            viewIn = "[{\"section\":\"community\",\"_id\":\"planet@parent\"}]"
+        }
+        // 2024-12-28 00:00 UTC
+        val user1Day2 = News().apply {
+            id = UUID.randomUUID().toString()
+            time = 1735344000000L
+            userId = "user1"
+            viewIn = "[{\"section\":\"community\",\"_id\":\"planet@parent\"}]"
+        }
+        val user2Day1 = News().apply {
+            id = UUID.randomUUID().toString()
+            time = 1735257600000L
+            userId = "user2"
+            viewIn = "[{\"section\":\"community\",\"_id\":\"planet@parent\"}]"
+        }
+
+        newsDao.upsertAll(listOf(user1Day1, user1Day2, user2Day1))
+
+        val user1Count = newsDao.countDistinctCommunityVoiceDatesForUser(
+            1735257600000L, 1735430400000L, "user1"
+        )
+        assertEquals(2, user1Count)
+
+        val user2Count = newsDao.countDistinctCommunityVoiceDatesForUser(
+            1735257600000L, 1735430400000L, "user2"
+        )
+        assertEquals(1, user2Count)
+
+        // All-community count covers both users (two distinct days across the set).
+        val allCount = newsDao.countDistinctCommunityVoiceDates(1735257600000L, 1735430400000L)
+        assertEquals(2, allCount)
+    }
 }

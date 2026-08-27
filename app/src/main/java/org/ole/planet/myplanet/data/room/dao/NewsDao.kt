@@ -75,6 +75,24 @@ interface NewsDao {
     @Query("SELECT * FROM news WHERE time >= :startTime AND time <= :endTime AND userId = :userId")
     suspend fun getInTimeRangeForUser(startTime: Long, endTime: Long, userId: String): List<News>
 
+    // Distinct calendar-day count of community-section voice posts in [startTime, endTime].
+    // `time` is epoch millis; strftime('%Y-%m-%d', time / 1000, 'unixepoch') collapses rows sharing
+    // a UTC day, and the JSON viewIn column is searched for a community section entry (stored
+    // compactly by plainGson, so no spaces around the colon) to match getCommunityVoiceDateCount.
+    @Query(
+        "SELECT COUNT(*) FROM (SELECT DISTINCT strftime('%Y-%m-%d', time / 1000, 'unixepoch') " +
+            "FROM news WHERE time >= :startTime AND time <= :endTime " +
+            "AND viewIn LIKE '%\"section\":\"community\"%')"
+    )
+    suspend fun countDistinctCommunityVoiceDates(startTime: Long, endTime: Long): Int
+
+    @Query(
+        "SELECT COUNT(*) FROM (SELECT DISTINCT strftime('%Y-%m-%d', time / 1000, 'unixepoch') " +
+            "FROM news WHERE time >= :startTime AND time <= :endTime AND userId = :userId " +
+            "AND viewIn LIKE '%\"section\":\"community\"%')"
+    )
+    suspend fun countDistinctCommunityVoiceDatesForUser(startTime: Long, endTime: Long, userId: String): Int
+
     @Query("SELECT * FROM news WHERE newsId = :chatId")
     suspend fun getByNewsId(chatId: String): List<News>
 
