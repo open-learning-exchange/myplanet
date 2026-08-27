@@ -145,62 +145,78 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     protected open fun showDownloadDialog(dbMyLibrary: List<MyLibrary?>) {
-        if (!shouldShowDownloadDialog) return
-        if (!isAdded) return
-        if (dbMyLibrary.isEmpty()) {
-            return
-        }
+        if (!isAdded || dbMyLibrary.isEmpty() || downloadSuggestionDialog?.isShowing == true) return
 
         activity?.let { fragmentActivity ->
             val inflater = fragmentActivity.layoutInflater
             val rootView = fragmentActivity.findViewById<ViewGroup>(android.R.id.content)
             convertView = inflater.inflate(R.layout.my_library_alertdialog, rootView, false)
 
-            val alertDialogBuilder = AlertDialog.Builder(fragmentActivity, R.style.AlertDialogTheme)
-            val titleView = TextView(requireContext()).apply {
-                text = getString(R.string.download_suggestion)
-                setPadding(48, 40, 48, 0)
-                textSize = 18f
-                maxLines = 5
-                isSingleLine = false
-                setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-            }
+            val alertDialogBuilder = AlertDialog.Builder(fragmentActivity, R.style.DownloadDialogTheme)
             alertDialogBuilder.setView(convertView)
-                .setCustomTitle(titleView)
+                .setCustomTitle(createDownloadDialogTitleView())
                 .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
-                    lifecycleScope.launch {
-                        val selectedItemsList = (lv?.adapter as? CheckboxAdapter)?.selectedItemsList
-                        selectedItemsList?.let {
-                            addToLibrary(dbMyLibrary, ArrayList(it))
-                            val selectedLibraries = it.mapNotNull { index -> dbMyLibrary.getOrNull(index) }
-                            if (resourcesRepository.downloadResources(selectedLibraries)) {
-                                val urls = selectedLibraries.mapNotNull { lib -> lib.resourceRemoteAddress }
-                                trackDownloadUrls(urls)
-                                showProgressDialog()
-                            }
-                        }
-                    }
+                    handleDownloadSelected(dbMyLibrary)
                 }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
-                    lifecycleScope.launch {
-                        addAllToLibrary(dbMyLibrary)
-                        val filtered = dbMyLibrary.filterNotNull()
-                        if (resourcesRepository.downloadResources(filtered)) {
-                            val urls = filtered.mapNotNull { lib -> lib.resourceRemoteAddress }
-                            trackDownloadUrls(urls)
-                            showProgressDialog()
-                        }
-                    }
+                    handleDownloadAll(dbMyLibrary)
                 }.setNegativeButton(R.string.txt_cancel, null)
-            downloadSuggestionDialog?.dismiss()
+            val oldDialog = downloadSuggestionDialog
             downloadSuggestionDialog = alertDialogBuilder.create()
             downloadSuggestionDialog?.let { dialog ->
                 createListView(dbMyLibrary, dialog)
                 dialog.setOnDismissListener {
-                    downloadSuggestionDialog = null
+                    if (downloadSuggestionDialog === dialog) {
+                        downloadSuggestionDialog = null
+                    }
                 }
+                dialog.setOnShowListener {
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled =
+                        ((lv?.adapter as? CheckboxAdapter)?.selectedItemsList?.size ?: 0) > 0
+                }
+                oldDialog?.setOnDismissListener(null)
+                oldDialog?.dismiss()
                 dialog.show()
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = ((lv?.adapter as? CheckboxAdapter)?.selectedItemsList?.size
-                    ?: 0) > 0
+            }
+        }
+    }
+
+    private fun createDownloadDialogTitleView(): TextView {
+        return TextView(requireContext()).apply {
+            text = getString(R.string.download_suggestion)
+            val paddingHorizontal = (16 * resources.displayMetrics.density).toInt()
+            val paddingTop = (12 * resources.displayMetrics.density).toInt()
+            val paddingBottom = (4 * resources.displayMetrics.density).toInt()
+            setPadding(paddingHorizontal, paddingTop, paddingHorizontal, paddingBottom)
+            textSize = 15f
+            maxLines = 4
+            isSingleLine = false
+            setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+        }
+    }
+
+    private fun handleDownloadSelected(dbMyLibrary: List<MyLibrary?>) {
+        lifecycleScope.launch {
+            val selectedItemsList = (lv?.adapter as? CheckboxAdapter)?.selectedItemsList
+            selectedItemsList?.let {
+                addToLibrary(dbMyLibrary, ArrayList(it))
+                val selectedLibraries = it.mapNotNull { index -> dbMyLibrary.getOrNull(index) }
+                if (resourcesRepository.downloadResources(selectedLibraries)) {
+                    val urls = selectedLibraries.mapNotNull { lib -> lib.resourceRemoteAddress }
+                    trackDownloadUrls(urls)
+                    showProgressDialog()
+                }
+            }
+        }
+    }
+
+    private fun handleDownloadAll(dbMyLibrary: List<MyLibrary?>) {
+        lifecycleScope.launch {
+            addAllToLibrary(dbMyLibrary)
+            val filtered = dbMyLibrary.filterNotNull()
+            if (resourcesRepository.downloadResources(filtered)) {
+                val urls = filtered.mapNotNull { lib -> lib.resourceRemoteAddress }
+                trackDownloadUrls(urls)
+                showProgressDialog()
             }
         }
     }
