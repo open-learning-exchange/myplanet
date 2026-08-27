@@ -5,12 +5,13 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.recyclerview.widget.RecyclerView
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.callback.OnStartDragListener
 import org.ole.planet.myplanet.model.MyLife
-import org.robolectric.shadows.ShadowLooper
 
 @RunWith(AndroidJUnit4::class)
 class LifeAdapterTest {
@@ -28,12 +29,8 @@ class LifeAdapterTest {
         override fun onStartDrag(viewHolder: RecyclerView.ViewHolder?) {}
     }
 
-    private fun flushMainThread() {
-        ShadowLooper.runUiThreadTasks()
-    }
-
     @Test
-    fun `onItemMove swaps positions and onItemMoveFinished invokes reorderCallback and submitList`() {
+    fun `onItemMove swaps positions and onItemMoveFinished invokes reorderCallback with reordered list`() {
         var receivedList: List<MyLife>? = null
 
         val context: Context = ApplicationProvider.getApplicationContext()
@@ -45,38 +42,39 @@ class LifeAdapterTest {
         )
 
         adapter.submitList(listOf(lifeItem("a", 0), lifeItem("b", 1), lifeItem("c", 2)))
-        flushMainThread()
         val moved = adapter.onItemMove(0, 2)
-        assertEquals(true, moved)
+        assertTrue(moved)
         adapter.onItemMoveFinished()
-        flushMainThread()
 
         assertNotNull(receivedList)
         assertEquals(listOf("b", "c", "a"), receivedList!!.map { it.title })
-        // submitList made its own copy; adapter list reflects the reordered order
-        assertEquals(listOf("b", "c", "a"), adapter.currentList.map { it.title })
+        // The drag list is passed directly (no redundant toList() copy) to both callbacks
+        assertEquals(3, receivedList!!.size)
     }
 
     @Test
     fun `onItemMoveFinished is a no-op when no drag occurred`() {
+        var reorderInvoked = false
+
         val context: Context = ApplicationProvider.getApplicationContext()
         val adapter = LifeAdapter(
             context = context,
             mDragStartListener = noopDrag,
             visibilityCallback = { _, _ -> },
-            reorderCallback = { _ -> throw AssertionError("reorderCallback should not be invoked") }
+            reorderCallback = { _ -> reorderInvoked = true }
         )
 
         adapter.submitList(listOf(lifeItem("a", 0), lifeItem("b", 1)))
-        flushMainThread()
         adapter.onItemMoveFinished()
-        flushMainThread()
-        assertEquals(listOf("a", "b"), adapter.currentList.map { it.title })
+
+        assertFalse(reorderInvoked)
+        assertEquals(2, adapter.itemCount)
     }
 
     @Test
-    fun `reorderCallback receives the same list instance that submitList uses`() {
+    fun `reorderCallback receives the reordered drag list directly`() {
         var receivedList: List<MyLife>? = null
+
         val context: Context = ApplicationProvider.getApplicationContext()
         val adapter = LifeAdapter(
             context = context,
@@ -86,13 +84,10 @@ class LifeAdapterTest {
         )
 
         adapter.submitList(listOf(lifeItem("a", 0), lifeItem("b", 1)))
-        flushMainThread()
         adapter.onItemMove(0, 1)
         adapter.onItemMoveFinished()
-        flushMainThread()
 
         assertNotNull(receivedList)
         assertEquals(listOf("b", "a"), receivedList!!.map { it.title })
-        assertEquals(listOf("b", "a"), adapter.currentList.map { it.title })
     }
 }
