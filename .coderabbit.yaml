@@ -1,20 +1,13 @@
-# CodeRabbit configuration for myPlanet
-# Goal: maximum signal, minimum scroll — short reviews that humans and
-# AI agents can act on without burning tokens on decoration.
-# Reference: https://docs.coderabbit.ai/reference/configuration
+# https://docs.coderabbit.ai/reference/configuration
 language: "en-US"
 
 tone_instructions: >-
-  Be concise. Only flag functional bugs, security issues, data-loss risks,
-  and clear violations of project conventions in CLAUDE.md. No style
-  nitpicks, no compliments, no restating the diff.
+  Correctness first: bugs, security, data loss. Then the conventions in
+  CLAUDE.md. Skip findings already reported by CodeRabbit's bundled detekt or
+  the Gradle build. No compliments, no restating the diff.
 
 reviews:
-  profile: chill
-  high_level_summary: true
-  collapse_walkthrough: true
-
-  # Decorative sections off — they bloat every PR thread.
+  profile: assertive
   sequence_diagrams: false
   changed_files_summary: false
   estimate_code_review_effort: false
@@ -22,13 +15,21 @@ reviews:
   related_prs: false
   suggested_labels: false
   suggested_reviewers: false
-  poem: false
-  review_status: false
   in_progress_fortune: false
-
-  # Keep the collapsible "Prompt for AI agents" block so Claude/Codex
-  # sessions can apply a finding directly.
+  review_status: false  # else a "Review skipped" notice on every unlabelled PR
+  poem: false
   enable_prompt_for_ai_agents: true
+
+  pre_merge_checks:
+    docstrings: { mode: "off" }
+    title: { mode: "off" }
+    description: { mode: "off" }
+    issue_assessment: { mode: "off" }
+
+  finishing_touches:
+    docstrings: { enabled: false }
+    unit_tests: { enabled: false }
+    simplify: { enabled: true }
 
   path_filters:
     - "!gradle/wrapper/**"
@@ -39,61 +40,33 @@ reviews:
   path_instructions:
     - path: "app/src/main/java/**"
       instructions: >-
-        All persistence must go through Room DAOs or DatabaseService — flag
+        All persistence must go through Room DAOs or DatabaseService -- flag
         raw SQLite or Realm usage. Flag hard-coded Dispatchers.* (inject
-        DispatcherProvider instead) and hard-coded user-facing strings
-        (must be string resources). Schema changes must bump the version in
+        DispatcherProvider instead) and hard-coded user-facing strings (must
+        be string resources). Schema changes must bump the version in
         AppDatabase (drop-and-resync strategy, no hand-written migrations).
     - path: "app/src/test/**"
       instructions: >-
-        Tests use MockK, runTest, MainDispatcherRule and
-        TestDispatcherProvider. Flag Mockito usage, Thread.sleep, or
-        hard-coded dispatchers in tests.
+        Tests use MockK, runTest, MainDispatcherRule and TestDispatcherProvider.
+        Flag Mockito usage, Thread.sleep, or hard-coded dispatchers in tests.
+    - path: "app/build.gradle"
+      instructions: >-
+        Every merge bumps versionCode and versionName here, so that hunk is
+        expected -- review the rest of the file and say nothing about the bump.
 
   auto_review:
-    enabled: true
-    drafts: false
-    # Dependency bumps are gated by CI already; reviewing them is noise.
-    ignore_usernames:
-      - "dependabot[bot]"
-
-  # Finishing touches are ON-DEMAND only (checkbox or @coderabbitai command)
-  # — zero noise when idle, full devops arsenal when summoned.
-  finishing_touches:
-    docstrings:
-      enabled: true # @coderabbitai generate docstrings
-    unit_tests:
-      enabled: true # @coderabbitai generate unit tests (conventions: see code_generation)
-    simplify:
-      enabled: true # off by default upstream; opt in
-    autofix:
-      enabled: true # @coderabbitai autofix — applies its own review findings
-    fix_ci:
-      enabled: true # @coderabbitai fix-ci — commits a fix for failing CI
-    resolve_merge_conflict:
-      enabled: true # @coderabbitai resolve merge conflict
-
-  pre_merge_checks:
-    # KDoc coverage is not a project goal — a perpetual 80% warning is pure noise.
-    docstring_coverage:
-      mode: "off"
+    enabled: false
+    labels: ["review"]
+    auto_incremental_review: true
+    auto_pause_after_reviewed_commits: 0
+    drafts: true
 
   tools:
-    detekt:
-      enabled: true
     gitleaks:
       enabled: true
-    actionlint:
-      enabled: true
-    yamllint:
-      enabled: true
-    github-checks:
-      enabled: true
-      timeout_ms: 90000
 
 chat:
   auto_reply: true
-  # art stays on (default): emoji are high signal per character.
 
 knowledge_base:
   code_guidelines:
@@ -106,8 +79,8 @@ code_generation:
     path_instructions:
       - path: "app/src/test/**"
         instructions: >-
-          Use MockK (mockk, coEvery, coVerify) — never Mockito. Coroutine
+          Use MockK (mockk, coEvery, coVerify) -- never Mockito. Coroutine
           tests use runTest with MainDispatcherRule and inject
-          TestDispatcherProvider. Use Robolectric only when Android
-          framework classes are required. Place tests mirroring the main
-          package path so CI (testDefaultDebugUnitTest) picks them up.
+          TestDispatcherProvider. Use Robolectric only when Android framework
+          classes are required. Place tests mirroring the main package path so
+          CI (testDefaultDebugUnitTest) picks them up.

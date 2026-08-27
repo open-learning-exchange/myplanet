@@ -731,7 +731,7 @@ Before opening a PR:
 
 ### PR Reviews
 
-Besides a human reviewer and a Claude session, several bots can review a PR — the full roster and their side effects are in `docs/AGENT_SPELLBOOK.md`. **CodeRabbit** is the default: it auto-reviews every non-draft push, and `@coderabbitai` in a PR comment re-summons it. It's the token-cheap shortcut — an incremental automated review without spending a human's time or a Claude session's context.
+Besides a human reviewer and a Claude session, several bots can review a PR — the full roster and their side effects are in `docs/AGENT_SPELLBOOK.md`. **CodeRabbit** is the default reviewer, but it is opt-in here: label a PR `review` and it reviews every push after that, drafts included. On an unlabelled PR `@coderabbitai review` still summons one by hand. It's the token-cheap shortcut — an incremental automated review without spending a human's time or a Claude session's context.
 
 Useful commands (as PR comments):
 
