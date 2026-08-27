@@ -7,7 +7,6 @@ import java.util.Calendar
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
-import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
@@ -28,8 +27,7 @@ class NotificationsRepositoryImpl @Inject constructor(
     private val teamNotificationDao: TeamNotificationDao,
     private val notificationDao: NotificationDao,
     private val teamTaskDao: TeamTaskDao,
-    private val voicesRepository: VoicesRepository,
-    private val examDao: ExamDao
+    private val voicesRepository: VoicesRepository
 ) : NotificationsRepository {
     override suspend fun refresh() = Unit
 
