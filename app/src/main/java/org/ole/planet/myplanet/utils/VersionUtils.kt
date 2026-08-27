@@ -4,9 +4,12 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
+import android.util.Log
 import androidx.core.content.pm.PackageInfoCompat.getLongVersionCode
 
 object VersionUtils {
+    private const val TAG = "VersionUtils"
+
     fun getVersionCode(context: Context): Int {
         try {
             val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
@@ -17,7 +20,7 @@ object VersionUtils {
                 return pInfo.versionCode
             }
         } catch (e: PackageManager.NameNotFoundException) {
-            e.printStackTrace()
+            Log.w(TAG, "Package info not found while reading version code", e)
         }
         return 0
     }
@@ -27,7 +30,7 @@ object VersionUtils {
             val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
             return pInfo.versionName
         } catch (e: PackageManager.NameNotFoundException) {
-            e.printStackTrace()
+            Log.w(TAG, "Package info not found while reading version name", e)
         }
         return ""
     }
@@ -41,15 +44,32 @@ object VersionUtils {
     }
 
     fun compareVersions(version1: String, version2: String): Int {
-        val parts1 = version1.removeSuffix("-lite").removePrefix("v").split(".").map { it.toInt() }
-        val parts2 = version2.removePrefix("v").split(".").map { it.toInt() }
+        val parts1 = parseIntSegments(version1.removeSuffix("-lite").removePrefix("v"))
+        val parts2 = parseIntSegments(version2.removePrefix("v"))
 
-        for (i in 0 until kotlin.math.min(parts1.size, parts2.size)) {
+        for (i in 0 until minOf(parts1.size, parts2.size)) {
             if (parts1[i] != parts2[i]) {
                 return parts1[i].compareTo(parts2[i])
             }
         }
         return parts1.size.compareTo(parts2.size)
+    }
+
+    private fun parseIntSegments(version: String): IntArray {
+        if (version.isEmpty()) {
+            // Mirrors split("."): "" -> [""], and "".toInt() throws NumberFormatException.
+            throw NumberFormatException(version)
+        }
+        val segments = mutableListOf<Int>()
+        var start = 0
+        while (start <= version.length) {
+            val end = version.indexOf('.', start)
+            val next = if (end == -1) version.length else end
+            segments.add(version.substring(start, next).toInt())
+            if (end == -1) break
+            start = end + 1
+        }
+        return segments.toIntArray()
     }
 
     fun parseApkVersionString(raw: String?): Int? {
