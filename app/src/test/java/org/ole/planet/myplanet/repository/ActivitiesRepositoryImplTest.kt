@@ -4,12 +4,16 @@ import android.content.Context
 import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -17,8 +21,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
@@ -107,11 +109,27 @@ class ActivitiesRepositoryImplTest {
     @Test
     fun `getOfflineLogins returns flow of activities`() = runTest {
         val mockActivities = listOf(OfflineActivity().apply { userName = "john" })
-        coEvery { offlineActivityDao.observeByUserNameAndType("john", UserSessionManager.KEY_LOGIN) } returns flowOf(mockActivities)
+        every { offlineActivityDao.observeByUserNameAndType("john", UserSessionManager.KEY_LOGIN) } returns flowOf(mockActivities)
 
         repository.getOfflineLogins("john").collect {
             assertEquals(mockActivities, it)
         }
+    }
+
+    @Test
+    fun `getOfflineLogins drops consecutive emissions with identical logins`() = runTest {
+        val first = listOf(OfflineActivity().apply { id = "1"; userName = "john"; loginTime = 100L })
+        val identical = listOf(OfflineActivity().apply { id = "1"; userName = "john"; loginTime = 100L })
+        val changed = listOf(OfflineActivity().apply { id = "1"; userName = "john"; loginTime = 200L })
+        every {
+            offlineActivityDao.observeByUserNameAndType("john", UserSessionManager.KEY_LOGIN)
+        } returns flowOf(first, identical, changed)
+
+        val emissions = repository.getOfflineLogins("john").toList()
+
+        assertEquals(2, emissions.size)
+        assertEquals(listOf(100L), emissions[0].map { it.loginTime })
+        assertEquals(listOf(200L), emissions[1].map { it.loginTime })
     }
 
     @Test

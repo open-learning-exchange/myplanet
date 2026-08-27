@@ -1268,6 +1268,7 @@
     <string name="current_cv">CV actuel : %s</string>
     <string name="select_pdf_only">Veuillez sélectionner un fichier PDF</string>
     <string name="file_not_found">Fichier introuvable : %s</string>
+    <string name="text_content_truncated">Le fichier est trop volumineux pour être affiché en entier — seule la première partie est affichée</string>
     <string name="chat_already_shared_to_destination">Cette discussion a déjà été partagée vers cette destination</string>
     <string name="load_earlier_messages">Charger les messages précédents</string>
     <string name="already_shared">Déjà partagé</string>
@@ -1386,5 +1387,10 @@
     <string name="filter_pdfs">PDF</string>
     <string name="downloaded">Téléchargé</string>
     <string name="not_downloaded">Non téléchargé</string>
+    <string-array name="download_filter">
+        <item>Tout</item>
+        <item>Téléchargé</item>
+        <item>Non téléchargé</item>
+    </string-array>
 
 </resources>

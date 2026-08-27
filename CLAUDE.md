@@ -39,6 +39,7 @@ myplanet/
 │   └── workflows/
 │       ├── automerge.yml      # Manually-dispatched queue drainer for `automerge`-labelled PRs
 │       ├── build.yml          # Build workflow for all branches
+│       ├── labels.yml         # Size-labels each PR on open and on every push
 │       ├── playstore.yml      # Hand-started publish of a release the Play Store quota refused
 │       ├── release.yml        # Release and Play Store publishing
 │       └── test.yml           # Unit test workflow
@@ -368,6 +369,8 @@ git push -u origin claude/feature-name-sessionid
 
 See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message and PR conventions.
 
+**Session opened on a branch that isn't `master`?** That's a takeover of someone else's PR branch: the web UI binds its PR panel to this session's auto-minted `claude/…` outcome branch instead, and the PR's CI failures and review comments never arrive. Call `get_session` first, then follow the `overtaking` skill — wired as a plugin in `.claude/settings.json` — to bind a session to the branch and subscribe to the PR. If the plugin didn't load (an empty `~/.claude/plugins/installed_plugins.json` is the tell), clone the marketplace repo listed there and read its `SKILL.md`.
+
 ### CI/CD Pipeline
 
 **Build Workflow** (`.github/workflows/build.yml`)
@@ -409,6 +412,13 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 - Logic lives in `.github/scripts/automerge.sh`; requires `AUTOMERGE_TOKEN` (the default `GITHUB_TOKEN` can't push to the protected base branch)
 - A release that never reached the Play Store stops the drain; the stop reports the estimated next save slot (eastern time, plus how many follow it) and links `playstore.yml`, which publishes that upload without a rebuild
 - A red workflow on the base is re-run before the drain gives up (`base_rerun_attempts`, default 1): every base commit is a PR head that build + test passed on just before the squash merge, so a failure there is treated as flaky until it reproduces
+
+**Labels Workflow** (`.github/workflows/labels.yml`)
+- Runs on `pull_request_target` (`opened`, `synchronize`, `reopened`, `ready_for_review`), so it re-labels on every push and works on fork and Dependabot PRs, where a `pull_request` token would be read-only. It never checks out PR code — it only reads diff numbers through the API
+- Two independent rules, both from `.github/scripts/labels.sh`:
+  - **size** from additions + deletions — `small` ≤ 60, `medium` ≤ 100, `large` ≤ 200, `enormous` above that (`SMALL_MAX`/`MEDIUM_MAX`/`LARGE_MAX`)
+  - **`less`** when the PR only removes code (0 additions, some deletions). It sits *alongside* the size label (`small` + `less`), matching how the label has been used by hand
+- Two exclusions, and both are load-bearing. `EXCLUDE_PATHS` drops `values-*/strings.xml`, because one translated string lands in all five and would count 6×. The version-only lines `automerge.sh` writes into `app/build.gradle` are discounted, because that bump takes a pure deletion from 0 additions to 2 — without the discount, draining the queue would strip `less` from exactly the PRs that earned it
 
 **Dependabot** (`.github/dependabot.yml`)
 - Daily checks for GitHub Actions updates (max 10 open PRs)
