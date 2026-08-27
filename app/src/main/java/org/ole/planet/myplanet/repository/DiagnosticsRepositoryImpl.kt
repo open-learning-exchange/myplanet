@@ -64,24 +64,8 @@ class DiagnosticsRepositoryImpl @Inject constructor(
         if (pendingLogs.isEmpty()) return true
         return try {
             val model = userSessionManager.getUserModel()
-            val versionName = VersionUtils.getVersionName(context)
-            val parentCode = sharedPrefManager.getParentCode()
-            val planetCode = sharedPrefManager.getPlanetCode()
-
             val logsToInsert = pendingLogs.map { pending ->
-                ApkLog().apply {
-                    id = "${UUID.randomUUID()}"
-                    this.parentCode = parentCode
-                    this.createdOn = planetCode
-                    model?.let { userId = it.id }
-                    this.time = pending.time
-                    page = ""
-                    version = versionName
-                    this.type = pending.type
-                    if (pending.error.isNotEmpty()) {
-                        this.error = pending.error
-                    }
-                }
+                buildApkLog(sharedPrefManager, model?.id, pending.time, pending.type, pending.error)
             }
             apkLogDao.insertAll(logsToInsert)
             true
