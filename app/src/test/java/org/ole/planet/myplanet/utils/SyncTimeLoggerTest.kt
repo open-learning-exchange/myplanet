@@ -1,7 +1,11 @@
 package org.ole.planet.myplanet.utils
 
+import android.util.Log
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -10,15 +14,19 @@ class SyncTimeLoggerTest {
 
     @Test
     fun testGenerateSummary() {
+        mockkStatic(Log::class)
+        every { Log.d(any(), any()) } returns 0
+
         var currentTime = 1000L
         val timeProvider = mockk<TimeProvider> {
             every { now() } answers { currentTime }
         }
 
+        val testDispatcher = UnconfinedTestDispatcher()
         val logger = SyncTimeLogger(
             timeProvider = timeProvider,
-            appScope = mockk(relaxed = true),
-            dispatcherProvider = mockk(relaxed = true),
+            appScope = CoroutineScope(testDispatcher),
+            dispatcherProvider = TestDispatcherProvider(testDispatcher),
             sharedPrefManager = mockk(relaxed = true),
             serverUrlMapper = mockk(relaxed = true),
             diagnosticsRepository = mockk(relaxed = true),
