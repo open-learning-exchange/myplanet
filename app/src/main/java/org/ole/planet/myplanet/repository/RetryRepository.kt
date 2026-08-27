@@ -26,7 +26,6 @@ interface RetryRepository {
     suspend fun getPending(): List<RetryOperation>
     suspend fun getPendingCount(): Long
     suspend fun cleanup()
-    suspend fun resetAllPending()
     suspend fun getExistingOperation(itemId: String, uploadType: String): RetryOperation?
     suspend fun deletePendingAndAbandonedOperations()
     suspend fun recoverStuckOperations()

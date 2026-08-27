@@ -95,10 +95,6 @@ class RetryRepositoryImpl @Inject constructor(
         retryDao.deleteOldCompleted(cutoffTime)
     }
 
-    override suspend fun resetAllPending() {
-        retryDao.resetPendingRetryTime(timeProvider.now())
-    }
-
     override suspend fun getExistingOperation(itemId: String, uploadType: String): RetryOperation? {
         return retryDao.findExisting(itemId, uploadType)
     }

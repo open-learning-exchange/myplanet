@@ -209,13 +209,6 @@ class RetryRepositoryImplTest {
     }
 
     @Test
-    fun `resetAllPending resets retry time`() = runTest {
-        repository.resetAllPending()
-
-        coVerify { retryDao.resetPendingRetryTime(timeProvider.now()) }
-    }
-
-    @Test
     fun `deletePendingAndAbandonedOperations delegates to dao`() = runTest {
         repository.deletePendingAndAbandonedOperations()
 
