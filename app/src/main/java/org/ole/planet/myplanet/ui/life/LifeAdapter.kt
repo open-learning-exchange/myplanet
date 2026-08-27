@@ -125,9 +125,8 @@ class LifeAdapter(
 
     override fun onItemMoveFinished() {
         dragList?.let { list ->
-            val finalList = list.toList()
-            reorderCallback(finalList)
-            submitList(finalList)
+            reorderCallback(list)
+            submitList(list)
             dragList = null
         }
     }
