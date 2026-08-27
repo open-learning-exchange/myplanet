@@ -862,7 +862,6 @@ class CoursesRepositoryImpl @Inject constructor(
         } else {
             courseStepDao.getByCourseIds(courseIds)
                 .groupBy { it.courseId ?: "" }
-                .mapValues { entry -> entry.value.map { it } }
         }
         return courses.map { course ->
             val courseKey = course.courseId ?: course.id
