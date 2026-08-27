@@ -8,6 +8,10 @@ updates:
     commit-message:
       prefix: "actions:"
     open-pull-requests-limit: 10
+    groups:
+      actions:
+        patterns:
+          - "*"
   - package-ecosystem: "gradle"
     directories:
       - "/"
@@ -17,3 +21,7 @@ updates:
     commit-message:
       prefix: "all:"
     open-pull-requests-limit: 15
+    groups:
+      dependencies:
+        patterns:
+          - "*"
