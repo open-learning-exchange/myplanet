@@ -60,7 +60,7 @@ class HealthSearchDebounceTest {
         val patients = listOf(UserEntity().apply { id = "1"; name = "John Doe" })
         coEvery { healthRepository.searchPatients("John", "joinDate", true) } returns patients
 
-        etSearch.textChanges()
+        val searchJob = etSearch.textChanges()
             .drop(1)
             .debounce(300)
             .distinctUntilChanged()
@@ -80,5 +80,8 @@ class HealthSearchDebounceTest {
 
         coVerify(exactly = 1) { healthRepository.searchPatients("John", "joinDate", true) }
         assertEquals(patients, viewModel.patientList.value)
+
+        searchJob.cancel()
+        runCurrent()
     }
 }
