@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.utils
 
+import android.util.Log
 import java.io.File
 import java.io.FileInputStream
-import android.util.Log
 import java.security.MessageDigest
 
 class Sha256Utils {

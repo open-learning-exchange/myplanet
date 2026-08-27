@@ -19,9 +19,9 @@ import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.callback.OnMemberActionListener
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCombinedMembersBinding
+import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.collectWhenStarted
 

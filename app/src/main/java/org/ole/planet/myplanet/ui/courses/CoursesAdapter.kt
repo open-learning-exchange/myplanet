@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.courses
 
-import android.app.Activity
 import android.content.Context
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle

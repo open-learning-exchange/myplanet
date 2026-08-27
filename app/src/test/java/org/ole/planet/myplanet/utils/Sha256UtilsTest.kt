@@ -1,17 +1,17 @@
 package org.ole.planet.myplanet.utils
 
+import android.util.Log
+import io.mockk.every
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import java.io.File
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeFalse
-import org.junit.Test
-import io.mockk.mockkStatic
-import io.mockk.unmockkStatic
 import org.junit.Before
-import org.junit.After
-import io.mockk.every
-import android.util.Log
+import org.junit.Test
 
 class Sha256UtilsTest {
 
