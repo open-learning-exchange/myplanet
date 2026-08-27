@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# Drain the automerge queue. Per PR labelled $LABEL, lowest number first:
+# Drain the automerge queue. Per PR labelled $LABEL -- those also labelled
+# $PRIORITY_LABEL first, then lowest number within each tier:
 #
 #   1. merge $BASE into the PR branch          (a conflict relabels it and moves on)
 #   2. bump the version on the PR branch
@@ -12,10 +13,12 @@ REPO="${REPO:?}"
 BASE="${BASE:?}"
 LABEL="${LABEL:?}"
 CONFLICT_LABEL="${CONFLICT_LABEL-conflict}"
+PRIORITY_LABEL="${PRIORITY_LABEL-priority}"
 GRADLE_FILE="${GRADLE_FILE:?}"
 VERSION_SH="${VERSION_SH:?}"
 COAUTHORS_SH="${COAUTHORS_SH:?}"
 QUOTA_SH="${QUOTA_SH:-}"
+PLAYSTORE_SH="${PLAYSTORE_SH:-}"
 REQUIRE_CHECKS="${REQUIRE_CHECKS:-true}"
 REQUIRED_WORKFLOWS="${REQUIRED_WORKFLOWS:-}"
 PUBLISH_JOB="${PUBLISH_JOB:-}"
@@ -61,13 +64,17 @@ pick_pr() {
         --state open \
         --base "$BASE" \
         --label "$LABEL" \
-        --limit 100 \
-        --json number,title,isDraft,headRefName,headRefOid,headRepositoryOwner \
-      | jq -c --arg skip "$skip_numbers" '
+        --limit 1000 \
+        --json number,title,isDraft,headRefName,headRefOid,headRepositoryOwner,labels \
+      | jq -c --arg skip "$skip_numbers" --arg prio "$PRIORITY_LABEL" '
             [ $skip | split(" ")[] | select(length > 0) | tonumber ] as $done
             | map(select(.isDraft | not))
             | map(select(.number as $n | $done | index($n) | not))
-            | sort_by(.number) | first'
+            | map(. + { priority: (
+                  ($prio | length > 0)
+                  and (((.labels // []) | map(.name) | index($prio)) != null)
+              ) })
+            | sort_by([ (if .priority then 0 else 1 end), .number ]) | first'
 }
 
 pr_state()  { gh pr view "$1" --repo "$REPO" --json state --jq '.state' 2>/dev/null || echo ''; }
@@ -284,6 +291,7 @@ wait_base_green() {
     done
 }
 
+# Cause the warn annotation later reads as failed -- ask playstore.sh whether the track actually is ok.
 publish_failed() {
     local sha=$1 run_id job_id note
     [ -n "$PUBLISH_JOB" ] || return 1
@@ -296,6 +304,14 @@ publish_failed() {
                  --jq "[.[] | select(.annotation_level == \"warning\") | .message | select(startswith(\"$PUBLISH_FAIL_MARKER\"))] | first" 2>/dev/null || true)
         if [ -n "$note" ] && [ "$note" != "null" ]; then
             log "  $note"
+            local pend=""
+            [ -n "$PLAYSTORE_SH" ] && [ -x "$PLAYSTORE_SH" ] \
+                && pend=$(GITHUB_OUTPUT='' PLAYSTORE_FORCE=true "$PLAYSTORE_SH" pending 2>/dev/null || true)
+            # pending=false also means "could not tell" -- only the track-read branch emits track_code
+            if grep -qx 'pending=false' <<<"$pend" && grep -qE '^track_code=[0-9]+$' <<<"$pend"; then
+                log "  the $BASE track carries it now -- the warning is stale, carrying on"
+                return 1
+            fi
             return 0
         fi
     done
@@ -307,11 +323,15 @@ quota_note() {
     quota_eta=""
     [ -n "$QUOTA_SH" ] && [ -x "$QUOTA_SH" ] || return 0
 
-    local status
+    local status line
     status=$("$QUOTA_SH" status 2>/dev/null) || return 0
     eval "$(sed -n "s/^report=/quota_report=/p; s/^next_free_local=/quota_eta=/p" <<<"$status")" || return 0
 
-    [ -n "$quota_report" ] && log "  $quota_report"
+    # the whole forecast: the refill rate decides whether a resume keeps pace
+    while IFS= read -r line; do
+        log "  $line"
+    done < <("$QUOTA_SH" forecast 2>/dev/null || printf '%s\n' "$quota_report")
+
     [ -n "$quota_eta" ] && log "  publish it without a rebuild: ${GITHUB_SERVER_URL:-https://github.com}/$REPO/actions/workflows/playstore.yml"
     return 0
 }
@@ -380,8 +400,8 @@ push_with_retry() {
     return 1
 }
 
-log "draining '$LABEL' into $BASE (dry_run=$DRY_RUN)"
-summary "### automerge: draining \`$LABEL\` into \`$BASE\`"
+log "draining '$LABEL' into $BASE${PRIORITY_LABEL:+, '$PRIORITY_LABEL' first} (dry_run=$DRY_RUN)"
+summary "### automerge: draining \`$LABEL\` into \`$BASE\`${PRIORITY_LABEL:+, \`$PRIORITY_LABEL\` first}"
 summary ""
 summary "| PR | version | result |"
 summary "|---|---|---|"
@@ -425,8 +445,12 @@ while :; do
     HEAD=$(jq   -r '.headRefName'               <<<"$pr_json")
     SHA=$(jq    -r '.headRefOid'                <<<"$pr_json")
     OWNER=$(jq  -r '.headRepositoryOwner.login' <<<"$pr_json")
+    PRIORITY=$(jq -r '.priority'                <<<"$pr_json")
 
-    log "picked #$NUMBER ($HEAD @ ${SHA:0:7}): $TITLE"
+    TIER=""
+    if [ "$PRIORITY" = true ]; then TIER=" $PRIORITY_LABEL"; fi
+
+    log "picked$TIER #$NUMBER ($HEAD @ ${SHA:0:7}): $TITLE"
 
     if [ "$OWNER" != "${REPO%%/*}" ]; then
         log "  #$NUMBER comes from fork $OWNER -- cannot push a version bump to it"
