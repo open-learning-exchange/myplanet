@@ -961,7 +961,9 @@ class TeamsRepositoryImpl @Inject constructor(
             .filter { !it.isDeletePending } // Filter so only the not pending members get query
             .mapNotNull { it.userId }
             .distinct()
-        return teamMembers.mapNotNull { userRepository.getUserById(it) }
+        if (teamMembers.isEmpty()) return emptyList()
+        val userMap = userRepository.getUsersByIds(teamMembers).associateBy { it.id }
+        return teamMembers.mapNotNull { userMap[it] }
     }
 
     override suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData> {
@@ -1050,7 +1052,9 @@ class TeamsRepositoryImpl @Inject constructor(
         val requestedMemberIds = teamDao.getByTeamIdAndDocType(teamId, "request")
             .mapNotNull { it.userId }
             .distinct()
-        return requestedMemberIds.mapNotNull { userRepository.getUserById(it) }
+        if (requestedMemberIds.isEmpty()) return emptyList()
+        val userMap = userRepository.getUsersByIds(requestedMemberIds).associateBy { it.id }
+        return requestedMemberIds.mapNotNull { userMap[it] }
     }
 
     override suspend fun isTeamNameExists(name: String, type: String, excludeTeamId: String?): Boolean {
