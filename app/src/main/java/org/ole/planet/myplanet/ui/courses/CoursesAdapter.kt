@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.utils.CourseSubjectClassifier
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ListViewMode
 import org.ole.planet.myplanet.utils.SelectionUtils
+import org.ole.planet.myplanet.utils.StableIdGenerator
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class CoursesAdapter(
@@ -124,6 +125,13 @@ class CoursesAdapter(
         if (context is OnHomeItemClickListener) {
             homeItemClickListener = context
         }
+        setHasStableIds(true)
+    }
+
+    override fun getItemId(position: Int): Long {
+        val item = getItem(position)
+        val id = StableIdGenerator.generateStringId(item.courseId)
+        return if (id != RecyclerView.NO_ID) id else StableIdGenerator.generateFallbackId(item)
     }
 
     fun setViewMode(mode: ListViewMode, onChanged: (() -> Unit)? = null) {

@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -67,7 +68,7 @@ class ActivitiesViewModelTest {
         val mockActivities = listOf(OfflineActivity().apply { _id = "1" }, OfflineActivity().apply { _id = "2" })
 
         coEvery { userSessionManager.getUserModel() } returns mockUser
-        coEvery { activitiesRepository.getOfflineLogins(userName) } returns flowOf(mockActivities)
+        every { activitiesRepository.getOfflineLogins(userName) } returns flowOf(mockActivities)
 
         val viewModel = ActivitiesViewModel(userSessionManager, activitiesRepository)
 
