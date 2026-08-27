@@ -1383,5 +1383,10 @@
     <string name="filter_pdfs">PDFहरू</string>
     <string name="downloaded">डाउनलोड गरिएको</string>
     <string name="not_downloaded">डाउनलोड नगरिएको</string>
+    <string-array name="download_filter">
+        <item>सबै</item>
+        <item>डाउनलोड गरियो</item>
+        <item>डाउनलोड गरिएको छैन</item>
+    </string-array>
 
 </resources>
