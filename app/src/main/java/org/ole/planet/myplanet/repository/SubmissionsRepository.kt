@@ -64,4 +64,5 @@ interface SubmissionsRepository {
     suspend fun getPendingSubmissionsForUpload(): List<Submission>
     suspend fun getPendingSubmitPhotosUploads(): List<SubmitPhotos>
     suspend fun markSubmitPhotosUploaded(localId: String, remoteId: String, rev: String): Boolean
+    suspend fun startExamSession(examId: String, parentId: String?, userId: String?, request: CreateExamSubmissionRequest, recreate: Boolean, deleteStale: Boolean = recreate): Submission
 }

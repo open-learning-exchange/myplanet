@@ -41,7 +41,7 @@ class LoginViewModel @Inject constructor(
         }
         viewModelScope.launch(dispatcherProvider.io) {
             val teamsList = teamsRepository.getAllActiveTeams()
-            _teams.value = teamsList.toList()
+            _teams.value = teamsList
         }
     }
 
@@ -49,7 +49,7 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch(dispatcherProvider.io) {
             if (!teamId.isNullOrEmpty()) {
                 val teamMembers = teamsRepository.refreshJoinedMembersForLogin(teamId)
-                _users.value = teamMembers.toList()
+                _users.value = teamMembers
                 loadSavedUsers() // Refresh saved users after joining team
             } else {
                 _users.value = emptyList()
