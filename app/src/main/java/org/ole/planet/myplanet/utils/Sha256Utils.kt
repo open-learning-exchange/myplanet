@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.utils
 
 import java.io.File
 import java.io.FileInputStream
+import android.util.Log
 import java.security.MessageDigest
 
 class Sha256Utils {
@@ -28,7 +29,7 @@ class Sha256Utils {
             }
             String(result)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w("Sha256Utils", "Failed to get checksum for file: ${file.absolutePath}", e)
             ""
         }
     }

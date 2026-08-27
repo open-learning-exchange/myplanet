@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.view.MenuItem
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utils.LocaleUtils
+import android.util.Log
 
 abstract class BaseActivity : SyncActivity() {
     override fun attachBaseContext(newBase: Context) {
@@ -32,7 +33,7 @@ abstract class BaseActivity : SyncActivity() {
                 setTitle(label)
             }
         } catch (e: PackageManager.NameNotFoundException) {
-            e.printStackTrace()
+            Log.w("BaseActivity", "Failed to find activity label for: ${componentName.className}", e)
         }
     }
 

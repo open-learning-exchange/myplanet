@@ -120,5 +120,5 @@ open class DashboardPluginFragment : BaseContainerFragment() {
         return v
     }
 
-    fun getMyLifeListBase(userId: String?): List<MyLife> = MyLife.defaultItems(requireContext(), userId)
+    fun getMyLifeListBase(userId: String?): List<MyLife> = MyLife.defaultItems(userId, requireContext()::getString)
 }
