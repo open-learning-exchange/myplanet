@@ -1384,6 +1384,11 @@
     <string name="filter_audio">Audio</string>
     <string name="filter_pdfs">PDFs</string>
     <string name="downloaded">Downloaded</string>
-    <string name="not_downloaded">Not downloaded</string>
+    <string name="not_downloaded">Not Downloaded</string>
+    <string-array name="download_filter">
+        <item>All</item>
+        <item>Downloaded</item>
+        <item>Not Downloaded</item>
+    </string-array>
 
 </resources>

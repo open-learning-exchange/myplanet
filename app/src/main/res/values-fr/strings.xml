@@ -1387,5 +1387,10 @@
     <string name="filter_pdfs">PDF</string>
     <string name="downloaded">Téléchargé</string>
     <string name="not_downloaded">Non téléchargé</string>
+    <string-array name="download_filter">
+        <item>Tout</item>
+        <item>Téléchargé</item>
+        <item>Non téléchargé</item>
+    </string-array>
 
 </resources>

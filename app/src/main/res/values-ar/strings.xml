@@ -1399,5 +1399,10 @@
     <string name="filter_pdfs">ملفات PDF</string>
     <string name="downloaded">تم التنزيل</string>
     <string name="not_downloaded">لم يتم التنزيل</string>
+    <string-array name="download_filter">
+        <item>الجميع</item>
+        <item>تم التنزيل</item>
+        <item>لم يتم التنزيل</item>
+    </string-array>
 
 </resources>
