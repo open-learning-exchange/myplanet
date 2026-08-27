@@ -29,10 +29,15 @@ class LifeViewModel @Inject constructor(
     private val _myLifeList = MutableStateFlow<List<MyLife>>(emptyList())
     val myLifeList: StateFlow<List<MyLife>> = _myLifeList.asStateFlow()
 
+    private suspend fun resolveUserId(): String? {
+        val raw = sharedPrefManager.getUserId().ifEmpty { userRepository.getUserModel()?.id.orEmpty() }
+        return raw.takeIf { it.isNotBlank() && it != "--" }
+    }
+
     fun loadMyLifeList() {
         viewModelScope.launch {
             val list = withContext(dispatcherProvider.io) {
-                val userId = sharedPrefManager.getUserId().ifEmpty { userRepository.getUserModel()?.id }
+                val userId = resolveUserId()
                 var myLifeList = lifeRepository.getMyLifeByUserId(userId)
                 if (myLifeList.isEmpty()) {
                     lifeRepository.seedMyLifeIfEmpty(userId, MyLife.defaultItems(context, userId))
@@ -54,6 +59,7 @@ class LifeViewModel @Inject constructor(
     }
 
     fun updateMyLifeListOrder(list: List<MyLife>) {
+        _myLifeList.value = list
         viewModelScope.launch {
             withContext(dispatcherProvider.io) {
                 lifeRepository.updateMyLifeListOrder(list)

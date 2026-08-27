@@ -141,13 +141,14 @@ class LifeViewModelTest {
     }
 
     @Test
-    fun `updateMyLifeListOrder calls repository`() = runTest {
+    fun `updateMyLifeListOrder calls repository and updates state flow`() = runTest {
         val items = listOf(MyLife().apply { _id = "1"; title = "Health" })
         coEvery { lifeRepository.updateMyLifeListOrder(items) } returns Unit
 
         viewModel.updateMyLifeListOrder(items)
         testScheduler.advanceUntilIdle()
 
+        assertEquals(items, viewModel.myLifeList.value)
         coVerify(exactly = 1) { lifeRepository.updateMyLifeListOrder(items) }
     }
 }

@@ -125,10 +125,19 @@ class LifeAdapter(
 
     override fun onItemMoveFinished() {
         dragList?.let { list ->
-            val finalList = list.toList()
-            reorderCallback(finalList)
-            submitList(finalList)
+            val updatedList = list.mapIndexed { index, item ->
+                MyLife().apply {
+                    _id = item._id
+                    imageId = item.imageId
+                    userId = item.userId
+                    title = item.title
+                    isVisible = item.isVisible
+                    weight = index
+                }
+            }
             dragList = null
+            reorderCallback(updatedList)
+            submitList(updatedList)
         }
     }
 
