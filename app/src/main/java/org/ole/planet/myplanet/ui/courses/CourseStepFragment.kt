@@ -118,8 +118,8 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 userHasCourse = data.userHasCourse
 
                 fragmentCourseStepBinding.btnResources.text =
-                    getString(R.string.resources_size, resources.size)
-                hideTestIfNoQuestion(data.hasExam, data.hasSurvey)
+                    getString(R.string.resources_size, data.resources.size)
+                hideTestIfNoQuestion(data.hasExam, data.hasSurvey, data.stepExams.size)
                 fragmentCourseStepBinding.tvTitle.text = step.stepTitle
                 val markdownContentWithLocalPaths = prependBaseUrlToImages(
                     step.description,
@@ -237,14 +237,14 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         }
     }
 
-    private fun hideTestIfNoQuestion(isTestPresent: Boolean, isSurveyPresent: Boolean) {
+    private fun hideTestIfNoQuestion(isTestPresent: Boolean, isSurveyPresent: Boolean, stepExamCount: Int = stepExams.size) {
         fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
         fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
         if (stepExams.isNotEmpty()) {
             fragmentCourseStepBinding.btnTakeTest.text = if (isTestPresent) {
-                getString(R.string.retake_test, stepExams.size)
+                getString(R.string.retake_test, stepExamCount)
             } else {
-                getString(R.string.take_test, stepExams.size)
+                getString(R.string.take_test, stepExamCount)
             }
             fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
         }
