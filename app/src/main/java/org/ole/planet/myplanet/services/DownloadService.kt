@@ -173,10 +173,10 @@ class DownloadService : Service() {
         return Companion.getNextUrl(preferences, PENDING_DOWNLOADS_KEY, processedUrls, false)
     }
 
-    private fun getRemainingCount(): Int {
-        val priorityUrls = preferences.getStringSet(PRIORITY_DOWNLOADS_KEY, emptySet()) ?: emptySet()
+    private fun getRemainingCount(priorityUrls: Set<String>? = null): Int {
+        val priority = priorityUrls ?: preferences.getStringSet(PRIORITY_DOWNLOADS_KEY, emptySet()) ?: emptySet()
         val pendingUrls = preferences.getStringSet(PENDING_DOWNLOADS_KEY, emptySet()) ?: emptySet()
-        val allUrls = priorityUrls + pendingUrls
+        val allUrls = priority + pendingUrls
         return allUrls.count { it !in processedUrls }
     }
 
@@ -499,11 +499,13 @@ class DownloadService : Service() {
             }
         }
 
-        val remainingPriority = preferences.getStringSet(PRIORITY_DOWNLOADS_KEY, emptySet())?.count { it !in processedUrls } ?: 0
-        val remaining = getRemainingCount()
+        val priorityUrls = preferences.getStringSet(PRIORITY_DOWNLOADS_KEY, emptySet()) ?: emptySet()
+        val remainingPriority = priorityUrls.count { it !in processedUrls }
+        val remaining = getRemainingCount(priorityUrls)
 
+        val fileName = getFileNameFromUrl(url)
         val download = Download().apply {
-            fileName = getFileNameFromUrl(url)
+            this.fileName = fileName
             fileUrl = originalDownloadUrl.ifEmpty { url }
             progress = 100
             completeAll = (remaining == 0) || (isCurrentDownloadPriority && remainingPriority == 0)
@@ -512,7 +514,7 @@ class DownloadService : Service() {
         sendIntent(download, fromSync)
         notificationBuilder?.apply {
             setProgress(sessionCompletedCount + remaining, sessionCompletedCount, false)
-            setContentText("Downloaded ${getFileNameFromUrl(url)}")
+            setContentText("Downloaded $fileName")
             setSubText("$sessionCompletedCount completed, $remaining remaining")
             notificationManager?.notify(ONGOING_NOTIFICATION_ID, build())
         }
