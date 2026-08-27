@@ -17,6 +17,9 @@ interface FeedbackDao {
     @Query("SELECT * FROM feedback WHERE owner IS :owner ORDER BY openTime DESC")
     fun getByOwnerFlow(owner: String?): Flow<List<Feedback>>
 
+    // No count variant by design: the only caller (UploadCoordinator via
+    // FeedbackRepository.getPendingFeedback) needs the full rows to serialize and upload each
+    // one, so a COUNT(*) here would be dead API.
     @Query("SELECT * FROM feedback WHERE isUploaded = 0")
     suspend fun getPending(): List<Feedback>
 
