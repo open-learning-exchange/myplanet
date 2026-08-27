@@ -297,7 +297,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         refreshJob?.cancel()
         refreshJob = viewLifecycleOwner.lifecycleScope.launch {
             val knownAssigneeIds = adapterTask.getKnownAssigneeIds()
-            val tasksSnapshot = teamViewModel.taskList.value.toList()
+            val tasksSnapshot = teamViewModel.taskList.value
 
             val (taskList, fetchedNames, currentSnapshot) = withContext(dispatcherProvider.io) {
                 val list = when (currentTab) {

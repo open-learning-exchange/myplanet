@@ -1,14 +1,11 @@
 package org.ole.planet.myplanet.model
 
-import android.text.TextUtils
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import com.google.gson.stream.JsonReader
-import java.io.StringReader
 import org.ole.planet.myplanet.utils.JsonUtils
 
 /**
@@ -47,14 +44,10 @@ open class Feedback {
     @get:Ignore
     val messageList: List<FeedbackReply>?
         get() {
-            if (TextUtils.isEmpty(messages)) return null
+            if (messages.isNullOrEmpty()) return null
             val feedbackReplies: MutableList<FeedbackReply> = ArrayList()
 
-            val stringReader = StringReader(messages)
-            val jsonReader = JsonReader(stringReader)
-
-            val e = JsonParser.parseReader(jsonReader)
-            val ar = e.asJsonArray
+            val ar = JsonParser.parseString(messages).asJsonArray
             if (ar.size() > 0) {
                 for (i in 1 until ar.size()) {
                     val ob = ar[i].asJsonObject
@@ -73,13 +66,9 @@ open class Feedback {
     @get:Ignore
     val message: String
         get() {
-            if (TextUtils.isEmpty(messages)) return ""
+            if (messages.isNullOrEmpty()) return ""
 
-            val stringReader = StringReader(messages)
-            val jsonReader = JsonReader(stringReader)
-
-            val e = JsonParser.parseReader(jsonReader)
-            val ar = e.asJsonArray
+            val ar = JsonParser.parseString(messages).asJsonArray
             if (ar.size() > 0) {
                 val ob = ar[0].asJsonObject
                 return ob["message"].asString

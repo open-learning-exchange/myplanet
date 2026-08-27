@@ -113,6 +113,9 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     }
 
     private fun setListeners() {
+        binding.toolbar.setNavigationOnClickListener {
+            FragmentNavigator.popBackStack(parentFragmentManager)
+        }
         binding.btnUpdate.setOnClickListener {
             val firstName = binding.etFname.text.toString().trim()
             val lastName = binding.etLname.text.toString().trim()
@@ -301,7 +304,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             }
             if (`object` != null) referenceArray?.remove(`object`)
             if (referenceArray == null) referenceArray = JsonArray()
-            referenceArray?.add(createReference(name, alertReferenceBinding.etRelationship, alertReferenceBinding.etPhone, alertReferenceBinding.etEmail))
+            referenceArray?.add(createReference(name, alertReferenceBinding.etRelationship.text.toString(), alertReferenceBinding.etPhone.text.toString(), alertReferenceBinding.etEmail.text.toString()))
             showReference()
             referenceDialog?.dismiss()
         }

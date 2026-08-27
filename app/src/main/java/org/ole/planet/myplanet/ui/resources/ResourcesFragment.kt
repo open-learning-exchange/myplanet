@@ -31,6 +31,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -59,7 +60,7 @@ import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.GridSpanCalculator
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.ListViewMode
-import org.ole.planet.myplanet.utils.ResourceSearchUtils
+import org.ole.planet.myplanet.utils.ResourcesSearchUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
@@ -105,6 +106,14 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private var refreshJob: Job? = null
     private var searchJob: Job? = null
 
+    private val spanUpdateRunnable = Runnable { updateGridSpanIfNeeded() }
+    private val layoutChangeListener = View.OnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
+        if (right - left != oldRight - oldLeft) {
+            recyclerView.removeCallbacks(spanUpdateRunnable)
+            recyclerView.post(spanUpdateRunnable)
+        }
+    }
+
     internal val addResourceLauncher = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -133,8 +142,9 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private fun refreshResourcesData() {
         if (!isAdded || requireActivity().isFinishing) return
+        if (view == null) return
         refreshJob?.cancel()
-        refreshJob = lifecycleScope.launch {
+        refreshJob = viewLifecycleOwner.lifecycleScope.launch {
             try {
                 allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
                 lastSearchQuery = null
@@ -148,7 +158,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override suspend fun getAdapter(): ListAdapter<*, *> {
         allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
 
-        val user = userRepository.getUserModel()
+        val user = viewModel.getCurrentUser()
         // The adapter caches the Context (Activity) which outlives onCreateView,
         // but Fragments and their host Activities are re-created together so this is safe from leaks.
         if (!::adapterLibrary.isInitialized) {
@@ -219,18 +229,25 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             }
         }
         viewLifecycleOwner.lifecycleScope.launch {
-            userModel = userRepository.getUserModel()
-            if (::adapterLibrary.isInitialized && _binding != null) {
-                checkList()
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.currentUser.filterNotNull().collectLatest { user ->
+                    userModel = user
+                    if (::adapterLibrary.isInitialized && _binding != null) {
+                        checkList()
+                    }
+                    val userId = userModel?.id
+                    if (userId != null) {
+                        viewModel.observeOpenedResourceIds(userId)
+                    }
+                }
             }
-            val userId = userModel?.id
-            if (userId != null) {
-                viewModel.observeOpenedResourceIds(userId)
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    viewModel.openedResourceIds.collectLatest { openedResourceIds ->
-                        if (::adapterLibrary.isInitialized) {
-                            adapterLibrary.setOpenedResourceIds(openedResourceIds)
-                        }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.openedResourceIds.collectLatest { openedResourceIds ->
+                    if (::adapterLibrary.isInitialized) {
+                        adapterLibrary.setOpenedResourceIds(openedResourceIds)
                     }
                 }
             }
@@ -257,11 +274,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         updateToggleUi(prefManager.getLibraryViewMode())
         toggleGridButton?.setOnClickListener { setViewMode(ListViewMode.GRID) }
         toggleListButton?.setOnClickListener { setViewMode(ListViewMode.LIST) }
-        recyclerView.addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
-            if (right - left != oldRight - oldLeft) {
-                recyclerView.post { updateGridSpanIfNeeded() }
-            }
-        }
+        recyclerView.addOnLayoutChangeListener(layoutChangeListener)
     }
 
     private fun setViewMode(mode: ListViewMode) {
@@ -297,7 +310,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private fun updateGridSpanIfNeeded() {
         val layoutManager = recyclerView.layoutManager
         if (layoutManager is GridLayoutManager) {
-            layoutManager.spanCount = currentSpanCount()
+            val currentSpan = currentSpanCount()
+            if (layoutManager.spanCount != currentSpan) {
+                layoutManager.spanCount = currentSpan
+            }
         }
     }
 
@@ -690,7 +706,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override fun onResume() {
         super.onResume()
         selectAll.isChecked = false
-        recyclerView.post { updateGridSpanIfNeeded() }
+        if (::recyclerView.isInitialized) {
+            recyclerView.removeCallbacks(spanUpdateRunnable)
+            recyclerView.post(spanUpdateRunnable)
+        }
     }
 
     override fun onPause() {
@@ -699,6 +718,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     override fun onDestroyView() {
+        if (::recyclerView.isInitialized) {
+            recyclerView.removeOnLayoutChangeListener(layoutChangeListener)
+            recyclerView.removeCallbacks(spanUpdateRunnable)
+        }
         if (confirmation?.isShowing == true) {
             confirmation?.dismiss()
         }
@@ -802,7 +825,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     private fun filterLocalLibraryByTag(models: List<ResourceListModel>, s: String, tags: List<TagEntity>): List<ResourceListModel> {
-        var filteredList = ResourceSearchUtils.searchLocalModels(models, s)
+        var filteredList = ResourcesSearchUtils.searchLocalModels(models, s)
 
         if (tags.isNotEmpty()) {
             filteredList = filteredList.filter { model ->
@@ -851,7 +874,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val itemsToAdd = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToAdd.isNotEmpty()) {
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 try {
                     viewModel.addResourcesToUserLibrary(itemsToAdd, userId)
                         .onSuccess {

@@ -579,6 +579,8 @@
     <string name="no_data_available_please_check_and_try_again">لا تتوفر بيانات، يرجى التحقق والمحاولة مرة أخرى.</string>
     <string name="no_course_matched_filter">لا توجد دورات تطابقت مع الفلتر</string>
     <string name="added_to_my_library">تمت الإضافة إلى myLibrary</string>
+    <string name="format_added_to_mylibrary">%1$s تمت الإضافة إلى myLibrary</string>
+    <string name="format_removed_from_mylibrary">%1$s تمت إزالتها من myLibrary</string>
     <string name="added_to_my_courses">تمت الإضافة إلى myCourses</string>
     <string name="do_you_want_to_stay_online">هل ترغب في البقاء متصلاً على الإنترنت؟</string>
     <string name="device_not_connected_to_planet">الجهاز غير متصل بالكوكب.</string>
@@ -1278,6 +1280,7 @@
     <string name="current_cv">السيرة الذاتية الحالية: %s</string>
     <string name="select_pdf_only">يرجى اختيار ملف PDF</string>
     <string name="file_not_found">الملف غير موجود: %s</string>
+    <string name="text_content_truncated">الملف كبير جدًا لعرضه بالكامل — يتم عرض الجزء الأول فقط</string>
     <string name="chat_already_shared_to_destination">تمت مشاركة هذه الدردشة بالفعل إلى هذه الوجهة</string>
     <string name="load_earlier_messages">تحميل الرسائل السابقة</string>
     <string name="already_shared">تمت المشاركة بالفعل</string>

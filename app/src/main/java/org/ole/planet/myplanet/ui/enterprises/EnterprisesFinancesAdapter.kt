@@ -39,7 +39,7 @@ class EnterprisesFinancesAdapter(
         val binding = holder.binding
         binding.date.text = item.date?.let { formatDate(it, "MMM dd, yyyy") } ?: ""
         binding.note.text = item.description
-        if ("debit".equals(item.type, ignoreCase = true)) {
+        if (item.type.equals("debit", ignoreCase = true)) {
             binding.debit.text = context.getString(R.string.number_placeholder, item.amount)
             binding.credit.text = context.getString(R.string.message_placeholder, " -")
         } else {
@@ -48,7 +48,7 @@ class EnterprisesFinancesAdapter(
         }
         binding.balance.text = item.balance.toString()
         bindFinanceImage(binding, item)
-        updateBackgroundColor(binding.llayout, position)
+        updateBackgroundColor(holder, position)
     }
 
     override fun onViewRecycled(holder: FinanceViewHolder) {
@@ -75,20 +75,25 @@ class EnterprisesFinancesAdapter(
         }
     }
 
-    private fun updateBackgroundColor(layout: LinearLayout, position: Int) {
+    private fun updateBackgroundColor(holder: FinanceViewHolder, position: Int) {
         if (position % 2 < 1) {
-            val border = GradientDrawable()
-            border.setColor(-0x1) //white background
-            border.setStroke(1, ContextCompat.getColor(context, R.color.black_overlay))
-            border.gradientType = GradientDrawable.LINEAR_GRADIENT
-            val layers = arrayOf<Drawable>(border)
-            val layerDrawable = LayerDrawable(layers)
-            layerDrawable.setLayerInset(0, -10, 0, -10, 0)
-            layout.background = layerDrawable
+            holder.binding.llayout.background = holder.alternateColor
+        } else {
+            holder.binding.llayout.background = null
         }
     }
 
     class FinanceViewHolder(val binding: RowFinanceBinding) : RecyclerView.ViewHolder(
         binding.root
-    )
+    ) {
+        val alternateColor: Drawable by lazy {
+            val border = GradientDrawable()
+            border.setColor(-0x1) //white background
+            border.setStroke(1, ContextCompat.getColor(binding.root.context, R.color.black_overlay))
+            border.gradientType = GradientDrawable.LINEAR_GRADIENT
+            val layerDrawable = LayerDrawable(arrayOf<Drawable>(border))
+            layerDrawable.setLayerInset(0, -10, 0, -10, 0)
+            layerDrawable.mutate()
+        }
+    }
 }
