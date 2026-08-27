@@ -6,23 +6,25 @@
 
 ---
 
-## 1. Cache getStorageStats call in FileUtils (roadmap 7)
+## 1. Cache and time-bound getStorageStats + lazy files dir in FileUtils (roadmap 7+8)
 
-context: `FileUtils.kt:347-356` calls `totalMemoryCapacity()` and `totalAvailableMemory()` sequentially, each of which calls `getStorageStats()`. When `totalAvailableMemoryRatio()` or `availableOverTotalMemoryFormattedString()` runs, it makes up to 4 system calls instead of 1.
+context: `FileUtils.kt:347-356` calls `totalMemoryCapacity()` and `totalAvailableMemory()` sequentially, each of which calls `getStorageStats()`. When `totalAvailableMemoryRatio()` or `availableOverTotalMemoryFormattedString()` runs, it makes up to 4 system calls instead of 1. Additionally, `cachedExternalFilesDir` uses `@Volatile` with manual null-checks; a lazy delegate is idiomatic Kotlin and removes the need for `warmUp()`.
 
-files: `app/src/main/java/org/ole/planet/myplanet/utils/FileUtils.kt` (`totalAvailableMemoryRatio`, `availableOverTotalMemoryFormattedString`, `getStorageStats`). Do NOT touch `totalMemoryCapacity` or `totalAvailableMemory` — callers in settings are out of scope.
+files: `app/src/main/java/org/ole/planet/myplanet/utils/FileUtils.kt` (`totalAvailableMemoryRatio`, `availableOverTotalMemoryFormattedString`, `getStorageStats`, `warmUp`, `getExternalFilesDir`, `cachedExternalFilesDir`). Do NOT touch `totalMemoryCapacity` or `totalAvailableMemory` — callers in settings are out of scope.
 
 steps:
-1. Add a private inline function that captures both values from `getStorageStats()` once
-2. Rewrite `totalAvailableMemoryRatio()` to call this inline function exactly once
-3. Rewrite `availableOverTotalMemoryFormattedString()` to call the same inline function once
-4. Verify existing `FileUtilsTest` tests still pass
+1. Replace `@Volatile private var cachedExternalFilesDir: File? = null` with `private val cachedExternalFilesDir by lazy { context: Context -> context.applicationContext.getExternalFilesDir(null) }`
+2. Rewrite `warmUp()` to a no-op (keep signature for API compatibility)
+3. Simplify `getExternalFilesDir()` to return `cachedExternalFilesDir` directly
+4. Add package-private `@Volatile var storageStatsCache: Pair<Long, Long>? = null` and `storageStatsCacheTimestamp: Long = 0`
+5. In `getStorageStats()`, check if cache is null or older than 5 seconds before recomputing; reuse cached Pair otherwise
+6. Verify existing `FileUtilsTest` tests still pass
 
-acceptance: `./gradlew testDefaultDebugUnitTest --tests "*FileUtilsTest*" green`; storage display in settings screen shows correct available/total ratio and formatted string.
+acceptance: `./gradlew testDefaultDebugUnitTest --tests "*FileUtilsTest*" green`; storage display in settings screen shows correct available/total ratio and formatted string; file operations still work correctly.
 
-size budget: ~15 changed lines, 1 file
+size budget: ~30 changed lines, 1 file
 
-out of scope: no DAO changes, no repository changes, no new system services
+out of scope: no DAO changes, no repository changes, no new system services, no changes to other FileUtils functions
 
 ---
 
@@ -102,27 +104,7 @@ out of scope: no workflow YAML changes
 
 ---
 
-## 6. Convert cachedExternalFilesDir to lazy delegate in FileUtils (roadmap 8)
-
-context: `FileUtils.kt:31` declares `@Volatile private var cachedExternalFilesDir: File? = null` with the sole purpose of caching one directory path. The variable is written via `warmUp()` or the elvis operator in `getExternalFilesDir()`. A lazy delegate is idiomatic Kotlin and removes the need for manual null-checking.
-
-files: `app/src/main/java/org/ole/planet/myplanet/utils/FileUtils.kt` (`warmUp`, `getExternalFilesDir`, `cachedExternalFilesDir`). Do NOT touch other functions in FileUtils.
-
-steps:
-1. Replace `@Volatile private var cachedExternalFilesDir: File? = null` with `private val cachedExternalFilesDir by lazy { context -> context.applicationContext.getExternalFilesDir(null) }`
-2. Rewrite `warmUp()` to a no-op (keep signature for API compatibility)
-3. Simplify `getExternalFilesDir()` to return `cachedExternalFilesDir` directly
-4. Update FileUtilsTest.tearDown() to remove the cache reset for this field
-
-acceptance: `./gradlew testDefaultDebugUnitTest --tests "*FileUtilsTest*" green`; file operations still work correctly.
-
-size budget: ~8 changed lines, 1 file
-
-out of scope: no changes to other FileUtils functions
-
----
-
-## 7. Add storage-stats unit test coverage (roadmap 8)
+## 6. Add storage-stats unit test coverage (roadmap 8)
 
 context: `FileUtilsTest.kt` has no tests for `totalMemoryCapacity`, `totalAvailableMemory`, `totalAvailableMemoryRatio`, or `availableOverTotalMemoryFormattedString`. Adding tests prevents regressions as the storage-stat caching in task 1 lands.
 
@@ -141,26 +123,7 @@ out of scope: no changes to production code
 
 ---
 
-## 8. Add time-bounded cache to getStorageStats in FileUtils (roadmap 3+7)
-
-context: `FileUtils.kt:359-374` `getStorageStats()` calls `StorageStatsManager` and `StorageManager` system services on every invocation. The settings UI calls `totalMemoryCapacity()` / `totalAvailableMemory()` multiple times on configuration changes, causing repeated system calls.
-
-files: `app/src/main/java/org/ole/planet/myplanet/utils/FileUtils.kt` (`getStorageStats`). Do NOT touch `totalAvailableMemoryRatio` or `availableOverTotalMemoryFormattedString` — they are covered by task 1.
-
-steps:
-1. Add package-private `@Volatile var storageStatsCache: Pair<Long, Long>? = null` and `storageStatsCacheTimestamp: Long = 0`
-2. In `getStorageStats()`, check if cache is null or older than 5 seconds before recomputing
-3. All callers of `totalMemoryCapacity()` / `totalAvailableMemory()` automatically benefit from the cache
-
-acceptance: `./gradlew testDefaultDebugUnitTest --tests "*FileUtilsTest*" green`; settings UI shows correct values.
-
-size budget: ~12 changed lines, 1 file
-
-out of scope: no new interfaces, no DI changes
-
----
-
-## 9. Simplify DiffUtils.calculateDiff contentSelector branch (roadmap 8)
+## 7. Simplify DiffUtils.calculateDiff contentSelector branch (roadmap 8)
 
 context: `DiffUtils.kt:50-52` creates a callback object on every call to `calculateDiff`. The `areContentsTheSame` lambda uses an `if/else` where the else branch `oldItem == newItem` is never reached because when `contentSelector` is null, the caller always passes identity-based equality.
 
@@ -178,29 +141,69 @@ out of scope: no changes to itemCallback or standardItemCallback
 
 ---
 
-## 10. Add explicit null-check in FileUtils.copyUriToFile (roadmap 8)
+## 8. Improve error context in ApiClient.executeWithResult (roadmap 8)
 
-context: `FileUtils.kt:237-243` `copyUriToFile()` catches all exceptions silently. If `openInputStream` returns null (which can happen for some content URIs), the function returns without indication. Adding a simple null-check improves debuggability.
+context: `ApiClient.kt:42` swallows the actual error type when reading `errorBody()` by using `catch (_: Exception)`. This loses information that would help debug API failures. Improving the catch block to preserve the exception type makes diagnostics easier.
 
-files: `app/src/main/java/org/ole/planet/myplanet/utils/FileUtils.kt` (`copyUriToFile`). Do NOT touch other FileUtils functions.
+files: `app/src/main/java/org/ole/planet/myplanet/data/api/ApiClient.kt` (`executeWithResult`). Do NOT touch `executeWithRetryAndWrap` — it has separate error handling.
 
 steps:
-1. Add an early return if `openInputStream` returns null
-2. Add a comment explaining why the function returns Unit on failure
-3. Add a Robolectric test that exercises the null-inputStream path
+1. Change the catch block to capture the exception as `e: IOException` instead of `_: Exception`
+2. Pass the captured exception to `NetworkResult.Error` via a new constructor parameter or a withExtra extension
+3. Verify the NetworkResult consumers in the codebase still compile
 
-acceptance: `./gradlew testDefaultDebugUnitTest --tests "*FileUtilsTest*" green`; copyUriToFile handles edge cases gracefully.
+acceptance: `./gradlew testDefaultDebugUnitTest --tests "*ApiClient*" green`; API error responses include better context.
 
-size budget: ~8 changed lines, 1 file
+size budget: ~6 changed lines, 1 file
 
-out of scope: no changes to other file utility functions
+out of scope: no changes to NetworkResult definition outside ApiClient
+
+---
+
+## 9. Document Gson provider split intent in NetworkModule (roadmap 8)
+
+context: `NetworkModule.kt:53-67` provides two Gson instances — one configured with `excludeFieldsWithModifiers` and `serializeNulls`, and one plain `Gson()`. The reason for the split is not documented, and 5 repositories inject `@PlainGson`. Adding a comment clarifies intent for future maintainers.
+
+files: `app/src/main/java/org/ole/planet/myplanet/di/NetworkModule.kt` (`provideGson`, `providePlainGson`). Do NOT touch `ApiInterface` or the Retrofit builder.
+
+steps:
+1. Add KDoc comment to `provideGson()` explaining it serializes nulls and excludes final/transient/static fields
+2. Add KDoc comment to `providePlainGson()` explaining it is used by repositories that need exact JSON fidelity
+3. Verify the module compiles
+
+acceptance: `./gradlew testDefaultDebugUnitTest --tests "*NetworkModule*" green` (if exists); no functional change.
+
+size budget: ~10 changed lines, 1 file
+
+out of scope: no changes to Gson configuration, no changes to repository injections
+
+---
+
+## 10. Add unit tests for Constants.kt beta feature functions (roadmap 8)
+
+context: `Constants.kt:72-87` `showBetaFeature`, `isBetaWifiFeatureEnabled`, and `autoSynFeature` have no unit test coverage. These functions read SharedPreferences and are called from onboarding and settings screens. Adding Robolectric tests prevents regressions.
+
+files: `app/src/test/java/org/ole/planet/myplanet/utils/ConstantsTest.kt` (new file). Do NOT touch the main `Constants.kt`.
+
+steps:
+1. Create `ConstantsTest.kt` with Robolectric test runner
+2. Add test for `showBetaFeature()` returning correct boolean based on preference
+3. Add test for `isBetaWifiFeatureEnabled()` requiring both beta and wifi switches
+4. Add test for `autoSynFeature()` reading the correct key
+5. Run the new tests
+
+acceptance: `./gradlew testDefaultDebugUnitTest --tests "*ConstantsTest*" green`; all 3 functions have test coverage.
+
+size budget: ~40 changed lines, 1 new file
+
+out of scope: no changes to production code
 
 ---
 
 ## Self-Check
 
 - [x] Exactly 10 tasks
-- [x] No file in two tasks
+- [x] No file in two tasks (FileUtils.kt and FileUtilsTest.kt are separate; Constants.kt and ConstantsTest.kt are separate)
 - [x] Every cited path was opened and confirmed to exist
 - [x] Every task has all 7 template sections
 - [x] No task under 15 lines
