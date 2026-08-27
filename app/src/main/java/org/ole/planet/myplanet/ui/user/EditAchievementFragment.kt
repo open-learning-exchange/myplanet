@@ -362,8 +362,8 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             }.setNegativeButton(getString(R.string.cancel), null).show()
     }
 
-    private fun setUpOldAchievement(`object`: JsonObject?, etDescription: EditText, etTitle: EditText, tvDate: AppCompatTextView): List<String?> {
-        val prevList: MutableList<String?> = ArrayList()
+    private fun setUpOldAchievement(`object`: JsonObject?, etDescription: EditText, etTitle: EditText, tvDate: AppCompatTextView): Set<String?> {
+        val prevSet: MutableSet<String?> = HashSet()
         if (`object` != null) {
             etTitle.setText(`object`["title"].asString)
             etDescription.setText(`object`["description"].asString)
@@ -372,11 +372,11 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             val array = `object`.getAsJsonArray("resources") ?: JsonArray()
             date = `object`["date"].asString
             for (o in array) {
-                prevList.add(o.asJsonObject["title"].asString)
+                prevSet.add(o.asJsonObject["title"].asString)
             }
             resourceArray = array
         }
-        return prevList
+        return prevSet
     }
 
     private fun saveAchievement(desc: String, title: String) {
@@ -391,7 +391,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         showAchievementAndInfo()
     }
 
-    private fun showResourceListDialog(prevList: List<String?>) {
+    private fun showResourceListDialog(prevList: Set<String?>) {
         viewLifecycleOwner.lifecycleScope.launch {
             val list = resourcesRepository.getAllLibraries()
 
@@ -474,7 +474,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         return achievement?.resumeFileName ?: ""
     }
 
-    private fun createResourceList(myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding, list: List<MyLibrary>, prevList: List<String?>): RecyclerView {
+    private fun createResourceList(myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding, list: List<MyLibrary>, prevList: Set<String?>): RecyclerView {
         val names = ArrayList<String>()
         val selected: ArrayList<Int> = ArrayList()
         for (i in list.indices) {
