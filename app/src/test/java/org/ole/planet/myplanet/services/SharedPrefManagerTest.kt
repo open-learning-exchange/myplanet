@@ -3,7 +3,9 @@ package org.ole.planet.myplanet.services
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.preference.PreferenceManager
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
@@ -179,14 +181,14 @@ class SharedPrefManagerTest {
         every { mockSharedPreferences.getBoolean(SharedPrefManager.MANUAL_CONFIG, false) } returns false
 
         every { mockEditor.clear() } returns mockEditor
-        every { mockEditor.commit() } returns true
+        every { mockEditor.apply() } just Runs
 
         sharedPrefManager.clearPreferences()
 
         verify { mockEditor.clear() }
         verify { mockEditor.putBoolean(SharedPrefManager.FIRST_LAUNCH, true) }
         verify { mockEditor.putBoolean(SharedPrefManager.MANUAL_CONFIG, false) }
-        verify { mockEditor.commit() }
+        verify { mockEditor.apply() }
 
         verify { mockDefaultEditor.clear() }
     }

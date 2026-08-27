@@ -16,6 +16,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
+import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.UserEntity
@@ -25,7 +26,7 @@ import org.ole.planet.myplanet.utils.SystemTimeProvider
 class EventsRepositoryImplTest {
 
     private lateinit var meetupDao: MeetupDao
-    private lateinit var userRepository: UserRepository
+    private lateinit var userDao: UserDao
     private lateinit var repository: EventsRepositoryImpl
 
     class SilentException(message: String) : Exception(message) {
@@ -35,8 +36,8 @@ class EventsRepositoryImplTest {
     @Before
     fun setup() {
         meetupDao = mockk(relaxed = true)
-        userRepository = mockk(relaxed = true)
-        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, userRepository, Gson())
+        userDao = mockk(relaxed = true)
+        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, userDao, Gson())
     }
 
     @Test
@@ -69,10 +70,9 @@ class EventsRepositoryImplTest {
             Meetup().apply { userId = "user2" },
             Meetup().apply { userId = "user1" }
         )
-        coEvery { userRepository.getAllUsers() } returns listOf(
+        coEvery { userDao.getUsersByAnyIds(any()) } returns listOf(
             UserEntity(id = "user1"),
-            UserEntity(id = "user2", _id = "remote-user2"),
-            UserEntity(id = "user3")
+            UserEntity(id = "user2", _id = "remote-user2")
         )
 
         val result = repository.getJoinedMembers("meetup1")
@@ -86,40 +86,38 @@ class EventsRepositoryImplTest {
     }
 
     @Test
-    fun toggleCurrentUserAttendance_success() = runTest {
+    fun toggleAttendance_success() = runTest {
         val meetup = Meetup().apply { meetupId = "meetup1" }
         coEvery { meetupDao.getByMeetupId("meetup1") } returns meetup
-        coEvery { userRepository.getUserModel() } returns UserEntity(id = "user1")
 
         meetup.userId = ""
-        val joinResult = repository.toggleCurrentUserAttendance("meetup1")
+        val joinResult = repository.toggleAttendance("meetup1", "user1")
         assertEquals("user1", meetup.userId)
         assertNotNull(joinResult)
 
         meetup.userId = "user1"
-        val leaveResult = repository.toggleCurrentUserAttendance("meetup1")
+        val leaveResult = repository.toggleAttendance("meetup1", "user1")
         assertEquals("", meetup.userId)
         assertNotNull(leaveResult)
 
         coVerify(atLeast = 1) { meetupDao.upsert(meetup) }
 
-        val emptyResult = repository.toggleCurrentUserAttendance("")
+        val emptyResult = repository.toggleAttendance("", "user1")
         assertNull(emptyResult)
     }
 
     @Test
-    fun toggleCurrentUserAttendance_missingActiveUser() = runTest {
+    fun toggleAttendance_missingActiveUser() = runTest {
         val meetup = Meetup().apply { meetupId = "meetup1" }
         coEvery { meetupDao.getByMeetupId("meetup1") } returns meetup
-        coEvery { userRepository.getUserModel() } returns null
 
         meetup.userId = "user1"
-        val leaveResult = repository.toggleCurrentUserAttendance("meetup1")
+        val leaveResult = repository.toggleAttendance("meetup1", "")
         assertEquals("user1", meetup.userId)
         assertNotNull(leaveResult)
 
         meetup.userId = ""
-        val joinResult = repository.toggleCurrentUserAttendance("meetup1")
+        val joinResult = repository.toggleAttendance("meetup1", "")
         assertEquals("", meetup.userId)
         assertNotNull(joinResult)
     }

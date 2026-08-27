@@ -63,20 +63,23 @@ class VoicesLabelManager(
     fun showChips(binding: RowNewsBinding, voice: News, canManageLabels: Boolean) {
         binding.fbChips.removeAllViews()
 
-        for (label in voice.labels ?: emptyList()) {
+        val labels = voice.labels ?: emptyList()
+
+        if (labels.isNotEmpty()) {
             val chipConfig = Utilities.getCloudConfig().apply {
                 selectMode(if (canManageLabels) ChipCloud.SelectMode.close else ChipCloud.SelectMode.none)
             }
-
             val chipCloud = ChipCloud(context, binding.fbChips, chipConfig)
-            chipCloud.addChip(getLabel(label))
+
+            for (label in labels) {
+                chipCloud.addChip(getLabel(label))
+            }
 
             if (canManageLabels) {
                 chipCloud.setDeleteListener { _: Int, labelText: String? ->
                     val selectedLabel = when {
                         labelText == null -> null
-                        Constants.LABELS.containsKey(labelText) -> Constants.LABELS[labelText]
-                        else -> voice.labels?.firstOrNull { getLabel(it) == labelText }
+                        else -> Constants.LABELS[labelText] ?: labels.firstOrNull { getLabel(it) == labelText }
                     }
                     val voiceId = voice.id
                     if (selectedLabel != null && voiceId != null) {
@@ -91,6 +94,7 @@ class VoicesLabelManager(
                 }
             }
         }
+
         updateAddLabelVisibility(binding, voice, canManageLabels)
     }
 
@@ -111,15 +115,12 @@ class VoicesLabelManager(
     }
 
     private fun getLabel(s: String): String {
-        for (key in Constants.LABELS.keys) {
-            if (s == Constants.LABELS[key]) {
-                return key
-            }
-        }
-        return formatLabelValue(s)
+        return reverseLabels[s] ?: formatLabelValue(s)
     }
 
     companion object {
+        private val reverseLabels by lazy { Constants.LABELS.entries.associate { it.value to it.key } }
+
         internal fun formatLabelValue(raw: String): String {
             val cleaned = raw.replace("_", " ").replace("-", " ")
             if (cleaned.isBlank()) {

@@ -11,6 +11,7 @@ import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -18,6 +19,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
@@ -32,6 +35,8 @@ import org.ole.planet.myplanet.model.UserChallengeActions
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -48,6 +53,9 @@ class ActivitiesRepositoryImplTest {
     private lateinit var offlineActivityDao: OfflineActivityDao
     private lateinit var removedLogDao: RemovedLogDao
     private lateinit var searchActivityDao: org.ole.planet.myplanet.data.room.dao.SearchActivityDao
+    private lateinit var dispatcherProvider: DispatcherProvider
+    private val testDispatcher = StandardTestDispatcher()
+    private val testScope = TestScope(testDispatcher)
 
     private lateinit var repository: ActivitiesRepositoryImpl
 
@@ -66,9 +74,11 @@ class ActivitiesRepositoryImplTest {
         offlineActivityDao = mockk(relaxed = true)
         removedLogDao = mockk(relaxed = true)
         searchActivityDao = mockk(relaxed = true)
+        dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
         repository = ActivitiesRepositoryImpl(
             context,
+            dispatcherProvider,
             lazyUserRepository,
             apiInterface,
             sharedPrefManager,
@@ -104,6 +114,22 @@ class ActivitiesRepositoryImplTest {
         repository.getOfflineLogins("john").collect {
             assertEquals(mockActivities, it)
         }
+    }
+
+    @Test
+    fun `getOfflineLogins drops consecutive emissions with identical logins`() = runTest {
+        val first = listOf(OfflineActivity().apply { id = "1"; userName = "john"; loginTime = 100L })
+        val identical = listOf(OfflineActivity().apply { id = "1"; userName = "john"; loginTime = 100L })
+        val changed = listOf(OfflineActivity().apply { id = "1"; userName = "john"; loginTime = 200L })
+        every {
+            offlineActivityDao.observeByUserNameAndType("john", UserSessionManager.KEY_LOGIN)
+        } returns flowOf(first, identical, changed)
+
+        val emissions = repository.getOfflineLogins("john").toList()
+
+        assertEquals(2, emissions.size)
+        assertEquals(listOf(100L), emissions[0].map { it.loginTime })
+        assertEquals(listOf(200L), emissions[1].map { it.loginTime })
     }
 
     @Test
@@ -202,14 +228,14 @@ class ActivitiesRepositoryImplTest {
     }
 
     @Test
-    fun `getMostOpenedResource returns null when no activities`() = runTest {
+    fun `getMostOpenedResource returns null when no activities`() = testScope.runTest {
         coEvery { resourceActivityDao.getByUserAndType("john", "pdf") } returns emptyList()
         val result = repository.getMostOpenedResource("john", "pdf")
         assertNull(result)
     }
 
     @Test
-    fun `getMostOpenedResource returns correct pair`() = runTest {
+    fun `getMostOpenedResource returns correct pair`() = testScope.runTest {
         val activities = listOf(
             ResourceActivity().apply { resourceId = "res1"; title = "Res 1" },
             ResourceActivity().apply { resourceId = "res1"; title = "Res 1" },

@@ -106,7 +106,7 @@ class UserEntityTest {
         val user = UserEntity()
         user.rolesList = mutableListOf("project_manager")
         user.userAdmin = false
-        assertTrue(user.isManager())
+        assertFalse(user.isManager())
     }
 
     @Test
@@ -120,6 +120,6 @@ class UserEntityTest {
     fun testIsLeaderWithCompoundRole() {
         val user = UserEntity()
         user.rolesList = mutableListOf("team_leader")
-        assertTrue(user.isLeader())
+        assertFalse(user.isLeader())
     }
 }

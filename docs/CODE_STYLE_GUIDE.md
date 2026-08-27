@@ -731,7 +731,7 @@ Before opening a PR:
 
 ### PR Reviews
 
-Besides a human reviewer and a Claude session, several bots can review a PR — the full roster and their side effects are in `docs/AGENT_SPELLBOOK.md`. **CodeRabbit** is the default: it auto-reviews every non-draft push, and `@coderabbitai` in a PR comment re-summons it. It's the token-cheap shortcut — an incremental automated review without spending a human's time or a Claude session's context.
+Besides a human reviewer and a Claude session, several bots can review a PR — the full roster and their side effects are in `docs/AGENT_SPELLBOOK.md`. **CodeRabbit** is the default reviewer, but it is opt-in here: label a PR `review` and it reviews every push after that, drafts included. On an unlabelled PR `@coderabbitai review` still summons one by hand. It's the token-cheap shortcut — an incremental automated review without spending a human's time or a Claude session's context.
 
 Useful commands (as PR comments):
 
@@ -784,3 +784,5 @@ These are real patterns that have caused bugs in this codebase before.
 **Don't swallow `CancellationException` in coroutines** — it breaks cooperative cancellation.
 
 **Don't block the main thread** with database queries, file I/O, or network calls. Use `withContext(dispatcherProvider.io)`.
+
+**Don't add `@Index` to fields storing JSON lists (like `userId`) if queried using `LIKE` with wildcards.** B-tree indices cannot optimize leading-wildcard queries (e.g. `LIKE '%"id"%'`). Adding an index will do nothing for performance but will trigger a database version bump and destructive migration, wiping local unsynced data.

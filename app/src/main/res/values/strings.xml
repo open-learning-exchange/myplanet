@@ -162,6 +162,7 @@
     <string name="https_protocol">https://</string>
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">Showing reply of:</string>
+    <string name="reply_count_format" translatable="false">(%1$d)</string>
     <string name="open_date">Open Date</string>
     <string name="my_survey">mySurveys</string>
     <string name="failed_to_load_course">Failed to load course</string>
@@ -578,6 +579,8 @@
     <string name="no_data_available_please_check_and_try_again">No data available, please check and try again.</string>
     <string name="no_course_matched_filter">No courses matched filter</string>
     <string name="added_to_my_library">added to myLibrary</string>
+    <string name="format_added_to_mylibrary">%1$s added to myLibrary</string>
+    <string name="format_removed_from_mylibrary">%1$s removed from myLibrary</string>
     <string name="added_to_my_courses">added to myCourses</string>
     <string name="do_you_want_to_stay_online">Do you want to stay online?</string>
     <string name="device_not_connected_to_planet">Device not connected to planet.</string>
@@ -607,6 +610,7 @@
     <string name="sync">sync</string>
     <string name="session_expired">Session expired.</string>
     <string name="downloading_started_please_check_notificati">Downloading started, please check notification…</string>
+    <string name="dictionary_parsing_failed">Dictionary parsing failed.</string>
     <string name="dictionary">Dictionary</string>
     <string name="list_size">List size %d</string>
     <string name="word_not_available_in_our_database">Word not available in our database.</string>
@@ -1023,7 +1027,7 @@
     <string name="dark_mode_follow_system">Follow System</string>
     <string name="theme_mode_light">Light</string>
     <string name="theme_mode_dark">Dark</string>
-    <string name="text_size">text size</string>
+    <string name="text_size">Text Size</string>
     <string name="select_text_size">Select Text Size</string>
     <string name="text_size_small">Small</string>
     <string name="text_size_medium">Medium</string>
@@ -1271,6 +1275,7 @@
     <string name="current_cv">Current CV/Resume: %s</string>
     <string name="select_pdf_only">Please select a PDF file</string>
     <string name="file_not_found">File not found: %s</string>
+    <string name="text_content_truncated">File is too large to display in full — showing the first part only</string>
     <string name="chat_already_shared_to_destination">This chat has already been shared to this destination</string>
     <string name="load_earlier_messages">Load earlier messages</string>
     <string name="already_shared">Already shared</string>
