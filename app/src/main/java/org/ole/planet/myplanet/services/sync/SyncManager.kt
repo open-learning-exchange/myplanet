@@ -56,7 +56,7 @@ import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
-class SyncManager @Inject constructor(
+open class SyncManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val sharedPrefManager: SharedPrefManager,
     private val apiInterface: ApiInterface,
@@ -78,6 +78,11 @@ class SyncManager @Inject constructor(
     private var backgroundSync: Job? = null
     private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
     val syncStatus: StateFlow<SyncStatus> = _syncStatus
+
+    /** Overridable in tests to observe every parallel-phase status write. */
+    protected open fun emitSyncStatus(status: SyncStatus.Syncing) {
+        _syncStatus.value = status
+    }
 
     fun start(listener: OnSyncListener?, type: String, syncTables: List<String>? = null) {
         this.listener = listener
@@ -151,24 +156,32 @@ class SyncManager @Inject constructor(
                 "meetups", "courses", "notifications"
             )
             val completedTables = AtomicInteger(0)
-            _syncStatus.value = SyncStatus.Syncing(context.getString(R.string.sync_phase_account_data), 1, 4,
-                0, parallelTables.size)
+            emitSyncStatus(SyncStatus.Syncing(context.getString(R.string.sync_phase_account_data), 1, 4,
+                0, parallelTables.size))
+            // Coalesce the per-table progress writes: ~14 near-simultaneous completions would otherwise
+            // each thrash the StateFlow. The coalescer collapses that burst into a handful of emissions.
+            val tableCoalescer = SyncStatusCoalescer(::emitSyncStatus, SYNC_STATUS_COALESCE_MS)
             coroutineScope {
+                tableCoalescer.start(this)
                 val syncJobs = parallelTables.map { tableName ->
                     async {
                         syncTimeLogger.startProcess("${tableName}_sync")
                         transactionSyncManager.syncDb(tableName)
                         syncTimeLogger.endProcess("${tableName}_sync")
                         val done = completedTables.incrementAndGet()
-                        _syncStatus.value = SyncStatus.Syncing(
-                            context.getString(R.string.sync_phase_account_data), 1, 4,
-                            done, parallelTables.size,
-                            context.getString(R.string.sync_table_progress, tableName, done, parallelTables.size)
+                        tableCoalescer.report(
+                            SyncStatus.Syncing(
+                                context.getString(R.string.sync_phase_account_data), 1, 4,
+                                done, parallelTables.size,
+                                context.getString(R.string.sync_table_progress, tableName, done, parallelTables.size)
+                            )
                         )
                     }
                 }
                 syncJobs.awaitAll()
+                tableCoalescer.stop()
             }
+            tableCoalescer.flush()
 
             // Phase 2: Sync resources base table (must run before library to establish base records)
             _syncStatus.value = SyncStatus.Syncing(context.getString(R.string.sync_phase_resources), 2, 4)
@@ -517,7 +530,10 @@ class SyncManager @Inject constructor(
             syncTimeLogger.startProcess("library_process_shelves")
 
             val completedShelves = AtomicInteger(0)
+            // Same coalescing as Phase 1: parallel shelf completions collapse into few emissions.
+            val shelfCoalescer = SyncStatusCoalescer(::emitSyncStatus, SYNC_STATUS_COALESCE_MS)
             coroutineScope {
+                shelfCoalescer.start(this)
                 val semaphore = Semaphore(6)
                 val shelfJobs = shelvesWithData.mapIndexed { index, shelfId ->
                     async(dispatcherProvider.io) {
@@ -529,10 +545,12 @@ class SyncManager @Inject constructor(
                                 syncTimeLogger.logDetail("library_sync", "Shelf ${index + 1}/${shelvesWithData.size} ($shelfId): $items items in ${shelfDuration}ms")
                             }
                             val completed = completedShelves.incrementAndGet()
-                            _syncStatus.value = SyncStatus.Syncing(
-                                context.getString(R.string.sync_phase_library), 3, 4,
-                                completed, shelvesWithData.size,
-                                context.getString(R.string.sync_shelves_progress, completed, shelvesWithData.size)
+                            shelfCoalescer.report(
+                                SyncStatus.Syncing(
+                                    context.getString(R.string.sync_phase_library), 3, 4,
+                                    completed, shelvesWithData.size,
+                                    context.getString(R.string.sync_shelves_progress, completed, shelvesWithData.size)
+                                )
                             )
                             items
                         }
@@ -540,7 +558,9 @@ class SyncManager @Inject constructor(
                 }
 
                 processedItems = shelfJobs.awaitAll().sum()
+                shelfCoalescer.stop()
             }
+            shelfCoalescer.flush()
 
             syncTimeLogger.endProcess("library_process_shelves", processedItems)
 
@@ -555,5 +575,10 @@ class SyncManager @Inject constructor(
             val failDuration = SystemClock.elapsedRealtime() - librarySyncStartTime
             Log.d("SyncPerf", "  ✗ Library sync failed after ${failDuration}ms: ${e.message}")
         }
+    }
+
+    private companion object {
+        /** Minimum spacing between coalesced parallel-phase status emissions. */
+        const val SYNC_STATUS_COALESCE_MS = 150L
     }
 }
