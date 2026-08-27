@@ -24,9 +24,15 @@ object StableIdGenerator {
     }
 
     /**
-     * Generates a unique fallback Long ID for an object that lacks a valid string key.
-     * Uses a WeakHashMap to ensure the same object instance receives the same ID over its lifecycle.
+     * Generates a fallback Long ID for an item that lacks a usable string key, so that keyless items
+     * never share RecyclerView.NO_ID under setHasStableIds(true).
+     *
+     * Keys are held in a WeakHashMap, so the ID is stable for as long as an equal key is reachable:
+     * items with a value-based equals (data classes) keep their ID across emissions, while items that
+     * inherit identity equality (the open Room entities) get a fresh ID on each new instance. Callers
+     * that need the stronger guarantee should pass a content-derived key to generateStringId instead.
      */
+    @Synchronized
     fun generateFallbackId(item: Any): Long {
         return fallbackIds.getOrPut(item) {
             nextFallbackId--

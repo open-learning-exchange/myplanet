@@ -43,4 +43,33 @@ class StableIdGeneratorTest {
         assertNotEquals(RecyclerView.NO_ID, fallbackId1)
         assertNotEquals(RecyclerView.NO_ID, fallbackId2)
     }
+
+    private data class ValueItem(val name: String)
+
+    private class IdentityItem
+
+    @Test
+    fun testGenerateFallbackId_equalInstancesShareId() {
+        val first = ValueItem("unsynced-team")
+        val second = ValueItem("unsynced-team")
+
+        val firstId = StableIdGenerator.generateFallbackId(first)
+        val secondId = StableIdGenerator.generateFallbackId(second)
+
+        assertEquals(firstId, secondId)
+        // Also pins both keys as reachable across the lookups above, since the cache holds them weakly.
+        assertEquals(first, second)
+    }
+
+    @Test
+    fun testGenerateFallbackId_identityInstancesGetDistinctIds() {
+        val first = IdentityItem()
+        val second = IdentityItem()
+
+        val firstId = StableIdGenerator.generateFallbackId(first)
+        val secondId = StableIdGenerator.generateFallbackId(second)
+
+        assertNotEquals(firstId, secondId)
+        assertNotEquals(first, second)
+    }
 }
