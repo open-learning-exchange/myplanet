@@ -291,4 +291,46 @@ class UrlUtilsTest {
         val result = UrlUtils.dbUrl(spm)
         assertEquals(expected, result)
     }
+
+    @Test
+    fun testGetUserInfo_nullInput() {
+        val (user, pass) = UrlUtils.getUserInfo(null)
+        assertEquals("", user)
+        assertEquals("", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_emptyInput() {
+        val (user, pass) = UrlUtils.getUserInfo("")
+        assertEquals("", user)
+        assertEquals("", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_validUsernameAndPassword() {
+        val (user, pass) = UrlUtils.getUserInfo("admin:secret")
+        assertEquals("admin", user)
+        assertEquals("secret", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_noColon() {
+        val (user, pass) = UrlUtils.getUserInfo("admin")
+        assertEquals("", user)
+        assertEquals("", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_colonWithoutPassword() {
+        val (user, pass) = UrlUtils.getUserInfo("admin:")
+        assertEquals("", user)
+        assertEquals("", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_multipleColons() {
+        val (user, pass) = UrlUtils.getUserInfo("admin:secret:extra")
+        assertEquals("admin", user)
+        assertEquals("secret", pass)
+    }
 }

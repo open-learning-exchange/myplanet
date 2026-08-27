@@ -10,6 +10,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
 class ServerUrlMapper @Inject constructor(
@@ -57,9 +58,9 @@ class ServerUrlMapper @Inject constructor(
         val urlPwd: String
 
         if (alternativeUrl.contains("@")) {
-            val userinfo = getUserInfo(altUri)
-            urlUser = userinfo[0]
-            urlPwd = userinfo[1]
+            val (u, p) = UrlUtils.getUserInfo(altUri.userInfo)
+            urlUser = u
+            urlPwd = p
         } else {
             urlUser = "satellite"
             urlPwd = settings.getString("serverPin", "") ?: ""
@@ -106,18 +107,6 @@ class ServerUrlMapper @Inject constructor(
                 updateUrlPreferences(editor, mapping.primaryUrl.toUri(), alternativeUrl, mapping.primaryUrl, settings)
             }
         }
-    }
-
-    private fun getUserInfo(uri: Uri): Array<String> {
-        val defaultInfo = arrayOf("", "")
-        val info = uri.userInfo?.split(":")?.dropLastWhile { it.isEmpty() }?.toTypedArray()
-
-        val result = if (info != null && info.size > 1) {
-            arrayOf(info[0], info[1])
-        } else {
-            defaultInfo
-        }
-        return result
     }
 
     suspend fun isUrlDirectlyReachable(url: String): Boolean {
