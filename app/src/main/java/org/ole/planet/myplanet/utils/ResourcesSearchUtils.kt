@@ -7,21 +7,20 @@ object ResourcesSearchUtils {
     fun <T> searchList(list: List<T>, query: String, normalizedTitleSelector: (T) -> String?): List<T> {
         if (query.isEmpty()) return list
 
-        val normalizedQueryParts = query.splitToSequence(" ").filter { it.isNotEmpty() }.map { Utilities.normalizeText(it) }.toList()
         val normalizedQuery = Utilities.normalizeText(query)
+        val normalizedQueryParts = normalizedQuery.splitToSequence(" ").filter { it.isNotEmpty() }.toList()
 
-        val startsWithQuery = mutableListOf<T>()
-        val containsQuery = mutableListOf<T>()
+        val results = mutableListOf<T>()
 
         for (item in list) {
             val title = normalizedTitleSelector(item) ?: continue
             if (title.startsWith(normalizedQuery)) {
-                startsWithQuery.add(item)
+                results.add(item)
             } else if (normalizedQueryParts.all { title.contains(it) }) {
-                containsQuery.add(item)
+                results.add(item)
             }
         }
-        return startsWithQuery + containsQuery
+        return results
     }
 
     fun searchLocalModels(models: List<ResourceListModel>, query: String): List<ResourceListModel> {

@@ -49,4 +49,48 @@ class ResourcesSearchUtilsTest {
         assertEquals(1, resultCaseInsensitive.size)
         assertEquals("Banana Bread", resultCaseInsensitive[0].item.title)
     }
+
+    @Test
+    fun testSearchMultiWordQueryUsesAllParts() {
+        val model1 = ResourceListModel(
+            library = mockk { every { titleNormal } returns null },
+            item = ResourceItem(id = "1", title = "Apple Pie Recipe", description = null, createdDate = 0L, averageRating = null, timesRated = 0, resourceId = null, isOffline = false, _rev = null, uploadDate = null, filename = null),
+            rating = null,
+            tags = emptyList()
+        )
+        val model2 = ResourceListModel(
+            library = mockk { every { titleNormal } returns null },
+            item = ResourceItem(id = "2", title = "Apple Crumble", description = null, createdDate = 0L, averageRating = null, timesRated = 0, resourceId = null, isOffline = false, _rev = null, uploadDate = null, filename = null),
+            rating = null,
+            tags = emptyList()
+        )
+
+        val models = listOf(model1, model2)
+
+        val result = ResourcesSearchUtils.searchLocalModels(models, "apple recipe")
+        assertEquals(1, result.size)
+        assertEquals("Apple Pie Recipe", result[0].item.title)
+    }
+
+    @Test
+    fun testSearchDiacriticsNormalized() {
+        val model1 = ResourceListModel(
+            library = mockk { every { titleNormal } returns null },
+            item = ResourceItem(id = "1", title = "Café Menu", description = null, createdDate = 0L, averageRating = null, timesRated = 0, resourceId = null, isOffline = false, _rev = null, uploadDate = null, filename = null),
+            rating = null,
+            tags = emptyList()
+        )
+        val model2 = ResourceListModel(
+            library = mockk { every { titleNormal } returns null },
+            item = ResourceItem(id = "2", title = "Caffe Latte", description = null, createdDate = 0L, averageRating = null, timesRated = 0, resourceId = null, isOffline = false, _rev = null, uploadDate = null, filename = null),
+            rating = null,
+            tags = emptyList()
+        )
+
+        val models = listOf(model1, model2)
+
+        val result = ResourcesSearchUtils.searchLocalModels(models, "cafe")
+        assertEquals(1, result.size)
+        assertEquals("Café Menu", result[0].item.title)
+    }
 }
