@@ -48,7 +48,7 @@ open class Feedback {
             val feedbackReplies: MutableList<FeedbackReply> = ArrayList()
 
             val ar = JsonParser.parseString(messages).asJsonArray
-            if (ar.size() > 0) {
+            if (ar.isNotEmpty()) {
                 for (i in 1 until ar.size()) {
                     val ob = ar[i].asJsonObject
                     feedbackReplies.add(
@@ -69,7 +69,7 @@ open class Feedback {
             if (messages.isNullOrEmpty()) return ""
 
             val ar = JsonParser.parseString(messages).asJsonArray
-            if (ar.size() > 0) {
+            if (ar.isNotEmpty()) {
                 val ob = ar[0].asJsonObject
                 return ob["message"].asString
             }
