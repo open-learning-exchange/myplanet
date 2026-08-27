@@ -9,7 +9,7 @@ import org.ole.planet.myplanet.model.AppNotification
 
 @Dao
 interface NotificationDao {
-    @Query("UPDATE notifications SET isRead = 1, needsSync = CASE WHEN isFromServer = 1 THEN 1 ELSE needsSync END WHERE userId = :userId AND type = :type AND isRead = 0")
+    @Query("UPDATE notifications SET isRead = 1, needsSync = CASE WHEN isFromServer = 1 THEN 1 ELSE needsSync END WHERE userId IS :userId AND type = :type AND isRead = 0")
     suspend fun markSummaryAsRead(userId: String?, type: String): Int
 
     @Query("UPDATE notifications SET isRead = 1, needsSync = CASE WHEN isFromServer = 1 THEN 1 ELSE needsSync END WHERE id = :notificationId")
