@@ -2,7 +2,10 @@ package org.ole.planet.myplanet.services.sync
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -65,9 +68,10 @@ class RealtimeSyncManagerTest {
         val manager = RealtimeSyncManager()
         val results = mutableListOf<TableDataUpdate>()
 
-        val job = launch(UnconfinedTestDispatcher()) {
+        val job = launch(StandardTestDispatcher(testScheduler)) {
             manager.dataUpdateFlow.collect { results.add(it) }
         }
+        runCurrent()
 
         val updates = List(30) { index ->
             TableDataUpdate("table_$index", index, 0, false)
@@ -76,6 +80,8 @@ class RealtimeSyncManagerTest {
         updates.forEach { update ->
             manager.notifyTableUpdated(update)
         }
+
+        advanceUntilIdle()
 
         assertEquals(30, results.size)
         assertEquals(updates, results)
