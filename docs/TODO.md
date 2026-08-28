@@ -129,6 +129,34 @@ Without this, "new" silently degrades to "everything" after a context compaction
 differ still reports `same`, and it would never be flipped. Carry a `pending_ci` flag and always
 inspect those rows. This was caught only because #16545 had been flagged by hand the tick before.
 
+### The harness underneath the loop is not stable — plan for it
+
+Two independent things drop out mid-run, and both are silent.
+
+**The GitHub MCP server can disconnect.** All 58 `mcp__github__*` tools vanish at once, with a
+notice saying not to search for them. There is **no fallback**: this environment has no `gh` CLI
+and no direct GitHub API access, so for the duration GitHub is entirely unreachable — no search, no
+check runs, no label flips, no comments. It lasted ~35 minutes on 2026-08-28 (19:57→20:36) and
+swallowed five or six ticks.
+
+Recovery is automatic — the server reconnects and a notice says its tools "will appear shortly" —
+but the tools do **not** come back on their own: `ToolSearch` with `select:<names>` waits for a
+connecting server and reloads the schemas. So **never report a GitHub capability as unavailable
+without calling ToolSearch first.** The "gone" notice and the "reconnecting" notice read alike, and
+only the search tells them apart.
+
+**The cron store is in-memory and is wiped on every MCP reconnect.** `CronList` came back empty
+after each one. Start every tick with `CronList` and re-create the job when it is gone, or the loop
+stops without saying so.
+
+What made both survivable: **the agent lanes do not run through the harness.** Jules and OpenHands
+are reached by plain `curl` from the scratchpad, and both kept working through the blackout — two
+OpenHands sessions pushed commits and CI went green on #16324 and #16585 while GitHub was
+unreachable from here. Nothing was lost; the loop merely observed it late, and the next tick diffed
+against the state file and picked both up as if nothing had happened. **An outage costs latency,
+not work — provided the state lives on disk rather than in the conversation.** That is the second
+reason for the state file, and the stronger one.
+
 ### Two things that must never be piped at an agent
 
 Both produce the no-op commit loop:
@@ -149,6 +177,12 @@ consequences:
 - The stale-`CHANGES_REQUESTED` sweep matters most on the **`merge` backlog**, not on `change`. A
   blocking review there stalls the automerge drain one PR at a time, and 8 were found sitting in
   exactly that state on `ready`. Run `review:changes_requested` across the merge set before a drain.
+
+**`change` reached 0 at 20:38.** All five remaining PRs cleared inside the last hour once the
+OpenHands lane was summoned from a working account and the CI blockage was understood — three
+agent pushes, one deliberate no-op with a metadata fix, one base merge. Draining `change` from 5 to
+0 took about an hour of ticks, so the steady state is cheap; the expensive part was the two
+diagnoses (whose account, and why CI was frozen), and both are written down above.
 
 ### Issue authoring
 
@@ -314,7 +348,7 @@ Two more things the API buys us:
 
 ---
 
-## 4. Open questions
+## 4. Open questions, and the ones that got answered
 
 - **What is the OpenHands concurrent cap?** Behaviour fits ~17 (24 summoned, 17 ran, the 7 oldest
   evicted). No endpoint exposes it — `/api/quota/status` is a *daily request* quota (null on this
@@ -328,20 +362,40 @@ Two more things the API buys us:
 - **Is the per-runtime API the real execution control?** Unexplored.
 - **Is the 17-slot cap per account, per org, or per plan?** Affects whether staggering or a
   smaller batch is the right fix.
-- **Why does the `push` event stop producing workflow runs on some branches?** Confirmed with
-  receipts on #16323 (`list_workflow_runs` filtered to its branch): commits 1–3 each got
-  `labels` + `build` + `test`; commits 4, 5 and 6 got **only `labels`**. The `build`/`test` runs
-  were never *created* — not queued, not cancelled — so there is nothing to re-run, and re-pushing
-  failed three times. `labels.yml` keeps firing because it is `pull_request_target`, which does not
-  depend on the push event; `build.yml`/`test.yml` are `push`. Same shape on #16324. Six other
-  branches got all five checks in the same minutes, so it is per-ref, not repo-wide. The `actor`
-  field reads `dogi` on every run, so a changed pusher is not visibly the cause.
-  **Workaround, verified:** dispatching `test.yml` on the branch produced normal `test` check runs
-  against the current head within seconds — proof the workflows and the code are fine and only the
-  `push` trigger was failing. But **`build.yml` has no `workflow_dispatch`** (`"Workflow does not
-  have 'workflow_dispatch' trigger"`), so a dispatched branch reaches 3/5 checks and still cannot
-  be flipped. **Adding `workflow_dispatch:` to `build.yml` is a two-line change that makes this
-  class of failure recoverable** — worth doing regardless of the root cause.
+
+### The stuck-`push`-trigger failure — solved
+
+**Symptom.** On some branches the `push` event silently stops producing workflow runs. Confirmed
+with receipts on #16323 (`list_workflow_runs` filtered to its branch): commits 1–3 each got
+`labels` + `build` + `test`; commits 4, 5 and 6 got **only `labels`**. The `build`/`test` runs were
+never *created* — not queued, not cancelled — so there is nothing to re-run, and re-pushing failed
+three times. `labels.yml` keeps firing because it is `pull_request_target`, which does not depend
+on the push event; `build.yml`/`test.yml` are `push`. Same shape on #16324. Six other branches got
+all five checks in the same minutes, so it is per-ref, not repo-wide.
+
+**Cause, confirmed twice.** A push from a *different actor* clears it. The `actor` field reads
+`dogi` on every stuck run, and every retry was also `dogi`; that was the one variable never tried.
+
+1. #16323 — an OpenHands session running as **olevim** pushed `f5434b4`, and that push produced
+   `labels` + `build` + `test`, all green, on a branch that had been frozen for hours.
+2. #16324 — no code change was warranted, so instead `update_pull_request_branch` merged the base
+   in. That merge commit is authored by the API caller, not `dogi`, and it produced all five check
+   runs within two seconds. First complete CI on that PR in hours.
+
+**So there are two fixes, and the second needs no code change at all:**
+
+- Hand the PR to an agent running on a different account and let its push unstick the branch.
+- Call `update_pull_request_branch`. It is the cheaper move when the review needs no code change —
+  it refreshes CI *and* brings the PR up to date with master, and the base had moved anyway.
+
+**Still worth doing:** `build.yml` has no `workflow_dispatch` (`"Workflow does not have
+'workflow_dispatch' trigger"`), so the dispatch workaround reaches only 3/5 checks and cannot flip
+a PR. `test.yml` has it and produced normal check runs within seconds. **Adding `workflow_dispatch:`
+to `build.yml` is a two-line change** that makes this class of failure recoverable without needing
+a second account or a base merge.
+
+**Root cause still unknown** — why GitHub stops creating `push` runs for one ref-and-actor pair is
+not explained by anything observable from here. But it no longer blocks the drain.
 
 ### Review hygiene on a flip
 
