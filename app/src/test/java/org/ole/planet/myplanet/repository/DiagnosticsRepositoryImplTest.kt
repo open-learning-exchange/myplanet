@@ -18,6 +18,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.CrashLogStore
 import org.ole.planet.myplanet.utils.VersionUtils
 
@@ -27,13 +28,16 @@ class DiagnosticsRepositoryImplTest {
     private val context: Context = mockk()
     private val apkLogDao: ApkLogDao = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk()
+    private val sharedPrefManager: SharedPrefManager = mockk()
     private lateinit var repository: DiagnosticsRepositoryImpl
 
     @Before
     fun setUp() {
         mockkObject(VersionUtils)
         every { VersionUtils.getVersionName(context) } returns "0.63.42"
-        repository = DiagnosticsRepositoryImpl(context, apkLogDao, userRepository)
+        every { sharedPrefManager.getParentCode() } returns "pref-parent"
+        every { sharedPrefManager.getPlanetCode() } returns "pref-planet"
+        repository = DiagnosticsRepositoryImpl(context, apkLogDao, userRepository, sharedPrefManager)
     }
 
     @After
@@ -65,7 +69,7 @@ class DiagnosticsRepositoryImplTest {
     }
 
     @Test
-    fun `saveLogToRoom with null user leaves identity fields null and still succeeds`() = runTest {
+    fun `saveLogToRoom falls back to SharedPrefManager codes when user is null`() = runTest {
         coEvery { userRepository.getUserModel() } returns null
 
         val result = repository.saveLogToRoom("sync", "", "12:01")
@@ -75,8 +79,24 @@ class DiagnosticsRepositoryImplTest {
         coVerify(exactly = 1) { apkLogDao.insert(capture(logSlot)) }
         val log = logSlot.captured
         assertEquals(null, log.userId)
-        assertEquals(null, log.parentCode)
-        assertEquals(null, log.createdOn)
+        assertEquals("pref-parent", log.parentCode)
+        assertEquals("pref-planet", log.createdOn)
+    }
+
+    @Test
+    fun `saveLogToRoom falls back to SharedPrefManager codes when user codes are blank`() = runTest {
+        val user = UserEntity(id = "user-3", planetCode = "", parentCode = "  ")
+        coEvery { userRepository.getUserModel() } returns user
+
+        val result = repository.saveLogToRoom("crash", "x", "12:02")
+
+        assertTrue(result)
+        val logSlot = slot<ApkLog>()
+        coVerify(exactly = 1) { apkLogDao.insert(capture(logSlot)) }
+        val log = logSlot.captured
+        assertEquals("user-3", log.userId)
+        assertEquals("pref-parent", log.parentCode)
+        assertEquals("pref-planet", log.createdOn)
     }
 
     @Test
@@ -109,6 +129,26 @@ class DiagnosticsRepositoryImplTest {
         assertEquals("t1", logs[0].time)
         assertEquals("e1", logs[0].error)
         assertEquals("t2", logs[1].time)
+    }
+
+    @Test
+    fun `saveLogsToRoom falls back to SharedPrefManager codes when user is null`() = runTest {
+        coEvery { userRepository.getUserModel() } returns null
+
+        val pendingLogs = listOf(
+            CrashLogStore.PendingLog(file = java.io.File("/tmp/a"), type = "crash", time = "t1", error = "e1")
+        )
+
+        val result = repository.saveLogsToRoom(pendingLogs)
+
+        assertTrue(result)
+        val logsSlot = slot<List<ApkLog>>()
+        coVerify(exactly = 1) { apkLogDao.insertAll(capture(logsSlot)) }
+        val logs = logsSlot.captured
+        assertEquals(1, logs.size)
+        assertEquals(null, logs[0].userId)
+        assertEquals("pref-parent", logs[0].parentCode)
+        assertEquals("pref-planet", logs[0].createdOn)
     }
 
     @Test

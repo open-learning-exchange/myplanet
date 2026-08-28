@@ -16,6 +16,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
@@ -48,9 +49,9 @@ class UserProfileViewModelTest {
         every { mockUser.name } returns "Test User"
         coEvery { userRepository.getUserModel() } returns mockUser
 
-        coEvery { activitiesRepository.getMostOpenedResource("Test User", "visit") } returns Pair("Test Resource", 5)
+        coEvery { activitiesRepository.getMostOpenedResource("Test User", UserSessionManager.KEY_RESOURCE_OPEN) } returns Pair("Test Resource", 5)
         coEvery { activitiesRepository.getGlobalLastVisit() } returns 123456789L
-        coEvery { activitiesRepository.getResourceOpenCount("Test User", "visit") } returns 10L
+        coEvery { activitiesRepository.getResourceOpenCount("Test User", UserSessionManager.KEY_RESOURCE_OPEN) } returns 10L
 
         viewModel = UserProfileViewModel(userRepository, activitiesRepository)
     }

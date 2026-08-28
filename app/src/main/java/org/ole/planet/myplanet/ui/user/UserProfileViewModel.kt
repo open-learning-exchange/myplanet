@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.UserSessionManager
 
 sealed class ProfileUpdateState {
     object Idle : ProfileUpdateState()
@@ -127,9 +128,9 @@ class UserProfileViewModel @Inject constructor(
         viewModelScope.launch {
             val fullName = userRepository.getUserModel()?.name ?: ""
             coroutineScope {
-                val resultDeferred = async { activitiesRepository.getMostOpenedResource(fullName, KEY_RESOURCE_OPEN) }
+                val resultDeferred = async { activitiesRepository.getMostOpenedResource(fullName, UserSessionManager.KEY_RESOURCE_OPEN) }
                 val lastVisitDeferred = async { activitiesRepository.getGlobalLastVisit() }
-                val countDeferred = async { activitiesRepository.getResourceOpenCount(fullName, KEY_RESOURCE_OPEN) }
+                val countDeferred = async { activitiesRepository.getResourceOpenCount(fullName, UserSessionManager.KEY_RESOURCE_OPEN) }
 
                 val result = resultDeferred.await()
                 _maxOpenedResource.value = if (result == null) "" else "${result.first} opened ${result.second} times"
@@ -146,9 +147,5 @@ class UserProfileViewModel @Inject constructor(
             val user = userRepository.getUserModel()
             _offlineVisits.value = user?.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0
         }
-    }
-
-    companion object {
-        private const val KEY_RESOURCE_OPEN = "visit"
     }
 }

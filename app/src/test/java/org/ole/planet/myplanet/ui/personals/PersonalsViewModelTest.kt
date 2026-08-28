@@ -3,42 +3,30 @@ package org.ole.planet.myplanet.ui.personals
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.utils.MainDispatcherRule
+import org.ole.planet.myplanet.utils.collectEmissions
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PersonalsViewModelTest {
 
-    private val personalsRepository: PersonalsRepository = mockk(relaxed = true)
-    private val userRepository: UserRepository = mockk()
     private val testDispatcher = StandardTestDispatcher()
 
-    @Before
-    fun setup() {
-        Dispatchers.setMain(testDispatcher)
-    }
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-    }
+    private val personalsRepository: PersonalsRepository = mockk(relaxed = true)
+    private val userRepository: UserRepository = mockk()
 
     @Test
     fun `personals emits resources scoped to the current user from UserRepository`() = runTest(testDispatcher) {
@@ -49,15 +37,10 @@ class PersonalsViewModelTest {
 
         val viewModel = PersonalsViewModel(personalsRepository, userRepository)
 
-        val emissions = mutableListOf<List<Personal>>()
-        val job = launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.personals.toList(emissions)
-        }
-        advanceUntilIdle()
+        val emissions = collectEmissions(viewModel.personals)
 
         assertEquals(resources, emissions.last())
         coVerify(exactly = 1) { personalsRepository.getPersonalResources("user-1") }
-        job.cancel()
     }
 
     @Test
@@ -67,14 +50,9 @@ class PersonalsViewModelTest {
 
         val viewModel = PersonalsViewModel(personalsRepository, userRepository)
 
-        val emissions = mutableListOf<List<Personal>>()
-        val job = launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.personals.toList(emissions)
-        }
-        advanceUntilIdle()
+        val emissions = collectEmissions(viewModel.personals)
 
         assertEquals(emptyList<Personal>(), emissions.last())
         coVerify(exactly = 1) { personalsRepository.getPersonalResources(null) }
-        job.cancel()
     }
 }

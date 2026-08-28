@@ -8,13 +8,15 @@ import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.CrashLogStore
 import org.ole.planet.myplanet.utils.VersionUtils
 
 class DiagnosticsRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val apkLogDao: ApkLogDao,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val sharedPrefManager: SharedPrefManager
 ) : DiagnosticsRepository {
 
     override suspend fun getPendingApkLogs(): List<ApkLog> {
@@ -33,8 +35,8 @@ class DiagnosticsRepositoryImpl @Inject constructor(
     ): ApkLog {
         return ApkLog().apply {
             id = "${UUID.randomUUID()}"
-            parentCode = model?.parentCode
-            createdOn = model?.planetCode
+            parentCode = model?.parentCode?.takeIf { it.isNotBlank() } ?: sharedPrefManager.getParentCode()
+            createdOn = model?.planetCode?.takeIf { it.isNotBlank() } ?: sharedPrefManager.getPlanetCode()
             model?.id?.let { userId = it }
             this.time = time
             page = ""
@@ -63,12 +65,14 @@ class DiagnosticsRepositoryImpl @Inject constructor(
         return try {
             val model = userRepository.getUserModel()
             val versionName = VersionUtils.getVersionName(context)
+            val parentCode = model?.parentCode?.takeIf { it.isNotBlank() } ?: sharedPrefManager.getParentCode()
+            val createdOn = model?.planetCode?.takeIf { it.isNotBlank() } ?: sharedPrefManager.getPlanetCode()
 
             val logsToInsert = pendingLogs.map { pending ->
                 ApkLog().apply {
                     id = "${UUID.randomUUID()}"
-                    this.parentCode = model?.parentCode
-                    this.createdOn = model?.planetCode
+                    this.parentCode = parentCode
+                    this.createdOn = createdOn
                     model?.let { userId = it.id }
                     this.time = pending.time
                     page = ""
