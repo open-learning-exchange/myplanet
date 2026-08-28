@@ -54,6 +54,25 @@ notes; several are load-bearing.
   ranking it had accidentally dropped. Don't phrase asks so that "produced a commit" is the win
   condition.
 
+### Do the metadata edit yourself after two misses
+
+#16545 took three reviews with one unchanged blocker: the title claimed a `StateFlow` conversion
+the diff did not make, and that title becomes the squash-merge commit message. Jules missed it
+twice — the second time it renamed a *test* instead of the title. Agents are reliable on code and
+unreliable on PR metadata. After the second miss, apply the reviewer's own suggested string
+directly with `update_pull_request`, then pipe only what is left, telling the agent explicitly that
+the title is done and not to touch it. Piping an unchanged ask a third time buys another no-op.
+
+### Handing a stalled Jules PR to OpenHands
+
+Worked on #16311 and again on #16323/#16324. The handover comment should carry three things:
+the review's substance restated as a decision; an instruction to **verify against the current diff
+rather than trust the earlier agent's commit messages** (Jules's messages claimed fixes the diff
+did not always contain); and any environmental context the new agent could not infer — for
+#16323/#16324 that was the dead `push` trigger, plus an explicit ask to *report whether its own
+push produces `build`/`test` runs*, since a push from a different actor was the one untested
+variable.
+
 ### The summon wording that worked
 
 ```
@@ -118,6 +137,18 @@ Both produce the no-op commit loop:
   zero changed files against master"* — with the reviewer explicitly deferring the close to a
   maintainer. There is no code change to ask for.
 - **A review whose asks a later commit already satisfied.** Report it for a human instead.
+
+### What the queue looked like at the end
+
+151 open PRs from dogi: **107 `merge`, 36 `ready`, 5 `change`, 0 `review`**. `change` is the only
+stage where work accumulates — everything flipped during the run had already moved on. Two
+consequences:
+
+- The loop's job is small and bounded: keep `change` draining. It never needs to look at the other
+  143.
+- The stale-`CHANGES_REQUESTED` sweep matters most on the **`merge` backlog**, not on `change`. A
+  blocking review there stalls the automerge drain one PR at a time, and 8 were found sitting in
+  exactly that state on `ready`. Run `review:changes_requested` across the merge set before a drain.
 
 ### Issue authoring
 
@@ -201,6 +232,21 @@ account cannot be polled in the abstract to find its own recent sessions.
 So the gate is **after** the summon, not before: post, wait ~30 s, read `execution_status`. `error`
 means that account is blocked — stop summoning for it this tick. Cost is at most one wasted summon;
 gating on `credits` instead blocked a *working* lane for several ticks.
+
+### ⚠️ The summoning account is whoever posts the comment
+
+This is the single most important operating fact and it took most of a day to see. An `@openhands`
+mention creates a session **on the account of the GitHub user who posted it** — the ack says so
+outright (*"**olevim** can track my progress at all-hands.dev"*). So:
+
+- An agent driving the loop posts as whatever identity its token has, and can therefore only ever
+  summon on **that** account. If that account is budget-blocked, every summon it posts is dead on
+  arrival, and no amount of waiting or retrying helps.
+- The seven PRs that "proved the lane recovered" had been summoned **by a different human**, on a
+  different account. The lane never recovered; a second account was doing the work. Several ticks
+  were spent reasoning about the wrong thing because the GitHub surface makes the two identical.
+- Corollary for the writeup below: *"OpenHands is dead"* and *"the account I post as is dead"* are
+  different claims. Say which one you mean.
 
 **Sessions are per account, and a foreign id returns `null`.** With two OpenHands accounts in play,
 `GET /api/v1/app-conversations?ids=…` silently yields a null entry for a session the key does not
@@ -290,8 +336,12 @@ Two more things the API buys us:
   depend on the push event; `build.yml`/`test.yml` are `push`. Same shape on #16324. Six other
   branches got all five checks in the same minutes, so it is per-ref, not repo-wide. The `actor`
   field reads `dogi` on every run, so a changed pusher is not visibly the cause.
-  **Workaround:** both workflows accept `workflow_dispatch`, so a manual dispatch on the branch
-  produces check runs against the current head and unblocks the PR.
+  **Workaround, verified:** dispatching `test.yml` on the branch produced normal `test` check runs
+  against the current head within seconds — proof the workflows and the code are fine and only the
+  `push` trigger was failing. But **`build.yml` has no `workflow_dispatch`** (`"Workflow does not
+  have 'workflow_dispatch' trigger"`), so a dispatched branch reaches 3/5 checks and still cannot
+  be flipped. **Adding `workflow_dispatch:` to `build.yml` is a two-line change that makes this
+  class of failure recoverable** — worth doing regardless of the root cause.
 
 ### Review hygiene on a flip
 
