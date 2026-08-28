@@ -10,8 +10,16 @@ permissions:
   contents: write
   actions: write
 
+# Keyed on github.sha, not github.ref: every master commit carries a unique
+# versionCode (the automerge drain bumps the version per PR), so each commit
+# must produce its own release. A github.ref group keeps only one pending run,
+# so a burst of merges during a drain would cancel the intermediate release --
+# dropping a versionCode with no tag and no Play Store upload, and because a
+# cancelled run is not a failed run, publish_failed/playstore.sh never notices.
+# github.sha still prevents two runs racing the same commit (double tag, double
+# upload, cache/sign collision) while letting distinct commits publish.
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ github.sha }}
   cancel-in-progress: false
 
 jobs:
