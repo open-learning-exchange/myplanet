@@ -68,9 +68,11 @@ class MembersFragment : BaseTeamFragment() {
         binding.rvRequests.layoutManager = GridLayoutManager(activity, columns)
         binding.rvRequests.adapter = requestsAdapter
 
-        val resolvedUser = user ?: UserEntity()
-        requestsAdapter?.setUser(resolvedUser)
-        membersAdapter?.setUserId(resolvedUser.id)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val resolvedUser = ensureUserResolved() ?: UserEntity()
+            requestsAdapter?.setUser(resolvedUser)
+            membersAdapter?.setUserId(resolvedUser.id)
+        }
 
         loadMembers()
 
@@ -93,7 +95,7 @@ class MembersFragment : BaseTeamFragment() {
     private fun loadMembers() {
         viewLifecycleOwner.lifecycleScope.launch {
             val members = teamsRepository.getJoinedMembersWithVisitInfo(teamId)
-            val currentUserId = user?.id
+            val currentUserId = ensureUserResolved()?.id
             val isLeader = members.any { it.user.id == currentUserId && it.isLeader }
             membersAdapter?.setUserId(currentUserId)
             membersAdapter?.updateData(members, isLeader)
