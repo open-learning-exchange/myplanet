@@ -562,7 +562,7 @@ class TeamsRepositoryImplTest {
     }
 
     @Test
-    fun `getJoinedMembers uses getUsersByIds and preserves order`() = runTest(testDispatcher) {
+    fun `getJoinedMembers uses getUsersByIds and preserves order including _id match`() = runTest(testDispatcher) {
         val teamId = "team1"
         val member1 = MyTeam().apply { userId = "user1"; isDeletePending = false }
         val member2 = MyTeam().apply { userId = "user2"; isDeletePending = false }
@@ -571,7 +571,7 @@ class TeamsRepositoryImplTest {
 
         coEvery { teamDao.getByTeamIdAndDocType(teamId, "membership") } returns listOf(member1, member2, deletePendingMember, member3)
 
-        val user1 = UserEntity().apply { id = "user1"; name = "Alice" }
+        val user1 = UserEntity().apply { id = "org.couchdb.user:alice"; _id = "user1"; name = "Alice" }
         val user2 = UserEntity().apply { id = "user2"; name = "Bob" }
         val user3 = UserEntity().apply { id = "user3"; name = "Charlie" }
 
@@ -585,14 +585,14 @@ class TeamsRepositoryImplTest {
     }
 
     @Test
-    fun `getRequestedMembers uses getUsersByIds and preserves order`() = runTest(testDispatcher) {
+    fun `getRequestedMembers uses getUsersByIds and preserves order including _id match`() = runTest(testDispatcher) {
         val teamId = "team1"
         val req1 = MyTeam().apply { userId = "user1" }
         val req2 = MyTeam().apply { userId = "user2" }
 
         coEvery { teamDao.getByTeamIdAndDocType(teamId, "request") } returns listOf(req1, req2)
 
-        val user1 = UserEntity().apply { id = "user1"; name = "Alice" }
+        val user1 = UserEntity().apply { id = "org.couchdb.user:alice"; _id = "user1"; name = "Alice" }
         val user2 = UserEntity().apply { id = "user2"; name = "Bob" }
 
         coEvery { userRepository.getUsersByIds(listOf("user1", "user2")) } returns listOf(user2, user1)

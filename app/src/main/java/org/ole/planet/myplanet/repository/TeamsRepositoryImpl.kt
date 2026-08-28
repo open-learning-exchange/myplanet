@@ -962,7 +962,12 @@ class TeamsRepositoryImpl @Inject constructor(
             .mapNotNull { it.userId }
             .distinct()
         if (teamMembers.isEmpty()) return emptyList()
-        val userMap = userRepository.getUsersByIds(teamMembers).associateBy { it.id }
+        val users = userRepository.getUsersByIds(teamMembers)
+        val userMap = HashMap<String, UserEntity>(users.size * 2)
+        users.forEach { user ->
+            userMap[user.id] = user
+            user._id?.let { userMap[it] = user }
+        }
         return teamMembers.mapNotNull { userMap[it] }
     }
 
@@ -1053,7 +1058,12 @@ class TeamsRepositoryImpl @Inject constructor(
             .mapNotNull { it.userId }
             .distinct()
         if (requestedMemberIds.isEmpty()) return emptyList()
-        val userMap = userRepository.getUsersByIds(requestedMemberIds).associateBy { it.id }
+        val users = userRepository.getUsersByIds(requestedMemberIds)
+        val userMap = HashMap<String, UserEntity>(users.size * 2)
+        users.forEach { user ->
+            userMap[user.id] = user
+            user._id?.let { userMap[it] = user }
+        }
         return requestedMemberIds.mapNotNull { userMap[it] }
     }
 
