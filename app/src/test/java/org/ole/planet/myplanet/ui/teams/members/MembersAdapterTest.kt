@@ -15,6 +15,8 @@ import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.teams.members.MembersAdapter.Companion.PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED
 import org.ole.planet.myplanet.utils.TimeUtils
+import java.util.Locale
+import java.util.TimeZone
 
 @RunWith(AndroidJUnit4::class)
 class MembersAdapterTest {
@@ -165,24 +167,37 @@ class MembersAdapterTest {
 
     @Test
     fun testOnBindViewHolder_lastVisitDate_usesSharedTimeUtilsFormatter() {
-        val user1 = UserEntity(
-            id = "user1",
-            name = "User 1"
-        )
-        // March 11, 2024, 00:00:00 UTC
-        val timestamp = 1710115200000L
-        val list = listOf(
-            JoinedMemberData(user1, 0, timestamp, "", "", false)
-        )
+        // Pin zone/locale so the rendered short date is deterministic. getFormattedShortDate
+        // renders in the system-default zone, so a UTC midnight timestamp stays on its day
+        // and avoids the off-by-one that a localized zone would introduce.
+        val originalLocale = Locale.getDefault()
+        val originalTimeZone = TimeZone.getDefault()
+        Locale.setDefault(Locale.US)
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
+        try {
+            val user1 = UserEntity(
+                id = "user1",
+                name = "User 1"
+            )
+            // March 11, 2024, 00:00:00 UTC -> "11 Mar 2024" in the short (dd MMM yyyy) format
+            val timestamp = 1710115200000L
+            val list = listOf(
+                JoinedMemberData(user1, 0, timestamp, "", "", false)
+            )
 
-        adapter.submitList(list) {
-            val parent = FrameLayout(ApplicationProvider.getApplicationContext())
-            val viewHolder = adapter.onCreateViewHolder(parent, 0)
+            adapter.submitList(list) {
+                val parent = FrameLayout(ApplicationProvider.getApplicationContext())
+                val viewHolder = adapter.onCreateViewHolder(parent, 0)
 
-            adapter.onBindViewHolder(viewHolder, 0)
+                adapter.onBindViewHolder(viewHolder, 0)
 
-            val expected = TimeUtils.getFormattedDate(timestamp)
-            assertTrue(viewHolder.binding.tvLastVisit.text.toString().contains(expected))
+                // Literal expectation, not a re-call of the function under test: this fails if
+                // the adapter switches pattern or timezone (the regression the issue guards against).
+                assertTrue(viewHolder.binding.tvLastVisit.text.toString().contains("11 Mar 2024"))
+            }
+        } finally {
+            Locale.setDefault(originalLocale)
+            TimeZone.setDefault(originalTimeZone)
         }
     }
 

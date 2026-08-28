@@ -106,7 +106,7 @@ class MembersAdapter(
             memberData.visitCount
         )
         val lastVisitDate = if (memberData.lastVisitDate != null) {
-            TimeUtils.getFormattedDate(memberData.lastVisitDate)
+            TimeUtils.getFormattedShortDate(memberData.lastVisitDate)
         } else {
             context.getString(R.string.no_visit)
         }
