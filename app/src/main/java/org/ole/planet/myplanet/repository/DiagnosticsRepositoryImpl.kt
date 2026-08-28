@@ -54,8 +54,7 @@ class DiagnosticsRepositoryImpl @Inject constructor(
             val log = buildApkLog(sharedPrefManager, model?.id, time, type, error)
             apkLogDao.insert(log)
             true
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } catch (e: Throwable) {
             false
         }
     }
@@ -85,8 +84,7 @@ class DiagnosticsRepositoryImpl @Inject constructor(
             }
             apkLogDao.insertAll(logsToInsert)
             true
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } catch (e: Throwable) {
             false
         }
     }

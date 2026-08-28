@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
@@ -24,8 +25,23 @@ class ResourceViewerViewModel @Inject constructor(
     private val resourcesRepository: ResourcesRepository,
     private val authSessionUpdaterFactory: AuthSessionUpdater.Factory,
     private val configurationsRepository: ConfigurationsRepository,
+    private val sharedPrefManager: SharedPrefManager,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
+
+    fun getPlaybackProgress(resourceKey: String): Long =
+        sharedPrefManager.getMediaPlaybackPosition(resourceKey)
+
+    fun savePlaybackProgress(resourceKey: String, positionMs: Long) {
+        sharedPrefManager.setMediaPlaybackPosition(resourceKey, positionMs)
+    }
+
+    fun getPlaybackSpeed(): Float =
+        sharedPrefManager.getMediaPlaybackSpeed()
+
+    fun savePlaybackSpeed(speed: Float) {
+        sharedPrefManager.setMediaPlaybackSpeed(speed)
+    }
 
     suspend fun ensureServerUrlUpdated() {
         configurationsRepository.ensureServerUrlUpdated()

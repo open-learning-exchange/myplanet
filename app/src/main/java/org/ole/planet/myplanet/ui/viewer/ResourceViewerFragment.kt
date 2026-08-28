@@ -12,6 +12,9 @@ import android.os.ParcelFileDescriptor
 import android.text.TextUtils
 import android.util.Rational
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -25,9 +28,13 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.registerReceiver
 import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
+import androidx.core.view.MenuHost
+import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import com.afollestad.materialdialogs.MaterialDialog
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -174,13 +181,76 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
     private suspend fun setupViewer() {
         when (type) {
-            ResourceType.VIDEO -> setupVideoViewer()
-            ResourceType.AUDIO -> setupAudioViewer()
+            ResourceType.VIDEO -> {
+                setupPlaybackSpeedMenu()
+                setupVideoViewer()
+            }
+            ResourceType.AUDIO -> {
+                setupPlaybackSpeedMenu()
+                setupAudioViewer()
+            }
             ResourceType.PDF -> setupPdfViewer()
             ResourceType.IMAGE -> setupImageViewer()
             ResourceType.TEXT, ResourceType.MARKDOWN, ResourceType.CSV -> setupTextViewer()
             else -> Utilities.toast(requireContext(), "Unsupported file type")
         }
+    }
+
+    private fun getMediaKey(): String = resourceId ?: filePath.orEmpty()
+
+    private fun saveCurrentPlaybackProgress() {
+        val player = exoPlayer ?: return
+        val mediaKey = getMediaKey()
+        if (mediaKey.isEmpty()) return
+        val currentPos = player.currentPosition
+        val duration = player.duration
+        if (duration > 0 && duration - currentPos < 2000L) {
+            viewModel.savePlaybackProgress(mediaKey, 0L)
+        } else if (currentPos > 0L) {
+            viewModel.savePlaybackProgress(mediaKey, currentPos)
+        }
+    }
+
+    private fun setupPlaybackSpeedMenu() {
+        val menuHost: MenuHost = requireActivity()
+        menuHost.addMenuProvider(object : MenuProvider {
+            override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+                val speedTitle = "${viewModel.getPlaybackSpeed()}x"
+                menu.add(Menu.NONE, R.id.action_playback_speed, Menu.NONE, speedTitle).apply {
+                    setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
+                }
+            }
+
+            override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+                if (menuItem.itemId == R.id.action_playback_speed) {
+                    showPlaybackSpeedDialog(menuItem)
+                    return true
+                }
+                return false
+            }
+        }, viewLifecycleOwner, Lifecycle.State.RESUMED)
+    }
+
+    private fun showPlaybackSpeedDialog(menuItem: MenuItem? = null) {
+        val speedOptions = arrayOf("0.75x", "1.0x", "1.25x", "1.5x", "2.0x")
+        val speedValues = floatArrayOf(0.75f, 1.0f, 1.25f, 1.5f, 2.0f)
+        val currentSpeed = viewModel.getPlaybackSpeed()
+        var selectedIndex = speedValues.indexOfFirst { kotlin.math.abs(it - currentSpeed) < 0.05f }
+        if (selectedIndex == -1) selectedIndex = 1
+
+        MaterialDialog.Builder(requireContext())
+            .title(R.string.playback_speed)
+            .items(*speedOptions)
+            .itemsCallbackSingleChoice(selectedIndex) { _, _, which, _ ->
+                val chosenSpeed = speedValues[which]
+                viewModel.savePlaybackSpeed(chosenSpeed)
+                exoPlayer?.setPlaybackSpeed(chosenSpeed)
+                menuItem?.title = "${chosenSpeed}x"
+                requireActivity().invalidateOptionsMenu()
+                true
+            }
+            .positiveText(android.R.string.ok)
+            .show()
     }
 
     private fun showVideoLoading(statusText: String) {
@@ -283,8 +353,13 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
         val audioSource = ProgressiveMediaSource.Factory(factory).createMediaSource(MediaItem.fromUri(fileUri))
         exoPlayer?.apply {
+            setPlaybackSpeed(viewModel.getPlaybackSpeed())
             setMediaSource(audioSource)
             prepare()
+            val savedProgress = viewModel.getPlaybackProgress(getMediaKey())
+            if (savedProgress > 0L) {
+                seekTo(savedProgress)
+            }
             playWhenReady = true
         }
     }
@@ -310,9 +385,14 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         playerView.player = exoPlayer
         setupDragToPipGesture(playerView)
         exoPlayer?.apply {
+            setPlaybackSpeed(viewModel.getPlaybackSpeed())
             setMediaSource(mediaSource)
-            playWhenReady = true
             prepare()
+            val savedProgress = viewModel.getPlaybackProgress(getMediaKey())
+            if (savedProgress > 0L) {
+                seekTo(savedProgress)
+            }
+            playWhenReady = true
         }
     }
 
@@ -329,10 +409,14 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             override fun onPlayerError(error: PlaybackException) {
                 navigateBackWithError(getString(R.string.video_playback_error))
             }
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                if (!isPlaying) saveCurrentPlaybackProgress()
+            }
             override fun onPlaybackStateChanged(playbackState: Int) {
                 when (playbackState) {
                     Player.STATE_BUFFERING -> showVideoLoading(getString(R.string.video_loading_buffering))
                     Player.STATE_READY -> hideVideoLoading()
+                    Player.STATE_ENDED -> viewModel.savePlaybackProgress(getMediaKey(), 0L)
                     else -> {}
                 }
             }
@@ -364,8 +448,23 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         exoPlayer = null
         exoPlayer = ExoPlayer.Builder(requireContext()).build().also { player ->
             playerView.player = player
+            player.setPlaybackSpeed(viewModel.getPlaybackSpeed())
             player.setMediaItem(MediaItem.fromUri(fullPath))
+            player.addListener(object : Player.Listener {
+                override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    if (!isPlaying) saveCurrentPlaybackProgress()
+                }
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    if (playbackState == Player.STATE_ENDED) {
+                        viewModel.savePlaybackProgress(getMediaKey(), 0L)
+                    }
+                }
+            })
             player.prepare()
+            val savedProgress = viewModel.getPlaybackProgress(getMediaKey())
+            if (savedProgress > 0L) {
+                player.seekTo(savedProgress)
+            }
             player.playWhenReady = true
 
             val timeBar = playerView.findViewById<DefaultTimeBar>(androidx.media3.ui.R.id.exo_progress)
@@ -565,6 +664,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
     override fun onPause() {
         super.onPause()
+        saveCurrentPlaybackProgress()
         if (activity?.isInPictureInPictureMode != true) {
             exoPlayer?.pause()
         }
@@ -572,6 +672,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     }
 
     override fun onDestroyView() {
+        saveCurrentPlaybackProgress()
         authSessionUpdater?.stop()
         exoPlayer?.release()
         exoPlayer = null
