@@ -48,7 +48,6 @@ class LifeAdapterTest {
 
         assertNotNull(receivedList)
         assertEquals(listOf("b", "c", "a"), receivedList!!.map { it.title })
-        // The drag list is passed directly (no redundant toList() copy) to both callbacks
         assertEquals(3, receivedList!!.size)
     }
 
