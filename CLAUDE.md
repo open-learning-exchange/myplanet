@@ -124,7 +124,16 @@ that have no server document. The **read-state round-trip** closes too:
 and `syncNotificationReads` PUTs each pending row back with the carried
 `rev` then calls `markSynced`. A new `DashboardSyncArea.notifications` +
 `NotificationsSyncNotifier` wire the bell-list refresh into the sync
-center. 4 new tests, 1478 pass.
+center. **Amended on harvest**: `markAllAsRead` and `markSummaryAsRead`
+were written as two statements — set `is_read`, then set `needs_sync` on
+the server rows — but the Kotlin does both in **one** statement,
+`needsSync = CASE WHEN isFromServer = 1 THEN 1 ELSE needsSync END` under a
+single `WHERE ... AND isRead = 0`. That shared `WHERE` is the point: after
+the first update nothing marks the rows it changed, so the second could
+only re-select by `is_read = 1`, which matches everything the user has
+*ever* read — one "mark all read" tap re-queued the whole history and the
+next sync PUT every document back. **A two-part read-then-flag over the
+same rows needs one statement, or the ids captured first.**
 
 Phase 47 localised the other four languages: `tool/arb_from_strings_xml.dart` derives `app_ar.arb`,
 `app_fr.arb`, `app_ne.arb` and `app_so.arb` from the Kotlin `values-*/strings.xml` (195–196 of 727

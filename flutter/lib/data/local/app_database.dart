@@ -1405,23 +1405,26 @@ class NotificationDao extends DatabaseAccessor<AppDatabase>
     notifications,
   )..where((row) => row.id.equals(id))).getSingleOrNull();
 
-  /// Port of `NotificationDao.markSummaryAsRead(userId, type)` — marks every
-  /// row for [userId] of [type] read, flagging server-originated rows for
-  /// read-state upload. Used when a notification id starts with `summary_`.
+  /// Port of `NotificationDao.markSummaryAsRead(userId, type)` — marks the
+  /// **unread** rows for [userId] of [type] read, flagging server-originated
+  /// ones for read-state upload. Used when a notification id starts with
+  /// `summary_`.
+  ///
+  /// One statement with the Kotlin's `CASE WHEN`, not two updates. Splitting it
+  /// loses the `is_read = 0` scope on the second half — once the first update
+  /// has flipped the rows there is no way to tell which ones it changed — so
+  /// every already-read server row gets re-flagged and re-uploaded on the next
+  /// sync. The `WHERE` also drives the returned count, which is "how many were
+  /// marked", not "how many exist".
   Future<int> markSummaryAsRead(String? userId, String type) async {
     if (userId == null || userId.isEmpty) return 0;
-    final count =
-        await (update(notifications)
-              ..where((n) => n.userId.equals(userId) & n.type.equals(type)))
-            .write(const NotificationsCompanion(isRead: Value(true)));
-    await (update(notifications)..where(
-          (n) =>
-              n.userId.equals(userId) &
-              n.type.equals(type) &
-              n.isFromServer.equals(true),
-        ))
-        .write(const NotificationsCompanion(needsSync: Value(true)));
-    return count;
+    return customUpdate(
+      'UPDATE notifications SET is_read = 1, '
+      'needs_sync = CASE WHEN is_from_server = 1 THEN 1 ELSE needs_sync END '
+      'WHERE user_id = ? AND type = ? AND is_read = 0',
+      variables: [Variable.withString(userId), Variable.withString(type)],
+      updates: {notifications},
+    );
   }
 
   /// Port of `NotificationDao.markAsRead(ids, createdAt)`. Sets `isRead`,
@@ -1446,26 +1449,22 @@ class NotificationDao extends DatabaseAccessor<AppDatabase>
     return count;
   }
 
+  /// Port of `NotificationDao.markAllAsRead(userId, createdAt)`.
+  ///
+  /// One statement with the Kotlin's `CASE WHEN`, for the reason spelled out on
+  /// [markSummaryAsRead]: as two updates, the second could only re-select by
+  /// `is_read = 1` — which by then matches every row the user had *ever* read —
+  /// so one "mark all read" tap re-flagged the whole history and the next sync
+  /// PUT every one of those documents back to CouchDB.
   Future<int> markAllAsRead(String userId, {int? createdAt}) async {
     final now = createdAt ?? DateTime.now().millisecondsSinceEpoch;
-    final count =
-        await (update(notifications)..where(
-              (row) => row.userId.equals(userId) & row.isRead.equals(false),
-            ))
-            .write(
-              NotificationsCompanion(
-                isRead: const Value(true),
-                createdAt: Value(now),
-              ),
-            );
-    await (update(notifications)..where(
-          (row) =>
-              row.userId.equals(userId) &
-              row.isFromServer.equals(true) &
-              row.isRead.equals(true),
-        ))
-        .write(const NotificationsCompanion(needsSync: Value(true)));
-    return count;
+    return customUpdate(
+      'UPDATE notifications SET is_read = 1, created_at = ?, '
+      'needs_sync = CASE WHEN is_from_server = 1 THEN 1 ELSE needs_sync END '
+      'WHERE user_id = ? AND is_read = 0',
+      variables: [Variable.withInt(now), Variable.withString(userId)],
+      updates: {notifications},
+    );
   }
 
   Future<int> deleteById(String id) =>
