@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.data.room.dao
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import java.util.TimeZone
 import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -18,9 +19,13 @@ import org.ole.planet.myplanet.model.News
 class NewsDaoTest {
     private lateinit var database: AppDatabase
     private lateinit var newsDao: NewsDao
+    private lateinit var defaultTimeZone: TimeZone
 
     @Before
     fun setup() {
+        defaultTimeZone = TimeZone.getDefault()
+        // Pin the timezone so the day-bucketing COUNT queries are deterministic across runners.
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
         database = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
             AppDatabase::class.java
@@ -31,6 +36,7 @@ class NewsDaoTest {
     @After
     fun teardown() {
         database.close()
+        TimeZone.setDefault(defaultTimeZone)
     }
 
     private fun teamIdPattern(teamId: String): String {
