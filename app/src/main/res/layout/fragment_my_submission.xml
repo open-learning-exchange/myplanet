@@ -113,42 +113,55 @@
             </com.google.android.material.textfield.TextInputLayout>
     </LinearLayout>
 
-    <LinearLayout
+        <LinearLayout
             android:id="@+id/title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@color/daynight_grey"
-            android:padding="@dimen/padding_normal">
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="12dp">
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:paddingEnd="8dp"
                 android:text="@string/name"
                 android:textColor="@color/daynight_textColor"
-                android:textSize="18sp" />
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:paddingEnd="8dp"
                 android:text="@string/status"
                 android:textColor="@color/daynight_textColor"
-                android:textSize="18sp" />
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
             <TextView
                 android:id="@+id/submitted_by"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:paddingEnd="8dp"
                 android:text="@string/submitted_by"
                 android:textColor="@color/daynight_textColor"
-                android:textSize="18sp" />
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/updated_on"
                 android:textColor="@color/daynight_textColor"
-                android:textSize="18sp" />
+                android:textSize="16sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView
