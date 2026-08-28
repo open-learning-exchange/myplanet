@@ -366,4 +366,40 @@ class CoursesRepositoryImplTest {
         assertEquals(3, result?.steps?.first()?.questionCount)
         assertEquals(4.0f, result?.ratingSummary?.averageRating)
     }
+
+    @Test
+    fun `joinCourse merges user ids deduplicating pre-existing entries and preserving order`() = runTest {
+        val existingCourse = MyCourse(
+            id = "course-123",
+            courseId = "course-123",
+            userId = listOf("user1", "", "user2", "user1")
+        )
+        coEvery { courseDao.getByCourseId("course-123") } returns existingCourse
+        val capturedCourse = slot<MyCourse>()
+        coEvery { courseDao.upsert(capture(capturedCourse)) } returns Unit
+
+        val result = repository.joinCourse("course-123", "user3")
+
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) { courseDao.upsert(any()) }
+        assertEquals(listOf("user1", "user2", "user3"), capturedCourse.captured.userId)
+    }
+
+    @Test
+    fun `markCoursesAdded merges user ids deduplicating pre-existing entries and preserving order`() = runTest {
+        val existingCourse = MyCourse(
+            id = "course-1",
+            courseId = "course-1",
+            userId = listOf("userA", "userB", "userA")
+        )
+        coEvery { courseDao.getByCourseIds(listOf("course-1")) } returns listOf(existingCourse)
+        val capturedCourses = slot<List<MyCourse>>()
+        coEvery { courseDao.upsertAll(capture(capturedCourses)) } returns Unit
+
+        val result = repository.markCoursesAdded(listOf("course-1"), "userC")
+
+        assertTrue(result.getOrDefault(false))
+        coVerify(exactly = 1) { courseDao.upsertAll(any()) }
+        assertEquals(listOf("userA", "userB", "userC"), capturedCourses.captured.first().userId)
+    }
 }

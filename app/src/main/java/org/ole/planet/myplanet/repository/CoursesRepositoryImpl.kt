@@ -882,10 +882,10 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     private fun mergeUserIds(existingUserIds: List<String>?, newUserId: String?): List<String>? {
-        val merged = existingUserIds.orEmpty().filter { !it.isNullOrBlank() }.toMutableList()
-        if (!newUserId.isNullOrBlank() && !merged.contains(newUserId)) {
-            merged.add(newUserId)
+        val set = existingUserIds.orEmpty().filterTo(LinkedHashSet()) { it.isNotBlank() }
+        if (!newUserId.isNullOrBlank()) {
+            set.add(newUserId)
         }
-        return merged.distinct().takeIf { it.isNotEmpty() }
+        return set.toList().takeIf { it.isNotEmpty() }
     }
 }

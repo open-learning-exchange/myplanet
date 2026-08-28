@@ -52,7 +52,7 @@ open class MyCourse(
 
     fun setUserId(userId: String?) {
         if (userId.isNullOrBlank()) return
-        val set = this.userId.orEmpty().filterTo(LinkedHashSet()) { !it.isNullOrBlank() }
+        val set = this.userId.orEmpty().filterTo(LinkedHashSet()) { it.isNotBlank() }
         set.add(userId)
         this.userId = set.toList()
     }
