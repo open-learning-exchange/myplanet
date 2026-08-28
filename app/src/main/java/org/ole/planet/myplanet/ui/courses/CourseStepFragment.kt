@@ -230,7 +230,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     private fun refreshInlineResources() {
         viewLifecycleOwner.lifecycleScope.launch {
-            if (!::resources.isInitialized) return@launch
             val updatedResources = resourcesRepository.getAllStepResources(stepId)
             resources = updatedResources
             inlineResourceAdapter?.submitList(updatedResources)
