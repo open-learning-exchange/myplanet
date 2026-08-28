@@ -54,6 +54,7 @@ jobs:
         with:
           path: |
             app/build
+            !app/build/outputs/**
             .gradle/*
             !.gradle/configuration-cache
           key: build-dir-release-${{ matrix.build }}-${{ github.sha }}
