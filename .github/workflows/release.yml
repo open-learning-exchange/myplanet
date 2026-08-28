@@ -38,7 +38,8 @@ jobs:
 
       - name: set release version
         run: |
-          eval "$(.github/scripts/version.sh read app/build.gradle)"
+          version_output=$(.github/scripts/version.sh read app/build.gradle)
+          eval "$version_output"
           echo "ANDROID_VERSION=${name}" >> $GITHUB_ENV
           echo "ANDROID_VERSION_CODE=${code}" >> $GITHUB_ENV
 
