@@ -76,8 +76,6 @@ class NewsViewModelTest {
 
         advanceUntilIdle()
 
-        advanceUntilIdle()
-
         assertEquals(expectedUrls, capturedResult)
     }
 
