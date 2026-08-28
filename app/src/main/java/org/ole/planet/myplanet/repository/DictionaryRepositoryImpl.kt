@@ -21,6 +21,9 @@ class DictionaryRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context
 ) : DictionaryRepository {
 
+    // Guards the check-then-insert seed. Correct only because RepositoryModule binds this
+    // repository @Singleton — one app-wide instance means one shared mutex. An unscoped
+    // binding would give each injection point its own mutex and silently re-open the race.
     private val seedMutex = Mutex()
 
     override suspend fun count(): Long {

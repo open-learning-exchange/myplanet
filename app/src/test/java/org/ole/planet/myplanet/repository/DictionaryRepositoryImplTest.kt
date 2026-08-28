@@ -6,8 +6,12 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -27,7 +31,8 @@ class DictionaryRepositoryImplTest {
     private lateinit var context: Context
     private lateinit var dispatcherProvider: TestDispatcherProvider
     private lateinit var dictionaryRepository: DictionaryRepositoryImpl
-    private val testDispatcher = UnconfinedTestDispatcher()
+    private val testScheduler = TestCoroutineScheduler()
+    private val testDispatcher = UnconfinedTestDispatcher(testScheduler)
 
     @Before
     fun setup() {
@@ -93,19 +98,34 @@ class DictionaryRepositoryImplTest {
     }
 
     @Test
-    fun `concurrent insertDictionaryData calls only insert once`() = runTest(testDispatcher) {
+    fun `concurrent insertDictionaryData calls only insert once`() = runTest(testScheduler) {
         every { FileUtils.checkFileExist(context, Constants.DICTIONARY_URL) } returns true
         every { FileUtils.getSDPathFromUrl(context, Constants.DICTIONARY_URL) } returns mockk()
         val validJson = """[{"code": "1", "language": "en", "advance_code": "2", "word": "hello", "meaning": "greeting", "definition": "A greeting", "synonym": "hi", "antonoym": "bye"}]"""
         every { FileUtils.getStringFromFile(any()) } returns validJson
 
-        val inserted = java.util.concurrent.atomic.AtomicBoolean(false)
+        // StandardTestDispatcher (not Unconfined) so async coroutines are queued instead of
+        // run eagerly, letting them actually interleave. The delay in insertAll is the yield
+        // point: both coroutines pass the count()==0 check before either completes the insert,
+        // so without the mutex both would insert. runTest advances the shared scheduler's
+        // virtual clock for free, so the delay costs no wall time.
+        val concurrentDispatcher = StandardTestDispatcher(testScheduler)
+        val concurrentRepository = DictionaryRepositoryImpl(
+            dictionaryDao,
+            TestDispatcherProvider(concurrentDispatcher),
+            context
+        )
+
+        val inserted = AtomicBoolean(false)
         coEvery { dictionaryDao.count() } answers { if (inserted.get()) 1L else 0L }
-        coEvery { dictionaryDao.insertAll(any()) } answers { inserted.set(true) }
+        coEvery { dictionaryDao.insertAll(any()) } coAnswers {
+            delay(10)
+            inserted.set(true)
+        }
 
         val results = listOf(
-            async { dictionaryRepository.insertDictionaryData() },
-            async { dictionaryRepository.insertDictionaryData() }
+            async { concurrentRepository.insertDictionaryData() },
+            async { concurrentRepository.insertDictionaryData() }
         ).map { it.await() }
 
         assertEquals(1, results.count { it is DictionaryLoad.Inserted })
