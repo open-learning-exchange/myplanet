@@ -9,7 +9,9 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -60,6 +62,15 @@ class FeedbackTest {
     }
 
     @Test
+    fun testMessageListEmptyArray() {
+        val feedback = Feedback()
+        feedback.messages = "[]"
+        val list = feedback.messageList
+        assertNotNull(list)
+        assertTrue(list!!.isEmpty())
+    }
+
+    @Test
     fun testMessageListWithElements() {
         val feedback = Feedback()
         val messageString = """
@@ -88,6 +99,13 @@ class FeedbackTest {
         assertEquals("", feedback.message)
 
         feedback.messages = null
+        assertEquals("", feedback.message)
+    }
+
+    @Test
+    fun testMessageEmptyArray() {
+        val feedback = Feedback()
+        feedback.messages = "[]"
         assertEquals("", feedback.message)
     }
 

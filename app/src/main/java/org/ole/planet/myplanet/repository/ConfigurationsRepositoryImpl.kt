@@ -325,7 +325,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             if (configResponse.isSuccessful) {
                 val rows = configResponse.body()?.getAsJsonArray("rows")
 
-                if (rows != null && rows.asList().isNotEmpty()) {
+                if (rows != null && !rows.isEmpty()) {
                     val firstRow = rows[0].asJsonObject
                     val id = firstRow.getAsJsonPrimitive("id").asString
                     val doc = firstRow.getAsJsonObject("doc")
