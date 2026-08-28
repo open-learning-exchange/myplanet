@@ -320,6 +320,27 @@ class UserRepositoryImplTest {
     }
 
     @Test
+    fun `getCurrentUserId returns sharedPrefManager userId when available`() = runTest {
+        every { sharedPrefManager.getUserId() } returns "pref_user_id"
+
+        val result = repository.getCurrentUserId()
+
+        assertEquals("pref_user_id", result)
+    }
+
+    @Test
+    fun `getCurrentUserId falls back to getUserModel id when preference is empty`() = runTest {
+        every { sharedPrefManager.getUserId() } returns ""
+        val userEntity = UserEntity().apply { id = "user_model_id" }
+        val spiedRepo = spyk(repository)
+        coEvery { spiedRepo.getUserModel() } returns userEntity
+
+        val result = spiedRepo.getCurrentUserId()
+
+        assertEquals("user_model_id", result)
+    }
+
+    @Test
     fun `upsertSavedUser ignores unknown sources`() = runTest {
         every { sharedPrefManager.getSavedUsers() } returns emptyList()
 

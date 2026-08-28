@@ -15,7 +15,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.MyLife
-import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
@@ -51,9 +50,8 @@ class LifeViewModelTest {
     }
 
     @Test
-    fun `loadMyLifeList resolves userId via userRepository and loads myLifeList`() = runTest {
-        val userEntity = UserEntity(id = "user_123")
-        coEvery { userRepository.getUserModel() } returns userEntity
+    fun `loadMyLifeList resolves userId via userRepository getCurrentUserId and loads myLifeList`() = runTest {
+        coEvery { userRepository.getCurrentUserId() } returns "user_123"
         val item = MyLife("img1", "user_123", "Item 1")
         coEvery { lifeRepository.getMyLifeByUserId("user_123") } returns listOf(item)
 
@@ -66,9 +64,21 @@ class LifeViewModelTest {
     }
 
     @Test
+    fun `loadMyLifeList resolves userId when preference value differs from user model id`() = runTest {
+        coEvery { userRepository.getCurrentUserId() } returns "pref_user_id"
+        val item = MyLife("img1", "pref_user_id", "Item 1")
+        coEvery { lifeRepository.getMyLifeByUserId("pref_user_id") } returns listOf(item)
+
+        viewModel.loadMyLifeList()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(listOf(item), viewModel.myLifeList.value)
+        coVerify(exactly = 1) { lifeRepository.getMyLifeByUserId("pref_user_id") }
+    }
+
+    @Test
     fun `loadMyLifeList seeds list if empty`() = runTest {
-        val userEntity = UserEntity(id = "user_123")
-        coEvery { userRepository.getUserModel() } returns userEntity
+        coEvery { userRepository.getCurrentUserId() } returns "user_123"
         val item = MyLife("img1", "user_123", "Item 1")
         coEvery { lifeRepository.getMyLifeByUserId("user_123") } returnsMany listOf(emptyList(), listOf(item))
 
@@ -82,8 +92,7 @@ class LifeViewModelTest {
 
     @Test
     fun `updateVisibility calls repository and reloads list`() = runTest {
-        val userEntity = UserEntity(id = "user_123")
-        coEvery { userRepository.getUserModel() } returns userEntity
+        coEvery { userRepository.getCurrentUserId() } returns "user_123"
         coEvery { lifeRepository.getMyLifeByUserId("user_123") } returns emptyList()
 
         viewModel.updateVisibility(true, "item_1")
