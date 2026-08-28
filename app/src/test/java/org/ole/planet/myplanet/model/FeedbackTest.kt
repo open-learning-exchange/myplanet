@@ -7,11 +7,11 @@ import com.google.gson.JsonParser
 import io.mockk.every
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import io.mockk.unmockkStatic
+import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Test
 
@@ -168,36 +168,35 @@ class FeedbackTest {
 
     @Test
     fun testMessagesCachedAcrossAccesses() {
+        val expectedArray = JsonArray().apply {
+            add(JsonObject().apply { addProperty("message", "First message"); addProperty("user", "user0"); addProperty("time", "time0") })
+            add(JsonObject().apply { addProperty("message", "Second message"); addProperty("user", "user1"); addProperty("time", "time1") })
+        }
         val feedback = Feedback()
-        val messageString = """
-            [
-              {"message": "First message", "user": "user0", "time": "time0"},
-              {"message": "Second message", "user": "user1", "time": "time1"}
-            ]
-        """.trimIndent()
-        feedback.messages = messageString
+        feedback.messages = """[{"message": "First message", "user": "user0", "time": "time0"},
+            {"message": "Second message", "user": "user1", "time": "time1"}]"""
 
-        val cacheField = Feedback::class.java.getDeclaredField("cachedMessages").apply { isAccessible = true }
+        mockkStatic(JsonParser::class)
+        every { JsonParser.parseString(any()) } returns expectedArray
 
-        // Before any access the cache is empty.
-        assertNull(cacheField.get(feedback))
+        try {
+            // Repeated reads of both derived views share one parse of the backing string.
+            assertEquals("First message", feedback.message)
+            assertEquals(1, feedback.messageList?.size)
+            assertEquals("Second message", feedback.messageList?.get(0)?.message)
+            repeat(5) { feedback.message }
+            repeat(5) { feedback.messageList }
 
-        // Prime the cache by reading a derived view.
-        assertEquals("First message", feedback.message)
-        val cached = cacheField.get(feedback)
-        assertNotNull(cached)
-
-        // Repeated reads reuse the same cached instance, never re-parsing.
-        repeat(5) { feedback.messageList }
-        repeat(5) { feedback.message }
-        assertSame(cached, cacheField.get(feedback))
+            verify(exactly = 1) { JsonParser.parseString(any()) }
+        } finally {
+            unmockkStatic(JsonParser::class)
+        }
     }
 
     @Test
     fun testCacheInvalidatedOnMessagesChange() {
         val feedback = Feedback()
         feedback.messages = """[{"message": "first", "user": "u", "time": "t"}]"""
-        // Prime the cache.
         assertEquals("first", feedback.message)
 
         feedback.messages = """[{"message": "second", "user": "u", "time": "t"}]"""
