@@ -185,18 +185,20 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                     selectedDobIso?.let { addProperty("birthDate", it) }
                 }
                 viewModel.saveAchievement(
-                    achievementId = achievementId,
-                    header = header,
-                    goals = goals,
-                    purpose = purpose,
-                    sendToNation = sendToNation,
-                    achievements = achievementArray ?: JsonArray(),
-                    references = referenceArray ?: JsonArray(),
-                    createdOn = user?.planetCode ?: "",
-                    username = user?.name ?: "",
-                    parentCode = user?.parentCode ?: "",
-                    resumeFileName = cvFilename,
-                    profileFields = userPayload
+                    AchievementSaveRequest(
+                        achievementId = achievementId,
+                        header = header,
+                        goals = goals,
+                        purpose = purpose,
+                        sendToNation = sendToNation,
+                        achievements = achievementArray ?: JsonArray(),
+                        references = referenceArray ?: JsonArray(),
+                        createdOn = user?.planetCode ?: "",
+                        username = user?.name ?: "",
+                        parentCode = user?.parentCode ?: "",
+                        resumeFileName = cvFilename,
+                        profileFields = userPayload,
+                    )
                 )
 
                 Utilities.toast(activity, getString(R.string.achievement_saved))

@@ -23,8 +23,8 @@ class TeamCoursesViewModel @Inject constructor(
     private val coursesRepository: CoursesRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(TeamCoursesUiState())
-    val uiState: StateFlow<TeamCoursesUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow<TeamCoursesUiState?>(null)
+    val uiState: StateFlow<TeamCoursesUiState?> = _uiState.asStateFlow()
 
     fun loadCourses(teamId: String, currentUserId: String) {
         viewModelScope.launch {

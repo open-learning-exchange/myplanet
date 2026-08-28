@@ -64,6 +64,14 @@ class DictionaryActivity : BaseActivity() {
         registerReceiver()
     }
 
+    override fun registerReceiver() {
+        collectWhenStarted(broadcastService.events) { intent ->
+            when (intent.action) {
+                "message_progress" -> receiver.onReceive(this@DictionaryActivity, intent)
+            }
+        }
+    }
+
     private fun renderLoadState(state: DictionaryLoadState) {
         when (state) {
             is DictionaryLoadState.Idle -> Unit

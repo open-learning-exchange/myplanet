@@ -12,7 +12,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -39,6 +39,11 @@ class TeamResourcesViewModelTest {
     }
 
     @Test
+    fun `uiState is null until loadResources emits`() = runTest(testDispatcher) {
+        assertNull(viewModel.uiState.value)
+    }
+
+    @Test
     fun `loadResources populates state with resources and canRemove when user is leader`() = runTest(testDispatcher) {
         val libraries = listOf(
             MyLibrary().apply { id = "r1"; title = "Resource 1" },
@@ -51,8 +56,8 @@ class TeamResourcesViewModelTest {
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
-        assertEquals(2, state.resources.size)
-        assertTrue(state.canRemove)
+        assertEquals(2, state?.resources?.size)
+        assertTrue(state?.canRemove == true)
     }
 
     @Test
@@ -63,7 +68,7 @@ class TeamResourcesViewModelTest {
         viewModel.loadResources("team1", "user1")
         advanceUntilIdle()
 
-        assertFalse(viewModel.uiState.value.canRemove)
+        assertTrue(viewModel.uiState.value?.canRemove == false)
     }
 
     @Test
@@ -74,7 +79,7 @@ class TeamResourcesViewModelTest {
         viewModel.loadResources("team1", null)
         advanceUntilIdle()
 
-        assertTrue(viewModel.uiState.value.resources.isEmpty())
+        assertTrue(viewModel.uiState.value?.resources?.isEmpty() == true)
     }
 
     @Test

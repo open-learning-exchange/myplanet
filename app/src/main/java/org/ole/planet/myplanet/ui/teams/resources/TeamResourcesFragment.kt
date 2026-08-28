@@ -54,7 +54,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
             binding.fabAddResource.isVisible = isMember
         }
         collectLatestWhenStarted(viewModel.uiState) { state ->
-            renderResources(state)
+            state?.let { renderResources(it) }
         }
     }
 

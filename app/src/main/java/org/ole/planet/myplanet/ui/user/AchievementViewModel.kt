@@ -19,6 +19,21 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
+data class AchievementSaveRequest(
+    val achievementId: String,
+    val header: String,
+    val goals: String,
+    val purpose: String,
+    val sendToNation: String,
+    val achievements: JsonArray,
+    val references: JsonArray,
+    val createdOn: String,
+    val username: String,
+    val parentCode: String,
+    val resumeFileName: String,
+    val profileFields: JsonObject,
+)
+
 @HiltViewModel
 class AchievementViewModel @Inject constructor(
     private val userRepository: UserRepository,
@@ -46,38 +61,24 @@ class AchievementViewModel @Inject constructor(
         }
     }
 
-    suspend fun saveAchievement(
-        achievementId: String,
-        header: String,
-        goals: String,
-        purpose: String,
-        sendToNation: String,
-        achievements: JsonArray,
-        references: JsonArray,
-        createdOn: String,
-        username: String,
-        parentCode: String,
-        resumeFileName: String,
-        profileFields: JsonObject
-    ) {
+    suspend fun saveAchievement(request: AchievementSaveRequest) {
         userRepository.updateAchievement(
-            achievementId = achievementId,
-            header = header,
-            goals = goals,
-            purpose = purpose,
-            sendToNation = sendToNation,
-            achievements = achievements,
-            references = references,
-            createdOn = createdOn,
-            username = username,
-            parentCode = parentCode,
-            resumeFileName = resumeFileName
+            achievementId = request.achievementId,
+            header = request.header,
+            goals = request.goals,
+            purpose = request.purpose,
+            sendToNation = request.sendToNation,
+            achievements = request.achievements,
+            references = request.references,
+            createdOn = request.createdOn,
+            username = request.username,
+            parentCode = request.parentCode,
+            resumeFileName = request.resumeFileName
         )
-        userRepository.updateProfileFields(_user.value?.id, profileFields)
+        userRepository.updateProfileFields(_user.value?.id, request.profileFields)
     }
 
     suspend fun getAllLibraries(): List<MyLibrary> {
         return resourcesRepository.getAllLibraries()
     }
 }
-

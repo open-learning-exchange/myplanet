@@ -22,8 +22,8 @@ class TeamResourcesViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(TeamResourcesUiState())
-    val uiState: StateFlow<TeamResourcesUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow<TeamResourcesUiState?>(null)
+    val uiState: StateFlow<TeamResourcesUiState?> = _uiState.asStateFlow()
 
     fun loadResources(teamId: String, userId: String?) {
         viewModelScope.launch {

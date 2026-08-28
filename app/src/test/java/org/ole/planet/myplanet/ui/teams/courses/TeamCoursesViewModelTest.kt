@@ -12,7 +12,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -40,6 +40,11 @@ class TeamCoursesViewModelTest {
     }
 
     @Test
+    fun `uiState is null until loadCourses emits`() = runTest(testDispatcher) {
+        assertNull(viewModel.uiState.value)
+    }
+
+    @Test
     fun `loadCourses populates state with courses and canRemove when user is creator`() = runTest(testDispatcher) {
         val courseIds = listOf("c1", "c2")
         val courses = listOf(
@@ -54,8 +59,8 @@ class TeamCoursesViewModelTest {
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
-        assertEquals(2, state.courses.size)
-        assertTrue(state.canRemove)
+        assertEquals(2, state?.courses?.size)
+        assertTrue(state?.canRemove == true)
     }
 
     @Test
@@ -67,7 +72,7 @@ class TeamCoursesViewModelTest {
         viewModel.loadCourses("team1", "other-user")
         advanceUntilIdle()
 
-        assertFalse(viewModel.uiState.value.canRemove)
+        assertTrue(viewModel.uiState.value?.canRemove == false)
     }
 
     @Test
@@ -79,7 +84,7 @@ class TeamCoursesViewModelTest {
         viewModel.loadCourses("team1", "creator")
         advanceUntilIdle()
 
-        assertTrue(viewModel.uiState.value.canRemove)
+        assertTrue(viewModel.uiState.value?.canRemove == true)
     }
 
     @Test
@@ -91,7 +96,7 @@ class TeamCoursesViewModelTest {
         viewModel.loadCourses("team1", "--")
         advanceUntilIdle()
 
-        assertTrue(viewModel.uiState.value.courses.isEmpty())
+        assertTrue(viewModel.uiState.value?.courses?.isEmpty() == true)
     }
 
     @Test

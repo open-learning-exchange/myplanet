@@ -40,15 +40,21 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
         super.onViewCreated(view, savedInstanceState)
         updateCoursesList()
         collectLatestWhenStarted(viewModel.uiState) { state ->
-            val safeActivity = activity ?: return@collectLatestWhenStarted
+            state?.let { renderCourses(it) }
+        }
+    }
+
+    private fun renderCourses(state: TeamCoursesUiState) {
+        val safeActivity = activity ?: return
+        if (adapterTeamCourse == null) {
             adapterTeamCourse = TeamCoursesAdapter(safeActivity, state.canRemove) { course ->
                 removeCourseFromTeam(course)
             }
-            binding.rvCourse.layoutManager = LinearLayoutManager(activity)
+            binding.rvCourse.layoutManager = LinearLayoutManager(safeActivity)
             binding.rvCourse.adapter = adapterTeamCourse
-            adapterTeamCourse?.submitList(state.courses)
-            showNoData(binding.tvNodata, state.courses.size, "teamCourses")
         }
+        adapterTeamCourse?.submitList(state.courses)
+        showNoData(binding.tvNodata, state.courses.size, "teamCourses")
     }
 
     fun updateCoursesList() {

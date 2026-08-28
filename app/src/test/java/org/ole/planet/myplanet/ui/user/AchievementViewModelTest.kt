@@ -100,18 +100,20 @@ class AchievementViewModelTest {
         val profileFields = JsonObject().apply { addProperty("firstName", "John") }
 
         viewModel.saveAchievement(
-            achievementId = "user1@planet1",
-            header = "header",
-            goals = "goals",
-            purpose = "purpose",
-            sendToNation = "true",
-            achievements = achievements,
-            references = references,
-            createdOn = "planet1",
-            username = "user1",
-            parentCode = "parent",
-            resumeFileName = "cv.pdf",
-            profileFields = profileFields
+            AchievementSaveRequest(
+                achievementId = "user1@planet1",
+                header = "header",
+                goals = "goals",
+                purpose = "purpose",
+                sendToNation = "true",
+                achievements = achievements,
+                references = references,
+                createdOn = "planet1",
+                username = "user1",
+                parentCode = "parent",
+                resumeFileName = "cv.pdf",
+                profileFields = profileFields,
+            )
         )
 
         coVerify(exactly = 1) {
