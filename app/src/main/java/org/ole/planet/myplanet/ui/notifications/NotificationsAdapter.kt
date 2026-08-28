@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.notifications
 
 import android.text.Html
+import android.util.LruCache
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -53,6 +54,7 @@ class NotificationsAdapter(
     companion object {
         private const val VIEW_TYPE_HEADER = 0
         private const val VIEW_TYPE_ITEM = 1
+        private val parsedHtmlCache = LruCache<String, CharSequence>(100)
     }
 
     override fun getItemViewType(position: Int): Int = when (getItem(position)) {
@@ -111,10 +113,15 @@ class NotificationsAdapter(
 
         fun bind(item: NotificationListItem.Item) {
             val notification = item.notification
-            binding.title.text = Html.fromHtml(
-                notification.formattedText.toString(),
-                Html.FROM_HTML_MODE_LEGACY
-            )
+            var titleText = parsedHtmlCache.get(notification.id)
+            if (titleText == null) {
+                titleText = Html.fromHtml(
+                    notification.formattedText.toString(),
+                    Html.FROM_HTML_MODE_LEGACY
+                )
+                parsedHtmlCache.put(notification.id, titleText)
+            }
+            binding.title.text = titleText
             binding.timestamp.text = formatRelativeTime(notification.createdAt)
             binding.root.alpha = if (notification.isRead) 0.6f else 1.0f
 
