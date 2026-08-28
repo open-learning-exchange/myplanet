@@ -54,9 +54,9 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     var stepId: String? = null
     private var nextStepId: String? = null
     private lateinit var step: CourseStep
-    private lateinit var resources: List<MyLibrary>
-    private lateinit var stepExams: List<StepExam>
-    private lateinit var stepSurvey: List<StepExam>
+    private var resources: List<MyLibrary> = emptyList()
+    private var stepExams: List<StepExam> = emptyList()
+    private var stepSurvey: List<StepExam> = emptyList()
     var user: UserEntity? = null
     private var stepNumber = 0
     private var courseTitle: String? = null
@@ -237,14 +237,14 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         }
     }
 
-    private fun hideTestIfNoQuestion(isTestPresent: Boolean, isSurveyPresent: Boolean, stepExams: List<StepExam>) {
+    private fun hideTestIfNoQuestion(isTestPresent: Boolean, isSurveyPresent: Boolean, exams: List<StepExam>) {
         fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
         fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
-        if (stepExams.isNotEmpty()) {
+        if (exams.isNotEmpty()) {
             fragmentCourseStepBinding.btnTakeTest.text = if (isTestPresent) {
-                getString(R.string.retake_test, stepExams.size)
+                getString(R.string.retake_test, exams.size)
             } else {
-                getString(R.string.take_test, stepExams.size)
+                getString(R.string.take_test, exams.size)
             }
             fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
         }
