@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import androidx.annotation.VisibleForTesting
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -64,7 +65,8 @@ class InlineResourceAdapter(
     }
 
     class ViewHolder(val binding: ItemInlineResourceBinding) : RecyclerView.ViewHolder(binding.root) {
-        private var previewJob: Job? = null
+        @get:VisibleForTesting
+        internal var previewJob: Job? = null
 
         fun cancelPreviousPreviews() {
             previewJob?.cancel()
