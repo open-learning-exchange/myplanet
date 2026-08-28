@@ -83,10 +83,10 @@ class RealtimeSyncManagerTest {
     }
 
     @Test
-    fun testNewSubscriberReceivesReplayedUpdates() = runTest {
+    fun testNewSubscriberDoesNotReceiveHistoricalUpdatesWhenReplayIsZero() = runTest {
         val manager = RealtimeSyncManager()
         val updates = List(5) { index ->
-            TableDataUpdate("replay_table_$index", index, 1, false)
+            TableDataUpdate("table_$index", index, 1, false)
         }
 
         updates.forEach { manager.notifyTableUpdated(it) }
@@ -96,8 +96,7 @@ class RealtimeSyncManagerTest {
             manager.dataUpdateFlow.collect { results.add(it) }
         }
 
-        assertEquals(5, results.size)
-        assertEquals(updates, results)
+        assertTrue(results.isEmpty())
         job.cancel()
     }
 }
