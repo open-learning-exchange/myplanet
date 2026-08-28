@@ -4,9 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -17,13 +18,16 @@ class NewsViewModel @Inject constructor(
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
-    private val _privateImageUrls = MutableStateFlow<List<String>>(emptyList())
-    val privateImageUrls: StateFlow<List<String>> = _privateImageUrls.asStateFlow()
+    private val _privateImageUrls = MutableSharedFlow<List<String>>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val privateImageUrls: SharedFlow<List<String>> = _privateImageUrls.asSharedFlow()
 
     fun getPrivateImageUrlsCreatedAfter(timestamp: Long) {
         viewModelScope.launch {
             val urls = resourcesRepository.getPrivateImageUrlsCreatedAfter(timestamp)
-            _privateImageUrls.value = urls
+            _privateImageUrls.emit(urls)
         }
     }
 }

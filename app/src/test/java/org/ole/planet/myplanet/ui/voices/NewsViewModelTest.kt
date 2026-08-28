@@ -76,26 +76,39 @@ class NewsViewModelTest {
 
         advanceUntilIdle()
 
+        advanceUntilIdle()
+
         assertEquals(expectedUrls, capturedResult)
     }
 
     @Test
-    fun `subscribing after query completes receives current StateFlow value`() = runTest {
+    fun `re-subscribing after event is collected does not replay previous emission`() = runTest {
         val timestamp = 123456789L
         val expectedUrls = listOf("url1", "url2")
         coEvery { resourcesRepository.getPrivateImageUrlsCreatedAfter(timestamp) } returns expectedUrls
 
-        viewModel.getPrivateImageUrlsCreatedAfter(timestamp)
-        advanceUntilIdle()
-
-        var capturedResult: List<String>? = null
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+        var firstCollectorResult: List<String>? = null
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.privateImageUrls.collect { urls ->
-                capturedResult = urls
+                firstCollectorResult = urls
             }
         }
 
-        assertEquals(expectedUrls, capturedResult)
-        assertEquals(expectedUrls, viewModel.privateImageUrls.value)
+        viewModel.getPrivateImageUrlsCreatedAfter(timestamp)
+        advanceUntilIdle()
+
+        assertEquals(expectedUrls, firstCollectorResult)
+
+        job.cancel()
+
+        var reSubscribedResult: List<String>? = null
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.privateImageUrls.collect { urls ->
+                reSubscribedResult = urls
+            }
+        }
+        advanceUntilIdle()
+
+        assertEquals(null, reSubscribedResult)
     }
 }
