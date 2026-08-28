@@ -19,7 +19,11 @@ object UrlUtils {
     private var generation = 0
 
     fun init(sharedPrefManager: SharedPrefManager) {
-        spmInstance = sharedPrefManager
+        synchronized(this) {
+            generation++
+            spmInstance = sharedPrefManager
+            cachedHeader = null
+        }
     }
 
     private fun spm(): SharedPrefManager {
