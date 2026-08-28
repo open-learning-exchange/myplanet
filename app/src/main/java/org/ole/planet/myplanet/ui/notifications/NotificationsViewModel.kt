@@ -231,7 +231,7 @@ class NotificationsViewModel @Inject constructor(
         // Normalize any unrecognized type to "notification" for a single Other group
         val grouped = notifications.groupBy { notif ->
             val t = notif.type.lowercase(Locale.ROOT)
-            if (t in KNOWN_TYPES) t else "notification"
+            if (t in NotificationsRepository.KNOWN_TYPES) t else "notification"
         }
         val orderedTypes = (TYPE_ORDER.filter { grouped.containsKey(it) } +
                 grouped.keys.filter { it !in TYPE_ORDER }).distinct()
@@ -245,7 +245,7 @@ class NotificationsViewModel @Inject constructor(
                     type in collapsedGroups -> false
                     else -> unreadCount > 0
                 }
-                add(NotificationListItem.Header(type, notificationsRepository.typeLabelFor(type), unreadCount, isExpanded))
+                add(NotificationListItem.Header(type, typeLabelFor(type), unreadCount, isExpanded))
                 if (isExpanded) {
                     items.forEach { notification ->
                         add(NotificationListItem.Item(notification, notification.id in selectedIds, inSelectionMode))
@@ -255,8 +255,18 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
+    private fun typeLabelFor(type: String): String = when (type.lowercase(Locale.ROOT)) {
+        "join_request" -> context.getString(R.string.notif_group_join_requests)
+        "team_join" -> context.getString(R.string.notif_group_team_updates)
+        "task" -> context.getString(R.string.tasks)
+        "chat" -> context.getString(R.string.notif_group_new_voices)
+        "voice_reply" -> context.getString(R.string.notif_group_voice_replies)
+        "resource" -> context.getString(R.string.resources)
+        "storage" -> context.getString(R.string.notification_group_system)
+        else -> context.getString(R.string.notification_group_other)
+    }
+
     companion object {
-        val KNOWN_TYPES = setOf("join_request", "team_join", "task", "chat", "voice_reply", "resource", "storage")
         val TYPE_ORDER = listOf("join_request", "team_join", "task", "chat", "voice_reply", "resource", "storage")
 
         private val TASK_DATE_PATTERN = Pattern.compile("\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s\\d{1,2},\\s\\w+\\s\\d{4}\\b")

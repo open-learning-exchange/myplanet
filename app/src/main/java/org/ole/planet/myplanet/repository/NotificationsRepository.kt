@@ -31,5 +31,8 @@ interface NotificationsRepository {
     suspend fun insert(doc: JsonObject)
     suspend fun deleteNotifications(ids: Set<String>): Set<String>
     fun resolveType(type: String, message: String, subType: String?): String
-    fun typeLabelFor(type: String): String
+
+    companion object {
+        val KNOWN_TYPES = setOf("join_request", "team_join", "task", "chat", "voice_reply", "resource", "storage")
+    }
 }

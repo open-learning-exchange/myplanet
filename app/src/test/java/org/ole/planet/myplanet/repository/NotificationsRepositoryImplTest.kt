@@ -1,12 +1,10 @@
 package org.ole.planet.myplanet.repository
 
 import android.app.Application
-import android.content.Context
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -18,7 +16,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
@@ -41,7 +38,6 @@ class NotificationsRepositoryImplTest {
     private lateinit var teamTaskDao: TeamTaskDao
     private lateinit var voicesRepository: VoicesRepository
     private lateinit var examDao: ExamDao
-    private lateinit var context: Context
 
     @Before
     fun setUp() {
@@ -52,9 +48,7 @@ class NotificationsRepositoryImplTest {
         teamTaskDao = mockk(relaxed = true)
         voicesRepository = mockk(relaxed = true)
         examDao = mockk(relaxed = true)
-        context = mockk(relaxed = true)
         repository = NotificationsRepositoryImpl(
-            context,
             userRepository,
             teamsRepository,
             TestTimeProvider(),
@@ -532,26 +526,5 @@ class NotificationsRepositoryImplTest {
         assertEquals("storage", repository.resolveType("other", "Low storage", null))
         assertEquals("voice_reply", repository.resolveType("other", "new reply to your voice", null))
         assertEquals("notification", repository.resolveType("other", "unrecognized text", null))
-    }
-
-    @Test
-    fun `typeLabelFor maps each known type to its localized label`() {
-        every { context.getString(R.string.notif_group_join_requests) } returns "Join Requests"
-        every { context.getString(R.string.notif_group_team_updates) } returns "Team Updates"
-        every { context.getString(R.string.tasks) } returns "Tasks"
-        every { context.getString(R.string.notif_group_new_voices) } returns "New Voices"
-        every { context.getString(R.string.notif_group_voice_replies) } returns "Voice Replies"
-        every { context.getString(R.string.resources) } returns "Resources"
-        every { context.getString(R.string.notification_group_system) } returns "System"
-        every { context.getString(R.string.notification_group_other) } returns "Other"
-
-        assertEquals("Join Requests", repository.typeLabelFor("join_request"))
-        assertEquals("Team Updates", repository.typeLabelFor("team_join"))
-        assertEquals("Tasks", repository.typeLabelFor("task"))
-        assertEquals("New Voices", repository.typeLabelFor("chat"))
-        assertEquals("Voice Replies", repository.typeLabelFor("voice_reply"))
-        assertEquals("Resources", repository.typeLabelFor("resource"))
-        assertEquals("System", repository.typeLabelFor("storage"))
-        assertEquals("Other", repository.typeLabelFor("notification"))
     }
 }

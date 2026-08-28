@@ -158,7 +158,6 @@ class NotificationsViewModelTest {
         val payload = notification(id = "1", type = "team", isRead = false, message = "whatever", subType = "join_request")
         coEvery { repository.getNotifications(USER_ID, FILTER_ALL, false) } returns listOf(payload)
         every { repository.resolveType("team", "whatever", "join_request") } returns "join_request"
-        every { repository.typeLabelFor(any()) } returns "join_request"
         backgroundScope.launch { viewModel.groupedItems.collect {} }
 
         viewModel.loadNotifications(USER_ID, FILTER_ALL)
@@ -201,7 +200,6 @@ class NotificationsViewModelTest {
         every { repository.resolveType(any(), any(), any()) } answers {
             firstArg<String>().lowercase()
         }
-        every { repository.typeLabelFor(any()) } answers { firstArg() }
         backgroundScope.launch { viewModel.groupedItems.collect {} }
         viewModel.loadNotifications(USER_ID, FILTER_ALL)
         advanceUntilIdle()
