@@ -19,5 +19,5 @@ data class TeamDetails(
     val services: String?,
     val rules: String?,
     val teamId: String?,
-    val profileImage: String?
+    val profileImage: String? = null
 )
