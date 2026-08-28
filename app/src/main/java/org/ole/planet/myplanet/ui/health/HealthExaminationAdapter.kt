@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertExaminationBinding
 import org.ole.planet.myplanet.databinding.RowExaminationBinding
 import org.ole.planet.myplanet.model.HealthExamination
-import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.health.HealthExaminationAdapter.HealthExaminationViewHolder
 import org.ole.planet.myplanet.utils.DiffUtils
@@ -140,7 +139,7 @@ class HealthExaminationAdapter(
             checkEmptyInt(realmExamination.pulse), realmExamination.bp, checkEmpty(realmExamination.height),
             checkEmpty(realmExamination.weight), realmExamination.vision, realmExamination.hearing).trimIndent()
 
-        alertExaminationBinding.tvCondition.text = MyHealth.formatConditions(realmExamination.conditions)
+        alertExaminationBinding.tvCondition.text = HealthExamination.formatConditions(realmExamination.conditions)
         showEncryptedData(alertExaminationBinding.tvOtherNotes, encrypted)
 
         val dialog = AlertDialog.Builder(context, R.style.CustomAlertDialog)
