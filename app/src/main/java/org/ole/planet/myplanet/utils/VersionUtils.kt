@@ -4,9 +4,12 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
+import android.util.Log
 import androidx.core.content.pm.PackageInfoCompat.getLongVersionCode
 
 object VersionUtils {
+    private const val TAG = "VersionUtils"
+
     fun getVersionCode(context: Context): Int {
         try {
             val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
@@ -17,7 +20,7 @@ object VersionUtils {
                 return pInfo.versionCode
             }
         } catch (e: PackageManager.NameNotFoundException) {
-            e.printStackTrace()
+            Log.w(TAG, "Failed to get version code", e)
         }
         return 0
     }
@@ -27,7 +30,7 @@ object VersionUtils {
             val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
             return pInfo.versionName
         } catch (e: PackageManager.NameNotFoundException) {
-            e.printStackTrace()
+            Log.w(TAG, "Failed to get version name", e)
         }
         return ""
     }
