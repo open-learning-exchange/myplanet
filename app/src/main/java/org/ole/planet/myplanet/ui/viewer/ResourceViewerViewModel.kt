@@ -15,7 +15,6 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
@@ -25,15 +24,10 @@ class ResourceViewerViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val resourcesRepository: ResourcesRepository,
     private val authSessionUpdaterFactory: AuthSessionUpdater.Factory,
-    private val sharedPrefManager: SharedPrefManager,
     private val ratingsRepository: RatingsRepository,
     private val configurationsRepository: ConfigurationsRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
-
-    companion object {
-        private const val RATING_PROMPT_PREFIX = "rating_prompted_"
-    }
 
     suspend fun shouldShowResourceRatingDialog(userId: String, resourceId: String): Boolean {
         if (isRatingPrompted(userId, resourceId)) {
@@ -50,14 +44,12 @@ class ResourceViewerViewModel @Inject constructor(
         return !hasRated
     }
 
-    fun isRatingPrompted(userId: String?, resourceId: String?): Boolean {
-        val key = "${RATING_PROMPT_PREFIX}${userId}_$resourceId"
-        return sharedPrefManager.getRawString(key, "false") == "true"
+    suspend fun isRatingPrompted(userId: String, resourceId: String): Boolean {
+        return ratingsRepository.isRatingPrompted(userId, resourceId)
     }
 
-    fun setRatingPrompted(userId: String?, resourceId: String?) {
-        val key = "${RATING_PROMPT_PREFIX}${userId}_$resourceId"
-        sharedPrefManager.setRawString(key, "true")
+    suspend fun setRatingPrompted(userId: String, resourceId: String) {
+        ratingsRepository.setRatingPrompted(userId, resourceId)
     }
 
     suspend fun ensureServerUrlUpdated() {

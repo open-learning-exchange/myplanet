@@ -165,19 +165,22 @@ class WebViewActivity : AppCompatActivity() {
         }
 
         if (!resourceId.isNullOrBlank()) {
-            backNavigationHandled = true
             lifecycleScope.launch {
                 val userId = userRepository.getUserModel()?.id?.takeIf { it.isNotBlank() }
-                if (userId == null || viewModel.isRatingPrompted(userId, resourceId)) {
+                if (userId == null) {
                     finish()
                     return@launch
                 }
+
+                if (backNavigationHandled) return@launch
+                backNavigationHandled = true
+
                 val showDialog = viewModel.shouldShowResourceRatingDialog(userId, resourceId)
                 if (showDialog && !supportFragmentManager.isStateSaved) {
                     val dialog = RatingsFragment.newInstance("resource", resourceId, title)
                     dialog.setOnDismissListener { finish() }
-                    dialog.show(supportFragmentManager, RatingsFragment.TAG)
                     viewModel.setRatingPrompted(userId, resourceId)
+                    dialog.show(supportFragmentManager, RatingsFragment.TAG)
                 } else {
                     finish()
                 }

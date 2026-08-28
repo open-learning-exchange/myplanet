@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.data.room
 
 import androidx.room.Database
+import org.ole.planet.myplanet.model.RatingPrompt
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import org.ole.planet.myplanet.data.room.dao.AchievementDao
@@ -99,6 +100,7 @@ import org.ole.planet.myplanet.model.UserEntity
         ChatHistory::class,
         Feedback::class,
         Rating::class,
+        RatingPrompt::class,
         TagEntity::class,
         Meetup::class,
         SearchActivity::class,
