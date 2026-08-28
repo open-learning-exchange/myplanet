@@ -345,7 +345,12 @@ class NotificationsViewModel @Inject constructor(
         val resolvedType = resolveType(notification.type, notification.message, notification.subType)
         val formattedText = when (resolvedType) {
             "task" -> {
-                val parsedDate = parsedTaskDates[notification.id] ?: parseTaskDate(notification.message)
+                // containsKey, not ?: — a cached null (message had no date) must short-circuit and not re-parse.
+                val parsedDate = if (parsedTaskDates.containsKey(notification.id)) {
+                    parsedTaskDates[notification.id]
+                } else {
+                    parseTaskDate(notification.message)
+                }
                 if (parsedDate != null) {
                     formatTaskNotification(parsedDate.first, parsedDate.second, notification.relatedId, taskTeamNames)
                 } else {
