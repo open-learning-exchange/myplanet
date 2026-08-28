@@ -6,6 +6,7 @@ import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import java.util.Collections
 import org.ole.planet.myplanet.utils.JsonUtils
 
 @Entity(tableName = "achievements", indices = [androidx.room.Index("isUpdated")])
@@ -90,10 +91,12 @@ class Achievement {
     }
 
     companion object {
-        private const val CACHE_CAPACITY = 1000
-        private val parsedJsonCache = object : LinkedHashMap<String, JsonElement>(16, 0.75f, true) {
-            override fun removeEldestEntry(eldest: Map.Entry<String, JsonElement>): Boolean = size > CACHE_CAPACITY
-        }
+        internal const val CACHE_CAPACITY = 1000
+        internal val parsedJsonCache: MutableMap<String, JsonElement> = Collections.synchronizedMap(
+            object : LinkedHashMap<String, JsonElement>(16, 0.75f, true) {
+                override fun removeEldestEntry(eldest: Map.Entry<String, JsonElement>): Boolean = size > CACHE_CAPACITY
+            }
+        )
 
         private fun parseStringListToJsonArray(list: List<String>?): JsonArray {
             val array = JsonArray()

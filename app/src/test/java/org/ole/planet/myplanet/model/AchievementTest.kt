@@ -164,15 +164,20 @@ class AchievementTest {
 
     @Test
     fun parsedJsonCache_isBoundedToCapacity() {
-        // The cache is private to the companion object, but its bound is exercised indirectly
-        // through parseStringListToJsonArray. We assert repeated parsing of many distinct
-        // entries never throws and remains correct, confirming the bounded map evicts eldest
-        // entries instead of growing unbounded.
+        // deepCopy() is applied on every read, so cached and freshly parsed elements are
+        // indistinguishable through the public API. The bound is therefore verified by
+        // observing the shared process-wide cache directly. The cache is populated by
+        // parseStringListToJsonArray (reached via the achievementsArray getter, not the
+        // setter), so each distinct entry is read back to fill the cache. Pushing more than
+        // CACHE_CAPACITY distinct entries must evict the eldest and cap the size instead of
+        // growing unbounded.
+        Achievement.parsedJsonCache.clear()
         val achievement = Achievement().apply { _id = "bound_ach" }
-        for (i in 1..1500) {
-            achievement.setAchievements(JsonArray().apply { add("item-$i") })
+        val overCapacity = Achievement.CACHE_CAPACITY + 500
+        for (i in 1..overCapacity) {
+            achievement.setAchievements(JsonArray().apply { add("bound-$i") })
+            achievement.achievementsArray.size()
         }
-        assertEquals(1, achievement.achievementsArray.size())
-        assertEquals("item-1500", achievement.achievementsArray[0].asString)
+        assertEquals(Achievement.CACHE_CAPACITY, Achievement.parsedJsonCache.size)
     }
 }
