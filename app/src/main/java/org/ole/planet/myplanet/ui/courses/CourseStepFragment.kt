@@ -109,13 +109,14 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         loadDataJob = viewLifecycleOwner.lifecycleScope.launch {
             user = userRepository.getUserModel()
             val data = loadStepData()
+            val title = data.step.courseId?.let { coursesRepository.getCourseTitleById(it) }
             viewLifecycleOwner.lifecycle.withStarted {
                 step = data.step
                 resources = data.resources
                 stepExams = data.stepExams
                 stepSurvey = data.stepSurvey
 
-                courseTitle = step.courseId?.let { coursesRepository.getCourseTitleById(it) }
+                courseTitle = title
                 userHasCourse = data.userHasCourse
 
                 fragmentCourseStepBinding.btnResources.text =
