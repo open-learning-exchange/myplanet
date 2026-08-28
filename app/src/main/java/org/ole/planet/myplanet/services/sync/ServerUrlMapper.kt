@@ -10,6 +10,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
 class ServerUrlMapper @Inject constructor(
@@ -89,6 +90,7 @@ class ServerUrlMapper @Inject constructor(
             putBoolean("isAlternativeUrl", true)
             apply()
         }
+        UrlUtils.invalidateHeaderCache()
     }
 
     suspend fun updateServerIfNecessary(
