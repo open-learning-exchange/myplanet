@@ -154,6 +154,19 @@ does, and unlike an `@openhands` comment it continues the existing session rathe
 new one — so it costs no slot. Also `POST /api/v1/conversations/{id}/pending-messages` queues
 without running.
 
+**Budget exhaustion is invisible from GitHub.** When the account's LLM budget is spent, an
+`@openhands` mention still posts *"I'm on it!"* and the sandbox still reaches `RUNNING` — the
+summon looks successful on the PR. Only the API shows it: `execution_status: error` about two
+seconds after the ack, and a `ConversationErrorEvent` in the event log:
+
+```
+429 budget_exceeded — Current cost: 491.13, Max budget: 0.0
+```
+
+Observed 2026-08-28 on #16554 and #16577. Waiting does not clear it and every further summon is
+wasted, so **check `execution_status` after a summon before queueing more** — this is the third
+distinct failure that looks identical through the GitHub surface (eviction, idle timeout, budget).
+
 **Two pause causes that look identical:**
 
 1. **Eviction** — `pause_old_sandboxes`, oldest-first, when over the concurrent cap.
@@ -184,14 +197,33 @@ OpenHands'.
 Activity types: `planGenerated`, `planApproved`, `userMessaged`, `agentMessaged`,
 `progressUpdated`, `sessionCompleted`, `sessionFailed` (with a `reason`).
 
-Two things this buys us:
+**The task ID in the PR body is the session ID.** `*PR created automatically by Jules for task
+<ID>*` → `GET /sessions/<ID>` resolves directly, no lookup table. The canonical link is
+`jules.google.com/session/<ID>`; the `/task/<ID>` form in the PR body is not the session URL.
+
+### `sendMessage` replaces the manual paste — the most valuable thing here
+
+**Jules never reads PR comments.** It moves only when text is delivered into its session, which
+was being done by hand. `POST /sessions/<id>:sendMessage {"prompt": "<review markdown>"}` does
+exactly that, and **it wakes a session already in `COMPLETED`** — verified 2026-08-28 on #16324
+(`COMPLETED` → `IN_PROGRESS` ~95 s after delivery, then a real push). Six reviews were piped this
+way with no paste; #16381 went idle-since-08:57 → delivered 14:08 → pushed 14:15.
+
+⚠️ **The API returns HTTP 200 for an empty body and silently no-ops**, writing a blank
+`userMessaged` activity into the session. A 200 is not proof of delivery — confirm a new
+`userMessaged` in `/activities`, and enforce a non-empty prompt client-side.
+
+Tooling built for this lives in the session scratchpad: `agents.py` (both lanes' live state in one
+call), `jsend.py` (deliver a review), `jtail.py` (last activities, for confirming delivery and
+skipping duplicates).
+
+Two more things the API buys us:
 
 - **`sessionFailed.reason` is a typed field** — the failure we spent a morning detecting by
   string-matching comment text.
-- **`planGenerated` without `planApproved` means waiting for approval**, a state with no signal
-  at all on the GitHub surface. Worth testing as the explanation for #16311's no-op loop: a
-  session parked on plan approval would produce exactly that pattern. The session ID is in the
-  PR body (`17093535217027961218`).
+- **`planGenerated` without `planApproved` would mean waiting for approval** — but on this account
+  approval is automatic: `planApproved` lands ~3 s after `planGenerated`, originator `user`. That
+  **disproves the plan-park hypothesis** for #16311's no-op loop; look elsewhere.
 
 ---
 
@@ -202,10 +234,16 @@ Two things this buys us:
   plan), and `billing/subscription-access`, `/api/v1/settings` and `web-client/config` carry
   nothing. Currently inferred only. `GET /api/organizations/{org_id}/conversations/stats` and
   `usage-stats` are untried and might have it.
-- **Does `send-message` with `run: true` restart a parked agent?** One call against #16359, #16362
-  or #16385 settles it. If yes, the whole drain becomes scriptable with no GitHub comments at all:
-  summon → poll events → read git diff → pause to release the slot → next.
+- **Does `send-message` with `run: true` restart a parked OpenHands agent?** Still untested — the
+  Jules equivalent works, so this is the obvious next thing to try. If yes, the whole drain becomes
+  scriptable with no GitHub comments at all: summon → poll events → read git diff → pause to
+  release the slot → next.
 - **Is the per-runtime API the real execution control?** Unexplored.
-- **Was #16311's Jules loop a plan-approval park?** Testable via `/sessions/{id}/activities`.
 - **Is the 17-slot cap per account, per org, or per plan?** Affects whether staggering or a
   smaller batch is the right fix.
+- **Why did `build`/`test` never fire on some pushes?** #16323 and #16324 sat 20+ minutes with only
+  the `labels` check on their head commits — the runs were *absent*, not queued — leaving both
+  `mergeable_state: blocked` with nothing to re-trigger them. Other Jules pushes in the same window
+  (#16381, #16545) got all five, so it is not systematic. Note `labels.yml` runs on
+  `pull_request_target` while `build.yml`/`test.yml` run on `push`, which is the kind of asymmetry
+  that would explain it if the pusher's token cannot trigger `push` workflows — unconfirmed.
