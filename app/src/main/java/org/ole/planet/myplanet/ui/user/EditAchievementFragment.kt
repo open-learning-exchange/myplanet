@@ -33,6 +33,8 @@ import kotlin.Array
 import kotlin.Int
 import kotlin.String
 import kotlin.arrayOf
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -54,7 +56,6 @@ import org.ole.planet.myplanet.utils.DialogUtils.getDialog
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utils.Utilities
-import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDateSetListener {
@@ -111,15 +112,12 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         setListeners()
         achievementArray = JsonArray()
         viewModel.loadUserAndAchievement()
-        collectWhenStarted(viewModel.user) { userModel ->
+        viewLifecycleOwner.lifecycleScope.launch {
+            val userModel = viewModel.user.filterNotNull().first()
             user = userModel
-        }
-        collectWhenStarted(viewModel.achievement) { loaded ->
+            val loaded = viewModel.achievement.filterNotNull().first()
             achievement = loaded
-            if (loaded != null) {
-                user = viewModel.user.value ?: user
-                populateAchievementData()
-            }
+            populateAchievementData()
         }
     }
 

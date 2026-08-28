@@ -7,6 +7,8 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -143,5 +145,23 @@ class AchievementViewModelTest {
 
         assertEquals(1, result.size)
         assertEquals("Lib 1", result[0].title)
+    }
+
+    @Test
+    fun `loadUserAndAchievement emits user and achievement once for one-shot consumers`() = runTest(testDispatcher) {
+        val user = UserEntity(id = "user1").apply { planetCode = "planet1" }
+        val achievement = Achievement()
+        coEvery { userRepository.getUserModel() } returns user
+        coEvery { userRepository.initializeAchievement("user1@planet1") } returns achievement
+
+        viewModel.loadUserAndAchievement()
+        advanceUntilIdle()
+
+        val firstUser = viewModel.user.filterNotNull().first()
+        val firstAchievement = viewModel.achievement.filterNotNull().first()
+
+        assertEquals("user1", firstUser.id)
+        assertEquals(achievement, firstAchievement)
+        assertEquals(firstAchievement, viewModel.achievement.value)
     }
 }
