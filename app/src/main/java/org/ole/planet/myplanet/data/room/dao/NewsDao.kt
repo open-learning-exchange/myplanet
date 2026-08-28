@@ -69,12 +69,6 @@ interface NewsDao {
     )
     suspend fun getPlanetMessages(planetCode: String): List<News>
 
-    @Query("SELECT * FROM news WHERE time >= :startTime AND time <= :endTime")
-    suspend fun getInTimeRange(startTime: Long, endTime: Long): List<News>
-
-    @Query("SELECT * FROM news WHERE time >= :startTime AND time <= :endTime AND userId = :userId")
-    suspend fun getInTimeRangeForUser(startTime: Long, endTime: Long, userId: String): List<News>
-
     // Distinct calendar-day count of community-section voice posts in [startTime, endTime].
     // `time` is epoch millis; strftime('%Y-%m-%d', time / 1000, 'unixepoch', 'localtime') buckets
     // by the device's local calendar day — matching the prior in-memory getDateFromTimestamp, which

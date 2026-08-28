@@ -3,7 +3,9 @@ package org.ole.planet.myplanet.data.room.dao
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import java.util.TimeZone
+import com.google.gson.Gson
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import java.util.UUID
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -19,13 +21,9 @@ import org.ole.planet.myplanet.model.News
 class NewsDaoTest {
     private lateinit var database: AppDatabase
     private lateinit var newsDao: NewsDao
-    private lateinit var defaultTimeZone: TimeZone
 
     @Before
     fun setup() {
-        defaultTimeZone = TimeZone.getDefault()
-        // Pin the timezone so the day-bucketing COUNT queries are deterministic across runners.
-        TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
         database = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
             AppDatabase::class.java
@@ -36,8 +34,26 @@ class NewsDaoTest {
     @After
     fun teardown() {
         database.close()
-        TimeZone.setDefault(defaultTimeZone)
     }
+
+    // Build the viewIn JSON through the same compact Gson that every production writer of
+    // News.viewIn uses (plainGson / JsonUtils.gson — none enable pretty-printing), so the
+    // test fails loudly the moment the serializer ever changes shape and the SQL `LIKE` on
+    // "section":"community" stops matching. SQLite's 'localtime' resolves through the C
+    // library's timezone rather than the JVM's TimeZone.getDefault(), so the test fixtures
+    // use timestamps spaced exactly 24 h apart and stay on distinct local calendar days
+    // under any fixed offset — no TZ pinning needed.
+    private fun communityViewIn(): String =
+        Gson().toJson(JsonArray().apply { add(JsonObject().apply {
+            addProperty("section", "community")
+            addProperty("_id", "planet@parent")
+        }) })
+
+    private fun teamViewIn(): String =
+        Gson().toJson(JsonArray().apply { add(JsonObject().apply {
+            addProperty("section", "teams")
+            addProperty("_id", "team_123")
+        }) })
 
     private fun teamIdPattern(teamId: String): String {
         val escaped = teamId
@@ -127,25 +143,25 @@ class NewsDaoTest {
         val day1 = News().apply {
             id = UUID.randomUUID().toString()
             time = 1735257600000L
-            viewIn = "[{\"section\":\"community\",\"_id\":\"planet@parent\"}]"
+            viewIn = communityViewIn()
         }
         // 2024-12-28 00:00 UTC
         val day2 = News().apply {
             id = UUID.randomUUID().toString()
             time = 1735344000000L
-            viewIn = "[{\"section\":\"community\",\"_id\":\"planet@parent\"}]"
+            viewIn = communityViewIn()
         }
         // Same UTC calendar day as day2 -> collapses into one distinct date.
         val day2SameDay = News().apply {
             id = UUID.randomUUID().toString()
             time = 1735344000000L + 3_600_000L // 2024-12-28 01:00 UTC
-            viewIn = "[{\"section\":\"community\",\"_id\":\"planet@parent\"}]"
+            viewIn = communityViewIn()
         }
         // Non-community post -> excluded even though it shares day1's timestamp.
         val teamPost = News().apply {
             id = UUID.randomUUID().toString()
             time = 1735257600000L
-            viewIn = "[{\"section\":\"teams\",\"_id\":\"team_123\"}]"
+            viewIn = teamViewIn()
         }
 
         newsDao.upsertAll(listOf(day1, day2, day2SameDay, teamPost))
@@ -161,20 +177,20 @@ class NewsDaoTest {
             id = UUID.randomUUID().toString()
             time = 1735257600000L
             userId = "user1"
-            viewIn = "[{\"section\":\"community\",\"_id\":\"planet@parent\"}]"
+            viewIn = communityViewIn()
         }
         // 2024-12-28 00:00 UTC
         val user1Day2 = News().apply {
             id = UUID.randomUUID().toString()
             time = 1735344000000L
             userId = "user1"
-            viewIn = "[{\"section\":\"community\",\"_id\":\"planet@parent\"}]"
+            viewIn = communityViewIn()
         }
         val user2Day1 = News().apply {
             id = UUID.randomUUID().toString()
             time = 1735257600000L
             userId = "user2"
-            viewIn = "[{\"section\":\"community\",\"_id\":\"planet@parent\"}]"
+            viewIn = communityViewIn()
         }
 
         newsDao.upsertAll(listOf(user1Day1, user1Day2, user2Day1))
