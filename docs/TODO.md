@@ -96,6 +96,28 @@ Other traps, each hit at least once:
 | Green CI on a PR that hasn't pushed | It's green from *yesterday's* commit. Require a **new commit** *and* green runs. |
 | `issue_read` method `get_labels` on a PR | Fails: *"Could not resolve to an Issue"*. Get labels via `search_pull_requests` with `fields: ["number","labels"]`. |
 | `issue_write` labels | **Replaces** the whole set. Carry every non-target label across verbatim, and **re-fetch each round** — the labels workflow re-runs on every push and changed sizes mid-flight (#16345, #16513 gained `enormous`). |
+| Reading only `get_comments` | A formal review (`get_reviews`) can be **newer** than the newest `## Review: NN/100` comment and is the blocking one. On #16526 and #16539 the comment review said *mergeable* while a later `CHANGES_REQUESTED` was what moved them to `change`. Read both; act on whichever is newer. |
+| Treating every `CHANGES_REQUESTED` as live | One whose `commit_id` is **not the head** is already answered — #16320 arrived labelled `change` on a review the next commit had fixed. Shortcut: if `PR.updated_at == review.submitted_at`, nothing was pushed after it, so it is LIVE; if `updated_at` is later, re-check against the head sha. |
+
+### Keeping ticks cheap: a state file
+
+Persist per PR `{lane, session, comments, updated_at, last_review_id, rating, acted, pending_ci}`
+and diff each tick's search against it. `comments` + `updated_at` come free in the one search call,
+so an unchanged PR costs **zero** further calls — on a 10-PR queue only two needed inspection.
+Without this, "new" silently degrades to "everything" after a context compaction and you re-summon.
+
+⚠️ **Check-run completion does not bump `updated_at`.** A PR waiting on CI can go green while the
+differ still reports `same`, and it would never be flipped. Carry a `pending_ci` flag and always
+inspect those rows. This was caught only because #16545 had been flagged by hand the tick before.
+
+### Two things that must never be piped at an agent
+
+Both produce the no-op commit loop:
+
+- **A review recommending the PR be closed.** #16584 came back at 20/100 — *"This PR is now empty…
+  zero changed files against master"* — with the reviewer explicitly deferring the close to a
+  maintainer. There is no code change to ask for.
+- **A review whose asks a later commit already satisfied.** Report it for a human instead.
 
 ### Issue authoring
 
@@ -163,9 +185,28 @@ seconds after the ack, and a `ConversationErrorEvent` in the event log:
 429 budget_exceeded — Current cost: 491.13, Max budget: 0.0
 ```
 
-Observed 2026-08-28 on #16554 and #16577. Waiting does not clear it and every further summon is
-wasted, so **check `execution_status` after a summon before queueing more** — this is the third
-distinct failure that looks identical through the GitHub surface (eviction, idle timeout, budget).
+Observed 2026-08-28 on #16554 and #16577. This is the third distinct failure that looks identical
+through the GitHub surface (eviction, idle timeout, budget).
+
+⚠️ **There is no pre-flight health probe. Do not invent one.** We tried
+`GET /api/billing/credits` and it looked authoritative — `{"credits":"0.00"}` on the account whose
+sessions were dying. It is a **prepaid credit balance, unrelated to the failure**: a second account
+(`olevim`) ran sessions to completion at the identical `0.00` while the first stayed blocked. What
+killed the first was a per-team LLM budget (`Max budget: 0.0`), which nothing reachable exposes.
+`GET /api/quota/status` is likewise a red herring — its `reset_at` is midnight UTC and it is what
+the all-hands.dev quota page counts down to, but its `daily_limit`/`remaining` are `null` and it
+says nothing about the budget. And `/api/v1/app-conversations` **requires explicit `ids`**, so an
+account cannot be polled in the abstract to find its own recent sessions.
+
+So the gate is **after** the summon, not before: post, wait ~30 s, read `execution_status`. `error`
+means that account is blocked — stop summoning for it this tick. Cost is at most one wasted summon;
+gating on `credits` instead blocked a *working* lane for several ticks.
+
+**Sessions are per account, and a foreign id returns `null`.** With two OpenHands accounts in play,
+`GET /api/v1/app-conversations?ids=…` silently yields a null entry for a session the key does not
+own — easy to misread as "gone". The ack comment names the owner (*"**olevim** can track my
+progress at all-hands.dev"*), which is how you tell which key to use. Tooling must say
+"NOT VISIBLE to any key" rather than reporting a state it cannot see.
 
 **Two pause causes that look identical:**
 
@@ -241,9 +282,26 @@ Two more things the API buys us:
 - **Is the per-runtime API the real execution control?** Unexplored.
 - **Is the 17-slot cap per account, per org, or per plan?** Affects whether staggering or a
   smaller batch is the right fix.
-- **Why did `build`/`test` never fire on some pushes?** #16323 and #16324 sat 20+ minutes with only
-  the `labels` check on their head commits — the runs were *absent*, not queued — leaving both
-  `mergeable_state: blocked` with nothing to re-trigger them. Other Jules pushes in the same window
-  (#16381, #16545) got all five, so it is not systematic. Note `labels.yml` runs on
-  `pull_request_target` while `build.yml`/`test.yml` run on `push`, which is the kind of asymmetry
-  that would explain it if the pusher's token cannot trigger `push` workflows — unconfirmed.
+- **Why does the `push` event stop producing workflow runs on some branches?** Confirmed with
+  receipts on #16323 (`list_workflow_runs` filtered to its branch): commits 1–3 each got
+  `labels` + `build` + `test`; commits 4, 5 and 6 got **only `labels`**. The `build`/`test` runs
+  were never *created* — not queued, not cancelled — so there is nothing to re-run, and re-pushing
+  failed three times. `labels.yml` keeps firing because it is `pull_request_target`, which does not
+  depend on the push event; `build.yml`/`test.yml` are `push`. Same shape on #16324. Six other
+  branches got all five checks in the same minutes, so it is per-ref, not repo-wide. The `actor`
+  field reads `dogi` on every run, so a changed pusher is not visibly the cause.
+  **Workaround:** both workflows accept `workflow_dispatch`, so a manual dispatch on the branch
+  produces check runs against the current head and unblocks the PR.
+
+### Review hygiene on a flip
+
+Flipping `change` → `review` is not the whole job. A stale `CHANGES_REQUESTED` keeps the PR at
+`mergeable_state: blocked`, which stalls the automerge drain — 8 PRs were sitting at `ready` in
+exactly that state before anyone noticed. Find them with
+`search_pull_requests … review:changes_requested`.
+
+**Re-requesting the reviewer does not unblock it — only a dismissal does.** Verified: re-requesting
+left four PRs `blocked`, while a manual dismissal on #16345 flipped it to `clean`. And **no MCP tool
+dismisses a review** (`pull_request_review_write` offers create / submit_pending / delete_pending /
+resolve_thread only), so on this toolset a human has to do it. Re-request what you can, then name
+the PRs still owed a dismissal rather than implying they are unblocked.
