@@ -12,14 +12,17 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.model.News
 
 class JsonUtilsTest {
 
     @Before
     fun setUp() {
         mockkStatic(Log::class)
+        every { Log.isLoggable(any(), any()) } returns true
         every { Log.d(any(), any()) } returns 0
         every { Log.d(any(), any(), any()) } returns 0
+        every { Log.w(any<String>(), any<String>(), any()) } returns 0
     }
 
     @After
@@ -138,9 +141,24 @@ class JsonUtilsTest {
         JsonUtils.getJsonObject("wrongArr", obj)
         JsonUtils.getLong("wrongType", obj)
 
+        // the isLoggable guard is consulted, so the string is never built on a normal build
+        verify(atLeast = 1) { Log.isLoggable("JsonUtils", Log.DEBUG) }
         // expected type mismatches fall back without materialising a stack trace
         verify(exactly = 0) { Log.d(any(), any(), any()) }
         // a brief debug diagnostic still reaches the log
         verify(atLeast = 1) { Log.d("JsonUtils", any()) }
+    }
+
+    @Test
+    fun testExtractSharedTeamNameParseFailureLogsWarning() {
+        val news = News()
+        news.id = "test"
+        news.viewIn = "not a json array"
+
+        assertEquals("", JsonUtils.extractSharedTeamName(news))
+
+        // malformed server data is unexpected, so it surfaces as a warning (with the throwable),
+        // not the quiet DEBUG fallback used for expected type mismatches
+        verify(atLeast = 1) { Log.w("JsonUtils", "failed to parse viewIn", any()) }
     }
 }
