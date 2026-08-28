@@ -2,12 +2,12 @@ package org.ole.planet.myplanet.ui.events
 
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.coVerifyOrder
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -58,15 +58,13 @@ class EventsDetailViewModelTest {
         assertSame(meetup, viewModel.meetup.first())
         assertEquals(members, viewModel.members.first())
 
-        coVerifyOrder {
-            userRepository.getUserModel()
-            eventsRepository.getMeetupByLocalId("meetup-local-1")
-            eventsRepository.getJoinedMembers("meetup-local-1")
-        }
+        coVerify(exactly = 1) { userRepository.getUserModel() }
+        coVerify(exactly = 1) { eventsRepository.getMeetupByLocalId("meetup-local-1") }
+        coVerify(exactly = 1) { eventsRepository.getJoinedMembers("meetup-local-1") }
     }
 
     @Test
-    fun `loadData runs the three repository calls concurrently`() = runTest {
+    fun `loadData runs the three repository calls concurrently`() = runTest(mainDispatcherRule.testDispatcher) {
         val user = UserEntity(id = "user-1", name = "Alice")
         val meetup = Meetup().apply { id = "meetup-local-1"; title = "Team Sync" }
         val members = listOf(UserEntity(id = "user-2", name = "Bob"))
@@ -75,6 +73,7 @@ class EventsDetailViewModelTest {
         coEvery { eventsRepository.getMeetupByLocalId("meetup-local-1") } coAnswers { delay(100); meetup }
         coEvery { eventsRepository.getJoinedMembers("meetup-local-1") } coAnswers { delay(100); members }
 
+        val start = currentTime
         viewModel.loadData("meetup-local-1")
         advanceUntilIdle()
 
@@ -82,6 +81,7 @@ class EventsDetailViewModelTest {
         assertEquals(meetup, viewModel.meetup.first())
         assertEquals(members, viewModel.members.first())
 
+        assertEquals(100L, currentTime - start)
         coVerify(exactly = 1) { userRepository.getUserModel() }
         coVerify(exactly = 1) { eventsRepository.getMeetupByLocalId("meetup-local-1") }
         coVerify(exactly = 1) { eventsRepository.getJoinedMembers("meetup-local-1") }
