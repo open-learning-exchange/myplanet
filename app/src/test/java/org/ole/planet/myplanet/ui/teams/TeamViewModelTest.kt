@@ -45,9 +45,9 @@ class TeamViewModelTest {
     @Test
     fun `loadTeams sorts teams correctly leader then member then neither`() = runTest(testDispatcher) {
         val teams = listOf(
-            TeamDetails(_id = "team3", name = "Team 3", teamType = null, createdDate = null, type = null, status = "active", visitCount = 0L, teamStatus = TeamStatus(isMember = true, isLeader = true, hasPendingRequest = false), description = null, services = null, rules = null, teamId = null),
-            TeamDetails(_id = "team2", name = "Team 2", teamType = null, createdDate = null, type = null, status = "active", visitCount = 0L, teamStatus = TeamStatus(isMember = true, isLeader = false, hasPendingRequest = false), description = null, services = null, rules = null, teamId = null),
-            TeamDetails(_id = "team1", name = "Team 1", teamType = null, createdDate = null, type = null, status = "active", visitCount = 0L, teamStatus = TeamStatus(isMember = false, isLeader = false, hasPendingRequest = false), description = null, services = null, rules = null, teamId = null)
+            TeamDetails(_id = "team3", name = "Team 3", teamType = null, createdDate = null, type = null, status = "active", visitCount = 0L, teamStatus = TeamStatus(isMember = true, isLeader = true, hasPendingRequest = false), description = null, services = null, rules = null, teamId = null, profileImage = null),
+            TeamDetails(_id = "team2", name = "Team 2", teamType = null, createdDate = null, type = null, status = "active", visitCount = 0L, teamStatus = TeamStatus(isMember = true, isLeader = false, hasPendingRequest = false), description = null, services = null, rules = null, teamId = null, profileImage = null),
+            TeamDetails(_id = "team1", name = "Team 1", teamType = null, createdDate = null, type = null, status = "active", visitCount = 0L, teamStatus = TeamStatus(isMember = false, isLeader = false, hasPendingRequest = false), description = null, services = null, rules = null, teamId = null, profileImage = null)
         )
 
         coEvery { teamsRepository.getTeamDetails(any()) } returns teams
@@ -64,8 +64,8 @@ class TeamViewModelTest {
     @Test
     fun `searchTeams filters by name correctly`() = runTest(testDispatcher) {
         val teams = listOf(
-            TeamDetails(_id = "team1", name = "Alpha", teamType = null, createdDate = null, type = null, status = "active", visitCount = 0L, teamStatus = null, description = null, services = null, rules = null, teamId = null),
-            TeamDetails(_id = "team2", name = "Beta", teamType = null, createdDate = null, type = null, status = "active", visitCount = 0L, teamStatus = null, description = null, services = null, rules = null, teamId = null)
+            TeamDetails(_id = "team1", name = "Alpha", teamType = null, createdDate = null, type = null, status = "active", visitCount = 0L, teamStatus = null, description = null, services = null, rules = null, teamId = null, profileImage = null),
+            TeamDetails(_id = "team2", name = "Beta", teamType = null, createdDate = null, type = null, status = "active", visitCount = 0L, teamStatus = null, description = null, services = null, rules = null, teamId = null, profileImage = null)
         )
 
         coEvery { teamsRepository.getTeamDetails(any()) } returns teams
