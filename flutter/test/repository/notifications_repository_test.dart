@@ -1,7 +1,14 @@
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:myplanet/core/config/server_config.dart';
+import 'package:myplanet/core/network/network_result.dart';
+import 'package:myplanet/core/sync/sync_result.dart';
+import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/notifications_repository.dart';
+
+class MockPlanetApi extends Mock implements PlanetApi {}
 
 void main() {
   late AppDatabase database;
@@ -198,5 +205,220 @@ void main() {
         expect(info['team-1']!.hasTask, isFalse);
       },
     );
+  });
+
+  group('server notification sync-in', () {
+    late MockPlanetApi api;
+
+    setUp(() {
+      api = MockPlanetApi();
+      repository = NotificationsRepository(
+        database.notificationDao,
+        teamNotificationDao: database.teamNotificationDao,
+        newsDao: database.newsDao,
+        teamTaskDao: database.teamTaskDao,
+        now: () => DateTime.fromMillisecondsSinceEpoch(1234),
+        api: api,
+      );
+    });
+
+    const config = ServerConfig(
+      serverUrl: 'https://planet.example',
+      couchDbUrl: 'https://satellite:1234@planet.example:443',
+      pin: '1234',
+    );
+
+    test(
+      'parses server documents and stamps isFromServer with the rev',
+      () async {
+        when(
+          () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+        ).thenAnswer((invocation) async {
+          final url = invocation.positionalArguments.single as String;
+          if (url.endsWith('limit=0')) {
+            return NetworkSuccess<Map<String, dynamic>>({'total_rows': 2});
+          }
+          return NetworkSuccess<Map<String, dynamic>>({
+            'rows': [
+              {
+                'doc': {
+                  '_id': 'team-join-1',
+                  'type': 'team',
+                  'user': 'user-1',
+                  'message': 'A join request',
+                  'link': '/teams/view/team-1/applicantTab',
+                  'linkParams': {'activeTab': 'applicantTab'},
+                  'item': 'team-1',
+                  'priority': 5,
+                  'time': 99000,
+                  '_rev': '1-abc',
+                  'status': 'unread',
+                },
+              },
+              {
+                'doc': {'_id': '_design/someview', 'type': 'team'},
+              },
+              {
+                'doc': {
+                  '_id': 'newtask-1',
+                  'type': 'newTask',
+                  'user': 'user-1',
+                  'message': 'A new task',
+                  'link': '/tasks/view/task-9/details',
+                  'priority': 0,
+                  'time': 88000,
+                  '_rev': '2-def',
+                  'status': 'read',
+                },
+              },
+            ],
+          });
+        });
+
+        final result = await repository.sync(config: config);
+
+        expect(result, isA<SyncComplete>());
+        expect(
+          (result as SyncComplete).savedCount,
+          2,
+          reason: '_design docs are skipped',
+        );
+
+        final join = await database.notificationDao.getById('team-join-1');
+        expect(join, isNot(isNull));
+        expect(join!.isFromServer, isTrue);
+        expect(join.rev, '1-abc');
+        expect(join.isRead, isFalse, reason: 'status "unread" -> not read');
+        expect(join.subType, 'join_request');
+        expect(join.relatedId, 'team-1');
+        expect(join.createdAt, 99000);
+
+        final task = await database.notificationDao.getById('newtask-1');
+        expect(task, isNot(isNull));
+        expect(task!.isRead, isTrue);
+        expect(
+          task.relatedId,
+          'task-9',
+          reason: 'newTask pulls the id from link',
+        );
+      },
+    );
+
+    test(
+      'preserves a local read state that has not been uploaded yet',
+      () async {
+        // First sync pulls the row as unread.
+        when(
+          () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+        ).thenAnswer((invocation) async {
+          final url = invocation.positionalArguments.single as String;
+          if (url.endsWith('limit=0')) {
+            return NetworkSuccess<Map<String, dynamic>>({'total_rows': 1});
+          }
+          return NetworkSuccess<Map<String, dynamic>>({
+            'rows': [
+              {
+                'doc': {
+                  '_id': 'n-1',
+                  'type': 'team',
+                  'user': 'user-1',
+                  'message': 'm',
+                  'status': 'unread',
+                  '_rev': '1-a',
+                  'time': 1000,
+                },
+              },
+            ],
+          });
+        });
+        await repository.sync(config: config);
+        await repository.markNotificationAsRead('n-1', 'user-1');
+        expect((await database.notificationDao.getById('n-1'))!.isRead, isTrue);
+        expect(
+          (await database.notificationDao.getById('n-1'))!.needsSync,
+          isTrue,
+        );
+
+        // A re-sync must not clobber the local read with the server's stale
+        // "unread" — the row stays read and still flagged for upload.
+        await repository.sync(config: config);
+        final row = await database.notificationDao.getById('n-1');
+        expect(row!.isRead, isTrue);
+        expect(row.needsSync, isTrue);
+      },
+    );
+
+    test(
+      'does not evict locally-authored notifications (no deleteNotIn)',
+      () async {
+        await repository.updateResourceNotification('user-1', 7);
+        when(
+          () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+        ).thenAnswer((invocation) async {
+          final url = invocation.positionalArguments.single as String;
+          if (url.endsWith('limit=0')) {
+            return NetworkSuccess<Map<String, dynamic>>({'total_rows': 1});
+          }
+          return NetworkSuccess<Map<String, dynamic>>({
+            'rows': [
+              {
+                'doc': {
+                  '_id': 'server-1',
+                  'type': 'team',
+                  'user': 'user-1',
+                  'message': 'm',
+                  'status': 'unread',
+                  '_rev': '1-a',
+                  'time': 1000,
+                },
+              },
+            ],
+          });
+        });
+
+        await repository.sync(config: config);
+
+        expect(
+          await database.notificationDao.getById('user-1:resource:count'),
+          isNot(isNull),
+          reason: 'the local resource-count row survives the sync',
+        );
+      },
+    );
+  });
+
+  group('markNotificationAsRead', () {
+    test('a summary id marks every notification of that type read', () async {
+      await database.notificationDao.upsert(
+        NotificationsCompanion.insert(
+          id: 's-1',
+          userId: 'user-1',
+          type: const Value('team'),
+          message: const Value('m1'),
+          createdAt: 1,
+          isFromServer: const Value(true),
+        ),
+      );
+      await database.notificationDao.upsert(
+        NotificationsCompanion.insert(
+          id: 's-2',
+          userId: 'user-1',
+          type: const Value('team'),
+          message: const Value('m2'),
+          createdAt: 2,
+          isFromServer: const Value(true),
+        ),
+      );
+
+      await repository.markNotificationAsRead('summary_team', 'user-1');
+
+      expect((await database.notificationDao.getById('s-1'))!.isRead, isTrue);
+      expect((await database.notificationDao.getById('s-2'))!.isRead, isTrue);
+      expect(
+        (await database.notificationDao.getById('s-1'))!.needsSync,
+        isTrue,
+        reason: 'server-originated rows are flagged for read-state upload',
+      );
+    });
   });
 }

@@ -109,7 +109,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 43;
+  int get schemaVersion => 44;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -471,6 +471,15 @@ class TeamDao extends DatabaseAccessor<AppDatabase> with _$TeamDaoMixin {
           ))
           .watch();
 
+  /// One-shot sibling of [watchMemberships]: every `membership` row for
+  /// [userId], used to compute the catalog's membership rank (leader/member/
+  /// non-member) the way `TeamsRepositoryImpl.getTeamMemberStatuses` does.
+  Future<List<TeamRow>> membershipsForUser(String userId) =>
+      (select(teams)..where(
+            (t) => t.docType.equals('membership') & t.userId.equals(userId),
+          ))
+          .get();
+
   /// The team documents behind a set of membership rows, for the home
   /// dashboard's myTeams card: real team documents only (no `docType`
   /// sub-documents), not archived, sorted by name. Chunked like every other
@@ -829,21 +838,35 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
   /// pushes a new list whenever `my_library` changes, so a background sync
   /// updates the UI with no explicit notification channel.
   ///
-  /// [query] matches against [MyLibraryTable.titleNormal], the diacritic-folded
-  /// column, so "cafe" finds "Café".
+  /// Text search is *not* applied here. The Kotlin (`ResourcesSearchUtils`
+  /// `searchList`) ranks prefix matches ahead of contains-all-words matches and
+  /// splits the query on spaces, neither of which a SQL `LIKE` can express, so
+  /// the matching lives in `ResourcesRepository.searchResources` against
+  /// [MyLibraryTable.titleNormal].
+  ///
+  /// Visibility mirrors `ResourcesRepositoryImpl.getEnrichedLibraries`: in
+  /// [myLibrary] mode the shelf is shown (`userId LIKE %"userId"%`, including
+  /// the user's private team resources); in catalog mode only public resources
+  /// not already on the signed-in user's shelf are shown (`isPrivate = 0 AND
+  /// (userId IS NULL OR userId NOT LIKE %"userId"%)`), and with no user (guest)
+  /// every public resource is shown.
   Stream<List<MyLibraryRow>> watchResources({
-    String? query,
     String? shelfUserId,
+    bool myLibrary = false,
   }) {
     final statement = select(myLibraryTable);
 
-    final trimmed = query?.trim().toLowerCase();
-    if (trimmed != null && trimmed.isNotEmpty) {
-      statement.where((r) => r.titleNormal.like('%$trimmed%'));
-    }
-    if (shelfUserId != null && shelfUserId.isNotEmpty) {
-      // Mirrors the Room `LIKE` containment check against the JSON userId column.
+    if (myLibrary && shelfUserId != null && shelfUserId.isNotEmpty) {
+      // `getMyLibrary` — the user's shelf, private team resources included.
       statement.where((r) => r.userId.like('%"$shelfUserId"%'));
+    } else {
+      // `getPublic` / `getPublicNotUserPattern` — the catalog.
+      statement.where((r) => r.isPrivate.equals(false));
+      if (shelfUserId != null && shelfUserId.isNotEmpty) {
+        statement.where(
+          (r) => r.userId.isNull() | r.userId.like('%"$shelfUserId"%').not(),
+        );
+      }
     }
 
     statement.orderBy([
@@ -1303,15 +1326,22 @@ class NotificationDao extends DatabaseAccessor<AppDatabase>
   Stream<List<NotificationRow>> watchForUser(
     String userId, {
     String filter = 'all',
+    bool isAdmin = false,
   }) {
     final query = select(notifications)
-      ..where((notification) => notification.userId.equals(userId));
+      ..where(
+        (notification) =>
+            _userMatch(notification, userId, isAdmin) &
+            notification.message.equals('INVALID').not() &
+            notification.message.equals('').not(),
+      );
     if (filter == 'read') {
       query.where((notification) => notification.isRead.equals(true));
     } else if (filter == 'unread') {
       query.where((notification) => notification.isRead.equals(false));
     }
     query.orderBy([
+      (notification) => OrderingTerm(expression: notification.isRead),
       (notification) => OrderingTerm(
         expression: notification.createdAt,
         mode: OrderingMode.desc,
@@ -1320,41 +1350,144 @@ class NotificationDao extends DatabaseAccessor<AppDatabase>
     return query.watch();
   }
 
-  Stream<int> watchUnreadCount(String userId) {
+  Stream<int> watchUnreadCount(String userId, {bool isAdmin = false}) {
     final count = notifications.id.count();
     final query = selectOnly(notifications)
       ..addColumns([count])
       ..where(
-        notifications.userId.equals(userId) &
+        _userMatch(notifications, userId, isAdmin) &
             notifications.isRead.equals(false),
       );
     return query.watchSingle().map((row) => row.read(count) ?? 0);
   }
 
+  // The user match: the user's own rows, plus `SYSTEM` rows when [isAdmin]
+  // (Kotlin's admin notification scope). Built outside the `where` lambda
+  // because drift's `|`/`&` operators are between `Expression<bool>`, not a
+  // bare `bool` and an expression.
+  Expression<bool> _userMatch(
+    $NotificationsTable n,
+    String userId,
+    bool admin,
+  ) {
+    var match = n.userId.equals(userId);
+    if (admin) match = match | n.userId.equals('SYSTEM');
+    return match;
+  }
+
   Future<void> upsert(NotificationsCompanion notification) =>
       into(notifications).insertOnConflictUpdate(notification);
+
+  /// Port of `NotificationDao.upsertAll` — the sync-in batch write. Chunked
+  /// so a planet with many notifications stays under SQLite's variable cap.
+  Future<void> upsertAll(List<NotificationsCompanion> rows) async {
+    if (rows.isEmpty) return;
+    await batch((b) => b.insertAllOnConflictUpdate(notifications, rows));
+  }
+
+  /// Port of `NotificationDao.getByIds` — used by the sync-in to preserve the
+  /// `needsSync`/`isRead` of a row whose read state was changed locally but
+  /// not yet uploaded, so a re-pull does not clobber it.
+  Future<Map<String, NotificationRow>> getByIds(List<String> ids) async {
+    final found = <String, NotificationRow>{};
+    for (final chunk in _chunked(ids, _sqliteVariableChunk)) {
+      final rows = await (select(
+        notifications,
+      )..where((n) => n.id.isIn(chunk))).get();
+      for (final row in rows) {
+        found[row.id] = row;
+      }
+    }
+    return found;
+  }
 
   Future<NotificationRow?> getById(String id) => (select(
     notifications,
   )..where((row) => row.id.equals(id))).getSingleOrNull();
 
-  Future<int> markAsRead(Iterable<String> ids) {
-    final values = ids.toList(growable: false);
-    if (values.isEmpty) return Future.value(0);
-    return (update(notifications)..where((row) => row.id.isIn(values))).write(
-      const NotificationsCompanion(isRead: Value(true)),
-    );
+  /// Port of `NotificationDao.markSummaryAsRead(userId, type)` — marks every
+  /// row for [userId] of [type] read, flagging server-originated rows for
+  /// read-state upload. Used when a notification id starts with `summary_`.
+  Future<int> markSummaryAsRead(String? userId, String type) async {
+    if (userId == null || userId.isEmpty) return 0;
+    final count =
+        await (update(notifications)
+              ..where((n) => n.userId.equals(userId) & n.type.equals(type)))
+            .write(const NotificationsCompanion(isRead: Value(true)));
+    await (update(notifications)..where(
+          (n) =>
+              n.userId.equals(userId) &
+              n.type.equals(type) &
+              n.isFromServer.equals(true),
+        ))
+        .write(const NotificationsCompanion(needsSync: Value(true)));
+    return count;
   }
 
-  Future<int> markAllAsRead(String userId) {
-    return (update(
+  /// Port of `NotificationDao.markAsRead(ids, createdAt)`. Sets `isRead`,
+  /// stamps a fresh `createdAt` (Kotlin's `Date`), and flags server-originated
+  /// rows for read-state upload via `needsSync`.
+  Future<int> markAsRead(Iterable<String> ids, {int? createdAt}) async {
+    final values = ids.toList(growable: false);
+    if (values.isEmpty) return 0;
+    final now = createdAt ?? DateTime.now().millisecondsSinceEpoch;
+    final count =
+        await (update(
           notifications,
-        )..where((row) => row.userId.equals(userId) & row.isRead.equals(false)))
-        .write(const NotificationsCompanion(isRead: Value(true)));
+        )..where((row) => row.id.isIn(values))).write(
+          NotificationsCompanion(
+            isRead: const Value(true),
+            createdAt: Value(now),
+          ),
+        );
+    await (update(notifications)
+          ..where((row) => row.id.isIn(values) & row.isFromServer.equals(true)))
+        .write(const NotificationsCompanion(needsSync: Value(true)));
+    return count;
+  }
+
+  Future<int> markAllAsRead(String userId, {int? createdAt}) async {
+    final now = createdAt ?? DateTime.now().millisecondsSinceEpoch;
+    final count =
+        await (update(notifications)..where(
+              (row) => row.userId.equals(userId) & row.isRead.equals(false),
+            ))
+            .write(
+              NotificationsCompanion(
+                isRead: const Value(true),
+                createdAt: Value(now),
+              ),
+            );
+    await (update(notifications)..where(
+          (row) =>
+              row.userId.equals(userId) &
+              row.isFromServer.equals(true) &
+              row.isRead.equals(true),
+        ))
+        .write(const NotificationsCompanion(needsSync: Value(true)));
+    return count;
   }
 
   Future<int> deleteById(String id) =>
       (delete(notifications)..where((row) => row.id.equals(id))).go();
+
+  /// Port of `NotificationDao.getPendingSyncNotifications` — server-originated
+  /// rows flagged for read-state upload. Only rows with a server `rev` can be
+  /// PUT back (no rev means the row was authored locally, not yet on the
+  /// server).
+  Future<List<NotificationRow>> getPendingSyncNotifications() => (select(
+    notifications,
+  )..where((row) => row.needsSync.equals(true) & row.rev.isNotNull())).get();
+
+  /// Port of `NotificationDao.markSynced(id, rev)` — clears `needsSync` and
+  /// records the fresh `rev` the server returned after a read-state PUT.
+  Future<int> markSynced(String id, String? rev) =>
+      (update(notifications)..where((row) => row.id.equals(id))).write(
+        NotificationsCompanion(
+          needsSync: const Value(false),
+          rev: rev == null ? const Value.absent() : Value(rev),
+        ),
+      );
 }
 
 /// Port of `data/room/dao/MyLifeDao.kt`.
@@ -3267,6 +3400,32 @@ class TeamLogDao extends DatabaseAccessor<AppDatabase> with _$TeamLogDaoMixin {
         .map((r) => r.read(teamLogTable.time.max()))
         .getSingleOrNull();
     return row;
+  }
+
+  /// Port of `TeamLogDao.getRecentTeamVisits` + `getRecentVisitCounts` — the
+  /// per-team count of `teamVisit` rows newer than [cutoffMillis] (the Kotlin
+  /// uses a 30-day window). Drives the catalog's membership-rank / visit-count
+  /// sort, mirroring `TeamsRepositoryImpl.getRecentVisitCounts`.
+  Future<Map<String, int>> recentVisitCounts(
+    List<String> teamIds,
+    int cutoffMillis,
+  ) async {
+    final valid = teamIds.where((id) => id.isNotEmpty).toSet().toList();
+    if (valid.isEmpty) return const {};
+    final query = selectOnly(teamLogTable, distinct: false)
+      ..addColumns([teamLogTable.teamId])
+      ..where(
+        teamLogTable.type.equals('teamVisit') &
+            teamLogTable.time.isBiggerOrEqualValue(cutoffMillis) &
+            teamLogTable.teamId.isIn(valid),
+      );
+    final rows = await query.map((r) => r.read(teamLogTable.teamId)).get();
+    final counts = <String, int>{};
+    for (final teamId in rows) {
+      if (teamId == null) continue;
+      counts[teamId] = (counts[teamId] ?? 0) + 1;
+    }
+    return counts;
   }
 }
 

@@ -133,6 +133,7 @@
   "syncChatDescription": "Refresh AI conversation history",
   "syncHealthDescription": "Refresh encrypted health records",
   "syncActivitiesDescription": "Refresh login history from the server",
+  "syncNotificationsDescription": "Refresh server notifications and upload read states",
   "homeMyLibrary": "myLibrary",
   "homeMyCourses": "myCourses",
   "homeMyTeams": "myTeams",

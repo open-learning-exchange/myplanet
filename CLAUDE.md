@@ -69,6 +69,63 @@ version behind**: `automerge.yml` bumps the Kotlin version on every merge (0.67.
 within an hour), and the first cut's exact-equality rule turned every pull-request run red,
 because a PR run tests the merge with master. Do not tighten it back.
 
+Phase 96 audited the 26 upstream commits after `ba794f4bb` (master
+0.67.14 → 0.67.40) — all refactors and CI/build work, no new behavioural
+port — and closed a pre-existing gap the audit surfaced: the ranked resource
+search. The Kotlin resources screen filters with `ResourcesSearchUtils`
+(`49617105e`/`1e41d3353`), ranking titles that **start with** the whole
+query ahead of those that **contain every whitespace-separated word**; the
+port had been using a flat SQL `LIKE '%query%'` since the first resources
+slice, which can neither rank nor word-split. `MyLibraryDao.watchResources`
+drops the text-search `LIKE` (the shelf `userId` scope stays in SQL);
+`ResourcesRepository.watchResources` maps the stream through a top-level
+`searchResources` pure function ported from `searchList`, reusing
+`text_utils.normalizeText` (the single one, Phase 78). The courses analogue
+needs no port — `CoursesRepositoryImpl.search(query)` is in the interface but
+uncalled; the screen uses `filterCourses` (a plain `contains`) which the
+port already mirrors.
+
+Phase 97 deepened the same systematic Kotlin-vs-Flutter search/filter/sort
+audit and closed three more gaps. **Resource catalog visibility**:
+`getEnrichedLibraries`'s `getMyLibrary`/`getPublicNotUserPattern`/`getPublic`
+three-way split is now mirrored by `MyLibraryDao.watchResources(myLibrary:)`
+— the catalog excludes private resources (`isPrivate = 0`) and the signed-in
+user's own shelf items (`userId IS NULL OR userId NOT LIKE`, so no
+duplication between catalog and My Library), while My Library includes the
+user's private team resources (`userId LIKE`). **Survey search**:
+`SurveysViewModel.filter` is the same ranked algorithm as
+`ResourcesSearchUtils.searchList` (startsWith-before-contains-all-words,
+word-split, accent-folded, `name` only); the port's flat
+`toLowerCase().contains` on name+description is replaced by a `searchSurveys`
+pure function. **Survey sort date**: `SurveysViewModel.getSortDate` prefers
+`adoptionDate` over `createdDate` for adopted surveys (those with a
+`sourceSurveyId`); a `surveySortDate` pure function ports it. 14 new tests,
+1474 pass.
+
+Phase 98 closed the notifications domain's missing half: the **sync-in
+(pull) direction**. `TransactionSyncManager`'s `"notifications"` walk had
+never ported, so a server-side notification (join request, new task, reply)
+never reached the local cache — the bell only ever showed rows the
+**upload** direction had authored (`userId:resource:count`,
+`userId:storage`, team watermarks). The `Notifications` table gains `rev`
++ `needsSync` (schema v44, pure cache so no preservation test);
+`NotificationDao` gains `markSummaryAsRead`/`getPendingSyncNotifications`/
+`upsertAll`/`getByIds`/`deleteByIds`/`markSynced` plus the Phase 53
+`watchForUser`/`watchUnreadCount` type-error fixes. `NotificationsRepository.sync`
+ports the `_all_docs` walk and `parseNotification`; `_bulkInsertFromSync`
+preserves a locally-read row's `isRead` + `needsSync` across a re-pull (the
+same round-trip shape as Phase 56's security-data fix and Phase 74's
+reactions) so a re-sync cannot undo a read. `_design` docs are skipped
+(`!id.startsWith("_design")`, no trailing slash). Unlike every other sync
+repository this one runs **no** `deleteNotIn` — the Kotlin walk never does
+either, and a prune would evict the locally-authored count/storage rows
+that have no server document. The **read-state round-trip** closes too:
+`markNotificationAsRead` flags server-originated rows `needsSync = true`,
+and `syncNotificationReads` PUTs each pending row back with the carried
+`rev` then calls `markSynced`. A new `DashboardSyncArea.notifications` +
+`NotificationsSyncNotifier` wire the bell-list refresh into the sync
+center. 4 new tests, 1478 pass.
+
 Phase 47 localised the other four languages: `tool/arb_from_strings_xml.dart` derives `app_ar.arb`,
 `app_fr.arb`, `app_ne.arb` and `app_so.arb` from the Kotlin `values-*/strings.xml` (195–196 of 727
 keys each, nothing machine-translated), which also made the language picker's four dead entries
@@ -340,7 +397,12 @@ reports "Found 0 widgets" for content that renders fine on a device. Scroll
 first. The same phase merged 26 master commits; they are all "smoother X"
 refactors, and the two that do carry behaviour have no port counterpart (the
 PDF word-wrap the port delegates to `package:pdf`, and an image-viewer
-http/https branch `course_markdown.dart` already has).
+http/https branch `course_markdown.dart` already has). **Phase 96 audited that
+same batch independently and went further**: reading `ResourcesSearchUtils`
+as *the* resource search rather than a renamed helper, it found the ranked
+search gap this pass missed. Two audits of one batch disagreeing on what it
+implies is the useful lesson — a diff that only renames a file can still point
+at a behaviour the port never had.
 
 ### Documentation Map
 

@@ -11,6 +11,46 @@ import '../data/local/team_mapper.dart';
 import 'dart:math';
 import 'package:drift/drift.dart';
 
+/// Per-team membership rank for the catalog sort, porting
+/// `TeamsRepositoryImpl.TeamMemberStatus` (without `hasPendingRequest`, which
+/// the catalog sort does not read). Used by [TeamsRepository.memberStatuses].
+class TeamMemberStatus {
+  const TeamMemberStatus({required this.isMember, required this.isLeader});
+
+  final bool isMember;
+  final bool isLeader;
+}
+
+/// Port of `TeamsRepositoryImpl.mapToTeamDetails`'s sort: membership rank
+/// (leader > member > non-member) DESC, then visit count DESC. Pure so the
+/// provider can call it without transitively watching another provider, and
+/// so a test can pin the order without a database.
+List<TeamRow> sortTeamsCatalog(
+  List<TeamRow> teams,
+  Map<String, TeamMemberStatus> statuses,
+  Map<String, int> visitCounts,
+) {
+  final sorted = [...teams];
+  sorted.sort((a, b) {
+    final aId = a.id;
+    final bId = b.id;
+    final aRank = _rank(statuses[aId]);
+    final bRank = _rank(statuses[bId]);
+    if (aRank != bRank) return bRank.compareTo(aRank);
+    final aVisits = visitCounts[aId] ?? 0;
+    final bVisits = visitCounts[bId] ?? 0;
+    return bVisits.compareTo(aVisits);
+  });
+  return sorted;
+}
+
+int _rank(TeamMemberStatus? status) {
+  if (status == null) return 1;
+  if (status.isLeader) return 3;
+  if (status.isMember) return 2;
+  return 1;
+}
+
 /// First vertical slice of `repository/TeamsRepositoryImpl.kt`: the offline
 /// team/enterprise catalog and its CouchDB refresh.
 class TeamsRepository {
@@ -49,6 +89,49 @@ class TeamsRepository {
   /// a user in a team, or null if they have never visited.
   Future<int?> lastTeamVisit(String? userName, String? teamId) =>
       _teamLogDao.lastTeamVisit(userName, teamId);
+
+  /// Port of `TeamsRepositoryImpl.getTeamMemberStatuses` — the catalog's
+  /// per-team membership rank for [userId]. `isMember` and `isLeader` come
+  /// from the `membership` rows; `hasPendingRequest` from `request` rows.
+  Future<Map<String, TeamMemberStatus>> memberStatuses(
+    String? userId,
+    Iterable<String> teamIds,
+  ) async {
+    if (userId == null || userId.isEmpty) return const {};
+    final valid = teamIds.where((id) => id.isNotEmpty).toSet();
+    if (valid.isEmpty) return const {};
+    final rows = await _dao.membershipsForUser(userId);
+    final memberships = <String>{};
+    final leaders = <String>{};
+    for (final row in rows) {
+      final teamId = row.teamId;
+      if (teamId == null || !valid.contains(teamId)) continue;
+      memberships.add(teamId);
+      if (row.isLeader) leaders.add(teamId);
+    }
+    return {
+      for (final id in valid)
+        id: TeamMemberStatus(
+          isMember: memberships.contains(id),
+          isLeader: leaders.contains(id),
+        ),
+    };
+  }
+
+  /// Port of `TeamsRepositoryImpl.getRecentVisitCounts` — the per-team count
+  /// of `teamVisit` logs within the last [window] (defaults to 30 days, the
+  /// Kotlin window). Drives the catalog's visit-count tiebreak sort.
+  Future<Map<String, int>> recentVisitCounts(
+    Iterable<String> teamIds, {
+    Duration window = const Duration(days: 30),
+  }) {
+    final cutoff = DateTime.now().subtract(window).millisecondsSinceEpoch;
+    return _teamLogDao.recentVisitCounts(
+      teamIds.where((id) => id.isNotEmpty).toList(),
+      cutoff,
+    );
+  }
+
   Stream<List<TeamRow>> watchResourceLinks(String teamId) =>
       _dao.watchResourceLinks(teamId);
   Stream<List<TeamRow>> watchReports(String teamId) =>
