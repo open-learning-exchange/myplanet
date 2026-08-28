@@ -9,6 +9,7 @@ import io.mockk.mockkObject
 import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.unmockkObject
+import io.mockk.verify
 import java.io.File
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -152,6 +153,13 @@ class DiagnosticsRepositoryImplTest {
 
         // Each log gets its own generated id.
         assertFalse(first.id == second.id)
+
+        // The three context lookups are hoisted above the map, so each runs once
+        // for the whole batch regardless of size (VersionUtils.getVersionName is
+        // a PackageManager IPC — the batch path flushes pending logs at startup).
+        verify(exactly = 1) { VersionUtils.getVersionName(any()) }
+        verify(exactly = 1) { sharedPrefManager.getParentCode() }
+        verify(exactly = 1) { sharedPrefManager.getPlanetCode() }
     }
 
     @Test
