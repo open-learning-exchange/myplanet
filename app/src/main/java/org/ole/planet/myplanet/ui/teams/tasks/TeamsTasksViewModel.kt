@@ -114,10 +114,6 @@ class TeamsTasksViewModel @Inject constructor(
         return teamsRepository.getJoinedMembers(teamId)
     }
 
-    suspend fun getJoinedMemberCount(teamId: String): Int {
-        return teamsRepository.getJoinedMemberCount(teamId)
-    }
-
     fun assignTask(taskId: String, user: UserEntity) {
         viewModelScope.launch {
             teamsRepository.assignTask(taskId, user.id)

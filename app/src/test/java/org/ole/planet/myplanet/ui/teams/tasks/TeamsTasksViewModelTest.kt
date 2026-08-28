@@ -197,16 +197,6 @@ class TeamsTasksViewModelTest {
     }
 
     @Test
-    fun `getJoinedMemberCount returns count from repository`() = runTest(testDispatcher) {
-        coEvery { mockTeamsRepository.getJoinedMemberCount("team1") } returns 3
-
-        val result = viewModel.getJoinedMemberCount("team1")
-
-        assertEquals(3, result)
-        coVerify { mockTeamsRepository.getJoinedMemberCount("team1") }
-    }
-
-    @Test
     fun `assignTask calls repository and emits event`() = runTest(testDispatcher) {
         val mockUser = UserEntity()
         mockUser.id = "user1"

@@ -125,18 +125,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         // Handle member assignment
         alertTaskBinding.tvAssignMember.setOnClickListener {
             viewLifecycleOwner.lifecycleScope.launch {
-                if (teamsTasksViewModel.getJoinedMemberCount(teamId) == 0) {
-                    Toast.makeText(context, R.string.no_members_task, Toast.LENGTH_SHORT).show()
-                    return@launch
-                }
-
-                val userList = teamsTasksViewModel.getJoinedMembers(teamId)
-                val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() || !user.name.isNullOrBlank() }
-
-                if (filteredUserList.isEmpty()) {
-                    Toast.makeText(context, R.string.no_members_task, Toast.LENGTH_SHORT).show()
-                    return@launch
-                }
+                val filteredUserList = loadAssignableMembers() ?: return@launch
 
                 showMemberSelectionDialog(filteredUserList) { user ->
                     selectedAssignee = user
@@ -181,6 +170,17 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
         alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
     }
+
+    private suspend fun loadAssignableMembers(): List<UserEntity>? {
+        val userList = teamsTasksViewModel.getJoinedMembers(teamId)
+        val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() || !user.name.isNullOrBlank() }
+        if (filteredUserList.isEmpty()) {
+            Toast.makeText(context, R.string.no_members_task, Toast.LENGTH_SHORT).show()
+            return null
+        }
+        return filteredUserList
+    }
+
     private fun showMemberSelectionDialog(filteredUserList: List<UserEntity>, onAssigneeSelected: (UserEntity) -> Unit) {
         var dialogSelectedItem: UserEntity? = filteredUserList.firstOrNull()
 
@@ -361,18 +361,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            if (teamsTasksViewModel.getJoinedMemberCount(teamId) == 0) {
-                Toast.makeText(context, R.string.no_members_task, Toast.LENGTH_SHORT).show()
-                return@launch
-            }
-
-            val userList = teamsTasksViewModel.getJoinedMembers(teamId)
-            val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() || !user.name.isNullOrBlank() }
-
-            if (filteredUserList.isEmpty()) {
-                Toast.makeText(context, R.string.no_members_task, Toast.LENGTH_SHORT).show()
-                return@launch
-            }
+            val filteredUserList = loadAssignableMembers() ?: return@launch
 
             var dialogSelectedItem: UserEntity? = filteredUserList.firstOrNull()
 
