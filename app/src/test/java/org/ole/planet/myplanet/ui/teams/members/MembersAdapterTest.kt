@@ -155,6 +155,28 @@ class MembersAdapterTest {
     }
 
     @Test
+    fun testOnBindViewHolder_nullNameRendersEmpty() {
+        val user = UserEntity(
+            id = "user1",
+            name = null
+        )
+        val list = listOf(
+            JoinedMemberData(user, 0, null, "", "", true)
+        )
+
+        adapter.submitList(list) {
+            val parent = FrameLayout(ApplicationProvider.getApplicationContext())
+            val viewHolder = adapter.onCreateViewHolder(parent, 0)
+
+            adapter.onBindViewHolder(viewHolder, 0)
+
+            // Direct member.name binding renders empty for a null name, whereas the old
+            // "$name" template (via toString()) would have rendered the literal "null".
+            assertEquals("", viewHolder.binding.tvTitle.text.toString())
+        }
+    }
+
+    @Test
     fun testOnBindViewHolder_withUnknownPayload_fallsBackToFullBind() {
         val user1 = UserEntity(
             id = "user1",
