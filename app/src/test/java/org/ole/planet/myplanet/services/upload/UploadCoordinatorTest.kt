@@ -6,8 +6,10 @@ import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -16,6 +18,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -46,14 +49,13 @@ class UploadCoordinatorTest {
         every { Log.e(any(), any()) } returns 0
         every { Log.e(any(), any(), any()) } returns 0
 
-        io.mockk.mockkObject(UrlUtils)
+        mockkObject(UrlUtils)
         every { UrlUtils.getUrl() } returns "http://mock.url"
     }
 
     @After
     fun tearDown() {
         unmockkAll()
-        io.mockk.unmockkObject(UrlUtils)
     }
 
     @Test
@@ -111,8 +113,8 @@ class UploadCoordinatorTest {
             assertEquals("remote-${index + 1}", success.items[index].remoteId)
         }
 
-        // Concurrency should not exceed Semaphore limit (6)
-        assertTrue("Max concurrent requests was $maxConcurrentRequests", maxConcurrentRequests in 1..6)
+        // Concurrency should saturate Semaphore limit (6)
+        assertEquals("expected the semaphore to be saturated", 6, maxConcurrentRequests)
     }
 
     @Test
@@ -127,7 +129,7 @@ class UploadCoordinatorTest {
 
         val item = Submission(id = "local-1", _id = "db-1")
 
-        val conflictResponse = Response.error<JsonObject>(409, okhttp3.ResponseBody.create(null, ""))
+        val conflictResponse = Response.error<JsonObject>(409, "".toResponseBody(null))
         coEvery { uploadRepository.putUpload(any(), any()) } returns conflictResponse
 
         val existingDoc = JsonObject().apply {
@@ -153,6 +155,40 @@ class UploadCoordinatorTest {
         assertEquals("local-1", success.items[0].localId)
         assertEquals("db-1", success.items[0].remoteId)
         assertEquals("2-existing-rev", success.items[0].remoteRev)
+    }
+
+    @Test
+    fun `upload 409 conflict recovery handles network IOException as retryable`() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        uploadCoordinator = UploadCoordinator(
+            uploadRepository = uploadRepository,
+            context = context,
+            retryQueue = retryQueue,
+            dispatcherProvider = TestDispatcherProvider(testDispatcher)
+        )
+
+        val item = Submission(id = "local-1", _id = "db-1")
+
+        val conflictResponse = Response.error<JsonObject>(409, "".toResponseBody(null))
+        coEvery { uploadRepository.putUpload(any(), any()) } returns conflictResponse
+        coEvery { uploadRepository.fetchExistingDoc("http://mock.url/test_endpoint/db-1") } throws IOException("Network down during 409 recovery")
+
+        val config = UploadConfig(
+            modelClass = Submission::class,
+            endpoint = "test_endpoint",
+            fetchPendingItems = { listOf(item) },
+            serializer = UploadSerializer.Simple { JsonObject() },
+            idExtractor = { it.id },
+            dbIdExtractor = { it._id }
+        )
+
+        val result = uploadCoordinator.upload(config)
+
+        assertTrue(result is UploadResult.Failure)
+        val failure = result as UploadResult.Failure
+        assertEquals(1, failure.errors.size)
+        assertEquals("local-1", failure.errors[0].itemId)
+        assertTrue("Error should be retryable when fetch step throws IOException", failure.errors[0].retryable)
     }
 
     @Test
@@ -213,7 +249,7 @@ class UploadCoordinatorTest {
             assertEquals("room-remote-${index + 1}", success.items[index].remoteId)
         }
 
-        assertTrue("Max concurrent requests was $maxConcurrentRequests", maxConcurrentRequests in 1..6)
+        assertEquals("expected the semaphore to be saturated", 6, maxConcurrentRequests)
     }
 
     @Test
@@ -228,7 +264,7 @@ class UploadCoordinatorTest {
 
         val item = TestRoomItem("room-local-1", null)
 
-        val conflictResponse = Response.error<JsonObject>(409, okhttp3.ResponseBody.create(null, ""))
+        val conflictResponse = Response.error<JsonObject>(409, "".toResponseBody(null))
         coEvery { uploadRepository.postUpload(any(), any()) } returns conflictResponse
 
         val existingDoc = JsonObject().apply {
@@ -254,6 +290,40 @@ class UploadCoordinatorTest {
         assertEquals("room-local-1", success.items[0].localId)
         assertEquals("room-remote-1", success.items[0].remoteId)
         assertEquals("3-room-rev", success.items[0].remoteRev)
+    }
+
+    @Test
+    fun `uploadRoom 409 conflict recovery handles network IOException as retryable`() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        uploadCoordinator = UploadCoordinator(
+            uploadRepository = uploadRepository,
+            context = context,
+            retryQueue = retryQueue,
+            dispatcherProvider = TestDispatcherProvider(testDispatcher)
+        )
+
+        val item = TestRoomItem("room-local-1", null)
+
+        val conflictResponse = Response.error<JsonObject>(409, "".toResponseBody(null))
+        coEvery { uploadRepository.postUpload(any(), any()) } returns conflictResponse
+        coEvery { uploadRepository.fetchExistingDoc("http://mock.url/test_room_endpoint/room-local-1") } throws IOException("Network down during 409 recovery")
+
+        val config = RoomUploadConfig(
+            endpoint = "test_room_endpoint",
+            modelClassName = "TestRoomItem",
+            fetchPendingItems = { listOf(item) },
+            serializer = UploadSerializer.Simple { JsonObject() },
+            idExtractor = { it.id },
+            markUploaded = { emptyList() }
+        )
+
+        val result = uploadCoordinator.uploadRoom(config)
+
+        assertTrue(result is UploadResult.Failure)
+        val failure = result as UploadResult.Failure
+        assertEquals(1, failure.errors.size)
+        assertEquals("room-local-1", failure.errors[0].itemId)
+        assertTrue("Error should be retryable when fetch step throws IOException", failure.errors[0].retryable)
     }
 
     @Test

@@ -210,6 +210,9 @@ class UploadCoordinator @Inject constructor(
                                 }
                             } catch (e: CancellationException) {
                                 throw e
+                            } catch (e: IOException) {
+                                Log.w(TAG, "Network error fetching existing doc for 409 recovery on item ${preparedItem.localId}", e)
+                                BatchItemResult.Error(UploadError(preparedItem.localId, e, retryable = true, httpCode = 409))
                             } catch (e: Exception) {
                                 BatchItemResult.Error(UploadError(
                                     preparedItem.localId,
@@ -461,6 +464,9 @@ class UploadCoordinator @Inject constructor(
                                 }
                             } catch (e: CancellationException) {
                                 throw e
+                            } catch (e: IOException) {
+                                Log.w(TAG, "Network error fetching existing doc for 409 recovery on item ${preparedItem.localId}", e)
+                                BatchItemResult.Error(UploadError(preparedItem.localId, e, retryable = true, httpCode = 409))
                             } catch (e: Exception) {
                                 BatchItemResult.Error(UploadError(preparedItem.localId, Exception("Document exists (409) but fetch failed: ${e.message}"), retryable = false, httpCode = 409))
                             }
