@@ -4,7 +4,7 @@
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@color/secondary_bg"
-    tools:context=".ui.submission.SubmissionsFragment">
+    tools:context=".ui.submissions.SubmissionsFragment">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -154,7 +154,8 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_mysurvey"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="0dp"
+            android:layout_weight="1" />
     </LinearLayout>
 
     <TextView
