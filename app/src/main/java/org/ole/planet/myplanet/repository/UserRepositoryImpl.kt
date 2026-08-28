@@ -480,7 +480,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getCurrentUserId(): String? {
-        return sharedPrefManager.getUserId().takeIf { it.isNotBlank() } ?: getUserModel()?.id
+        return sharedPrefManager.getUserId().takeIf { it.isNotBlank() }
     }
 
     override suspend fun getUserModel(): UserEntity? {

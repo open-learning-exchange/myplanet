@@ -64,19 +64,6 @@ class LifeViewModelTest {
     }
 
     @Test
-    fun `loadMyLifeList resolves userId when preference value differs from user model id`() = runTest {
-        coEvery { userRepository.getCurrentUserId() } returns "pref_user_id"
-        val item = MyLife("img1", "pref_user_id", "Item 1")
-        coEvery { lifeRepository.getMyLifeByUserId("pref_user_id") } returns listOf(item)
-
-        viewModel.loadMyLifeList()
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertEquals(listOf(item), viewModel.myLifeList.value)
-        coVerify(exactly = 1) { lifeRepository.getMyLifeByUserId("pref_user_id") }
-    }
-
-    @Test
     fun `loadMyLifeList seeds list if empty`() = runTest {
         coEvery { userRepository.getCurrentUserId() } returns "user_123"
         val item = MyLife("img1", "user_123", "Item 1")

@@ -320,7 +320,7 @@ class UserRepositoryImplTest {
     }
 
     @Test
-    fun `getCurrentUserId returns sharedPrefManager userId when available`() = runTest {
+    fun `getCurrentUserId returns sharedPrefManager userId when non-blank`() = runTest {
         every { sharedPrefManager.getUserId() } returns "pref_user_id"
 
         val result = repository.getCurrentUserId()
@@ -329,15 +329,12 @@ class UserRepositoryImplTest {
     }
 
     @Test
-    fun `getCurrentUserId falls back to getUserModel id when preference is empty`() = runTest {
-        every { sharedPrefManager.getUserId() } returns ""
-        val userEntity = UserEntity().apply { id = "user_model_id" }
-        val spiedRepo = spyk(repository)
-        coEvery { spiedRepo.getUserModel() } returns userEntity
+    fun `getCurrentUserId returns null when preference is blank`() = runTest {
+        every { sharedPrefManager.getUserId() } returns "   "
 
-        val result = spiedRepo.getCurrentUserId()
+        val result = repository.getCurrentUserId()
 
-        assertEquals("user_model_id", result)
+        assertEquals(null, result)
     }
 
     @Test
