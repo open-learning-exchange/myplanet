@@ -85,6 +85,9 @@ class LifeRepositoryImpl @Inject constructor(
         if (visibleForUser.isNotEmpty()) {
             return visibleForUser
         }
+        if (myLifeDao.countByUserId(effectiveUserId) > 0) {
+            return emptyList()
+        }
 
         val json = sharedPrefManager.rawPreferences.getString("$MY_LIFE_CACHE_PREFIX$userId", null)
         if (json != null) {
