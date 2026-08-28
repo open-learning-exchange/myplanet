@@ -122,16 +122,6 @@ object FileUtils {
         }
     }
 
-    private fun getResourceRelativePathFromUrl(url: String?): String {
-        return try {
-            val segments = url?.toUri()?.pathSegments
-            getResourceRelativePathFromSegments(segments)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            getFileNameFromUrl(url)
-        }
-    }
-
     /**
      * Resolves an HTML resource's entry file (e.g. from `openWhichFile`, which may nest the
      * entry point in a subfolder like `sudoku/index.html`) against its download directory,
