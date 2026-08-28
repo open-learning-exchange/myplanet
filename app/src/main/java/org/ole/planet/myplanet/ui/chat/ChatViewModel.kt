@@ -64,6 +64,9 @@ class ChatViewModel @Inject constructor(
     private val _refreshChatSignal = MutableSharedFlow<Unit>(replay = 1)
     val refreshChatSignal: SharedFlow<Unit> = _refreshChatSignal.asSharedFlow()
     init {
+        // Seed the replay cache so a cold ViewModel still triggers one initial load when the
+        // fragment subscribes — the replayed value replaces the explicit onViewCreated load.
+        _refreshChatSignal.tryEmit(Unit)
         viewModelScope.launch {
             realtimeSyncManager.updatesFor("chats")
                 .collect { update ->

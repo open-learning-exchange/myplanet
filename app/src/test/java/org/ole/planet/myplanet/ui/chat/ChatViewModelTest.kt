@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ChatRepository
@@ -43,7 +44,7 @@ class ChatViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var dispatcherProvider: TestDispatcherProvider
     private lateinit var realtimeSyncManager: RealtimeSyncManager
-    private val dataUpdateFlow = MutableSharedFlow<org.ole.planet.myplanet.model.TableDataUpdate>()
+    private val dataUpdateFlow = MutableSharedFlow<TableDataUpdate>()
 
     @Before
     fun setup() {
@@ -81,13 +82,31 @@ class ChatViewModelTest {
     }
 
     @Test
+    fun `refreshChatSignal seeds an initial load value for a cold ViewModel`() = runTest {
+        // A freshly constructed ViewModel that has never seen a chats sync still seeds one
+        // value in the replay cache, so a fragment subscribing on first open gets an initial
+        // load instead of a blank screen.
+        val signals = mutableListOf<Unit>()
+        val job = launch(testDispatcher) {
+            viewModel.refreshChatSignal.collect { signals.add(it) }
+        }
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, signals.size)
+        job.cancel()
+    }
+
+    @Test
     fun `refreshChatSignal emits when RealtimeSyncManager emits chats update`() = runTest {
         val signals = mutableListOf<Unit>()
         val job = launch(testDispatcher) {
             viewModel.refreshChatSignal.collect { signals.add(it) }
         }
+        // Drain the seeded initial load before asserting on the sync-driven signal.
+        testScheduler.advanceUntilIdle()
+        signals.clear()
 
-        dataUpdateFlow.emit(org.ole.planet.myplanet.model.TableDataUpdate("chats", 0, 1))
+        dataUpdateFlow.emit(TableDataUpdate("chats", 0, 1))
         testScheduler.advanceUntilIdle()
 
         assertEquals(1, signals.size)
@@ -103,10 +122,11 @@ class ChatViewModelTest {
         // A chats update arrives while the history fragment is stopped: the fragment's
         // refreshChatSignal collector (the only subscriber) is unsubscribed, so on the old
         // replay = 0 flow the value would be silently dropped. With replay = 1 it is buffered.
-        dataUpdateFlow.emit(org.ole.planet.myplanet.model.TableDataUpdate("chats", 1, 0, true))
+        dataUpdateFlow.emit(TableDataUpdate("chats", 1, 0, true))
         testScheduler.advanceUntilIdle()
 
-        // The user returns to the foreground: the fragment re-subscribes to refreshChatSignal.
+        // The user returns to the foreground: the fragment re-subscribes to refreshChatSignal
+        // and receives the buffered update (replacing the seeded initial load in the cache).
         val signals = mutableListOf<Unit>()
         val job = launch(testDispatcher) {
             viewModel.refreshChatSignal.collect { signals.add(it) }
