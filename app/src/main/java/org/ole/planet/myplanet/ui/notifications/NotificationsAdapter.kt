@@ -38,6 +38,7 @@ class NotificationsAdapter(
 
     private var dateFormatter: DateTimeFormatter? = null
     private var lastLocale: Locale? = null
+    private val parsedHtmlCache = LruCache<String, CharSequence>(100)
 
     private fun getDateFormatter(): DateTimeFormatter {
         val currentLocale = Locale.getDefault()
@@ -54,7 +55,6 @@ class NotificationsAdapter(
     companion object {
         private const val VIEW_TYPE_HEADER = 0
         private const val VIEW_TYPE_ITEM = 1
-        private val parsedHtmlCache = LruCache<String, CharSequence>(100)
     }
 
     override fun getItemViewType(position: Int): Int = when (getItem(position)) {
@@ -113,13 +113,14 @@ class NotificationsAdapter(
 
         fun bind(item: NotificationListItem.Item) {
             val notification = item.notification
-            var titleText = parsedHtmlCache.get(notification.id)
+            val rawText = notification.formattedText.toString()
+            var titleText = parsedHtmlCache.get(rawText)
             if (titleText == null) {
                 titleText = Html.fromHtml(
-                    notification.formattedText.toString(),
+                    rawText,
                     Html.FROM_HTML_MODE_LEGACY
                 )
-                parsedHtmlCache.put(notification.id, titleText)
+                parsedHtmlCache.put(rawText, titleText)
             }
             binding.title.text = titleText
             binding.timestamp.text = formatRelativeTime(notification.createdAt)
