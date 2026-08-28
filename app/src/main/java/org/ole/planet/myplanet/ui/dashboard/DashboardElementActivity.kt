@@ -35,7 +35,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     lateinit var activitiesRepository: ActivitiesRepository
     lateinit var navigationView: BottomNavigationView
     private lateinit var goOnline: MenuItem
-    var c = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,8 +46,8 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             0 -> openCallFragment(BellDashboardFragment(), "dashboard")
             1 -> openCallFragment(ResourcesFragment(), "library")
             2 -> openCallFragment(CoursesFragment(), "course")
+            3 -> openCallFragment(TeamFragment(), "teams")
             4 -> openEnterpriseFragment()
-            3 -> openCallFragment(TeamFragment(), "survey")
             5 -> {
                 openCallFragment(CommunityTabFragment(), "community")
             }
@@ -57,47 +56,17 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
 
     fun openCallFragment(newFragment: Fragment, tag: String?) {
         val fragmentManager = supportFragmentManager
-        if(c<2){
-            c=0
+        val existingFragment = if (!tag.isNullOrEmpty()) fragmentManager.findFragmentByTag(tag) else null
+        if (existingFragment != null && existingFragment.isVisible) {
+            return
         }
-        val existingFragment = fragmentManager.findFragmentByTag(tag)
-        if (tag == "") {
-            c++
-            if(c>2){
-                c--
-                FragmentNavigator.popBackStack(fragmentManager, tag, 0)
-            }else{
-                FragmentNavigator.replaceFragment(
-                    fragmentManager,
-                    R.id.fragment_container,
-                    newFragment,
-                    addToBackStack = true,
-                    tag = tag
-                )
-            }
-        } else {
-            if (existingFragment != null && existingFragment.isVisible) {
-                return
-            } else if (existingFragment != null) {
-                if(c>0 && c>2){
-                    c=0
-                }
-                FragmentNavigator.popBackStack(fragmentManager, tag, 0)
-            } else {
-                if(c>0 && c>2){
-                    c=0
-                }
-                if(tag!="") {
-                    FragmentNavigator.replaceFragment(
-                        fragmentManager,
-                        R.id.fragment_container,
-                        newFragment,
-                        addToBackStack = true,
-                        tag = tag
-                    )
-                }
-            }
-        }
+        FragmentNavigator.replaceFragment(
+            fragmentManager,
+            R.id.fragment_container,
+            newFragment,
+            addToBackStack = true,
+            tag = tag
+        )
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
