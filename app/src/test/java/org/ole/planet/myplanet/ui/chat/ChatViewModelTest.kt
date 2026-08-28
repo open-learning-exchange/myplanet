@@ -95,6 +95,29 @@ class ChatViewModelTest {
     }
 
     @Test
+    fun `refreshChatSignal delivers a missed update to a subscriber that attaches after the emit`() = runTest {
+        // Let the ViewModel's internal chats-update collector subscribe before emitting,
+        // mirroring production where the collector lives in the (always-alive) viewModelScope.
+        testScheduler.advanceUntilIdle()
+
+        // A chats update arrives while the history fragment is stopped: the fragment's
+        // refreshChatSignal collector (the only subscriber) is unsubscribed, so on the old
+        // replay = 0 flow the value would be silently dropped. With replay = 1 it is buffered.
+        dataUpdateFlow.emit(org.ole.planet.myplanet.model.TableDataUpdate("chats", 1, 0, true))
+        testScheduler.advanceUntilIdle()
+
+        // The user returns to the foreground: the fragment re-subscribes to refreshChatSignal.
+        val signals = mutableListOf<Unit>()
+        val job = launch(testDispatcher) {
+            viewModel.refreshChatSignal.collect { signals.add(it) }
+        }
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, signals.size)
+        job.cancel()
+    }
+
+    @Test
     fun `clearChatState resets selectedChatHistory, selectedId, selectedRev, and selectedAiProvider to their initial values`() {
         val dummyHistory = listOf(Conversation())
         viewModel.setSelectedChatHistory(dummyHistory)
