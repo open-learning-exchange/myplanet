@@ -118,7 +118,7 @@ class ResourceViewerActivity : AppCompatActivity() {
                     return@launch
                 }
                 val showDialog = viewModel.shouldShowResourceRatingDialog(userId, resourceId)
-                if (showDialog) {
+                if (showDialog && !supportFragmentManager.isStateSaved) {
                     val dialog = RatingsFragment.newInstance("resource", resourceId, title)
                     dialog.setOnDismissListener { finish() }
                     dialog.show(supportFragmentManager, RatingsFragment.TAG)

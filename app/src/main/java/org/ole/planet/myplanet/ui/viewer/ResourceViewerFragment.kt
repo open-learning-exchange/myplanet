@@ -59,7 +59,6 @@ import org.ole.planet.myplanet.databinding.FragmentResourceViewerBinding
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.AudioRecorder
-import org.ole.planet.myplanet.ui.ratings.RatingsFragment
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.IntentUtils
@@ -393,6 +392,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val pdfFileName = binding.root.findViewById<TextView>(R.id.pdfFileName)
         pdfFileName.text = title
 
+        isResourceFinished = true
+
         renderPdf()
         extractPdfText()
         setupPdfFabActions()
@@ -468,6 +469,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val textFileTitle = binding.root.findViewById<TextView>(R.id.textFileTitle)
         val textContent = binding.root.findViewById<TextView>(R.id.textContent)
         textFileTitle.text = title
+
+        isResourceFinished = true
 
         val file = File(externalFilesDir, "ole/$filePath")
         if (file.exists()) {
