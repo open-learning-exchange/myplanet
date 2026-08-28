@@ -20,14 +20,15 @@ noreply_for() { printf '%s <%s@users.noreply.github.com>' "$1" "$1"; }
 declare -A collaborators=()
 
 # Needs push access; failing here beats crediting nobody.
+collab_raw=$(
+    gh api "repos/$REPO/collaborators?per_page=100" --paginate \
+        --jq '.[] | select(.type == "User") | .login' | tr '[:upper:]' '[:lower:]'
+)
 while IFS= read -r col; do
     if [ -n "$col" ]; then
         collaborators["$col"]=1
     fi
-done < <(
-    gh api "repos/$REPO/collaborators?per_page=100" --paginate \
-        --jq '.[] | select(.type == "User") | .login' | tr '[:upper:]' '[:lower:]'
-)
+done <<<"$collab_raw"
 
 pr_json=$(gh pr view "$PR" --repo "$REPO" --json author,body)
 author_login=$(jq -r '.author.login // ""' <<<"$pr_json")
