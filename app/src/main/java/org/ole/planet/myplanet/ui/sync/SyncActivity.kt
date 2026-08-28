@@ -31,8 +31,8 @@ import com.afollestad.materialdialogs.MaterialDialog
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Date
 import javax.inject.Inject
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -78,7 +78,7 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 import kotlin.time.Duration.Companion.milliseconds
 
 @AndroidEntryPoint
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(FlowPreview::class)
 abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepository.CheckVersionCallback {
     private var serverDialogBinding: DialogServerUrlBinding? = null
     private lateinit var syncDate: TextView
