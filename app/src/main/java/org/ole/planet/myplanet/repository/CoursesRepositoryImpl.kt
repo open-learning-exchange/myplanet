@@ -257,24 +257,27 @@ class CoursesRepositoryImpl @Inject constructor(
         val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
         val normalizedQuery = Utilities.normalizeText(query)
 
-        val data = allCourses.filter { course ->
-            val title = course.courseTitleNormal ?: course.courseTitle?.let { Utilities.normalizeText(it) }
-            title != null && normalizedQueryParts.all { title.contains(it) }
-        }
-
         val startsWithQuery = mutableListOf<MyCourse>()
-        val containsQuery = mutableListOf<MyCourse>()
+        val titleContainsQuery = mutableListOf<MyCourse>()
+        val contentContainsQuery = mutableListOf<MyCourse>()
 
-        for (item in data) {
-            val title = item.courseTitleNormal ?: item.courseTitle?.let { Utilities.normalizeText(it) } ?: continue
+        for (item in allCourses) {
+            val title = item.courseTitleNormal ?: item.courseTitle?.let { Utilities.normalizeText(it) }.orEmpty()
+            val description = item.description?.let { Utilities.normalizeText(it) }.orEmpty()
+            val stepsText = item.courseSteps?.joinToString(" ") { step ->
+                "${step.stepTitle.orEmpty()} ${step.description.orEmpty()}"
+            }?.let { Utilities.normalizeText(it) }.orEmpty()
+            val allContent = "$title $description $stepsText"
 
             if (title.startsWith(normalizedQuery)) {
                 startsWithQuery.add(item)
-            } else if (matchesAllParts(title, normalizedQueryParts)) {
-                containsQuery.add(item)
+            } else if (normalizedQueryParts.all { title.contains(it) }) {
+                titleContainsQuery.add(item)
+            } else if (normalizedQueryParts.all { allContent.contains(it) }) {
+                contentContainsQuery.add(item)
             }
         }
-        return startsWithQuery + containsQuery
+        return startsWithQuery + titleContainsQuery + contentContainsQuery
     }
 
     override suspend fun filterCourses(
@@ -296,7 +299,18 @@ class CoursesRepositoryImpl @Inject constructor(
         return mapCourses(courseDao.getAll())
             .asSequence()
             .filter { !it.courseTitle.isNullOrEmpty() }
-            .filter { searchText.isEmpty() || it.courseTitle?.contains(searchText, ignoreCase = true) == true }
+            .filter { course ->
+                if (searchText.isEmpty()) {
+                    true
+                } else {
+                    course.courseTitle?.contains(searchText, ignoreCase = true) == true ||
+                        course.description?.contains(searchText, ignoreCase = true) == true ||
+                        course.courseSteps?.any { step ->
+                            step.stepTitle?.contains(searchText, ignoreCase = true) == true ||
+                                step.description?.contains(searchText, ignoreCase = true) == true
+                        } == true
+                }
+            }
             .filter { gradeLevel.isEmpty() || it.gradeLevel == gradeLevel }
             .filter { subjectLevel.isEmpty() || it.subjectLevel == subjectLevel }
             .filter { courseIdsWithTags == null || courseIdsWithTags.contains(it.courseId) }
