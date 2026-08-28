@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.teams.resources
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -35,15 +36,24 @@ class TeamResourcesViewModel @Inject constructor(
 
     suspend fun addResources(teamId: String, resources: List<TeamResourceDto>, userId: String?) {
         teamsRepository.addResourceLinks(teamId, resources, userId)
-        teamsRepository.recordTeamActivity()
+        recordActivitySafely()
     }
 
     suspend fun removeResource(teamId: String, resourceId: String) {
         teamsRepository.removeResourceLink(teamId, resourceId)
-        teamsRepository.recordTeamActivity()
+        recordActivitySafely()
     }
 
     suspend fun getAvailableResources(teamId: String): List<MyLibrary> {
         return teamsRepository.getAvailableResourcesToAdd(teamId)
+    }
+
+    private suspend fun recordActivitySafely() {
+        runCatching { teamsRepository.recordTeamActivity() }
+            .onFailure { Log.w(TAG, "Failed to record team activity", it) }
+    }
+
+    private companion object {
+        const val TAG = "TeamResourcesViewModel"
     }
 }
