@@ -7,8 +7,10 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -301,8 +303,8 @@ class UrlUtilsTest {
         val secondHeader = UrlUtils.header
 
         assertEquals(firstHeader, secondHeader)
-        io.mockk.verify(exactly = 1) { mockSpm.getUrlUser() }
-        io.mockk.verify(exactly = 1) { mockSpm.getUrlPwd() }
+        verify(exactly = 1) { mockSpm.getUrlUser() }
+        verify(exactly = 1) { mockSpm.getUrlPwd() }
 
         every { mockSpm.getUrlUser() } returns "user2"
         every { mockSpm.getUrlPwd() } returns "pass2"
@@ -310,9 +312,9 @@ class UrlUtilsTest {
         UrlUtils.invalidateHeaderCache()
         val thirdHeader = UrlUtils.header
 
-        io.mockk.verify(exactly = 2) { mockSpm.getUrlUser() }
-        io.mockk.verify(exactly = 2) { mockSpm.getUrlPwd() }
-        assert(firstHeader != thirdHeader)
+        verify(exactly = 2) { mockSpm.getUrlUser() }
+        verify(exactly = 2) { mockSpm.getUrlPwd() }
+        assertNotEquals(firstHeader, thirdHeader)
     }
 
     @Test
@@ -328,6 +330,6 @@ class UrlUtilsTest {
         val secondHeader = UrlUtils.header
 
         assertEquals(firstHeader, secondHeader)
-        io.mockk.verify(exactly = 2) { mockSpm.getUrlUser() }
+        verify(exactly = 2) { mockSpm.getUrlUser() }
     }
 }

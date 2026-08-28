@@ -15,6 +15,9 @@ object UrlUtils {
     @Volatile
     private var cachedHeader: String? = null
 
+    @Volatile
+    private var generation = 0
+
     fun init(sharedPrefManager: SharedPrefManager) {
         spmInstance = sharedPrefManager
     }
@@ -25,25 +28,41 @@ object UrlUtils {
     }
 
     fun invalidateHeaderCache() {
-        cachedHeader = null
+        synchronized(this) {
+            generation++
+            cachedHeader = null
+        }
     }
 
     @VisibleForTesting
     internal fun resetForTesting() {
-        spmInstance = null
-        cachedHeader = null
+        synchronized(this) {
+            generation++
+            spmInstance = null
+            cachedHeader = null
+        }
     }
 
     val header: String
         get() {
-            return cachedHeader ?: synchronized(this) {
-                cachedHeader ?: run {
-                    val spm = spm()
-                    val computed = basicAuthHeader(spm.getUrlUser(), spm.getUrlPwd())
+            cachedHeader?.let { return it }
+            val currentGen: Int
+            val user: String
+            val pwd: String
+            synchronized(this) {
+                cachedHeader?.let { return it }
+                currentGen = generation
+                val spm = spm()
+                user = spm.getUrlUser()
+                pwd = spm.getUrlPwd()
+            }
+            val computed = basicAuthHeader(user, pwd)
+            synchronized(this) {
+                if (generation == currentGen) {
                     cachedHeader = computed
-                    computed
                 }
             }
+            return computed
         }
 
     fun basicAuthHeader(username: String, password: String): String {
