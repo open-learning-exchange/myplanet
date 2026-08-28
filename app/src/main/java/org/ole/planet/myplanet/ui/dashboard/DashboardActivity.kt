@@ -447,12 +447,17 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
+    private fun isAtRootDashboard(): Boolean {
+        val currentFrag = supportFragmentManager.findFragmentById(R.id.fragment_container)
+        return currentFrag == null || currentFrag is BellDashboardFragment || currentFrag is InactiveDashboardFragment
+    }
+
     private fun addBackPressCallback() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 when {
                     result?.isDrawerOpen == true -> result?.closeDrawer()
-                    supportFragmentManager.backStackEntryCount > 1 -> FragmentNavigator.popBackStack(supportFragmentManager)
+                    supportFragmentManager.backStackEntryCount > 0 && !isAtRootDashboard() -> FragmentNavigator.popBackStack(supportFragmentManager)
                     else -> promptLogout()
                 }
             }
