@@ -20,7 +20,7 @@ object JsonUtils {
         return try {
             block()
         } catch (e: Exception) {
-            Log.d(TAG, "expected type mismatch, using fallback", e)
+            Log.d(TAG, "expected type mismatch, using fallback: ${e.message}")
             default()
         }
     }
@@ -31,7 +31,7 @@ object JsonUtils {
             try {
                 gson.fromJson(news.viewIn, JsonArray::class.java)
             } catch (e: Exception) {
-                Log.d(TAG, "failed to parse viewIn, ignoring", e)
+                Log.d(TAG, "failed to parse viewIn, ignoring: ${e.message}")
                 null
             }
         } else null

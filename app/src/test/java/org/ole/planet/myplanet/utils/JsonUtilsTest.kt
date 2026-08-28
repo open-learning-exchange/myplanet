@@ -1,20 +1,31 @@
 package org.ole.planet.myplanet.utils
 
-import android.app.Application
+import android.util.Log
+import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
+import io.mockk.every
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import io.mockk.verify
+import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
-import java.io.ByteArrayOutputStream
-import java.io.PrintStream
 
-@RunWith(RobolectricTestRunner::class)
-@Config(application = Application::class)
 class JsonUtilsTest {
+
+    @Before
+    fun setUp() {
+        mockkStatic(Log::class)
+        every { Log.d(any(), any()) } returns 0
+        every { Log.d(any(), any(), any()) } returns 0
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
+    }
 
     @Test
     fun testGetStringWithValidString() {
@@ -84,16 +95,16 @@ class JsonUtilsTest {
     @Test
     fun testGetJsonArray() {
         val obj = JsonObject()
-        val arr = com.google.gson.JsonArray()
+        val arr = JsonArray()
         arr.add("item")
         obj.add("arr", arr)
         obj.add("nullVal", JsonNull.INSTANCE)
         obj.add("wrongType", JsonObject())
 
         assertEquals(arr, JsonUtils.getJsonArray("arr", obj))
-        assertEquals(com.google.gson.JsonArray(), JsonUtils.getJsonArray("nullVal", obj))
-        assertEquals(com.google.gson.JsonArray(), JsonUtils.getJsonArray("missing", obj))
-        assertEquals(com.google.gson.JsonArray(), JsonUtils.getJsonArray("wrongType", obj))
+        assertEquals(JsonArray(), JsonUtils.getJsonArray("nullVal", obj))
+        assertEquals(JsonArray(), JsonUtils.getJsonArray("missing", obj))
+        assertEquals(JsonArray(), JsonUtils.getJsonArray("wrongType", obj))
     }
 
     @Test
@@ -103,7 +114,7 @@ class JsonUtilsTest {
         innerObj.addProperty("inner", "val")
         obj.add("obj", innerObj)
         obj.add("nullVal", JsonNull.INSTANCE)
-        val arr = com.google.gson.JsonArray()
+        val arr = JsonArray()
         obj.add("wrongType", arr)
 
         assertEquals(innerObj, JsonUtils.getJsonObject("obj", obj))
@@ -113,32 +124,23 @@ class JsonUtilsTest {
     }
 
     @Test
-    fun testTypeMismatchesAreQuietOnStderr() {
+    fun testTypeMismatchesAreQuiet() {
         val obj = JsonObject()
         obj.add("wrongType", JsonObject())
-        val array = com.google.gson.JsonArray()
+        val array = JsonArray()
         array.add(JsonObject())
         obj.add("wrongArr", array)
 
-        val originalErr = System.err
-        val captured = ByteArrayOutputStream()
-        System.setErr(PrintStream(captured, true))
-        try {
-            JsonUtils.getInt("wrongType", obj)
-            JsonUtils.getFloat("wrongType", obj)
-            JsonUtils.getString(array, 0)
-            JsonUtils.getJsonArray("wrongType", obj)
-            JsonUtils.getJsonObject("wrongArr", obj)
-            JsonUtils.getLong("wrongType", obj)
-        } finally {
-            System.setErr(originalErr)
-        }
+        JsonUtils.getInt("wrongType", obj)
+        JsonUtils.getFloat("wrongType", obj)
+        JsonUtils.getString(array, 0)
+        JsonUtils.getJsonArray("wrongType", obj)
+        JsonUtils.getJsonObject("wrongArr", obj)
+        JsonUtils.getLong("wrongType", obj)
 
-        val output = captured.toString()
-        assertTrue(
-            "safeGet must not dump stack traces on expected type mismatches, but stderr was:\n$output",
-            output.isBlank(),
-        )
+        // expected type mismatches fall back without materialising a stack trace
+        verify(exactly = 0) { Log.d(any(), any(), any()) }
+        // a brief debug diagnostic still reaches the log
+        verify(atLeast = 1) { Log.d("JsonUtils", any()) }
     }
 }
-
