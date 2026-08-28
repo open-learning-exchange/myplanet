@@ -109,4 +109,29 @@ class NewsViewModelTest {
 
         assertEquals(null, reSubscribedResult)
     }
+
+    @Test
+    fun `getPrivateImageUrlsCreatedAfter emits sequential updates to active collector`() = runTest {
+        val timestamp1 = 100L
+        val timestamp2 = 200L
+        val urls1 = listOf("url1")
+        val urls2 = listOf("url2")
+
+        coEvery { resourcesRepository.getPrivateImageUrlsCreatedAfter(timestamp1) } returns urls1
+        coEvery { resourcesRepository.getPrivateImageUrlsCreatedAfter(timestamp2) } returns urls2
+
+        val capturedResults = mutableListOf<List<String>>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.privateImageUrls.collect { urls ->
+                capturedResults.add(urls)
+            }
+        }
+
+        viewModel.getPrivateImageUrlsCreatedAfter(timestamp1)
+        viewModel.getPrivateImageUrlsCreatedAfter(timestamp2)
+
+        advanceUntilIdle()
+
+        assertEquals(listOf(urls1, urls2), capturedResults)
+    }
 }
