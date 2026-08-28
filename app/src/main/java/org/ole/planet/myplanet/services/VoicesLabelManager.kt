@@ -69,11 +69,13 @@ class VoicesLabelManager(
     fun showChips(binding: RowNewsBinding, voice: News, canManageLabels: Boolean) {
         val labels = voice.labels ?: emptyList()
 
-        // Skip the teardown-and-rebuild when the labels and manage-permission are unchanged from
-        // the previous bind for this row. During community-voices scroll and payload-driven rebinds
-        // (e.g. PAYLOAD_LABELS_CHANGED) the same row is re-bound with identical state, so rebuilding
-        // the ChipCloudConfig + ChipCloud every time is wasted work.
-        val renderedState = RenderedState(labels, canManageLabels)
+        // Skip the teardown-and-rebuild when the voice, labels, and manage-permission are unchanged
+        // from the previous bind for this row. During community-voices scroll and payload-driven
+        // rebinds (e.g. PAYLOAD_LABELS_CHANGED) the same row is re-bound with identical state, so
+        // rebuilding the ChipCloudConfig + ChipCloud every time is wasted work. The voice id is part
+        // of the key because the delete listener closes over it — a recycled row re-bound to a
+        // different voice with the same labels must rebuild, or label deletion acts on the wrong post.
+        val renderedState = RenderedState(voice.id, labels, canManageLabels)
         if (renderedStateCache[binding] == renderedState) {
             return
         }
@@ -114,7 +116,7 @@ class VoicesLabelManager(
         updateAddLabelVisibility(binding, voice, canManageLabels)
     }
 
-    private data class RenderedState(val labels: List<String>, val canManageLabels: Boolean)
+    private data class RenderedState(val voiceId: String?, val labels: List<String>, val canManageLabels: Boolean)
 
     private fun updateAddLabelVisibility(
         binding: RowNewsBinding,
