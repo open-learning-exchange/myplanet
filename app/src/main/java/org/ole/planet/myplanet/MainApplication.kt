@@ -65,6 +65,7 @@ import org.ole.planet.myplanet.utils.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utils.NetworkUtils.stopListenNetworkState
 import org.ole.planet.myplanet.utils.PdfThumbnailLoader
 import org.ole.planet.myplanet.utils.SecurePrefs
+import org.ole.planet.myplanet.utils.SystemTimeProvider
 import org.ole.planet.myplanet.utils.ThemeMode
 import org.ole.planet.myplanet.utils.UrlUtils.init
 
@@ -136,7 +137,11 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
         fun createLog(type: String, error: String = "") {
             applicationScope.launch {
-                saveLogToRoom(type, error, "${coreDependenciesEntryPoint.timeProvider().now()}")
+                try {
+                    val time = runCatching { coreDependenciesEntryPoint.timeProvider().now() }.getOrNull() ?: System.currentTimeMillis()
+                    saveLogToRoom(type, error, "$time")
+                } catch (_: Throwable) {
+                }
             }
         }
 
@@ -146,22 +151,30 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         // to a plain file before this runs: the Room write below can still be lost
         // if the process dies before the coroutine persists the row.
         suspend fun saveLogToRoom(type: String, error: String, time: String): Boolean {
-            val entryPoint = EntryPointAccessors.fromApplication(
-                context,
-                CoreDependenciesEntryPoint::class.java
-            )
-            val diagnosticsRepository = entryPoint.diagnosticsRepository()
-            return diagnosticsRepository.saveLogToRoom(type, error, time)
+            return try {
+                val entryPoint = EntryPointAccessors.fromApplication(
+                    context,
+                    CoreDependenciesEntryPoint::class.java
+                )
+                val diagnosticsRepository = entryPoint.diagnosticsRepository()
+                diagnosticsRepository.saveLogToRoom(type, error, time)
+            } catch (e: Throwable) {
+                false
+            }
         }
 
         suspend fun saveLogsToRoom(pendingLogs: List<CrashLogStore.PendingLog>): Boolean {
             if (pendingLogs.isEmpty()) return true
-            val entryPoint = EntryPointAccessors.fromApplication(
-                context,
-                CoreDependenciesEntryPoint::class.java
-            )
-            val diagnosticsRepository = entryPoint.diagnosticsRepository()
-            return diagnosticsRepository.saveLogsToRoom(pendingLogs)
+            return try {
+                val entryPoint = EntryPointAccessors.fromApplication(
+                    context,
+                    CoreDependenciesEntryPoint::class.java
+                )
+                val diagnosticsRepository = entryPoint.diagnosticsRepository()
+                diagnosticsRepository.saveLogsToRoom(pendingLogs)
+            } catch (e: Throwable) {
+                false
+            }
         }
 
         private fun applyThemeMode(themeMode: String?) {
@@ -248,10 +261,14 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         }
 
         fun persistCriticalLog(type: String, error: String) {
-            val pendingFile = CrashLogStore.save(context, type, error, coreDependenciesEntryPoint.timeProvider())
+            val timeProvider = runCatching { coreDependenciesEntryPoint.timeProvider() }.getOrNull() ?: SystemTimeProvider()
+            val pendingFile = CrashLogStore.save(context, type, error, timeProvider)
             applicationScope.launch {
-                if (saveLogToRoom(type, error, "${coreDependenciesEntryPoint.timeProvider().now()}")) {
-                    pendingFile?.delete()
+                try {
+                    if (saveLogToRoom(type, error, "${timeProvider.now()}")) {
+                        pendingFile?.delete()
+                    }
+                } catch (_: Throwable) {
                 }
             }
         }
@@ -332,8 +349,11 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     }
 
     private suspend fun initializeDatabaseConnection() {
-        withContext(dispatcherProvider.io) {
-            appDatabase.openHelper.writableDatabase
+        try {
+            withContext(dispatcherProvider.io) {
+                appDatabase.openHelper.writableDatabase
+            }
+        } catch (_: Throwable) {
         }
     }
 

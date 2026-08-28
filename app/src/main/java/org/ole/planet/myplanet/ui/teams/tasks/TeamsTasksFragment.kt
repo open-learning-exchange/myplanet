@@ -53,6 +53,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         val description: String?,
         val deadline: Long,
         val completed: Boolean,
+        val status: String?,
         val assignee: String?
     )
     private var lastSubmittedSnapshot: List<TaskSnapshot>? = null
@@ -274,15 +275,23 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
     }
 
     private fun allTasks(tasks: List<TeamTask>): List<TeamTask> {
-        return tasks.sortedWith(compareBy<TeamTask> { it.completed }.thenByDescending { it.deadline })
+        return tasks.sortedWith(compareBy<TeamTask> { it.completed || it.status == "completed" }.thenByDescending { it.deadline })
+    }
+
+    private fun todoTasks(tasks: List<TeamTask>): List<TeamTask> {
+        return tasks.filter { !it.completed && (it.status == null || it.status == "to_do") }.sortedByDescending { it.deadline }
+    }
+
+    private fun inProgressTasks(tasks: List<TeamTask>): List<TeamTask> {
+        return tasks.filter { !it.completed && it.status == "in_progress" }.sortedByDescending { it.deadline }
     }
 
     private fun completedTasks(tasks: List<TeamTask>): List<TeamTask> {
-        return tasks.filter { it.completed }.sortedByDescending { it.deadline }
+        return tasks.filter { it.completed || it.status == "completed" }.sortedByDescending { it.deadline }
     }
 
     private fun myTasks(tasks: List<TeamTask>): List<TeamTask> {
-        return tasks.filter { !it.completed && it.assignee == user?.id }.sortedByDescending { it.deadline }
+        return tasks.filter { (!it.completed && it.status != "completed") && it.assignee == user?.id }.sortedByDescending { it.deadline }
     }
 
     override fun onNewsItemClick(news: News?) {}
@@ -301,13 +310,15 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
 
             val (taskList, fetchedNames, currentSnapshot) = withContext(dispatcherProvider.io) {
                 val list = when (currentTab) {
-                    R.id.btn_my -> myTasks(tasksSnapshot)
+                    R.id.btn_todo -> todoTasks(tasksSnapshot)
+                    R.id.btn_in_progress -> inProgressTasks(tasksSnapshot)
                     R.id.btn_completed -> completedTasks(tasksSnapshot)
+                    R.id.btn_my -> myTasks(tasksSnapshot)
                     else -> allTasks(tasksSnapshot)
                 }
 
                 val currentSnapshot = list.map {
-                    TaskSnapshot(it.id, it.title, it.description, it.deadline, it.completed, it.assignee)
+                    TaskSnapshot(it.id, it.title, it.description, it.deadline, it.completed, it.status, it.assignee)
                 }
                 if (currentSnapshot == lastSubmittedSnapshot) {
                     return@withContext Triple(null, null, currentSnapshot)
@@ -338,6 +349,11 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
     override fun onCheckChange(realmTeamTask: TeamTask?, completed: Boolean) {
         val taskId = realmTeamTask?.id ?: return
         teamsTasksViewModel.setTaskCompletion(taskId, completed)
+    }
+
+    override fun onStatusChange(task: TeamTask?, newStatus: String) {
+        val taskId = task?.id ?: return
+        teamsTasksViewModel.setTaskStatus(taskId, newStatus)
     }
 
     override fun onEdit(task: TeamTask?) {

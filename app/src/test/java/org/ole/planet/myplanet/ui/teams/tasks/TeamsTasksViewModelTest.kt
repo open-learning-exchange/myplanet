@@ -186,6 +186,14 @@ class TeamsTasksViewModelTest {
     }
 
     @Test
+    fun `setTaskStatus calls repository`() = runTest(testDispatcher) {
+        viewModel.setTaskStatus("task1", "in_progress")
+        yield()
+
+        coVerify { mockTeamsRepository.setTaskStatus("task1", "in_progress") }
+    }
+
+    @Test
     fun `getJoinedMembers returns list from repository`() = runTest(testDispatcher) {
         val mockList = listOf(mockk<UserEntity>())
         coEvery { mockTeamsRepository.getJoinedMembers("team1") } returns mockList

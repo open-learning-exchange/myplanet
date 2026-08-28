@@ -2,10 +2,12 @@ package org.ole.planet.myplanet.ui.teams.tasks
 
 import android.app.AlertDialog
 import android.content.Context
+import android.content.res.ColorStateList
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
@@ -45,6 +47,37 @@ class TeamsTasksAdapter(
         binding.checkbox.setOnCheckedChangeListener(null)
         binding.checkbox.text = it.title
         binding.checkbox.isChecked = it.completed
+
+        val isCompleted = it.completed || it.status == "completed"
+        val isInProgress = !isCompleted && it.status == "in_progress"
+
+        val statusText = when {
+            isCompleted -> context.getString(R.string.status_completed)
+            isInProgress -> context.getString(R.string.status_in_progress)
+            else -> context.getString(R.string.status_todo)
+        }
+        val statusColor = when {
+            isCompleted -> ContextCompat.getColor(context, R.color.md_green_600)
+            isInProgress -> ContextCompat.getColor(context, R.color.md_amber_700)
+            else -> ContextCompat.getColor(context, R.color.md_blue_600)
+        }
+        binding.statusBadge.text = statusText
+        binding.statusBadge.backgroundTintList = ColorStateList.valueOf(statusColor)
+
+        binding.statusBadge.setOnClickListener {
+            if (nonTeamMember) return@setOnClickListener
+            val adapterPosition = holder.bindingAdapterPosition
+            if (adapterPosition != RecyclerView.NO_POSITION) {
+                val task = getItem(adapterPosition)
+                val nextStatus = when {
+                    task.completed || task.status == "completed" -> "to_do"
+                    task.status == "in_progress" -> "completed"
+                    else -> "in_progress"
+                }
+                listener?.onStatusChange(task, nextStatus)
+            }
+        }
+
         if (!it.completed) {
             binding.deadline.text =
                 context.getString(R.string.deadline_colon, formatDate(it.deadline))
@@ -126,6 +159,7 @@ class TeamsTasksAdapter(
                         old.description == new.description &&
                         old.deadline == new.deadline &&
                         old.completed == new.completed &&
+                        old.status == new.status &&
                         old.assignee == new.assignee
             }
         )

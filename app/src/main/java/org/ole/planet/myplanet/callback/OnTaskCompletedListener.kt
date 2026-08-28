@@ -7,4 +7,5 @@ interface OnTaskCompletedListener {
     fun onEdit(task: TeamTask?)
     fun onDelete(task: TeamTask?)
     fun onClickMore(realmTeamTask: TeamTask?)
+    fun onStatusChange(task: TeamTask?, newStatus: String) {}
 }
