@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.withResumed
+import androidx.lifecycle.withStarted
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -108,7 +109,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         loadDataJob = viewLifecycleOwner.lifecycleScope.launch {
             user = userRepository.getUserModel()
             val data = loadStepData()
-            if (viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            viewLifecycleOwner.lifecycle.withStarted {
                 step = data.step
                 resources = data.resources
                 stepExams = data.stepExams
@@ -163,10 +164,10 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                         textWithSpans.removeSpan(urlSpan)
                     }
                 }
-                if (userHasCourse) {
-                    viewLifecycleOwner.lifecycle.withResumed {
-                        launchSaveCourseProgress()
-                    }
+            }
+            if (userHasCourse) {
+                viewLifecycleOwner.lifecycle.withResumed {
+                    launchSaveCourseProgress()
                 }
             }
         }
