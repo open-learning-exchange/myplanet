@@ -47,8 +47,8 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             0 -> openCallFragment(BellDashboardFragment(), "dashboard")
             1 -> openCallFragment(ResourcesFragment(), "library")
             2 -> openCallFragment(CoursesFragment(), "course")
+            3 -> openCallFragment(TeamFragment(), "teams")
             4 -> openEnterpriseFragment()
-            3 -> openCallFragment(TeamFragment(), "survey")
             5 -> {
                 openCallFragment(CommunityTabFragment(), "community")
             }

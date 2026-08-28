@@ -15,7 +15,10 @@ import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -32,22 +35,27 @@ import org.ole.planet.myplanet.utils.NotificationUtils
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class)
-@OptIn(ExperimentalCoroutinesApi::class)
 class NotificationActionReceiverTest {
 
     private lateinit var receiver: NotificationActionReceiver
     private lateinit var mockContext: Context
     private lateinit var testDispatcher: CoroutineDispatcher
     private lateinit var testScope: TestScope
-
     private val mockNotificationsRepository: NotificationsRepository = mockk(relaxed = true)
     private var mockDispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private lateinit var mockNotificationUtils: NotificationUtils.NotificationManager
 
+    private var originalScope: CoroutineScope? = null
+
     @Before
     fun setUp() {
+        try {
+            originalScope = MainApplication.applicationScope
+        } catch (_: Throwable) {
+        }
         testDispatcher = StandardTestDispatcher()
         testScope = TestScope(testDispatcher)
 
@@ -83,6 +91,9 @@ class NotificationActionReceiverTest {
 
     @After
     fun tearDown() {
+        originalScope?.let { MainApplication.applicationScope = it } ?: run {
+            MainApplication.applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        }
         unmockkAll()
     }
 
