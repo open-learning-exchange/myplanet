@@ -207,7 +207,7 @@ open class News {
                             val conversationsString = conversationsElement.asString
                             try {
                                 val conversationsArray = JsonUtils.gson.fromJson(conversationsString, JsonArray::class.java)
-                                if (conversationsArray.size() > 0) {
+                                if (!conversationsArray.isEmpty()) {
                                     val conversationsList = ArrayList<HashMap<String, String>>()
                                     conversationsArray.forEach { conversationElement ->
                                         val conversationObj = conversationElement.asJsonObject

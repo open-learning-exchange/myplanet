@@ -112,7 +112,7 @@ class SyncRepositoryImpl @Inject constructor(
             coroutineScope {
                 val dataJobs = Constants.shelfDataList.mapNotNull { shelfData ->
                     val array = getJsonArray(shelfData.key, shelfDoc)
-                    if (array.size() > 0) {
+                    if (!array.isEmpty()) {
                         async(dispatcherProvider.io) {
                             processShelfDataOptimizedSync(shelfId, shelfData, shelfDoc)
                         }
@@ -134,7 +134,7 @@ class SyncRepositoryImpl @Inject constructor(
 
         try {
             val array = getJsonArray(shelfData.key, shelfDoc)
-            if (array.size() == 0) return 0
+            if (array.isEmpty()) return 0
 
             val validIds = mutableListOf<String>()
             for (i in 0 until array.size()) {
@@ -180,7 +180,7 @@ class SyncRepositoryImpl @Inject constructor(
                 val responseRows = getJsonArray("rows", response)
                 logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum)", apiDuration, true, responseRows.size())
 
-                if (responseRows.size() == 0) continue
+                if (responseRows.isEmpty()) continue
 
                 val documentsToProcess = mutableListOf<JsonObject>()
                 for (j in 0 until responseRows.size()) {
