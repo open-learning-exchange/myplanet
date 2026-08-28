@@ -4,7 +4,7 @@ import android.content.Context
 import android.view.View
 import android.widget.PopupMenu
 import androidx.appcompat.view.ContextThemeWrapper
-import fisk.chipcloud.ChipCloud
+import com.google.android.material.chip.Chip
 import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -66,32 +66,28 @@ class VoicesLabelManager(
         val labels = voice.labels ?: emptyList()
 
         if (labels.isNotEmpty()) {
-            val chipConfig = Utilities.getCloudConfig().apply {
-                selectMode(if (canManageLabels) ChipCloud.SelectMode.close else ChipCloud.SelectMode.none)
-            }
-            val chipCloud = ChipCloud(context, binding.fbChips, chipConfig)
-
+            val chipContext = ContextThemeWrapper(context, com.google.android.material.R.style.Theme_MaterialComponents_DayNight_NoActionBar)
             for (label in labels) {
-                chipCloud.addChip(getLabel(label))
-            }
-
-            if (canManageLabels) {
-                chipCloud.setDeleteListener { _: Int, labelText: String? ->
-                    val selectedLabel = when {
-                        labelText == null -> null
-                        else -> Constants.LABELS[labelText] ?: labels.firstOrNull { getLabel(it) == labelText }
-                    }
-                    val voiceId = voice.id
-                    if (selectedLabel != null && voiceId != null) {
-                        scope.launch {
-                            try {
-                                removeLabelFn(voiceId, selectedLabel)
-                            } catch (e: Exception) {
-                                e.printStackTrace()
+                val chip = Chip(chipContext).apply {
+                    text = getLabel(label)
+                    isCloseIconVisible = canManageLabels
+                    if (canManageLabels) {
+                        setOnCloseIconClickListener {
+                            val selectedLabel = Constants.LABELS[label] ?: labels.firstOrNull { getLabel(it) == text }
+                            val voiceId = voice.id
+                            if (selectedLabel != null && voiceId != null) {
+                                scope.launch {
+                                    try {
+                                        removeLabelFn(voiceId, selectedLabel)
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
+                                }
                             }
                         }
                     }
                 }
+                binding.fbChips.addView(chip)
             }
         }
 
