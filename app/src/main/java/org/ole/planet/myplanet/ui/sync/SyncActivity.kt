@@ -32,9 +32,11 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
@@ -76,6 +78,7 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 import kotlin.time.Duration.Companion.milliseconds
 
 @AndroidEntryPoint
+@OptIn(ExperimentalCoroutinesApi::class)
 abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepository.CheckVersionCallback {
     private var serverDialogBinding: DialogServerUrlBinding? = null
     private lateinit var syncDate: TextView
@@ -146,7 +149,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initSyncConfigurationCoordinator()
-        collectWhenStarted(syncManager.syncStatus) { status ->
+        collectWhenStarted(syncManager.syncStatus.sample(SYNC_STATUS_SAMPLE_MS)) { status ->
             if (status == lastSyncStatus) return@collectWhenStarted
             lastSyncStatus = status
             when (status) {
@@ -793,6 +796,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         super.onDestroy()
     }
     companion object {
+        /** Minimum spacing between progress-dialog redraws; collapses parallel-phase status bursts. */
+        private const val SYNC_STATUS_SAMPLE_MS = 150L
         private val secondsAgoRegex by lazy { Regex("^\\d{1,2} seconds ago$") }
         private val urlProtocolRegex by lazy { Regex("^https?://") }
         fun restartApp() {
