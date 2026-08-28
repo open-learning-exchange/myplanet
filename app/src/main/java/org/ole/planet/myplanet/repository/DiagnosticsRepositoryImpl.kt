@@ -28,19 +28,22 @@ class DiagnosticsRepositoryImpl @Inject constructor(
     }
 
     private fun buildApkLog(
-        model: UserEntity?,
+        parentCode: String,
+        planetCode: String,
+        versionName: String?,
+        modelId: String?,
         time: String,
         type: String,
         error: String
     ): ApkLog {
         return ApkLog().apply {
             id = "${UUID.randomUUID()}"
-            parentCode = model?.parentCode?.takeIf { it.isNotBlank() } ?: sharedPrefManager.getParentCode()
-            createdOn = model?.planetCode?.takeIf { it.isNotBlank() } ?: sharedPrefManager.getPlanetCode()
-            model?.id?.let { userId = it }
+            this.parentCode = parentCode
+            createdOn = planetCode
+            modelId?.let { userId = it }
             this.time = time
             page = ""
-            version = VersionUtils.getVersionName(context)
+            version = versionName
             this.type = type
             if (error.isNotEmpty()) {
                 this.error = error
@@ -48,10 +51,24 @@ class DiagnosticsRepositoryImpl @Inject constructor(
         }
     }
 
+    private fun resolveParentCode(model: UserEntity?): String =
+        model?.parentCode?.takeIf { it.isNotBlank() } ?: sharedPrefManager.getParentCode()
+
+    private fun resolvePlanetCode(model: UserEntity?): String =
+        model?.planetCode?.takeIf { it.isNotBlank() } ?: sharedPrefManager.getPlanetCode()
+
     override suspend fun saveLogToRoom(type: String, error: String, time: String): Boolean {
         return try {
             val model = userRepository.getUserModel()
-            val log = buildApkLog(model, time, type, error)
+            val log = buildApkLog(
+                resolveParentCode(model),
+                resolvePlanetCode(model),
+                VersionUtils.getVersionName(context),
+                model?.id,
+                time,
+                type,
+                error,
+            )
             apkLogDao.insert(log)
             true
         } catch (e: Exception) {
@@ -65,23 +82,11 @@ class DiagnosticsRepositoryImpl @Inject constructor(
         return try {
             val model = userRepository.getUserModel()
             val versionName = VersionUtils.getVersionName(context)
-            val parentCode = model?.parentCode?.takeIf { it.isNotBlank() } ?: sharedPrefManager.getParentCode()
-            val createdOn = model?.planetCode?.takeIf { it.isNotBlank() } ?: sharedPrefManager.getPlanetCode()
+            val parentCode = resolveParentCode(model)
+            val planetCode = resolvePlanetCode(model)
 
             val logsToInsert = pendingLogs.map { pending ->
-                ApkLog().apply {
-                    id = "${UUID.randomUUID()}"
-                    this.parentCode = parentCode
-                    this.createdOn = createdOn
-                    model?.let { userId = it.id }
-                    this.time = pending.time
-                    page = ""
-                    version = versionName
-                    this.type = pending.type
-                    if (pending.error.isNotEmpty()) {
-                        this.error = pending.error
-                    }
-                }
+                buildApkLog(parentCode, planetCode, versionName, model?.id, pending.time, pending.type, pending.error)
             }
             apkLogDao.insertAll(logsToInsert)
             true
