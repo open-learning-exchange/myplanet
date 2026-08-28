@@ -84,10 +84,12 @@ object MarkdownUtils {
         width: Int = 150,
         height: Int = 100
     ): String {
-        val matcher = markdownContent?.let { imagePattern.matcher(it) }
-            ?: return markdownContent.orEmpty()
+        val content = markdownContent ?: return markdownContent.orEmpty()
+        val matcher = imagePattern.matcher(content)
         val result = StringBuilder()
+        var last = 0
         while (matcher.find()) {
+            result.append(content, last, matcher.start())
             val relativePath = matcher.group(1)
             val modifiedPath = if (relativePath != null && relativePath.startsWith("resources/")) {
                 relativePath.substring("resources/".length)
@@ -95,9 +97,10 @@ object MarkdownUtils {
                 relativePath
             }
             val fullUrl = baseUrl + modifiedPath
-            matcher.appendReplacement(result, "<img src=$fullUrl width=$width height=$height/>")
+            result.append("<img src=$fullUrl width=$width height=$height/>")
+            last = matcher.end()
         }
-        matcher.appendTail(result)
+        result.append(content, last, content.length)
         return result.toString()
     }
 
