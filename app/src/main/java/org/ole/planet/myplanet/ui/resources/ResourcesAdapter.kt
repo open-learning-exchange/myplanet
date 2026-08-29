@@ -211,6 +211,8 @@ class ResourcesAdapter(
         }
     }
 
+    fun getLocallyOfflineIds(): Set<String> = locallyOfflineIds.toSet()
+
     override fun onBindViewHolder(
         holder: RecyclerView.ViewHolder,
         position: Int,
