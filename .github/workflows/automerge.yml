@@ -81,6 +81,10 @@ permissions:
   statuses: read
   actions: write
 
+concurrency:
+  group: automerge
+  cancel-in-progress: false
+
 env:
   DEFAULT_BASE: master
   GRADLE_FILE: app/build.gradle
@@ -95,6 +99,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          filter: blob:none
           token: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
 
       - name: stage helper scripts outside the work tree
