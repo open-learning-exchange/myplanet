@@ -55,9 +55,6 @@ import org.ole.planet.myplanet.utils.UrlUtils.header
 @AndroidEntryPoint
 class DownloadService : Service() {
     @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
-
-    @Inject
     lateinit var downloadRepository: DownloadRepository
 
     @Inject
