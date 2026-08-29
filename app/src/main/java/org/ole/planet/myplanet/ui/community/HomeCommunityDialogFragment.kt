@@ -96,7 +96,7 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
         val sParentcode = sharedPrefManager.getParentCode()
         val communityName = sharedPrefManager.getCommunityName()
         val planetType = configurationsRepository.getPlanetType()
-        binding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "$communityName@$sParentcode", true, planetType)
+        binding.viewPager2.adapter = CommunityPagerAdapter(this, "$communityName@$sParentcode", true, planetType)
         tabLayoutMediator = TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
             tab.text = (binding.viewPager2.adapter as CommunityPagerAdapter).getPageTitle(position)
         }
