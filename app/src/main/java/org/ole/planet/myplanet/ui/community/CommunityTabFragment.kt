@@ -29,7 +29,7 @@ class CommunityTabFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
             val state = viewModel.state.filterNotNull().first()
-            binding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "${state.planetCode}@${state.parentCode}", false, state.planetType)
+            binding.viewPager2.adapter = CommunityPagerAdapter(this@CommunityTabFragment, "${state.planetCode}@${state.parentCode}", false, state.planetType)
             TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
                 tab.text = (binding.viewPager2.adapter as CommunityPagerAdapter).getPageTitle(position)
             }.attach()
