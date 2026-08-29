@@ -82,7 +82,7 @@ permissions:
   actions: write
 
 concurrency:
-  group: myPlanet-automerge
+  group: automerge
   cancel-in-progress: false
 
 env:
