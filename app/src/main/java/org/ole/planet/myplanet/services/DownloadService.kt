@@ -360,6 +360,7 @@ class DownloadService : Service() {
     private fun downloadFile(body: ResponseBody, url: String) {
         val fileSize = body.contentLength()
         val finalFile = FileUtils.getSDPathFromUrl(this@DownloadService, url)
+        finalFile.parentFile?.mkdirs()
         val tempFile = File(finalFile.parentFile, "${finalFile.name}.tmp")
         tempFile.delete()
         outputFile = finalFile
