@@ -247,12 +247,6 @@ class NotificationsRepositoryImpl @Inject constructor(
         return map
     }
 
-    override suspend fun getTaskTeamName(taskTitle: String): String? {
-        val taskObj = teamTaskDao.getByTitle(taskTitle)
-        val teamInfo = taskObj?.teamId?.let { teamsRepository.get().getTeamLabelInfo(it) }
-        return teamInfo?.name
-    }
-
     override suspend fun getTaskTeamNamesByTaskTitles(taskTitles: List<String>): Map<String, String> {
         if (taskTitles.isEmpty()) return emptyMap()
         val map = mutableMapOf<String, String>()
