@@ -68,8 +68,9 @@ pick_pr() {
         --json number,title,isDraft,headRefName,headRefOid,headRepositoryOwner,labels \
       | jq -c --arg skip "$skip_numbers" --arg prio "$PRIORITY_LABEL" '
             [ $skip | split(" ")[] | select(length > 0) | tonumber ] as $done
+            | ($done | map({ key: tostring, value: true }) | from_entries) as $doneSet
             | map(select(.isDraft | not))
-            | map(select(.number as $n | $done | index($n) | not))
+            | map(select(.number as $n | $doneSet | has($n | tostring) | not))
             | map(. + { priority: (
                   ($prio | length > 0)
                   and (((.labels // []) | map(.name) | index($prio)) != null)
