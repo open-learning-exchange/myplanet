@@ -9,11 +9,6 @@ class Sha256Utils {
         private val HEX_CHARS = "0123456789abcdef".toCharArray()
     }
 
-    /**
-     * Returns the SHA-512 hex digest of [file], or `null` when the file cannot be read
-     * or the digest cannot be computed. The class is named Sha256Utils for historical
-     * reasons but computes a SHA-512 hash.
-     */
     fun getCheckSumFromFile(file: File): String? {
         return try {
             val digest = MessageDigest.getInstance("SHA-512")
