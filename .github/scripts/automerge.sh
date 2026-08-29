@@ -366,6 +366,46 @@ verify_version_only_diff() {
     log "  bump is version-only ($from -> $to)"
 }
 
+# GitHub closes an issue on merge only when a closing keyword appears in the PR
+# *body*. A "(fixes #N)" in the title is never parsed, and neither is the squash
+# subject this script writes -- so a PR that carries the reference in its title
+# alone merges without ever closing the issue. That is the common shape here:
+# the issue is often filed after the PR is opened and only the title gets edited
+# afterwards. Mirror any closing reference from the title into the body, right
+# before the merge, so the merge actually closes it.
+CLOSING_KW='(fix|fixes|fixed|close|closes|closed|resolve|resolves|resolved)'
+link_title_issues() {
+    local pr="$1" title="$2" body ref refs missing=''
+    refs=$(printf '%s\n' "$title" \
+        | grep -oiE "${CLOSING_KW}[[:space:]]*:?[[:space:]]*#[0-9]+" \
+        | grep -oE '[0-9]+' | sort -u) || true
+    [ -n "$refs" ] || return 0
+
+    body=$(gh pr view "$pr" --repo "$REPO" --json body --jq '.body' 2>/dev/null) || return 0
+    [ "$body" = 'null' ] && body=''
+
+    for ref in $refs; do
+        printf '%s\n' "$body" \
+            | grep -qiE "${CLOSING_KW}[[:space:]]*:?[[:space:]]*#${ref}([^0-9]|$)" \
+            || missing="$missing $ref"
+    done
+    [ -n "$missing" ] || return 0
+
+    for ref in $missing; do
+        if [ -n "$body" ]; then
+            body="${body%$'\n'}"$'\n\n'"Fixes #${ref}"
+        else
+            body="Fixes #${ref}"
+        fi
+    done
+
+    if printf '%s\n' "$body" | gh pr edit "$pr" --repo "$REPO" --body-file - >/dev/null 2>&1; then
+        log "  linked${missing// / #} into #$pr's body so the merge closes it"
+    else
+        log "  could not add the closing reference for${missing// / #} to #$pr's body"
+    fi
+}
+
 merge_with_retry() {
     local pr=$1 head_sha=$2 delay live
     shift 2
@@ -569,6 +609,8 @@ while :; do
             continue
         fi
     fi
+
+    link_title_issues "$NUMBER" "$TITLE"
 
     commit_body=$(REPO="$REPO" PR="$NUMBER" "$COAUTHORS_SH")
     if [ -n "$commit_body" ]; then
