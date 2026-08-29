@@ -41,5 +41,4 @@ jobs:
           PR: ${{ inputs.pr || github.event.pull_request.number }}
           DRY_RUN: ${{ inputs.dry_run || false }}
         run: |
-          # no ref: must read default branch's script, never the PR head (pull_request_target)
           gh api "repos/$REPO/contents/.github/scripts/labels.sh" -H "Accept: application/vnd.github.v3.raw" | bash
