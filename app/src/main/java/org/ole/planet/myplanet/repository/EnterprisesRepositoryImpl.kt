@@ -92,9 +92,6 @@ class EnterprisesRepositoryImpl @Inject constructor(
                 }.sortedByDescending { it.createdDate }
             }
             .distinctByContent { old, new ->
-                // Compare CouchDB sync markers alongside the financial fields edited locally
-                // via updateReport/archiveReport, since _rev stays fixed for a local edit and the
-                // report's displayed values must refresh immediately without waiting for a sync.
                 old._id == new._id && old._rev == new._rev && old.status == new.status &&
                     old.description == new.description && old.beginningBalance == new.beginningBalance &&
                     old.sales == new.sales && old.otherIncome == new.otherIncome &&
