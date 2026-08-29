@@ -4,7 +4,6 @@ import com.google.gson.JsonObject
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -15,6 +14,7 @@ import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.distinctByContent
 
 class EnterprisesRepositoryImpl @Inject constructor(
     private val teamDao: TeamDao,
@@ -91,9 +91,14 @@ class EnterprisesRepositoryImpl @Inject constructor(
                     it.status != "archived"
                 }.sortedByDescending { it.createdDate }
             }
-            .distinctUntilChanged { old, new ->
-                if (old.size != new.size) return@distinctUntilChanged false
-                old.zip(new).all { (o, n) -> o._id == n._id && o._rev == n._rev }
+            .distinctByContent { old, new ->
+                old._id == new._id && old._rev == new._rev && old.status == new.status &&
+                    old.description == new.description && old.beginningBalance == new.beginningBalance &&
+                    old.sales == new.sales && old.otherIncome == new.otherIncome &&
+                    old.wages == new.wages && old.otherExpenses == new.otherExpenses &&
+                    old.startDate == new.startDate && old.endDate == new.endDate &&
+                    old.updatedDate == new.updatedDate && old.updated == new.updated &&
+                    old.imageName == new.imageName
             }
             .flowOn(dispatcherProvider.default)
     }
