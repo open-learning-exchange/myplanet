@@ -111,7 +111,7 @@ class NotificationsRepositoryImpl @Inject constructor(
     override suspend fun markNotificationsAsRead(notificationIds: Set<String>): Set<String> {
         if (notificationIds.isEmpty()) return emptySet()
 
-        val existingIds = notificationDao.getByIds(notificationIds.toList()).map { it.id }
+        val existingIds = notificationDao.getIdsByIds(notificationIds.toList())
         if (existingIds.isEmpty()) return emptySet()
         notificationDao.markAsRead(existingIds, Date())
         return existingIds.toSet()
@@ -119,7 +119,7 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun markAllUnreadAsRead(userId: String?): Set<String> {
         val actualUserId = userId ?: return emptySet()
-        val unreadIds = notificationDao.getNotifications(actualUserId, "unread", false).map { it.id }.toSet()
+        val unreadIds = notificationDao.getUnreadIds(actualUserId).toSet()
         if (unreadIds.isEmpty()) return emptySet()
         notificationDao.markAllUnreadAsRead(actualUserId, Date())
         return unreadIds
@@ -395,7 +395,7 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun deleteNotifications(ids: Set<String>): Set<String> {
         if (ids.isEmpty()) return emptySet()
-        val deletedIds = notificationDao.getByIds(ids.toList()).map { it.id }
+        val deletedIds = notificationDao.getIdsByIds(ids.toList())
         if (deletedIds.isNotEmpty()) {
             notificationDao.deleteByIds(deletedIds)
         }
