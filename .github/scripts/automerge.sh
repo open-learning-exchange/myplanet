@@ -12,7 +12,27 @@ set -euo pipefail
 
 REPO="${REPO:?}"
 BASE="${BASE:?}"
-LABEL="${LABEL:?}"
+
+# The dispatch menu carries all four labels in one field, in the order the drain
+# uses them: queue,priority,conflict,red. An empty slot means that label goes
+# unused -- no priority tier, or drop the queue label without marking why. A slot
+# left off the end keeps the default below, which is also what a hand-run gets.
+if [ -n "${LABELS:-}" ]; then
+    label_i=0
+    while IFS= read -r label_part; do
+        label_part="${label_part#"${label_part%%[![:space:]]*}"}"
+        label_part="${label_part%"${label_part##*[![:space:]]}"}"
+        case "$label_i" in
+            0) LABEL="$label_part" ;;
+            1) PRIORITY_LABEL="$label_part" ;;
+            2) CONFLICT_LABEL="$label_part" ;;
+            3) RED_LABEL="$label_part" ;;
+        esac
+        label_i=$(( label_i + 1 ))
+    done <<<"$(printf '%s' "$LABELS" | tr ',' '\n')"
+fi
+
+LABEL="${LABEL:?the queue label may not be blank -- it is the first slot of LABELS}"
 CONFLICT_LABEL="${CONFLICT_LABEL-conflict}"
 RED_LABEL="${RED_LABEL-red}"
 PRIORITY_LABEL="${PRIORITY_LABEL-priority}"

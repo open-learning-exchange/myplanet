@@ -20,6 +20,17 @@ on:
         required: false
         default: '0'
         type: string
+      labels:
+        description: '🏷️ labels: queue,prio,conflict,red'
+        required: false
+        default: 'automerge,priority,conflict,red'
+        type: string
+      retries:
+        description: '🔁 re-runs before a red sticks'
+        required: false
+        default: '1'
+        type: choice
+        options: ['0', '1', '2', '3']
 
 permissions:
   contents: write
@@ -40,18 +51,12 @@ concurrency:
 env:
   BASE: master                                   # 🌿 branch the queue merges into
   GRADLE_FILE: app/build.gradle                  # 📄 file the version bump edits
-  LABEL: automerge                               # 🏷️ marks a PR as queued
-  PRIORITY_LABEL: priority                       # ⭐ drained first (blank = no tier)
-  CONFLICT_LABEL: conflict                       # 💥 put on a PR that conflicts
-  RED_LABEL: red                                 # 🚩 put on a PR that fails build or test
   OWNER_LOGIN: dogi                              # 🙏 credited on PRs they did not author
   REQUIRE_CHECKS: 'true'                         # ✅ never merge an unverified commit
   REQUIRED_WORKFLOWS: 'myPlanet build, myPlanet test'   # 🔍 must be green on it
   PUBLISH_JOB: 'myPlanet release (lite)'         # 📦 its refusal warning stops the drain
   DELETE_BRANCH: 'true'                          # 🧹 drop each head branch after merging
   WAIT_TIMEOUT_MIN: '45'                         # ⏱️ per commit, build and test
-  BASE_RERUN_ATTEMPTS: '1'                       # 🔁 flake allowance on the base
-  HEAD_RERUN_ATTEMPTS: '1'                       # 🔁 flake allowance on a prepared commit
 
 jobs:
   automerge:
@@ -89,6 +94,11 @@ jobs:
           REPO: ${{ github.repository }}
           DRY_RUN: ${{ inputs.dry_run }}
           MAX_MERGES: ${{ inputs.max_merges }}
+          LABELS: ${{ inputs.labels }}
+          # one menu field, because a base that flakes and a prepared commit that
+          # flakes are the same coin toss; split them here if that stops being true
+          BASE_RERUN_ATTEMPTS: ${{ inputs.retries }}
+          HEAD_RERUN_ATTEMPTS: ${{ inputs.retries }}
           VERSION_SH: ${{ steps.stage.outputs.dir }}/version.sh
           COAUTHORS_SH: ${{ steps.stage.outputs.dir }}/coauthors.sh
           QUOTA_SH: ${{ steps.stage.outputs.dir }}/playstore-quota.sh
