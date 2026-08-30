@@ -286,9 +286,9 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
     private fun performDeferredInitialization() {
         applicationScope.launch(dispatcherProvider.io) {
-            FileUtils.warmUp(this@MainApplication)
-            SecurePrefs.warmUp(this@MainApplication)
-            MarkdownUtils.warmUp(this@MainApplication)
+            runCatching { FileUtils.warmUp(this@MainApplication) }
+            runCatching { SecurePrefs.warmUp(this@MainApplication) }
+            runCatching { MarkdownUtils.warmUp(this@MainApplication) }
             runCatching { Class.forName("pl.droidsonroids.gif.GifInfoHandle") }
         }
         applicationScope.launch {
