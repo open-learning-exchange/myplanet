@@ -141,20 +141,31 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         // outlives its caller, so an escaping exception has nobody left to catch it: it reaches the
         // uncaught handler, which kills the process in production and, under kotlinx-coroutines-test,
         // is re-reported against whichever unrelated test runs next in the fork. Cancellation still
-        // propagates, and Errors are left to fly: a dying JVM is not best-effort work.
+        // propagates, and so does a dying JVM: OutOfMemoryError and the other VirtualMachineErrors
+        // are nobody's best-effort work.
         private suspend fun runBestEffort(what: String, block: suspend () -> Unit) {
             try {
                 block()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                try {
-                    Log.w(LOG_TAG, "$what failed", e)
-                } catch (loggingFailure: RuntimeException) {
-                    // android.util.Log is not mocked in plain JUnit tests (returnDefaultValues is
-                    // unset), where it raises "Method w in android.util.Log not mocked". This is
-                    // the error handler of an error handler: there is nowhere left to report.
-                }
+                warnBestEffortFailed(what, e)
+            } catch (e: LinkageError) {
+                // Probing for an optional class fails with NoClassDefFoundError or
+                // ExceptionInInitializerError wherever its native library is absent -- which is
+                // every JVM unit test, for the GifInfoHandle preload below. A link failure is
+                // recoverable and expected here, unlike the VirtualMachineErrors left to fly.
+                warnBestEffortFailed(what, e)
+            }
+        }
+
+        private fun warnBestEffortFailed(what: String, failure: Throwable) {
+            try {
+                Log.w(LOG_TAG, "$what failed", failure)
+            } catch (loggingFailure: RuntimeException) {
+                // android.util.Log is not mocked in plain JUnit tests (returnDefaultValues is
+                // unset), where it raises "Method w in android.util.Log not mocked". This is the
+                // error handler of an error handler: there is nowhere left to report.
             }
         }
 
