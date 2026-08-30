@@ -53,6 +53,7 @@ class NetworkUtilsMockTest {
     @After
     fun tearDown() {
         unmockkAll()
+        NetworkUtils.resetForTesting()
     }
 
     @Test
