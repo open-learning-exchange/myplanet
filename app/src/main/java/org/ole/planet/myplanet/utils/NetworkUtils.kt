@@ -117,8 +117,13 @@ object NetworkUtils {
     @VisibleForTesting
     internal fun resetForTesting() {
         if (_currentNetwork.value.isListening) {
-            // Best effort: the Application this callback was registered against may already be gone.
-            runCatching { connectivityManager.unregisterNetworkCallback(networkCallback) }
+            try {
+                connectivityManager.unregisterNetworkCallback(networkCallback)
+            } catch (e: IllegalArgumentException) {
+                // The only documented failure: the callback was registered against a previous
+                // test's ConnectivityManager, which this one has never heard of. Anything else
+                // is a real fault, and a reset meant to expose bad state must not hide it.
+            }
         }
         _currentNetwork.value = provideDefaultCurrentNetwork()
         resettableCaches.forEach { it.reset() }

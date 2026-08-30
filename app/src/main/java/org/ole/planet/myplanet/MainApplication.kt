@@ -141,15 +141,20 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         // outlives its caller, so an escaping exception has nobody left to catch it: it reaches the
         // uncaught handler, which kills the process in production and, under kotlinx-coroutines-test,
         // is re-reported against whichever unrelated test runs next in the fork. Cancellation still
-        // propagates. Reporting the failure must not throw either — android.util.Log is not mocked
-        // in plain JUnit tests, where calling it raises "Method w in android.util.Log not mocked".
+        // propagates, and Errors are left to fly: a dying JVM is not best-effort work.
         private suspend fun runBestEffort(what: String, block: suspend () -> Unit) {
             try {
                 block()
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Throwable) {
-                runCatching { Log.w(LOG_TAG, "$what failed", e) }
+            } catch (e: Exception) {
+                try {
+                    Log.w(LOG_TAG, "$what failed", e)
+                } catch (loggingFailure: RuntimeException) {
+                    // android.util.Log is not mocked in plain JUnit tests (returnDefaultValues is
+                    // unset), where it raises "Method w in android.util.Log not mocked". This is
+                    // the error handler of an error handler: there is nowhere left to report.
+                }
             }
         }
 
