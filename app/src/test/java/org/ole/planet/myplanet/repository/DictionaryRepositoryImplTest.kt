@@ -104,11 +104,6 @@ class DictionaryRepositoryImplTest {
         val validJson = """[{"code": "1", "language": "en", "advance_code": "2", "word": "hello", "meaning": "greeting", "definition": "A greeting", "synonym": "hi", "antonoym": "bye"}]"""
         every { FileUtils.getStringFromFile(any()) } returns validJson
 
-        // StandardTestDispatcher (not Unconfined) so async coroutines are queued instead of
-        // run eagerly, letting them actually interleave. The delay in insertAll is the yield
-        // point: both coroutines pass the count()==0 check before either completes the insert,
-        // so without the mutex both would insert. runTest advances the shared scheduler's
-        // virtual clock for free, so the delay costs no wall time.
         val concurrentDispatcher = StandardTestDispatcher(testScheduler)
         val concurrentRepository = DictionaryRepositoryImpl(
             dictionaryDao,
