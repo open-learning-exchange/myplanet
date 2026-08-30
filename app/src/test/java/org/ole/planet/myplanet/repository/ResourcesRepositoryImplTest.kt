@@ -217,13 +217,13 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
-    fun `getEnrichedLibraries fetches public-not-user items when not my course lib`() = runTest {
+    fun `getResourceListModels fetches public-not-user items when not my course lib`() = runTest {
         val lib1 = MyLibrary().apply { id = "1"; resourceId = "r1"; title = "Match" }
         coEvery { myLibraryDao.getPublicNotUserPattern(any()) } returns listOf(lib1)
         coEvery { ratingsRepository.getResourceRatings(any()) } returns HashMap()
         coEvery { tagsRepository.getTagsForResources(any()) } returns emptyMap()
 
-        val result = repository.getEnrichedLibraries(false, "model123")
+        val result = repository.getResourceListModels(false, "model123")
 
         assertEquals(1, result.size)
         assertEquals("Match", result[0].library.title)

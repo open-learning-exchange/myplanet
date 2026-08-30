@@ -678,7 +678,7 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
             }
     }
 
-    override suspend fun getEnrichedLibraries(isMyCourseLib: Boolean, modelId: String?): List<LibraryWithMetadata> {
+    private suspend fun getEnrichedLibraries(isMyCourseLib: Boolean, modelId: String?): List<LibraryWithMetadata> {
         val allLibraryItems = if (isMyCourseLib) {
             getMyLibrary(modelId)
         } else if (modelId != null) {
