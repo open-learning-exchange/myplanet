@@ -170,7 +170,7 @@ object NetworkUtils {
     }
 
     fun getUniqueIdentifier(): String {
-        val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+        val androidId = VersionUtils.getAndroidId(context)
         val buildId = Build.ID
         return androidId + "_" + buildId
     }
@@ -186,8 +186,7 @@ object NetworkUtils {
     }
 
     fun getCustomDeviceName(context: Context): String {
-        val spm = coreEntryPoint.sharedPrefManager()
-        return spm.getCustomDeviceName()
+        return sharedPrefManager.getCustomDeviceName()
     }
 
     fun extractProtocol(url: String): String? {
