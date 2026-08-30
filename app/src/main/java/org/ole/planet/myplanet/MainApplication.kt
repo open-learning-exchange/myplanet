@@ -137,12 +137,6 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
         }
 
-        // Runs best-effort work launched fire-and-forget into applicationScope. Such a coroutine
-        // outlives its caller, so an escaping exception has nobody left to catch it: it reaches the
-        // uncaught handler, which kills the process in production and, under kotlinx-coroutines-test,
-        // is re-reported against whichever unrelated test runs next in the fork. Cancellation still
-        // propagates, and so does a dying JVM: OutOfMemoryError and the other VirtualMachineErrors
-        // are nobody's best-effort work.
         private suspend fun runBestEffort(what: String, block: suspend () -> Unit) {
             try {
                 block()
@@ -151,10 +145,6 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             } catch (e: Exception) {
                 warnBestEffortFailed(what, e)
             } catch (e: LinkageError) {
-                // Probing for an optional class fails with NoClassDefFoundError or
-                // ExceptionInInitializerError wherever its native library is absent -- which is
-                // every JVM unit test, for the GifInfoHandle preload below. A link failure is
-                // recoverable and expected here, unlike the VirtualMachineErrors left to fly.
                 warnBestEffortFailed(what, e)
             }
         }
@@ -163,9 +153,6 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             try {
                 Log.w(LOG_TAG, "$what failed", failure)
             } catch (loggingFailure: RuntimeException) {
-                // android.util.Log is not mocked in plain JUnit tests (returnDefaultValues is
-                // unset), where it raises "Method w in android.util.Log not mocked". This is the
-                // error handler of an error handler: there is nowhere left to report.
             }
         }
 
@@ -177,11 +164,6 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             }
         }
 
-
-
-        // A report for a failure that may kill the process (crash/ANR) must be persisted
-        // to a plain file before this runs: the Room write below can still be lost
-        // if the process dies before the coroutine persists the row.
         suspend fun saveLogToRoom(type: String, error: String, time: String): Boolean {
             val entryPoint = EntryPointAccessors.fromApplication(
                 context,
@@ -327,9 +309,6 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
     private fun performDeferredInitialization() {
         applicationScope.launch(dispatcherProvider.io) {
-            // Warm-ups are pure optimisation, so none of them may fail startup: SecurePrefs.warmUp
-            // throws whenever AndroidKeyStore is unavailable. Guarded one by one so that a failure
-            // in one still leaves the others warmed.
             runBestEffort("FileUtils.warmUp") { FileUtils.warmUp(this@MainApplication) }
             runBestEffort("SecurePrefs.warmUp") { SecurePrefs.warmUp(this@MainApplication) }
             runBestEffort("MarkdownUtils.warmUp") { MarkdownUtils.warmUp(this@MainApplication) }
