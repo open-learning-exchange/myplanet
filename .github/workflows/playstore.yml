@@ -26,7 +26,7 @@ on:
         default: false
         type: boolean
       resume_automerge:
-        description: 'dispatch the automerge drain once the pending release is published'
+        description: 'dispatch the automerge drain once nothing is owed to the track (published now, or already current)'
         required: false
         default: false
         type: boolean
@@ -244,7 +244,11 @@ jobs:
           exit 1
 
       - name: resume the automerge drain
-        if: (steps.confirm.outputs.published == 'true' || steps.confirm_retry.outputs.published == 'true') && (inputs.resume_automerge || false)
+        # Reached only when nothing is still owed: a refusal fails the job one step
+        # earlier. Published here, or the track was already current, or the newest
+        # release run never warned -- in every one of those the release that stopped
+        # the drain no longer does, and only this run knows that.
+        if: (inputs.resume_automerge || false) && env.DRY_RUN != 'true'
         env:
           GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
         run: |
