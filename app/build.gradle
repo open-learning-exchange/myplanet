@@ -23,8 +23,6 @@ android {
                 test.maxParallelForks = requested ? requested.toInteger()
                     : Math.min(Runtime.runtime.availableProcessors(), 4)
                 test.maxHeapSize = "1536m"
-                // Name the failing test in the console log; without this a red build only says
-                // "N tests completed, 1 failed" and the test has to be dug out of the report artifact.
                 test.testLogging {
                     events "failed"
                     exceptionFormat = "short"
