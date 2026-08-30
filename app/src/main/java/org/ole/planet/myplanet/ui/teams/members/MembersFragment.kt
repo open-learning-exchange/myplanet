@@ -11,7 +11,6 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
@@ -22,14 +21,10 @@ import org.ole.planet.myplanet.databinding.FragmentCombinedMembersBinding
 import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class MembersFragment : BaseTeamFragment() {
-
-    @Inject
-    lateinit var userSessionManager: UserSessionManager
 
     private val requestsViewModel: RequestsViewModel by viewModels()
     private var _binding: FragmentCombinedMembersBinding? = null
@@ -74,7 +69,7 @@ class MembersFragment : BaseTeamFragment() {
         binding.rvRequests.adapter = requestsAdapter
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val resolvedUser = userSessionManager.getUserModel() ?: UserEntity()
+            val resolvedUser = ensureUserResolved() ?: UserEntity()
             requestsAdapter?.setUser(resolvedUser)
             membersAdapter?.setUserId(resolvedUser.id)
         }
@@ -100,7 +95,7 @@ class MembersFragment : BaseTeamFragment() {
     private fun loadMembers() {
         viewLifecycleOwner.lifecycleScope.launch {
             val members = teamsRepository.getJoinedMembersWithVisitInfo(teamId)
-            val currentUserId = userSessionManager.getUserModel()?.id
+            val currentUserId = ensureUserResolved()?.id
             val isLeader = members.any { it.user.id == currentUserId && it.isLeader }
             membersAdapter?.setUserId(currentUserId)
             membersAdapter?.updateData(members, isLeader)
