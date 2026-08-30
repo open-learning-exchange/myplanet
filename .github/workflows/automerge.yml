@@ -11,12 +11,12 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: '🧪 dry run — report what would happen, change nothing'
+        description: '🧪 dry run — change nothing'
         required: false
         default: false
         type: boolean
       max_merges:
-        description: '🔢 stop after this many merges (0 = drain the queue)'
+        description: '🔢 stop after N merges (0 = all)'
         required: false
         default: '0'
         type: string
