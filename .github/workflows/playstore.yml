@@ -20,11 +20,6 @@ on:
         required: false
         default: '0'
         type: string
-      force:
-        description: '💪 check the track even if no warning'
-        required: false
-        default: false
-        type: boolean
       dry_run:
         description: '🧪 dry run — upload nothing'
         required: false
@@ -51,7 +46,6 @@ jobs:
       PLAYSTORE_TRACK: internal                  # 🛤️ the track kept current
       PLAYSTORE_DAILY_LIMIT: '50'                # 📊 saves per day, only to estimate the next slot
       RETRY_MINUTES: '15'                        # 🔁 after a refusal, wait this long and try once more
-      PLAYSTORE_FORCE: ${{ inputs.force || false }}
       WAIT_MINUTES: ${{ inputs.wait_minutes || '0' }}
       DRY_RUN: ${{ inputs.dry_run || false }}
       WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/workflows/playstore.yml

@@ -3,9 +3,11 @@
 #   playstore.sh track-code   # highest versionCode on $PLAYSTORE_TRACK
 #   playstore.sh pending      # key=value: what (if anything) to publish
 #
-# `pending` checks the newest release run's publish warning and the release's
-# own signed .aab before it spends a playstore call. Reading a track needs an
-# edit, but only edits.commit spends save quota -- this one is deleted unsaved.
+# `pending` asks the track what it carries and compares it with the newest
+# release, because the track is the authority and reading it is free: an edit is
+# opened and deleted unsaved, and only edits.commit spends save quota. The
+# release run is consulted for two things only -- whether one is still in flight,
+# and, when the track cannot be read at all, whether it warned.
 set -euo pipefail
 
 REPO="${REPO:?}"
@@ -17,7 +19,6 @@ VERSION_SUFFIX="${PLAYSTORE_VERSION_SUFFIX:--lite}"
 RELEASE_WORKFLOW="${PLAYSTORE_RELEASE_WORKFLOW:-release.yml}"
 PUBLISH_JOB="${PLAYSTORE_PUBLISH_JOB:-myPlanet release (lite)}"
 PUBLISH_WARN_STEP="${PLAYSTORE_PUBLISH_WARN_STEP:-warn that the playstore upload failed}"
-FORCE="${PLAYSTORE_FORCE:-false}"
 
 API="https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PACKAGE"
 
@@ -78,31 +79,42 @@ code_for() {
 }
 
 # 0 = the newest release run on $BASE warned (or cannot say), 1 = it published.
-release_run_warned() {
+# What the newest release run on $BASE says, on stdout:
+#   running   -- still in flight, and about to answer this question itself
+#   published -- its publish step did not warn
+#   warned    -- its publish step warned that the upload failed twice
+#   unknown   -- no run, no job, no step, or the API would not say
+# Only `running` and `warned` decide anything now; the track decides the rest.
+release_run_state() {
     local run job_id concl
     # a page and max_by, because per_page=1 is not reliably the newest run
     run=$(gh api "repos/$REPO/actions/workflows/$RELEASE_WORKFLOW/runs?branch=$BASE&event=push&per_page=20" \
-            --jq '[.workflow_runs[]?] | max_by(.id) | select(. != null) | "\(.id)\t\(.status)"' 2>/dev/null) || return 0
-    [ -n "$run" ] && [ "$run" != "null" ] || { note "no $RELEASE_WORKFLOW run found on $BASE"; return 0; }
+            --jq '[.workflow_runs[]?] | max_by(.id) | select(. != null) | "\(.id)\t\(.status)"' 2>/dev/null) \
+        || { printf 'unknown\n'; return 0; }
+    [ -n "$run" ] && [ "$run" != "null" ] \
+        || { note "no $RELEASE_WORKFLOW run found on $BASE"; printf 'unknown\n'; return 0; }
 
     local id=${run%%$'\t'*} status=${run##*$'\t'}
     if [ "$status" != 'completed' ]; then
         note "release run $id is still $status -- letting it finish"
-        return 1
+        printf 'running\n'; return 0
     fi
 
     job_id=$(gh api "repos/$REPO/actions/runs/$id/jobs?per_page=100" \
-               --jq ".jobs[] | select(.name == \"$PUBLISH_JOB\") | .id" 2>/dev/null | head -n 1) || return 0
-    [ -n "$job_id" ] || { note "release run $id has no '$PUBLISH_JOB' job"; return 0; }
+               --jq ".jobs[] | select(.name == \"$PUBLISH_JOB\") | .id" 2>/dev/null | head -n 1) \
+        || { printf 'unknown\n'; return 0; }
+    [ -n "$job_id" ] || { note "release run $id has no '$PUBLISH_JOB' job"; printf 'unknown\n'; return 0; }
 
     concl=$(gh api "repos/$REPO/actions/jobs/$job_id" \
-              --jq ".steps[]? | select(.name == \"$PUBLISH_WARN_STEP\") | .conclusion" 2>/dev/null | head -n 1) || return 0
+              --jq ".steps[]? | select(.name == \"$PUBLISH_WARN_STEP\") | .conclusion" 2>/dev/null | head -n 1) \
+        || { printf 'unknown\n'; return 0; }
     case "$concl" in
-        skipped) note "release run $id published its build -- nothing pending"; return 1 ;;
-        '')      note "release run $id has no '$PUBLISH_WARN_STEP' step -- checking the track anyway"; return 0 ;;
-        *)       note "release run $id warned that the playstore upload failed"; return 0 ;;
+        skipped) note "release run $id did not warn about its upload"; printf 'published\n' ;;
+        '')      note "release run $id has no '$PUBLISH_WARN_STEP' step"; printf 'unknown\n' ;;
+        *)       note "release run $id warned that the playstore upload failed"; printf 'warned\n' ;;
     esac
 }
+
 
 emit() {
     local kv key value
@@ -115,11 +127,12 @@ emit() {
 }
 
 pending() {
-    local release tag name code asset track
+    local release tag name code asset track state
 
-    if [ "$FORCE" = 'true' ]; then
-        note "force is set -- skipping the release run check"
-    elif ! release_run_warned; then
+    # A release run mid-flight is about to answer this question itself, and
+    # racing it can spend two save slots on one build.
+    state=$(release_run_state)
+    if [ "$state" = 'running' ]; then
         emit 'pending=false'
         return 0
     fi
@@ -145,8 +158,16 @@ pending() {
             return 0
         fi
     else
+        # Without the track there is one witness left. It warned: upload blind.
+        # It did not: leave the quota alone -- a release run that died before the
+        # upload and one that published look the same from here.
+        if [ "$state" != 'warned' ]; then
+            note "the $TRACK track is unreadable and the release run $state -- nothing to do"
+            emit 'pending=false'
+            return 0
+        fi
         track=''
-        note "could not read the $TRACK track -- attempting the upload blind"
+        note "could not read the $TRACK track, but the release run warned -- attempting the upload blind"
     fi
 
     emit 'pending=true' "tag=$tag" "version_name=${name}${VERSION_SUFFIX}" "version_code=$code" \
