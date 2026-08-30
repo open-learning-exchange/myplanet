@@ -273,9 +273,6 @@ class VoicesLabelManagerTest {
 
     @Test
     fun testShowChips_SameBindingDifferentVoice_Rebuilds() {
-        // A recycled RecyclerView row is re-bound to a different voice that happens to share the
-        // same labels and permission. The delete listener closes over voice.id, so this must rebuild
-        // or label deletion would act on the previously-bound (now off-screen) post.
         val voiceA = News().apply { id = "a"; labels = listOf("offer") }
         val voiceB = News().apply { id = "b"; labels = listOf("offer") }
 
