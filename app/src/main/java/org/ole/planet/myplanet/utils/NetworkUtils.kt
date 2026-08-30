@@ -10,9 +10,12 @@ import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.provider.Settings
+import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
 import dagger.hilt.android.EntryPointAccessors
 import java.util.Locale
+import kotlin.properties.ReadOnlyProperty
+import kotlin.reflect.KProperty
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,32 +28,60 @@ import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 object NetworkUtils {
-    private val coreEntryPoint: CoreDependenciesEntryPoint by lazy {
+    // Caches a value that depends on MainApplication.context, which is safe because NetworkUtils
+    // is only accessed after MainApplication.onCreate sets it. Resettable because unit tests get a
+    // fresh Application (and so a fresh ConnectivityManager) per test while this object outlives
+    // them: without resetForTesting() the first test to touch NetworkUtils pins every cached value
+    // to its own Application, and later tests in the same fork silently act on a stale one.
+    private class ResettableCache<T : Any>(private val initializer: () -> T) : ReadOnlyProperty<Any?, T> {
+        @Volatile
+        private var cached: T? = null
+
+        override fun getValue(thisRef: Any?, property: KProperty<*>): T =
+            cached ?: synchronized(this) { cached ?: initializer().also { cached = it } }
+
+        fun reset() {
+            synchronized(this) { cached = null }
+        }
+    }
+
+    private val coreEntryPointCache = ResettableCache {
         EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
     }
 
-    // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
-    private val sharedPrefManager: SharedPrefManager by lazy {
-        coreEntryPoint.sharedPrefManager()
-    }
+    private val coreEntryPoint: CoreDependenciesEntryPoint by coreEntryPointCache
 
-    // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
-    private val coroutineScope: CoroutineScope by lazy {
-        coreEntryPoint.applicationScope()
-    }
+    private val sharedPrefManagerCache = ResettableCache { coreEntryPoint.sharedPrefManager() }
 
-    // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
-    private val connectivityManager: ConnectivityManager by lazy {
+    private val sharedPrefManager: SharedPrefManager by sharedPrefManagerCache
+
+    private val coroutineScopeCache = ResettableCache { coreEntryPoint.applicationScope() }
+
+    private val coroutineScope: CoroutineScope by coroutineScopeCache
+
+    private val connectivityManagerCache = ResettableCache {
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     }
 
+    private val connectivityManager: ConnectivityManager by connectivityManagerCache
+
     private val _currentNetwork = MutableStateFlow(provideDefaultCurrentNetwork())
 
-    val isNetworkConnectedFlow: StateFlow<Boolean> by lazy {
+    private val isNetworkConnectedFlowCache = ResettableCache {
         _currentNetwork
             .map { it.isConnected() }
             .stateIn(scope = coroutineScope, started = SharingStarted.WhileSubscribed(5_000), initialValue = _currentNetwork.value.isConnected())
     }
+
+    val isNetworkConnectedFlow: StateFlow<Boolean> by isNetworkConnectedFlowCache
+
+    private val resettableCaches = listOf(
+        coreEntryPointCache,
+        sharedPrefManagerCache,
+        coroutineScopeCache,
+        connectivityManagerCache,
+        isNetworkConnectedFlowCache,
+    )
 
     val isNetworkConnected: Boolean
         get() = isNetworkConnectedFlow.value
@@ -76,6 +107,21 @@ object NetworkUtils {
 
         connectivityManager.unregisterNetworkCallback(networkCallback)
         _currentNetwork.update { provideDefaultCurrentNetwork() }
+    }
+
+    /**
+     * Drops every cached dependency and the listening state, so the next access rebinds to the
+     * current [context]. Unit tests must call this before exercising NetworkUtils: this object is
+     * shared by every test in a JVM fork, while each test gets its own Application.
+     */
+    @VisibleForTesting
+    internal fun resetForTesting() {
+        if (_currentNetwork.value.isListening) {
+            // Best effort: the Application this callback was registered against may already be gone.
+            runCatching { connectivityManager.unregisterNetworkCallback(networkCallback) }
+        }
+        _currentNetwork.value = provideDefaultCurrentNetwork()
+        resettableCaches.forEach { it.reset() }
     }
 
     private class NetworkCallback : ConnectivityManager.NetworkCallback() {

@@ -37,6 +37,7 @@ class NetworkUtilsTest {
         // It is needed here because NetworkUtils gets system service from it directly
         org.ole.planet.myplanet.MainApplication.testContext = ApplicationProvider.getApplicationContext()
         VersionUtils.resetAndroidIdCacheForTesting()
+        NetworkUtils.resetForTesting()
     }
 
     @Test

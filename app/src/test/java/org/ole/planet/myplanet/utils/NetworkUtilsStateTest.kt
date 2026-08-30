@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
@@ -29,6 +30,14 @@ class NetworkUtilsStateTest {
     fun init() {
         hiltRule.inject()
         org.ole.planet.myplanet.MainApplication.testContext = ApplicationProvider.getApplicationContext()
+        // NetworkUtils is a process-wide object shared with every other test in this JVM fork,
+        // while Robolectric hands each test a fresh Application. Rebind it to this test's context.
+        NetworkUtils.resetForTesting()
+    }
+
+    @After
+    fun tearDown() {
+        NetworkUtils.resetForTesting()
     }
 
     @Test
