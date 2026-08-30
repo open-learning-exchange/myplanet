@@ -30,8 +30,6 @@ class NetworkUtilsStateTest {
     fun init() {
         hiltRule.inject()
         org.ole.planet.myplanet.MainApplication.testContext = ApplicationProvider.getApplicationContext()
-        // NetworkUtils is a process-wide object shared with every other test in this JVM fork,
-        // while Robolectric hands each test a fresh Application. Rebind it to this test's context.
         NetworkUtils.resetForTesting()
     }
 
@@ -50,7 +48,6 @@ class NetworkUtilsStateTest {
         NetworkUtils.startListenNetworkState()
         assertEquals(initialSize + 1, shadowConnectivityManager.networkCallbacks.size)
 
-        // Calling it again should not register duplicate callbacks
         NetworkUtils.startListenNetworkState()
         assertEquals(initialSize + 1, shadowConnectivityManager.networkCallbacks.size)
 
