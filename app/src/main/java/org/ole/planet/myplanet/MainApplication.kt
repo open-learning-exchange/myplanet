@@ -269,8 +269,6 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         fun persistCriticalLog(type: String, error: String) {
             val pendingFile = CrashLogStore.save(context, type, error, coreDependenciesEntryPoint.timeProvider())
             applicationScope.launch {
-                // The report is already on disk in pendingFile, so swallowing a failed Room write
-                // defers it to the next replay rather than losing it.
                 runBestEffort("persistCriticalLog") {
                     if (saveLogToRoom(type, error, "${coreDependenciesEntryPoint.timeProvider().now()}")) {
                         pendingFile?.delete()
