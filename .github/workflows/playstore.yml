@@ -223,8 +223,6 @@ jobs:
           exit 1
 
       - name: resume the automerge drain
-        # Reached only when nothing is owed -- a refusal fails the job a step
-        # earlier. A repository_dispatch carries no inputs, so it never resumes.
         if: (inputs.resume_automerge || false) && env.DRY_RUN != 'true'
         env:
           GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
