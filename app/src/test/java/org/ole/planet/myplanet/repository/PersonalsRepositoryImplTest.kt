@@ -140,11 +140,10 @@ class PersonalsRepositoryImplTest {
     }
 
     @Test
-    fun `deletePersonalResource deletes both _id and id`() = runTest {
+    fun `deletePersonalResource deletes by _id or id in a single statement`() = runTest {
         repository.deletePersonalResource("test-id")
 
-        coVerify { personalDao.deleteByDocId("test-id") }
-        coVerify { personalDao.deleteById("test-id") }
+        coVerify(exactly = 1) { personalDao.deleteByIdOrDocId("test-id") }
     }
 
     @Test
