@@ -69,6 +69,11 @@ on:
         required: false
         default: '1'
         type: string
+      head_rerun_attempts:
+        description: 'how often to re-run a workflow that fails on a prepared commit before the PR is dropped from the queue (0 = never)'
+        required: false
+        default: '1'
+        type: string
       wait_timeout_minutes:
         description: 'how long to wait for workflows: build and test on the prepared commit, and whatever is in flight on the base'
         required: false
@@ -77,7 +82,7 @@ on:
       dry_run:
         description: 'report what would happen, change nothing'
         required: false
-        default: true
+        default: false
         type: boolean
 
 permissions:
@@ -142,6 +147,7 @@ jobs:
           MAX_MERGES: ${{ inputs.max_merges }}
           WAIT_TIMEOUT_MIN: ${{ inputs.wait_timeout_minutes }}
           BASE_RERUN_ATTEMPTS: ${{ inputs.base_rerun_attempts }}
+          HEAD_RERUN_ATTEMPTS: ${{ inputs.head_rerun_attempts }}
           VERSION_SH: ${{ steps.stage.outputs.dir }}/version.sh
           COAUTHORS_SH: ${{ steps.stage.outputs.dir }}/coauthors.sh
           QUOTA_SH: ${{ steps.stage.outputs.dir }}/playstore-quota.sh

@@ -32,6 +32,8 @@ WAIT_TIMEOUT_MIN="${WAIT_TIMEOUT_MIN:-45}"
 USING_PAT="${USING_PAT:-false}"
 BASE_RERUN_ATTEMPTS="${BASE_RERUN_ATTEMPTS:-1}"
 case "$BASE_RERUN_ATTEMPTS" in *[!0-9]*|"") BASE_RERUN_ATTEMPTS=1 ;; esac
+HEAD_RERUN_ATTEMPTS="${HEAD_RERUN_ATTEMPTS:-1}"
+case "$HEAD_RERUN_ATTEMPTS" in *[!0-9]*|"") HEAD_RERUN_ATTEMPTS=1 ;; esac
 
 RUN_APPEAR_TIMEOUT_SEC=300
 RERUN_START_TIMEOUT_SEC=180
@@ -279,13 +281,13 @@ wait_run_restarted() {
 }
 
 rerun_failed_runs() {
-    local sha=$1 branch=${2:-} id name triggered=0
-    [ "$BASE_RERUN_ATTEMPTS" -gt 0 ] || return 1
+    local sha=$1 branch=${2:-} attempts=${3:-$BASE_RERUN_ATTEMPTS} id name triggered=0
+    [ "$attempts" -gt 0 ] || return 1
 
     while IFS=$'\t' read -r id name; do
         [ -n "$id" ] || continue
-        if [ "$(rerun_count_for "$id")" -ge "$BASE_RERUN_ATTEMPTS" ]; then
-            log "  $name failed again after $BASE_RERUN_ATTEMPTS re-run(s) -- taking it as real"
+        if [ "$(rerun_count_for "$id")" -ge "$attempts" ]; then
+            log "  $name failed again after $attempts re-run(s) -- taking it as real"
             continue
         fi
         if gh api -X POST "repos/$REPO/actions/runs/$id/rerun-failed-jobs" >/dev/null 2>&1 \
@@ -558,7 +560,14 @@ while :; do
 
     if [ "$REQUIRE_CHECKS" = 'true' ]; then
         checks_rc=0
-        wait_for_runs "$merge_sha" "$REQUIRED_WORKFLOWS" fail "$HEAD" || checks_rc=$?
+        while :; do
+            checks_rc=0
+            wait_for_runs "$merge_sha" "$REQUIRED_WORKFLOWS" fail "$HEAD" || checks_rc=$?
+            [ "$checks_rc" -eq 2 ] || break
+            [ "$HEAD_RERUN_ATTEMPTS" -gt 0 ] \
+                && log "  re-running the red workflow(s) before taking this as #$NUMBER's"
+            rerun_failed_runs "$merge_sha" "$HEAD" "$HEAD_RERUN_ATTEMPTS" || break
+        done
         # 2 is a verdict on this PR alone -- relabel it and drain the rest of the
         # queue. 1 is no verdict at all (nothing ran, or it timed out), which says
         # nothing about the PR and everything about the setup: that still stops.
