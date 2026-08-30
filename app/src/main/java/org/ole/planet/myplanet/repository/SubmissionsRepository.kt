@@ -4,6 +4,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
 import kotlinx.coroutines.flow.Flow
+import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao.UploadedPhoto
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.StepExam
@@ -52,6 +53,7 @@ interface SubmissionsRepository {
     suspend fun getExamById(id: String): StepExam?
     suspend fun getUnuploadedPhotos(): List<Pair<String?, JsonObject>>
     suspend fun markPhotoUploaded(photoId: String?, rev: String, id: String)
+    suspend fun markPhotosUploadedBatch(uploads: List<UploadedPhoto>)
     suspend fun getOrCreateSubmission(userId: String?, parentId: String): Submission
     suspend fun getPhotosByIds(ids: Array<String>): List<SubmitPhotos>
     suspend fun bulkInsertFromSync(jsonArray: JsonArray)
