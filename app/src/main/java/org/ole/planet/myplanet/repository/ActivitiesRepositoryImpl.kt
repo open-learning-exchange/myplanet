@@ -303,7 +303,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
         ob.addProperty("deviceName", NetworkUtils.getDeviceName())
         ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
         if (activity._id != null) {
-            ob.addProperty("_id", activity.logoutTime)
+            ob.addProperty("_id", activity._id)
         }
         if (activity._rev != null) {
             ob.addProperty("_rev", activity._rev)
