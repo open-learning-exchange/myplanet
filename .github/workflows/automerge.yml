@@ -2,10 +2,8 @@ name: myPlanet automerge
 
 # Queue drainer, started by hand: for each PR labelled `automerge`, merge the
 # base in, bump the version, wait for build + test, squash merge. A PR that
-# conflicts, or whose prepared commit goes red, is relabelled and skipped -- the
-# queue keeps draining. Needs AUTOMERGE_TOKEN. Press Run workflow and it drains;
-# everything else is in `env:` below. Logic, and the conditions that do stop it:
-# .github/scripts/automerge.sh
+# conflicts or goes red is relabelled and skipped; the queue keeps draining.
+# Needs AUTOMERGE_TOKEN. Logic, and what does stop it: .github/scripts/automerge.sh
 
 on:
   workflow_dispatch:

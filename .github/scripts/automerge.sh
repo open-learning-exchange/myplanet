@@ -5,18 +5,15 @@
 #
 #   1. merge $BASE into the PR branch          (a conflict relabels it and moves on)
 #   2. bump the version on the PR branch
-#   3. push, and wait for build + test on that prepared commit (red relabels it
-#      and moves on too: one PR's failing test is not the queue's problem)
+#   3. push, and wait for build + test on that prepared commit (red relabels too)
 #   4. wait for $BASE to be settled and green, then squash merge
 set -euo pipefail
 
 REPO="${REPO:?}"
 BASE="${BASE:?}"
 
-# The dispatch menu carries all four labels in one field, in the order the drain
-# uses them: queue,priority,conflict,failing. An empty slot means that label goes
-# unused -- no priority tier, or drop the queue label without marking why. A slot
-# left off the end keeps the default below, which is also what a hand-run gets.
+# queue,priority,conflict,failing in one field: an empty slot means that label
+# goes unused, a slot left off the end keeps the default below.
 if [ -n "${LABELS:-}" ]; then
     label_i=0
     while IFS= read -r label_part; do
@@ -130,8 +127,7 @@ add_marker_label() {
     gh pr edit "$pr" --repo "$REPO" --add-label "$label" >/dev/null 2>&1
 }
 
-# Drop $LABEL so the queue moves on, and say why on the PR itself. Neither
-# reason is the queue's fault, so neither ends the drain.
+# Drop $LABEL so the queue moves on, and mark why on the PR itself.
 retire_pr() {
     local pr=$1 marker=$2 color=$3 desc=$4 what=$5
 
@@ -588,9 +584,7 @@ while :; do
                 && log "  re-running the red workflow(s) before taking this as #$NUMBER's"
             rerun_failed_runs "$merge_sha" "$HEAD" "$HEAD_RERUN_ATTEMPTS" || break
         done
-        # 2 is a verdict on this PR alone -- relabel it and drain the rest of the
-        # queue. 1 is no verdict at all (nothing ran, or it timed out), which says
-        # nothing about the PR and everything about the setup: that still stops.
+        # 2 is a verdict on this PR alone; 1 is no verdict at all, which still stops.
         if [ "$checks_rc" -eq 2 ]; then
             handle_failing "$NUMBER"
             skip_numbers="$skip_numbers $NUMBER"

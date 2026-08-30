@@ -223,12 +223,8 @@ jobs:
           exit 1
 
       - name: resume the automerge drain
-        # Reached only when nothing is still owed: a refusal fails the job one step
-        # earlier. Published here, or the track was already current, or the newest
-        # release run never warned -- in every one of those the release that stopped
-        # the drain no longer does, and only this run knows that. Default on,
-        # because unsticking the drain is why this workflow gets pressed; a
-        # repository_dispatch carries no inputs, so that path never resumes.
+        # Reached only when nothing is owed -- a refusal fails the job a step
+        # earlier. A repository_dispatch carries no inputs, so it never resumes.
         if: (inputs.resume_automerge || false) && env.DRY_RUN != 'true'
         env:
           GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN || github.token }}

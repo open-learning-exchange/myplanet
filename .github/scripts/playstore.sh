@@ -3,11 +3,8 @@
 #   playstore.sh track-code   # highest versionCode on $PLAYSTORE_TRACK
 #   playstore.sh pending      # key=value: what (if anything) to publish
 #
-# `pending` asks the track what it carries and compares it with the newest
-# release, because the track is the authority and reading it is free: an edit is
-# opened and deleted unsaved, and only edits.commit spends save quota. The
-# release run is consulted for two things only -- whether one is still in flight,
-# and, when the track cannot be read at all, whether it warned.
+# `pending` asks the track and compares it with the newest release: the track is
+# the authority, and an edit opened and deleted unsaved spends no save quota.
 set -euo pipefail
 
 REPO="${REPO:?}"
@@ -79,12 +76,8 @@ code_for() {
 }
 
 # 0 = the newest release run on $BASE warned (or cannot say), 1 = it published.
-# What the newest release run on $BASE says, on stdout:
-#   running   -- still in flight, and about to answer this question itself
-#   published -- its publish step did not warn
-#   warned    -- its publish step warned that the upload failed twice
-#   unknown   -- no run, no job, no step, or the API would not say
-# Only `running` and `warned` decide anything now; the track decides the rest.
+# Newest release run on $BASE, on stdout: running|published|warned|unknown.
+# Only running and warned decide anything; the track decides the rest.
 release_run_state() {
     local run job_id concl
     # a page and max_by, because per_page=1 is not reliably the newest run
@@ -129,8 +122,7 @@ emit() {
 pending() {
     local release tag name code asset track state
 
-    # A release run mid-flight is about to answer this question itself, and
-    # racing it can spend two save slots on one build.
+    # Racing a release run mid-flight can spend two save slots on one build.
     state=$(release_run_state)
     if [ "$state" = 'running' ]; then
         emit 'pending=false'
@@ -158,9 +150,8 @@ pending() {
             return 0
         fi
     else
-        # Without the track there is one witness left. It warned: upload blind.
-        # It did not: leave the quota alone -- a release run that died before the
-        # upload and one that published look the same from here.
+        # No track: warned uploads blind, silence leaves the quota alone -- a run
+        # that died before the upload and one that published look the same here.
         if [ "$state" != 'warned' ]; then
             note "the $TRACK track is unreadable and the release run $state -- nothing to do"
             emit 'pending=false'
