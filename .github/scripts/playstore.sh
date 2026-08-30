@@ -149,8 +149,6 @@ pending() {
             return 0
         fi
     else
-        # No track: warned uploads blind, silence leaves the quota alone -- a run
-        # that died before the upload and one that published look the same here.
         if [ "$state" != 'warned' ]; then
             note "the $TRACK track is unreadable and the release run $state -- nothing to do"
             emit 'pending=false'
