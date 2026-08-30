@@ -228,4 +228,24 @@ class RetryRepositoryImplTest {
 
         coVerify { retryDao.recoverStuck(timeProvider.now() + 60_000) }
     }
+
+    @Test
+    fun `safeClearQueue returns false and skips deletion while processing`() = runTest {
+        repository.setProcessing(true)
+
+        val result = repository.safeClearQueue()
+
+        assertEquals(false, result)
+        coVerify(exactly = 0) { retryDao.deletePendingAndAbandoned() }
+    }
+
+    @Test
+    fun `safeClearQueue returns true and deletes pending and abandoned when idle`() = runTest {
+        repository.setProcessing(false)
+
+        val result = repository.safeClearQueue()
+
+        assertEquals(true, result)
+        coVerify(exactly = 1) { retryDao.deletePendingAndAbandoned() }
+    }
 }
