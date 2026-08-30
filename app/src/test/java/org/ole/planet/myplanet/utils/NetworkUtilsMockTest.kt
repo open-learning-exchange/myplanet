@@ -53,8 +53,6 @@ class NetworkUtilsMockTest {
     @After
     fun tearDown() {
         unmockkAll()
-        // Drop the caches this test bound to its mock Context, so later tests in this JVM
-        // fork do not inherit a mocked ConnectivityManager.
         NetworkUtils.resetForTesting()
     }
 
