@@ -24,9 +24,6 @@ class VoicesLabelManager(
     private val addLabelFn: suspend (String, String) -> Unit,
     private val removeLabelFn: suspend (String, String) -> Unit
 ) {
-    // Per-row cache of the last labels + manage-permission actually rendered, so identical rebinds
-    // (scroll fling-back, payload-driven updates) skip rebuilding the chip cloud. Weak keys let
-    // recycled/destroyed bindings be garbage-collected instead of leaking via this cache.
     private val renderedStateCache = WeakHashMap<RowNewsBinding, RenderedState>()
 
     fun setupAddLabelMenu(binding: RowNewsBinding, voice: News?, canManageLabels: Boolean) {
@@ -69,12 +66,6 @@ class VoicesLabelManager(
     fun showChips(binding: RowNewsBinding, voice: News, canManageLabels: Boolean) {
         val labels = voice.labels ?: emptyList()
 
-        // Skip the teardown-and-rebuild when the voice, labels, and manage-permission are unchanged
-        // from the previous bind for this row. During community-voices scroll and payload-driven
-        // rebinds (e.g. PAYLOAD_LABELS_CHANGED) the same row is re-bound with identical state, so
-        // rebuilding the ChipCloudConfig + ChipCloud every time is wasted work. The voice id is part
-        // of the key because the delete listener closes over it — a recycled row re-bound to a
-        // different voice with the same labels must rebuild, or label deletion acts on the wrong post.
         val renderedState = RenderedState(voice.id, labels, canManageLabels)
         if (renderedStateCache[binding] == renderedState) {
             return
