@@ -108,7 +108,6 @@ release_run_state() {
     esac
 }
 
-
 emit() {
     local kv key value
     for kv in "$@"; do
