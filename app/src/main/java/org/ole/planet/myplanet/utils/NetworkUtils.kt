@@ -28,11 +28,6 @@ import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 object NetworkUtils {
-    // Caches a value that depends on MainApplication.context, which is safe because NetworkUtils
-    // is only accessed after MainApplication.onCreate sets it. Resettable because unit tests get a
-    // fresh Application (and so a fresh ConnectivityManager) per test while this object outlives
-    // them: without resetForTesting() the first test to touch NetworkUtils pins every cached value
-    // to its own Application, and later tests in the same fork silently act on a stale one.
     private class ResettableCache<T : Any>(private val initializer: () -> T) : ReadOnlyProperty<Any?, T> {
         @Volatile
         private var cached: T? = null
@@ -109,20 +104,12 @@ object NetworkUtils {
         _currentNetwork.update { provideDefaultCurrentNetwork() }
     }
 
-    /**
-     * Drops every cached dependency and the listening state, so the next access rebinds to the
-     * current [context]. Unit tests must call this before exercising NetworkUtils: this object is
-     * shared by every test in a JVM fork, while each test gets its own Application.
-     */
     @VisibleForTesting
     internal fun resetForTesting() {
         if (_currentNetwork.value.isListening) {
             try {
                 connectivityManager.unregisterNetworkCallback(networkCallback)
             } catch (e: IllegalArgumentException) {
-                // The only documented failure: the callback was registered against a previous
-                // test's ConnectivityManager, which this one has never heard of. Anything else
-                // is a real fault, and a reset meant to expose bad state must not hide it.
             }
         }
         _currentNetwork.value = provideDefaultCurrentNetwork()
