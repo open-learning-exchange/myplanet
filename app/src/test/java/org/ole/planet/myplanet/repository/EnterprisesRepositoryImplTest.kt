@@ -28,6 +28,7 @@ class EnterprisesRepositoryImplTest {
 
     @Test
     fun `exportReportsAsCsv calculates correct profitLoss and endingBalance`() = runTest {
+        val teamId = "team123"
         val report = MyTeam().apply {
             startDate = 1000L
             endDate = 2000L
@@ -39,8 +40,14 @@ class EnterprisesRepositoryImplTest {
             wages = 10
             otherExpenses = 15
         }
+        val archivedReport = MyTeam().apply {
+            status = "archived"
+            createdDate = 4000L
+        }
 
-        val result = repository.exportReportsAsCsv(listOf(report), "Test Team")
+        coEvery { teamDao.getByTeamIdAndDocType(teamId, "report") } returns listOf(report, archivedReport)
+
+        val result = repository.exportReportsAsCsv(teamId, "Test Team")
 
         val expectedTotalIncome = 50 + 20 // 70
         val expectedTotalExpenses = 10 + 15 // 25
