@@ -8,11 +8,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.services.SharedPrefManager
 
-/**
- * Injectable source of the device's custom name so domain repositories can serialize it into
- * uploaded documents without depending on [android.content.Context] or [NetworkUtils]. Mirrors
- * [TimeProvider]: the Android-aware lookup lives in the implementation, callers only see a string.
- */
 interface DeviceNameProvider {
     fun getCustomDeviceName(): String
 }
