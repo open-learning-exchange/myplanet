@@ -20,6 +20,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
+import org.ole.planet.myplanet.data.room.dao.ResourceTitleProjection
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
@@ -567,6 +568,37 @@ class ResourcesRepositoryImplTest {
         assertTrue(result.isSuccess)
         coVerify(exactly = 0) { myLibraryDao.getByResourceIds(any()) }
         coVerify(exactly = 0) { removedLogDao.insertAll(any()) }
+    }
+
+    @Test
+    fun `getMyLibIds calls getIdsForUserPattern and returns JsonArray of ids`() = runTest {
+        val userId = "user123"
+        val expectedPattern = "%\"user123\"%"
+        val expectedIds = listOf("id1", "id2")
+        coEvery { myLibraryDao.getIdsForUserPattern(expectedPattern) } returns expectedIds
+
+        val result = repository.getMyLibIds(userId)
+
+        coVerify(exactly = 1) { myLibraryDao.getIdsForUserPattern(expectedPattern) }
+        assertEquals(2, result.size())
+        assertEquals("id1", result.get(0).asString)
+        assertEquals("id2", result.get(1).asString)
+    }
+
+    @Test
+    fun `getResourceTitlesMap calls getResourceTitles and returns mapped titles`() = runTest {
+        val projections = listOf(
+            ResourceTitleProjection("res1", "Title 1"),
+            ResourceTitleProjection("res2", "Title 2")
+        )
+        coEvery { myLibraryDao.getResourceTitles() } returns projections
+
+        val result = repository.getResourceTitlesMap()
+
+        coVerify(exactly = 1) { myLibraryDao.getResourceTitles() }
+        assertEquals(2, result.size)
+        assertEquals("Title 1", result["res1"])
+        assertEquals("Title 2", result["res2"])
     }
 
     @Test
