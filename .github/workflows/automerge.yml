@@ -1,9 +1,10 @@
 name: myPlanet automerge
 
 # Queue drainer, started by hand: for each PR labelled `automerge`, merge the
-# base in, bump the version, wait for build + test, squash merge. A conflicting
-# PR is relabelled and skipped, not fatal. Needs AUTOMERGE_TOKEN. Logic, and the
-# conditions that do stop it: .github/scripts/automerge.sh
+# base in, bump the version, wait for build + test, squash merge. A PR that
+# conflicts, or whose prepared commit goes red, is relabelled and skipped -- the
+# queue keeps draining. Needs AUTOMERGE_TOKEN. Logic, and the conditions that do
+# stop it: .github/scripts/automerge.sh
 
 on:
   workflow_dispatch:
@@ -22,6 +23,11 @@ on:
         description: 'label put on a PR that conflicts with the base, whose automerge label is then dropped (blank = drop the label without marking it)'
         required: false
         default: 'conflict'
+        type: string
+      red_label:
+        description: 'label put on a PR whose prepared commit fails build or test, whose automerge label is then dropped (blank = drop the label without marking it)'
+        required: false
+        default: 'red'
         type: string
       base:
         description: 'base branch to merge into (blank = workflow default)'
@@ -126,6 +132,7 @@ jobs:
           BASE: ${{ inputs.base || env.DEFAULT_BASE }}
           LABEL: ${{ inputs.label }}
           CONFLICT_LABEL: ${{ inputs.conflict_label }}
+          RED_LABEL: ${{ inputs.red_label }}
           PRIORITY_LABEL: ${{ inputs.priority_label }}
           REQUIRE_CHECKS: ${{ inputs.require_checks }}
           REQUIRED_WORKFLOWS: ${{ inputs.required_workflows }}

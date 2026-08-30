@@ -5,7 +5,8 @@
 #
 #   1. merge $BASE into the PR branch          (a conflict relabels it and moves on)
 #   2. bump the version on the PR branch
-#   3. push, and wait for build + test on that prepared commit
+#   3. push, and wait for build + test on that prepared commit (red relabels it
+#      and moves on too: one PR's failing test is not the queue's problem)
 #   4. wait for $BASE to be settled and green, then squash merge
 set -euo pipefail
 
@@ -13,6 +14,7 @@ REPO="${REPO:?}"
 BASE="${BASE:?}"
 LABEL="${LABEL:?}"
 CONFLICT_LABEL="${CONFLICT_LABEL-conflict}"
+RED_LABEL="${RED_LABEL-red}"
 PRIORITY_LABEL="${PRIORITY_LABEL-priority}"
 GRADLE_FILE="${GRADLE_FILE:?}"
 VERSION_SH="${VERSION_SH:?}"
@@ -50,6 +52,8 @@ merged_count=0
 merged_list=""
 conflict_count=0
 conflict_list=""
+red_count=0
+red_list=""
 skip_numbers=""
 last_base_sha=""
 
@@ -96,36 +100,54 @@ check_mergeable() {
     esac
 }
 
-add_conflict_label() {
-    local pr=$1
-    gh pr edit "$pr" --repo "$REPO" --add-label "$CONFLICT_LABEL" >/dev/null 2>&1 && return 0
-    gh label create "$CONFLICT_LABEL" --repo "$REPO" \
-        --color BD8652 --description 'merge conflict' >/dev/null 2>&1 || true
-    gh pr edit "$pr" --repo "$REPO" --add-label "$CONFLICT_LABEL" >/dev/null 2>&1
+add_marker_label() {
+    local pr=$1 label=$2 color=$3 desc=$4
+    gh pr edit "$pr" --repo "$REPO" --add-label "$label" >/dev/null 2>&1 && return 0
+    gh label create "$label" --repo "$REPO" \
+        --color "$color" --description "$desc" >/dev/null 2>&1 || true
+    gh pr edit "$pr" --repo "$REPO" --add-label "$label" >/dev/null 2>&1
 }
 
-handle_conflict() {
-    local pr=$1
-    conflict_count=$(( conflict_count + 1 ))
-    conflict_list="$conflict_list #$pr"
+# Drop $LABEL so the queue moves on, and say why on the PR itself. Neither
+# reason is the queue's fault, so neither ends the drain.
+retire_pr() {
+    local pr=$1 marker=$2 color=$3 desc=$4 what=$5
 
     if [ "$DRY_RUN" = 'true' ]; then
-        log "  dry run: #$pr conflicts with $BASE -- would relabel it and move on"
-        summary "| #$pr | | dry run: **conflicts** with \`$BASE\` |"
+        log "  dry run: #$pr $what -- would relabel it and move on"
+        summary "| #$pr | | dry run: **$what** |"
         return 0
     fi
 
-    log "  #$pr conflicts with $BASE -- dropping '$LABEL', moving on to the next PR"
-    if [ -n "$CONFLICT_LABEL" ] && ! add_conflict_label "$pr"; then
-        log "  #$pr: could not add '$CONFLICT_LABEL'"
+    local marked=""
+    log "  #$pr $what -- dropping '$LABEL', moving on to the next PR"
+    if [ -n "$marker" ]; then
+        if add_marker_label "$pr" "$marker" "$color" "$desc"; then
+            marked=", added \`$marker\`"
+        else
+            log "  #$pr: could not add '$marker'"
+        fi
     fi
     if gh pr edit "$pr" --repo "$REPO" --remove-label "$LABEL" >/dev/null 2>&1; then
-        summary "| #$pr | | **conflicts** with \`$BASE\`: dropped \`$LABEL\`${CONFLICT_LABEL:+, added \`$CONFLICT_LABEL\`} |"
+        summary "| #$pr | | **$what**: dropped \`$LABEL\`$marked |"
     else
         log "  #$pr: could not remove '$LABEL' -- skipped for this drain only"
-        summary "| #$pr | | **conflicts** with \`$BASE\`: \`$LABEL\` could not be removed |"
+        summary "| #$pr | | **$what**: \`$LABEL\` could not be removed |"
     fi
     return 0
+}
+
+handle_conflict() {
+    conflict_count=$(( conflict_count + 1 ))
+    conflict_list="$conflict_list #$1"
+    retire_pr "$1" "$CONFLICT_LABEL" BD8652 'merge conflict' "conflicts with \`$BASE\`"
+}
+
+handle_red() {
+    red_count=$(( red_count + 1 ))
+    red_list="$red_list #$1"
+    retire_pr "$1" "$RED_LABEL" D73A4A 'build or test red on the prepared commit' \
+        'went red on its prepared commit'
 }
 
 wait_pr_merged() {
@@ -535,8 +557,19 @@ while :; do
     fi
 
     if [ "$REQUIRE_CHECKS" = 'true' ]; then
-        wait_for_runs "$merge_sha" "$REQUIRED_WORKFLOWS" fail "$HEAD" \
-            || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: prepared commit not green |"; exit 1; }
+        checks_rc=0
+        wait_for_runs "$merge_sha" "$REQUIRED_WORKFLOWS" fail "$HEAD" || checks_rc=$?
+        # 2 is a verdict on this PR alone -- relabel it and drain the rest of the
+        # queue. 1 is no verdict at all (nothing ran, or it timed out), which says
+        # nothing about the PR and everything about the setup: that still stops.
+        if [ "$checks_rc" -eq 2 ]; then
+            handle_red "$NUMBER"
+            skip_numbers="$skip_numbers $NUMBER"
+            continue
+        elif [ "$checks_rc" -ne 0 ]; then
+            summary "| #$NUMBER | → \`$new_name\` | **stopped**: no verdict on the prepared commit |"
+            exit 1
+        fi
     else
         log "  require_checks is off -- merging ${merge_sha:0:7} unverified"
     fi
@@ -647,5 +680,14 @@ if [ "$conflict_count" -ne 0 ]; then
         summary "**$conflict_count PR(s) conflict with \`$BASE\`**:$conflict_list -- a real run would drop \`$LABEL\`${CONFLICT_LABEL:+ and add \`$CONFLICT_LABEL\`} and keep draining."
     else
         summary "**$conflict_count PR(s) conflict with \`$BASE\`**:$conflict_list -- \`$LABEL\` dropped${CONFLICT_LABEL:+, \`$CONFLICT_LABEL\` added}. Resolve the conflict and re-add \`$LABEL\` to queue it again."
+    fi
+fi
+if [ "$red_count" -ne 0 ]; then
+    log "left for a human, red on the prepared commit:$red_list"
+    summary ""
+    if [ "$DRY_RUN" = 'true' ]; then
+        summary "**$red_count PR(s) went red on their prepared commit**:$red_list -- a real run would drop \`$LABEL\`${RED_LABEL:+ and add \`$RED_LABEL\`} and keep draining."
+    else
+        summary "**$red_count PR(s) went red on their prepared commit**:$red_list -- \`$LABEL\` dropped${RED_LABEL:+, \`$RED_LABEL\` added}. Fix the failing build or test and re-add \`$LABEL\` to queue it again."
     fi
 fi
