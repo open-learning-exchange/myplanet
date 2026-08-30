@@ -137,24 +137,25 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
         }
 
-        // These diagnostics writes are launched fire-and-forget into applicationScope, so they
-        // outlive their caller: an escaping exception has nobody left to catch it and reaches the
-        // uncaught handler, taking down whatever runs next. Reporting the failure must not throw
-        // either — android.util.Log is not mocked in plain JUnit tests, where calling it raises
-        // "Method w in android.util.Log not mocked".
-        private suspend fun persistDiagnosticsLog(caller: String, block: suspend () -> Unit) {
+        // Runs best-effort work launched fire-and-forget into applicationScope. Such a coroutine
+        // outlives its caller, so an escaping exception has nobody left to catch it: it reaches the
+        // uncaught handler, which kills the process in production and, under kotlinx-coroutines-test,
+        // is re-reported against whichever unrelated test runs next in the fork. Cancellation still
+        // propagates. Reporting the failure must not throw either — android.util.Log is not mocked
+        // in plain JUnit tests, where calling it raises "Method w in android.util.Log not mocked".
+        private suspend fun runBestEffort(what: String, block: suspend () -> Unit) {
             try {
                 block()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
-                runCatching { Log.w(LOG_TAG, "$caller: could not persist log", e) }
+                runCatching { Log.w(LOG_TAG, "$what failed", e) }
             }
         }
 
         fun createLog(type: String, error: String = "") {
             applicationScope.launch {
-                persistDiagnosticsLog("createLog") {
+                runBestEffort("createLog") {
                     saveLogToRoom(type, error, "${coreDependenciesEntryPoint.timeProvider().now()}")
                 }
             }
@@ -272,7 +273,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             applicationScope.launch {
                 // The report is already on disk in pendingFile, so swallowing a failed Room write
                 // defers it to the next replay rather than losing it.
-                persistDiagnosticsLog("persistCriticalLog") {
+                runBestEffort("persistCriticalLog") {
                     if (saveLogToRoom(type, error, "${coreDependenciesEntryPoint.timeProvider().now()}")) {
                         pendingFile?.delete()
                     }
@@ -310,10 +311,13 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
     private fun performDeferredInitialization() {
         applicationScope.launch(dispatcherProvider.io) {
-            FileUtils.warmUp(this@MainApplication)
-            SecurePrefs.warmUp(this@MainApplication)
-            MarkdownUtils.warmUp(this@MainApplication)
-            runCatching { Class.forName("pl.droidsonroids.gif.GifInfoHandle") }
+            // Warm-ups are pure optimisation, so none of them may fail startup: SecurePrefs.warmUp
+            // throws whenever AndroidKeyStore is unavailable. Guarded one by one so that a failure
+            // in one still leaves the others warmed.
+            runBestEffort("FileUtils.warmUp") { FileUtils.warmUp(this@MainApplication) }
+            runBestEffort("SecurePrefs.warmUp") { SecurePrefs.warmUp(this@MainApplication) }
+            runBestEffort("MarkdownUtils.warmUp") { MarkdownUtils.warmUp(this@MainApplication) }
+            runBestEffort("GifInfoHandle preload") { Class.forName("pl.droidsonroids.gif.GifInfoHandle") }
         }
         applicationScope.launch {
             initApp()
