@@ -3,87 +3,23 @@ name: myPlanet automerge
 # Queue drainer, started by hand: for each PR labelled `automerge`, merge the
 # base in, bump the version, wait for build + test, squash merge. A PR that
 # conflicts, or whose prepared commit goes red, is relabelled and skipped -- the
-# queue keeps draining. Needs AUTOMERGE_TOKEN. Logic, and the conditions that do
-# stop it: .github/scripts/automerge.sh
+# queue keeps draining. Needs AUTOMERGE_TOKEN. Press Run workflow and it drains;
+# everything else is in `env:` below. Logic, and the conditions that do stop it:
+# .github/scripts/automerge.sh
 
 on:
   workflow_dispatch:
     inputs:
-      label:
-        description: 'label marking PRs as mergeable'
-        required: false
-        default: 'automerge'
-        type: string
-      priority_label:
-        description: 'PRs with this label are drained before the rest; lowest number first within each tier (blank = no priority tier)'
-        required: false
-        default: 'priority'
-        type: string
-      conflict_label:
-        description: 'label put on a PR that conflicts with the base, whose automerge label is then dropped (blank = drop the label without marking it)'
-        required: false
-        default: 'conflict'
-        type: string
-      red_label:
-        description: 'label put on a PR whose prepared commit fails build or test, whose automerge label is then dropped (blank = drop the label without marking it)'
-        required: false
-        default: 'red'
-        type: string
-      base:
-        description: 'base branch to merge into (blank = workflow default)'
-        required: false
-        default: ''
-        type: string
-      owner_login:
-        description: 'credited as co-author on every PR they did not author'
-        required: false
-        default: 'dogi'
-        type: string
-      require_checks:
-        description: 'refuse to merge unless the prepared commit (base merged in + version bumped) is green'
-        required: false
-        default: true
-        type: boolean
-      required_workflows:
-        description: 'comma-separated workflows that must have passed on the prepared commit (blank = judge whatever ran)'
-        required: false
-        default: 'myPlanet build, myPlanet test'
-        type: string
-      publish_job:
-        description: 'job whose "playstore upload failed twice" warning stops the drain (blank = skip the check)'
-        required: false
-        default: 'myPlanet release (lite)'
-        type: string
-      delete_branch:
-        description: 'delete each head branch after merging'
-        required: false
-        default: true
-        type: boolean
-      max_merges:
-        description: 'stop after this many merges (0 = until the queue is empty)'
-        required: false
-        default: '0'
-        type: string
-      base_rerun_attempts:
-        description: 'how often to re-run a workflow that fails on the base before stopping the drain (0 = never)'
-        required: false
-        default: '1'
-        type: string
-      head_rerun_attempts:
-        description: 'how often to re-run a workflow that fails on a prepared commit before the PR is dropped from the queue (0 = never)'
-        required: false
-        default: '1'
-        type: string
-      wait_timeout_minutes:
-        description: 'how long to wait for workflows: build and test on the prepared commit, and whatever is in flight on the base'
-        required: false
-        default: '45'
-        type: string
       dry_run:
-        description: 'report what would happen, change nothing'
+        description: '🧪 dry run — report what would happen, change nothing'
         required: false
         default: false
         type: boolean
+      max_merges:
+        description: '🔢 stop after this many merges (0 = drain the queue)'
+        required: false
+        default: '0'
+        type: string
 
 permissions:
   contents: write
@@ -96,9 +32,26 @@ concurrency:
   group: automerge
   cancel-in-progress: false
 
+# The rest of the drain's settings. They were menu inputs, and three drains'
+# logs say every one of them was dispatched at its default every time -- a menu
+# of fifteen fields is fifteen chances to mistype one at 2am. Change them here,
+# in a diff someone reviews, and the handover in playstore.yml gets the same
+# settings for free.
 env:
-  DEFAULT_BASE: master
-  GRADLE_FILE: app/build.gradle
+  BASE: master                                   # 🌿 branch the queue merges into
+  GRADLE_FILE: app/build.gradle                  # 📄 file the version bump edits
+  LABEL: automerge                               # 🏷️ marks a PR as queued
+  PRIORITY_LABEL: priority                       # ⭐ drained first (blank = no tier)
+  CONFLICT_LABEL: conflict                       # 💥 put on a PR that conflicts
+  RED_LABEL: red                                 # 🚩 put on a PR that fails build or test
+  OWNER_LOGIN: dogi                              # 🙏 credited on PRs they did not author
+  REQUIRE_CHECKS: 'true'                         # ✅ never merge an unverified commit
+  REQUIRED_WORKFLOWS: 'myPlanet build, myPlanet test'   # 🔍 must be green on it
+  PUBLISH_JOB: 'myPlanet release (lite)'         # 📦 its refusal warning stops the drain
+  DELETE_BRANCH: 'true'                          # 🧹 drop each head branch after merging
+  WAIT_TIMEOUT_MIN: '45'                         # ⏱️ per commit, build and test
+  BASE_RERUN_ATTEMPTS: '1'                       # 🔁 flake allowance on the base
+  HEAD_RERUN_ATTEMPTS: '1'                       # 🔁 flake allowance on a prepared commit
 
 jobs:
   automerge:
@@ -134,23 +87,10 @@ jobs:
           SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           USING_PAT: ${{ secrets.AUTOMERGE_TOKEN != '' }}
           REPO: ${{ github.repository }}
-          BASE: ${{ inputs.base || env.DEFAULT_BASE }}
-          LABEL: ${{ inputs.label }}
-          CONFLICT_LABEL: ${{ inputs.conflict_label }}
-          RED_LABEL: ${{ inputs.red_label }}
-          PRIORITY_LABEL: ${{ inputs.priority_label }}
-          REQUIRE_CHECKS: ${{ inputs.require_checks }}
-          REQUIRED_WORKFLOWS: ${{ inputs.required_workflows }}
-          PUBLISH_JOB: ${{ inputs.publish_job }}
-          DELETE_BRANCH: ${{ inputs.delete_branch }}
           DRY_RUN: ${{ inputs.dry_run }}
           MAX_MERGES: ${{ inputs.max_merges }}
-          WAIT_TIMEOUT_MIN: ${{ inputs.wait_timeout_minutes }}
-          BASE_RERUN_ATTEMPTS: ${{ inputs.base_rerun_attempts }}
-          HEAD_RERUN_ATTEMPTS: ${{ inputs.head_rerun_attempts }}
           VERSION_SH: ${{ steps.stage.outputs.dir }}/version.sh
           COAUTHORS_SH: ${{ steps.stage.outputs.dir }}/coauthors.sh
           QUOTA_SH: ${{ steps.stage.outputs.dir }}/playstore-quota.sh
           PLAYSTORE_SH: ${{ steps.stage.outputs.dir }}/playstore.sh
-          OWNER_LOGIN: ${{ inputs.owner_login }}
         run: '${{ steps.stage.outputs.dir }}/automerge.sh'
