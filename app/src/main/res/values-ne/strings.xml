@@ -884,7 +884,7 @@
     <string name="auto_sync_device">स्वचालित सिङ्क यन्त्र</string>
     <string name="beta_functionality">बीटा कार्यक्षमता</string>
     <string name="main_controls">मुख्य नियन्त्रणहरू</string>
-    <string name ="dismiss"> खारेज गर्नुहोस्</string>
+    <string name="dismiss">खारेज गर्नुहोस्</string>
     <string name="available_space_colon">उपलब्ध ठाउँ: </string>
     <string name="community_leaders">सामुदायिक नेताहरू</string>
     <string name="services">सेवाहरू</string>
