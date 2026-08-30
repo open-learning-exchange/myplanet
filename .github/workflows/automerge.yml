@@ -43,20 +43,15 @@ concurrency:
   group: automerge
   cancel-in-progress: false
 
-# The rest of the drain's settings. They were menu inputs, and three drains'
-# logs say every one of them was dispatched at its default every time -- a menu
-# of fifteen fields is fifteen chances to mistype one at 2am. Change them here,
-# in a diff someone reviews, and the handover in playstore.yml gets the same
-# settings for free.
 env:
-  BASE: master                                   # 🌿 branch the queue merges into
-  GRADLE_FILE: app/build.gradle                  # 📄 file the version bump edits
-  OWNER_LOGIN: dogi                              # 🙏 credited on PRs they did not author
-  REQUIRE_CHECKS: 'true'                         # ✅ never merge an unverified commit
+  BASE: master                                          # 🌿 branch the queue merges into
+  GRADLE_FILE: app/build.gradle                         # 📄 file the version bump edits
+  OWNER_LOGIN: dogi                                     # 🙏 credited on PRs they did not author
+  REQUIRE_CHECKS: 'true'                                # ✅ never merge an unverified commit
   REQUIRED_WORKFLOWS: 'myPlanet build, myPlanet test'   # 🔍 must be green on it
-  PUBLISH_JOB: 'myPlanet release (lite)'         # 📦 its refusal warning stops the drain
-  DELETE_BRANCH: 'true'                          # 🧹 drop each head branch after merging
-  WAIT_TIMEOUT_MIN: '45'                         # ⏱️ per commit, build and test
+  PUBLISH_JOB: 'myPlanet release (lite)'                # 📦 its refusal warning stops the drain
+  DELETE_BRANCH: 'true'                                 # 🧹 drop each head branch after merging
+  WAIT_TIMEOUT_MIN: '45'                                # ⏱️ per commit, build and test
 
 jobs:
   automerge:
@@ -95,8 +90,6 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run }}
           MAX_MERGES: ${{ inputs.max_merges }}
           LABELS: ${{ inputs.labels }}
-          # one menu field, because a base that flakes and a prepared commit that
-          # flakes are the same coin toss; split them here if that stops being true
           BASE_RERUN_ATTEMPTS: ${{ inputs.retries }}
           HEAD_RERUN_ATTEMPTS: ${{ inputs.retries }}
           VERSION_SH: ${{ steps.stage.outputs.dir }}/version.sh
