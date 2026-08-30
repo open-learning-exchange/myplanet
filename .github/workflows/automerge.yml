@@ -21,9 +21,9 @@ on:
         default: '0'
         type: string
       labels:
-        description: '🏷️ labels: queue,prio,conflict,red'
+        description: '🏷️ labels: queue,prio,conflict,fail'
         required: false
-        default: 'automerge,priority,conflict,red'
+        default: 'automerge,priority,conflict,failing'
         type: string
       retries:
         description: '🔁 re-runs before a red sticks'

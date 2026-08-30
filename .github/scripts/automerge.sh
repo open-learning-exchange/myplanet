@@ -14,7 +14,7 @@ REPO="${REPO:?}"
 BASE="${BASE:?}"
 
 # The dispatch menu carries all four labels in one field, in the order the drain
-# uses them: queue,priority,conflict,red. An empty slot means that label goes
+# uses them: queue,priority,conflict,failing. An empty slot means that label goes
 # unused -- no priority tier, or drop the queue label without marking why. A slot
 # left off the end keeps the default below, which is also what a hand-run gets.
 if [ -n "${LABELS:-}" ]; then
@@ -26,7 +26,7 @@ if [ -n "${LABELS:-}" ]; then
             0) LABEL="$label_part" ;;
             1) PRIORITY_LABEL="$label_part" ;;
             2) CONFLICT_LABEL="$label_part" ;;
-            3) RED_LABEL="$label_part" ;;
+            3) FAILING_LABEL="$label_part" ;;
         esac
         label_i=$(( label_i + 1 ))
     done <<<"$(printf '%s' "$LABELS" | tr ',' '\n')"
@@ -34,7 +34,7 @@ fi
 
 LABEL="${LABEL:?the queue label may not be blank -- it is the first slot of LABELS}"
 CONFLICT_LABEL="${CONFLICT_LABEL-conflict}"
-RED_LABEL="${RED_LABEL-red}"
+FAILING_LABEL="${FAILING_LABEL-failing}"
 PRIORITY_LABEL="${PRIORITY_LABEL-priority}"
 GRADLE_FILE="${GRADLE_FILE:?}"
 VERSION_SH="${VERSION_SH:?}"
@@ -74,8 +74,8 @@ merged_count=0
 merged_list=""
 conflict_count=0
 conflict_list=""
-red_count=0
-red_list=""
+failing_count=0
+failing_list=""
 skip_numbers=""
 last_base_sha=""
 
@@ -165,11 +165,11 @@ handle_conflict() {
     retire_pr "$1" "$CONFLICT_LABEL" BD8652 'merge conflict' "conflicts with \`$BASE\`"
 }
 
-handle_red() {
-    red_count=$(( red_count + 1 ))
-    red_list="$red_list #$1"
-    retire_pr "$1" "$RED_LABEL" D73A4A 'build or test red on the prepared commit' \
-        'went red on its prepared commit'
+handle_failing() {
+    failing_count=$(( failing_count + 1 ))
+    failing_list="$failing_list #$1"
+    retire_pr "$1" "$FAILING_LABEL" B60205 'build or test failing on the prepared commit' \
+        'failed build or test on its prepared commit'
 }
 
 wait_pr_merged() {
@@ -592,7 +592,7 @@ while :; do
         # queue. 1 is no verdict at all (nothing ran, or it timed out), which says
         # nothing about the PR and everything about the setup: that still stops.
         if [ "$checks_rc" -eq 2 ]; then
-            handle_red "$NUMBER"
+            handle_failing "$NUMBER"
             skip_numbers="$skip_numbers $NUMBER"
             continue
         elif [ "$checks_rc" -ne 0 ]; then
@@ -711,12 +711,12 @@ if [ "$conflict_count" -ne 0 ]; then
         summary "**$conflict_count PR(s) conflict with \`$BASE\`**:$conflict_list -- \`$LABEL\` dropped${CONFLICT_LABEL:+, \`$CONFLICT_LABEL\` added}. Resolve the conflict and re-add \`$LABEL\` to queue it again."
     fi
 fi
-if [ "$red_count" -ne 0 ]; then
-    log "left for a human, red on the prepared commit:$red_list"
+if [ "$failing_count" -ne 0 ]; then
+    log "left for a human, failing on the prepared commit:$failing_list"
     summary ""
     if [ "$DRY_RUN" = 'true' ]; then
-        summary "**$red_count PR(s) went red on their prepared commit**:$red_list -- a real run would drop \`$LABEL\`${RED_LABEL:+ and add \`$RED_LABEL\`} and keep draining."
+        summary "**$failing_count PR(s) failed on their prepared commit**:$failing_list -- a real run would drop \`$LABEL\`${FAILING_LABEL:+ and add \`$FAILING_LABEL\`} and keep draining."
     else
-        summary "**$red_count PR(s) went red on their prepared commit**:$red_list -- \`$LABEL\` dropped${RED_LABEL:+, \`$RED_LABEL\` added}. Fix the failing build or test and re-add \`$LABEL\` to queue it again."
+        summary "**$failing_count PR(s) failed on their prepared commit**:$failing_list -- \`$LABEL\` dropped${FAILING_LABEL:+, \`$FAILING_LABEL\` added}. Fix the build or test and re-add \`$LABEL\` to queue it again."
     fi
 fi
