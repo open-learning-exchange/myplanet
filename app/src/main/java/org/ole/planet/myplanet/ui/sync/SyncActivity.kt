@@ -21,6 +21,7 @@ import android.widget.RadioGroup
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
@@ -31,7 +32,9 @@ import com.afollestad.materialdialogs.MaterialDialog
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Date
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -46,6 +49,7 @@ import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.SyncUiState
 import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -67,7 +71,6 @@ import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utils.NotificationUtils.cancelAll
 import org.ole.planet.myplanet.utils.RetryUtils
 import org.ole.planet.myplanet.utils.ServerConfigUtils
-import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -119,6 +122,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     var serverListAddresses: List<ServerAddress> = emptyList()
     private var isProgressDialogShowing = false
     private var lastSyncStatus: SyncManager.SyncStatus? = null
+    private var progressDialogBackPressedCallback: OnBackPressedCallback? = null
     @Inject
     lateinit var configurationsRepository: ConfigurationsRepository
 
@@ -133,8 +137,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     @Inject
     lateinit var syncManager: SyncManager
-    @Inject
-    override lateinit var timeProvider: TimeProvider
 
     @Inject
     lateinit var transactionSyncManager: TransactionSyncManager
@@ -156,19 +158,22 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
                 is SyncManager.SyncStatus.Syncing -> {
                     withContext(dispatcherProvider.main) {
-                        val s = status
-                        if (s.phase.isEmpty()) {
+                        if (status.phase.isEmpty()) {
                             onSyncStarted()
                         } else {
                             customProgressDialog.setSyncPhase(
-                                s.phase, s.phaseIndex, s.totalPhases,
-                                getString(R.string.sync_step_of, s.phaseIndex, s.totalPhases)
+                                status.phase, status.phaseIndex, status.totalPhases,
+                                getString(R.string.sync_step_of, status.phaseIndex,
+                                    status.totalPhases)
                             )
-                            val label = s.countLabel.ifEmpty {
-                                if (s.itemsTotal > 0) getString(R.string.sync_items_of, s.itemsDone, s.itemsTotal) else ""
+                            val label = status.countLabel.ifEmpty {
+                                if (status.itemsTotal > 0) getString(R.string.sync_items_of,
+                                    status.itemsDone, status.itemsTotal) else ""
                             }
-                            if (label.isNotEmpty() && s.itemsTotal > 0) {
-                                customProgressDialog.setSyncItemProgress(s.itemsDone, s.itemsTotal, label)
+                            if (label.isNotEmpty() && status.itemsTotal > 0) {
+                                customProgressDialog.setSyncItemProgress(
+                                    status.itemsDone,
+                                    status.itemsTotal, label)
                             }
                         }
                     }
@@ -203,10 +208,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 override fun showProgressDialog() {
                     customProgressDialog.setText(getString(R.string.check_apk_version))
                     customProgressDialog.show()
+                    guardBackPressWhileDialogShowing()
                 }
 
                 override fun dismissProgressDialog() {
                     customProgressDialog.dismiss()
+                    releaseBackPressGuard()
                 }
 
                 override fun setSyncFailed(failed: Boolean) {
@@ -268,16 +275,18 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     try {
                         customProgressDialog.setText(getString(R.string.clearing_data))
                         customProgressDialog.show()
+                        guardBackPressWhileDialogShowing()
 
                         configurationsRepository.clearAllData()
                         prefData.setManualConfig(config)
                         prefData.clearPreferences()
 
-                        delay(500)
+                        delay(500.milliseconds)
                         restartApp()
                     } catch (e: Exception) {
                         e.printStackTrace()
                         customProgressDialog.dismiss()
+                        releaseBackPressGuard()
                         dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = true
                         dialog.getButton(AlertDialog.BUTTON_NEGATIVE).isEnabled = true
                     }
@@ -341,6 +350,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             else -> ""
         }
         customProgressDialog.dismiss()
+        releaseBackPressGuard()
         alertDialogOkay(errorMessage)
         return false
     }
@@ -375,7 +385,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         prefData.setAutoSync(syncSwitch.isChecked)
         prefData.setAutoSyncInterval(syncTimeInterval[spinner.selectedItemPosition])
         prefData.setAutoSyncPosition(spinner.selectedItemPosition)
-        (applicationContext as? org.ole.planet.myplanet.MainApplication)?.applyAutoSyncSettings()
+        (applicationContext as? MainApplication)?.applyAutoSyncSettings()
     }
 
     suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): Boolean {
@@ -443,11 +453,28 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         return if (isUrlValid(url)) setUrlParts(url, pin) else ""
     }
 
+    private fun guardBackPressWhileDialogShowing() {
+        if (progressDialogBackPressedCallback != null) return
+        val callback = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                Toast.makeText(this@SyncActivity, getString(R.string.sync_in_progress_wait), Toast.LENGTH_SHORT).show()
+            }
+        }
+        onBackPressedDispatcher.addCallback(this, callback)
+        progressDialogBackPressedCallback = callback
+    }
+
+    private fun releaseBackPressGuard() {
+        progressDialogBackPressedCallback?.remove()
+        progressDialogBackPressedCallback = null
+    }
+
     private suspend fun onSyncStarted() {
         withContext(dispatcherProvider.main) {
             customProgressDialog.resetSyncProgress()
             customProgressDialog.setText(getString(R.string.syncing_data_please_wait))
             customProgressDialog.show()
+            guardBackPressWhileDialogShowing()
             isProgressDialogShowing = true
             txtSyncState?.text = getString(R.string.sync_chip_syncing)
             dotSync?.backgroundTintList = ColorStateList.valueOf(0xFFF59E0B.toInt())
@@ -459,6 +486,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             if (isProgressDialogShowing) {
                 customProgressDialog.dismiss()
             }
+            releaseBackPressGuard()
             if (::syncIconDrawable.isInitialized) {
                 syncIconDrawable = syncIcon.drawable as AnimationDrawable
                 syncIconDrawable.stop()
@@ -499,6 +527,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     }
 
                     customProgressDialog.dismiss()
+                    releaseBackPressGuard()
 
                     if (::syncIconDrawable.isInitialized) {
                         syncIconDrawable = syncIcon.drawable as AnimationDrawable
@@ -631,8 +660,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     MainApplication.applicationScope.launch {
                         val canReachServer = MainApplication.isServerReachable(serverUrl)
                         if (canReachServer) {
-                            withContext(dispatcherProvider.main) {
-                                startUpload("login")
+                            val state = syncRepository.uploadLoginData()
+                                .first { it is SyncUiState.Success || it is SyncUiState.Error }
+                            if (state is SyncUiState.Success) {
+                                prefData.setLastUsageUploaded(Date().time)
                             }
                             transactionSyncManager.syncDb("login_activities")
                         }
@@ -712,6 +743,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     override fun onSuccess(success: String?) {
         if (customProgressDialog.isShowing() && success?.contains("Crash") == true) {
             customProgressDialog.dismiss()
+            releaseBackPressGuard()
         }
         if (::btnSignIn.isInitialized) {
             showSnack(btnSignIn, success)
@@ -757,6 +789,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             if (customProgressDialog.isShowing()) {
                 customProgressDialog.dismiss()
             }
+            releaseBackPressGuard()
             if (!blockSync) {
                 continueSyncProcess()
             } else {
