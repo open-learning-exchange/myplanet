@@ -55,8 +55,16 @@ object SecurePrefs {
     }
     
     fun warmUp(context: Context) {
-        if (cachedAead == null) getAead(context)
-        if (cachedSecureStore == null) getSecureStore(context)
+        // Best-effort cache pre-fill only. Where the platform has no usable AndroidKeyStore,
+        // building either primitive throws, and every real accessor builds them lazily anyway.
+        // MainApplication warms up inside applicationScope.launch, so an escaping failure here
+        // is an uncaught coroutine exception, not a recoverable one.
+        try {
+            if (cachedAead == null) getAead(context)
+            if (cachedSecureStore == null) getSecureStore(context)
+        } catch (e: Exception) {
+            Log.w("SecurePrefs", "Secure storage warm-up failed, deferring to lazy initialization", e)
+        }
     }
 
     @Suppress("DEPRECATION")

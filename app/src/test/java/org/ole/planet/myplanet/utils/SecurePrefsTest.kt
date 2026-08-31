@@ -43,4 +43,13 @@ class SecurePrefsTest {
         assertEquals("testPass", encryptedPrefs.getString("loginUserPassword", null))
         assertNull(encryptedPrefs.getString("nonSensitive", null))
     }
+
+    @Test
+    fun testWarmUpSurvivesUnavailableSecureStorage() {
+        // Robolectric has no AndroidKeyStore, so building either primitive fails here the same
+        // way it does on a device with broken keystore state. MainApplication warms up inside
+        // applicationScope.launch, so a failure escaping warmUp is an uncaught coroutine
+        // exception that kotlinx-coroutines-test then charges to whichever test runs next.
+        SecurePrefs.warmUp(context)
+    }
 }
