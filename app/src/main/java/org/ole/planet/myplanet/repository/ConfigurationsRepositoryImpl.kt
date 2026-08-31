@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import android.util.Log
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.google.gson.Gson
@@ -53,6 +54,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     @PlainGson private val gson: Gson
 ) : ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
+
+    companion object {
+        private const val TAG = "ConfigurationsRepository"
+    }
 
     override suspend fun checkHealth(): String {
         return try {
@@ -244,6 +249,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     if (f.exists()) {
                         val sha256 = withContext(dispatcherProvider.io) {
                             Sha256Utils().getCheckSumFromFile(f)
+                        }
+                        if (sha256 == null) {
+                            Log.w(TAG, "Could not compute checksum for $path")
+                            return false
                         }
                         return checksum.contains(sha256)
                     }

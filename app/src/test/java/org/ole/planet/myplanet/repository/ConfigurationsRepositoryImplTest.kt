@@ -501,6 +501,41 @@ class ConfigurationsRepositoryImplTest {
     }
 
     @Test
+    fun `checkCheckSum returns false when checksum cannot be computed`() = runTest(testDispatcher) {
+        val path = "test_path"
+        val expectedChecksum = "expected_checksum"
+
+        every { sharedPrefManager.getServerUrl() } returns "http://test.url"
+        every { sharedPrefManager.isAlternativeUrl() } returns false
+        every { sharedPrefManager.getCouchdbUrl() } returns "http://test.url"
+        UrlUtils.init(sharedPrefManager)
+
+        // Mock api response
+        val mockBody = expectedChecksum.toResponseBody("text/plain".toMediaTypeOrNull())
+        val response = Response.success(200, mockBody)
+        coEvery { apiInterface.getChecksum(any()) } returns response
+
+        io.mockk.mockkStatic(android.util.Log::class)
+        every { android.util.Log.w(any(), any<String>()) } returns 0
+
+        io.mockk.mockkObject(FileUtils)
+        val mockFile = mockk<java.io.File>()
+        every { FileUtils.getSDPathFromUrl(context, path) } returns mockFile
+        every { mockFile.exists() } returns true
+
+        io.mockk.mockkConstructor(Sha256Utils::class)
+        every { anyConstructed<Sha256Utils>().getCheckSumFromFile(mockFile) } returns null
+
+        val result = repository.checkCheckSum(path)
+
+        assertFalse(result)
+
+        io.mockk.unmockkStatic(android.util.Log::class)
+        io.mockk.unmockkObject(FileUtils)
+        io.mockk.unmockkConstructor(Sha256Utils::class)
+    }
+
+    @Test
     fun `checkCheckSum returns false when file does not exist`() = runTest(testDispatcher) {
         val path = "test_path"
         val checksumUrl = "http://test.url/checksum"
