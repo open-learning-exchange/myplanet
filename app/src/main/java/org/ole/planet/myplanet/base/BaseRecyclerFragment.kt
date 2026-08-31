@@ -75,7 +75,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        postponeEnterTransition()
         viewLifecycleOwner.lifecycleScope.launch {
             model = userRepository.getUserModel()
             val adapter = getAdapter()
@@ -87,7 +86,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                     resources?.let { showDownloadDialog(it) }
                 }
             }
-            startPostponedEnterTransition()
             requireActivity().reportFullyDrawn()
 
             if (isMyCourseLib && courseLib == null && !isSurvey) {

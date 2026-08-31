@@ -373,8 +373,9 @@ class ResourcesAdapter(
     private fun buildMetaLine(model: ResourceListModel, type: LibraryType): String {
         val parts = mutableListOf<String>()
         parts.add(context.getString(typeLabelRes(type)))
+        val isOffline = model.item.isOffline || locallyOfflineIds.contains(model.item.id) || model.isLocallyOffline
         val localPath = model.item.resourceLocalAddress
-        if (!localPath.isNullOrBlank()) {
+        if (isOffline && !localPath.isNullOrBlank()) {
             val file = File(localPath)
             if (file.exists()) {
                 parts.add(FileUtils.formatSize(context, file.length()))

@@ -213,10 +213,20 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             adapterLibrary.setViewMode(prefManager.getLibraryViewMode())
             adapterLibrary.updateIdentity(user?.isGuest() == true, user?.name)
         }
-
         adapterLibrary.setListener(this)
 
-        val filteredList = applyFilterModels(filterLocalLibraryByTag(allResourceModels, etSearch.text?.toString()?.trim().orEmpty(), searchTags))
+        val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
+        val currentSearchTags = searchTags
+        val searchTagIds = currentSearchTags.map { it.id }.sorted()
+        lastSearchQuery = searchQuery
+        lastSearchTags = searchTagIds
+        lastSubjects = HashSet(subjects)
+        lastLevels = HashSet(levels)
+        lastLanguages = HashSet(languages)
+        lastMediums = HashSet(mediums)
+        lastDownloadFilterIndex = selectedDownloadFilterIndex
+
+        val filteredList = applyFilterModels(filterLocalLibraryByTag(allResourceModels, searchQuery, currentSearchTags))
         adapterLibrary.setLibraryList(filteredList)
 
         checkList(filteredList.size)
