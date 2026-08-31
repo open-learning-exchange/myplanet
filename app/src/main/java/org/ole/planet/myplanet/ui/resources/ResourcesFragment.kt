@@ -83,7 +83,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private var layoutViewToggle: View? = null
     private var toggleGridButton: ImageButton? = null
     private var toggleListButton: ImageButton? = null
-    private var searchTags: MutableList<TagEntity> = ArrayList()
+    internal var searchTags: MutableList<TagEntity> = ArrayList()
     private lateinit var config: ChipCloudConfig
     private lateinit var adapterLibrary: ResourcesAdapter
     var userModel: UserEntity ?= null
@@ -103,7 +103,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private val viewModel: ResourcesViewModel by viewModels()
     @Inject
     lateinit var realtimeSyncManager: RealtimeSyncManager
-    private var selectedDownloadFilterIndex: Int = 0   // 0 = All
+    internal var selectedDownloadFilterIndex: Int = 0   // 0 = All
     private var lastDownloadFilterIndex: Int = 0
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private var refreshJob: Job? = null
@@ -136,24 +136,24 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     internal fun saveFilterState(outState: Bundle) {
-        outState.putStringArrayList("filter_subjects", ArrayList(subjects))
-        outState.putStringArrayList("filter_languages", ArrayList(languages))
-        outState.putStringArrayList("filter_levels", ArrayList(levels))
-        outState.putStringArrayList("filter_mediums", ArrayList(mediums))
-        outState.putInt("filter_download_index", selectedDownloadFilterIndex)
-        outState.putStringArrayList("filter_tag_ids", ArrayList(searchTags.map { it.id }))
-        outState.putStringArrayList("filter_tag_names", ArrayList(searchTags.map { it.name.orEmpty() }))
+        outState.putStringArrayList(KEY_FILTER_SUBJECTS, ArrayList(subjects))
+        outState.putStringArrayList(KEY_FILTER_LANGUAGES, ArrayList(languages))
+        outState.putStringArrayList(KEY_FILTER_LEVELS, ArrayList(levels))
+        outState.putStringArrayList(KEY_FILTER_MEDIUMS, ArrayList(mediums))
+        outState.putInt(KEY_FILTER_DOWNLOAD_INDEX, selectedDownloadFilterIndex)
+        outState.putStringArrayList(KEY_FILTER_TAG_IDS, ArrayList(searchTags.map { it.id }))
+        outState.putStringArrayList(KEY_FILTER_TAG_NAMES, ArrayList(searchTags.map { it.name.orEmpty() }))
     }
 
     internal fun restoreFilterState(bundle: Bundle?) {
         bundle ?: return
-        bundle.getStringArrayList("filter_subjects")?.let { subjects = it.toMutableSet() }
-        bundle.getStringArrayList("filter_languages")?.let { languages = it.toMutableSet() }
-        bundle.getStringArrayList("filter_levels")?.let { levels = it.toMutableSet() }
-        bundle.getStringArrayList("filter_mediums")?.let { mediums = it.toMutableSet() }
-        selectedDownloadFilterIndex = bundle.getInt("filter_download_index", 0)
-        val tagIds = bundle.getStringArrayList("filter_tag_ids") ?: emptyList()
-        val tagNames = bundle.getStringArrayList("filter_tag_names") ?: emptyList()
+        bundle.getStringArrayList(KEY_FILTER_SUBJECTS)?.let { subjects = it.toMutableSet() }
+        bundle.getStringArrayList(KEY_FILTER_LANGUAGES)?.let { languages = it.toMutableSet() }
+        bundle.getStringArrayList(KEY_FILTER_LEVELS)?.let { levels = it.toMutableSet() }
+        bundle.getStringArrayList(KEY_FILTER_MEDIUMS)?.let { mediums = it.toMutableSet() }
+        selectedDownloadFilterIndex = bundle.getInt(KEY_FILTER_DOWNLOAD_INDEX, 0)
+        val tagIds = bundle.getStringArrayList(KEY_FILTER_TAG_IDS) ?: emptyList()
+        val tagNames = bundle.getStringArrayList(KEY_FILTER_TAG_NAMES) ?: emptyList()
         searchTags.clear()
         for (i in tagIds.indices) {
             searchTags.add(TagEntity().apply {
@@ -1017,5 +1017,15 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             chip.setTextColor(ContextCompat.getColor(requireContext(),
                 if (isSelected) R.color.chip_selected_text else R.color.daynight_textColor))
         }
+    }
+
+    companion object {
+        const val KEY_FILTER_SUBJECTS = "filter_subjects"
+        const val KEY_FILTER_LANGUAGES = "filter_languages"
+        const val KEY_FILTER_LEVELS = "filter_levels"
+        const val KEY_FILTER_MEDIUMS = "filter_mediums"
+        const val KEY_FILTER_DOWNLOAD_INDEX = "filter_download_index"
+        const val KEY_FILTER_TAG_IDS = "filter_tag_ids"
+        const val KEY_FILTER_TAG_NAMES = "filter_tag_names"
     }
 }
