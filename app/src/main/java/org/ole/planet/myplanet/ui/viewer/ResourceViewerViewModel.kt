@@ -36,11 +36,28 @@ class ResourceViewerViewModel @Inject constructor(
         sharedPrefManager.setMediaPlaybackPosition(resourceKey, positionMs)
     }
 
+    fun savePlaybackProgress(resourceKey: String, currentPos: Long, duration: Long) {
+        val effectivePosition = calculateEffectivePlaybackPosition(currentPos, duration)
+        sharedPrefManager.setMediaPlaybackPosition(resourceKey, effectivePosition)
+    }
+
     fun getPlaybackSpeed(): Float =
         sharedPrefManager.getMediaPlaybackSpeed()
 
     fun savePlaybackSpeed(speed: Float) {
         sharedPrefManager.setMediaPlaybackSpeed(speed)
+    }
+
+    companion object {
+        const val NEAR_END_THRESHOLD_MS = 2000L
+
+        fun calculateEffectivePlaybackPosition(currentPos: Long, duration: Long): Long {
+            if (currentPos <= 0L) return 0L
+            if (duration > 0L && duration - currentPos < NEAR_END_THRESHOLD_MS) {
+                return 0L
+            }
+            return currentPos
+        }
     }
 
     suspend fun ensureServerUrlUpdated() {

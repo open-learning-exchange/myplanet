@@ -1390,4 +1390,5 @@
         <item>डाउनलोड गरिएको छैन</item>
     </string-array>
 
+    <string name="playback_speed">प्लेब्याक गति</string>
 </resources>

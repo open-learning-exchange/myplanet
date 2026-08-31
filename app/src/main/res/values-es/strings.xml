@@ -1393,4 +1393,5 @@
         <item>No descargado</item>
     </string-array>
 
+    <string name="playback_speed">Velocidad de reproducción</string>
 </resources>

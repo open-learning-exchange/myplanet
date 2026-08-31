@@ -165,10 +165,16 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         return binding.root
     }
 
+    private var lastSavedPositionMs: Long = -1L
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         audioRecorder = AudioRecorder().setAudioRecordListener(audioRecordListener)
         audioRecorder.setCaller(requireActivity(), requireContext())
+
+        if (type == ResourceType.VIDEO || type == ResourceType.AUDIO) {
+            setupPlaybackSpeedMenu()
+        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             externalFilesDir = viewModel.getExternalFilesDir()
@@ -181,14 +187,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
     private suspend fun setupViewer() {
         when (type) {
-            ResourceType.VIDEO -> {
-                setupPlaybackSpeedMenu()
-                setupVideoViewer()
-            }
-            ResourceType.AUDIO -> {
-                setupPlaybackSpeedMenu()
-                setupAudioViewer()
-            }
+            ResourceType.VIDEO -> setupVideoViewer()
+            ResourceType.AUDIO -> setupAudioViewer()
             ResourceType.PDF -> setupPdfViewer()
             ResourceType.IMAGE -> setupImageViewer()
             ResourceType.TEXT, ResourceType.MARKDOWN, ResourceType.CSV -> setupTextViewer()
@@ -204,10 +204,10 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         if (mediaKey.isEmpty()) return
         val currentPos = player.currentPosition
         val duration = player.duration
-        if (duration > 0 && duration - currentPos < 2000L) {
-            viewModel.savePlaybackProgress(mediaKey, 0L)
-        } else if (currentPos > 0L) {
-            viewModel.savePlaybackProgress(mediaKey, currentPos)
+        val effectivePosition = ResourceViewerViewModel.calculateEffectivePlaybackPosition(currentPos, duration)
+        if (lastSavedPositionMs == -1L || Math.abs(effectivePosition - lastSavedPositionMs) >= 2000L || effectivePosition == 0L) {
+            lastSavedPositionMs = effectivePosition
+            viewModel.savePlaybackProgress(mediaKey, effectivePosition)
         }
     }
 
@@ -223,7 +223,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
                 if (menuItem.itemId == R.id.action_playback_speed) {
-                    showPlaybackSpeedDialog(menuItem)
+                    showPlaybackSpeedDialog()
                     return true
                 }
                 return false
@@ -231,7 +231,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         }, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
-    private fun showPlaybackSpeedDialog(menuItem: MenuItem? = null) {
+    private fun showPlaybackSpeedDialog() {
         val speedOptions = arrayOf("0.75x", "1.0x", "1.25x", "1.5x", "2.0x")
         val speedValues = floatArrayOf(0.75f, 1.0f, 1.25f, 1.5f, 2.0f)
         val currentSpeed = viewModel.getPlaybackSpeed()
@@ -245,7 +245,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                 val chosenSpeed = speedValues[which]
                 viewModel.savePlaybackSpeed(chosenSpeed)
                 exoPlayer?.setPlaybackSpeed(chosenSpeed)
-                menuItem?.title = "${chosenSpeed}x"
                 requireActivity().invalidateOptionsMenu()
                 true
             }
@@ -410,13 +409,18 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                 navigateBackWithError(getString(R.string.video_playback_error))
             }
             override fun onIsPlayingChanged(isPlaying: Boolean) {
-                if (!isPlaying) saveCurrentPlaybackProgress()
+                if (!isPlaying && player.playbackState != Player.STATE_BUFFERING) {
+                    saveCurrentPlaybackProgress()
+                }
             }
             override fun onPlaybackStateChanged(playbackState: Int) {
                 when (playbackState) {
                     Player.STATE_BUFFERING -> showVideoLoading(getString(R.string.video_loading_buffering))
                     Player.STATE_READY -> hideVideoLoading()
-                    Player.STATE_ENDED -> viewModel.savePlaybackProgress(getMediaKey(), 0L)
+                    Player.STATE_ENDED -> {
+                        lastSavedPositionMs = 0L
+                        viewModel.savePlaybackProgress(getMediaKey(), 0L)
+                    }
                     else -> {}
                 }
             }
@@ -452,10 +456,13 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             player.setMediaItem(MediaItem.fromUri(fullPath))
             player.addListener(object : Player.Listener {
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
-                    if (!isPlaying) saveCurrentPlaybackProgress()
+                    if (!isPlaying && player.playbackState != Player.STATE_BUFFERING) {
+                        saveCurrentPlaybackProgress()
+                    }
                 }
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     if (playbackState == Player.STATE_ENDED) {
+                        lastSavedPositionMs = 0L
                         viewModel.savePlaybackProgress(getMediaKey(), 0L)
                     }
                 }
