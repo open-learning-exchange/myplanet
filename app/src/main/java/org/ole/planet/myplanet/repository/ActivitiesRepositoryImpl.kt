@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
+import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.LoginActivityData
 import org.ole.planet.myplanet.model.MyPlanet
@@ -53,7 +54,8 @@ class ActivitiesRepositoryImpl @Inject constructor(
     private val resourceActivityDao: ResourceActivityDao,
     private val offlineActivityDao: OfflineActivityDao,
     private val removedLogDao: RemovedLogDao,
-    private val searchActivityDao: SearchActivityDao
+    private val searchActivityDao: SearchActivityDao,
+    private val userDao: UserDao
 ) : ActivitiesRepository {
     override suspend fun getOfflineVisitCount(userId: String): Int {
         return offlineActivityDao.countByUserIdAndType(userId, UserSessionManager.KEY_LOGIN)
@@ -84,7 +86,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logCourseVisit(courseId: String, title: String, userId: String) {
-        val user = userRepository.get().getUserByName(userId)
+        val user = userDao.getByName(userId)
         val parentCode = user?.parentCode
         val createdOn = user?.planetCode
 

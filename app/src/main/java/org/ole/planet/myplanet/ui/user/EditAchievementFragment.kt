@@ -249,8 +249,9 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private fun showAchievementAndInfo() {
         val config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
         binding.llAttachment.removeAllViews()
+        val inflater = LayoutInflater.from(activity)
         for (e in achievementArray ?: return) {
-            editAttachmentBinding = EditAttachementBinding.inflate(LayoutInflater.from(activity))
+            editAttachmentBinding = EditAttachementBinding.inflate(inflater, binding.llAttachment, false)
             editAttachmentBinding.tvTitle.text = e.asJsonObject["title"].asString
             val flexboxLayout = editAttachmentBinding.flexbox
             flexboxLayout.removeAllViews()
@@ -271,8 +272,9 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     private fun showReference() {
         binding.llOtherInfo.removeAllViews()
+        val inflater = LayoutInflater.from(activity)
         for (e in referenceArray ?: return) {
-            editOtherInfoBinding = EditOtherInfoBinding.inflate(LayoutInflater.from(activity))
+            editOtherInfoBinding = EditOtherInfoBinding.inflate(inflater, binding.llOtherInfo, false)
             editOtherInfoBinding.tvTitle.text = e.asJsonObject["name"].asString
             editOtherInfoBinding.ivDelete.setOnClickListener {
                 referenceArray?.remove(e)
@@ -362,8 +364,8 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             }.setNegativeButton(getString(R.string.cancel), null).show()
     }
 
-    private fun setUpOldAchievement(`object`: JsonObject?, etDescription: EditText, etTitle: EditText, tvDate: AppCompatTextView): List<String?> {
-        val prevList: MutableList<String?> = ArrayList()
+    private fun setUpOldAchievement(`object`: JsonObject?, etDescription: EditText, etTitle: EditText, tvDate: AppCompatTextView): Set<String?> {
+        val prevSet: MutableSet<String?> = HashSet()
         if (`object` != null) {
             etTitle.setText(`object`["title"].asString)
             etDescription.setText(`object`["description"].asString)
@@ -372,11 +374,11 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             val array = `object`.getAsJsonArray("resources") ?: JsonArray()
             date = `object`["date"].asString
             for (o in array) {
-                prevList.add(o.asJsonObject["title"].asString)
+                prevSet.add(o.asJsonObject["title"].asString)
             }
             resourceArray = array
         }
-        return prevList
+        return prevSet
     }
 
     private fun saveAchievement(desc: String, title: String) {
@@ -391,7 +393,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         showAchievementAndInfo()
     }
 
-    private fun showResourceListDialog(prevList: List<String?>) {
+    private fun showResourceListDialog(prevList: Set<String?>) {
         viewLifecycleOwner.lifecycleScope.launch {
             val list = resourcesRepository.getAllLibraries()
 
@@ -474,7 +476,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         return achievement?.resumeFileName ?: ""
     }
 
-    private fun createResourceList(myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding, list: List<MyLibrary>, prevList: List<String?>): RecyclerView {
+    private fun createResourceList(myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding, list: List<MyLibrary>, prevList: Set<String?>): RecyclerView {
         val names = ArrayList<String>()
         val selected: ArrayList<Int> = ArrayList()
         for (i in list.indices) {
