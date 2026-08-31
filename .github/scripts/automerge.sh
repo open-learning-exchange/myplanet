@@ -5,14 +5,33 @@
 #
 #   1. merge $BASE into the PR branch          (a conflict relabels it and moves on)
 #   2. bump the version on the PR branch
-#   3. push, and wait for build + test on that prepared commit
+#   3. push, and wait for build + test on that prepared commit (red relabels too)
 #   4. wait for $BASE to be settled and green, then squash merge
 set -euo pipefail
 
 REPO="${REPO:?}"
 BASE="${BASE:?}"
-LABEL="${LABEL:?}"
+
+# queue,priority,conflict,failing in one field: an empty slot means that label
+# goes unused, a slot left off the end keeps the default below.
+if [ -n "${LABELS:-}" ]; then
+    label_i=0
+    while IFS= read -r label_part; do
+        label_part="${label_part#"${label_part%%[![:space:]]*}"}"
+        label_part="${label_part%"${label_part##*[![:space:]]}"}"
+        case "$label_i" in
+            0) LABEL="$label_part" ;;
+            1) PRIORITY_LABEL="$label_part" ;;
+            2) CONFLICT_LABEL="$label_part" ;;
+            3) FAILING_LABEL="$label_part" ;;
+        esac
+        label_i=$(( label_i + 1 ))
+    done <<<"$(printf '%s' "$LABELS" | tr ',' '\n')"
+fi
+
+LABEL="${LABEL:?the queue label may not be blank -- it is the first slot of LABELS}"
 CONFLICT_LABEL="${CONFLICT_LABEL-conflict}"
+FAILING_LABEL="${FAILING_LABEL-failing}"
 PRIORITY_LABEL="${PRIORITY_LABEL-priority}"
 GRADLE_FILE="${GRADLE_FILE:?}"
 VERSION_SH="${VERSION_SH:?}"
@@ -30,6 +49,8 @@ WAIT_TIMEOUT_MIN="${WAIT_TIMEOUT_MIN:-45}"
 USING_PAT="${USING_PAT:-false}"
 BASE_RERUN_ATTEMPTS="${BASE_RERUN_ATTEMPTS:-1}"
 case "$BASE_RERUN_ATTEMPTS" in *[!0-9]*|"") BASE_RERUN_ATTEMPTS=1 ;; esac
+HEAD_RERUN_ATTEMPTS="${HEAD_RERUN_ATTEMPTS:-1}"
+case "$HEAD_RERUN_ATTEMPTS" in *[!0-9]*|"") HEAD_RERUN_ATTEMPTS=1 ;; esac
 
 RUN_APPEAR_TIMEOUT_SEC=300
 RERUN_START_TIMEOUT_SEC=180
@@ -50,6 +71,8 @@ merged_count=0
 merged_list=""
 conflict_count=0
 conflict_list=""
+failing_count=0
+failing_list=""
 skip_numbers=""
 last_base_sha=""
 
@@ -68,8 +91,9 @@ pick_pr() {
         --json number,title,isDraft,headRefName,headRefOid,headRepositoryOwner,labels \
       | jq -c --arg skip "$skip_numbers" --arg prio "$PRIORITY_LABEL" '
             [ $skip | split(" ")[] | select(length > 0) | tonumber ] as $done
+            | ($done | map({ key: tostring, value: true }) | from_entries) as $doneSet
             | map(select(.isDraft | not))
-            | map(select(.number as $n | $done | index($n) | not))
+            | map(select(.number as $n | $doneSet | has($n | tostring) | not))
             | map(. + { priority: (
                   ($prio | length > 0)
                   and (((.labels // []) | map(.name) | index($prio)) != null)
@@ -95,36 +119,53 @@ check_mergeable() {
     esac
 }
 
-add_conflict_label() {
-    local pr=$1
-    gh pr edit "$pr" --repo "$REPO" --add-label "$CONFLICT_LABEL" >/dev/null 2>&1 && return 0
-    gh label create "$CONFLICT_LABEL" --repo "$REPO" \
-        --color BD8652 --description 'merge conflict' >/dev/null 2>&1 || true
-    gh pr edit "$pr" --repo "$REPO" --add-label "$CONFLICT_LABEL" >/dev/null 2>&1
+add_marker_label() {
+    local pr=$1 label=$2 color=$3 desc=$4
+    gh pr edit "$pr" --repo "$REPO" --add-label "$label" >/dev/null 2>&1 && return 0
+    gh label create "$label" --repo "$REPO" \
+        --color "$color" --description "$desc" >/dev/null 2>&1 || true
+    gh pr edit "$pr" --repo "$REPO" --add-label "$label" >/dev/null 2>&1
 }
 
-handle_conflict() {
-    local pr=$1
-    conflict_count=$(( conflict_count + 1 ))
-    conflict_list="$conflict_list #$pr"
+# Drop $LABEL so the queue moves on, and mark why on the PR itself.
+retire_pr() {
+    local pr=$1 marker=$2 color=$3 desc=$4 what=$5
 
     if [ "$DRY_RUN" = 'true' ]; then
-        log "  dry run: #$pr conflicts with $BASE -- would relabel it and move on"
-        summary "| #$pr | | dry run: **conflicts** with \`$BASE\` |"
+        log "  dry run: #$pr $what -- would relabel it and move on"
+        summary "| #$pr | | dry run: **$what** |"
         return 0
     fi
 
-    log "  #$pr conflicts with $BASE -- dropping '$LABEL', moving on to the next PR"
-    if [ -n "$CONFLICT_LABEL" ] && ! add_conflict_label "$pr"; then
-        log "  #$pr: could not add '$CONFLICT_LABEL'"
+    local marked=""
+    log "  #$pr $what -- dropping '$LABEL', moving on to the next PR"
+    if [ -n "$marker" ]; then
+        if add_marker_label "$pr" "$marker" "$color" "$desc"; then
+            marked=", added \`$marker\`"
+        else
+            log "  #$pr: could not add '$marker'"
+        fi
     fi
     if gh pr edit "$pr" --repo "$REPO" --remove-label "$LABEL" >/dev/null 2>&1; then
-        summary "| #$pr | | **conflicts** with \`$BASE\`: dropped \`$LABEL\`${CONFLICT_LABEL:+, added \`$CONFLICT_LABEL\`} |"
+        summary "| #$pr | | **$what**: dropped \`$LABEL\`$marked |"
     else
         log "  #$pr: could not remove '$LABEL' -- skipped for this drain only"
-        summary "| #$pr | | **conflicts** with \`$BASE\`: \`$LABEL\` could not be removed |"
+        summary "| #$pr | | **$what**: \`$LABEL\` could not be removed |"
     fi
     return 0
+}
+
+handle_conflict() {
+    conflict_count=$(( conflict_count + 1 ))
+    conflict_list="$conflict_list #$1"
+    retire_pr "$1" "$CONFLICT_LABEL" BD8652 'merge conflict' "conflicts with \`$BASE\`"
+}
+
+handle_failing() {
+    failing_count=$(( failing_count + 1 ))
+    failing_list="$failing_list #$1"
+    retire_pr "$1" "$FAILING_LABEL" B60205 'build or test failing on the prepared commit' \
+        'failed build or test on its prepared commit'
 }
 
 wait_pr_merged() {
@@ -256,13 +297,13 @@ wait_run_restarted() {
 }
 
 rerun_failed_runs() {
-    local sha=$1 branch=${2:-} id name triggered=0
-    [ "$BASE_RERUN_ATTEMPTS" -gt 0 ] || return 1
+    local sha=$1 branch=${2:-} attempts=${3:-$BASE_RERUN_ATTEMPTS} id name triggered=0
+    [ "$attempts" -gt 0 ] || return 1
 
     while IFS=$'\t' read -r id name; do
         [ -n "$id" ] || continue
-        if [ "$(rerun_count_for "$id")" -ge "$BASE_RERUN_ATTEMPTS" ]; then
-            log "  $name failed again after $BASE_RERUN_ATTEMPTS re-run(s) -- taking it as real"
+        if [ "$(rerun_count_for "$id")" -ge "$attempts" ]; then
+            log "  $name failed again after $attempts re-run(s) -- taking it as real"
             continue
         fi
         if gh api -X POST "repos/$REPO/actions/runs/$id/rerun-failed-jobs" >/dev/null 2>&1 \
@@ -534,8 +575,24 @@ while :; do
     fi
 
     if [ "$REQUIRE_CHECKS" = 'true' ]; then
-        wait_for_runs "$merge_sha" "$REQUIRED_WORKFLOWS" fail "$HEAD" \
-            || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: prepared commit not green |"; exit 1; }
+        checks_rc=0
+        while :; do
+            checks_rc=0
+            wait_for_runs "$merge_sha" "$REQUIRED_WORKFLOWS" fail "$HEAD" || checks_rc=$?
+            [ "$checks_rc" -eq 2 ] || break
+            [ "$HEAD_RERUN_ATTEMPTS" -gt 0 ] \
+                && log "  re-running the red workflow(s) before taking this as #$NUMBER's"
+            rerun_failed_runs "$merge_sha" "$HEAD" "$HEAD_RERUN_ATTEMPTS" || break
+        done
+        # 2 is a verdict on this PR alone; 1 is no verdict at all, which still stops.
+        if [ "$checks_rc" -eq 2 ]; then
+            handle_failing "$NUMBER"
+            skip_numbers="$skip_numbers $NUMBER"
+            continue
+        elif [ "$checks_rc" -ne 0 ]; then
+            summary "| #$NUMBER | → \`$new_name\` | **stopped**: no verdict on the prepared commit |"
+            exit 1
+        fi
     else
         log "  require_checks is off -- merging ${merge_sha:0:7} unverified"
     fi
@@ -646,5 +703,14 @@ if [ "$conflict_count" -ne 0 ]; then
         summary "**$conflict_count PR(s) conflict with \`$BASE\`**:$conflict_list -- a real run would drop \`$LABEL\`${CONFLICT_LABEL:+ and add \`$CONFLICT_LABEL\`} and keep draining."
     else
         summary "**$conflict_count PR(s) conflict with \`$BASE\`**:$conflict_list -- \`$LABEL\` dropped${CONFLICT_LABEL:+, \`$CONFLICT_LABEL\` added}. Resolve the conflict and re-add \`$LABEL\` to queue it again."
+    fi
+fi
+if [ "$failing_count" -ne 0 ]; then
+    log "left for a human, failing on the prepared commit:$failing_list"
+    summary ""
+    if [ "$DRY_RUN" = 'true' ]; then
+        summary "**$failing_count PR(s) failed on their prepared commit**:$failing_list -- a real run would drop \`$LABEL\`${FAILING_LABEL:+ and add \`$FAILING_LABEL\`} and keep draining."
+    else
+        summary "**$failing_count PR(s) failed on their prepared commit**:$failing_list -- \`$LABEL\` dropped${FAILING_LABEL:+, \`$FAILING_LABEL\` added}. Fix the build or test and re-add \`$LABEL\` to queue it again."
     fi
 fi
