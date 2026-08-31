@@ -17,7 +17,13 @@ setup() {
     export EXCLUDE_PATHS='app/src/main/res/values-*/strings.xml'
     export DRY_RUN=true
     export FILES_JSON="$BATS_TMPDIR/files-$BATS_TEST_NAME.json"
+    # isolate per-test blob registrations and resolved SHAs (stub_blob/gradle_blob)
+    unset GRADLE_BLOB_h GRADLE_BLOB_b GRADLE_HEAD_SHA GRADLE_BASE_SHA
     load test_helper
+}
+
+teardown() {
+    unset GRADLE_BLOB_h GRADLE_BLOB_b GRADLE_HEAD_SHA GRADLE_BASE_SHA
 }
 
 # Feed a files-listing JSON (path/additions/deletions, no patch) for the offline
@@ -91,6 +97,22 @@ feed() { printf '%s' "$1" > "$FILES_JSON"; }
     [ "$status" -eq 0 ]
     [[ "$output" == *"+5/-0"* ]]
     [[ "$output" != *"discounting the version bump"* ]]
+}
+
+@test "an unreadable version-file diff warns instead of silently dropping the discount" {
+    install_gh_stub
+    # listing reports the version file changed, but both blobs read back empty
+    # (as they would under a missing contents:read scope)
+    feed '[{"path":"app/build.gradle","additions":2,"deletions":2}]'
+    export GRADLE_HEAD_SHA=h
+    export GRADLE_BASE_SHA=b
+    # no stub_blob -> gradle_blob returns "" for both shas
+    run bash -c "set -euo pipefail; $(label_src); main"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"WARNING: could not read app/build.gradle diff"* ]]
+    [[ "$output" == *"check contents:read permission"* ]]
+    # the 2/2 is NOT discounted
+    [[ "$output" == *"+2/-2"* ]]
 }
 
 @test "excluded translation strings are skipped" {

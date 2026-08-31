@@ -124,6 +124,13 @@ main() {
                 [ "$file_adds" -lt 0 ] && file_adds=0
                 [ "$file_dels" -lt 0 ] && file_dels=0
                 log "  discounting the version bump in $path (-$bump_adds/-$bump_dels)"
+            elif [ -z "$patch" ] && [ $((file_adds + file_dels)) -gt 0 ]; then
+                # The listing says the version file changed but we could not
+                # reconstruct its diff (blob read returned null/empty -- a
+                # missing contents:read scope, or a force-pushed-away base).
+                # Surface it so the discount isn't silently dropped. A readable
+                # diff with no version lines is the normal no-discount case.
+                log "  WARNING: could not read $path diff -- not discounting the version bump (check contents:read permission)"
             fi
         fi
         adds=$((adds + file_adds))
