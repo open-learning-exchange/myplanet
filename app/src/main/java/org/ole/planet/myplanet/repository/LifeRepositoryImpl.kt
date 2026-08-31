@@ -70,7 +70,7 @@ class LifeRepositoryImpl @Inject constructor(
         return imageId?.takeIf { it.isNotBlank() }
             ?: title?.takeIf { it.isNotBlank() }
             ?: _id.takeIf { it.isNotBlank() }
-            ?: System.identityHashCode(this)
+            ?: listOf(userId, isVisible, weight)
     }
 
     override suspend fun getMyLifeByUserId(userId: String?, ensureLatest: Boolean): List<MyLife> {
