@@ -186,7 +186,7 @@ object NetworkUtils {
     }
 
     fun getCurrentNetworkId(context: Context): Int {
-        var ssid = -1
+        var networkId = -1
         val connManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connManager.activeNetwork
         val capabilities = connManager.getNetworkCapabilities(network)
@@ -201,10 +201,10 @@ object NetworkUtils {
 
             if (connectionInfo != null && !connectionInfo.ssid.isNullOrEmpty()) {
                 @Suppress("DEPRECATION")
-                ssid = connectionInfo.networkId
+                networkId = connectionInfo.networkId
             }
         }
-        return ssid
+        return networkId
     }
 
     fun getUniqueIdentifier(): String {
