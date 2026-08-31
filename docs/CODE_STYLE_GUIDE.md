@@ -698,7 +698,7 @@ Branches follow the `{prefix}/{slug}` pattern, where the slug is kebab-case deri
 | AI agent (Copilot) | `copilot/` | `copilot/fix-notification-badge-count` |
 | Human contributor | `{number}-{description}` | `13755-add-ability-to-edit-meetups` |
 
-(The full field guide to summoning AI agents on PRs — reviewers vs doers, incantations, side effects, and the Laws of Summoning — is the `agents-summoning` skill: `.agents/skills/agents-summoning/SKILL.md`, or the `agents-summoning@summoning` plugin in a Claude Code session. See `docs/SKILL_SYNC.md` for how it loads.)
+(The full field guide to summoning AI agents on PRs — reviewers vs doers, incantations, side effects, and the Laws of Summoning — is the `agents-summoning` skill: `.agents/skills/agents-summoning/SKILL.md`, or the `agents-summoning@summoning` plugin in a Claude Code session.)
 
 **Push flag:** Always use `-u` on the first push: `git push -u origin <branch-name>`.
 

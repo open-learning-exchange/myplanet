@@ -25,7 +25,6 @@
 | `docs/DOMAIN_MODEL.md` | You need to understand the learning domain — roles, courses, teams, surveys, sync concepts |
 | `docs/CODE_STYLE_GUIDE.md` | You're writing code — naming, imports, coroutines, Room, Hilt, UI conventions |
 | `docs/TESTING.md` | You're writing or fixing tests — patterns to copy per layer |
-| `docs/SKILL_SYNC.md` | You're wiring up or bumping a shared agent skill (`agents-summoning`, `merge-prepping`, `kotlin-importing`, `branch-overtaking`) — how one skill repo feeds Claude Code, OpenHands, and Copilot |
 | `agents-summoning` skill — `.agents/skills/agents-summoning/SKILL.md` (or the `agents-summoning@summoning` plugin in a Claude Code session) | You're summoning another AI agent (`@coderabbitai` `@codex` `@copilot` `@devin` `@jules` `@openhands` `@dependabot`) on a PR or issue — who answers, how fast, with what side effects, and why a summon went silent. Dated receipts in the same skill's `NOTES.md`; connection checklists in its `references/connecting.md` |
 
 ---

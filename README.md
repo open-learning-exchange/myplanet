@@ -48,8 +48,6 @@ git clone --recurse-submodules https://github.com/open-learning-exchange/myplane
 git submodule update --init --recursive
 ```
 
-See [`docs/SKILL_SYNC.md`](docs/SKILL_SYNC.md) for how the skills are wired up and kept in sync.
-
 ## Contact
 
 For any questions or feedback, please join [our Discord server](https://discord.gg/BVrFEeNtQZ).

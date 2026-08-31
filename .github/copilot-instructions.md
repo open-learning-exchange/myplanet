@@ -16,4 +16,4 @@ Submodules are **not** initialized on a default clone or `actions/checkout`. Bef
 git submodule update --init --recursive
 ```
 
-Each skill's entry point is `.agents/skills/<name>/SKILL.md`. Full setup and maintenance docs: `docs/SKILL_SYNC.md`.
+Each skill's entry point is `.agents/skills/<name>/SKILL.md`.
