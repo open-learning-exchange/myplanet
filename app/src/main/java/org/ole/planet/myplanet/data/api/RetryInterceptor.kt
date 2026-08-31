@@ -85,7 +85,7 @@ class RetryInterceptor @Inject constructor(
                 if (remaining <= 0) {
                     return
                 }
-                Thread.sleep(minOf(remaining, MAX_BACKOFF_SLICE_MS))
+                timeProvider.sleep(minOf(remaining, MAX_BACKOFF_SLICE_MS))
             }
         } catch (e: InterruptedException) {
             Thread.currentThread().interrupt()

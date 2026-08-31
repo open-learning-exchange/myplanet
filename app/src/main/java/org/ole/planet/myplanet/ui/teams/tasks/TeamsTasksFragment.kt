@@ -313,9 +313,9 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                     return@withContext Triple(null, null, currentSnapshot)
                 }
 
-                val assigneesToFetch = list.mapNotNull { it.assignee }
-                    .filter { it.isNotBlank() && !knownAssigneeIds.contains(it) }
-                    .distinct()
+                val assigneesToFetch = list.mapNotNullTo(LinkedHashSet()) { task ->
+                    task.assignee?.takeIf { it.isNotBlank() && it !in knownAssigneeIds }
+                }
 
                 val fetchedAssigneeNames = if (assigneesToFetch.isNotEmpty()) teamsTasksViewModel.fetchAssigneeNames(assigneesToFetch) else emptyMap()
                 Triple(list, fetchedAssigneeNames, currentSnapshot)
