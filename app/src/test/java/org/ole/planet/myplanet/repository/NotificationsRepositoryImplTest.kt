@@ -500,4 +500,66 @@ class NotificationsRepositoryImplTest {
         assertTrue(saved.isEmpty())
         coVerify(exactly = 0) { notificationDao.getByIds(any()) }
     }
+
+    @Test
+    fun `resolveType passes through known types lowercased`() {
+        assertEquals("join_request", repository.resolveType("join_request", "anything", null))
+        assertEquals("task", repository.resolveType("Task", "anything", null))
+        assertEquals("resource", repository.resolveType("RESOURCE", "anything", null))
+    }
+
+    @Test
+    fun `resolveType classifies raw team type as join request via english message`() {
+        assertEquals(
+            "join_request",
+            repository.resolveType("team", "<b>Jane</b> has requested to join <b>\"My Team\"</b> team.", null)
+        )
+    }
+
+    @Test
+    fun `resolveType classifies raw team type as join request via spanish message`() {
+        assertEquals(
+            "join_request",
+            repository.resolveType("team", "test22012601 ha solicitado unirse a \"test GT\" team.", null)
+        )
+    }
+
+    @Test
+    fun `resolveType classifies raw team type as join request via subType regardless of message language`() {
+        assertEquals("join_request", repository.resolveType("team", "غير معروف", "join_request"))
+    }
+
+    @Test
+    fun `resolveType classifies raw team type as chat for posted message`() {
+        assertEquals(
+            "chat",
+            repository.resolveType("team", "Bhushan Nim has posted a message on \"test GT\" team.", null)
+        )
+    }
+
+    @Test
+    fun `resolveType classifies unmatched raw team type as team join`() {
+        assertEquals(
+            "team_join",
+            repository.resolveType("team", "Has sido eliminado de \"test GT\" team.", null)
+        )
+    }
+
+    @Test
+    fun `resolveType classifies newTask as task`() {
+        assertEquals("task", repository.resolveType("newTask", "You were assigned a new task", null))
+    }
+
+    @Test
+    fun `resolveType classifies newResource as resource`() {
+        assertEquals("resource", repository.resolveType("newResource", "Hay nuevos recursos en la biblioteca.", null))
+    }
+
+    @Test
+    fun `resolveType falls back to message sniffing for unknown types`() {
+        assertEquals("task", repository.resolveType("other", "Report is due tomorrow", null))
+        assertEquals("storage", repository.resolveType("other", "Low storage", null))
+        assertEquals("voice_reply", repository.resolveType("other", "new reply to your voice", null))
+        assertEquals("notification", repository.resolveType("other", "unrecognized text", null))
+    }
 }
