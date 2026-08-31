@@ -194,4 +194,91 @@ class VoicesLabelManagerTest {
         verify { anyConstructed<ChipCloud>().addChip("Offer") }
         verify { btnAddLabel.visibility = View.GONE }
     }
+
+    @Test
+    fun testShowChips_UnchangedLabels_SkipsRedundantRebuild() {
+        voice.labels = listOf("offer")
+
+        voicesLabelManager.showChips(binding, voice, true)
+        voicesLabelManager.showChips(binding, voice, true)
+
+        verify(exactly = 1) { fbChips.removeAllViews() }
+        verify(exactly = 1) { Utilities.getCloudConfig() }
+        verify(exactly = 1) { anyConstructed<ChipCloud>().addChip("Offer") }
+        verify(exactly = 1) { anyConstructed<ChipCloud>().setDeleteListener(any<fisk.chipcloud.ChipDeletedListener>()) }
+        verify(exactly = 1) { btnAddLabel.visibility = any() }
+    }
+
+    @Test
+    fun testShowChips_EmptyLabels_Unchanged_SkipsRedundantRebuild() {
+        voicesLabelManager.showChips(binding, voice, false)
+        voicesLabelManager.showChips(binding, voice, false)
+
+        verify(exactly = 1) { fbChips.removeAllViews() }
+        verify(exactly = 0) { Utilities.getCloudConfig() }
+        verify(exactly = 0) { anyConstructed<ChipCloud>().addChip(any<String>()) }
+    }
+
+    @Test
+    fun testShowChips_NullAndEmptyLabels_TreatedAsSame_SkipsRebuild() {
+        voice.labels = null
+        voicesLabelManager.showChips(binding, voice, false)
+
+        voice.labels = emptyList()
+        voicesLabelManager.showChips(binding, voice, false)
+
+        verify(exactly = 1) { fbChips.removeAllViews() }
+    }
+
+    @Test
+    fun testShowChips_ChangedLabels_Rebuilds() {
+        voice.labels = listOf("offer")
+        voicesLabelManager.showChips(binding, voice, false)
+
+        voice.labels = listOf("help")
+        voicesLabelManager.showChips(binding, voice, false)
+
+        verify(exactly = 2) { fbChips.removeAllViews() }
+        verify(exactly = 1) { anyConstructed<ChipCloud>().addChip("Offer") }
+        verify(exactly = 1) { anyConstructed<ChipCloud>().addChip("Help wanted") }
+    }
+
+    @Test
+    fun testShowChips_CanManageChanged_Rebuilds() {
+        voice.labels = listOf("offer")
+
+        voicesLabelManager.showChips(binding, voice, false)
+        voicesLabelManager.showChips(binding, voice, true)
+
+        verify(exactly = 2) { fbChips.removeAllViews() }
+        verify(exactly = 2) { Utilities.getCloudConfig() }
+    }
+
+    @Test
+    fun testShowChips_PerBindingIsolation_RebuildsEachBinding() {
+        voice.labels = listOf("offer")
+
+        val otherBinding = mockk<RowNewsBinding>(relaxed = true)
+        val otherBtnAddLabel = mockk<Button>(relaxed = true)
+        val otherFbChips = mockk<FlexboxLayout>(relaxed = true)
+        RowNewsBinding::class.java.getField("btnAddLabel").apply { isAccessible = true }.set(otherBinding, otherBtnAddLabel)
+        RowNewsBinding::class.java.getField("fbChips").apply { isAccessible = true }.set(otherBinding, otherFbChips)
+
+        voicesLabelManager.showChips(binding, voice, false)
+        voicesLabelManager.showChips(otherBinding, voice, false)
+
+        verify(exactly = 1) { fbChips.removeAllViews() }
+        verify(exactly = 1) { otherFbChips.removeAllViews() }
+    }
+
+    @Test
+    fun testShowChips_SameBindingDifferentVoice_Rebuilds() {
+        val voiceA = News().apply { id = "a"; labels = listOf("offer") }
+        val voiceB = News().apply { id = "b"; labels = listOf("offer") }
+
+        voicesLabelManager.showChips(binding, voiceA, true)
+        voicesLabelManager.showChips(binding, voiceB, true)
+
+        verify(exactly = 2) { fbChips.removeAllViews() }
+    }
 }

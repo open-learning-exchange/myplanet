@@ -33,6 +33,9 @@ class ChatAdapter(
     var onLoadMoreClick: (() -> Unit)? = null
 
     private var chatItemClickListener: OnChatItemClickListener? = null
+    private val clipboardManager by lazy {
+        context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    }
 
     fun setOnChatItemClickListener(listener: OnChatItemClickListener) {
         this.chatItemClickListener = listener
@@ -94,9 +97,8 @@ class ChatAdapter(
     }
 
     private fun copyToClipboard(text: String) {
-        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         val clip = ClipData.newPlainText("copied Text", text)
-        clipboard.setPrimaryClip(clip)
+        clipboardManager.setPrimaryClip(clip)
         Utilities.toast(
             context,
             context.getString(R.string.copied_to_clipboard),
