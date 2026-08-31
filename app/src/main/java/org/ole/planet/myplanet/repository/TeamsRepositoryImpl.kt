@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.TaskStatus
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.TeamResourceDto
@@ -824,7 +825,7 @@ class TeamsRepositoryImpl @Inject constructor(
     override suspend fun setTaskCompletion(taskId: String, completed: Boolean) {
         teamTaskDao.getById(taskId)?.let { task ->
             task.completed = completed
-            task.status = if (completed) "completed" else "to_do"
+            task.status = if (completed) TaskStatus.COMPLETED.value else TaskStatus.TODO.value
             task.completedTime = if (completed) Date().time else 0
             task.isUpdated = true
             teamTaskDao.upsert(task)
@@ -834,7 +835,7 @@ class TeamsRepositoryImpl @Inject constructor(
     override suspend fun setTaskStatus(taskId: String, status: String) {
         teamTaskDao.getById(taskId)?.let { task ->
             task.status = status
-            task.completed = (status == "completed")
+            task.completed = (status == TaskStatus.COMPLETED.value)
             task.completedTime = if (task.completed) Date().time else 0
             task.isUpdated = true
             teamTaskDao.upsert(task)

@@ -1289,6 +1289,7 @@
     <string name="warning_icon">أيقونة التحذير</string>
     <string name="close_banner">إغلاق لافتة التحذير</string>
     <string name="status_not_started">لم يبدأ</string>
+    <string name="status_todo">المهام المطلوبة</string>
     <string name="status_in_progress">قيد التنفيذ</string>
     <string name="status_completed">مكتمل</string>
     <string name="read_aloud">اقرأ بصوت عالٍ</string>

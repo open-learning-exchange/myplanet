@@ -72,3 +72,29 @@ class TeamTask {
         }
     }
 }
+
+enum class TaskStatus(val value: String) {
+    TODO("to_do"),
+    IN_PROGRESS("in_progress"),
+    COMPLETED("completed");
+
+    companion object {
+        fun fromValue(value: String?): TaskStatus = when (value) {
+            COMPLETED.value -> COMPLETED
+            IN_PROGRESS.value -> IN_PROGRESS
+            else -> TODO
+        }
+    }
+}
+
+fun TeamTask.effectiveStatus(): String = when {
+    completed || status == TaskStatus.COMPLETED.value -> TaskStatus.COMPLETED.value
+    status == TaskStatus.IN_PROGRESS.value -> TaskStatus.IN_PROGRESS.value
+    else -> TaskStatus.TODO.value
+}
+
+fun TeamTask.nextStatus(): TaskStatus = when (effectiveStatus()) {
+    TaskStatus.TODO.value -> TaskStatus.IN_PROGRESS
+    TaskStatus.IN_PROGRESS.value -> TaskStatus.COMPLETED
+    else -> TaskStatus.TODO
+}
