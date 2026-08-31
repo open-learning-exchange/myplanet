@@ -409,13 +409,9 @@ class ResourcesRepositoryImpl @Inject constructor(
         return downloadResources(resources)
     }
 
-override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrary> {
-        var files = libraryList
-        if (files == null) {
-            files = getAllLibrariesToSync()
-        }
-        val safeFiles = files ?: emptyList()
-        val urls = DownloadUtils.downloadAllFiles(safeFiles)
+    override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrary> {
+        val files = libraryList ?: getAllLibrariesToSync()
+        val urls = DownloadUtils.downloadAllFiles(files)
 
         MainApplication.applicationScope.launch {
             if (configurationsRepository.checkServerAvailability()) {
@@ -424,7 +420,7 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
                 }
             }
         }
-        return safeFiles
+        return files
     }
 
     override suspend fun getAllLibrariesToSync(): List<MyLibrary> {
@@ -480,9 +476,9 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
     }
 
     override suspend fun getMyLibIds(userId: String): JsonArray {
-        val libs = myLibraryDao.getForUserPattern(userIdPattern(userId))
+        val ids = myLibraryDao.getIdsForUserPattern(userIdPattern(userId))
         val jsonArray = JsonArray()
-        libs.forEach { jsonArray.add(it.id) }
+        ids.forEach { jsonArray.add(it) }
         return jsonArray
     }
 
@@ -678,7 +674,7 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
             }
     }
 
-    override suspend fun getEnrichedLibraries(isMyCourseLib: Boolean, modelId: String?): List<LibraryWithMetadata> {
+    private suspend fun getEnrichedLibraries(isMyCourseLib: Boolean, modelId: String?): List<LibraryWithMetadata> {
         val allLibraryItems = if (isMyCourseLib) {
             getMyLibrary(modelId)
         } else if (modelId != null) {
@@ -701,7 +697,7 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
     }
 
     override suspend fun getResourceTitlesMap(): Map<String, String> {
-        return myLibraryDao.getWithResourceId()
+        return myLibraryDao.getResourceTitles()
             .associate { (it.resourceId ?: "") to (it.title ?: "") }
     }
 
