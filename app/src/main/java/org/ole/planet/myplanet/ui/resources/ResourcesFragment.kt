@@ -146,21 +146,14 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private fun refreshResourcesData() {
         if (!isAdded || requireActivity().isFinishing) return
         if (view == null) return
-        refreshJob?.cancel()
-        refreshJob = viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
-                lastSearchQuery = null
-                applyFiltersAndUpdateUI(scrollToTop = false)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
+        viewModel.loadResources(isMyCourseLib, model?.id)
+    }
+
+    override suspend fun postAddRefresh() {
+        refreshResourcesData()
     }
 
     override suspend fun getAdapter(): ListAdapter<*, *> {
-        allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
-
         val user = viewModel.getCurrentUser()
         // The adapter caches the Context (Activity) which outlives onCreateView,
         // but Fragments and their host Activities are re-created together so this is safe from leaks.
@@ -182,12 +175,18 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
         adapterLibrary.setListener(this)
 
-        val filteredList = applyFilterModels(filterLocalLibraryByTag(allResourceModels, etSearch.text?.toString()?.trim().orEmpty(), searchTags))
-        adapterLibrary.setLibraryList(filteredList)
+        val cached = viewModel.resourcesState.value
+        if (cached.isNotEmpty()) {
+            allResourceModels = cached
+            val filteredList = applyFilterModels(filterLocalLibraryByTag(allResourceModels, etSearch.text?.toString()?.trim().orEmpty(), searchTags))
+            adapterLibrary.setLibraryList(filteredList)
 
-        checkList(filteredList.size)
-        showNoData(tvMessage, filteredList.size, "resources")
-        changeButtonStatus()
+            checkList(filteredList.size)
+            showNoData(tvMessage, filteredList.size, "resources")
+            changeButtonStatus()
+        }
+
+        viewModel.loadResources(isMyCourseLib, model?.id)
         return adapterLibrary
     }
 
@@ -216,6 +215,13 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                 refreshResourcesData()
             }
         }
+        collectWhenStarted(viewModel.resourcesState) { list ->
+            allResourceModels = list
+            if (::adapterLibrary.isInitialized && _binding != null) {
+                applyFiltersAndUpdateUI(scrollToTop = false, forceUpdate = true)
+            }
+        }
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 broadcastService.events.collect { intent ->
@@ -390,14 +396,15 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             .launchIn(viewLifecycleOwner.lifecycleScope)
     }
 
-    private fun applyFiltersAndUpdateUI(scrollToTop: Boolean = true) {
+    private fun applyFiltersAndUpdateUI(scrollToTop: Boolean = true, forceUpdate: Boolean = false) {
         if (!::adapterLibrary.isInitialized || !isAdded || _binding == null) return
         val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
 
         val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
         val searchTagIds = currentSearchTags.map { it.id }.sorted()
 
-        if (searchQuery == lastSearchQuery &&
+        if (!forceUpdate &&
+            searchQuery == lastSearchQuery &&
             searchTagIds == lastSearchTags &&
             subjects == lastSubjects &&
             levels == lastLevels &&
@@ -811,19 +818,15 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         binding.orderByDateButton.setOnClickListener {
             bottomSheet.visibility = View.GONE
             viewLifecycleOwner.lifecycleScope.launch {
-                val sorted = viewModel.toggleSortOrder(adapterLibrary.currentList)
-                adapterLibrary.setLibraryList(sorted) {
-                    recyclerView.scrollToPosition(0)
-                }
+                allResourceModels = viewModel.toggleSortOrder(allResourceModels)
+                applyFiltersAndUpdateUI(scrollToTop = true, forceUpdate = true)
             }
         }
         binding.orderByTitleButton.setOnClickListener {
             bottomSheet.visibility = View.GONE
             viewLifecycleOwner.lifecycleScope.launch {
-                val sorted = viewModel.toggleTitleSortOrder(adapterLibrary.currentList)
-                adapterLibrary.setLibraryList(sorted) {
-                    recyclerView.scrollToPosition(0)
-                }
+                allResourceModels = viewModel.toggleTitleSortOrder(allResourceModels)
+                applyFiltersAndUpdateUI(scrollToTop = true, forceUpdate = true)
             }
         }
     }

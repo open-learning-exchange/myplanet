@@ -10,6 +10,8 @@ import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.ceil
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
@@ -674,7 +676,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             }
     }
 
-    private suspend fun getEnrichedLibraries(isMyCourseLib: Boolean, modelId: String?): List<LibraryWithMetadata> {
+    private suspend fun getEnrichedLibraries(isMyCourseLib: Boolean, modelId: String?): List<LibraryWithMetadata> = coroutineScope {
         val allLibraryItems = if (isMyCourseLib) {
             getMyLibrary(modelId)
         } else if (modelId != null) {
@@ -685,10 +687,13 @@ class ResourcesRepositoryImpl @Inject constructor(
 
         val allResourceIds = allLibraryItems.mapNotNull { it.resourceId ?: it.id }
 
-        val map = HashMap(getResourceRatingsBulk(allResourceIds, modelId))
-        val tagsMap = getResourceTagsBulk(allResourceIds)
+        val tagsDeferred = async { getResourceTagsBulk(allResourceIds) }
+        val ratingsDeferred = async { getResourceRatingsBulk(allResourceIds, modelId) }
 
-        return allLibraryItems.map { library ->
+        val tagsMap = tagsDeferred.await()
+        val map = ratingsDeferred.await()
+
+        allLibraryItems.map { library ->
             val resourceId = library.resourceId ?: library.id
             val rating = map[resourceId]
             val tags = tagsMap[resourceId] ?: emptyList()
