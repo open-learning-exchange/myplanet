@@ -91,6 +91,48 @@ class CourseFilterController(
         onScrollToTop()
     }
 
+    fun restoreFilterState(state: FilterState, tags: List<TagEntity> = emptyList()) {
+        if (::etSearch.isInitialized && etSearch.text.toString() != state.searchText) {
+            etSearch.setText(state.searchText)
+        }
+        if (::spnGrade.isInitialized) {
+            val gradeAdapter = spnGrade.adapter
+            if (gradeAdapter != null) {
+                var found = false
+                for (i in 0 until gradeAdapter.count) {
+                    if (gradeAdapter.getItem(i).toString() == state.grade || (state.grade.isEmpty() && i == 0)) {
+                        spnGrade.setSelection(i)
+                        found = true
+                        break
+                    }
+                }
+            }
+        }
+        if (::spnSubject.isInitialized) {
+            val subjectAdapter = spnSubject.adapter
+            if (subjectAdapter != null) {
+                for (i in 0 until subjectAdapter.count) {
+                    if (subjectAdapter.getItem(i).toString() == state.subject || (state.subject.isEmpty() && i == 0)) {
+                        spnSubject.setSelection(i)
+                        break
+                    }
+                }
+            }
+        }
+        searchTags.clear()
+        val seenNames = HashSet<String?>()
+        tags.forEach { tag ->
+            if (seenNames.add(tag.name)) {
+                searchTags.add(tag)
+            }
+        }
+        progressFilter = state.progressFilter
+        if (::tvSelected.isInitialized) {
+            refreshTagText()
+        }
+        _filterState.value = currentState()
+    }
+
     private fun setupSearchWatcher() {
         searchTextWatcher = object : TextWatcher {
             @Suppress("EmptyMethod")

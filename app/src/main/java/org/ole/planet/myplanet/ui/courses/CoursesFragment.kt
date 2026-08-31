@@ -222,12 +222,17 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         )
         filterController.setup()
 
-        var lastState: FilterState? = null
+        val savedFilter = viewModel.currentFilterState
+        if (savedFilter.isActive) {
+            filterController.restoreFilterState(savedFilter)
+        }
+
+        var lastState: FilterState? = savedFilter.takeIf { it.isActive }
         var isFirstEmission = true
         collectLatestWhenStarted(filterController.filterState) { state ->
             if (isFirstEmission) {
                 isFirstEmission = false
-                if (!state.isActive) {
+                if (savedFilter.isActive || !state.isActive) {
                     lastState = state
                     return@collectLatestWhenStarted
                 }

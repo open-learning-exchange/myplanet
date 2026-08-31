@@ -41,6 +41,9 @@ class CoursesViewModel @Inject constructor(
     private var activeSort: SortType? = null
     private var sortJob: Job? = null
 
+    var currentFilterState: FilterState = FilterState("", "", "", emptyList())
+        private set
+
     enum class SortType { TITLE, DATE }
 
     fun toggleTitleSort() {
@@ -129,7 +132,16 @@ class CoursesViewModel @Inject constructor(
                     val tagsMap = coursesRepository.getCourseTagsBulk(allCourseIds)
                         .mapValues { entry -> entry.value.map { it.toTag() } }
 
-                    processCourses(isMyCourseLib, userId, validCourses, myCourses, progressMap, tagsMap)
+                    if (currentFilterState.isActive) {
+                        filterCoursesInternal(
+                            isMyCourseLib, userId, currentFilterState.searchText,
+                            currentFilterState.grade, currentFilterState.subject,
+                            currentFilterState.tagNames, currentFilterState.progressFilter,
+                            allCourses, progressMap, tagsMap
+                        )
+                    } else {
+                        processCourses(isMyCourseLib, userId, validCourses, myCourses, progressMap, tagsMap)
+                    }
                 } catch (e: Exception) {
                     e.printStackTrace()
                     null
@@ -150,6 +162,7 @@ class CoursesViewModel @Inject constructor(
         tagNames: List<String>,
         progressFilter: String = ""
     ) {
+        currentFilterState = FilterState(searchText, selectedGrade, selectedSubject, tagNames, progressFilter)
         viewModelScope.launch {
             val newState = withContext(dispatcherProvider.io) {
                 val filteredCourses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
@@ -157,34 +170,54 @@ class CoursesViewModel @Inject constructor(
                 val progressMap = _coursesState.value.progressMap
                 val tagsMap = _coursesState.value.tagsMap
 
-                val baseCourses = if (isMyCourseLib) myCourses else filteredCourses
-
-                val progressFilteredCourses = if (progressFilter.isEmpty() || progressMap == null) {
-                    baseCourses
-                } else {
-                    baseCourses.filter { course ->
-                        val courseKey = course.courseId.takeIf { !it.isNullOrBlank() }
-                            ?: course.id.takeIf { !it.isNullOrBlank() }
-                            ?: course._id
-                        val p = progressMap[courseKey] ?: progressMap[course.courseId] ?: progressMap[course.id]
-                        val current = p?.current ?: 0
-                        val max = p?.max?.takeIf { it > 0 } ?: course.getNumberOfSteps()
-                        when (progressFilter) {
-                            "Not Started" -> current == 0
-                            "In Progress" -> current > 0 && (max == 0 || current < max)
-                            "Completed"   -> max > 0 && current >= max
-                            else -> true
-                        }
-                    }
-                }
-
-                if (isMyCourseLib) {
-                    processCourses(isMyCourseLib, userId, filteredCourses, progressFilteredCourses, progressMap, tagsMap)
-                } else {
-                    processCourses(isMyCourseLib, userId, progressFilteredCourses, myCourses, progressMap, tagsMap)
-                }
+                filterCoursesInternal(
+                    isMyCourseLib, userId, searchText, selectedGrade, selectedSubject,
+                    tagNames, progressFilter, null, progressMap, tagsMap
+                )
             }
             _coursesState.value = newState
+        }
+    }
+
+    private suspend fun filterCoursesInternal(
+        isMyCourseLib: Boolean,
+        userId: String?,
+        searchText: String,
+        selectedGrade: String,
+        selectedSubject: String,
+        tagNames: List<String>,
+        progressFilter: String,
+        cachedAllCourses: List<MyCourse>?,
+        progressMap: Map<String, CourseProgressState>?,
+        tagsMap: Map<String, List<Tag>>
+    ): CoursesUiState {
+        val filteredCourses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
+        val myCourses = coursesRepository.getMyCourses(userId, filteredCourses)
+
+        val baseCourses = if (isMyCourseLib) myCourses else filteredCourses
+        val progressFilteredCourses = if (progressFilter.isEmpty() || progressMap == null) {
+            baseCourses
+        } else {
+            baseCourses.filter { course ->
+                val courseKey = course.courseId.takeIf { !it.isNullOrBlank() }
+                    ?: course.id.takeIf { !it.isNullOrBlank() }
+                    ?: course._id
+                val p = progressMap[courseKey] ?: progressMap[course.courseId] ?: progressMap[course.id]
+                val current = p?.current ?: 0
+                val max = p?.max?.takeIf { it > 0 } ?: course.getNumberOfSteps()
+                when (progressFilter) {
+                    "Not Started" -> current == 0
+                    "In Progress" -> current > 0 && (max == 0 || current < max)
+                    "Completed"   -> max > 0 && current >= max
+                    else -> true
+                }
+            }
+        }
+
+         return if (isMyCourseLib) {
+            processCourses(isMyCourseLib, userId, filteredCourses, progressFilteredCourses, progressMap, tagsMap)
+        } else {
+            processCourses(isMyCourseLib, userId, progressFilteredCourses, myCourses, progressMap, tagsMap)
         }
     }
 
