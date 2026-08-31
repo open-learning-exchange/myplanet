@@ -13,7 +13,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseMemberFragment
-import org.ole.planet.myplanet.callback.OnMemberChangeListener
+import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -27,8 +27,8 @@ class RequestsFragment : BaseMemberFragment() {
 
     private val viewModel: RequestsViewModel by viewModels()
     private lateinit var currentUser: UserEntity
-    private var onMemberChangeListener: OnMemberChangeListener? = null
-    fun setOnMemberChangeListener(listener: OnMemberChangeListener) {
+    private var onMemberChangeListener: OnChangedListener? = null
+    fun setOnMemberChangeListener(listener: OnChangedListener) {
         this.onMemberChangeListener = listener
     }
 
@@ -53,7 +53,7 @@ class RequestsFragment : BaseMemberFragment() {
             showNoData(binding.tvNodata, uiState.members.size, "members")
         }
         collectWhenStarted(viewModel.successAction) {
-            onMemberChangeListener?.onMemberChanged()
+            onMemberChangeListener?.onChanged()
         }
     }
 
