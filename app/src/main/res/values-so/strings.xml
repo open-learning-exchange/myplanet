@@ -740,6 +740,7 @@
     <string name="sync_step_of">Tallaabo %1$d ka mid ah %2$d</string>
     <string name="sync_items_of">%1$d / %2$d</string>
     <string name="sync_table_progress">%1$s  ·  %2$d / %3$d miisas</string>
+    <string name="sync_in_progress_wait">Dib-u-hagreeska ayaa socda. Fadlan sug ilaa ay dhammaato.</string>
     <string name="sync_shelves_progress">%1$d / %2$d raafooyin</string>
     <string name="team_leader">Xoghayaha kooxda</string>
     <string name="select_resource">Xulo khadka</string>

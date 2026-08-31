@@ -68,9 +68,11 @@ class SyncTimeLogger @Inject constructor(
         detailedLogs.clear()
         apiCallCounter.set(0)
         dbOpCounter.set(0)
-        Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-        Log.d("SyncPerf", "SYNC STARTED at ${formatTimestamp(startTime)}")
-        Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+        if (Log.isLoggable("SyncPerf", Log.DEBUG)) {
+            Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+            Log.d("SyncPerf", "SYNC STARTED at ${formatTimestamp(startTime)}")
+            Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+        }
     }
 
     fun stopLogging(uploadManager: UploadManager? = null) {
@@ -81,10 +83,12 @@ class SyncTimeLogger @Inject constructor(
         val summary = generateSummary()
         saveSummaryToRoom(summary, uploadManager)
 
-        Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-        Log.d("SyncPerf", "SYNC COMPLETED at ${formatTimestamp(endTime)}")
-        Log.d("SyncPerf", "TOTAL DURATION: ${formatTime(endTime - startTime)}")
-        Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+        if (Log.isLoggable("SyncPerf", Log.DEBUG)) {
+            Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+            Log.d("SyncPerf", "SYNC COMPLETED at ${formatTimestamp(endTime)}")
+            Log.d("SyncPerf", "TOTAL DURATION: ${formatTime(endTime - startTime)}")
+            Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+        }
     }
 
 
@@ -141,11 +145,13 @@ class SyncTimeLogger @Inject constructor(
         processTimes[processName] = duration
         processItemCounts[processName] = itemCount
 
-        val elapsed = endTime - this.startTime
-        if (itemCount > 0) {
-            Log.d("SyncPerf", "[${formatElapsed(elapsed)}] ✓ $processName completed: ${formatTime(duration)}, $itemCount items")
-        } else {
-            Log.d("SyncPerf", "[${formatElapsed(elapsed)}] ✓ $processName completed: ${formatTime(duration)}")
+        if (Log.isLoggable("SyncPerf", Log.DEBUG)) {
+            val elapsed = endTime - this.startTime
+            if (itemCount > 0) {
+                Log.d("SyncPerf", "[${formatElapsed(elapsed)}] ✓ $processName completed: ${formatTime(duration)}, $itemCount items")
+            } else {
+                Log.d("SyncPerf", "[${formatElapsed(elapsed)}] ✓ $processName completed: ${formatTime(duration)}")
+            }
         }
     }
 
@@ -154,15 +160,17 @@ class SyncTimeLogger @Inject constructor(
 
         val timestamp = timeProvider.now()
         val callNum = apiCallCounter.incrementAndGet()
-        val elapsed = timestamp - startTime
         val processName = extractProcessName(endpoint)
 
         val log = ApiCallLog(endpoint, duration, timestamp, success, itemsReturned)
         apiCallTimes.getOrPut(processName) { mutableListOf() }.add(log)
 
-        val statusIcon = if (success) "✓" else "✗"
-        val itemInfo = if (itemsReturned > 0) ", $itemsReturned items" else ""
-        Log.d("SyncPerf", "[${formatElapsed(elapsed)}] $statusIcon API #$callNum: ${shortenEndpoint(endpoint)} - ${formatTime(duration)}$itemInfo")
+        if (Log.isLoggable("SyncPerf", Log.DEBUG)) {
+            val elapsed = timestamp - startTime
+            val statusIcon = if (success) "✓" else "✗"
+            val itemInfo = if (itemsReturned > 0) ", $itemsReturned items" else ""
+            Log.d("SyncPerf", "[${formatElapsed(elapsed)}] $statusIcon API #$callNum: ${shortenEndpoint(endpoint)} - ${formatTime(duration)}$itemInfo")
+        }
     }
 
     fun logDbOperation(operation: String, model: String, duration: Long, itemCount: Int) {
@@ -170,22 +178,26 @@ class SyncTimeLogger @Inject constructor(
 
         val timestamp = timeProvider.now()
         val opNum = dbOpCounter.incrementAndGet()
-        val elapsed = timestamp - startTime
 
         val log = DbOperationLog(operation, model, duration, itemCount, timestamp)
         dbOperationTimes.getOrPut(model) { mutableListOf() }.add(log)
 
-        Log.d("SyncPerf", "[${formatElapsed(elapsed)}] 💾 DB #$opNum: $operation $model - ${formatTime(duration)}, $itemCount items")
+        if (Log.isLoggable("SyncPerf", Log.DEBUG)) {
+            val elapsed = timestamp - startTime
+            Log.d("SyncPerf", "[${formatElapsed(elapsed)}] 💾 DB #$opNum: $operation $model - ${formatTime(duration)}, $itemCount items")
+        }
     }
 
     fun logDetail(context: String, message: String) {
         if (!isLogging) return
 
-        val timestamp = timeProvider.now()
-        val elapsed = timestamp - startTime
         detailedLogs.getOrPut(context) { mutableListOf() }.add(message)
 
-        Log.d("SyncPerf", "[${formatElapsed(elapsed)}] ℹ $context: $message")
+        if (Log.isLoggable("SyncPerf", Log.DEBUG)) {
+            val timestamp = timeProvider.now()
+            val elapsed = timestamp - startTime
+            Log.d("SyncPerf", "[${formatElapsed(elapsed)}] ℹ $context: $message")
+        }
     }
 
     private fun shortenEndpoint(endpoint: String): String {
