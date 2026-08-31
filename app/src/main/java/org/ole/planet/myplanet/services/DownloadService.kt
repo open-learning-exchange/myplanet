@@ -55,9 +55,6 @@ import org.ole.planet.myplanet.utils.UrlUtils.header
 @AndroidEntryPoint
 class DownloadService : Service() {
     @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
-
-    @Inject
     lateinit var downloadRepository: DownloadRepository
 
     @Inject
@@ -363,6 +360,7 @@ class DownloadService : Service() {
     private fun downloadFile(body: ResponseBody, url: String) {
         val fileSize = body.contentLength()
         val finalFile = FileUtils.getSDPathFromUrl(this@DownloadService, url)
+        finalFile.parentFile?.mkdirs()
         val tempFile = File(finalFile.parentFile, "${finalFile.name}.tmp")
         tempFile.delete()
         outputFile = finalFile
