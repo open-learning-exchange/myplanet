@@ -135,7 +135,10 @@ object DownloadUtils {
             .build()
     }
     fun downloadAllFiles(dbMyLibrary: List<MyLibrary?>): ArrayList<String> {
-        return ArrayList(dbMyLibrary.map { UrlUtils.getUrl(it) })
+        val base = UrlUtils.getUrl()
+        return dbMyLibrary.mapTo(ArrayList()) { library ->
+            UrlUtils.getUrl(library?.resourceId, library?.resourceLocalAddress, base)
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.S)

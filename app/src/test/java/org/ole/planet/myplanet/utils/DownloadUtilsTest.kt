@@ -12,6 +12,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.spyk
 import io.mockk.unmockkAll
+import io.mockk.unmockkObject
 import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -19,7 +20,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.DownloadService
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
@@ -198,5 +201,40 @@ class DownloadUtilsTest {
         val text = "An empty image link: ![alt]()"
         val result = DownloadUtils.extractLinks(text)
         assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun `downloadAllFiles resolves base url once and builds urls against it`() {
+        unmockkObject(DownloadUtils)
+        UrlUtils.resetForTesting()
+        val spm = mockk<SharedPrefManager>(relaxed = true)
+        every { spm.isAlternativeUrl() } returns false
+        every { spm.getCouchdbUrl() } returns "http://example.com"
+        UrlUtils.init(spm)
+
+        val library1 = MyLibrary().apply { resourceId = "r1"; resourceLocalAddress = "f1" }
+        val library2 = MyLibrary().apply { resourceId = "r2"; resourceLocalAddress = "f2" }
+
+        val result = DownloadUtils.downloadAllFiles(listOf(library1, library2))
+
+        assertEquals(2, result.size)
+        assertEquals("http://example.com/db/resources/r1/f1", result[0])
+        assertEquals("http://example.com/db/resources/r2/f2", result[1])
+        verify(exactly = 1) { spm.getCouchdbUrl() }
+    }
+
+    @Test
+    fun `downloadAllFiles returns empty list for empty input`() {
+        unmockkObject(DownloadUtils)
+        UrlUtils.resetForTesting()
+        val spm = mockk<SharedPrefManager>(relaxed = true)
+        every { spm.isAlternativeUrl() } returns false
+        every { spm.getCouchdbUrl() } returns "http://example.com"
+        UrlUtils.init(spm)
+
+        val result = DownloadUtils.downloadAllFiles(emptyList())
+
+        assertTrue(result.isEmpty())
+        verify(exactly = 1) { spm.getCouchdbUrl() }
     }
 }
