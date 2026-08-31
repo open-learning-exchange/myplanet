@@ -47,10 +47,21 @@ class NotificationsViewModel @Inject constructor(
         .map { it.size }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
+    private data class NotificationGroup(
+        val type: String,
+        val label: String,
+        val unreadCount: Int,
+        val items: List<Notification>
+    )
+
+    private val groupedNotifications: StateFlow<List<NotificationGroup>> = _notifications
+        .map { buildNotificationGroups(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val groupedItems: StateFlow<List<NotificationListItem>> = combine(
-        _notifications, _selectedIds, _collapsedGroups, _expandedGroups
-    ) { notifs, selected, collapsed, expanded ->
-        buildGroupedList(notifs, selected, collapsed, expanded)
+        groupedNotifications, _selectedIds, _collapsedGroups, _expandedGroups
+    ) { groups, selected, collapsed, expanded ->
+        buildGroupedList(groups, selected, collapsed, expanded)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private var currentFilter: String = "all"
@@ -221,33 +232,44 @@ class NotificationsViewModel @Inject constructor(
         return notifications.any { it.type == type && !it.isRead }
     }
 
-    private fun buildGroupedList(
-        notifications: List<Notification>,
-        selectedIds: Set<String>,
-        collapsedGroups: Set<String>,
-        expandedGroups: Set<String>
-    ): List<NotificationListItem> {
+    private fun buildNotificationGroups(notifications: List<Notification>): List<NotificationGroup> {
         if (notifications.isEmpty()) return emptyList()
-        // Normalize any unrecognized type to "notification" for a single Other group
         val grouped = notifications.groupBy { notif ->
             val t = notif.type.lowercase(Locale.ROOT)
             if (t in KNOWN_TYPES) t else "notification"
         }
         val orderedTypes = (TYPE_ORDER.filter { grouped.containsKey(it) } +
                 grouped.keys.filter { it !in TYPE_ORDER }).distinct()
+        return orderedTypes.mapNotNull { type ->
+            val items = grouped[type] ?: return@mapNotNull null
+            val unreadCount = items.count { !it.isRead }
+            NotificationGroup(
+                type = type,
+                label = typeLabelFor(type),
+                unreadCount = unreadCount,
+                items = items
+            )
+        }
+    }
+
+    private fun buildGroupedList(
+        groups: List<NotificationGroup>,
+        selectedIds: Set<String>,
+        collapsedGroups: Set<String>,
+        expandedGroups: Set<String>
+    ): List<NotificationListItem> {
+        if (groups.isEmpty()) return emptyList()
         val inSelectionMode = selectedIds.isNotEmpty()
         return buildList {
-            for (type in orderedTypes) {
-                val items = grouped[type] ?: continue
-                val unreadCount = items.count { !it.isRead }
+            for (group in groups) {
                 val isExpanded = when {
-                    type in expandedGroups -> true
-                    type in collapsedGroups -> false
-                    else -> unreadCount > 0
+                    group.type in expandedGroups -> true
+                    group.type in collapsedGroups -> false
+                    else -> group.unreadCount > 0
                 }
-                add(NotificationListItem.Header(type, typeLabelFor(type), unreadCount, isExpanded))
+                add(NotificationListItem.Header(group.type, group.label, group.unreadCount, isExpanded))
                 if (isExpanded) {
-                    items.forEach { notification ->
+                    group.items.forEach { notification ->
                         add(NotificationListItem.Item(notification, notification.id in selectedIds, inSelectionMode))
                     }
                 }

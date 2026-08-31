@@ -125,7 +125,7 @@ class TeamsTasksViewModel @Inject constructor(
         return userRepository.getUserById(userId)
     }
 
-    suspend fun fetchAssigneeNames(assigneesToFetch: List<String>): Map<String, String> {
-        return userRepository.getUsersByIds(assigneesToFetch).mapNotNull { user -> user.name?.let { user.id to it } }.toMap()
+    suspend fun fetchAssigneeNames(assigneesToFetch: Collection<String>): Map<String, String> {
+        return userRepository.getUsersByIds(assigneesToFetch.toList()).mapNotNull { user -> user.name?.let { user.id to it } }.toMap()
     }
 }
