@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
+import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao.UploadedPhoto
 import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
@@ -598,6 +599,12 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
     override suspend fun markPhotoUploaded(photoId: String?, rev: String, id: String) {
         photoId?.let { submitPhotosDao.markUploaded(it, rev, id) }
+    }
+
+    override suspend fun markPhotosUploadedBatch(uploads: List<UploadedPhoto>) {
+        if (uploads.isNotEmpty()) {
+            submitPhotosDao.markUploadedBatch(uploads)
+        }
     }
 
     override suspend fun getPendingSubmitPhotosUploads(): List<SubmitPhotos> {
