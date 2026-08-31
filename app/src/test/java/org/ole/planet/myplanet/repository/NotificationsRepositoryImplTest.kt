@@ -16,7 +16,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
@@ -37,7 +36,6 @@ class NotificationsRepositoryImplTest {
     private lateinit var notificationDao: NotificationDao
     private lateinit var teamTaskDao: TeamTaskDao
     private lateinit var voicesRepository: VoicesRepository
-    private lateinit var examDao: ExamDao
 
     @Before
     fun setUp() {
@@ -47,7 +45,6 @@ class NotificationsRepositoryImplTest {
         notificationDao = mockk(relaxed = true)
         teamTaskDao = mockk(relaxed = true)
         voicesRepository = mockk(relaxed = true)
-        examDao = mockk(relaxed = true)
         repository = NotificationsRepositoryImpl(
             userRepository,
             teamsRepository,
@@ -55,8 +52,7 @@ class NotificationsRepositoryImplTest {
             teamNotificationDao,
             notificationDao,
             teamTaskDao,
-            voicesRepository,
-            examDao,
+            voicesRepository
         )
     }
 
@@ -371,28 +367,67 @@ class NotificationsRepositoryImplTest {
     }
 
     @Test
+    fun `markNotificationsAsRead with empty set does nothing`() = runTest {
+        val result = repository.markNotificationsAsRead(emptySet())
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { notificationDao.getIdsByIds(any()) }
+        coVerify(exactly = 0) { notificationDao.markAsRead(any<List<String>>(), any()) }
+    }
+
+    @Test
+    fun `markNotificationsAsRead marks existing notifications as read and returns ids`() = runTest {
+        val ids = setOf("id1", "id2", "id3")
+        coEvery { notificationDao.getIdsByIds(any()) } returns listOf("id1", "id2")
+        coEvery { notificationDao.markAsRead(any<List<String>>(), any()) } returns 2
+
+        val result = repository.markNotificationsAsRead(ids)
+
+        assertEquals(setOf("id1", "id2"), result)
+        coVerify { notificationDao.getIdsByIds(ids.toList()) }
+        coVerify { notificationDao.markAsRead(listOf("id1", "id2"), any()) }
+    }
+
+    @Test
+    fun `markAllUnreadAsRead with null userId returns empty set`() = runTest {
+        val result = repository.markAllUnreadAsRead(null)
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { notificationDao.getUnreadIds(any()) }
+        coVerify(exactly = 0) { notificationDao.markAllUnreadAsRead(any(), any()) }
+    }
+
+    @Test
+    fun `markAllUnreadAsRead fetches unread ids and updates all unread`() = runTest {
+        coEvery { notificationDao.getUnreadIds("user1") } returns listOf("id1", "id2")
+        coEvery { notificationDao.markAllUnreadAsRead("user1", any()) } returns 2
+
+        val result = repository.markAllUnreadAsRead("user1")
+
+        assertEquals(setOf("id1", "id2"), result)
+        coVerify { notificationDao.getUnreadIds("user1") }
+        coVerify { notificationDao.markAllUnreadAsRead("user1", any()) }
+    }
+
+    @Test
     fun `deleteNotifications with empty set does nothing`() = runTest {
         val result = repository.deleteNotifications(emptySet())
 
         assertTrue(result.isEmpty())
-        coVerify(exactly = 0) { notificationDao.getByIds(any()) }
+        coVerify(exactly = 0) { notificationDao.getIdsByIds(any()) }
         coVerify(exactly = 0) { notificationDao.deleteByIds(any()) }
     }
 
     @Test
     fun `deleteNotifications deletes existing notifications and returns deleted ids`() = runTest {
         val ids = setOf("id1", "id2", "id3")
-        val notifications = listOf(
-            AppNotification().apply { id = "id1" },
-            AppNotification().apply { id = "id2" }
-        )
-        coEvery { notificationDao.getByIds(any()) } returns notifications
+        coEvery { notificationDao.getIdsByIds(any()) } returns listOf("id1", "id2")
         coEvery { notificationDao.deleteByIds(any()) } returns 2
 
         val result = repository.deleteNotifications(ids)
 
         assertEquals(setOf("id1", "id2"), result)
-        coVerify { notificationDao.getByIds(ids.toList()) }
+        coVerify { notificationDao.getIdsByIds(ids.toList()) }
         coVerify { notificationDao.deleteByIds(listOf("id1", "id2")) }
     }
 

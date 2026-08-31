@@ -187,6 +187,26 @@ class NotificationsViewModelTest {
         assertEquals("t2", notifs[3].id)
     }
 
+    @Test
+    fun testToggleSelectionUpdatesSelectionStateOnListItems() = runTest(testDispatcher) {
+        loadNotifications(unreadTask)
+
+        assertFalse(item("1").isSelected)
+        assertFalse(item("1").isSelectionMode)
+
+        viewModel.toggleSelection("1")
+        runCurrent()
+
+        assertTrue(item("1").isSelected)
+        assertTrue(item("1").isSelectionMode)
+
+        viewModel.toggleSelection("1")
+        runCurrent()
+
+        assertFalse(item("1").isSelected)
+        assertFalse(item("1").isSelectionMode)
+    }
+
     private fun item(id: String): NotificationListItem.Item =
         viewModel.groupedItems.value
             .filterIsInstance<NotificationListItem.Item>()

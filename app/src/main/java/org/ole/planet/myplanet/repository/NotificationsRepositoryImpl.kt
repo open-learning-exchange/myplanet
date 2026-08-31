@@ -8,7 +8,6 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
-import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
@@ -29,8 +28,7 @@ class NotificationsRepositoryImpl @Inject constructor(
     private val teamNotificationDao: TeamNotificationDao,
     private val notificationDao: NotificationDao,
     private val teamTaskDao: TeamTaskDao,
-    private val voicesRepository: VoicesRepository,
-    private val examDao: ExamDao
+    private val voicesRepository: VoicesRepository
 ) : NotificationsRepository {
     override suspend fun refresh() = Unit
 
@@ -114,7 +112,7 @@ class NotificationsRepositoryImpl @Inject constructor(
     override suspend fun markNotificationsAsRead(notificationIds: Set<String>): Set<String> {
         if (notificationIds.isEmpty()) return emptySet()
 
-        val existingIds = notificationDao.getByIds(notificationIds.toList()).map { it.id }
+        val existingIds = notificationDao.getIdsByIds(notificationIds.toList())
         if (existingIds.isEmpty()) return emptySet()
         notificationDao.markAsRead(existingIds, Date())
         return existingIds.toSet()
@@ -122,7 +120,7 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun markAllUnreadAsRead(userId: String?): Set<String> {
         val actualUserId = userId ?: return emptySet()
-        val unreadIds = notificationDao.getNotifications(actualUserId, "unread", false).map { it.id }.toSet()
+        val unreadIds = notificationDao.getUnreadIds(actualUserId).toSet()
         if (unreadIds.isEmpty()) return emptySet()
         notificationDao.markAllUnreadAsRead(actualUserId, Date())
         return unreadIds
@@ -248,12 +246,6 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
 
         return map
-    }
-
-    override suspend fun getTaskTeamName(taskTitle: String): String? {
-        val taskObj = teamTaskDao.getByTitle(taskTitle)
-        val teamInfo = taskObj?.teamId?.let { teamsRepository.get().getTeamLabelInfo(it) }
-        return teamInfo?.name
     }
 
     override suspend fun getTaskTeamNamesByTaskTitles(taskTitles: List<String>): Map<String, String> {
@@ -434,7 +426,7 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun deleteNotifications(ids: Set<String>): Set<String> {
         if (ids.isEmpty()) return emptySet()
-        val deletedIds = notificationDao.getByIds(ids.toList()).map { it.id }
+        val deletedIds = notificationDao.getIdsByIds(ids.toList())
         if (deletedIds.isNotEmpty()) {
             notificationDao.deleteByIds(deletedIds)
         }

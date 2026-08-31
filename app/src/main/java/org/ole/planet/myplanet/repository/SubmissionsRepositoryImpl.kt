@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
+import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao.UploadedPhoto
 import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
@@ -92,7 +93,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
     private suspend fun getExamsByIds(examIds: List<String>): List<StepExam> {
         if (examIds.isEmpty()) return emptyList()
-        return examDao.getByIds(examIds).map { it }
+        return examDao.getByIds(examIds)
     }
 
     override suspend fun getUniquePendingSurveys(userId: String?): List<Submission> {
@@ -227,7 +228,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun saveSubmission(submission: Submission) {
-        val answerEntities = submission.answers?.map { it }.orEmpty()
+        val answerEntities = submission.answers.orEmpty()
         submissionDao.upsertAll(listOf(submission))
         if (answerEntities.isNotEmpty()) {
             answerDao.upsertAll(answerEntities)
@@ -363,7 +364,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     private suspend fun getSurveysByCourseId(courseId: String): List<StepExam> {
-        return examDao.getByCourseIdAndType(courseId, "survey").map { it }
+        return examDao.getByCourseIdAndType(courseId, "survey")
     }
 
     override suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean {
@@ -598,6 +599,12 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
     override suspend fun markPhotoUploaded(photoId: String?, rev: String, id: String) {
         photoId?.let { submitPhotosDao.markUploaded(it, rev, id) }
+    }
+
+    override suspend fun markPhotosUploadedBatch(uploads: List<UploadedPhoto>) {
+        if (uploads.isNotEmpty()) {
+            submitPhotosDao.markUploadedBatch(uploads)
+        }
     }
 
     override suspend fun getPendingSubmitPhotosUploads(): List<SubmitPhotos> {
