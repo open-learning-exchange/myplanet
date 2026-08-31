@@ -15,12 +15,12 @@ finds a skill, and what to do after a skill repo merges.
 | **kotlin-importing** | Sort/clean Kotlin imports | `dogi/kotlin-importing` | Claude Code (plugin), OpenHands + Copilot (submodule) |
 | **branch-overtaking** | Bind a session to someone else's PR branch and subscribe to its events | `dogi/branch-overtaking` | Claude Code (plugin) only — no submodule |
 
-`agents-summoning` replaced this repo's old `docs/AGENT_SPELLBOOK.md`: the grid,
-the laws and the vendor links became the skill's `SKILL.md`, the dated receipts
-its `NOTES.md`, and the "is this agent even connected?" procedure its
-`references/connecting.md`. Read it there — in a Claude Code session ask for it
-by name (`/agents-summoning:summoning`) or just ask to "get codex to review
-this"; from any clone it is `.agents/skills/agents-summoning/SKILL.md`.
+`agents-summoning` is the one to reach for by hand: the grid, the Laws of
+Summoning and the vendor links are its `SKILL.md`, the dated receipts behind
+every claim are its `NOTES.md`, and the "is this agent even connected?"
+procedure is `references/connecting.md`. In a Claude Code session ask for it by
+name (`/agents-summoning:summoning`) or just ask to "get codex to review this";
+from any clone it is `.agents/skills/agents-summoning/SKILL.md`.
 
 ## Why this works
 
