@@ -55,12 +55,8 @@ object SecurePrefs {
     }
     
     fun warmUp(context: Context) {
-        try {
-            if (cachedAead == null) getAead(context)
-            if (cachedSecureStore == null) getSecureStore(context)
-        } catch (e: Exception) {
-            Log.w("SecurePrefs", "Warmup failed: ${e.message}")
-        }
+        if (cachedAead == null) getAead(context)
+        if (cachedSecureStore == null) getSecureStore(context)
     }
 
     @Suppress("DEPRECATION")

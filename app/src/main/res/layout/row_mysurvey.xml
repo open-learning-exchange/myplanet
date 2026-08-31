@@ -3,61 +3,44 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="?attr/selectableItemBackground"
-    android:gravity="center_vertical"
-    android:orientation="horizontal"
-    android:paddingHorizontal="16dp"
-    android:paddingVertical="12dp">
+    android:padding="@dimen/padding_normal">
 
-    <LinearLayout
+    <TextView
+        android:id="@+id/title"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingEnd="8dp">
-
-        <TextView
-            android:id="@+id/title"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textColor="@color/hint_color"
-            android:textSize="16sp" />
-
-        <TextView
-            android:id="@+id/submission_count"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
-            android:textColor="@color/hint_color"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:visibility="gone" />
-    </LinearLayout>
-
+        android:textSize="18sp"
+        android:textColor="@color/hint_color"
+        android:paddingEnd="8dp" />
     <TextView
         android:id="@+id/status"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:paddingEnd="8dp"
-        android:textColor="@color/hint_color"
-        android:textSize="16sp" />
-
+        android:textSize="18sp"
+        android:textColor="@color/hint_color" />
     <TextView
         android:id="@+id/submitted_by"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:paddingEnd="8dp"
-        android:textColor="@color/hint_color"
-        android:textSize="16sp" />
-
+        android:textSize="18sp"
+        android:textColor="@color/hint_color" />
     <TextView
         android:id="@+id/date"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:textSize="18sp"
+        android:textColor="@color/hint_color" />
+    <TextView
+        android:id="@+id/submission_count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:textSize="14sp"
+        android:textStyle="bold"
         android:textColor="@color/hint_color"
-        android:textSize="16sp" />
+        android:visibility="gone" />
 </LinearLayout>

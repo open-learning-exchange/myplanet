@@ -146,30 +146,22 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         // to a plain file before this runs: the Room write below can still be lost
         // if the process dies before the coroutine persists the row.
         suspend fun saveLogToRoom(type: String, error: String, time: String): Boolean {
-            return try {
-                val entryPoint = EntryPointAccessors.fromApplication(
-                    context,
-                    CoreDependenciesEntryPoint::class.java
-                )
-                val diagnosticsRepository = entryPoint.diagnosticsRepository()
-                diagnosticsRepository.saveLogToRoom(type, error, time)
-            } catch (t: Throwable) {
-                false
-            }
+            val entryPoint = EntryPointAccessors.fromApplication(
+                context,
+                CoreDependenciesEntryPoint::class.java
+            )
+            val diagnosticsRepository = entryPoint.diagnosticsRepository()
+            return diagnosticsRepository.saveLogToRoom(type, error, time)
         }
 
         suspend fun saveLogsToRoom(pendingLogs: List<CrashLogStore.PendingLog>): Boolean {
             if (pendingLogs.isEmpty()) return true
-            return try {
-                val entryPoint = EntryPointAccessors.fromApplication(
-                    context,
-                    CoreDependenciesEntryPoint::class.java
-                )
-                val diagnosticsRepository = entryPoint.diagnosticsRepository()
-                diagnosticsRepository.saveLogsToRoom(pendingLogs)
-            } catch (t: Throwable) {
-                false
-            }
+            val entryPoint = EntryPointAccessors.fromApplication(
+                context,
+                CoreDependenciesEntryPoint::class.java
+            )
+            val diagnosticsRepository = entryPoint.diagnosticsRepository()
+            return diagnosticsRepository.saveLogsToRoom(pendingLogs)
         }
 
         private fun applyThemeMode(themeMode: String?) {
@@ -294,9 +286,9 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
     private fun performDeferredInitialization() {
         applicationScope.launch(dispatcherProvider.io) {
-            runCatching { FileUtils.warmUp(this@MainApplication) }
-            runCatching { SecurePrefs.warmUp(this@MainApplication) }
-            runCatching { MarkdownUtils.warmUp(this@MainApplication) }
+            FileUtils.warmUp(this@MainApplication)
+            SecurePrefs.warmUp(this@MainApplication)
+            MarkdownUtils.warmUp(this@MainApplication)
             runCatching { Class.forName("pl.droidsonroids.gif.GifInfoHandle") }
         }
         applicationScope.launch {
