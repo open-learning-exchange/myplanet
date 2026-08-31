@@ -223,11 +223,15 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         filterController.setup()
 
         val chipRow = view?.findViewById<LinearLayout>(R.id.chip_filter_row)
-        var lastState: FilterState? = null
+        val savedFilter = viewModel.currentFilterState
+        if (savedFilter.isActive) {
+            filterController.restoreFilterState(savedFilter)
+        }
+        var lastState: FilterState? = savedFilter.takeIf { it.isActive }
+
         var isFirstEmission = true
         collectLatestWhenStarted(filterController.filterState) { state ->
             chipRow?.let { renderCourseChipSelection(it) }
-
             if (isFirstEmission) {
                 isFirstEmission = false
                 if (!state.isActive) {

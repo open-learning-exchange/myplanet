@@ -91,6 +91,49 @@ class CourseFilterController(
         onScrollToTop()
     }
 
+    fun restoreFilterState(state: FilterState, tags: List<TagEntity> = emptyList()) {
+        restoreSearchText(state.searchText)
+        if (::spnGrade.isInitialized) {
+            restoreSpinnerSelection(spnGrade, state.grade)
+        }
+        if (::spnSubject.isInitialized) {
+            restoreSpinnerSelection(spnSubject, state.subject)
+        }
+        restoreTags(tags)
+        progressFilter = state.progressFilter
+        if (::tvSelected.isInitialized) {
+            refreshTagText()
+        }
+        _filterState.value = currentState()
+    }
+
+    private fun restoreSearchText(searchText: String) {
+        if (::etSearch.isInitialized && etSearch.text.toString() != searchText) {
+            etSearch.setText(searchText)
+        }
+    }
+
+    private fun restoreSpinnerSelection(spinner: Spinner, targetValue: String) {
+        val adapter = spinner.adapter ?: return
+        for (i in 0 until adapter.count) {
+            val itemStr = adapter.getItem(i).toString()
+            if (itemStr == targetValue || (targetValue.isEmpty() && i == 0)) {
+                spinner.setSelection(i)
+                break
+            }
+        }
+    }
+
+    private fun restoreTags(tags: List<TagEntity>) {
+        searchTags.clear()
+        val seenNames = HashSet<String?>()
+        tags.forEach { tag ->
+            if (seenNames.add(tag.name)) {
+                searchTags.add(tag)
+            }
+        }
+    }
+
     private fun setupSearchWatcher() {
         searchTextWatcher = object : TextWatcher {
             @Suppress("EmptyMethod")
