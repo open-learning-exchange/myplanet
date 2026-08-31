@@ -7,19 +7,23 @@ import org.ole.planet.myplanet.model.UserEntity
  * Membership, leadership, and roster capability of the team domain.
  *
  * One of the three sub-interfaces composed into [TeamsRepository] (alongside
- * [TeamsFinancesRepository] and [TeamsNotificationsRepository]). Callers that
- * only need membership checks — a notification worker deciding who to alert, a
- * permission gate in a non-team screen — depend on this narrow contract instead
- * of the full composite, so they are insulated from unrelated finance and
- * notification surface area.
+ * [TeamsFinancesRepository] and [TeamsNotificationsRepository]). Taking this
+ * narrow contract instead of the full composite keeps a caller's surface area
+ * proportional to what it actually calls — for example, `RequestsViewModel`
+ * injects only [TeamsMembersRepository] and so never sees finance or
+ * notification methods. (Broad team callers such as `TeamViewModel` and
+ * `TaskNotificationWorker` take the full composite, since they span more than
+ * membership.)
  *
- * ## KMP rationale
+ * ## Kotlin Multiplatform
  *
- * The split also anticipates a Kotlin Multiplatform (KMP) future: a shared
- * `commonMain` module can declare this interface alone and supply per-platform
+ * The split is primarily an interface-segregation choice; myPlanet is an
+ * Android-only single-module app today. If a Kotlin Multiplatform (KMP) target
+ * is ever pursued, this narrow interface would also be the natural seam for it:
+ * a shared `commonMain` module could declare it alone with per-platform
  * `expect`/`actual` implementations, while the Android app re-composes it into
- * [TeamsRepository]. Keep new membership concerns here rather than growing the
- * composite directly.
+ * [TeamsRepository]. That is a conditional benefit, not a committed direction.
+ * Prefer adding new membership concerns here rather than growing the composite.
  */
 interface TeamsMembersRepository {
     suspend fun isMember(userId: String?, teamId: String): Boolean
