@@ -19,9 +19,7 @@ object CourseRatingUtils {
         val totalRatings = ratingSummary?.totalRatings
         val userRating = ratingSummary?.userRating?.toFloat()
 
-        average?.text = String.format(Locale.getDefault(), "%.2f", averageRating ?: 0f)
-        ratingCount?.text = context.getString(R.string.rating_count_format, totalRatings ?: 0)
-        ratingBar?.rating = userRating ?: averageRating ?: 0f
+        renderRating(context, averageRating, totalRatings, userRating, average, ratingCount, ratingBar)
     }
 
     fun showRating(
@@ -43,6 +41,18 @@ object CourseRatingUtils {
             else -> null
         }
 
+        renderRating(context, averageRating, totalRatings, userRating, average, ratingCount, ratingBar)
+    }
+
+    private fun renderRating(
+        context: Context,
+        averageRating: Float?,
+        totalRatings: Int?,
+        userRating: Float?,
+        average: TextView?,
+        ratingCount: TextView?,
+        ratingBar: AppCompatRatingBar?
+    ) {
         average?.text = String.format(Locale.getDefault(), "%.2f", averageRating ?: 0f)
         ratingCount?.text = context.getString(R.string.rating_count_format, totalRatings ?: 0)
         ratingBar?.rating = userRating ?: averageRating ?: 0f
