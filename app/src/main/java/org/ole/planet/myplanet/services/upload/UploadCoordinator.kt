@@ -1,9 +1,7 @@
 package org.ole.planet.myplanet.services.upload
 
-import android.content.Context
 import android.util.Log
 import com.google.gson.JsonObject
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
@@ -30,7 +28,6 @@ import org.ole.planet.myplanet.utils.UrlUtils
 @Singleton
 class UploadCoordinator @Inject constructor(
     private val uploadRepository: UploadRepository,
-    @ApplicationContext private val context: Context,
     private val retryQueue: RetryQueue,
     private val dispatcherProvider: DispatcherProvider
 ) {
