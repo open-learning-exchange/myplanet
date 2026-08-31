@@ -84,6 +84,12 @@ interface NewsDao {
     @Query("SELECT viewableId FROM news WHERE viewableBy = 'teams' AND viewableId IN (:teamIds)")
     suspend fun getTeamChatViewableIds(teamIds: List<String>): List<String>
 
+    // COUNT mirror of getTopLevelByTeam: top-level posts visible to this team. Matches the
+    // list returned to the UI (both the viewableBy/viewableId path and the viewIn LIKE path
+    // that locally-created team messages use), so the notification count tracks the feed.
+    @Query("SELECT COUNT(*) FROM news WHERE (replyTo IS NULL OR replyTo = '') AND ((viewableBy = 'teams' COLLATE NOCASE AND viewableId = :teamId COLLATE NOCASE) OR viewIn LIKE :teamPattern ESCAPE '\\')")
+    suspend fun countTopLevelByTeam(teamId: String, teamPattern: String): Long
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(news: News)
 

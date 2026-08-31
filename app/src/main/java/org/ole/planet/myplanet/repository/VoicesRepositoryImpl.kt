@@ -511,6 +511,10 @@ class VoicesRepositoryImpl @Inject constructor(
         return newsDao.countTeamChats(teamId)
     }
 
+    override suspend fun countTopLevelByTeam(teamId: String): Long {
+        return newsDao.countTopLevelByTeam(teamId, teamIdPattern(teamId))
+    }
+
     override suspend fun getTeamChatViewableIds(teamIds: List<String>): List<String> {
         return newsDao.getTeamChatViewableIds(teamIds)
     }

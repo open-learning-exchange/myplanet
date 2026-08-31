@@ -114,4 +114,43 @@ class NewsDaoTest {
         assertTrue(ids.contains("reply2"))
         assertTrue(ids.contains("reply3"))
     }
+
+    @Test
+    fun countTopLevelByTeam_matches_getTopLevelByTeam_size() = runBlocking {
+        // Locally-created team message: only viewIn is set (News.createNews path), no viewableBy/viewableId.
+        val localTop = News().apply {
+            id = UUID.randomUUID().toString()
+            time = 100L
+            viewIn = "[{\"_id\":\"teamA\",\"section\":\"teams\"}]"
+        }
+        // Server-synced team message matched via viewableBy/viewableId.
+        val syncedTop = News().apply {
+            id = UUID.randomUUID().toString()
+            time = 200L
+            viewableBy = "teams"
+            viewableId = "teamA"
+        }
+        // A reply to the local message — must NOT be counted (notification tracks top-level feed).
+        val reply = News().apply {
+            id = UUID.randomUUID().toString()
+            time = 150L
+            replyTo = localTop.id
+            viewIn = "[{\"_id\":\"teamA\",\"section\":\"teams\"}]"
+        }
+        // A top-level message for a different team — must NOT be counted.
+        val otherTeam = News().apply {
+            id = UUID.randomUUID().toString()
+            time = 300L
+            viewIn = "[{\"_id\":\"teamB\",\"section\":\"teams\"}]"
+        }
+
+        newsDao.upsertAll(listOf(localTop, syncedTop, reply, otherTeam))
+
+        val pattern = teamIdPattern("teamA")
+        val listSize = newsDao.getTopLevelByTeam("teamA", pattern).size
+        val count = newsDao.countTopLevelByTeam("teamA", pattern)
+
+        assertEquals(2, listSize)
+        assertEquals(listSize.toLong(), count)
+    }
 }

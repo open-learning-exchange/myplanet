@@ -58,16 +58,17 @@ class TeamsVoicesViewModelTest {
     }
 
     @Test
-    fun `getFilteredNews derives notification count from countTeamChats and returns the list`() = runTest(testDispatcher) {
+    fun `getFilteredNews derives notification count from countTopLevelByTeam and returns the list`() = runTest(testDispatcher) {
         val teamId = "team123"
         val newsList = listOf<News>(mockk(relaxed = true), mockk(relaxed = true))
         coEvery { voicesRepository.getFilteredNews(teamId) } returns newsList
-        coEvery { voicesRepository.countTeamChats(teamId) } returns 7L
+        coEvery { voicesRepository.countTopLevelByTeam(teamId) } returns 7L
 
         val result = viewModel.getFilteredNews(teamId)
 
         assertEquals(newsList, result)
-        coVerify(exactly = 1) { voicesRepository.countTeamChats(teamId) }
+        coVerify(exactly = 1) { voicesRepository.countTopLevelByTeam(teamId) }
+        coVerify(exactly = 0) { voicesRepository.countTeamChats(teamId) }
         coVerify(exactly = 1) { notificationsRepository.updateTeamNotification(teamId, 7) }
         coVerify(exactly = 0) { notificationsRepository.updateTeamNotification(teamId, newsList.size) }
     }
