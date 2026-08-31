@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import android.util.Log
 import androidx.sqlite.db.SimpleSQLiteQuery
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -352,6 +353,13 @@ class ResourcesRepositoryImpl @Inject constructor(
             return
         }
         val entryFile = library.openWhichFile?.takeIf { it.isNotBlank() } ?: "index.html"
+        val directory = File(MainApplication.context.getExternalFilesDir(null), "ole/$resourceId")
+        val entryExists = withContext(dispatcherProvider.io) {
+            FileUtils.resolveHtmlEntryFile(directory, entryFile)?.exists() == true
+        }
+        if (!entryExists) {
+            return
+        }
         library.resourceOffline = true
         library.downloadedRev = library._rev
         if (library.resourceLocalAddress.isNullOrBlank()) {
@@ -624,6 +632,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
         if (librariesToUpsert.isNotEmpty()) {
             myLibraryDao.upsertAll(librariesToUpsert)
+            reconcileHtmlLibraries(librariesToUpsert)
         }
         return processedCount
     }
@@ -666,8 +675,23 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
         if (librariesToUpsert.isNotEmpty()) {
             myLibraryDao.upsertAll(librariesToUpsert)
+            reconcileHtmlLibraries(librariesToUpsert)
         }
         return savedIds
+    }
+
+    // Detects HTML resources already present on disk from a prior install/sync that never got a resourceLocalAddress.
+    private suspend fun reconcileHtmlLibraries(libraries: List<MyLibrary>) {
+        libraries.forEach { library ->
+            if (library.mediaType == "HTML" && library.resourceLocalAddress.isNullOrBlank()) {
+                val resourceId = library.resourceId ?: return@forEach
+                try {
+                    reconcileHtmlResourceOffline(resourceId)
+                } catch (e: Exception) {
+                    Log.w("ResourcesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
+                }
+            }
+        }
     }
 
     private suspend fun getResourceRatingsBulk(ids: List<String>, userId: String?): Map<String?, JsonObject> {

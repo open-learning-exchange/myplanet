@@ -48,6 +48,7 @@ class CoursesRepositoryImplTest {
     private val submissionsRepository: SubmissionsRepository = mockk(relaxed = true)
     private val tagsRepository: TagsRepository = mockk(relaxed = true)
     private val ratingsRepository: RatingsRepository = mockk(relaxed = true)
+    private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val certificationDao: CertificationDao = mockk(relaxed = true)
     private val courseDao: CourseDao = mockk(relaxed = true)
@@ -75,6 +76,7 @@ class CoursesRepositoryImplTest {
             submissionsRepository,
             tagsRepository,
             ratingsRepository,
+            resourcesRepository,
             sharedPrefManager,
             certificationDao,
             courseDao,

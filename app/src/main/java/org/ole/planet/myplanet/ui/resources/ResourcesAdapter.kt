@@ -54,6 +54,7 @@ class ResourcesAdapter(
     private val locallyOfflineIds = mutableSetOf<String>()
     private val externalFilesDir: File? by lazy { FileUtils.getExternalFilesDir(context) }
     private var adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
+    private val htmlCoverCache = mutableMapOf<String, File?>()
 
     init {
         setHasStableIds(true)
@@ -185,6 +186,19 @@ class ResourcesAdapter(
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
         adapterScope.cancel()
+        htmlCoverCache.clear()
+    }
+
+    override fun onCurrentListChanged(previousList: MutableList<ResourceListModel>, currentList: MutableList<ResourceListModel>) {
+        super.onCurrentListChanged(previousList, currentList)
+        val currentMap = currentList.associateBy { it.library.id }
+        previousList.forEach { prev ->
+            val id = prev.library.id
+            val current = currentMap[id]
+            if (current == null || current.library.resourceLocalAddress != prev.library.resourceLocalAddress) {
+                htmlCoverCache.remove(id)
+            }
+        }
     }
 
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
@@ -312,7 +326,7 @@ class ResourcesAdapter(
             mimeType?.contains("html") == true -> {
                 showTypeIconOnly(ivPreview, ivTypeIcon)
                 val resourceDir = File(dir, "ole/$libraryId")
-                adapterScope.launch { showHtmlPreview(ivPreview, ivTypeIcon, resourceDir) }
+                adapterScope.launch { showHtmlPreview(ivPreview, ivTypeIcon, libraryId, resourceDir) }
             }
             else -> {
                 showTypeIconOnly(ivPreview, ivTypeIcon)
@@ -376,8 +390,14 @@ class ResourcesAdapter(
         }
     }
 
-    private suspend fun showHtmlPreview(ivPreview: ImageView, ivTypeIcon: ImageView, resourceDir: File) {
-        val coverImage = withContext(dispatcherProvider.io) { FileUtils.findHtmlCoverImage(resourceDir) }
+    private suspend fun showHtmlPreview(ivPreview: ImageView, ivTypeIcon: ImageView, libraryId: String, resourceDir: File) {
+        val coverImage = if (htmlCoverCache.containsKey(libraryId)) {
+            htmlCoverCache.getValue(libraryId)
+        } else {
+            withContext(dispatcherProvider.io) { FileUtils.findHtmlCoverImage(resourceDir) }.also {
+                htmlCoverCache[libraryId] = it
+            }
+        }
         if (coverImage != null) {
             showImagePreview(ivPreview, ivTypeIcon, coverImage)
         } else {
