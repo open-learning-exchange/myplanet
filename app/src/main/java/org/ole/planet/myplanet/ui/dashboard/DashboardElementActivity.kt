@@ -56,17 +56,18 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
 
     fun openCallFragment(newFragment: Fragment, tag: String?) {
         val fragmentManager = supportFragmentManager
-        val existingFragment = if (!tag.isNullOrEmpty()) fragmentManager.findFragmentByTag(tag) else null
-        if (existingFragment != null && existingFragment.isVisible) {
-            return
+        val existing = tag?.takeIf { it.isNotEmpty() }?.let { fragmentManager.findFragmentByTag(it) }
+        when {
+            existing?.isVisible == true -> return
+            existing != null -> FragmentNavigator.popBackStack(fragmentManager, tag, 0)
+            else -> FragmentNavigator.replaceFragment(
+                fragmentManager,
+                R.id.fragment_container,
+                newFragment,
+                addToBackStack = true,
+                tag = tag
+            )
         }
-        FragmentNavigator.replaceFragment(
-            fragmentManager,
-            R.id.fragment_container,
-            newFragment,
-            addToBackStack = true,
-            tag = tag
-        )
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -141,15 +142,15 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         val fragmentTag = f?.tag
         if (f is CoursesFragment) {
             if ("MyCoursesFragment" == fragmentTag) {
-                navigationView.menu.findItem(R.id.menu_mycourses).isChecked = true
+                navigationView.menu.findItem(R.id.menu_mycourses)?.isChecked = true
             } else {
-                navigationView.menu.findItem(R.id.menu_courses).isChecked = true
+                navigationView.menu.findItem(R.id.menu_courses)?.isChecked = true
             }
         } else if (f is ResourcesFragment) {
             if ("MyResourcesFragment" == fragmentTag) {
-                navigationView.menu.findItem(R.id.menu_mylibrary).isChecked = true
+                navigationView.menu.findItem(R.id.menu_mylibrary)?.isChecked = true
             } else {
-                navigationView.menu.findItem(R.id.menu_library).isChecked = true
+                navigationView.menu.findItem(R.id.menu_library)?.isChecked = true
             }
         }
     }
