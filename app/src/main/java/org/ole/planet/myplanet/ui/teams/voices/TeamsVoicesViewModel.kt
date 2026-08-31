@@ -57,7 +57,7 @@ class TeamsVoicesViewModel @Inject constructor(
 
     suspend fun getFilteredNews(teamId: String): List<News?> {
         val newsList = voicesRepository.getFilteredNews(teamId)
-        notificationsRepository.updateTeamNotification(teamId, voicesRepository.countTopLevelByTeam(teamId).toInt())
+        notificationsRepository.updateTeamNotification(teamId, newsList.size)
         return newsList
     }
 

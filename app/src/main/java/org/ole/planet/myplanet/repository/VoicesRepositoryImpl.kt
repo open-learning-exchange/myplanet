@@ -515,10 +515,6 @@ class VoicesRepositoryImpl @Inject constructor(
         return newsDao.countTopLevelByTeam(teamId, teamIdPattern(teamId))
     }
 
-    override suspend fun getTeamChatViewableIds(teamIds: List<String>): List<String> {
-        return newsDao.getTeamChatViewableIds(teamIds)
-    }
-
     override suspend fun getPendingNewsLogUploads(): List<org.ole.planet.myplanet.model.NewsLog> {
         return newsLogDao.getPendingUploads()
     }

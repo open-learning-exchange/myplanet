@@ -309,12 +309,15 @@ class NotificationsRepositoryImpl @Inject constructor(
             }
         }
 
-        // 2. Fetch all relevant chat counts in a single query
-        val chatViewableIds = voicesRepository.getTeamChatViewableIds(teamIds)
+        // 2. Fetch the current top-level chat count per team. This must use the same predicate
+        //    as the watermark written by TeamsVoicesViewModel.getFilteredNews (which stores
+        //    newsList.size, i.e. getTopLevelByTeam), so the lastCount < chatCount comparison
+        //    compares like for like. The previous getTeamChatViewableIds query counted a
+        //    different set (viewableBy/viewableId only, replies included) so the badge never
+        //    cleared for teams with replies and never appeared for viewIn-only local posts.
         val chatCountsById = mutableMapOf<String, Long>()
-        chatViewableIds.forEach { viewableId ->
-            val currentCount = chatCountsById[viewableId] ?: 0
-            chatCountsById[viewableId] = currentCount + 1
+        for (teamId in teamIds) {
+            chatCountsById[teamId] = voicesRepository.countTopLevelByTeam(teamId)
         }
 
         // 3. Fetch all relevant tasks once

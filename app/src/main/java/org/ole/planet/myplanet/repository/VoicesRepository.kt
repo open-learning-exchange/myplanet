@@ -42,7 +42,6 @@ interface VoicesRepository : VoicesEditActions {
     suspend fun insertNewsList(docs: List<JsonObject>)
     suspend fun countTeamChats(teamId: String): Long
     suspend fun countTopLevelByTeam(teamId: String): Long
-    suspend fun getTeamChatViewableIds(teamIds: List<String>): List<String>
     suspend fun getPendingNewsLogUploads(): List<org.ole.planet.myplanet.model.NewsLog>
     suspend fun markNewsLogUploaded(localId: String, remoteId: String, rev: String): Boolean
 }
