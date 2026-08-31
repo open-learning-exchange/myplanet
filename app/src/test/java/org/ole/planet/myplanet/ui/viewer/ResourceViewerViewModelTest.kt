@@ -36,7 +36,6 @@ internal class ResourceViewerViewModelTest {
             context = mockk(relaxed = true),
             resourcesRepository = resourcesRepository,
             authSessionUpdaterFactory = mockk(relaxed = true),
-            sharedPrefManager = sharedPrefManager,
             ratingsRepository = ratingsRepository,
             configurationsRepository = configurationsRepository,
             dispatcherProvider = TestDispatcherProvider(mainDispatcherRule.testDispatcher)
