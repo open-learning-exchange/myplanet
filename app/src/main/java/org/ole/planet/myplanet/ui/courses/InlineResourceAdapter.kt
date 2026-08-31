@@ -185,6 +185,7 @@ class InlineResourceAdapter(
                     mimeType?.startsWith("video") == true -> showVideoPreview(binding, context, resourceFile)
                     mimeType?.contains("pdf") == true -> showPdfPreview(holder, resourceFile)
                     mimeType?.startsWith("audio") == true -> showAudioPreview(holder, resourceFile)
+                    mimeType?.contains("html") == true -> showHtmlPreview(binding, context, File(externalFilesDir, "ole/${resource.id}"))
                     mimeType?.contains("csv") == true || resource.resourceLocalAddress?.endsWith(".csv") == true -> showCsvPreview(holder, resourceFile)
                     mimeType?.startsWith("text") == true || resource.resourceLocalAddress?.endsWith(".txt") == true || resource.resourceLocalAddress?.endsWith(".md") == true -> showTextPreview(holder, resourceFile)
                 }
@@ -236,6 +237,20 @@ class InlineResourceAdapter(
             holder.binding.ivResourcePreview.scaleType = ImageView.ScaleType.FIT_CENTER
             holder.binding.ivResourcePreview.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
             holder.binding.ivResourcePreview.setImageBitmap(bitmap)
+        }
+    }
+
+    private suspend fun showHtmlPreview(binding: ItemInlineResourceBinding, context: Context, resourceDir: File) {
+        val coverImage = withContext(dispatcherProvider.io) { FileUtils.findHtmlCoverImage(resourceDir) }
+        if (coverImage != null) {
+            binding.ivResourcePreview.visibility = View.VISIBLE
+            Glide.with(context)
+                .load(coverImage)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .centerCrop()
+                .placeholder(R.drawable.ole_logo)
+                .error(R.drawable.ole_logo)
+                .into(binding.ivResourcePreview)
         }
     }
 

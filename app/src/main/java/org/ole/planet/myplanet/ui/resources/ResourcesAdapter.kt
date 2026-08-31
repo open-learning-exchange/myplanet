@@ -21,6 +21,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
 import org.ole.planet.myplanet.databinding.ItemLibraryGridBinding
@@ -308,6 +309,11 @@ class ResourcesAdapter(
                 val targetWidthPx = (coverWidthDp * context.resources.displayMetrics.density).toInt()
                 adapterScope.launch { showPdfPreview(ivPreview, ivTypeIcon, file, targetWidthPx) }
             }
+            mimeType?.contains("html") == true -> {
+                showTypeIconOnly(ivPreview, ivTypeIcon)
+                val resourceDir = File(dir, "ole/$libraryId")
+                adapterScope.launch { showHtmlPreview(ivPreview, ivTypeIcon, resourceDir) }
+            }
             else -> {
                 showTypeIconOnly(ivPreview, ivTypeIcon)
                 null
@@ -365,6 +371,15 @@ class ResourcesAdapter(
             ivTypeIcon.visibility = View.GONE
             ivPreview.visibility = View.VISIBLE
             ivPreview.setImageBitmap(bitmap)
+        } else {
+            showTypeIconOnly(ivPreview, ivTypeIcon)
+        }
+    }
+
+    private suspend fun showHtmlPreview(ivPreview: ImageView, ivTypeIcon: ImageView, resourceDir: File) {
+        val coverImage = withContext(dispatcherProvider.io) { FileUtils.findHtmlCoverImage(resourceDir) }
+        if (coverImage != null) {
+            showImagePreview(ivPreview, ivTypeIcon, coverImage)
         } else {
             showTypeIconOnly(ivPreview, ivTypeIcon)
         }

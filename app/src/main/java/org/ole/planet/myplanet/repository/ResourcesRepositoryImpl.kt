@@ -323,8 +323,15 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun markResourceOfflineByUrl(url: String) {
         val localAddress = FileUtils.getFileNameFromUrl(url)
+        val resourceId = FileUtils.getIdFromUrl(url)
+        val relativePath = FileUtils.getResourceRelativePathFromUrl(url)
+
         if (localAddress.isNotBlank()) {
             markResourceOfflineByLocalAddress(localAddress)
+        }
+
+        if (resourceId.isNotBlank()) {
+            markResourceOfflineByResourceId(resourceId, relativePath)
         }
     }
 
@@ -337,6 +344,34 @@ class ResourcesRepositoryImpl @Inject constructor(
         if (results.isNotEmpty()) {
             myLibraryDao.upsertAll(results)
         }
+    }
+
+    override suspend fun reconcileHtmlResourceOffline(resourceId: String) {
+        val library = myLibraryDao.getByResourceId(resourceId) ?: return
+        if (library.isResourceOffline()) {
+            return
+        }
+        val entryFile = library.openWhichFile?.takeIf { it.isNotBlank() } ?: "index.html"
+        library.resourceOffline = true
+        library.downloadedRev = library._rev
+        if (library.resourceLocalAddress.isNullOrBlank()) {
+            library.resourceLocalAddress = entryFile
+        }
+        myLibraryDao.upsert(library)
+    }
+
+    private suspend fun markResourceOfflineByResourceId(resourceId: String, relativePath: String) {
+        val library = myLibraryDao.getByResourceId(resourceId) ?: return
+        val entryFile = library.openWhichFile?.takeIf { it.isNotBlank() } ?: "index.html"
+        if (relativePath != entryFile) {
+            return
+        }
+        library.resourceOffline = true
+        library.downloadedRev = library._rev
+        if (library.resourceLocalAddress.isNullOrBlank()) {
+            library.resourceLocalAddress = relativePath
+        }
+        myLibraryDao.upsert(library)
     }
 
     override fun getRecentResources(userId: String): Flow<List<MyLibrary>> {

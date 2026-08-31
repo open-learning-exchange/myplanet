@@ -65,7 +65,7 @@ object FileUtils {
         return resolveFilePath(context, "/ole/${getIdFromUrl(url)}", getResourceRelativePathFromUrl(url))
     }
 
-    private fun getResourceRelativePathFromUrl(url: String?): String {
+    fun getResourceRelativePathFromUrl(url: String?): String {
         return try {
             val segments = url?.toUri()?.pathSegments ?: return getFileNameFromUrl(url)
             val idx = segments.indexOf("resources")
@@ -104,6 +104,21 @@ object FileUtils {
             e.printStackTrace()
             null
         }
+    }
+
+    private val previewImageExtensions = setOf("png", "jpg", "jpeg", "gif", "webp")
+    private val previewImageNameHints = listOf("cover", "thumbnail", "thumb", "screenshot", "poster")
+
+    fun findHtmlCoverImage(resourceDir: File): File? {
+        if (!resourceDir.isDirectory) return null
+        val images = resourceDir.walkTopDown()
+            .maxDepth(4)
+            .filter { it.isFile && it.extension.lowercase() in previewImageExtensions }
+            .toList()
+        if (images.isEmpty()) return null
+        return images.firstOrNull { image ->
+            previewImageNameHints.any { image.nameWithoutExtension.lowercase().contains(it) }
+        } ?: images.maxByOrNull { it.length() }
     }
 
     fun checkFileExist(context: Context, url: String?): Boolean {

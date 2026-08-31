@@ -7,6 +7,7 @@ import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
+import java.io.File
 import java.util.Calendar
 import java.util.UUID
 import org.ole.planet.myplanet.MainApplication.Companion.context
@@ -299,6 +300,20 @@ open class MyLibrary {
                     }
                 }
                 languages = mergedList(languages, JsonUtils.getJsonArray("languages", params.doc))
+                
+                if (mediaType == "HTML" && resourceLocalAddress.isNullOrBlank()) {
+                    try {
+                        val entryRelativePath = openWhichFile?.takeIf { it.isNotBlank() } ?: "index.html"
+                        val directory = File(context.getExternalFilesDir(null), "ole/$resourceId")
+                        if (FileUtils.resolveHtmlEntryFile(directory, entryRelativePath)?.exists() == true) {
+                            resourceLocalAddress = entryRelativePath
+                            resourceOffline = true
+                            downloadedRev = _rev
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
             }
             return resource
         }
