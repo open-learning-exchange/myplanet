@@ -8,12 +8,9 @@ import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.asRequestBody
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
-import org.ole.planet.myplanet.model.MembershipDoc
 import org.ole.planet.myplanet.model.StepExam
-import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.services.FileUploader
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -24,20 +21,8 @@ class UploadRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
     private val examDao: ExamDao,
     private val submissionDao: SubmissionDao,
-    private val answerDao: AnswerDao,
     private val dispatcherProvider: DispatcherProvider,
 ) : UploadRepository {
-
-    @Suppress("UNCHECKED_CAST")
-    override suspend fun <T : Any> queryPending(config: UploadQueryContract<T>): List<T> {
-        return when (config.queryType) {
-            UploadQueryType.AdoptedSurveys -> examDao.getPendingAdoptedSurveys() as List<T>
-
-            UploadQueryType.ExamResults -> hydrateSubmissions(submissionDao.getPendingExamResults()) as List<T>
-
-            UploadQueryType.CompletedSubmissions -> hydrateSubmissions(submissionDao.getPendingSubmissions()) as List<T>
-        }
-    }
 
     override suspend fun markUploaded(
         config: UploadUpdateContract,
@@ -73,13 +58,6 @@ class UploadRepositoryImpl @Inject constructor(
 
     override suspend fun fetchExistingDoc(url: String): Response<JsonObject> {
         return apiInterface.getJsonObject(UrlUtils.header, url)
-    }
-
-    private suspend fun hydrateSubmissions(rows: List<Submission>): List<Submission> {
-        if (rows.isEmpty()) return emptyList()
-        val answersBySubmissionId =
-            answerDao.getBySubmissionIds(rows.map { it.id }).groupBy { it.submissionId }
-        return rows.map { row -> row.apply { answers = answersBySubmissionId[id].orEmpty().toMutableList(); teamId?.let { membershipDoc = MembershipDoc().apply { this.teamId = it } } } }
     }
 
     private suspend fun markExamsUploaded(
