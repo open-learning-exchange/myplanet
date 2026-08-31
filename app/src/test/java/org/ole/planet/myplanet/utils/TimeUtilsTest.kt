@@ -58,7 +58,7 @@ class TimeUtilsTest {
         // March 11, 2024, 00:00:00 UTC
         val timestamp = 1710115200000L
         val formatted = TimeUtils.getFormattedDate(timestamp)
-        assertEquals("Monday, Mar 11, 2024", formatted)
+        assertEquals("03/11/2024", formatted)
 
         val formattedNull = TimeUtils.getFormattedDate(null)
         assertNotEquals("N/A", formattedNull) // should return current date, not N/A
@@ -69,7 +69,7 @@ class TimeUtilsTest {
         // 0 timestamp is Jan 01, 1970 UTC. To avoid Locale flakiness with TimeUtils object initialization,
         // we assert against the dynamically formatted expected value instead of hardcoding English locale.
         val expected = DateTimeFormatter
-            .ofPattern("EEEE, MMM dd, yyyy", Locale.getDefault())
+            .ofPattern("MM/dd/yyyy", Locale.getDefault())
             .withZone(ZoneId.of("UTC"))
             .format(Instant.ofEpochMilli(0L))
         val formatted = TimeUtils.getFormattedDate(0L)
@@ -80,7 +80,7 @@ class TimeUtilsTest {
     fun testGetFormattedDate_preEpoch() {
         val timestamp = -1000000000000L
         val expected = DateTimeFormatter
-            .ofPattern("EEEE, MMM dd, yyyy", Locale.getDefault())
+            .ofPattern("MM/dd/yyyy", Locale.getDefault())
             .withZone(ZoneId.of("UTC"))
             .format(Instant.ofEpochMilli(timestamp))
         val formatted = TimeUtils.getFormattedDate(timestamp)
@@ -91,12 +91,12 @@ class TimeUtilsTest {
     fun testGetFormattedDate_extremeValues() {
         // DateTimeFormatter successfully evaluates MAX/MIN Instant bounds natively without throwing.
         val expectedMax = DateTimeFormatter
-            .ofPattern("EEEE, MMM dd, yyyy", Locale.getDefault())
+            .ofPattern("MM/dd/yyyy", Locale.getDefault())
             .withZone(ZoneId.of("UTC"))
             .format(Instant.ofEpochMilli(Long.MAX_VALUE))
 
         val expectedMin = DateTimeFormatter
-            .ofPattern("EEEE, MMM dd, yyyy", Locale.getDefault())
+            .ofPattern("MM/dd/yyyy", Locale.getDefault())
             .withZone(ZoneId.of("UTC"))
             .format(Instant.ofEpochMilli(Long.MIN_VALUE))
 
@@ -146,11 +146,11 @@ class TimeUtilsTest {
         val dateString = "2024-03-11T12:00:00.000Z"
         val pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
         val formatted = TimeUtils.getFormattedDate(dateString, pattern)
-        assertEquals("Monday, Mar 11, 2024", formatted)
+        assertEquals("03/11/2024", formatted)
 
         // Date only
         val formatted2 = TimeUtils.getFormattedDate("2024-03-11", "yyyy-MM-dd")
-        assertEquals("Monday, Mar 11, 2024", formatted2)
+        assertEquals("03/11/2024", formatted2)
 
         assertEquals("N/A", TimeUtils.getFormattedDate("", "yyyy-MM-dd"))
         assertEquals("N/A", TimeUtils.getFormattedDate("2024-03-11", ""))
