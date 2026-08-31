@@ -447,9 +447,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun isAtRootDashboard(): Boolean {
+    internal fun isAtRootDashboard(): Boolean {
         val currentFrag = supportFragmentManager.findFragmentById(R.id.fragment_container)
-        return currentFrag == null || currentFrag is BellDashboardFragment || currentFrag is InactiveDashboardFragment
+        return isRootDashboardFragment(currentFrag)
     }
 
     private fun addBackPressCallback() {
@@ -1144,5 +1144,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         const val MESSAGE_PROGRESS = "message_progress"
         var isFromNotificationAction = false
         private const val LAST_SYNC_STATUS_REFRESH_INTERVAL_MS = 60_000L
+
+        fun isRootDashboardFragment(fragment: Fragment?): Boolean {
+            return fragment == null || fragment is BellDashboardFragment || fragment is InactiveDashboardFragment
+        }
     }
 }
