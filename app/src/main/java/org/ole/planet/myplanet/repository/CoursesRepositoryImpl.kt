@@ -249,13 +249,16 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun search(query: String): List<MyCourse> {
         val allCourses = mapCourses(courseDao.getAll())
-        if (query.isEmpty()) {
+        val trimmedQuery = query.trim()
+        if (trimmedQuery.isEmpty()) {
             return allCourses
         }
 
-        val queryParts = query.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
-        val normalizedQuery = Utilities.normalizeText(query)
+        val normalizedQueryParts = trimmedQuery.splitToSequence(" ")
+            .filter { it.isNotEmpty() }
+            .map { Utilities.normalizeText(it) }
+            .toList()
+        val normalizedQuery = Utilities.normalizeText(trimmedQuery)
 
         val startsWithQuery = mutableListOf<MyCourse>()
         val titleContainsQuery = mutableListOf<MyCourse>()
@@ -263,18 +266,25 @@ class CoursesRepositoryImpl @Inject constructor(
 
         for (item in allCourses) {
             val title = item.courseTitleNormal ?: item.courseTitle?.let { Utilities.normalizeText(it) }.orEmpty()
-            val description = item.description?.let { Utilities.normalizeText(it) }.orEmpty()
-            val stepsText = item.courseSteps?.joinToString(" ") { step ->
-                "${step.stepTitle.orEmpty()} ${step.description.orEmpty()}"
-            }?.let { Utilities.normalizeText(it) }.orEmpty()
-            val allContent = "$title $description $stepsText"
 
             if (title.startsWith(normalizedQuery)) {
                 startsWithQuery.add(item)
             } else if (normalizedQueryParts.all { title.contains(it) }) {
                 titleContainsQuery.add(item)
-            } else if (normalizedQueryParts.all { allContent.contains(it) }) {
-                contentContainsQuery.add(item)
+            } else {
+                val description = item.description?.let { Utilities.normalizeText(it) }
+                val steps = item.courseSteps
+                val matchesContent = normalizedQueryParts.all { part ->
+                    title.contains(part) ||
+                        (description != null && description.contains(part)) ||
+                        (steps != null && steps.any { step ->
+                            step.stepTitle?.let { Utilities.normalizeText(it) }?.contains(part) == true ||
+                                step.description?.let { Utilities.normalizeText(it) }?.contains(part) == true
+                        })
+                }
+                if (matchesContent) {
+                    contentContainsQuery.add(item)
+                }
             }
         }
         return startsWithQuery + titleContainsQuery + contentContainsQuery

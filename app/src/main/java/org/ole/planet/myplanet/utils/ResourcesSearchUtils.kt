@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.utils
 
-import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.ResourceListModel
 
 object ResourcesSearchUtils {
@@ -30,21 +29,19 @@ object ResourcesSearchUtils {
                 startsWithQuery.add(item)
             } else if (normalizedQueryParts.all { primary.contains(it) }) {
                 primaryContainsQuery.add(item)
-            } else {
-                val secondaryCombined = secondarySelectors.mapNotNull { it(item) }
-                    .joinToString(" ") { Utilities.normalizeText(it) }
-                val allText = "$primary $secondaryCombined"
-                if (normalizedQueryParts.all { allText.contains(it) }) {
+            } else if (secondarySelectors.isNotEmpty()) {
+                val matchesSecondary = normalizedQueryParts.all { part ->
+                    primary.contains(part) || secondarySelectors.any { selector ->
+                        val value = selector(item)
+                        value != null && Utilities.normalizeText(value).contains(part)
+                    }
+                }
+                if (matchesSecondary) {
                     secondaryContainsQuery.add(item)
                 }
             }
         }
         return startsWithQuery + primaryContainsQuery + secondaryContainsQuery
-    }
-
-    // Requires normalizedTitleSelector to return a pre-normalized (and lowercased) string
-    fun <T> searchList(list: List<T>, query: String, normalizedTitleSelector: (T) -> String?): List<T> {
-        return searchList(list, query, normalizedTitleSelector, emptyList())
     }
 
     fun searchLocalModels(models: List<ResourceListModel>, query: String): List<ResourceListModel> {
@@ -58,17 +55,6 @@ object ResourcesSearchUtils {
                 { it.library.publisher },
                 { it.tags.joinToString(" ") { tag -> tag.name.orEmpty() } },
                 { it.library.subject?.joinToString(" ") }
-            )
-        )
-    }
-
-    fun searchCourseSteps(steps: List<CourseStep>, query: String): List<CourseStep> {
-        return searchList(
-            list = steps,
-            query = query,
-            primarySelector = { it.stepTitle?.let { t -> Utilities.normalizeText(t) } },
-            secondarySelectors = listOf(
-                { it.description }
             )
         )
     }
