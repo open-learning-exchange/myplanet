@@ -66,7 +66,7 @@ class VoicesLabelManager(
         val labels = voice.labels ?: emptyList()
 
         if (labels.isNotEmpty()) {
-            val chipContext = ContextThemeWrapper(context, com.google.android.material.R.style.Theme_MaterialComponents_DayNight_NoActionBar)
+            val chipContext = ContextThemeWrapper(context, R.style.Theme_App_Chip)
             for (label in labels) {
                 val chip = Chip(chipContext).apply {
                     text = getLabel(label)

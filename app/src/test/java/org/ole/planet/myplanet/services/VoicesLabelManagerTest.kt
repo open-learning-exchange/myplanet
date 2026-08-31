@@ -51,7 +51,7 @@ class VoicesLabelManagerTest {
     @Before
     fun setUp() {
         val app = ApplicationProvider.getApplicationContext<Application>()
-        val themedContext = android.view.ContextThemeWrapper(app, com.google.android.material.R.style.Theme_MaterialComponents_DayNight_NoActionBar)
+        val themedContext = android.view.ContextThemeWrapper(app, R.style.Theme_App_Chip)
         context = themedContext
         dispatcherProvider = mockk(relaxed = true)
         every { dispatcherProvider.main } returns UnconfinedTestDispatcher()

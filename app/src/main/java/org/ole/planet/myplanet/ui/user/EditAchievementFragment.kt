@@ -254,7 +254,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             editAttachmentBinding = EditAttachementBinding.inflate(LayoutInflater.from(activity))
             editAttachmentBinding.tvTitle.text = e.asJsonObject["title"].asString
             val flexboxLayout = editAttachmentBinding.flexbox
-            val chipContext = ContextThemeWrapper(context, com.google.android.material.R.style.Theme_MaterialComponents_DayNight_NoActionBar)
+            val chipContext = ContextThemeWrapper(context, R.style.Theme_App_Chip)
             val resources = e.asJsonObject.getAsJsonArray("resources") ?: JsonArray()
             for (element in resources) {
                 val chip = Chip(chipContext).apply {

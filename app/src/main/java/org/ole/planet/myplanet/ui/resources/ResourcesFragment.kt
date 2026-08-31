@@ -6,6 +6,7 @@ import android.content.DialogInterface
 import android.content.res.ColorStateList
 import android.os.Build
 import android.os.Bundle
+import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -649,9 +650,10 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private fun renderTagChips() {
         val context = context ?: return
+        val chipContext = ContextThemeWrapper(context, R.style.Theme_App_Chip)
         flexBoxTags.removeAllViews()
         for (tag in searchTags) {
-            val chip = Chip(context).apply {
+            val chip = Chip(chipContext).apply {
                 text = tag.name
                 isCloseIconVisible = true
                 setOnCloseIconClickListener {

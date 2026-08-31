@@ -180,7 +180,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     private fun showOtherDiagnosis() {
         binding.containerOtherDiagnosis.removeAllViews()
         preloadCustomDiagnosis()
-        val chipContext = ContextThemeWrapper(this, com.google.android.material.R.style.Theme_MaterialComponents_DayNight_NoActionBar)
+        val chipContext = ContextThemeWrapper(this, R.style.Theme_App_Chip)
         for (s in customDiag ?: emptySet()) {
             if (s.isNullOrBlank()) {
                 continue
