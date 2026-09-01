@@ -178,4 +178,40 @@ class CoursesViewModelTest {
         assertEquals("Banana", courses[1].courseTitle) // 1500L
         assertEquals("Apple", courses[2].courseTitle) // 2000L
     }
+
+    @Test
+    fun testFilterCourses_updatesCurrentFilterState() = runTest {
+        val tags = listOf("Science", "Math")
+        viewModel.filterCourses(false, "u1", "query", "Grade 1", "Math", tags, "In Progress")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.currentFilterState
+        assertEquals("query", state.searchText)
+        assertEquals("Grade 1", state.grade)
+        assertEquals("Math", state.subject)
+        assertEquals(tags, state.tagNames)
+        assertEquals("In Progress", state.progressFilter)
+    }
+
+    @Test
+    fun testLoadCourses_withActiveCurrentFilterState_usesFilterCoursesInternal() = runTest {
+        viewModel.filterCourses(false, "u1", "algebra", "", "", listOf("Science"), "")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.loadCourses(false, "u1")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(atLeast = 2) { coursesRepository.filterCourses("algebra", "", "", listOf("Science")) }
+    }
+
+    @Test
+    fun testFilterCourses_tagPreservation() = runTest {
+        val tagNames = listOf("Biology", "Chemistry")
+        viewModel.filterCourses(true, "u1", "", "", "", tagNames, "")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.currentFilterState
+        assertEquals(tagNames, state.tagNames)
+        coVerify { coursesRepository.filterCourses("", "", "", tagNames) }
+    }
 }
