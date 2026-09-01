@@ -13,13 +13,11 @@ import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.RetryQueueDetails
 import org.ole.planet.myplanet.repository.RetryRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val configurationsRepository: ConfigurationsRepository,
-    private val sharedPrefManager: SharedPrefManager,
     private val retryRepository: RetryRepository,
     private val resourcesRepository: ResourcesRepository,
     private val dispatcherProvider: DispatcherProvider
@@ -44,7 +42,7 @@ class SettingsViewModel @Inject constructor(
     fun clearAllData() {
         viewModelScope.launch(dispatcherProvider.io) {
             configurationsRepository.clearAllData()
-            sharedPrefManager.clearPreferences()
+            configurationsRepository.clearPreferences()
             _clearDataEvent.send(Unit)
         }
     }

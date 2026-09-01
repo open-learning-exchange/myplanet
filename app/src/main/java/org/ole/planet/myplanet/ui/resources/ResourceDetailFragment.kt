@@ -64,7 +64,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                     library = updated
                     if (changed) {
                         Utilities.toast(activity, getString(R.string.added_to_my_library))
-                        binding.btnRemove.setImageResource(R.drawable.close_x)
+                        binding.btnRemove.setImageResource(R.drawable.baseline_close_24)
                         binding.btnRemove.contentDescription = getString(R.string.remove)
                     }
                 }
@@ -217,7 +217,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 if (isAdd) {
                     R.drawable.ic_add_library
                 } else {
-                    R.drawable.close_x
+                    R.drawable.baseline_close_24
                 }
             )
             binding.btnRemove.contentDescription =
