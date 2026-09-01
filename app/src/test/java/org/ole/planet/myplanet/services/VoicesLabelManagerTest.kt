@@ -12,9 +12,7 @@ import io.mockk.clearAllMocks
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
 import io.mockk.unmockkAll
-import io.mockk.verify
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -22,6 +20,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -167,47 +166,52 @@ class VoicesLabelManagerTest {
         voice.labels = listOf("offer")
 
         voicesLabelManager.showChips(binding, voice, true)
+        val chip = fbChips.getChildAt(0) as Chip
+        val sentinel = addRebuildSentinel()
+
         voicesLabelManager.showChips(binding, voice, true)
 
-        verify(exactly = 1) { fbChips.removeAllViews() }
-        verify(exactly = 1) { Utilities.getCloudConfig() }
-        verify(exactly = 1) { anyConstructed<ChipCloud>().addChip("Offer") }
-        verify(exactly = 1) { anyConstructed<ChipCloud>().setDeleteListener(any<fisk.chipcloud.ChipDeletedListener>()) }
-        verify(exactly = 1) { btnAddLabel.visibility = any() }
+        assertTrue(fbChips.indexOfChild(sentinel) >= 0)
+        assertSame(chip, fbChips.getChildAt(0))
+        assertEquals(View.VISIBLE, btnAddLabel.visibility)
     }
 
     @Test
     fun testShowChips_EmptyLabels_Unchanged_SkipsRedundantRebuild() {
         voicesLabelManager.showChips(binding, voice, false)
+        val sentinel = addRebuildSentinel()
+
         voicesLabelManager.showChips(binding, voice, false)
 
-        verify(exactly = 1) { fbChips.removeAllViews() }
-        verify(exactly = 0) { Utilities.getCloudConfig() }
-        verify(exactly = 0) { anyConstructed<ChipCloud>().addChip(any<String>()) }
+        assertTrue(fbChips.indexOfChild(sentinel) >= 0)
+        assertEquals(1, fbChips.childCount)
     }
 
     @Test
     fun testShowChips_NullAndEmptyLabels_TreatedAsSame_SkipsRebuild() {
         voice.labels = null
         voicesLabelManager.showChips(binding, voice, false)
+        val sentinel = addRebuildSentinel()
 
         voice.labels = emptyList()
         voicesLabelManager.showChips(binding, voice, false)
 
-        verify(exactly = 1) { fbChips.removeAllViews() }
+        assertTrue(fbChips.indexOfChild(sentinel) >= 0)
     }
 
     @Test
     fun testShowChips_ChangedLabels_Rebuilds() {
         voice.labels = listOf("offer")
         voicesLabelManager.showChips(binding, voice, false)
+        assertEquals("Offer", (fbChips.getChildAt(0) as Chip).text)
+        val sentinel = addRebuildSentinel()
 
         voice.labels = listOf("help")
         voicesLabelManager.showChips(binding, voice, false)
 
-        verify(exactly = 2) { fbChips.removeAllViews() }
-        verify(exactly = 1) { anyConstructed<ChipCloud>().addChip("Offer") }
-        verify(exactly = 1) { anyConstructed<ChipCloud>().addChip("Help wanted") }
+        assertEquals(-1, fbChips.indexOfChild(sentinel))
+        assertEquals(1, fbChips.childCount)
+        assertEquals("Help wanted", (fbChips.getChildAt(0) as Chip).text)
     }
 
     @Test
@@ -215,27 +219,26 @@ class VoicesLabelManagerTest {
         voice.labels = listOf("offer")
 
         voicesLabelManager.showChips(binding, voice, false)
+        assertFalse((fbChips.getChildAt(0) as Chip).isCloseIconVisible)
+        val sentinel = addRebuildSentinel()
+
         voicesLabelManager.showChips(binding, voice, true)
 
-        verify(exactly = 2) { fbChips.removeAllViews() }
-        verify(exactly = 2) { Utilities.getCloudConfig() }
+        assertEquals(-1, fbChips.indexOfChild(sentinel))
+        assertEquals(1, fbChips.childCount)
+        assertTrue((fbChips.getChildAt(0) as Chip).isCloseIconVisible)
     }
 
     @Test
     fun testShowChips_PerBindingIsolation_RebuildsEachBinding() {
         voice.labels = listOf("offer")
-
-        val otherBinding = mockk<RowNewsBinding>(relaxed = true)
-        val otherBtnAddLabel = mockk<Button>(relaxed = true)
-        val otherFbChips = mockk<FlexboxLayout>(relaxed = true)
-        RowNewsBinding::class.java.getField("btnAddLabel").apply { isAccessible = true }.set(otherBinding, otherBtnAddLabel)
-        RowNewsBinding::class.java.getField("fbChips").apply { isAccessible = true }.set(otherBinding, otherFbChips)
+        val otherBinding = RowNewsBinding.inflate(LayoutInflater.from(context))
 
         voicesLabelManager.showChips(binding, voice, false)
         voicesLabelManager.showChips(otherBinding, voice, false)
 
-        verify(exactly = 1) { fbChips.removeAllViews() }
-        verify(exactly = 1) { otherFbChips.removeAllViews() }
+        assertEquals(1, fbChips.childCount)
+        assertEquals(1, otherBinding.fbChips.childCount)
     }
 
     @Test
@@ -244,8 +247,13 @@ class VoicesLabelManagerTest {
         val voiceB = News().apply { id = "b"; labels = listOf("offer") }
 
         voicesLabelManager.showChips(binding, voiceA, true)
+        val sentinel = addRebuildSentinel()
+
         voicesLabelManager.showChips(binding, voiceB, true)
 
-        verify(exactly = 2) { fbChips.removeAllViews() }
+        assertEquals(-1, fbChips.indexOfChild(sentinel))
+        assertEquals(1, fbChips.childCount)
     }
+
+    private fun addRebuildSentinel(): View = View(context).also { fbChips.addView(it) }
 }
