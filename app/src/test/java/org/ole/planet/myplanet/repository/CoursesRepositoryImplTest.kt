@@ -380,6 +380,27 @@ class CoursesRepositoryImplTest {
     }
 
     @Test
+    fun `filterCourses sorts results alphabetically within each relevance bucket`() = runTest {
+        coEvery { courseDao.getAll() } returns listOf(
+            MyCourse(id = "1", courseId = "1", courseTitle = "Math Zoology", courseTitleNormal = "math zoology"),
+            MyCourse(id = "2", courseId = "2", courseTitle = "Math Algebra", courseTitleNormal = "math algebra"),
+            MyCourse(id = "3", courseId = "3", courseTitle = "Advanced Math Zoology", courseTitleNormal = "advanced math zoology"),
+            MyCourse(id = "4", courseId = "4", courseTitle = "Advanced Math Algebra", courseTitleNormal = "advanced math algebra")
+        )
+        coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
+
+        val results = repository.filterCourses("Math", "", "", emptyList())
+
+        assertEquals(4, results.size)
+        // Bucket 1 (starts with "Math"): sorted alphabetically
+        assertEquals("Math Algebra", results[0].courseTitle)
+        assertEquals("Math Zoology", results[1].courseTitle)
+        // Bucket 2 (title contains "Math"): sorted alphabetically
+        assertEquals("Advanced Math Algebra", results[2].courseTitle)
+        assertEquals("Advanced Math Zoology", results[3].courseTitle)
+    }
+
+    @Test
     fun `filterCourses ranks prefix matches first, then title contains, then content contains`() = runTest {
         val course1 = MyCourse(id = "c1", courseId = "c1", courseTitle = "Biology 101", description = "Introductory life sciences")
         val course2 = MyCourse(id = "c2", courseId = "c2", courseTitle = "Advanced Biology", description = "Cellular mechanics")
@@ -388,9 +409,7 @@ class CoursesRepositoryImplTest {
             courseId = "c3",
             courseTitle = "Science Overview",
             description = "General science fundamentals"
-        ).apply {
-            courseSteps = mutableListOf(CourseStep(id = "s1", courseId = "c3", stepTitle = "Molecular Biology", description = "DNA basics"))
-        }
+        )
 
         coEvery { courseDao.getAll() } returns listOf(course1, course2, course3)
         coEvery { courseStepDao.getByCourseIds(listOf("c1", "c2", "c3")) } returns listOf(
@@ -414,9 +433,7 @@ class CoursesRepositoryImplTest {
             courseTitle = "Advanced Calculus",
             description = "Derivatives",
             gradeLevel = "Grade 1"
-        ).apply {
-            courseSteps = mutableListOf(CourseStep(id = "s1", courseId = "c3", stepTitle = "Linear Algebra Intro", description = "Matrix basics"))
-        }
+        )
 
         coEvery { courseDao.getAll() } returns listOf(course1, course2, course3)
         coEvery { courseStepDao.getByCourseIds(listOf("c1", "c2", "c3")) } returns listOf(
@@ -431,9 +448,9 @@ class CoursesRepositoryImplTest {
         )
 
         assertEquals(3, results.size)
-        assertEquals("c1", results[0].id) // Prefix match in title
-        assertEquals("c2", results[1].id) // Title match
-        assertEquals("c3", results[2].id) // Step content match
+        assertEquals("c1", results[0].id) // Prefix match in title ("Algebra I")
+        assertEquals("c3", results[1].id) // Content match sorted alphabetically ("Advanced Calculus" step: "Linear Algebra Intro")
+        assertEquals("c2", results[2].id) // Content match sorted alphabetically ("Math Overview" description: "Includes Algebra and Calculus")
     }
 
     @Test

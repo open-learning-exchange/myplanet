@@ -58,11 +58,14 @@ class ResourcesSearchUtilsTest {
 
         val resultEmpty = ResourcesSearchUtils.searchLocalModels(models, "")
         assertEquals(3, resultEmpty.size)
+        assertEquals("Apple Juice", resultEmpty[0].item.title)
+        assertEquals("Apple Pie Recipe", resultEmpty[1].item.title)
+        assertEquals("Banana Bread", resultEmpty[2].item.title)
 
         val resultApple = ResourcesSearchUtils.searchLocalModels(models, "apple")
         assertEquals(2, resultApple.size)
-        assertEquals("Apple Pie Recipe", resultApple[0].item.title)
-        assertEquals("Apple Juice", resultApple[1].item.title)
+        assertEquals("Apple Juice", resultApple[0].item.title)
+        assertEquals("Apple Pie Recipe", resultApple[1].item.title)
 
         val resultBread = ResourcesSearchUtils.searchLocalModels(models, "bread")
         assertEquals(1, resultBread.size)
@@ -106,6 +109,33 @@ class ResourcesSearchUtilsTest {
         assertEquals("1", result[0].id)
         assertEquals("2", result[1].id)
         assertEquals("3", result[2].id)
+    }
+
+    @Test
+    fun testSearchListSortsAlphabeticallyWithinRelevanceBuckets() {
+        data class TestItem(val id: String, val title: String, val body: String)
+
+        val item1 = TestItem("1", "Physics Zeta", "mechanics")
+        val item2 = TestItem("2", "Physics Alpha", "mechanics")
+        val item3 = TestItem("3", "Modern Physics Zeta", "relativity")
+        val item4 = TestItem("4", "Modern Physics Alpha", "relativity")
+
+        val list = listOf(item1, item2, item3, item4)
+
+        val result = ResourcesSearchUtils.searchList(
+            list = list,
+            query = "Physics",
+            primarySelector = { it.title },
+            secondarySelectors = listOf({ it.body })
+        )
+
+        assertEquals(4, result.size)
+        // Bucket 1 (starts with "Physics"): sorted alphabetically
+        assertEquals("2", result[0].id) // Physics Alpha
+        assertEquals("1", result[1].id) // Physics Zeta
+        // Bucket 2 (title contains "Physics"): sorted alphabetically
+        assertEquals("4", result[2].id) // Modern Physics Alpha
+        assertEquals("3", result[3].id) // Modern Physics Zeta
     }
 
     @Test

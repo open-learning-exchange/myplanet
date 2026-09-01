@@ -270,8 +270,9 @@ class CoursesRepositoryImpl @Inject constructor(
             .toList()
 
         val trimmedQuery = searchText.trim()
+        val titleComparator = compareBy(String.CASE_INSENSITIVE_ORDER) { it: MyCourse -> it.courseTitle.orEmpty() }
         if (trimmedQuery.isEmpty()) {
-            return filteredCandidates.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.courseTitle.orEmpty() })
+            return filteredCandidates.sortedWith(titleComparator)
         }
 
         val normalizedQueryParts = trimmedQuery.splitToSequence(" ")
@@ -293,21 +294,25 @@ class CoursesRepositoryImpl @Inject constructor(
                 titleContainsQuery.add(item)
             } else {
                 val description = item.description?.let { Utilities.normalizeText(it) }
-                val steps = item.courseSteps
+                val stepTexts = item.courseSteps?.flatMap { step ->
+                    listOfNotNull(
+                        step.stepTitle?.let { Utilities.normalizeText(it) },
+                        step.description?.let { Utilities.normalizeText(it) }
+                    )
+                }.orEmpty()
                 val matchesContent = normalizedQueryParts.all { part ->
                     title.contains(part) ||
                         (description != null && description.contains(part)) ||
-                        (steps != null && steps.any { step ->
-                            step.stepTitle?.let { Utilities.normalizeText(it) }?.contains(part) == true ||
-                                step.description?.let { Utilities.normalizeText(it) }?.contains(part) == true
-                        })
+                        stepTexts.any { it.contains(part) }
                 }
                 if (matchesContent) {
                     contentContainsQuery.add(item)
                 }
             }
         }
-        return startsWithQuery + titleContainsQuery + contentContainsQuery
+        return startsWithQuery.sortedWith(titleComparator) +
+            titleContainsQuery.sortedWith(titleComparator) +
+            contentContainsQuery.sortedWith(titleComparator)
     }
 
     override suspend fun saveSearchActivity(
