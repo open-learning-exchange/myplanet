@@ -65,12 +65,13 @@ class SubmissionViewModel @Inject constructor(
             filtered = filtered.filter { examIds.contains(it.parentId) }
         }
 
-        val groupedSubmissions = filtered.groupBy { it.parentId }
-
-        val uniqueRawSubmissions = groupedSubmissions
-            .mapValues { entry -> entry.value.maxByOrNull { it.lastUpdateTime } }
-            .values
-            .filterNotNull()
+        val uniqueRawSubmissions = mutableListOf<Submission>()
+        val submissionCountMap = HashMap<String?, Int>()
+        for (group in filtered.groupBy { it.parentId }.values) {
+            val newest = group.maxByOrNull { it.lastUpdateTime } ?: continue
+            uniqueRawSubmissions.add(newest)
+            submissionCountMap[newest.id] = group.size
+        }
 
         val userIds = uniqueRawSubmissions.mapNotNull { it.userId }.distinct()
         val fallbackUsersMap = userRepository.getUsersByIds(userIds).associateBy { it.id }
@@ -80,11 +81,6 @@ class SubmissionViewModel @Inject constructor(
             val fallback = sub.userId?.let { fallbackUsersMap[it]?.name }
             SubmissionViewData(sub, name ?: fallback ?: "")
         }.sortedByDescending { it.submission.lastUpdateTime }
-
-        val submissionCountMap = groupedSubmissions.mapValues { it.value.size }
-            .mapKeys { entry ->
-                groupedSubmissions[entry.key]?.maxByOrNull { it.lastUpdateTime }?.id
-            }
 
         Triple(uniqueSubmissions, submissionCountMap, filtered)
     }.flowOn(dispatcherProvider.io).shareIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1)
