@@ -43,7 +43,7 @@ object TimeUtils {
     }
 
     private val defaultDateFormatter by lazy {
-        DateTimeFormatter.ofPattern("MM/dd/yyyy", defaultLocale).withZone(utcZone)
+        DateTimeFormatter.ofPattern("EEEE, MMM dd, yyyy", defaultLocale).withZone(utcZone)
     }
 
     private val dateTimeFormatter by lazy {
