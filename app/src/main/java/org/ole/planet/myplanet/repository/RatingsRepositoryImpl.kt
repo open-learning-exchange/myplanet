@@ -46,14 +46,14 @@ class RatingsRepositoryImpl @Inject constructor(
         itemId: String,
         userId: String?,
     ): RatingSummary {
-        val results = ratingDao.getByTypeAndItem(type, itemId)
-        val totalRatings = results.size
-        val averageRating = if (totalRatings > 0) {
-            results.map { it.rate }.average().toFloat()
+        val aggregate = ratingDao.getAggregate(type, itemId)
+        val totalRatings = aggregate.totalCount
+        val averageRating = aggregate.averageRate?.toFloat() ?: 0f
+        val existingRating = if (userId != null) {
+            ratingDao.findByTypeUserItem(type, userId, itemId)
         } else {
-            0f
+            null
         }
-        val existingRating = if (userId != null) results.firstOrNull { it.userId == userId } else null
         return RatingSummary(
             existingRating = existingRating?.toRatingEntry(),
             averageRating = averageRating,

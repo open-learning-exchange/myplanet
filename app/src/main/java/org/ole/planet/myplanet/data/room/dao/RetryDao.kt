@@ -34,9 +34,6 @@ interface RetryDao {
     @Query("DELETE FROM retry_operation WHERE status = 'completed' AND lastAttemptTime < :cutoff")
     suspend fun deleteOldCompleted(cutoff: Long)
 
-    @Query("UPDATE retry_operation SET nextRetryTime = :now WHERE status = 'pending'")
-    suspend fun resetPendingRetryTime(now: Long)
-
     @Query(
         "SELECT * FROM retry_operation WHERE itemId = :itemId AND uploadType = :uploadType " +
             "AND status != 'completed' AND status != 'abandoned' LIMIT 1"
