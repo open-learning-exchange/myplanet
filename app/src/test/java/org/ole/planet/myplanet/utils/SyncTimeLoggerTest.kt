@@ -15,6 +15,7 @@ class SyncTimeLoggerTest {
     @Test
     fun testGenerateSummary() {
         mockkStatic(Log::class)
+        every { Log.isLoggable(any(), any()) } returns true
         every { Log.d(any(), any()) } returns 0
 
         var currentTime = 1000L
