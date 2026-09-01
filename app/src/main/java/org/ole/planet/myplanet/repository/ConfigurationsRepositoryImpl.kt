@@ -393,6 +393,22 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         return sharedPrefManager.getRawString("planetType")
     }
 
+    override fun getParentCode(): String {
+        return sharedPrefManager.getParentCode()
+    }
+
+    override fun getCommunityName(): String {
+        return sharedPrefManager.getCommunityName()
+    }
+
+    override fun getCommunityLeaders(): String {
+        return sharedPrefManager.getCommunityLeaders()
+    }
+
+    override fun clearPreferences() {
+        sharedPrefManager.clearPreferences()
+    }
+
     override suspend fun clearFirstRunStorageAndSetFlag(hasWritePermission: Boolean) {
         withContext(dispatcherProvider.io) {
             if (hasWritePermission && sharedPrefManager.getFirstRun()) {

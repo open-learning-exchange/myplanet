@@ -2,7 +2,10 @@ package org.ole.planet.myplanet.services.sync
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -58,5 +61,48 @@ class RealtimeSyncManagerTest {
         val manager = RealtimeSyncManager()
         manager.notifyTableUpdated(TableDataUpdate("no_collectors", 0, 0))
         assertTrue(true)
+    }
+
+    @Test
+    fun testBurstTableUpdatesNotDropped() = runTest {
+        val manager = RealtimeSyncManager()
+        val results = mutableListOf<TableDataUpdate>()
+
+        val job = launch(StandardTestDispatcher(testScheduler)) {
+            manager.dataUpdateFlow.collect { results.add(it) }
+        }
+        runCurrent()
+
+        val updates = List(30) { index ->
+            TableDataUpdate("table_$index", index, 0, false)
+        }
+
+        updates.forEach { update ->
+            manager.notifyTableUpdated(update)
+        }
+
+        advanceUntilIdle()
+
+        assertEquals(30, results.size)
+        assertEquals(updates, results)
+        job.cancel()
+    }
+
+    @Test
+    fun testNewSubscriberDoesNotReceiveHistoricalUpdatesWhenReplayIsZero() = runTest {
+        val manager = RealtimeSyncManager()
+        val updates = List(5) { index ->
+            TableDataUpdate("table_$index", index, 1, false)
+        }
+
+        updates.forEach { manager.notifyTableUpdated(it) }
+
+        val results = mutableListOf<TableDataUpdate>()
+        val job = launch(UnconfinedTestDispatcher()) {
+            manager.dataUpdateFlow.collect { results.add(it) }
+        }
+
+        assertTrue(results.isEmpty())
+        job.cancel()
     }
 }
