@@ -54,7 +54,6 @@ class MembersAdapterTest {
         }
         adapter.registerAdapterDataObserver(observer)
 
-        // Use synchronous update for initial state
         adapter.submitList(list) {
             adapter.updateData(list, true) // Should emit payload because isLoggedInUserTeamLeader defaults to false
             assertEquals(PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED, payloadEmitted)
@@ -76,27 +75,21 @@ class MembersAdapterTest {
             JoinedMemberData(user2, 0, null, "", "", false)
         )
 
-        // We set the list synchronously via updateData first to have data in getItem
         adapter.submitList(multiList) {
             adapter.updateData(multiList, true)
 
             val parent = FrameLayout(ApplicationProvider.getApplicationContext())
             val viewHolder1 = adapter.onCreateViewHolder(parent, 0)
 
-            // force full bind first to set up views directly calling onBindViewHolder
             adapter.onBindViewHolder(viewHolder1, 0)
 
-            // Logged-in user should always have the menu visible if itemCount > 1, regardless of leader status
             assertEquals(View.VISIBLE, viewHolder1.binding.icMore.visibility)
 
-            // Apply payload explicitly to test partial update independently
-            // We change the leader status directly
             adapter.updateData(multiList, false)
 
             val payloads = mutableListOf<Any>(PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED)
             adapter.onBindViewHolder(viewHolder1, 0, payloads)
 
-            // Should still be visible for own card
             assertEquals(View.VISIBLE, viewHolder1.binding.icMore.visibility)
         }
     }
@@ -122,19 +115,56 @@ class MembersAdapterTest {
             val parent = FrameLayout(ApplicationProvider.getApplicationContext())
             val viewHolder2 = adapter.onCreateViewHolder(parent, 1)
 
-            // force full bind first to set up views
             adapter.onBindViewHolder(viewHolder2, 1)
 
             assertEquals(View.VISIBLE, viewHolder2.binding.icMore.visibility)
 
-            // Change leader status to false
             adapter.updateData(multiList, false)
 
-            // Apply payload explicitly
             val payloads = mutableListOf<Any>(PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED)
             adapter.onBindViewHolder(viewHolder2, 1, payloads)
 
             assertEquals(View.GONE, viewHolder2.binding.icMore.visibility)
+        }
+    }
+
+    @Test
+    fun testOnBindViewHolder_bindsMemberDisplayName() {
+        val user = UserEntity(
+            id = "user1",
+            name = "Alice Example"
+        )
+        val list = listOf(
+            JoinedMemberData(user, 0, null, "", "", true)
+        )
+
+        adapter.submitList(list) {
+            val parent = FrameLayout(ApplicationProvider.getApplicationContext())
+            val viewHolder = adapter.onCreateViewHolder(parent, 0)
+
+            adapter.onBindViewHolder(viewHolder, 0)
+
+            assertEquals("Alice Example", viewHolder.binding.tvTitle.text.toString())
+        }
+    }
+
+    @Test
+    fun testOnBindViewHolder_nullNameRendersEmpty() {
+        val user = UserEntity(
+            id = "user1",
+            name = null
+        )
+        val list = listOf(
+            JoinedMemberData(user, 0, null, "", "", true)
+        )
+
+        adapter.submitList(list) {
+            val parent = FrameLayout(ApplicationProvider.getApplicationContext())
+            val viewHolder = adapter.onCreateViewHolder(parent, 0)
+
+            adapter.onBindViewHolder(viewHolder, 0)
+
+            assertEquals("", viewHolder.binding.tvTitle.text.toString())
         }
     }
 
@@ -152,15 +182,12 @@ class MembersAdapterTest {
             val parent = FrameLayout(ApplicationProvider.getApplicationContext())
             val viewHolder = adapter.onCreateViewHolder(parent, 0)
 
-            // Test falling back when payloads contains only unknown elements
             val payloads = mutableListOf<Any>("UNKNOWN_PAYLOAD")
 
-            // Ensure title starts empty to verify full bind happens
             viewHolder.binding.tvTitle.text = ""
 
             adapter.onBindViewHolder(viewHolder, 0, payloads)
 
-            // Title should be updated if full bind is correctly called as a fallback
             assertEquals("User 1", viewHolder.binding.tvTitle.text.toString())
         }
     }

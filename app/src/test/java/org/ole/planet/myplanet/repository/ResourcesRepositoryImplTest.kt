@@ -590,24 +590,78 @@ class ResourcesRepositoryImplTest {
         val result = repository.getLibraryListForUser(null)
 
         assertTrue(result.isEmpty())
-        coVerify(exactly = 0) { myLibraryDao.getPublicForUserPattern(any()) }
+        coVerify(exactly = 0) { myLibraryDao.getPublicNeedingUpdateForUserPattern(any()) }
     }
 
     @Test
-    fun `getLibraryListForUser returns filtered items`() = runTest {
+    fun `getLibraryListForUser returns items needing update from dao`() = runTest {
         val userId = "user123"
-        // Need to update is true if !resourceOffline OR (resourceLocalAddress != null && _rev != downloadedRev)
         val needsUpdateLib = MyLibrary().apply { resourceOffline = false }
-        val noUpdateLib = MyLibrary().apply { resourceOffline = true; resourceLocalAddress = null }
 
-        coEvery { myLibraryDao.getPublicForUserPattern(any()) } returns listOf(needsUpdateLib, noUpdateLib)
+        coEvery { myLibraryDao.getPublicNeedingUpdateForUserPattern(any()) } returns listOf(needsUpdateLib)
 
         val result = repository.getLibraryListForUser(userId)
 
         assertEquals(1, result.size)
         assertEquals(needsUpdateLib, result[0])
         val expectedPattern = "%\"user123\"%"
-        coVerify(exactly = 1) { myLibraryDao.getPublicForUserPattern(expectedPattern) }
+        coVerify(exactly = 1) { myLibraryDao.getPublicNeedingUpdateForUserPattern(expectedPattern) }
+    }
+
+    @Test
+    fun `countLibrariesNeedingUpdate returns 0 if userId is null`() = runTest {
+        assertEquals(0, repository.countLibrariesNeedingUpdate(null))
+        coVerify(exactly = 0) { myLibraryDao.countPublicNeedingUpdateForUserPattern(any()) }
+    }
+
+    @Test
+    fun `countLibrariesNeedingUpdate delegates to dao`() = runTest {
+        val userId = "user123"
+        val expectedPattern = "%\"user123\"%"
+        coEvery { myLibraryDao.countPublicNeedingUpdateForUserPattern(expectedPattern) } returns 3
+
+        val count = repository.countLibrariesNeedingUpdate(userId)
+
+        assertEquals(3, count)
+        coVerify(exactly = 1) { myLibraryDao.countPublicNeedingUpdateForUserPattern(expectedPattern) }
+    }
+
+    @Test
+    fun `getAllLibrariesToSync delegates directly to getSyncable`() = runTest {
+        val syncableList = listOf(MyLibrary().apply { id = "s1" })
+        coEvery { myLibraryDao.getSyncable() } returns syncableList
+
+        val result = repository.getAllLibrariesToSync()
+
+        assertEquals(syncableList, result)
+        coVerify(exactly = 1) { myLibraryDao.getSyncable() }
+    }
+
+    @Test
+    fun `getDownloadSuggestionList uses user pattern when target user is available`() = runTest {
+        val userLib = MyLibrary().apply { id = "ul1" }
+        val expectedPattern = "%\"user123\"%"
+        coEvery { myLibraryDao.getPublicNeedingUpdateForUserPattern(expectedPattern) } returns listOf(userLib)
+
+        val result = repository.getDownloadSuggestionList("user123")
+
+        assertEquals(listOf(userLib), result)
+        coVerify(exactly = 1) { myLibraryDao.getPublicNeedingUpdateForUserPattern(expectedPattern) }
+        coVerify(exactly = 0) { myLibraryDao.getPublicNeedingUpdate() }
+    }
+
+    @Test
+    fun `getDownloadSuggestionList falls back to public needing update when user pattern yields empty`() = runTest {
+        val publicLib = MyLibrary().apply { id = "pl1" }
+        val expectedPattern = "%\"user123\"%"
+        coEvery { myLibraryDao.getPublicNeedingUpdateForUserPattern(expectedPattern) } returns emptyList()
+        coEvery { myLibraryDao.getPublicNeedingUpdate() } returns listOf(publicLib)
+
+        val result = repository.getDownloadSuggestionList("user123")
+
+        assertEquals(listOf(publicLib), result)
+        coVerify(exactly = 1) { myLibraryDao.getPublicNeedingUpdateForUserPattern(expectedPattern) }
+        coVerify(exactly = 1) { myLibraryDao.getPublicNeedingUpdate() }
     }
 
     @Test

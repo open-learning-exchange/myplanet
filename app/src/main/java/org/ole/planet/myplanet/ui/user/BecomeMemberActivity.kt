@@ -18,7 +18,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
-import org.ole.planet.myplanet.callback.OnSecurityDataListener
+import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.model.MemberInfo
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -117,17 +117,15 @@ class BecomeMemberActivity : BaseActivity() {
             withContext(dispatcherProvider.main) {
                 if (result.first) {
                     val userName = info.username
-                    val securityCallback = object : OnSecurityDataListener {
-                        override fun onSecurityDataUpdated() {
-                            customProgressDialog.dismiss()
-                            autoLoginNewMember(info.username, info.password)
-                        }
+                    val securityCallback = OnChangedListener {
+                        customProgressDialog.dismiss()
+                        autoLoginNewMember(info.username, info.password)
                     }
                     startUpload("becomeMember", userName, securityCallback)
 
                     if (result.second == getString(R.string.not_connect_to_planet_created_user_offline)) {
                         Utilities.toast(MainApplication.context, result.second)
-                        securityCallback.onSecurityDataUpdated()
+                        securityCallback.onChanged()
                     }
                     Utilities.toast(this@BecomeMemberActivity, result.second)
                 } else {
