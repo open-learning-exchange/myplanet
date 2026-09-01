@@ -289,14 +289,14 @@ class DashboardViewModel @Inject constructor(
             try {
                 val dialogData = coroutineScope {
                     val courseDataDeferred = async { progressRepository.fetchCourseData(userId) }
-                    val uniqueDatesDeferred = async { voicesRepository.getCommunityVoiceDates(startTime, endTime, userId) }
-                    val allUniqueDatesDeferred = async { voicesRepository.getCommunityVoiceDates(startTime, endTime, null) }
+                    val voiceCountDeferred = async { voicesRepository.getCommunityVoiceDateCount(startTime, endTime, userId) }
+                    val allVoiceCountDeferred = async { voicesRepository.getCommunityVoiceDateCount(startTime, endTime, null) }
                     val courseNameDeferred = async { coursesRepository.getCourseTitleById(courseId) }
                     val hasUnfinishedSurveyDeferred = async { submissionsRepository.hasPendingSurvey(courseId, userId) }
 
                     val courseData = courseDataDeferred.await()
-                    val uniqueDates = uniqueDatesDeferred.await()
-                    val allUniqueDates = allUniqueDatesDeferred.await()
+                    val voiceCount = voiceCountDeferred.await()
+                    val allVoiceCount = allVoiceCountDeferred.await()
                     val courseName = courseNameDeferred.await()
                     val hasUnfinishedSurvey = hasUnfinishedSurveyDeferred.await()
 
@@ -310,7 +310,6 @@ class DashboardViewModel @Inject constructor(
 
                     if (!isGuest && shouldPrompt) {
                         val courseStatus = getCourseStatusString(progress, courseName)
-                        val voiceCount = uniqueDates.size
                         val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
                         var hasValidSync = false
                         if (prereqsMet) {
@@ -318,9 +317,9 @@ class DashboardViewModel @Inject constructor(
                         }
 
                         ChallengeDialogData(
-                            voiceCount = uniqueDates.size,
+                            voiceCount = voiceCount,
                             courseStatus = courseStatus,
-                            allVoiceCount = allUniqueDates.size,
+                            allVoiceCount = allVoiceCount,
                             hasUnfinishedSurvey = hasUnfinishedSurvey,
                             hasValidSync = hasValidSync
                         )

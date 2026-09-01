@@ -4,7 +4,7 @@
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@color/secondary_bg"
-    tools:context=".ui.submission.SubmissionsFragment">
+    tools:context=".ui.submissions.SubmissionsFragment">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -93,11 +93,11 @@
             </RadioGroup>
 
             <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tl_search"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:textColorHint="@color/hint_color">
+                android:id="@+id/tl_search"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColorHint="@color/hint_color">
 
                 <EditText
                     android:id="@+id/et_search"
@@ -111,9 +111,9 @@
                     android:maxLines="1"
                     android:textColor="@color/daynight_textColor" />
             </com.google.android.material.textfield.TextInputLayout>
-    </LinearLayout>
+        </LinearLayout>
 
-    <LinearLayout
+        <LinearLayout
             android:id="@+id/title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -154,7 +154,8 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_mysurvey"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="0dp"
+            android:layout_weight="1" />
     </LinearLayout>
 
     <TextView
