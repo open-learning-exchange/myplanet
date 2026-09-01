@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -96,7 +97,7 @@ class DashboardViewModelTest {
         }
 
         val events = mutableListOf<SyncUiState>()
-        backgroundScope.launch(kotlinx.coroutines.Dispatchers.Unconfined) {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.syncKeyIdEvent.collect { events.add(it) }
         }
 
@@ -108,7 +109,6 @@ class DashboardViewModelTest {
         assertEquals(2, events.size)
         assertEquals(SyncUiState.Loading, events[0])
         assertEquals(SyncUiState.Success(null), events[1])
-
     }
     @Test
     fun `loadUserContent replaces existing collectors when called multiple times`() = runTest(testDispatcher) {
