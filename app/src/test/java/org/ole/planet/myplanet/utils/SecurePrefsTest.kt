@@ -35,10 +35,8 @@ class SecurePrefsTest {
             .putString("nonSensitive", "nonSensitiveValue")
             .commit()
 
-        // Explicitly call the actual production migration logic
         SecurePrefs.performMigration(plainPrefs, encryptedPrefs)
 
-        // Verify EncryptedPrefs got the sensitive data
         assertEquals("testUser", encryptedPrefs.getString("loginUserName", null))
         assertEquals("testPass", encryptedPrefs.getString("loginUserPassword", null))
         assertNull(encryptedPrefs.getString("nonSensitive", null))
@@ -46,14 +44,7 @@ class SecurePrefsTest {
 
     @Test
     fun testWarmUpSurvivesUnavailableSecureStorage() {
-        // Robolectric has no AndroidKeyStore, so building the store fails here the same way it
-        // does on a device with broken keystore state. MainApplication warms up inside
-        // applicationScope.launch, so a failure escaping warmUp is an uncaught coroutine
-        // exception that kotlinx-coroutines-test then charges to whichever test runs next.
-        // Both caches are object state shared across every test in this Robolectric sandbox, and
-        // warmUp skips a primitive that is already cached — clear them or this asserts nothing.
         clearCachedPrimitives()
-
         SecurePrefs.warmUp(context)
     }
 
