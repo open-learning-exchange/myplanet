@@ -29,6 +29,7 @@ import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Provider
 import kotlin.math.roundToInt
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -248,6 +249,9 @@ class DownloadService : Service() {
             }
 
             return tryDownloadFromResult(primaryResult, url, fromSync, fileName, isAlternative = false)
+        } catch (e: CancellationException) {
+            Log.d(TAG, "initDownload: cancelled for $fileName")
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "initDownload: unexpected error for $fileName", e)
             downloadFailed("Download initialization failed: ${e.localizedMessage ?: "Unknown error"}", fromSync)
