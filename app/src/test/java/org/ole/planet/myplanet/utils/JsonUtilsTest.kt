@@ -140,13 +140,12 @@ class JsonUtilsTest {
         JsonUtils.getJsonArray("wrongType", obj)
         JsonUtils.getJsonObject("wrongArr", obj)
         JsonUtils.getLong("wrongType", obj)
+        JsonUtils.getBoolean("wrongType", obj)
 
-        // the isLoggable guard is consulted, so the string is never built on a normal build
-        verify(atLeast = 1) { Log.isLoggable("JsonUtils", Log.DEBUG) }
-        // expected type mismatches fall back without materialising a stack trace
+        // #16652: accessors type-check instead of throwing, so the catch is never entered.
+        verify(exactly = 0) { Log.isLoggable(any(), any()) }
+        verify(exactly = 0) { Log.d(any(), any()) }
         verify(exactly = 0) { Log.d(any(), any(), any()) }
-        // a brief debug diagnostic still reaches the log
-        verify(atLeast = 1) { Log.d("JsonUtils", any()) }
     }
 
     @Test
