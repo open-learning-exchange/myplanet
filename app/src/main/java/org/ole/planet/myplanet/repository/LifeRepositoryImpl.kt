@@ -38,7 +38,11 @@ class LifeRepositoryImpl @Inject constructor(
 
     override suspend fun updateMyLifeListOrder(list: List<MyLife>) {
         val userId = list.firstOrNull()?.userId
-        val idToIndex = list.mapIndexed { index, item -> item._id to index }.toMap()
+        val idToIndex = buildMap(list.size) {
+            list.forEachIndexed { index, item ->
+                put(item._id, index)
+            }
+        }
         val ids = idToIndex.keys.filter { it.isNotEmpty() }
         if (ids.isEmpty()) return
 
@@ -74,11 +78,19 @@ class LifeRepositoryImpl @Inject constructor(
         return myLifeDao.getByUserId(effectiveUserId).distinctBy { it.dedupKey() }
     }
 
+    private suspend fun getVisibleMyLifeByUserId(userId: String?): List<MyLife> {
+        val effectiveUserId = userId?.ifEmpty { null }
+        return myLifeDao.getVisibleByUserId(effectiveUserId).distinctBy { it.dedupKey() }
+    }
+
     override suspend fun getMyLifeForDashboard(userId: String, seedBase: List<MyLife>): List<MyLife> {
         val effectiveUserId = userId.ifEmpty { null }
-        val allForUser = getMyLifeByUserId(effectiveUserId, ensureLatest = false)
-        if (allForUser.isNotEmpty()) {
-            return allForUser.filter { it.isVisible }
+        val visibleForUser = getVisibleMyLifeByUserId(effectiveUserId)
+        if (visibleForUser.isNotEmpty()) {
+            return visibleForUser
+        }
+        if (myLifeDao.countByUserId(effectiveUserId) > 0) {
+            return emptyList()
         }
 
         val json = sharedPrefManager.rawPreferences.getString("$MY_LIFE_CACHE_PREFIX$userId", null)
@@ -90,10 +102,14 @@ class LifeRepositoryImpl @Inject constructor(
                 null
             }
             if (cached != null) {
-                return cached.filter { it.isVisible }.map { item ->
-                    MyLife(item.imageId, userId, item.title).apply {
-                        isVisible = item.isVisible
-                        weight = item.weight
+                return cached.mapNotNull { item ->
+                    if (item.isVisible) {
+                        MyLife(item.imageId, userId, item.title).apply {
+                            isVisible = item.isVisible
+                            weight = item.weight
+                        }
+                    } else {
+                        null
                     }
                 }
             }

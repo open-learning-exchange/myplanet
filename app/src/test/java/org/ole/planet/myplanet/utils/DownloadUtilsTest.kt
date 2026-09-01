@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.utils
 
 import android.app.ActivityManager
 import android.app.Application
+import android.app.NotificationManager
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
@@ -36,6 +37,7 @@ class DownloadUtilsTest {
     @Before
     fun setup() {
         context = spyk(ApplicationProvider.getApplicationContext())
+        DownloadUtils.resetChannelsCreatedForTesting()
 
         sharedPreferences = mockk(relaxed = true)
         sharedPreferencesEditor = mockk(relaxed = true)
@@ -58,7 +60,25 @@ class DownloadUtilsTest {
 
     @After
     fun tearDown() {
+        DownloadUtils.resetChannelsCreatedForTesting()
         unmockkAll()
+    }
+
+    @Test
+    fun createChannels_executesOncePerProcess() {
+        val notificationManager = mockk<NotificationManager>(relaxed = true)
+        every { context.getSystemService(Context.NOTIFICATION_SERVICE) } returns notificationManager
+        every { notificationManager.getNotificationChannel(any()) } returns null
+
+        DownloadUtils.createChannels(context)
+        DownloadUtils.createChannels(context)
+
+        verify(exactly = 3) { notificationManager.getNotificationChannel(any()) }
+
+        DownloadUtils.resetChannelsCreatedForTesting()
+        DownloadUtils.createChannels(context)
+
+        verify(exactly = 6) { notificationManager.getNotificationChannel(any()) }
     }
 
     @Test
