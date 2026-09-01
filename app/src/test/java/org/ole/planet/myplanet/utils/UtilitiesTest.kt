@@ -69,4 +69,11 @@ class UtilitiesTest {
         verify(exactly = 1) { mockToast.show() }
         verify(exactly = 1) { anyConstructed<Handler>().post(any()) }
     }
+
+    @Test
+    fun `toHex returns hex representation for valid strings and empty string for null`() {
+        org.junit.Assert.assertEquals("68656c6c6f", Utilities.toHex("hello"))
+        org.junit.Assert.assertEquals("0", Utilities.toHex(""))
+        org.junit.Assert.assertEquals("", Utilities.toHex(null))
+    }
 }
