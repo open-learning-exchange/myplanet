@@ -479,6 +479,10 @@ class UserRepositoryImpl @Inject constructor(
         upsertUser(model)
     }
 
+    override suspend fun getCurrentUserId(): String? {
+        return sharedPrefManager.getUserId().takeIf { it.isNotBlank() }
+    }
+
     override suspend fun getUserModel(): UserEntity? {
         val userId = sharedPrefManager.getUserId().takeUnless { it.isBlank() } ?: return null
         return userDao.getById(userId)

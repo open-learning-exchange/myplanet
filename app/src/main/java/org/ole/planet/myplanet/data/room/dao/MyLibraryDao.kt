@@ -162,6 +162,12 @@ interface MyLibraryDao {
     @Query("DELETE FROM my_library WHERE id IN (:ids)")
     suspend fun deleteByIds(ids: List<String>)
 
+    @Query("SELECT id FROM my_library WHERE userId LIKE :userPattern ESCAPE '\\'")
+    suspend fun getIdsForUserPattern(userPattern: String): List<String>
+
+    @Query("SELECT resourceId, title FROM my_library WHERE resourceId IS NOT NULL")
+    suspend fun getResourceTitles(): List<ResourceTitleProjection>
+
     @Query(
         "DELETE FROM my_library WHERE _rev IS NOT NULL AND _rev != '' AND isPrivate = 0 " +
             "AND resourceId NOT IN (:currentResourceIds)"
@@ -171,3 +177,8 @@ interface MyLibraryDao {
     @Query("DELETE FROM my_library WHERE _rev IS NOT NULL AND _rev != '' AND isPrivate = 0")
     suspend fun deleteAllStalePublic()
 }
+
+data class ResourceTitleProjection(
+    val resourceId: String?,
+    val title: String?
+)
