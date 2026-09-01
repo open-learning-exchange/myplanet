@@ -95,8 +95,6 @@ class ChatHistoryFragment : Fragment() {
             }
         }
 
-        // No explicit load here: setupRealtimeSync() subscribes to refreshChatSignal and the
-        // replayed seed value drives the one initial load on START.
         binding.searchBar.textChanges()
             .drop(1)
             .debounce(300)
