@@ -124,10 +124,11 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
         hBinding.imgDate.rotation = if (headerState.isAsc) 180f else 0f
 
-        hBinding.tvDebit.text = getString(R.string.number_placeholder, headerState.debit)
-        hBinding.tvCredit.text = getString(R.string.number_placeholder, headerState.credit)
-        hBinding.tvBalance.text = getString(R.string.number_placeholder, headerState.total)
-        hBinding.balanceCaution.visibility = if (headerState.isCautionVisible) View.VISIBLE else View.GONE
+        val state = viewModel.headerState.value
+        hBinding.tvDebit.text = getString(R.string.number_placeholder, state.debit)
+        hBinding.tvCredit.text = getString(R.string.number_placeholder, state.credit)
+        hBinding.tvBalance.text = getString(R.string.number_placeholder, state.total)
+        hBinding.balanceCaution.visibility = if (state.isCautionVisible) View.VISIBLE else View.GONE
     }
 
     private fun showDatePickerDialog(isFromDate: Boolean) {
@@ -256,6 +257,9 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             transactions = results
             updatedFinanceList(results)
         }
+        collectLatestWhenStarted(viewModel.headerState) {
+            headerAdapter.notifyItemChanged(0, PAYLOAD_HEADER)
+        }
         collectWhenStarted(viewModel.transactionCreated) { result ->
             if (result.isSuccess) {
                 Utilities.toast(activity, getString(R.string.transaction_added))
@@ -273,24 +277,6 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
-    }
-
-    private fun calculateTotal(list: List<Transaction>) {
-        var debit = 0
-        var credit = 0
-        for (team in list) {
-            if ("credit".equals(team.type, ignoreCase = true)) {
-                credit += team.amount
-            } else {
-                debit += team.amount
-            }
-        }
-        val total = credit - debit
-        headerState.debit = debit
-        headerState.credit = credit
-        headerState.total = total
-        headerState.isCautionVisible = total < 0
-        headerAdapter.notifyItemChanged(0, PAYLOAD_HEADER)
     }
 
     private fun addTransaction() {
@@ -348,7 +334,6 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         if (view == null) return
 
         financeAdapter.submitList(results)
-        calculateTotal(results)
 
         binding.rvFinance.visibility = View.VISIBLE
         binding.tvNodata.visibility = if (results.isEmpty()) View.VISIBLE else View.GONE
@@ -401,10 +386,6 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         var toDate: String = "",
         var isToDateEnabled: Boolean = false,
         var isAsc: Boolean = false,
-        var debit: Int = 0,
-        var credit: Int = 0,
-        var total: Int = 0,
-        var isCautionVisible: Boolean = false,
     )
 
     private class FinanceHeaderAdapter(

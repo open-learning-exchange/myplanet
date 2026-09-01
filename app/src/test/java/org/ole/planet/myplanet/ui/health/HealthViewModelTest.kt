@@ -49,7 +49,7 @@ class HealthViewModelTest {
     }
 
     @Test
-    fun `searchPatients updates patientList with debounce`() = runTest {
+    fun `searchPatients updates patientList`() = runTest {
         val query = "John"
         val patients = listOf(UserEntity().apply { id = "2"; name = "John Doe" })
         coEvery { healthRepository.searchPatients(query, "joinDate", true) } returns patients
