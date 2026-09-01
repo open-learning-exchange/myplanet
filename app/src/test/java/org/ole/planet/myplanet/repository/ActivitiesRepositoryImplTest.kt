@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import com.google.gson.JsonObject
 import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -336,5 +337,114 @@ class ActivitiesRepositoryImplTest {
         coEvery { courseActivityDao.markUploaded("local1", "remote1", "rev1") } returns 0
         val result = repository.markCourseActivityUploaded("local1", "remote1", "rev1")
         assertFalse(result)
+    }
+
+    private fun loginDoc(
+        id: String,
+        loginTime: Long,
+        userName: String,
+        rev: String = "rev-$id"
+    ): JsonObject = JsonObject().apply {
+        addProperty("_id", id)
+        addProperty("_rev", rev)
+        addProperty("loginTime", loginTime)
+        addProperty("user", userName)
+        addProperty("type", "login")
+    }
+
+    @Test
+    fun `insertLoginActivitiesFromSync collects lookup keys in a single pass`() = runTest {
+        val docs = listOf(
+            loginDoc("a1", 100L, "alice"),
+            loginDoc("a2", 200L, "bob"),
+            loginDoc("a1", 100L, "alice")
+        )
+        coEvery { offlineActivityDao.getByRemoteIds(listOf("a1", "a2")) } returns emptyList()
+        coEvery {
+            offlineActivityDao.getByLoginTimesAndUserNames(listOf(100L, 200L), listOf("alice", "bob"))
+        } returns emptyList()
+
+        repository.insertLoginActivitiesFromSync(docs)
+
+        coVerify(exactly = 1) { offlineActivityDao.getByRemoteIds(listOf("a1", "a2")) }
+        coVerify(exactly = 1) {
+            offlineActivityDao.getByLoginTimesAndUserNames(listOf(100L, 200L), listOf("alice", "bob"))
+        }
+        val slot = slot<List<OfflineActivity>>()
+        coVerify(exactly = 1) { offlineActivityDao.upsertAll(capture(slot)) }
+        assertEquals(3, slot.captured.size)
+    }
+
+    @Test
+    fun `insertLoginActivitiesFromSync dedupes ids loginTimes and userNames`() = runTest {
+        val docs = listOf(
+            loginDoc("a1", 100L, "alice"),
+            loginDoc("a1", 100L, "alice")
+        )
+        coEvery { offlineActivityDao.getByRemoteIds(listOf("a1")) } returns emptyList()
+        coEvery {
+            offlineActivityDao.getByLoginTimesAndUserNames(listOf(100L), listOf("alice"))
+        } returns emptyList()
+
+        repository.insertLoginActivitiesFromSync(docs)
+
+        coVerify(exactly = 1) { offlineActivityDao.getByRemoteIds(listOf("a1")) }
+        coVerify(exactly = 1) {
+            offlineActivityDao.getByLoginTimesAndUserNames(listOf(100L), listOf("alice"))
+        }
+        val slot = slot<List<OfflineActivity>>()
+        coVerify(exactly = 1) { offlineActivityDao.upsertAll(capture(slot)) }
+        assertEquals(2, slot.captured.size)
+    }
+
+    @Test
+    fun `insertLoginActivitiesFromSync skips design docs and empty keys`() = runTest {
+        val docs = listOf(
+            JsonObject().apply { addProperty("_id", "_design/someview") },
+            JsonObject().apply { addProperty("_id", "") },
+            loginDoc("a1", 100L, "alice")
+        )
+        coEvery { offlineActivityDao.getByRemoteIds(listOf("a1")) } returns emptyList()
+        coEvery {
+            offlineActivityDao.getByLoginTimesAndUserNames(listOf(100L), listOf("alice"))
+        } returns emptyList()
+
+        repository.insertLoginActivitiesFromSync(docs)
+
+        coVerify(exactly = 1) { offlineActivityDao.getByRemoteIds(listOf("a1")) }
+        val slot = slot<List<OfflineActivity>>()
+        coVerify(exactly = 1) { offlineActivityDao.upsertAll(capture(slot)) }
+        assertEquals(2, slot.captured.size)
+    }
+
+    @Test
+    fun `insertLoginActivitiesFromSync returns early when only design docs`() = runTest {
+        val docs = listOf(JsonObject().apply { addProperty("_id", "_design/someview") })
+
+        repository.insertLoginActivitiesFromSync(docs)
+
+        coVerify(exactly = 0) { offlineActivityDao.getByRemoteIds(any()) }
+        coVerify(exactly = 0) { offlineActivityDao.getByLoginTimesAndUserNames(any(), any()) }
+        coVerify(exactly = 0) { offlineActivityDao.upsertAll(any()) }
+    }
+
+    @Test
+    fun `insertLoginActivitiesFromSync skips fallback lookup when keys missing`() = runTest {
+        val docs = listOf(
+            JsonObject().apply {
+                addProperty("_id", "a1")
+                addProperty("_rev", "rev-a1")
+            }
+        )
+        coEvery { offlineActivityDao.getByRemoteIds(listOf("a1")) } returns emptyList()
+
+        repository.insertLoginActivitiesFromSync(docs)
+
+        coVerify(exactly = 0) {
+            offlineActivityDao.getByLoginTimesAndUserNames(any(), any())
+        }
+        val slot = slot<List<OfflineActivity>>()
+        coVerify(exactly = 1) { offlineActivityDao.upsertAll(capture(slot)) }
+        assertEquals(1, slot.captured.size)
     }
 }

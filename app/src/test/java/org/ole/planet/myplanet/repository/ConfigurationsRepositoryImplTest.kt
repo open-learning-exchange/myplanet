@@ -287,6 +287,76 @@ class ConfigurationsRepositoryImplTest {
     }
 
     @Test
+    fun `checkServerAvailability with string url counts trailing commas as a single entry`() = runTest(testDispatcher) {
+        val url = "http://test.url"
+        val mockBody = "1,2,3,4,5,6,7,8,,".toResponseBody("text/plain".toMediaTypeOrNull())
+        val response = Response.success(200, mockBody)
+
+        coEvery { apiInterface.isPlanetAvailable(url) } returns response
+
+        val result = repository.checkServerAvailability(url)
+
+        assertTrue(result)
+        coVerify { apiInterface.isPlanetAvailable(url) }
+    }
+
+    @Test
+    fun `checkServerAvailability with string url returns false when response is only commas`() = runTest(testDispatcher) {
+        val url = "http://test.url"
+        val mockBody = ",,,".toResponseBody("text/plain".toMediaTypeOrNull())
+        val response = Response.success(200, mockBody)
+
+        coEvery { apiInterface.isPlanetAvailable(url) } returns response
+
+        val result = repository.checkServerAvailability(url)
+
+        assertFalse(result)
+        coVerify { apiInterface.isPlanetAvailable(url) }
+    }
+
+    @Test
+    fun `checkServerAvailability with string url returns false when response body is empty`() = runTest(testDispatcher) {
+        val url = "http://test.url"
+        val mockBody = "".toResponseBody("text/plain".toMediaTypeOrNull())
+        val response = Response.success(200, mockBody)
+
+        coEvery { apiInterface.isPlanetAvailable(url) } returns response
+
+        val result = repository.checkServerAvailability(url)
+
+        assertFalse(result)
+        coVerify { apiInterface.isPlanetAvailable(url) }
+    }
+
+    @Test
+    fun `checkServerAvailability with string url keeps internal empty entries when counting`() = runTest(testDispatcher) {
+        val url = "http://test.url"
+        val mockBody = "a,,,b,,,,,,,h".toResponseBody("text/plain".toMediaTypeOrNull())
+        val response = Response.success(200, mockBody)
+
+        coEvery { apiInterface.isPlanetAvailable(url) } returns response
+
+        val result = repository.checkServerAvailability(url)
+
+        assertTrue(result)
+        coVerify { apiInterface.isPlanetAvailable(url) }
+    }
+
+    @Test
+    fun `checkServerAvailability with string url returns false when response has exactly seven items`() = runTest(testDispatcher) {
+        val url = "http://test.url"
+        val mockBody = "1,2,3,4,5,6,7".toResponseBody("text/plain".toMediaTypeOrNull())
+        val response = Response.success(200, mockBody)
+
+        coEvery { apiInterface.isPlanetAvailable(url) } returns response
+
+        val result = repository.checkServerAvailability(url)
+
+        assertFalse(result)
+        coVerify { apiInterface.isPlanetAvailable(url) }
+    }
+
+    @Test
     fun `checkServerAvailability with string url returns true when response is 401`() = runTest(testDispatcher) {
         val url = "http://test.url"
         val mockBody = "".toResponseBody("text/plain".toMediaTypeOrNull())
