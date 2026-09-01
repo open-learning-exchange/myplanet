@@ -55,8 +55,12 @@ object SecurePrefs {
     }
     
     fun warmUp(context: Context) {
-        if (cachedAead == null) getAead(context)
-        if (cachedSecureStore == null) getSecureStore(context)
+        try {
+            if (cachedAead == null) getAead(context)
+            if (cachedSecureStore == null) getSecureStore(context)
+        } catch (e: Exception) {
+            Log.w("SecurePrefs", "Secure storage warm-up failed, deferring to lazy initialization", e)
+        }
     }
 
     @Suppress("DEPRECATION")
@@ -78,8 +82,6 @@ object SecurePrefs {
                 val plainPrefs = context.getSharedPreferences(PLAIN_PREFS_FILE_NAME, Context.MODE_PRIVATE)
                 performMigration(plainPrefs, encryptedPrefs)
 
-                // The legacy "secure_store" file was exclusively used for these two credentials.
-                // We unconditionally clear and delete it to ensure no plaintext legacy file lingers on disk.
                 plainPrefs.edit(commit = true) { clear() }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     context.deleteSharedPreferences(PLAIN_PREFS_FILE_NAME)
@@ -205,7 +207,6 @@ object SecurePrefs {
                 if (password != null) putString("loginUserPassword", encrypt(aead, password))
                 else remove("loginUserPassword")
             }
-            // Clear legacy if it exists
              getLegacyEncryptedPrefs(context)?.edit {
                 remove("loginUserName")
                 remove("loginUserPassword")

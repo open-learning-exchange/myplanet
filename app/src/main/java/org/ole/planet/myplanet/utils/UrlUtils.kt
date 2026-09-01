@@ -12,8 +12,18 @@ object UrlUtils {
     @Volatile
     private var spmInstance: SharedPrefManager? = null
 
+    @Volatile
+    private var cachedHeader: String? = null
+
+    @Volatile
+    private var generation = 0
+
     fun init(sharedPrefManager: SharedPrefManager) {
-        spmInstance = sharedPrefManager
+        synchronized(this) {
+            generation++
+            spmInstance = sharedPrefManager
+            cachedHeader = null
+        }
     }
 
     private fun spm(): SharedPrefManager {
@@ -21,15 +31,42 @@ object UrlUtils {
             ?: error("UrlUtils.init(SharedPrefManager) must be called before using UrlUtils")
     }
 
+    fun invalidateHeaderCache() {
+        synchronized(this) {
+            generation++
+            cachedHeader = null
+        }
+    }
+
     @VisibleForTesting
     internal fun resetForTesting() {
-        spmInstance = null
+        synchronized(this) {
+            generation++
+            spmInstance = null
+            cachedHeader = null
+        }
     }
 
     val header: String
         get() {
-            val spm = spm()
-            return basicAuthHeader(spm.getUrlUser(), spm.getUrlPwd())
+            cachedHeader?.let { return it }
+            val currentGen: Int
+            val user: String
+            val pwd: String
+            synchronized(this) {
+                cachedHeader?.let { return it }
+                currentGen = generation
+                val spm = spm()
+                user = spm.getUrlUser()
+                pwd = spm.getUrlPwd()
+            }
+            val computed = basicAuthHeader(user, pwd)
+            synchronized(this) {
+                if (generation == currentGen) {
+                    cachedHeader = computed
+                }
+            }
+            return computed
         }
 
     fun basicAuthHeader(username: String, password: String): String {
@@ -146,5 +183,14 @@ object UrlUtils {
     fun getApkUpdateUrl(path: String?): String {
         val url = baseUrl(spm())
         return "$url$path"
+    }
+
+    fun getUserInfo(userInfo: String?): Pair<String, String> {
+        val info = userInfo?.split(":")?.dropLastWhile { it.isEmpty() }
+        return if (info != null && info.size > 1) {
+            Pair(info[0], info[1])
+        } else {
+            Pair("", "")
+        }
     }
 }
