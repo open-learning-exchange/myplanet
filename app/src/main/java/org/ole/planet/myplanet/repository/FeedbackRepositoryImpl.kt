@@ -122,10 +122,10 @@ class FeedbackRepositoryImpl @Inject constructor(
     }
 
     override suspend fun insertFeedbackList(jsonObjects: List<JsonObject>) {
-        val mappedList = jsonObjects.map { it to JsonUtils.getString("_id", it) }
-        val existingById = feedbackDao.getByIds(mappedList.map { it.second }).associateBy { it.id }
+        val ids = jsonObjects.map { JsonUtils.getString("_id", it) }
+        val existingById = feedbackDao.getByIds(ids).associateBy { it.id }
         feedbackDao.upsertAll(
-            mappedList.map { (json, id) -> mapToFeedback(json, existingById[id], id) }
+            jsonObjects.zip(ids) { json, id -> mapToFeedback(json, existingById[id], id) }
         )
     }
 

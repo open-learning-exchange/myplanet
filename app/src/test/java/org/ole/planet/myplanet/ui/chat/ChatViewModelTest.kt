@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ChatRepository
@@ -43,7 +44,7 @@ class ChatViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var dispatcherProvider: TestDispatcherProvider
     private lateinit var realtimeSyncManager: RealtimeSyncManager
-    private val dataUpdateFlow = MutableSharedFlow<org.ole.planet.myplanet.model.TableDataUpdate>()
+    private val dataUpdateFlow = MutableSharedFlow<TableDataUpdate>()
 
     @Before
     fun setup() {
@@ -81,13 +82,44 @@ class ChatViewModelTest {
     }
 
     @Test
+    fun `refreshChatSignal seeds an initial load value for a cold ViewModel`() = runTest {
+        val signals = mutableListOf<Unit>()
+        val job = launch(testDispatcher) {
+            viewModel.refreshChatSignal.collect { signals.add(it) }
+        }
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, signals.size)
+        job.cancel()
+    }
+
+    @Test
     fun `refreshChatSignal emits when RealtimeSyncManager emits chats update`() = runTest {
         val signals = mutableListOf<Unit>()
         val job = launch(testDispatcher) {
             viewModel.refreshChatSignal.collect { signals.add(it) }
         }
+        testScheduler.advanceUntilIdle()
+        signals.clear()
 
-        dataUpdateFlow.emit(org.ole.planet.myplanet.model.TableDataUpdate("chats", 0, 1))
+        dataUpdateFlow.emit(TableDataUpdate("chats", 0, 1))
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, signals.size)
+        job.cancel()
+    }
+
+    @Test
+    fun `refreshChatSignal delivers a missed update to a subscriber that attaches after the emit`() = runTest {
+        testScheduler.advanceUntilIdle()
+
+        dataUpdateFlow.emit(TableDataUpdate("chats", 1, 0, true))
+        testScheduler.advanceUntilIdle()
+
+        val signals = mutableListOf<Unit>()
+        val job = launch(testDispatcher) {
+            viewModel.refreshChatSignal.collect { signals.add(it) }
+        }
         testScheduler.advanceUntilIdle()
 
         assertEquals(1, signals.size)
@@ -179,7 +211,6 @@ class ChatViewModelTest {
             communityName = "community1"
         )
 
-        // Wait for coroutine to process
         testScheduler.advanceUntilIdle()
 
         val result = viewModel.screenData.value
@@ -271,7 +302,6 @@ class ChatViewModelTest {
         assertEquals(listOf(conversation), result.chatHistory)
         assertEquals(listOf(news), result.newsMessages)
 
-        // Verify user and targets were NOT fetched again
         coVerify(exactly = 0) { userRepository.getUserById(any()) }
         coVerify(exactly = 0) { teamsRepository.getTeamSummaries(any()) }
 
