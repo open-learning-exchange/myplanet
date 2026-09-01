@@ -447,12 +447,17 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
+    internal fun isAtRootDashboard(): Boolean {
+        val currentFrag = supportFragmentManager.findFragmentById(R.id.fragment_container)
+        return isRootDashboardFragment(currentFrag)
+    }
+
     private fun addBackPressCallback() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 when {
                     result?.isDrawerOpen == true -> result?.closeDrawer()
-                    supportFragmentManager.backStackEntryCount > 1 -> FragmentNavigator.popBackStack(supportFragmentManager)
+                    supportFragmentManager.backStackEntryCount > 0 && !isAtRootDashboard() -> FragmentNavigator.popBackStack(supportFragmentManager)
                     else -> promptLogout()
                 }
             }
@@ -1139,5 +1144,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         const val MESSAGE_PROGRESS = "message_progress"
         var isFromNotificationAction = false
         private const val LAST_SYNC_STATUS_REFRESH_INTERVAL_MS = 60_000L
+
+        fun isRootDashboardFragment(fragment: Fragment?): Boolean {
+            return fragment == null || fragment is BellDashboardFragment || fragment is InactiveDashboardFragment
+        }
     }
 }
