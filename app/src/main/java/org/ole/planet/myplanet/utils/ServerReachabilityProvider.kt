@@ -14,7 +14,8 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 class ServerReachabilityProvider @Inject constructor(
     @StandardHttpClient private val okHttpClient: OkHttpClient,
     private val serverUrlMapper: ServerUrlMapper,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val timeProvider: TimeProvider
 ) {
     private val reachabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
     private val REACHABILITY_CACHE_TTL_MS = 30_000L
@@ -23,7 +24,7 @@ class ServerReachabilityProvider @Inject constructor(
         if (urlString.isBlank()) return false
 
         reachabilityCache[urlString]?.let { (reachable, checkedAt) ->
-            if (System.currentTimeMillis() - checkedAt < REACHABILITY_CACHE_TTL_MS) {
+            if (timeProvider.now() - checkedAt < REACHABILITY_CACHE_TTL_MS) {
                 return reachable
             }
         }
@@ -39,7 +40,7 @@ class ServerReachabilityProvider @Inject constructor(
                 break
             }
         }
-        reachabilityCache[urlString] = reachable to System.currentTimeMillis()
+        reachabilityCache[urlString] = reachable to timeProvider.now()
         return reachable
     }
 

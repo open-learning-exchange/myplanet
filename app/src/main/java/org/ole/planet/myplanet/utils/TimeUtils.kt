@@ -85,6 +85,14 @@ object TimeUtils {
             "N/A"
         }
 
+    fun getFormattedShortDate(date: Long): String =
+        try {
+            formatterFor(DATE_FORMAT, ZoneId.systemDefault()).format(Instant.ofEpochMilli(date))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            "N/A"
+        }
+
     fun getFormattedDateWithTime(date: Long): String =
         try {
             val instant = Instant.ofEpochMilli(date)
