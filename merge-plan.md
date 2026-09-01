@@ -1,102 +1,98 @@
 # Merge plan — open-learning-exchange/myplanet
 
-**BASE** `master` @ `9ce716cc90d30d008c820f49224cf8c7bde0d51e` — **unchanged since the previous plan**  
-**PR heads fetched** 2026-09-01T13:36:44Z  
-**Labels this run** MERGE=`merge` (35) · PRIORITY=`priority` (1) · READY=`ready` (5) · QUEUE=`automerge` (0)
+**BASE** `master` @ `32f95629a8ac7a3586bf2dc697dccf952acf7b3b` — unchanged since the previous plan  
+**PR heads fetched** 2026-09-01T16:02:44Z  
+**Labels this run** MERGE=`merge` (34) · PRIORITY=`priority` (3) · READY=`ready` (3) · QUEUE=`automerge` (2) · `conflict` (18)
 
 Re-run if BASE moves for any reason other than executing it.
 
 ## Previous plan — how far it got
 
-**Nothing landed.** BASE has not moved, so the 5-PR wave 1 was not executed; all 5 are still open.
+**7 of the 9 wave-1 PRs merged** (#16387, #16487, #16545, #16564, #16590, #16626, #16641), all via `automerge`. The remaining two, [16609](https://github.com/open-learning-exchange/myplanet/pull/16609) and [16620](https://github.com/open-learning-exchange/myplanet/pull/16620), are still open and both now carry `automerge`.
 
-The movement this interval was in the **broken bucket**, which is what the previous plan named as the bottleneck. It went **30 → 27**:
+### The `conflict` labelling worked as a work signal
 
-- **Rebased clean**: [16487](https://github.com/open-learning-exchange/myplanet/pull/16487) and [16564](https://github.com/open-learning-exchange/myplanet/pull/16564) — both now in wave 1.
-- **Closed while broken**: [16486](https://github.com/open-learning-exchange/myplanet/pull/16486).
-- **Newly broken: 0** — the first run with no decay at all.
-- **Still broken: 27.**
+All 27 PRs I labelled last turn are accounted for, and the buckets sum:
 
-Alongside that, `failing` went **6 → 0** and `conflict` **1 → 0**, with new heads pushed to 5 in-play PRs. [16387](https://github.com/open-learning-exchange/myplanet/pull/16387) is the clearest case: it had lost `merge` and carried `conflict`+`failing`, and has now been fixed, re-labelled `merge`, and re-enters as a clean candidate.
+| bucket | n |
+|---|---|
+| open, still labelled | 18 |
+| open, label removed by someone | 9 |
+| merged | 0 |
+| closed unmerged | 0 |
 
-So the rebase work has started — but it cleared 2 of 30 while 27 remain.
+**All 9 whose label was removed are now clean against BASE** — someone worked the list, rebased them, and cleared the label: [16323](https://github.com/open-learning-exchange/myplanet/pull/16323), [16332](https://github.com/open-learning-exchange/myplanet/pull/16332), [16398](https://github.com/open-learning-exchange/myplanet/pull/16398), [16436](https://github.com/open-learning-exchange/myplanet/pull/16436), [16438](https://github.com/open-learning-exchange/myplanet/pull/16438), [16442](https://github.com/open-learning-exchange/myplanet/pull/16442), [16495](https://github.com/open-learning-exchange/myplanet/pull/16495), [16513](https://github.com/open-learning-exchange/myplanet/pull/16513), [16600](https://github.com/open-learning-exchange/myplanet/pull/16600).
 
-## Wave 1 — 9 PRs
+That took the broken bucket from **27 → 18** and roughly doubled wave 1. It is the first interval where the rebase queue moved faster than it decayed.
 
-Verified: all 9 chained cumulatively onto BASE with **zero** merge failures. 1274 changed lines. **Zero conflict edges**, so nothing is held.
+## Wave 1 — 13 PRs
+
+Verified: all 13 chained cumulatively onto BASE with **zero** merge failures. 2918 changed lines.
 
 |  |  |  |  |  |  |
 |---|---|---|---|---|---|
-| [16387](https://github.com/open-learning-exchange/myplanet/pull/16387) | [16487](https://github.com/open-learning-exchange/myplanet/pull/16487) | [16545](https://github.com/open-learning-exchange/myplanet/pull/16545) | [16564](https://github.com/open-learning-exchange/myplanet/pull/16564) | [16590](https://github.com/open-learning-exchange/myplanet/pull/16590) | [16609](https://github.com/open-learning-exchange/myplanet/pull/16609) |
-| [16620](https://github.com/open-learning-exchange/myplanet/pull/16620) | [16626](https://github.com/open-learning-exchange/myplanet/pull/16626) | [16641](https://github.com/open-learning-exchange/myplanet/pull/16641) |  |  |  |
+| [16323](https://github.com/open-learning-exchange/myplanet/pull/16323) | [16332](https://github.com/open-learning-exchange/myplanet/pull/16332) | [16436](https://github.com/open-learning-exchange/myplanet/pull/16436) | [16438](https://github.com/open-learning-exchange/myplanet/pull/16438) | [16442](https://github.com/open-learning-exchange/myplanet/pull/16442) | [16495](https://github.com/open-learning-exchange/myplanet/pull/16495) |
+| [16513](https://github.com/open-learning-exchange/myplanet/pull/16513) | [16594](https://github.com/open-learning-exchange/myplanet/pull/16594) | [16605](https://github.com/open-learning-exchange/myplanet/pull/16605) | [16609](https://github.com/open-learning-exchange/myplanet/pull/16609) | [16622](https://github.com/open-learning-exchange/myplanet/pull/16622) | [16637](https://github.com/open-learning-exchange/myplanet/pull/16637) |
+| [16644](https://github.com/open-learning-exchange/myplanet/pull/16644) |  |  |  |  |  |
 
 | # | diff | title |
 |---|---|---|
-| [16387](https://github.com/open-learning-exchange/myplanet/pull/16387) | 269 | community: smoother configurations repository tab views modelling (fixes #16326) |
-| [16487](https://github.com/open-learning-exchange/myplanet/pull/16487) | 72 | sync: smoother time logger summary generating (fixes #16461) |
-| [16545](https://github.com/open-learning-exchange/myplanet/pull/16545) | 37 | teams: smoother voices image url flowing (fixes #16527) |
-| [16564](https://github.com/open-learning-exchange/myplanet/pull/16564) | 9 | all: smoother utilities hex mapping (fixes #16547) |
-| [16590](https://github.com/open-learning-exchange/myplanet/pull/16590) | 127 | life: smoother user repository view modelling (fixes #16575) |
-| [16609](https://github.com/open-learning-exchange/myplanet/pull/16609) | 143 | life: smoother health examination formatting (fixes #16452) |
-| [16620](https://github.com/open-learning-exchange/myplanet/pull/16620) | 319 | all: smoother chip cloud library migrating (fixes #16648) |
-| [16626](https://github.com/open-learning-exchange/myplanet/pull/16626) | 187 | dashboard: smoother fragment navigation streamlining (fixes #16613) |
-| [16641](https://github.com/open-learning-exchange/myplanet/pull/16641) | 111 | callbacks: unify interfaces into OnChangedListener (fixes #16640) |
+| [16323](https://github.com/open-learning-exchange/myplanet/pull/16323) | 130 | sync: smoother url utils auth header caching (fixes #16303) |
+| [16332](https://github.com/open-learning-exchange/myplanet/pull/16332) | 165 | resources: smoother repository dao querying (fixes #16304) |
+| [16436](https://github.com/open-learning-exchange/myplanet/pull/16436) | 71 | all: smoother personals repository intent updating (fixes #16432) |
+| [16438](https://github.com/open-learning-exchange/myplanet/pull/16438) | 3 | resources: smoother collections tags filtering (fixes #16410) |
+| [16442](https://github.com/open-learning-exchange/myplanet/pull/16442) | 75 | all: smoother notifications enrichment view modelling (fixes #16402) |
+| [16495](https://github.com/open-learning-exchange/myplanet/pull/16495) | 826 | sync: smoother upload coordinating (fixes #16467)(fixes #16464) |
+| [16513](https://github.com/open-learning-exchange/myplanet/pull/16513) | 7 | sync: smoother collector-side status throttling (fixes #16468) |
+| [16594](https://github.com/open-learning-exchange/myplanet/pull/16594) | 526 | labels: smoother size labeller fetching (fixes #16344) |
+| [16605](https://github.com/open-learning-exchange/myplanet/pull/16605) | 259 | teams: smoother notification count via countTeamChats (fixes #16418) |
+| [16609](https://github.com/open-learning-exchange/myplanet/pull/16609) | 139 | life: smoother health examination formatting (fixes #16452) |
+| [16622](https://github.com/open-learning-exchange/myplanet/pull/16622) | 247 | dashboard: smoother back press navigating (fixes #16611) |
+| [16637](https://github.com/open-learning-exchange/myplanet/pull/16637) | 356 | resources: smoother HTML download and view (fixes #16636) |
+| [16644](https://github.com/open-learning-exchange/myplanet/pull/16644) | 114 | all: smoother skill agents summoning (fixes #16649) |
 
-## Wave 2 — empty
+## Wave 2 — 3 held
 
-No PR is held; the candidate set has a single file overlap and no conflict.
+Three symmetric conflict edges among the candidates (0 asymmetric across all 6 overlapping pairs). These need a rebase, not a reordering.
 
-## Wave 3 — 27 broken against BASE, ranked by staleness
+| held | conflicts with |
+|---|---|
+| [16398](https://github.com/open-learning-exchange/myplanet/pull/16398) | [16323](https://github.com/open-learning-exchange/myplanet/pull/16323) |
+| [16600](https://github.com/open-learning-exchange/myplanet/pull/16600) | [16442](https://github.com/open-learning-exchange/myplanet/pull/16442) |
+| [16639](https://github.com/open-learning-exchange/myplanet/pull/16639) | [16495](https://github.com/open-learning-exchange/myplanet/pull/16495) |
 
-Commits behind BASE at each PR's merge base. Median **117**, max **190**. Most branched on 2026-08-27 and have been broken for five days. This is the queue that is not moving; the top rows are both the stalest and, mostly, the smallest.
+Note [16398](https://github.com/open-learning-exchange/myplanet/pull/16398) and [16600](https://github.com/open-learning-exchange/myplanet/pull/16600) were among the 9 just rebased out of the broken bucket, and have landed straight into a pairwise conflict instead.
 
-| # | behind | merge base | files | title |
-|---|---|---|---|---|
-| [16096](https://github.com/open-learning-exchange/myplanet/pull/16096) | 190 | 2026-08-25 | 8 | life: smoother life layout list loading (fixes #16089) |
-| [16595](https://github.com/open-learning-exchange/myplanet/pull/16595) | 122 | 2026-08-27 | 8 | all: smoother error log tagging (fixes #16358) |
-| [16398](https://github.com/open-learning-exchange/myplanet/pull/16398) | 122 | 2026-08-27 | 2 | sync: smoother url utils base64 handling (fixes #16372) |
-| [16397](https://github.com/open-learning-exchange/myplanet/pull/16397) | 122 | 2026-08-27 | 3 | enterprises: smoother reports dao filtering (fixes #16373) |
-| [16370](https://github.com/open-learning-exchange/myplanet/pull/16370) | 122 | 2026-08-27 | 1 | community: smoother home community dialog handling (fixes #163 |
-| [16368](https://github.com/open-learning-exchange/myplanet/pull/16368) | 122 | 2026-08-27 | 5 | life: smoother life repository seed inserting (fixes #16328) |
-| [16367](https://github.com/open-learning-exchange/myplanet/pull/16367) | 122 | 2026-08-27 | 2 | enterprises: smoother repository context injecting (fixes #163 |
-| [16335](https://github.com/open-learning-exchange/myplanet/pull/16335) | 122 | 2026-08-27 | 5 | all: smoother url utils credential handling (fixes #16309) |
-| [16332](https://github.com/open-learning-exchange/myplanet/pull/16332) | 122 | 2026-08-27 | 4 | resources: smoother repository dao querying (fixes #16304) |
-| [16323](https://github.com/open-learning-exchange/myplanet/pull/16323) | 122 | 2026-08-27 | 5 | sync: smoother url utils auth header caching (fixes #16303) |
-| [16526](https://github.com/open-learning-exchange/myplanet/pull/16526) | 117 | 2026-08-27 | 3 | all: smoother version utils testing (fixes #16504) |
-| [16513](https://github.com/open-learning-exchange/myplanet/pull/16513) | 117 | 2026-08-27 | 1 | sync: smoother collector-side status throttling (fixes #16468) |
-| [16508](https://github.com/open-learning-exchange/myplanet/pull/16508) | 117 | 2026-08-27 | 2 | life: smoother life adapting (fixes #16505) |
-| [16503](https://github.com/open-learning-exchange/myplanet/pull/16503) | 117 | 2026-08-27 | 2 | all: smoother version utils comparing (fixes #16500) |
-| [16442](https://github.com/open-learning-exchange/myplanet/pull/16442) | 117 | 2026-08-27 | 2 | all: smoother notifications enrichment view modelling (fixes # |
-| [16441](https://github.com/open-learning-exchange/myplanet/pull/16441) | 117 | 2026-08-27 | 1 | all: smoother file utils url path resolving (fixes #16409) |
-| [16436](https://github.com/open-learning-exchange/myplanet/pull/16436) | 117 | 2026-08-27 | 6 | all: smoother personals repository intent updating (fixes #164 |
-| [16585](https://github.com/open-learning-exchange/myplanet/pull/16585) | 115 | 2026-08-27 | 12 | all: smoother dictionary teams achievement view modelling (fix |
-| [16577](https://github.com/open-learning-exchange/myplanet/pull/16577) | 115 | 2026-08-27 | 15 | all: smoother user repository view modelling (fixes #16571) |
-| [16554](https://github.com/open-learning-exchange/myplanet/pull/16554) | 115 | 2026-08-27 | 19 | all: smoother collection emptiness checking (fixes #16553) |
-| [16551](https://github.com/open-learning-exchange/myplanet/pull/16551) | 115 | 2026-08-27 | 2 | all: smoother notifications repository batch id filtering (fix |
-| [16607](https://github.com/open-learning-exchange/myplanet/pull/16607) | 114 | 2026-08-27 | 3 | login: smoother storage category selection view modelling (fix |
-| [16605](https://github.com/open-learning-exchange/myplanet/pull/16605) | 114 | 2026-08-27 | 7 | teams: smoother notification count via countTeamChats (fixes # |
-| [16600](https://github.com/open-learning-exchange/myplanet/pull/16600) | 114 | 2026-08-27 | 2 | all: smoother notifications task date caching (fixes #16414) |
-| [16599](https://github.com/open-learning-exchange/myplanet/pull/16599) | 114 | 2026-08-27 | 2 | all: smoother notifications type resolving (fixes #16419) |
-| [16438](https://github.com/open-learning-exchange/myplanet/pull/16438) | 74 | 2026-08-30 | 102 | resources: smoother collections tags filtering (fixes #16410) |
-| [16495](https://github.com/open-learning-exchange/myplanet/pull/16495) | 53 | 2026-08-31 | 3 | sync: smoother upload coordinating (fixes #16467, fixes #16464 |
+## Wave 3 — 18 broken against BASE
 
-Two outliers worth separating: [16438](https://github.com/open-learning-exchange/myplanet/pull/16438) touches **102 files**, so it is a rebase of a different order from the rest; and [16495](https://github.com/open-learning-exchange/myplanet/pull/16495) is the freshest (53 behind, base 08-31) — it was pushed to today and is still broken, so it needs another pass rather than a first one.
+|  |  |  |  |  |  |
+|---|---|---|---|---|---|
+| [16096](https://github.com/open-learning-exchange/myplanet/pull/16096) | [16335](https://github.com/open-learning-exchange/myplanet/pull/16335) | [16367](https://github.com/open-learning-exchange/myplanet/pull/16367) | [16368](https://github.com/open-learning-exchange/myplanet/pull/16368) | [16370](https://github.com/open-learning-exchange/myplanet/pull/16370) | [16397](https://github.com/open-learning-exchange/myplanet/pull/16397) |
+| [16441](https://github.com/open-learning-exchange/myplanet/pull/16441) | [16503](https://github.com/open-learning-exchange/myplanet/pull/16503) | [16508](https://github.com/open-learning-exchange/myplanet/pull/16508) | [16526](https://github.com/open-learning-exchange/myplanet/pull/16526) | [16551](https://github.com/open-learning-exchange/myplanet/pull/16551) | [16554](https://github.com/open-learning-exchange/myplanet/pull/16554) |
+| [16577](https://github.com/open-learning-exchange/myplanet/pull/16577) | [16585](https://github.com/open-learning-exchange/myplanet/pull/16585) | [16595](https://github.com/open-learning-exchange/myplanet/pull/16595) | [16599](https://github.com/open-learning-exchange/myplanet/pull/16599) | [16607](https://github.com/open-learning-exchange/myplanet/pull/16607) | [16620](https://github.com/open-learning-exchange/myplanet/pull/16620) |
 
-## Priority protection — free for the fourth run
+## Priority — 3 PRs, protection still free
 
-One PR carries `priority`: [16620](https://github.com/open-learning-exchange/myplanet/pull/16620), also `merge`. It conflicts with nothing, so greedy MIS is 9 with or without protection — cost **0 PRs**.
+| # | labels | state |
+|---|---|---|
+| [16620](https://github.com/open-learning-exchange/myplanet/pull/16620) | `priority` `merge` `automerge` `failing` | **broken against BASE** |
+| [16656](https://github.com/open-learning-exchange/myplanet/pull/16656) | `priority` `ready` | clean, report-only |
+| [16659](https://github.com/open-learning-exchange/myplanet/pull/16659) | `priority` `ready` | clean, report-only |
+
+The two clean priority PRs conflict with nothing, so greedy MIS is 13 with or without protection — cost **0 PRs**, the fifth consecutive run.
+
+## Two label discrepancies, neither introduced by this plan
+
+- [16605](https://github.com/open-learning-exchange/myplanet/pull/16605) carries `conflict` but now **merges clean** — it was rebased and the label was not cleared. It is in wave 1. Stale label.
+- [16620](https://github.com/open-learning-exchange/myplanet/pull/16620) is **broken** but carries no `conflict` label. It broke after the labelling pass. It also carries `automerge` while conflicting, so the drainer will hit it: per the repo's own workflow a conflicting PR loses `automerge` and gains `conflict`, so this should self-correct, but it will cost a queue cycle.
 
 ## `ready` impact (report only — never merged by this plan)
 
-4 `ready`-only PRs are clean against BASE (#16591, #16594, #16622, #16625). Landing wave 1 breaks **none**.
+3 `ready`-only PRs are clean (#16625, #16656, #16659). Landing wave 1 breaks **none**.
 
 ## Caveats
 
 - Conflict detection is **textual**. A clean merge is not a passing build.
-- One same-file overlap in wave 1: `Utilities.kt` — [16564](https://github.com/open-learning-exchange/myplanet/pull/16564) and [16620](https://github.com/open-learning-exchange/myplanet/pull/16620). They merge clean but land together, so test mid-wave, not only at the end.
-- `failing` is now clear on every in-play PR, but this plan reads no CI, so that is a label observation and not a green build.
-- Squash-merge carries each PR title into BASE permanently.
-
-## Title hygiene — nothing to hand off
-
-Every in-play PR is house style, for the second run running. No worklist and no summon to paste.
+- One same-file overlap in wave 1: `ResourcesRepositoryImpl.kt` and its test — [16332](https://github.com/open-learning-exchange/myplanet/pull/16332) and [16637](https://github.com/open-learning-exchange/myplanet/pull/16637). They merge clean but land together, so test mid-wave.
+- [16495](https://github.com/open-learning-exchange/myplanet/pull/16495) is the largest at 826 lines and [16594](https://github.com/open-learning-exchange/myplanet/pull/16594) at 526; both are freshly rebased, so they are the likeliest to break if the wave is executed slowly.
+- Squash-merge carries each PR title into BASE permanently. Every wave-1 title is house style, so nothing to hand off.
