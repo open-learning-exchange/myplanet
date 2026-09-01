@@ -85,16 +85,16 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         }
 
         binding.deleteSelectedButton.setOnClickListener {
-            val selected = viewModel.uiState.value.items.filter { it.isChecked }
-            confirmDelete(selected.size, getString(R.string.storage_delete_selected_confirm, selected.size)) {
-                deleteItems(selected)
+            val checkedCount = viewModel.uiState.value.checkedCount
+            confirmDelete(checkedCount, getString(R.string.storage_delete_selected_confirm, checkedCount)) {
+                viewModel.deleteSelected()
             }
         }
 
         binding.deleteAllButton.setOnClickListener {
-            val items = viewModel.uiState.value.items
-            confirmDelete(items.size, getString(R.string.storage_delete_confirm, categoryLabel)) {
-                deleteItems(items)
+            val count = viewModel.uiState.value.items.size
+            confirmDelete(count, getString(R.string.storage_delete_confirm, categoryLabel)) {
+                viewModel.deleteAll()
             }
         }
 
@@ -127,7 +127,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
                 binding.selectAllDivider.visibility = View.VISIBLE
 
                 adapter.submitList(state.items)
-                updateSelectionState(state.items)
+                updateSelectionState(state)
             }
 
             if (state.isDeleting) {
@@ -142,10 +142,10 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         }
     }
 
-    private fun updateSelectionState(items: List<OfflineResourceItem>) {
+    private fun updateSelectionState(state: StorageCategoryUiState) {
         if (_binding == null) return
-        val checkedCount = items.count { it.isChecked }
-        val allChecked = checkedCount == items.size && items.isNotEmpty()
+        val checkedCount = state.checkedCount
+        val allChecked = state.allChecked
 
         binding.selectAllCheckbox.isChecked = allChecked
         binding.deleteSelectedButton.isEnabled = checkedCount > 0
@@ -165,11 +165,6 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
             .setPositiveButton(R.string.yes) { _, _ -> onConfirm() }
             .setNegativeButton(R.string.no, null)
             .show()
-    }
-
-    private fun deleteItems(toDelete: List<OfflineResourceItem>) {
-        if (_binding == null) return
-        viewModel.deleteItems(toDelete)
     }
 
     private val DIFF_CALLBACK = DiffUtils.itemCallback<OfflineResourceItem>(
