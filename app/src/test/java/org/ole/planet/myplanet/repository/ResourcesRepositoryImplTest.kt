@@ -11,6 +11,7 @@ import io.mockk.mockkObject
 import io.mockk.slot
 import io.mockk.unmockkObject
 import io.mockk.verify
+import java.io.File
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.CoroutineScope
@@ -22,6 +23,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -38,6 +40,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -83,6 +86,7 @@ class ResourcesRepositoryImplTest {
             configurationsRepository,
             dispatcherProvider
         )
+        every { dispatcherProvider.io } returns testDispatcher
     }
 
     @Test
@@ -137,6 +141,138 @@ class ResourcesRepositoryImplTest {
 
         assertEquals(mockLibrary, result)
         coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+    }
+
+    @Test
+    fun `markResourceOfflineByUrl marks resource offline when relative path matches entry file`() = runTest {
+        val library = MyLibrary().apply {
+            id = "res1"
+            resourceId = "res1"
+            openWhichFile = "index.html"
+            resourceLocalAddress = null
+            _rev = "2-abc"
+        }
+        coEvery { myLibraryDao.getByResourceId("res1") } returns library
+        coEvery { myLibraryDao.getByLocalAddress(any()) } returns emptyList()
+
+        val url = "http://example.com/resources/res1/index.html"
+        mockkObject(FileUtils)
+        try {
+            every { FileUtils.getFileNameFromUrl(url) } returns "index.html"
+            every { FileUtils.getIdFromUrl(url) } returns "res1"
+            every { FileUtils.getResourceRelativePathFromUrl(url) } returns "index.html"
+
+            repository.markResourceOfflineByUrl(url)
+
+            assertTrue(library.resourceOffline)
+            assertEquals("2-abc", library.downloadedRev)
+            assertEquals("index.html", library.resourceLocalAddress)
+            coVerify { myLibraryDao.upsert(library) }
+        } finally {
+            unmockkObject(FileUtils)
+        }
+    }
+
+    @Test
+    fun `markResourceOfflineByUrl does not mark offline for a non-entry html asset`() = runTest {
+        val library = MyLibrary().apply {
+            id = "res1"
+            resourceId = "res1"
+            openWhichFile = "index.html"
+            resourceLocalAddress = null
+        }
+        coEvery { myLibraryDao.getByResourceId("res1") } returns library
+        coEvery { myLibraryDao.getByLocalAddress(any()) } returns emptyList()
+
+        val url = "http://example.com/resources/res1/style.css"
+        mockkObject(FileUtils)
+        try {
+            every { FileUtils.getFileNameFromUrl(url) } returns "style.css"
+            every { FileUtils.getIdFromUrl(url) } returns "res1"
+            every { FileUtils.getResourceRelativePathFromUrl(url) } returns "style.css"
+
+            repository.markResourceOfflineByUrl(url)
+
+            assertFalse(library.resourceOffline)
+            coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+        } finally {
+            unmockkObject(FileUtils)
+        }
+    }
+
+    @Test
+    fun `reconcileHtmlResourceOffline returns early when already offline`() = runTest {
+        val library = MyLibrary().apply {
+            id = "res1"
+            resourceId = "res1"
+            resourceOffline = true
+            _rev = "3-xyz"
+            downloadedRev = "3-xyz"
+        }
+        coEvery { myLibraryDao.getByResourceId("res1") } returns library
+
+        repository.reconcileHtmlResourceOffline("res1")
+
+        coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+    }
+
+    @Test
+    fun `reconcileHtmlResourceOffline does not mark offline when entry file is missing from disk`() = runTest {
+        val library = MyLibrary().apply {
+            id = "res1"
+            resourceId = "res1"
+            openWhichFile = "index.html"
+            resourceOffline = false
+        }
+        coEvery { myLibraryDao.getByResourceId("res1") } returns library
+
+        val baseDir = kotlin.io.path.createTempDirectory("resources-repo-test").toFile()
+        val mockContext = mockk<Context>(relaxed = true)
+        every { mockContext.getExternalFilesDir(null) } returns baseDir
+        mockkObject(MainApplication)
+        try {
+            every { MainApplication.context } returns mockContext
+
+            repository.reconcileHtmlResourceOffline("res1")
+
+            assertFalse(library.resourceOffline)
+            coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+        } finally {
+            unmockkObject(MainApplication)
+            baseDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `reconcileHtmlResourceOffline marks offline when entry file exists on disk`() = runTest {
+        val library = MyLibrary().apply {
+            id = "res1"
+            resourceId = "res1"
+            openWhichFile = "index.html"
+            resourceOffline = false
+            _rev = "1-abc"
+        }
+        coEvery { myLibraryDao.getByResourceId("res1") } returns library
+
+        val baseDir = kotlin.io.path.createTempDirectory("resources-repo-test").toFile()
+        File(baseDir, "ole/res1").apply { mkdirs() }
+        File(baseDir, "ole/res1/index.html").writeText("<html></html>")
+        val mockContext = mockk<Context>(relaxed = true)
+        every { mockContext.getExternalFilesDir(null) } returns baseDir
+        mockkObject(MainApplication)
+        try {
+            every { MainApplication.context } returns mockContext
+
+            repository.reconcileHtmlResourceOffline("res1")
+
+            assertTrue(library.resourceOffline)
+            assertEquals("1-abc", library.downloadedRev)
+            assertEquals("index.html", library.resourceLocalAddress)
+            coVerify { myLibraryDao.upsert(library) }
+        } finally {
+            unmockkObject(MainApplication)
+            baseDir.deleteRecursively()
+        }
     }
 
     @Test

@@ -56,6 +56,7 @@ interface ResourcesRepository {
     suspend fun setUserLibrary(resourceId: String, add: Boolean): MyLibrary?
     suspend fun updateLibraryItem(id: String, updater: (MyLibrary) -> Unit)
     suspend fun markResourceOfflineByUrl(url: String)
+    suspend fun reconcileHtmlResourceOffline(resourceId: String)
     suspend fun saveSearchActivity(
         userName: String,
         searchText: String,
