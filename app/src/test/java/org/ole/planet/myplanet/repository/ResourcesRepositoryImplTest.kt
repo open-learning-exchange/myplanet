@@ -7,19 +7,28 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.slot
+import io.mockk.unmockkObject
+import io.mockk.verify
 import java.util.logging.Level
 import java.util.logging.Logger
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
+import org.ole.planet.myplanet.data.room.dao.ResourceTitleProjection
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
@@ -27,6 +36,8 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -46,6 +57,8 @@ class ResourcesRepositoryImplTest {
     private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
+    private val configurationsRepository: ConfigurationsRepository = mockk(relaxed = true)
+    private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
 
     private lateinit var repository: ResourcesRepositoryImpl
 
@@ -67,8 +80,8 @@ class ResourcesRepositoryImplTest {
             userRepository,
             teamsRepositoryLazy,
             userSessionManager,
-            mockk(relaxed = true),
-            mockk(relaxed = true)
+            configurationsRepository,
+            dispatcherProvider
         )
     }
 
@@ -216,13 +229,13 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
-    fun `getEnrichedLibraries fetches public-not-user items when not my course lib`() = runTest {
+    fun `getResourceListModels fetches public-not-user items when not my course lib`() = runTest {
         val lib1 = MyLibrary().apply { id = "1"; resourceId = "r1"; title = "Match" }
         coEvery { myLibraryDao.getPublicNotUserPattern(any()) } returns listOf(lib1)
         coEvery { ratingsRepository.getResourceRatings(any()) } returns HashMap()
         coEvery { tagsRepository.getTagsForResources(any()) } returns emptyMap()
 
-        val result = repository.getEnrichedLibraries(false, "model123")
+        val result = repository.getResourceListModels(false, "model123")
 
         assertEquals(1, result.size)
         assertEquals("Match", result[0].library.title)
@@ -570,6 +583,37 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
+    fun `getMyLibIds calls getIdsForUserPattern and returns JsonArray of ids`() = runTest {
+        val userId = "user123"
+        val expectedPattern = "%\"user123\"%"
+        val expectedIds = listOf("id1", "id2")
+        coEvery { myLibraryDao.getIdsForUserPattern(expectedPattern) } returns expectedIds
+
+        val result = repository.getMyLibIds(userId)
+
+        coVerify(exactly = 1) { myLibraryDao.getIdsForUserPattern(expectedPattern) }
+        assertEquals(2, result.size())
+        assertEquals("id1", result.get(0).asString)
+        assertEquals("id2", result.get(1).asString)
+    }
+
+    @Test
+    fun `getResourceTitlesMap calls getResourceTitles and returns mapped titles`() = runTest {
+        val projections = listOf(
+            ResourceTitleProjection("res1", "Title 1"),
+            ResourceTitleProjection("res2", "Title 2")
+        )
+        coEvery { myLibraryDao.getResourceTitles() } returns projections
+
+        val result = repository.getResourceTitlesMap()
+
+        coVerify(exactly = 1) { myLibraryDao.getResourceTitles() }
+        assertEquals(2, result.size)
+        assertEquals("Title 1", result["res1"])
+        assertEquals("Title 2", result["res2"])
+    }
+
+    @Test
     fun `markResourceUploaded calls createLocalResourceLink when resource is private`() = runTest {
         val localId = "local1"
         val remoteId = "remote1"
@@ -598,6 +642,54 @@ class ResourcesRepositoryImplTest {
                 title = "Private Resource",
                 planetCode = "planet1"
             )
+        }
+    }
+
+    @Test
+    fun `downloadFiles returns provided list directly when not null`() = runTest {
+        val scope = CoroutineScope(SupervisorJob())
+        mockkObject(MainApplication)
+        mockkObject(DownloadUtils)
+        try {
+            every { MainApplication.applicationScope } returns scope
+            coEvery { configurationsRepository.checkServerAvailability() } returns false
+            every { DownloadUtils.downloadAllFiles(any()) } returns arrayListOf("url1")
+
+            val library = MyLibrary().apply { _id = "lib1"; resourceId = "r1" }
+            val provided = listOf(library)
+
+            val result = repository.downloadFiles(provided)
+
+            assertEquals(1, result.size)
+            assertSame(library, result[0])
+            coVerify(exactly = 0) { myLibraryDao.getSyncable() }
+            verify(exactly = 1) { DownloadUtils.downloadAllFiles(provided) }
+        } finally {
+            unmockkObject(MainApplication)
+            unmockkObject(DownloadUtils)
+        }
+    }
+
+    @Test
+    fun `downloadFiles falls back to getAllLibrariesToSync when list is null`() = runTest {
+        val scope = CoroutineScope(SupervisorJob())
+        mockkObject(MainApplication)
+        mockkObject(DownloadUtils)
+        try {
+            every { MainApplication.applicationScope } returns scope
+            coEvery { configurationsRepository.checkServerAvailability() } returns false
+            val synced = listOf(MyLibrary().apply { _id = "synced1" })
+            coEvery { myLibraryDao.getSyncable() } returns synced
+            every { DownloadUtils.downloadAllFiles(any()) } returns arrayListOf("url2")
+
+            val result = repository.downloadFiles(null)
+
+            assertEquals(1, result.size)
+            assertEquals("synced1", result[0]._id)
+            coVerify(exactly = 1) { myLibraryDao.getSyncable() }
+        } finally {
+            unmockkObject(MainApplication)
+            unmockkObject(DownloadUtils)
         }
     }
 }
