@@ -45,7 +45,7 @@ class TeamCoursesViewModel @Inject constructor(
     }
 
     suspend fun getAvailableCourses(teamId: String): List<MyCourse> {
-        val existingIds = teamsRepository.getTeamCourseIds(teamId)
+        val existingIds = teamsRepository.getTeamCourseIds(teamId).toSet()
         val allCourses = coursesRepository.getAllCourses()
         return allCourses.filter { it.courseId !in existingIds }
     }
