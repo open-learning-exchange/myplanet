@@ -10,7 +10,7 @@ import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
 import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnFeedbackSubmittedListener
+import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.databinding.FragmentFeedbackBinding
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
@@ -22,8 +22,8 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
 
     private val viewModel: FeedbackComposerViewModel by viewModels()
 
-    private var mListener: OnFeedbackSubmittedListener? = null
-    fun setOnFeedbackSubmittedListener(listener: OnFeedbackSubmittedListener?) {
+    private var mListener: OnChangedListener? = null
+    fun setOnFeedbackSubmittedListener(listener: OnChangedListener?) {
         mListener = listener
     }
 
@@ -50,7 +50,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
             when (event) {
                 is FeedbackComposerViewModel.SubmitEvent.Saved -> {
                     Utilities.toast(activity, getString(R.string.feedback_saved))
-                    mListener?.onFeedbackSubmitted()
+                    mListener?.onChanged()
                     dismiss()
                 }
                 is FeedbackComposerViewModel.SubmitEvent.Error -> {

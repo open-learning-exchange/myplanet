@@ -60,8 +60,7 @@ class AchievementsAdapter(list: List<String>) : ListAdapter<ReferenceRow, Achiev
         val payloadSet = flatPayloads.filterIsInstance<String>().toSet()
 
         // If there are payloads we didn't handle, default to full bind
-        val handledPayloads = setOf(PAYLOAD_PHONE, PAYLOAD_EMAIL)
-        if (payloadSet.subtract(handledPayloads).isNotEmpty() || flatPayloads.any { it !is String }) {
+        if (payloadSet.subtract(HANDLED_PAYLOADS).isNotEmpty() || flatPayloads.any { it !is String }) {
             super.onBindViewHolder(holder, position, payloads)
             return
         }
@@ -79,6 +78,8 @@ class AchievementsAdapter(list: List<String>) : ListAdapter<ReferenceRow, Achiev
     companion object {
         const val PAYLOAD_PHONE = "payload_phone"
         const val PAYLOAD_EMAIL = "payload_email"
+
+        private val HANDLED_PAYLOADS = setOf(PAYLOAD_PHONE, PAYLOAD_EMAIL)
 
         private val DIFF_CALLBACK = DiffUtils.itemCallback<ReferenceRow>(
             areItemsTheSame = { oldItem, newItem ->
