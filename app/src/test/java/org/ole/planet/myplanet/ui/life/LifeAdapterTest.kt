@@ -6,7 +6,9 @@ import android.widget.LinearLayout
 import androidx.test.core.app.ApplicationProvider
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -31,6 +33,24 @@ class LifeAdapterTest {
             mDragStartListener = mockk<OnStartDragListener>(),
             visibilityCallback = { _, _ -> },
             reorderCallback = { },
+        )
+    }
+
+    private fun lifeItem(id: String, weight: Int): MyLife {
+        return MyLife().apply {
+            _id = id
+            title = id
+            imageId = id
+            this.weight = weight
+        }
+    }
+
+    private fun adapterWith(reorderCallback: (List<MyLife>) -> Unit): LifeAdapter {
+        return LifeAdapter(
+            context = context,
+            mDragStartListener = mockk<OnStartDragListener>(),
+            visibilityCallback = { _, _ -> },
+            reorderCallback = reorderCallback,
         )
     }
 
@@ -85,12 +105,7 @@ class LifeAdapterTest {
         val b = MyLife("ic_b", "u", "B").apply { isVisible = true }
 
         val captured = mutableListOf<List<MyLife>>()
-        val reorderAdapter = LifeAdapter(
-            context = context,
-            mDragStartListener = mockk<OnStartDragListener>(),
-            visibilityCallback = { _, _ -> },
-            reorderCallback = { captured += it },
-        )
+        val reorderAdapter = adapterWith { captured += it }
         reorderAdapter.submitList(listOf(a, b))
         reorderAdapter.onItemMove(0, 1)
         reorderAdapter.onItemMoveFinished()
@@ -98,5 +113,48 @@ class LifeAdapterTest {
         assertEquals(1, captured.size)
         assertEquals("B", captured.first()[0].title)
         assertEquals("A", captured.first()[1].title)
+    }
+
+    @Test
+    fun `onItemMove swaps positions and onItemMoveFinished invokes reorderCallback with reordered list`() {
+        var receivedList: List<MyLife>? = null
+        val reorderAdapter = adapterWith { list -> receivedList = list }
+
+        reorderAdapter.submitList(listOf(lifeItem("a", 0), lifeItem("b", 1), lifeItem("c", 2)))
+        val moved = reorderAdapter.onItemMove(0, 2)
+        assertTrue(moved)
+        reorderAdapter.onItemMoveFinished()
+
+        assertNotNull(receivedList)
+        assertEquals(listOf("b", "c", "a"), receivedList!!.map { it.title })
+        assertEquals(3, receivedList!!.size)
+    }
+
+    @Test
+    fun `onItemMoveFinished is a no-op when no drag occurred`() {
+        var reorderInvoked = false
+        val reorderAdapter = adapterWith { reorderInvoked = true }
+
+        reorderAdapter.submitList(listOf(lifeItem("a", 0), lifeItem("b", 1)))
+        reorderAdapter.onItemMoveFinished()
+
+        assertFalse(reorderInvoked)
+        assertEquals(2, reorderAdapter.itemCount)
+    }
+
+    @Test
+    fun `onItemMoveFinished clears drag state before the callback so re-entry is a no-op`() {
+        var invocations = 0
+        lateinit var reentrantAdapter: LifeAdapter
+        reentrantAdapter = adapterWith {
+            invocations++
+            reentrantAdapter.onItemMoveFinished()
+        }
+
+        reentrantAdapter.submitList(listOf(lifeItem("a", 0), lifeItem("b", 1)))
+        reentrantAdapter.onItemMove(0, 1)
+        reentrantAdapter.onItemMoveFinished()
+
+        assertEquals(1, invocations)
     }
 }

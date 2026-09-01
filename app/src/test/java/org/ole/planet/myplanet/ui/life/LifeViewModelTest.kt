@@ -4,6 +4,7 @@ import android.content.Context
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -53,40 +54,45 @@ class LifeViewModelTest {
     fun `loadMyLifeList resolves userId via userRepository getCurrentUserId and loads myLifeList`() = runTest {
         coEvery { userRepository.getCurrentUserId() } returns "user_123"
         val item = MyLife("img1", "user_123", "Item 1")
-        coEvery { lifeRepository.getMyLifeByUserId("user_123") } returns listOf(item)
+        coEvery { lifeRepository.getMyLifeByUserId("user_123", any()) } returns listOf(item)
 
         viewModel.loadMyLifeList()
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(listOf(item), viewModel.myLifeList.value)
-        coVerify(exactly = 1) { lifeRepository.getMyLifeByUserId("user_123") }
+        coVerify(exactly = 1) { lifeRepository.getMyLifeByUserId("user_123", any()) }
         coVerify(exactly = 0) { lifeRepository.seedMyLifeIfEmpty(any(), any()) }
     }
 
     @Test
-    fun `loadMyLifeList seeds list if empty`() = runTest {
+    fun `loadMyLifeList delegates seeding to the repository by passing the default items`() = runTest {
         coEvery { userRepository.getCurrentUserId() } returns "user_123"
         val item = MyLife("img1", "user_123", "Item 1")
-        coEvery { lifeRepository.getMyLifeByUserId("user_123") } returnsMany listOf(emptyList(), listOf(item))
+        val defaults = slot<List<MyLife>>()
+        coEvery { lifeRepository.getMyLifeByUserId("user_123", capture(defaults)) } returns listOf(item)
 
         viewModel.loadMyLifeList()
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(listOf(item), viewModel.myLifeList.value)
-        coVerify(exactly = 1) { lifeRepository.seedMyLifeIfEmpty("user_123", any()) }
-        coVerify(exactly = 2) { lifeRepository.getMyLifeByUserId("user_123") }
+        assertEquals(
+            MyLife.defaultItems("user_123", context::getString).map { it.imageId },
+            defaults.captured.map { it.imageId }
+        )
+        coVerify(exactly = 1) { lifeRepository.getMyLifeByUserId("user_123", any()) }
+        coVerify(exactly = 0) { lifeRepository.seedMyLifeIfEmpty(any(), any()) }
     }
 
     @Test
     fun `updateVisibility calls repository and reloads list`() = runTest {
         coEvery { userRepository.getCurrentUserId() } returns "user_123"
-        coEvery { lifeRepository.getMyLifeByUserId("user_123") } returns emptyList()
+        coEvery { lifeRepository.getMyLifeByUserId("user_123", any()) } returns emptyList()
 
         viewModel.updateVisibility(true, "item_1")
         testDispatcher.scheduler.advanceUntilIdle()
 
         coVerify(exactly = 1) { lifeRepository.updateVisibility(true, "item_1") }
-        coVerify { lifeRepository.getMyLifeByUserId("user_123") }
+        coVerify { lifeRepository.getMyLifeByUserId("user_123", any()) }
     }
 
     @Test
