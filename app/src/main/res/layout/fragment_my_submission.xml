@@ -93,11 +93,11 @@
             </RadioGroup>
 
             <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tl_search"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:textColorHint="@color/hint_color">
+                android:id="@+id/tl_search"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColorHint="@color/hint_color">
 
                 <EditText
                     android:id="@+id/et_search"
@@ -111,7 +111,7 @@
                     android:maxLines="1"
                     android:textColor="@color/daynight_textColor" />
             </com.google.android.material.textfield.TextInputLayout>
-    </LinearLayout>
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/title"
