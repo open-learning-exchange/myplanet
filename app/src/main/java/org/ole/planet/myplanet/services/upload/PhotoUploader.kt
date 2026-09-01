@@ -5,6 +5,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnSuccessListener
+import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao.UploadedPhoto
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UploadRepository
@@ -48,15 +49,18 @@ class PhotoUploader @Inject constructor(
                             val rev = getString("rev", `object`)
                             val id = getString("id", `object`)
 
-                            submissionsRepository.markPhotoUploaded(photoId, rev, id)
-
-                            if (listener != null && photoId != null) {
+                            if (photoId != null) {
                                 successfulUploads.add(UploadedPhotoInfo(photoId, rev, id))
                             }
                         }
                     } catch (e: Exception) {
                         Log.e(TAG, "Exception in PhotoUploader", e)
                     }
+                }
+
+                if (successfulUploads.isNotEmpty()) {
+                    val batchedMarks = successfulUploads.map { UploadedPhoto(it.photoId, it.rev, it.id) }
+                    submissionsRepository.markPhotosUploadedBatch(batchedMarks)
                 }
 
                 if (listener != null && successfulUploads.isNotEmpty()) {

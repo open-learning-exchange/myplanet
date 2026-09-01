@@ -10,10 +10,15 @@ permissions:
   contents: write
   actions: write
 
+concurrency:
+  group: release-${{ github.sha }}
+  cancel-in-progress: false
+
 jobs:
   release:
     name: myPlanet release
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -35,6 +40,18 @@ jobs:
         uses: gradle/actions/setup-gradle@v6.3.0
         with:
           gradle-version: wrapper
+
+      - name: restore project build dir
+        uses: actions/cache@v6
+        with:
+          path: |
+            app/build
+            !app/build/outputs/**
+            .gradle/*
+            !.gradle/configuration-cache
+          key: build-dir-release-${{ matrix.build }}-${{ github.sha }}
+          restore-keys: |
+            build-dir-release-${{ matrix.build }}-
 
       - name: set release version
         run: |
