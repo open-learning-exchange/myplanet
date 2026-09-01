@@ -232,4 +232,14 @@
         <item name="android:textColorPrimary">@color/daynight_textColor</item>
         <item name="android:textSize">16sp</item>
     </style>
+
+    <style name="Theme.App.Chip" parent="AppTheme.MaterialComponents">
+        <item name="chipStyle">@style/Widget.App.Chip</item>
+    </style>
+
+    <style name="Widget.App.Chip" parent="Widget.MaterialComponents.Chip.Action">
+        <item name="chipBackgroundColor">@color/multi_select_grey</item>
+        <item name="android:textColor">@color/daynight_textColor</item>
+        <item name="closeIconTint">@color/daynight_textColor</item>
+    </style>
 </resources>

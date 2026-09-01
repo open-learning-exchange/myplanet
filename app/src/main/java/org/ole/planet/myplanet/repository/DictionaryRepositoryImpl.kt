@@ -5,6 +5,8 @@ import com.google.gson.JsonArray
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.data.room.entity.DictionaryEntity
@@ -18,6 +20,8 @@ class DictionaryRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     @ApplicationContext private val context: Context
 ) : DictionaryRepository {
+
+    private val seedMutex = Mutex()
 
     override suspend fun count(): Long {
         return dictionaryDao.count()
@@ -33,38 +37,40 @@ class DictionaryRepositoryImpl @Inject constructor(
                 return@withContext DictionaryLoad.FileMissing
             }
 
-            if (dictionaryDao.count() > 0) {
-                return@withContext DictionaryLoad.AlreadyPopulated
-            }
-
-            try {
-                val data = FileUtils.getStringFromFile(
-                    FileUtils.getSDPathFromUrl(context, Constants.DICTIONARY_URL)
-                )
-                val json = JsonUtils.gson.fromJson(data, JsonArray::class.java)
-                if (json != null) {
-                    val entities = json.map { js ->
-                        val doc = js.asJsonObject
-                        DictionaryEntity(
-                            id = UUID.randomUUID().toString(),
-                            code = JsonUtils.getString("code", doc),
-                            language = JsonUtils.getString("language", doc),
-                            advanceCode = JsonUtils.getString("advance_code", doc),
-                            word = JsonUtils.getString("word", doc),
-                            meaning = JsonUtils.getString("meaning", doc),
-                            definition = JsonUtils.getString("definition", doc),
-                            synonym = JsonUtils.getString("synonym", doc),
-                            antonym = JsonUtils.getString("antonoym", doc)
-                        )
-                    }
-                    dictionaryDao.insertAll(entities)
-                    DictionaryLoad.Inserted
-                } else {
-                    DictionaryLoad.Failed(null)
+            seedMutex.withLock {
+                if (dictionaryDao.count() > 0) {
+                    return@withLock DictionaryLoad.AlreadyPopulated
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                DictionaryLoad.Failed(e)
+
+                try {
+                    val data = FileUtils.getStringFromFile(
+                        FileUtils.getSDPathFromUrl(context, Constants.DICTIONARY_URL)
+                    )
+                    val json = JsonUtils.gson.fromJson(data, JsonArray::class.java)
+                    if (json != null) {
+                        val entities = json.map { js ->
+                            val doc = js.asJsonObject
+                            DictionaryEntity(
+                                id = UUID.randomUUID().toString(),
+                                code = JsonUtils.getString("code", doc),
+                                language = JsonUtils.getString("language", doc),
+                                advanceCode = JsonUtils.getString("advance_code", doc),
+                                word = JsonUtils.getString("word", doc),
+                                meaning = JsonUtils.getString("meaning", doc),
+                                definition = JsonUtils.getString("definition", doc),
+                                synonym = JsonUtils.getString("synonym", doc),
+                                antonym = JsonUtils.getString("antonoym", doc)
+                            )
+                        }
+                        dictionaryDao.insertAll(entities)
+                        DictionaryLoad.Inserted
+                    } else {
+                        DictionaryLoad.Failed(null)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    DictionaryLoad.Failed(e)
+                }
             }
         }
     }
