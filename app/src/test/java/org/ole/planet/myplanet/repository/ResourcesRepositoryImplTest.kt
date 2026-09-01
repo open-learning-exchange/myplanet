@@ -17,11 +17,11 @@ import java.util.logging.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
@@ -30,9 +30,9 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
-import org.ole.planet.myplanet.data.room.dao.ResourceTitleProjection
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
+import org.ole.planet.myplanet.data.room.dao.ResourceTitleProjection
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.SearchActivity
@@ -855,6 +855,7 @@ class ResourcesRepositoryImplTest {
             coVerify(exactly = 0) { myLibraryDao.getSyncable() }
             verify(exactly = 1) { DownloadUtils.downloadAllFiles(provided) }
         } finally {
+            scope.cancel()
             unmockkObject(MainApplication)
             unmockkObject(DownloadUtils)
         }
@@ -878,6 +879,7 @@ class ResourcesRepositoryImplTest {
             assertEquals("synced1", result[0]._id)
             coVerify(exactly = 1) { myLibraryDao.getSyncable() }
         } finally {
+            scope.cancel()
             unmockkObject(MainApplication)
             unmockkObject(DownloadUtils)
         }

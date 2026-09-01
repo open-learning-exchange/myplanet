@@ -207,7 +207,7 @@ class TransactionSyncManager @Inject constructor(
                     break
                 }
                 val arr = getJsonArray("rows", response.body())
-                if (arr.size() == 0) {
+                if (arr.isEmpty()) {
                     syncCompletedFully = true
                     break
                 }

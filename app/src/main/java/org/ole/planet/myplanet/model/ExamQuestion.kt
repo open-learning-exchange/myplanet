@@ -56,7 +56,7 @@ open class ExamQuestion(
 
     companion object {
         fun insertExamQuestions(questions: JsonArray, examId: String?): List<ExamQuestion> {
-            if (questions.size() == 0) return emptyList()
+            if (questions.isEmpty()) return emptyList()
 
             val questionsToInsert = mutableListOf<ExamQuestion>()
 

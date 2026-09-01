@@ -20,11 +20,14 @@ import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -58,7 +61,8 @@ class ConfigurationsRepositoryImplTest {
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val appDatabase: AppDatabase = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
-    private val serviceScope = CoroutineScope(testDispatcher)
+    // Handed to the repository under test; cancelled in @After so nothing escapes the fork.
+    private val serviceScope = CoroutineScope(SupervisorJob() + testDispatcher)
 
     private val dispatcherProvider = object : DispatcherProvider {
         override val main = testDispatcher
@@ -70,6 +74,11 @@ class ConfigurationsRepositoryImplTest {
 
     @get:Rule
     val temporaryFolder = TemporaryFolder()
+
+    @After
+    fun tearDown() {
+        serviceScope.cancel()
+    }
 
     @Before
     fun setup() {
