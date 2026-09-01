@@ -21,19 +21,6 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
 
-/**
- * Room-backed integration test for the team-chat badge.
- *
- * The badge is `hasChat = lastCount < chatCount`, where `lastCount` is the watermark written by
- * `TeamsVoicesViewModel.getFilteredNews` (the size of the displayed top-level feed) and
- * `chatCount` is the current count computed in `getTeamNotifications`. Both must measure the
- * same set of posts (top-level, visible to the team via either `viewableBy`/`viewableId` or the
- * `viewIn` path); otherwise the badge never clears (replies inflate `chatCount`) or never
- * appears (locally-created `viewIn`-only posts are invisible to `chatCount`).
- *
- * This wires a real in-memory Room DB through `VoicesRepositoryImpl.countTopLevelByTeam` and
- * `NotificationsRepositoryImpl` so the comparison is exercised end-to-end against real SQL.
- */
 @RunWith(RobolectricTestRunner::class)
 class TeamChatBadgeIntegrationTest {
 
@@ -127,19 +114,15 @@ class TeamChatBadgeIntegrationTest {
     @Test
     fun `badge appears when a new top-level post arrives after the feed was opened`() = runBlocking {
         val teamId = "teamB"
-        // Synced post visible via viewableBy/viewableId.
+
         val first = topLevel(viewableBy = "teams", viewableId = teamId)
         newsDao.upsertAll(listOf(first))
         notificationsRepository.updateTeamNotification(teamId, voicesRepository.countTopLevelByTeam(teamId).toInt())
 
-        // Same count → no badge.
         assertFalse(notificationsRepository.getTeamNotifications(listOf(teamId), "user1")[teamId]?.hasChat == true)
 
-        // A new top-level post arrives (here via the viewIn path, the locally-created case the
-        // old chatCount missed entirely).
         newsDao.upsertAll(listOf(topLevel(viewIn = "[{\"_id\":\"$teamId\",\"section\":\"teams\"}]")))
 
-        // chatCount (2) > lastCount (1) → badge appears.
         val result = notificationsRepository.getTeamNotifications(listOf(teamId), "user1")
         assertTrue(result[teamId]?.hasChat == true)
     }
@@ -151,7 +134,6 @@ class TeamChatBadgeIntegrationTest {
         newsDao.upsertAll(listOf(root))
         notificationsRepository.updateTeamNotification(teamId, voicesRepository.countTopLevelByTeam(teamId).toInt())
 
-        // Adding replies must not raise the badge: they are not part of the top-level feed.
         newsDao.upsertAll(listOf(replyTo(root, viewIn = "[{\"_id\":\"$teamId\",\"section\":\"teams\"}]")))
         val result = notificationsRepository.getTeamNotifications(listOf(teamId), "user1")
         assertFalse(result[teamId]?.hasChat == true)
@@ -165,8 +147,6 @@ class TeamChatBadgeIntegrationTest {
         val c = replyTo(a, viewIn = "[{\"_id\":\"$teamId\",\"section\":\"teams\"}]") // reply, excluded
         newsDao.upsertAll(listOf(a, b, c))
 
-        // The badge's chatCount comes from countTopLevelByTeam, which must equal the size of the
-        // feed the user sees (getFilteredNews → getTopLevelByTeam): 2 top-level posts, reply excluded.
         val displayedSize = voicesRepository.getFilteredNews(teamId).size
         val count = voicesRepository.countTopLevelByTeam(teamId)
         assertEquals(2L, count)
