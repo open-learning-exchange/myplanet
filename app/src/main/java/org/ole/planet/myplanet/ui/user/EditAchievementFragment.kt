@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
+import android.view.ContextThemeWrapper
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
@@ -21,10 +22,10 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.chip.Chip
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import fisk.chipcloud.ChipCloud
 import java.io.File
 import java.util.Calendar
 import java.util.Locale
@@ -247,18 +248,20 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     }
 
     private fun showAchievementAndInfo() {
-        val config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
+        val context = context ?: return
         binding.llAttachment.removeAllViews()
         val inflater = LayoutInflater.from(activity)
         for (e in achievementArray ?: return) {
             editAttachmentBinding = EditAttachementBinding.inflate(inflater, binding.llAttachment, false)
             editAttachmentBinding.tvTitle.text = e.asJsonObject["title"].asString
             val flexboxLayout = editAttachmentBinding.flexbox
-            flexboxLayout.removeAllViews()
-            val chipCloud = ChipCloud(activity, flexboxLayout, config)
+            val chipContext = ContextThemeWrapper(context, R.style.Theme_App_Chip)
             val resources = e.asJsonObject.getAsJsonArray("resources") ?: JsonArray()
             for (element in resources) {
-                chipCloud.addChip(element.asJsonObject["title"].asString)
+                val chip = Chip(chipContext).apply {
+                    text = element.asJsonObject["title"].asString
+                }
+                flexboxLayout.addView(chip)
             }
             editAttachmentBinding.ivDelete.setOnClickListener {
                 achievementArray?.remove(e)

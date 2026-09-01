@@ -15,8 +15,8 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.base.BaseTeamFragment
+import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.callback.OnMemberActionListener
-import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCombinedMembersBinding
 import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.News
@@ -30,11 +30,11 @@ class MembersFragment : BaseTeamFragment() {
     private var _binding: FragmentCombinedMembersBinding? = null
     private val binding get() = _binding!!
 
-    private var onMemberChangeListener: OnMemberChangeListener? = null
+    private var onMemberChangeListener: OnChangedListener? = null
     private var membersAdapter: MembersAdapter? = null
     private var requestsAdapter: RequestsAdapter? = null
 
-    fun setOnMemberChangeListener(listener: OnMemberChangeListener) {
+    fun setOnMemberChangeListener(listener: OnChangedListener) {
         onMemberChangeListener = listener
     }
 
@@ -87,7 +87,7 @@ class MembersFragment : BaseTeamFragment() {
             }
         }
         collectWhenStarted(requestsViewModel.successAction) {
-            onMemberChangeListener?.onMemberChanged()
+            onMemberChangeListener?.onChanged()
             loadMembers()
         }
     }
@@ -139,7 +139,7 @@ class MembersFragment : BaseTeamFragment() {
                 }
                 teamsRepository.removeMember(teamId, memberId)
                 loadMembers()
-                onMemberChangeListener?.onMemberChanged()
+                onMemberChangeListener?.onChanged()
                 requestsViewModel.fetchMembers(teamId)
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Error removing member: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -153,7 +153,7 @@ class MembersFragment : BaseTeamFragment() {
                 teamsRepository.updateTeamLeader(teamId, userId)
                 loadMembers()
                 Toast.makeText(requireContext(), getString(R.string.leader_selected), Toast.LENGTH_SHORT).show()
-                onMemberChangeListener?.onMemberChanged()
+                onMemberChangeListener?.onChanged()
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Error making leader: ${e.message}", Toast.LENGTH_SHORT).show()
             }

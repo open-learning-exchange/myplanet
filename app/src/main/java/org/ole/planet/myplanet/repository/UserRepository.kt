@@ -70,6 +70,7 @@ interface UserRepository {
 
     suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String>
 
+    suspend fun getCurrentUserId(): String?
     suspend fun getUserModel(): UserEntity?
     suspend fun getUserProfile(): UserEntity?
     suspend fun getUserImageUrl(): String?

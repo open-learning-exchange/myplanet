@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import dagger.Lazy
 import java.util.Calendar
 import java.util.Date
+import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
@@ -332,6 +333,36 @@ class NotificationsRepositoryImpl @Inject constructor(
     override suspend fun markNotificationsSynced(syncResults: List<Pair<String, String?>>) {
         if (syncResults.isEmpty()) return
         notificationDao.markSynced(syncResults)
+    }
+
+    override fun resolveType(type: String, message: String, subType: String?): String {
+        if (type.lowercase(Locale.ROOT) in NotificationsRepository.KNOWN_TYPES) return type.lowercase(Locale.ROOT)
+        val lower = message.lowercase(Locale.ROOT)
+        // Raw server type "team" covers every team-related event (message/request/added/rejected/removed) in
+        // whatever language the server rendered the message in, so classify structurally first and only fall
+        // back to English message-sniffing to pick a more specific sub-bucket when it's recognizable.
+        if (type == "team") {
+            if (subType != null) return subType
+            return when {
+                lower.contains("requested to join") || lower.contains("wants to join") ||
+                    lower.contains("solicitado unirse") -> "join_request"
+                lower.contains("posted a message on") || lower.contains("posted a new voice") ||
+                    lower.contains("new voice in") || lower.contains("posted in") -> "chat"
+                else -> "team_join"
+            }
+        }
+        if (type == "newTask") return "task"
+        if (type == "newResource") return "resource"
+        return when {
+            lower.contains("requested to join") || lower.contains("wants to join") -> "join_request"
+            lower.contains("added you to") || lower.contains("you've been added") || lower.contains("you have been added") -> "team_join"
+            lower.contains("replied to your") || lower.contains("replied on your") || lower.contains("new reply to") -> "voice_reply"
+            lower.contains("posted a new voice") || lower.contains("new voice in") || lower.contains("posted in") -> "chat"
+            lower.contains("is due") || lower.contains("due:") -> "task"
+            lower.contains("storage") -> "storage"
+            lower.contains("resource") -> "resource"
+            else -> "notification"
+        }
     }
 
     private fun parseNotification(doc: JsonObject): AppNotification? {

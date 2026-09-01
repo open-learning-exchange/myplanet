@@ -22,7 +22,6 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.health.HealthExaminationAdapter.HealthExaminationViewHolder
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.Utilities
@@ -140,18 +139,7 @@ class HealthExaminationAdapter(
             checkEmptyInt(realmExamination.pulse), realmExamination.bp, checkEmpty(realmExamination.height),
             checkEmpty(realmExamination.weight), realmExamination.vision, realmExamination.hearing).trimIndent()
 
-        var conditionsText = ""
-        try {
-            val conditionsMap = JsonUtils.gson.fromJson(realmExamination.conditions, JsonObject::class.java)
-            if (conditionsMap != null) {
-                conditionsText = conditionsMap.keySet()
-                    .filter { conditionsMap[it].asBoolean }
-                    .joinToString(", ")
-            }
-        } catch (e: Exception) {
-            // Ignore parsing errors and leave empty
-        }
-        alertExaminationBinding.tvCondition.text = conditionsText
+        alertExaminationBinding.tvCondition.text = HealthExamination.formatConditions(realmExamination.conditions)
         showEncryptedData(alertExaminationBinding.tvOtherNotes, encrypted)
 
         val dialog = AlertDialog.Builder(context, R.style.CustomAlertDialog)
