@@ -471,6 +471,9 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             answers = mutableListOf()
 
             if (team != null) {
+                // teamObject and membershipDoc are @Ignore, so this column is the only team
+                // linkage that survives the write and can be read back at upload time
+                this.teamId = request.teamId
                 teamObject = TeamReference().apply {
                     _id = team._id
                     name = team.name
@@ -810,6 +813,27 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return `object`
     }
 
+    // Planet reads the owning team of a survey response from this field; without it a response
+    // recorded for a team never shows up in that team's submission count.
+    private suspend fun resolveTeamJson(submission: Submission): JsonObject? {
+        val teamRef = submission.teamObject
+            ?: submission.teamId?.takeIf { it.isNotEmpty() }?.let { teamId ->
+                teamsRepositoryProvider.get().getTeamById(teamId)?.let { team ->
+                    TeamReference().apply {
+                        _id = team._id
+                        name = team.name
+                        this.type = team.type ?: "team"
+                    }
+                }
+            }
+            ?: return null
+        return JsonObject().apply {
+            addProperty("_id", teamRef._id)
+            addProperty("name", teamRef.name)
+            addProperty("type", teamRef.type)
+        }
+    }
+
     override suspend fun serializeSubmission(submission: Submission, source: String, parentCode: String, user: UserEntity?): JsonObject {
         val jsonObject = JsonObject()
 
@@ -826,6 +850,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
             jsonObject.addProperty("parentId", submission.parentId ?: "")
             jsonObject.addProperty("type", submission.type ?: "survey")
+            resolveTeamJson(submission)?.let { jsonObject.add("team", it) }
             jsonObject.addProperty("grade", submission.grade)
             jsonObject.addProperty("startTime", submission.startTime)
             jsonObject.addProperty("lastUpdateTime", submission.lastUpdateTime)

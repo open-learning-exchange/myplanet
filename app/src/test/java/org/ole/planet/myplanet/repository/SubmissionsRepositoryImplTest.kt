@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao.UploadedPhoto
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.ExamQuestion
+import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.UserEntity
@@ -577,6 +578,70 @@ class SubmissionsRepositoryImplTest {
         val result = repository.serializeSubmission(submission, "planet", "parent", null)
 
         assertEquals("stored_user", result.getAsJsonObject("user").get("_id").asString)
+    }
+
+    @Test
+    fun `serializeSubmission stamps the owning team on the payload`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+
+        // Planet attributes a survey response to a team through this field, so a response
+        // recorded for a team has to carry it up.
+        coEvery { teamsRepositoryProvider.get().getTeamById("team1") } returns MyTeam().apply {
+            _id = "team1"
+            name = "Team One"
+            type = "team"
+        }
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
+            teamId = "team1"
+        }
+
+        val result = repository.serializeSubmission(submission, "planet", "parent", null)
+
+        val team = result.getAsJsonObject("team")
+        assertEquals("team1", team.get("_id").asString)
+        assertEquals("Team One", team.get("name").asString)
+        assertEquals("team", team.get("type").asString)
+    }
+
+    @Test
+    fun `serializeSubmission omits the team for a submission with no team`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
+        }
+
+        val result = repository.serializeSubmission(submission, "planet", "parent", null)
+
+        assertNull(result.get("team"))
+    }
+
+    @Test
+    fun `createExamSubmission persists the team id so upload can read it back`() = runTest {
+        val exam = StepExam().apply {
+            id = "exam_id"
+            courseId = "course_id"
+        }
+        coEvery { teamsRepositoryProvider.get().getTeamById("team1") } returns MyTeam().apply {
+            _id = "team1"
+            name = "Team One"
+            type = "team"
+        }
+
+        val result = repository.createExamSubmission(
+            CreateExamSubmissionRequest("user", "dob", "gender", exam, "type", "team1")
+        )
+
+        assertEquals("team1", result?.teamId)
+        coVerify { submissionDao.upsertAll(match { it.single().teamId == "team1" }) }
     }
 
     @Test
