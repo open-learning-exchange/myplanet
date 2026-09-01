@@ -56,7 +56,7 @@ class RequestsViewModel @Inject constructor(
             val result = teamsRepository.respondToMemberRequest(teamId, userId, isAccepted)
             if (result.isSuccess) {
                 _successAction.emit(Unit)
-                launch { teamsRepository.recordTeamActivity() }
+                teamsRepository.recordTeamActivity()
             } else {
                 _uiState.value = originalState
             }

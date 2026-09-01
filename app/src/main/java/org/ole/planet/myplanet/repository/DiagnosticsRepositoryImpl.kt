@@ -27,7 +27,9 @@ class DiagnosticsRepositoryImpl @Inject constructor(
     }
 
     private fun buildApkLog(
-        spm: SharedPrefManager,
+        parentCode: String,
+        planetCode: String,
+        versionName: String?,
         modelId: String?,
         time: String,
         type: String,
@@ -35,12 +37,12 @@ class DiagnosticsRepositoryImpl @Inject constructor(
     ): ApkLog {
         return ApkLog().apply {
             id = "${UUID.randomUUID()}"
-            parentCode = spm.getParentCode()
-            createdOn = spm.getPlanetCode()
+            this.parentCode = parentCode
+            createdOn = planetCode
             modelId?.let { userId = it }
             this.time = time
             page = ""
-            version = VersionUtils.getVersionName(context)
+            version = versionName
             this.type = type
             if (error.isNotEmpty()) {
                 this.error = error
@@ -51,7 +53,15 @@ class DiagnosticsRepositoryImpl @Inject constructor(
     override suspend fun saveLogToRoom(type: String, error: String, time: String): Boolean {
         return try {
             val model = userSessionManager.getUserModel()
-            val log = buildApkLog(sharedPrefManager, model?.id, time, type, error)
+            val log = buildApkLog(
+                sharedPrefManager.getParentCode(),
+                sharedPrefManager.getPlanetCode(),
+                VersionUtils.getVersionName(context),
+                model?.id,
+                time,
+                type,
+                error,
+            )
             apkLogDao.insert(log)
             true
         } catch (e: Exception) {
@@ -64,24 +74,11 @@ class DiagnosticsRepositoryImpl @Inject constructor(
         if (pendingLogs.isEmpty()) return true
         return try {
             val model = userSessionManager.getUserModel()
-            val versionName = VersionUtils.getVersionName(context)
             val parentCode = sharedPrefManager.getParentCode()
             val planetCode = sharedPrefManager.getPlanetCode()
-
+            val versionName = VersionUtils.getVersionName(context)
             val logsToInsert = pendingLogs.map { pending ->
-                ApkLog().apply {
-                    id = "${UUID.randomUUID()}"
-                    this.parentCode = parentCode
-                    this.createdOn = planetCode
-                    model?.let { userId = it.id }
-                    this.time = pending.time
-                    page = ""
-                    version = versionName
-                    this.type = pending.type
-                    if (pending.error.isNotEmpty()) {
-                        this.error = pending.error
-                    }
-                }
+                buildApkLog(parentCode, planetCode, versionName, model?.id, pending.time, pending.type, pending.error)
             }
             apkLogDao.insertAll(logsToInsert)
             true

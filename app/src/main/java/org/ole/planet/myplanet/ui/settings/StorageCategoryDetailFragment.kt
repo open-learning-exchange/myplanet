@@ -1,12 +1,10 @@
 package org.ole.planet.myplanet.ui.settings
 
 import android.app.Dialog
-import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -32,27 +30,20 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
     private val viewModel: StorageCategoryViewModel by viewModels()
 
     private var categoryLabel: String = ""
-    private var extensions: Set<String> = emptySet()
-    private var allKnownExtensions: Set<String> = emptySet()
+    private var categoryIndex: Int = -1
 
     private lateinit var adapter: ResourceAdapter
 
     companion object {
         private const val ARG_LABEL = "label"
-        private const val ARG_EXTENSIONS = "extensions"
-        private const val ARG_ALL_KNOWN = "all_known"
+        private const val ARG_CATEGORY_INDEX = "category_index"
         const val RESULT_KEY = "category_deleted"
         const val PAYLOAD_CHECKED_CHANGED = "payload_checked_changed"
 
-        fun newInstance(
-            label: String,
-            extensions: List<String>,
-            allKnownExtensions: List<String>
-        ) = StorageCategoryDetailFragment().apply {
+        fun newInstance(label: String, categoryIndex: Int) = StorageCategoryDetailFragment().apply {
             arguments = Bundle().apply {
                 putString(ARG_LABEL, label)
-                putStringArrayList(ARG_EXTENSIONS, ArrayList(extensions))
-                putStringArrayList(ARG_ALL_KNOWN, ArrayList(allKnownExtensions))
+                putInt(ARG_CATEGORY_INDEX, categoryIndex)
             }
         }
     }
@@ -60,21 +51,14 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         categoryLabel = arguments?.getString(ARG_LABEL) ?: ""
-        extensions = arguments?.getStringArrayList(ARG_EXTENSIONS)?.toSet() ?: emptySet()
-        allKnownExtensions = arguments?.getStringArrayList(ARG_ALL_KNOWN)?.toSet() ?: emptySet()
+        categoryIndex = arguments?.getInt(ARG_CATEGORY_INDEX, -1) ?: -1
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
-        dialog.setOnShowListener { d: DialogInterface ->
-            val sheet = (d as BottomSheetDialog)
-                .findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
-            sheet?.let {
-                BottomSheetBehavior.from(it).apply {
-                    state = BottomSheetBehavior.STATE_EXPANDED
-                    skipCollapsed = true
-                }
-            }
+        dialog.behavior.apply {
+            state = BottomSheetBehavior.STATE_EXPANDED
+            skipCollapsed = true
         }
         return dialog
     }
@@ -115,7 +99,11 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         }
 
         observeViewModel()
-        viewModel.loadResources(extensions, allKnownExtensions)
+        val category = StorageCategories.all.getOrNull(categoryIndex)
+        viewModel.loadResources(
+            extensions = category?.extensions ?: emptySet(),
+            allKnownExtensions = StorageCategories.allKnownExtensions
+        )
     }
 
     private fun observeViewModel() {

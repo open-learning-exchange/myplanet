@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.util.Base64
+import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Calendar
@@ -52,6 +53,7 @@ class CoursesRepositoryImpl @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val tagsRepository: TagsRepository,
     private val ratingsRepository: RatingsRepository,
+    private val resourcesRepository: ResourcesRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val certificationDao: CertificationDao,
     private val courseDao: CourseDao,
@@ -269,7 +271,7 @@ class CoursesRepositoryImpl @Inject constructor(
 
         val trimmedQuery = searchText.trim()
         if (trimmedQuery.isEmpty()) {
-            return filteredCandidates.sortedBy { it.courseTitle?.lowercase().orEmpty() }
+            return filteredCandidates.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.courseTitle.orEmpty() })
         }
 
         val normalizedQueryParts = trimmedQuery.splitToSequence(" ")
@@ -814,7 +816,7 @@ class CoursesRepositoryImpl @Inject constructor(
         }
 
         val correctChoiceArray = JsonUtils.getJsonArray("correctChoice", questionJson)
-        return if (correctChoiceArray.size() > 0) {
+        return if (!correctChoiceArray.isEmpty()) {
             correctChoiceArray.map { resolveChoiceValue(it.asString) }
         } else {
             val correctChoice = JsonUtils.getString("correctChoice", questionJson)
@@ -855,6 +857,16 @@ class CoursesRepositoryImpl @Inject constructor(
         }
         if (libraries.isNotEmpty()) {
             myLibraryDao.upsertAll(libraries)
+            libraries.forEach { library ->
+                if (library.mediaType == "HTML" && library.resourceLocalAddress.isNullOrBlank()) {
+                    val resourceId = library.resourceId ?: return@forEach
+                    try {
+                        resourcesRepository.reconcileHtmlResourceOffline(resourceId)
+                    } catch (e: Exception) {
+                        Log.w("CoursesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
+                    }
+                }
+            }
         }
     }
 
@@ -866,7 +878,6 @@ class CoursesRepositoryImpl @Inject constructor(
         } else {
             courseStepDao.getByCourseIds(courseIds)
                 .groupBy { it.courseId ?: "" }
-                .mapValues { entry -> entry.value.map { it } }
         }
         return courses.map { course ->
             val courseKey = course.courseId ?: course.id
@@ -886,10 +897,10 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     private fun mergeUserIds(existingUserIds: List<String>?, newUserId: String?): List<String>? {
-        val merged = existingUserIds.orEmpty().filter { !it.isNullOrBlank() }.toMutableList()
-        if (!newUserId.isNullOrBlank() && !merged.contains(newUserId)) {
-            merged.add(newUserId)
+        val set = existingUserIds.orEmpty().filterTo(LinkedHashSet()) { it.isNotBlank() }
+        if (!newUserId.isNullOrBlank()) {
+            set.add(newUserId)
         }
-        return merged.distinct().takeIf { it.isNotEmpty() }
+        return set.toList().takeIf { it.isNotEmpty() }
     }
 }

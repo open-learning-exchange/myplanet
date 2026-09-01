@@ -9,12 +9,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class LeadersViewModel @Inject constructor(
-    private val sharedPrefManager: SharedPrefManager,
+    private val configurationsRepository: ConfigurationsRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
@@ -27,7 +27,7 @@ class LeadersViewModel @Inject constructor(
 
     private fun loadLeaders() {
         viewModelScope.launch(dispatcherProvider.default) {
-            val leadersString = sharedPrefManager.getCommunityLeaders()
+            val leadersString = configurationsRepository.getCommunityLeaders()
             if (leadersString.isNotEmpty()) {
                 _leaders.value = UserEntity.parseLeadersJson(leadersString)
             } else {

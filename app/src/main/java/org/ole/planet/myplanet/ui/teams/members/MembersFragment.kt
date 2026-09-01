@@ -11,35 +11,30 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.base.BaseTeamFragment
+import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.callback.OnMemberActionListener
-import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCombinedMembersBinding
 import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class MembersFragment : BaseTeamFragment() {
 
-    @Inject
-    lateinit var userSessionManager: UserSessionManager
-
     private val requestsViewModel: RequestsViewModel by viewModels()
     private var _binding: FragmentCombinedMembersBinding? = null
     private val binding get() = _binding!!
 
-    private var onMemberChangeListener: OnMemberChangeListener? = null
+    private var onMemberChangeListener: OnChangedListener? = null
     private var membersAdapter: MembersAdapter? = null
     private var requestsAdapter: RequestsAdapter? = null
 
-    fun setOnMemberChangeListener(listener: OnMemberChangeListener) {
+    fun setOnMemberChangeListener(listener: OnChangedListener) {
         onMemberChangeListener = listener
     }
 
@@ -74,7 +69,7 @@ class MembersFragment : BaseTeamFragment() {
         binding.rvRequests.adapter = requestsAdapter
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val resolvedUser = userSessionManager.getUserModel() ?: UserEntity()
+            val resolvedUser = ensureUserResolved() ?: UserEntity()
             requestsAdapter?.setUser(resolvedUser)
             membersAdapter?.setUserId(resolvedUser.id)
         }
@@ -92,7 +87,7 @@ class MembersFragment : BaseTeamFragment() {
             }
         }
         collectWhenStarted(requestsViewModel.successAction) {
-            onMemberChangeListener?.onMemberChanged()
+            onMemberChangeListener?.onChanged()
             loadMembers()
         }
     }
@@ -100,7 +95,7 @@ class MembersFragment : BaseTeamFragment() {
     private fun loadMembers() {
         viewLifecycleOwner.lifecycleScope.launch {
             val members = teamsRepository.getJoinedMembersWithVisitInfo(teamId)
-            val currentUserId = userSessionManager.getUserModel()?.id
+            val currentUserId = ensureUserResolved()?.id
             val isLeader = members.any { it.user.id == currentUserId && it.isLeader }
             membersAdapter?.setUserId(currentUserId)
             membersAdapter?.updateData(members, isLeader)
@@ -144,7 +139,7 @@ class MembersFragment : BaseTeamFragment() {
                 }
                 teamsRepository.removeMember(teamId, memberId)
                 loadMembers()
-                onMemberChangeListener?.onMemberChanged()
+                onMemberChangeListener?.onChanged()
                 requestsViewModel.fetchMembers(teamId)
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Error removing member: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -156,11 +151,9 @@ class MembersFragment : BaseTeamFragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 teamsRepository.updateTeamLeader(teamId, userId)
-                val members = teamsRepository.getJoinedMembersWithVisitInfo(teamId)
-                membersAdapter?.updateData(members, false)
                 loadMembers()
                 Toast.makeText(requireContext(), getString(R.string.leader_selected), Toast.LENGTH_SHORT).show()
-                onMemberChangeListener?.onMemberChanged()
+                onMemberChangeListener?.onChanged()
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Error making leader: ${e.message}", Toast.LENGTH_SHORT).show()
             }

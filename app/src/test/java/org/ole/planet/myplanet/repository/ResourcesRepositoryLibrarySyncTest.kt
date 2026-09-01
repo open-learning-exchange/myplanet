@@ -16,6 +16,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
@@ -138,5 +139,59 @@ class ResourcesRepositoryLibrarySyncTest {
         repository.batchInsertResources(listOf(resourceDoc("res1", "Algebra")))
 
         assertNull(myLibraryDao.getById("res1")?.openWhichFile)
+    }
+
+    @Test
+    fun `getSyncable includes online rows and offline rows with stale rev but excludes up to date offline rows`() = runBlocking {
+        val online = MyLibrary().apply { id = "r1"; resourceOffline = false; isPrivate = false }
+        val offlineStale = MyLibrary().apply { id = "r2"; resourceOffline = true; resourceLocalAddress = "a.pdf"; _rev = "2-b"; downloadedRev = "1-a"; isPrivate = false }
+        val offlineCurrent = MyLibrary().apply { id = "r3"; resourceOffline = true; resourceLocalAddress = "b.pdf"; _rev = "1-a"; downloadedRev = "1-a"; isPrivate = false }
+        val offlineNoAddress = MyLibrary().apply { id = "r4"; resourceOffline = true; resourceLocalAddress = null; _rev = "2-b"; downloadedRev = "1-a"; isPrivate = false }
+
+        myLibraryDao.upsertAll(listOf(online, offlineStale, offlineCurrent, offlineNoAddress))
+
+        val syncable = repository.getAllLibrariesToSync()
+        val syncableIds = syncable.map { it.id }.toSet()
+
+        assertEquals(setOf("r1", "r2"), syncableIds)
+    }
+
+    @Test
+    fun `getPublicNeedingUpdateForUserPattern and countPublicNeedingUpdateForUserPattern filter by shelf and predicate`() = runBlocking {
+        val matching = MyLibrary().apply {
+            id = "m1"
+            isPrivate = false
+            setUserId("userA")
+            resourceOffline = false
+        }
+        val privateRes = MyLibrary().apply {
+            id = "m2"
+            isPrivate = true
+            setUserId("userA")
+            resourceOffline = false
+        }
+        val upToDate = MyLibrary().apply {
+            id = "m3"
+            isPrivate = false
+            setUserId("userA")
+            resourceOffline = true
+            resourceLocalAddress = "c.pdf"
+            _rev = "1-a"
+            downloadedRev = "1-a"
+        }
+        val userBRes = MyLibrary().apply {
+            id = "m4"
+            isPrivate = false
+            setUserId("userB")
+            resourceOffline = false
+        }
+
+        myLibraryDao.upsertAll(listOf(matching, privateRes, upToDate, userBRes))
+
+        val userAList = repository.getLibraryListForUser("userA")
+        assertEquals(listOf("m1"), userAList.map { it.id })
+
+        val count = repository.countLibrariesNeedingUpdate("userA")
+        assertEquals(1, count)
     }
 }

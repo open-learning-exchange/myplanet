@@ -11,19 +11,24 @@ import org.ole.planet.myplanet.model.TagItem
 
 class ResourcesSearchUtilsTest {
 
-    @Test
-    fun testSearchLocalModels() {
-        val model1 = ResourceListModel(
+    private fun model(
+        id: String,
+        title: String,
+        description: String? = null,
+        author: String? = null,
+        tags: List<TagItem> = emptyList()
+    ): ResourceListModel =
+        ResourceListModel(
             library = mockk<MyLibrary>(relaxed = true) {
                 every { titleNormal } returns null
-                every { description } returns null
-                every { author } returns null
+                every { this@mockk.description } returns description
+                every { this@mockk.author } returns author
                 every { publisher } returns null
             },
             item = ResourceItem(
-                id = "1",
-                title = "Apple Pie Recipe",
-                description = null,
+                id = id,
+                title = title,
+                description = description,
                 createdDate = 0L,
                 averageRating = null,
                 timesRated = 0,
@@ -34,56 +39,22 @@ class ResourcesSearchUtilsTest {
                 filename = null
             ),
             rating = null,
-            tags = emptyList()
-        )
-        val model2 = ResourceListModel(
-            library = mockk<MyLibrary>(relaxed = true) {
-                every { titleNormal } returns null
-                every { description } returns "Delicious pastry with cinnamon"
-                every { author } returns "Baker John"
-                every { publisher } returns null
-            },
-            item = ResourceItem(
-                id = "2",
-                title = "Banana Bread",
-                description = "Delicious pastry with cinnamon",
-                createdDate = 0L,
-                averageRating = null,
-                timesRated = 0,
-                resourceId = null,
-                isOffline = false,
-                _rev = null,
-                uploadDate = null,
-                filename = null
-            ),
-            rating = null,
-            tags = listOf(TagItem(id = "t1", name = "Dessert"))
-        )
-        val model3 = ResourceListModel(
-            library = mockk<MyLibrary>(relaxed = true) {
-                every { titleNormal } returns null
-                every { description } returns null
-                every { author } returns null
-                every { publisher } returns null
-            },
-            item = ResourceItem(
-                id = "3",
-                title = "Apple Juice",
-                description = null,
-                createdDate = 0L,
-                averageRating = null,
-                timesRated = 0,
-                resourceId = null,
-                isOffline = false,
-                _rev = null,
-                uploadDate = null,
-                filename = null
-            ),
-            rating = null,
-            tags = emptyList()
+            tags = tags
         )
 
-        val models = listOf(model1, model2, model3)
+    @Test
+    fun testSearchLocalModels() {
+        val models = listOf(
+            model("1", "Apple Pie Recipe"),
+            model(
+                "2",
+                "Banana Bread",
+                description = "Delicious pastry with cinnamon",
+                author = "Baker John",
+                tags = listOf(TagItem(id = "t1", name = "Dessert"))
+            ),
+            model("3", "Apple Juice"),
+        )
 
         val resultEmpty = ResourcesSearchUtils.searchLocalModels(models, "")
         assertEquals(3, resultEmpty.size)
@@ -135,5 +106,42 @@ class ResourcesSearchUtilsTest {
         assertEquals("1", result[0].id)
         assertEquals("2", result[1].id)
         assertEquals("3", result[2].id)
+    }
+
+    @Test
+    fun testSearchPrefixRanksBeforeContains() {
+        val models = listOf(
+            model("1", "Green Apple Care"),
+            model("2", "Apple Pie"),
+        )
+
+        val result = ResourcesSearchUtils.searchLocalModels(models, "apple")
+        assertEquals(2, result.size)
+        assertEquals("Apple Pie", result[0].item.title)
+        assertEquals("Green Apple Care", result[1].item.title)
+    }
+
+    @Test
+    fun testSearchMultiWordQueryUsesAllParts() {
+        val models = listOf(
+            model("1", "Apple Pie Recipe"),
+            model("2", "Apple Crumble"),
+        )
+
+        val result = ResourcesSearchUtils.searchLocalModels(models, "apple recipe")
+        assertEquals(1, result.size)
+        assertEquals("Apple Pie Recipe", result[0].item.title)
+    }
+
+    @Test
+    fun testSearchDiacriticsNormalized() {
+        val models = listOf(
+            model("1", "Café Menu"),
+            model("2", "Caffe Latte"),
+        )
+
+        val result = ResourcesSearchUtils.searchLocalModels(models, "cafe")
+        assertEquals(1, result.size)
+        assertEquals("Café Menu", result[0].item.title)
     }
 }

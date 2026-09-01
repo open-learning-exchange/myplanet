@@ -65,10 +65,8 @@ class EventsRepositoryImplTest {
 
     @Test
     fun getJoinedMembers() = runTest {
-        coEvery { meetupDao.getMembersByMeetupId("meetup1") } returns listOf(
-            Meetup().apply { userId = "user1" },
-            Meetup().apply { userId = "user2" },
-            Meetup().apply { userId = "user1" }
+        coEvery { meetupDao.getMemberUserIdsByMeetupId("meetup1") } returns listOf(
+            "user1", "user2", "user1"
         )
         coEvery { userDao.getUsersByAnyIds(any()) } returns listOf(
             UserEntity(id = "user1"),

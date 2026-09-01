@@ -10,10 +10,15 @@ permissions:
   contents: write
   actions: write
 
+concurrency:
+  group: release-${{ github.sha }}
+  cancel-in-progress: false
+
 jobs:
   release:
     name: myPlanet release
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -36,8 +41,24 @@ jobs:
         with:
           gradle-version: wrapper
 
+      - name: restore project build dir
+        uses: actions/cache@v6
+        with:
+          path: |
+            app/build
+            !app/build/outputs/**
+            .gradle/*
+            !.gradle/configuration-cache
+          key: build-dir-release-${{ matrix.build }}-${{ github.sha }}
+          restore-keys: |
+            build-dir-release-${{ matrix.build }}-
+
       - name: set release version
-        run: echo ANDROID_VERSION=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' app/build.gradle) >> $GITHUB_ENV
+        run: |
+          version_output=$(.github/scripts/version.sh read app/build.gradle)
+          eval "$version_output"
+          echo "ANDROID_VERSION=${name}" >> $GITHUB_ENV
+          echo "ANDROID_VERSION_CODE=${code}" >> $GITHUB_ENV
 
       - name: build release APK and AAB
         env:
@@ -52,12 +73,11 @@ jobs:
           mkdir -p sign
           cp app/build/outputs/bundle/${FLAVOR}Release/app-${FLAVOR}-release.aab sign/.
           cp app/build/outputs/apk/${FLAVOR}/release/app-${FLAVOR}-release-unsigned.apk sign/.
-          VERSION=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' app/build.gradle)
+          VERSION="${ANDROID_VERSION}"
           if [ "$FLAVOR" == "lite" ]; then
             VERSION="${VERSION}-lite"
           fi
           echo "ANDROID_VERSION_NAME=${VERSION}" >> $GITHUB_ENV
-          echo ANDROID_VERSION_CODE=$(grep versionCode app/build.gradle | sed 's/[^0-9]//g') >> $GITHUB_ENV
 
       - name: sign release APK and AAB
         uses: dogi/sign-android-release@v5.1
