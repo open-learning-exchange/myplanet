@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import android.util.Log
 import androidx.sqlite.db.SimpleSQLiteQuery
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -190,8 +191,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun getLibraryListForUser(userId: String?): List<MyLibrary> {
         if (userId == null) return emptyList()
-        return myLibraryDao.getPublicForUserPattern(userIdPattern(userId))
-            .filter { it.needToUpdate() }
+        return myLibraryDao.getPublicNeedingUpdateForUserPattern(userIdPattern(userId))
     }
 
     override suspend fun getMyLibrary(userId: String?): List<MyLibrary> {
@@ -211,8 +211,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun countLibrariesNeedingUpdate(userId: String?): Int {
         if (userId == null) return 0
-        return myLibraryDao.getPublicForUserPattern(userIdPattern(userId))
-            .count { it.needToUpdate() }
+        return myLibraryDao.countPublicNeedingUpdateForUserPattern(userIdPattern(userId))
     }
 
     override suspend fun resourceTitleExists(title: String): Boolean {
@@ -323,8 +322,15 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun markResourceOfflineByUrl(url: String) {
         val localAddress = FileUtils.getFileNameFromUrl(url)
+        val resourceId = FileUtils.getIdFromUrl(url)
+        val relativePath = FileUtils.getResourceRelativePathFromUrl(url)
+
         if (localAddress.isNotBlank()) {
             markResourceOfflineByLocalAddress(localAddress)
+        }
+
+        if (resourceId.isNotBlank()) {
+            markResourceOfflineByResourceId(resourceId, relativePath)
         }
     }
 
@@ -337,6 +343,41 @@ class ResourcesRepositoryImpl @Inject constructor(
         if (results.isNotEmpty()) {
             myLibraryDao.upsertAll(results)
         }
+    }
+
+    override suspend fun reconcileHtmlResourceOffline(resourceId: String) {
+        val library = myLibraryDao.getByResourceId(resourceId) ?: return
+        if (library.isResourceOffline()) {
+            return
+        }
+        val entryFile = library.openWhichFile?.takeIf { it.isNotBlank() } ?: "index.html"
+        val directory = File(MainApplication.context.getExternalFilesDir(null), "ole/$resourceId")
+        val entryExists = withContext(dispatcherProvider.io) {
+            FileUtils.resolveHtmlEntryFile(directory, entryFile)?.exists() == true
+        }
+        if (!entryExists) {
+            return
+        }
+        library.resourceOffline = true
+        library.downloadedRev = library._rev
+        if (library.resourceLocalAddress.isNullOrBlank()) {
+            library.resourceLocalAddress = entryFile
+        }
+        myLibraryDao.upsert(library)
+    }
+
+    private suspend fun markResourceOfflineByResourceId(resourceId: String, relativePath: String) {
+        val library = myLibraryDao.getByResourceId(resourceId) ?: return
+        val entryFile = library.openWhichFile?.takeIf { it.isNotBlank() } ?: "index.html"
+        if (relativePath != entryFile) {
+            return
+        }
+        library.resourceOffline = true
+        library.downloadedRev = library._rev
+        if (library.resourceLocalAddress.isNullOrBlank()) {
+            library.resourceLocalAddress = relativePath
+        }
+        myLibraryDao.upsert(library)
     }
 
     override fun getRecentResources(userId: String): Flow<List<MyLibrary>> {
@@ -424,7 +465,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getAllLibrariesToSync(): List<MyLibrary> {
-        return myLibraryDao.getSyncable().filter { it.needToUpdate() }
+        return myLibraryDao.getSyncable()
     }
 
     override suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String): Result<Unit> {
@@ -456,14 +497,13 @@ class ResourcesRepositoryImpl @Inject constructor(
         val targetUserId = userId ?: sharedPrefManager.getUserId().ifEmpty { null }
 
         if (!targetUserId.isNullOrBlank()) {
-            val userLibrariesNeedingUpdate = myLibraryDao.getPublicForUserPattern(userIdPattern(targetUserId))
-                .filter { it.needToUpdate() }
+            val userLibrariesNeedingUpdate = myLibraryDao.getPublicNeedingUpdateForUserPattern(userIdPattern(targetUserId))
             if (userLibrariesNeedingUpdate.isNotEmpty()) {
                 return userLibrariesNeedingUpdate
             }
         }
 
-        return myLibraryDao.getPublic().filter { it.needToUpdate() }
+        return myLibraryDao.getPublicNeedingUpdate()
     }
 
     override suspend fun removeDeletedResources(currentIds: List<String?>) {
@@ -589,6 +629,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
         if (librariesToUpsert.isNotEmpty()) {
             myLibraryDao.upsertAll(librariesToUpsert)
+            reconcileHtmlLibraries(librariesToUpsert)
         }
         return processedCount
     }
@@ -631,8 +672,23 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
         if (librariesToUpsert.isNotEmpty()) {
             myLibraryDao.upsertAll(librariesToUpsert)
+            reconcileHtmlLibraries(librariesToUpsert)
         }
         return savedIds
+    }
+
+    // Detects HTML resources already present on disk from a prior install/sync that never got a resourceLocalAddress.
+    private suspend fun reconcileHtmlLibraries(libraries: List<MyLibrary>) {
+        libraries.forEach { library ->
+            if (library.mediaType == "HTML" && library.resourceLocalAddress.isNullOrBlank()) {
+                val resourceId = library.resourceId ?: return@forEach
+                try {
+                    reconcileHtmlResourceOffline(resourceId)
+                } catch (e: Exception) {
+                    Log.w("ResourcesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
+                }
+            }
+        }
     }
 
     private suspend fun getResourceRatingsBulk(ids: List<String>, userId: String?): Map<String?, JsonObject> {

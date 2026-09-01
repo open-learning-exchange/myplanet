@@ -8,7 +8,6 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.slot
 import io.mockk.unmockkAll
-import io.mockk.unmockkObject
 import io.mockk.verify
 import java.io.File
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -25,7 +24,6 @@ import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.CrashLogStore
 import org.ole.planet.myplanet.utils.VersionUtils
 
@@ -34,7 +32,7 @@ class DiagnosticsRepositoryImplTest {
     private lateinit var context: Context
     private lateinit var apkLogDao: ApkLogDao
     private lateinit var sharedPrefManager: SharedPrefManager
-    private lateinit var userSessionManager: UserSessionManager
+    private lateinit var userRepository: UserRepository
     private lateinit var repository: DiagnosticsRepositoryImpl
 
     @After
@@ -47,7 +45,7 @@ class DiagnosticsRepositoryImplTest {
         context = mockk()
         apkLogDao = mockk(relaxed = true)
         sharedPrefManager = mockk()
-        userSessionManager = mockk()
+        userRepository = mockk()
 
         every { sharedPrefManager.getParentCode() } returns "parent-123"
         every { sharedPrefManager.getPlanetCode() } returns "planet-456"
@@ -55,13 +53,13 @@ class DiagnosticsRepositoryImplTest {
         mockkObject(VersionUtils)
         every { VersionUtils.getVersionName(any()) } returns "0.63.42"
 
-        repository = DiagnosticsRepositoryImpl(context, apkLogDao, sharedPrefManager, userSessionManager)
+        repository = DiagnosticsRepositoryImpl(context, apkLogDao, userRepository, sharedPrefManager)
     }
 
     @Test
     fun `saveLogToRoom builds a log reusing buildApkLog fields`() = runTest {
         val user = UserEntity(id = "user-1")
-        coEvery { userSessionManager.getUserModel() } returns user
+        coEvery { userRepository.getUserModel() } returns user
 
         val inserted = slot<ApkLog>()
         coEvery { apkLogDao.insert(capture(inserted)) } returns Unit
@@ -84,7 +82,7 @@ class DiagnosticsRepositoryImplTest {
 
     @Test
     fun `saveLogToRoom leaves userId null when no user is logged in`() = runTest {
-        coEvery { userSessionManager.getUserModel() } returns null
+        coEvery { userRepository.getUserModel() } returns null
 
         val inserted = slot<ApkLog>()
         coEvery { apkLogDao.insert(capture(inserted)) } returns Unit
@@ -96,7 +94,7 @@ class DiagnosticsRepositoryImplTest {
 
     @Test
     fun `saveLogToRoom returns false on exception`() = runTest {
-        coEvery { userSessionManager.getUserModel() } throws RuntimeException("db down")
+        coEvery { userRepository.getUserModel() } throws RuntimeException("db down")
 
         val result = repository.saveLogToRoom("crash", "boom", "1700000000000")
 
@@ -115,7 +113,7 @@ class DiagnosticsRepositoryImplTest {
     @Test
     fun `saveLogsToRoom builds each log reusing buildApkLog fields`() = runTest {
         val user = UserEntity(id = "user-1")
-        coEvery { userSessionManager.getUserModel() } returns user
+        coEvery { userRepository.getUserModel() } returns user
 
         val inserted = slot<List<ApkLog>>()
         coEvery { apkLogDao.insertAll(capture(inserted)) } returns Unit
@@ -164,7 +162,7 @@ class DiagnosticsRepositoryImplTest {
 
     @Test
     fun `saveLogsToRoom leaves userId null when no user is logged in`() = runTest {
-        coEvery { userSessionManager.getUserModel() } returns null
+        coEvery { userRepository.getUserModel() } returns null
 
         val inserted = slot<List<ApkLog>>()
         coEvery { apkLogDao.insertAll(capture(inserted)) } returns Unit
@@ -181,7 +179,7 @@ class DiagnosticsRepositoryImplTest {
 
     @Test
     fun `saveLogsToRoom returns false on exception`() = runTest {
-        coEvery { userSessionManager.getUserModel() } throws RuntimeException("db down")
+        coEvery { userRepository.getUserModel() } throws RuntimeException("db down")
 
         val result = repository.saveLogsToRoom(
             listOf(CrashLogStore.PendingLog(File("/tmp/a.log"), "crash", "1700000000001", "err1"))
@@ -189,5 +187,65 @@ class DiagnosticsRepositoryImplTest {
 
         assertFalse(result)
         coVerify(exactly = 0) { apkLogDao.insertAll(any()) }
+    }
+
+    @Test
+    fun `saveLogToRoom prefers the identity codes carried by the user model`() = runTest {
+        val user = UserEntity(id = "user-1", planetCode = "planet-x", parentCode = "parent-y")
+        coEvery { userRepository.getUserModel() } returns user
+
+        val inserted = slot<ApkLog>()
+        coEvery { apkLogDao.insert(capture(inserted)) } returns Unit
+
+        val result = repository.saveLogToRoom("crash", "boom", "1700000000000")
+
+        assertTrue(result)
+        val log = inserted.captured
+        assertEquals("user-1", log.userId)
+        assertEquals("parent-y", log.parentCode)
+        assertEquals("planet-x", log.createdOn)
+        verify(exactly = 0) { sharedPrefManager.getParentCode() }
+        verify(exactly = 0) { sharedPrefManager.getPlanetCode() }
+    }
+
+    @Test
+    fun `saveLogToRoom falls back to SharedPrefManager when the user codes are blank`() = runTest {
+        val user = UserEntity(id = "user-1", planetCode = "", parentCode = "  ")
+        coEvery { userRepository.getUserModel() } returns user
+
+        val inserted = slot<ApkLog>()
+        coEvery { apkLogDao.insert(capture(inserted)) } returns Unit
+
+        repository.saveLogToRoom("crash", "boom", "1700000000000")
+
+        val log = inserted.captured
+        assertEquals("user-1", log.userId)
+        assertEquals("parent-123", log.parentCode)
+        assertEquals("planet-456", log.createdOn)
+    }
+
+    @Test
+    fun `saveLogsToRoom prefers the identity codes carried by the user model`() = runTest {
+        val user = UserEntity(id = "user-1", planetCode = "planet-x", parentCode = "parent-y")
+        coEvery { userRepository.getUserModel() } returns user
+
+        val inserted = slot<List<ApkLog>>()
+        coEvery { apkLogDao.insertAll(capture(inserted)) } returns Unit
+
+        val pending = listOf(
+            CrashLogStore.PendingLog(File("/tmp/a.log"), "crash", "1700000000001", "err1"),
+            CrashLogStore.PendingLog(File("/tmp/b.log"), "anr", "1700000000002", "err2")
+        )
+
+        val result = repository.saveLogsToRoom(pending)
+
+        assertTrue(result)
+        inserted.captured.forEach { log ->
+            assertEquals("user-1", log.userId)
+            assertEquals("parent-y", log.parentCode)
+            assertEquals("planet-x", log.createdOn)
+        }
+        verify(exactly = 0) { sharedPrefManager.getParentCode() }
+        verify(exactly = 0) { sharedPrefManager.getPlanetCode() }
     }
 }

@@ -6,16 +6,17 @@ import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.model.ApkLog
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.CrashLogStore
 import org.ole.planet.myplanet.utils.VersionUtils
 
 class DiagnosticsRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val apkLogDao: ApkLogDao,
-    private val sharedPrefManager: SharedPrefManager,
-    private val userSessionManager: UserSessionManager
+    private val userRepository: UserRepository,
+    private val sharedPrefManager: SharedPrefManager
 ) : DiagnosticsRepository {
 
     override suspend fun getPendingApkLogs(): List<ApkLog> {
@@ -50,12 +51,18 @@ class DiagnosticsRepositoryImpl @Inject constructor(
         }
     }
 
+    private fun resolveParentCode(model: UserEntity?): String =
+        model?.parentCode?.takeIf { it.isNotBlank() } ?: sharedPrefManager.getParentCode()
+
+    private fun resolvePlanetCode(model: UserEntity?): String =
+        model?.planetCode?.takeIf { it.isNotBlank() } ?: sharedPrefManager.getPlanetCode()
+
     override suspend fun saveLogToRoom(type: String, error: String, time: String): Boolean {
         return try {
-            val model = userSessionManager.getUserModel()
+            val model = userRepository.getUserModel()
             val log = buildApkLog(
-                sharedPrefManager.getParentCode(),
-                sharedPrefManager.getPlanetCode(),
+                resolveParentCode(model),
+                resolvePlanetCode(model),
                 VersionUtils.getVersionName(context),
                 model?.id,
                 time,
@@ -73,10 +80,11 @@ class DiagnosticsRepositoryImpl @Inject constructor(
     override suspend fun saveLogsToRoom(pendingLogs: List<CrashLogStore.PendingLog>): Boolean {
         if (pendingLogs.isEmpty()) return true
         return try {
-            val model = userSessionManager.getUserModel()
-            val parentCode = sharedPrefManager.getParentCode()
-            val planetCode = sharedPrefManager.getPlanetCode()
+            val model = userRepository.getUserModel()
             val versionName = VersionUtils.getVersionName(context)
+            val parentCode = resolveParentCode(model)
+            val planetCode = resolvePlanetCode(model)
+
             val logsToInsert = pendingLogs.map { pending ->
                 buildApkLog(parentCode, planetCode, versionName, model?.id, pending.time, pending.type, pending.error)
             }

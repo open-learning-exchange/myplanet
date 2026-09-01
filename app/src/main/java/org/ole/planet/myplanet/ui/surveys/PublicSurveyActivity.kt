@@ -172,7 +172,7 @@ class PublicSurveyActivity : AppCompatActivity() {
             val choices = answer?.valueChoicesArray ?: JsonArray()
             when {
                 question.type.equals("selectMultiple", ignoreCase = true) -> payload.add(choices)
-                question.type.equals("select", ignoreCase = true) && choices.size() > 0 -> payload.add(choices[0])
+                question.type.equals("select", ignoreCase = true) && !choices.isEmpty() -> payload.add(choices[0])
                 else -> payload.add(JsonPrimitive(answer?.value.orEmpty()))
             }
         }

@@ -290,7 +290,7 @@ class DownloadService : Service() {
         return null
     }
 
-    private fun tryDownloadFromResult(
+    private suspend fun tryDownloadFromResult(
         result: DownloadResult,
         url: String,
         fromSync: Boolean,
@@ -357,7 +357,7 @@ class DownloadService : Service() {
     }
 
     @Throws(IOException::class)
-    private fun downloadFile(body: ResponseBody, url: String) {
+    private suspend fun downloadFile(body: ResponseBody, url: String) {
         val fileSize = body.contentLength()
         val finalFile = FileUtils.getSDPathFromUrl(this@DownloadService, url)
         finalFile.parentFile?.mkdirs()
@@ -486,14 +486,12 @@ class DownloadService : Service() {
         }
     }
 
-    private fun onDownloadComplete(url: String) {
+    private suspend fun onDownloadComplete(url: String) {
         if ((outputFile?.length() ?: 0) > 0) {
-            appScope.launch {
-                try {
-                    resourcesRepository.markResourceOfflineByUrl(url)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+            try {
+                resourcesRepository.markResourceOfflineByUrl(url)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
 
