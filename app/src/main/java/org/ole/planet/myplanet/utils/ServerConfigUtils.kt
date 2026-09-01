@@ -7,7 +7,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Community
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
 
 object ServerConfigUtils {
 
@@ -96,8 +95,8 @@ object ServerConfigUtils {
     ): String {
         val uri = url.toUri()
         val (urlUser, urlPwd, couchdbURL) = if (url.contains("@")) {
-            val userinfo = ProcessUserDataActivity.getUserInfo(uri)
-            Triple(userinfo[0], userinfo[1], url)
+            val (u, p) = UrlUtils.getUserInfo(uri.userInfo)
+            Triple(u, p, url)
         } else {
             val user = "satellite"
             val scheme = uri.scheme
