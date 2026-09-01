@@ -12,6 +12,7 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Provider
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -437,11 +438,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
     override suspend fun createExamSubmission(request: CreateExamSubmissionRequest): Submission {
         val (userId, userDob, userGender, exam, type, teamId) = request
-        val team = if (!teamId.isNullOrEmpty()) {
-            teamsRepositoryProvider.get().getTeamById(teamId)
-        } else {
-            null
-        }
+        val persistedTeamId = teamId?.takeIf { it.isNotBlank() }
+        val team = persistedTeamId?.let { getTeamByIdOrNull(it) }
 
         val now = Date().time
         val submission = Submission().apply {
@@ -469,21 +467,21 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             startTime = now
             lastUpdateTime = now
             answers = mutableListOf()
+            // Persist the supplied association independently because the richer team fields are
+            // ignored by Room and might be unavailable from the local team table.
+            this.teamId = persistedTeamId
 
-            if (team != null) {
-                // teamObject and membershipDoc are @Ignore, so this column is the only team
-                // linkage that survives the write and can be read back at upload time
-                this.teamId = request.teamId
+            if (persistedTeamId != null) {
                 teamObject = TeamReference().apply {
-                    _id = team._id
-                    name = team.name
-                    this.type = team.type ?: "team"
+                    _id = persistedTeamId
+                    name = team?.name
+                    this.type = team?.type
                 }
-                membershipDoc = MembershipDoc().apply { this.teamId = teamId }
+                membershipDoc = MembershipDoc().apply { this.teamId = persistedTeamId }
                 user = JsonObject().apply {
                     addProperty("age", userDob ?: "")
                     addProperty("gender", userGender ?: "")
-                    add("membershipDoc", JsonObject().apply { addProperty("teamId", teamId) })
+                    add("membershipDoc", JsonObject().apply { addProperty("teamId", persistedTeamId) })
                 }.toString()
             }
         }
@@ -813,25 +811,35 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return `object`
     }
 
-    // Planet reads the owning team of a survey response from this field; without it a response
-    // recorded for a team never shows up in that team's submission count.
+    // Preserve direct team association across Room round trips so team-scoped exports receive
+    // the same top-level team stamp as submissions serialized before persistence.
     private suspend fun resolveTeamJson(submission: Submission): JsonObject? {
         val teamRef = submission.teamObject
-            ?: submission.teamId?.takeIf { it.isNotEmpty() }?.let { teamId ->
-                teamsRepositoryProvider.get().getTeamById(teamId)?.let { team ->
-                    TeamReference().apply {
-                        _id = team._id
-                        name = team.name
-                        this.type = team.type ?: "team"
-                    }
-                }
-            }
+        val teamId = teamRef?._id?.takeIf { it.isNotBlank() }
+            ?: submission.teamId?.takeIf { it.isNotBlank() }
             ?: return null
-        return JsonObject().apply {
-            addProperty("_id", teamRef._id)
-            addProperty("name", teamRef.name)
-            addProperty("type", teamRef.type)
+
+        val teamName = teamRef?.name?.takeIf { it.isNotBlank() }
+        val teamType = teamRef?.type?.takeIf { it.isNotBlank() }
+        val localTeam = if (teamName == null || teamType == null) {
+            getTeamByIdOrNull(teamId)
+        } else {
+            null
         }
+
+        return JsonObject().apply {
+            addProperty("_id", teamId)
+            (teamName ?: localTeam?.name?.takeIf { it.isNotBlank() })?.let { addProperty("name", it) }
+            (teamType ?: localTeam?.type?.takeIf { it.isNotBlank() })?.let { addProperty("type", it) }
+        }
+    }
+
+    private suspend fun getTeamByIdOrNull(teamId: String) = try {
+        teamsRepositoryProvider.get().getTeamById(teamId)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        null
     }
 
     override suspend fun serializeSubmission(submission: Submission, source: String, parentCode: String, user: UserEntity?): JsonObject {

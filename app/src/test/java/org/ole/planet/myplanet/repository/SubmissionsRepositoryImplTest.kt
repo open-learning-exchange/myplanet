@@ -9,6 +9,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
@@ -35,6 +36,7 @@ import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
+import org.ole.planet.myplanet.model.TeamReference
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -581,18 +583,97 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `serializeSubmission stamps the owning team on the payload`() = runTest {
+    fun `createExamSubmission persists team id through Room when local team is missing`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        coEvery { teamsRepositoryProvider.get().getTeamById("team1") } returns null
+
+        val persistedSubmissions = slot<List<Submission>>()
+        coEvery { submissionDao.upsertAll(capture(persistedSubmissions)) } returns Unit
+        val exam = StepExam().apply {
+            id = "exam_id"
+            courseId = "course_id"
+        }
+
+        repository.createExamSubmission(
+            CreateExamSubmissionRequest("user", "dob", "gender", exam, "survey", "team1")
+        )
+
+        val persisted = persistedSubmissions.captured.single()
+        assertEquals("team1", persisted.teamId)
+
+        // Reconstruct the entity as Room would: @Ignore fields are absent, while teamId survives.
+        val reconstructed = Submission().apply {
+            id = persisted.id
+            userId = persisted.userId
+            parentId = persisted.parentId
+            type = persisted.type
+            teamId = persisted.teamId
+        }
+
+        val result = repository.serializeSubmission(reconstructed, "planet", "parent", null)
+
+        val team = result.getAsJsonObject("team")
+        assertEquals("team1", team.get("_id").asString)
+        assertNull(team.get("name"))
+        assertNull(team.get("type"))
+    }
+
+    @Test
+    fun `serializeSubmission emits persisted team id when local team is missing`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        coEvery { teamsRepositoryProvider.get().getTeamById("team1") } returns null
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
+            teamId = "team1"
+        }
+
+        val result = repository.serializeSubmission(submission, "planet", "parent", null)
+
+        val team = result.getAsJsonObject("team")
+        assertEquals("team1", team.get("_id").asString)
+        assertNull(team.get("name"))
+        assertNull(team.get("type"))
+    }
+
+    @Test
+    fun `serializeSubmission emits persisted team id when local team lookup throws`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        coEvery { teamsRepositoryProvider.get().getTeamById("team1") } throws IllegalStateException("lookup failed")
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
+            teamId = "team1"
+        }
+
+        val result = repository.serializeSubmission(submission, "planet", "parent", null)
+
+        val team = result.getAsJsonObject("team")
+        assertEquals("team1", team.get("_id").asString)
+        assertNull(team.get("name"))
+        assertNull(team.get("type"))
+    }
+
+    @Test
+    fun `serializeSubmission enriches persisted team id with actual local metadata`() = runTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
         every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
 
-        // Planet attributes a survey response to a team through this field, so a response
-        // recorded for a team has to carry it up.
         coEvery { teamsRepositoryProvider.get().getTeamById("team1") } returns MyTeam().apply {
             _id = "team1"
-            name = "Team One"
-            type = "team"
+            name = "Enterprise One"
+            type = "enterprise"
         }
 
         val submission = Submission().apply {
@@ -604,8 +685,33 @@ class SubmissionsRepositoryImplTest {
 
         val team = result.getAsJsonObject("team")
         assertEquals("team1", team.get("_id").asString)
-        assertEquals("Team One", team.get("name").asString)
-        assertEquals("team", team.get("type").asString)
+        assertEquals("Enterprise One", team.get("name").asString)
+        assertEquals("enterprise", team.get("type").asString)
+    }
+
+    @Test
+    fun `serializeSubmission uses in-memory team object`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
+            teamObject = TeamReference().apply {
+                _id = "enterprise1"
+                name = "Enterprise One"
+                type = "enterprise"
+            }
+        }
+
+        val result = repository.serializeSubmission(submission, "planet", "parent", null)
+
+        val team = result.getAsJsonObject("team")
+        assertEquals("enterprise1", team.get("_id").asString)
+        assertEquals("Enterprise One", team.get("name").asString)
+        assertEquals("enterprise", team.get("type").asString)
+        coVerify(exactly = 0) { teamsRepositoryProvider.get().getTeamById(any()) }
     }
 
     @Test
@@ -622,26 +728,6 @@ class SubmissionsRepositoryImplTest {
         val result = repository.serializeSubmission(submission, "planet", "parent", null)
 
         assertNull(result.get("team"))
-    }
-
-    @Test
-    fun `createExamSubmission persists the team id so upload can read it back`() = runTest {
-        val exam = StepExam().apply {
-            id = "exam_id"
-            courseId = "course_id"
-        }
-        coEvery { teamsRepositoryProvider.get().getTeamById("team1") } returns MyTeam().apply {
-            _id = "team1"
-            name = "Team One"
-            type = "team"
-        }
-
-        val result = repository.createExamSubmission(
-            CreateExamSubmissionRequest("user", "dob", "gender", exam, "type", "team1")
-        )
-
-        assertEquals("team1", result?.teamId)
-        coVerify { submissionDao.upsertAll(match { it.single().teamId == "team1" }) }
     }
 
     @Test
