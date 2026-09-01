@@ -80,7 +80,13 @@ class FileUtilsTest {
     @Test
     fun checkFileExist_returnsFalseWhenFileDoesNotExist() {
         val url = "http://example.com/resources/123/nonexistent.txt"
+        val expectedFile = FileUtils.getSDPathFromUrl(context, url)
+        val parentDir = expectedFile.parentFile
+
         assertFalse(FileUtils.checkFileExist(context, url))
+        if (parentDir != null) {
+            assertFalse("Parent directory should not be created by existence check", parentDir.exists())
+        }
     }
 
     @Test
