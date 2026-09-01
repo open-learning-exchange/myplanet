@@ -80,7 +80,13 @@ class FileUtilsTest {
     @Test
     fun checkFileExist_returnsFalseWhenFileDoesNotExist() {
         val url = "http://example.com/resources/123/nonexistent.txt"
+        val expectedFile = FileUtils.getSDPathFromUrl(context, url)
+        val parentDir = expectedFile.parentFile
+
         assertFalse(FileUtils.checkFileExist(context, url))
+        if (parentDir != null) {
+            assertFalse("Parent directory should not be created by existence check", parentDir.exists())
+        }
     }
 
     @Test
@@ -158,6 +164,43 @@ class FileUtilsTest {
     @Test
     fun resolveHtmlEntryFile_rejectsAbsolutePath() {
         assertNull(FileUtils.resolveHtmlEntryFile(tempDir, "/etc/passwd"))
+    }
+
+    @Test
+    fun findHtmlCoverImage_prefersNameHintOverLargerFile() {
+        File(tempDir, "cover.png").writeBytes(ByteArray(10))
+        File(tempDir, "photo.jpg").writeBytes(ByteArray(1000))
+
+        val cover = FileUtils.findHtmlCoverImage(tempDir)
+
+        assertEquals("cover.png", cover?.name)
+    }
+
+    @Test
+    fun findHtmlCoverImage_fallsBackToLargestImageWhenNoNameHint() {
+        File(tempDir, "photo.jpg").writeBytes(ByteArray(10))
+        File(tempDir, "banner.jpg").writeBytes(ByteArray(1000))
+
+        val cover = FileUtils.findHtmlCoverImage(tempDir)
+
+        assertEquals("banner.jpg", cover?.name)
+    }
+
+    @Test
+    fun findHtmlCoverImage_findsHintedImageNestedInSubdirectory() {
+        val assetsDir = File(tempDir, "assets").apply { mkdirs() }
+        File(assetsDir, "thumbnail.png").writeBytes(ByteArray(10))
+
+        val cover = FileUtils.findHtmlCoverImage(tempDir)
+
+        assertEquals("thumbnail.png", cover?.name)
+    }
+
+    @Test
+    fun findHtmlCoverImage_returnsNullWhenNoImagesPresent() {
+        File(tempDir, "index.html").writeText("<html></html>")
+
+        assertNull(FileUtils.findHtmlCoverImage(tempDir))
     }
 
     @Test

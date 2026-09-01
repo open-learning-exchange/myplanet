@@ -6,14 +6,16 @@ import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import javax.inject.Inject
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 
 class DownloadRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val diagnosticsRepository: DiagnosticsRepository,
+    private val timeProvider: TimeProvider
 ) : DownloadRepository {
 
     companion object {
@@ -48,9 +50,9 @@ class DownloadRepositoryImpl @Inject constructor(
                         val responseString = response.toString()
                         val matchResult = URL_REGEX.find(responseString)
                         val extractedUrl = matchResult?.groupValues?.get(1)
-                        createLog("File Not Found", "$extractedUrl")
+                        diagnosticsRepository.saveLogToRoom("File Not Found", "$extractedUrl", "${timeProvider.now()}")
                     } catch (e: Exception) {
-                        createLog("File Not Found", url)
+                        diagnosticsRepository.saveLogToRoom("File Not Found", url, "${timeProvider.now()}")
                     }
                 }
 

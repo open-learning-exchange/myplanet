@@ -9,29 +9,25 @@ import org.ole.planet.myplanet.model.ResourceListModel
 
 class ResourcesSearchUtilsTest {
 
+    private fun model(id: String, title: String): ResourceListModel =
+        ResourceListModel(
+            library = mockk { every { titleNormal } returns null },
+            item = ResourceItem(
+                id = id, title = title, description = null, createdDate = 0L,
+                averageRating = null, timesRated = 0, resourceId = null, isOffline = false,
+                _rev = null, uploadDate = null, filename = null,
+            ),
+            rating = null,
+            tags = emptyList(),
+        )
 
     @Test
     fun testSearchLocalModels() {
-        val model1 = ResourceListModel(
-            library = mockk { every { titleNormal } returns null },
-            item = ResourceItem(id = "1", title = "Apple Pie Recipe", description = null, createdDate = 0L, averageRating = null, timesRated = 0, resourceId = null, isOffline = false, _rev = null, uploadDate = null, filename = null),
-            rating = null,
-            tags = emptyList()
+        val models = listOf(
+            model("1", "Apple Pie Recipe"),
+            model("2", "Banana Bread"),
+            model("3", "Apple Juice"),
         )
-        val model2 = ResourceListModel(
-            library = mockk { every { titleNormal } returns null },
-            item = ResourceItem(id = "2", title = "Banana Bread", description = null, createdDate = 0L, averageRating = null, timesRated = 0, resourceId = null, isOffline = false, _rev = null, uploadDate = null, filename = null),
-            rating = null,
-            tags = emptyList()
-        )
-        val model3 = ResourceListModel(
-            library = mockk { every { titleNormal } returns null },
-            item = ResourceItem(id = "3", title = "Apple Juice", description = null, createdDate = 0L, averageRating = null, timesRated = 0, resourceId = null, isOffline = false, _rev = null, uploadDate = null, filename = null),
-            rating = null,
-            tags = emptyList()
-        )
-
-        val models = listOf(model1, model2, model3)
 
         val resultEmpty = ResourcesSearchUtils.searchLocalModels(models, "")
         assertEquals(3, resultEmpty.size)
@@ -48,5 +44,42 @@ class ResourcesSearchUtilsTest {
         val resultCaseInsensitive = ResourcesSearchUtils.searchLocalModels(models, "BANANA")
         assertEquals(1, resultCaseInsensitive.size)
         assertEquals("Banana Bread", resultCaseInsensitive[0].item.title)
+    }
+
+    @Test
+    fun testSearchPrefixRanksBeforeContains() {
+        val models = listOf(
+            model("1", "Green Apple Care"),
+            model("2", "Apple Pie"),
+        )
+
+        val result = ResourcesSearchUtils.searchLocalModels(models, "apple")
+        assertEquals(2, result.size)
+        assertEquals("Apple Pie", result[0].item.title)
+        assertEquals("Green Apple Care", result[1].item.title)
+    }
+
+    @Test
+    fun testSearchMultiWordQueryUsesAllParts() {
+        val models = listOf(
+            model("1", "Apple Pie Recipe"),
+            model("2", "Apple Crumble"),
+        )
+
+        val result = ResourcesSearchUtils.searchLocalModels(models, "apple recipe")
+        assertEquals(1, result.size)
+        assertEquals("Apple Pie Recipe", result[0].item.title)
+    }
+
+    @Test
+    fun testSearchDiacriticsNormalized() {
+        val models = listOf(
+            model("1", "Café Menu"),
+            model("2", "Caffe Latte"),
+        )
+
+        val result = ResourcesSearchUtils.searchLocalModels(models, "cafe")
+        assertEquals(1, result.size)
+        assertEquals("Café Menu", result[0].item.title)
     }
 }

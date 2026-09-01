@@ -29,8 +29,9 @@ open class ExamQuestion(
     private fun setCorrectChoiceArray(array: JsonArray, question: ExamQuestion?) {
         if (question == null) return
         val list = question.correctChoiceList?.toMutableList() ?: mutableListOf()
+        val defaultLocale = Locale.getDefault()
         for (i in 0 until array.size()) {
-            list.add(JsonUtils.getString(array, i).lowercase(Locale.getDefault()))
+            list.add(JsonUtils.getString(array, i).lowercase(defaultLocale))
         }
         question.correctChoiceList = list
     }
@@ -55,7 +56,7 @@ open class ExamQuestion(
 
     companion object {
         fun insertExamQuestions(questions: JsonArray, examId: String?): List<ExamQuestion> {
-            if (questions.size() == 0) return emptyList()
+            if (questions.isEmpty()) return emptyList()
 
             val questionsToInsert = mutableListOf<ExamQuestion>()
 
@@ -93,13 +94,15 @@ open class ExamQuestion(
         }
 
         private fun insertCorrectChoice(array: JsonArray, question: JsonObject, myQuestion: ExamQuestion?) {
-            for (a in 0 until array.size()) {
-                val res = array[a].asJsonObject
-                if (question["correctChoice"].isJsonArray) {
-                    myQuestion?.correctChoiceList = mutableListOf()
-                    myQuestion?.setCorrectChoiceArray(JsonUtils.getJsonArray("correctChoice", question), myQuestion)
-                } else if (JsonUtils.getString("correctChoice", question) == JsonUtils.getString("id", res)) {
-                    myQuestion?.correctChoiceList = listOf(JsonUtils.getString("res", res))
+            if (question.has("correctChoice") && question["correctChoice"].isJsonArray) {
+                myQuestion?.correctChoiceList = mutableListOf()
+                myQuestion?.setCorrectChoiceArray(JsonUtils.getJsonArray("correctChoice", question), myQuestion)
+            } else {
+                for (a in 0 until array.size()) {
+                    val res = array[a].asJsonObject
+                    if (JsonUtils.getString("correctChoice", question) == JsonUtils.getString("id", res)) {
+                        myQuestion?.correctChoiceList = listOf(JsonUtils.getString("res", res))
+                    }
                 }
             }
         }

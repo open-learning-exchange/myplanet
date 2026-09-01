@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import android.util.Log
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.google.gson.Gson
@@ -53,6 +54,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     @PlainGson private val gson: Gson
 ) : ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
+
+    companion object {
+        private const val TAG = "ConfigurationsRepository"
+    }
 
     override suspend fun checkHealth(): String {
         return try {
@@ -212,8 +217,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             val code = response.code()
             if (response.isSuccessful) {
                 val ss = withContext(dispatcherProvider.io) { response.body()?.string() }
-                val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
-                val dbCount = myList?.size ?: 0
+                val dbCount = countCommaEntries(ss)
                 dbCount >= 8
             } else {
                 code == 401
@@ -221,6 +225,18 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         } catch (_: Exception) {
             false
         }
+    }
+
+    private fun countCommaEntries(body: String?): Int {
+        if (body == null) return 0
+        var end = body.length
+        while (end > 0 && body[end - 1] == ',') end--
+        if (end == 0) return 0
+        var commaCount = 0
+        for (i in 0 until end) {
+            if (body[i] == ',') commaCount++
+        }
+        return commaCount + 1
     }
 
     override suspend fun checkCheckSum(path: String): Boolean {
@@ -233,6 +249,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     if (f.exists()) {
                         val sha256 = withContext(dispatcherProvider.io) {
                             Sha256Utils().getCheckSumFromFile(f)
+                        }
+                        if (sha256 == null) {
+                            Log.w(TAG, "Could not compute checksum for $path")
+                            return false
                         }
                         return checksum.contains(sha256)
                     }
@@ -325,7 +345,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             if (configResponse.isSuccessful) {
                 val rows = configResponse.body()?.getAsJsonArray("rows")
 
-                if (rows != null && rows.size() > 0) {
+                if (rows != null && !rows.isEmpty()) {
                     val firstRow = rows[0].asJsonObject
                     val id = firstRow.getAsJsonPrimitive("id").asString
                     val doc = firstRow.getAsJsonObject("doc")
@@ -371,6 +391,22 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
     override fun getPlanetType(): String? {
         return sharedPrefManager.getRawString("planetType")
+    }
+
+    override fun getParentCode(): String {
+        return sharedPrefManager.getParentCode()
+    }
+
+    override fun getCommunityName(): String {
+        return sharedPrefManager.getCommunityName()
+    }
+
+    override fun getCommunityLeaders(): String {
+        return sharedPrefManager.getCommunityLeaders()
+    }
+
+    override fun clearPreferences() {
+        sharedPrefManager.clearPreferences()
     }
 
     override suspend fun clearFirstRunStorageAndSetFlag(hasWritePermission: Boolean) {

@@ -193,8 +193,8 @@ class CoursesAdapter(
     }
 
     fun areAllSelected(): Boolean {
-        val selectableCourses = currentList.filter { isMyCourseLib || !it.isMyCourse }
-        return selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()
+        val count = currentList.count { isMyCourseLib || !it.isMyCourse }
+        return count > 0 && selectedItems.size == count
     }
 
     fun selectAllItems(selectAll: Boolean) {
@@ -202,8 +202,7 @@ class CoursesAdapter(
         selectedItems.clear()
 
         if (selectAll) {
-            val selectableCourses = currentList.filter { isMyCourseLib || !it.isMyCourse }
-            selectedItems.addAll(selectableCourses)
+            currentList.filterTo(selectedItems) { isMyCourseLib || !it.isMyCourse }
         }
 
         val newSelectedIds = selectedItems.mapNotNull { it?.courseId }.toSet()

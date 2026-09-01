@@ -37,7 +37,7 @@ interface VoicesRepository : VoicesEditActions {
     suspend fun deletePost(newsId: String, teamName: String)
     suspend fun addLabel(newsId: String, label: String)
     suspend fun removeLabel(newsId: String, label: String)
-    suspend fun getCommunityVoiceDates(startTime: Long, endTime: Long, userId: String?): List<String>
+    suspend fun getCommunityVoiceDateCount(startTime: Long, endTime: Long, userId: String?): Int
     suspend fun getPlanetNewsMessages(planetCode: String?): List<News>
     suspend fun insertNewsList(docs: List<JsonObject>)
     suspend fun countTeamChats(teamId: String): Long

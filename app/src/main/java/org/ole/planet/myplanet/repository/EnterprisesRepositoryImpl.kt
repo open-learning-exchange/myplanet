@@ -1,22 +1,24 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.Context
 import com.google.gson.JsonObject
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.distinctByContent
 
 class EnterprisesRepositoryImpl @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     private val teamDao: TeamDao,
     private val timeProvider: TimeProvider,
     private val dispatcherProvider: DispatcherProvider
@@ -91,14 +93,22 @@ class EnterprisesRepositoryImpl @Inject constructor(
                     it.status != "archived"
                 }.sortedByDescending { it.createdDate }
             }
-            .distinctUntilChanged { old, new ->
-                if (old.size != new.size) return@distinctUntilChanged false
-                old.zip(new).all { (o, n) -> o._id == n._id && o._rev == n._rev }
+            .distinctByContent { old, new ->
+                old._id == new._id && old._rev == new._rev && old.status == new.status &&
+                    old.description == new.description && old.beginningBalance == new.beginningBalance &&
+                    old.sales == new.sales && old.otherIncome == new.otherIncome &&
+                    old.wages == new.wages && old.otherExpenses == new.otherExpenses &&
+                    old.startDate == new.startDate && old.endDate == new.endDate &&
+                    old.updatedDate == new.updatedDate && old.updated == new.updated &&
+                    old.imageName == new.imageName
             }
             .flowOn(dispatcherProvider.default)
     }
 
-    override suspend fun exportReportsAsCsv(reports: List<MyTeam>, teamName: String): String {
+    override suspend fun exportReportsAsCsv(teamId: String, teamName: String): String {
+        val reports = teamDao.getByTeamIdAndDocType(teamId, "report")
+            .filter { it.status != "archived" }
+            .sortedByDescending { it.createdDate }
         val csvBuilder = StringBuilder()
         csvBuilder.append(teamName).append(" Financial Report Summary\n\n")
         csvBuilder.append("Start Date, End Date, Created Date, Updated Date, Beginning Balance, Sales, Other Income, Wages, Other Expenses, Profit/Loss, Ending Balance\n")
@@ -125,7 +135,7 @@ class EnterprisesRepositoryImpl @Inject constructor(
 
     private suspend fun attachTeamImage(teamId: String, imageName: String, imageData: ByteArray) {
         if (teamId.isBlank()) return
-        val destFile = MyTeam.getAttachmentFile(MainApplication.context, teamId, imageName) ?: return
+        val destFile = MyTeam.getAttachmentFile(context, teamId, imageName) ?: return
         withContext(dispatcherProvider.io) {
             destFile.parentFile?.mkdirs()
             destFile.writeBytes(imageData)
