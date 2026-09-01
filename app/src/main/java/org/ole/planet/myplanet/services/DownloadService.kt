@@ -220,6 +220,8 @@ class DownloadService : Service() {
                 Log.d(TAG, "initDownload: $fileName already on disk, marking offline and skipping download")
                 try {
                     resourcesRepository.markResourceOfflineByUrl(url)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
