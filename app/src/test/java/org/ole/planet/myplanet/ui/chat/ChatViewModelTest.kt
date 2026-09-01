@@ -83,9 +83,6 @@ class ChatViewModelTest {
 
     @Test
     fun `refreshChatSignal seeds an initial load value for a cold ViewModel`() = runTest {
-        // A freshly constructed ViewModel that has never seen a chats sync still seeds one
-        // value in the replay cache, so a fragment subscribing on first open gets an initial
-        // load instead of a blank screen.
         val signals = mutableListOf<Unit>()
         val job = launch(testDispatcher) {
             viewModel.refreshChatSignal.collect { signals.add(it) }
@@ -102,7 +99,6 @@ class ChatViewModelTest {
         val job = launch(testDispatcher) {
             viewModel.refreshChatSignal.collect { signals.add(it) }
         }
-        // Drain the seeded initial load before asserting on the sync-driven signal.
         testScheduler.advanceUntilIdle()
         signals.clear()
 
@@ -115,18 +111,11 @@ class ChatViewModelTest {
 
     @Test
     fun `refreshChatSignal delivers a missed update to a subscriber that attaches after the emit`() = runTest {
-        // Let the ViewModel's internal chats-update collector subscribe before emitting,
-        // mirroring production where the collector lives in the (always-alive) viewModelScope.
         testScheduler.advanceUntilIdle()
 
-        // A chats update arrives while the history fragment is stopped: the fragment's
-        // refreshChatSignal collector (the only subscriber) is unsubscribed, so on the old
-        // replay = 0 flow the value would be silently dropped. With replay = 1 it is buffered.
         dataUpdateFlow.emit(TableDataUpdate("chats", 1, 0, true))
         testScheduler.advanceUntilIdle()
 
-        // The user returns to the foreground: the fragment re-subscribes to refreshChatSignal
-        // and receives the buffered update (replacing the seeded initial load in the cache).
         val signals = mutableListOf<Unit>()
         val job = launch(testDispatcher) {
             viewModel.refreshChatSignal.collect { signals.add(it) }
@@ -222,7 +211,6 @@ class ChatViewModelTest {
             communityName = "community1"
         )
 
-        // Wait for coroutine to process
         testScheduler.advanceUntilIdle()
 
         val result = viewModel.screenData.value
@@ -314,7 +302,6 @@ class ChatViewModelTest {
         assertEquals(listOf(conversation), result.chatHistory)
         assertEquals(listOf(news), result.newsMessages)
 
-        // Verify user and targets were NOT fetched again
         coVerify(exactly = 0) { userRepository.getUserById(any()) }
         coVerify(exactly = 0) { teamsRepository.getTeamSummaries(any()) }
 
