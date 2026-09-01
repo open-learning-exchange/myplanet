@@ -24,8 +24,6 @@ interface NewsDao {
     @Query("SELECT * FROM news WHERE id IN (:ids)")
     suspend fun getByIds(ids: List<String>): List<News>
 
-    // Top-level posts (no reply parent), newest first. Team/community visibility is filtered
-    // in-memory by the repository (mirrors the isVisibleToUser approach).
     @Query("SELECT * FROM news WHERE replyTo IS NULL OR replyTo = '' ORDER BY time DESC")
     suspend fun getTopLevel(): List<News>
 
@@ -38,17 +36,10 @@ interface NewsDao {
     @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND ((viewableBy = 'teams' COLLATE NOCASE AND viewableId = :teamId COLLATE NOCASE) OR viewIn LIKE :teamPattern ESCAPE '\\') ORDER BY time DESC")
     fun getTopLevelByTeamFlow(teamId: String, teamPattern: String): Flow<List<News>>
 
-    // Top-level "message" posts (community feed source).
-    @Query(
-        "SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') " +
-            "AND docType = 'message' COLLATE NOCASE ORDER BY time DESC"
-    )
+    @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND docType = 'message' COLLATE NOCASE ORDER BY time DESC")
     suspend fun getTopLevelMessages(): List<News>
 
-    @Query(
-        "SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') " +
-            "AND docType = 'message' COLLATE NOCASE ORDER BY time DESC"
-    )
+    @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND docType = 'message' COLLATE NOCASE ORDER BY time DESC")
     fun getTopLevelMessagesFlow(): Flow<List<News>>
 
     @Query("SELECT * FROM news WHERE replyTo = :newsId COLLATE NOCASE ORDER BY time DESC")
@@ -63,18 +54,9 @@ interface NewsDao {
     @Query("WITH RECURSIVE thread(id) AS (SELECT :newsId UNION SELECT news.id FROM news JOIN thread ON news.replyTo = thread.id) SELECT id FROM thread")
     suspend fun getNewsAndRepliesIds(newsId: String): List<String>
 
-    @Query(
-        "SELECT * FROM news WHERE docType = 'message' COLLATE NOCASE " +
-            "AND createdOn = :planetCode COLLATE NOCASE"
-    )
+    @Query("SELECT * FROM news WHERE docType = 'message' COLLATE NOCASE AND createdOn = :planetCode COLLATE NOCASE")
     suspend fun getPlanetMessages(planetCode: String): List<News>
 
-    // Distinct calendar-day count of community-section voice posts in [startTime, endTime].
-    // `time` is epoch millis; strftime('%Y-%m-%d', time / 1000, 'unixepoch', 'localtime') buckets
-    // by the device's local calendar day — matching the prior in-memory getDateFromTimestamp, which
-    // used ZoneId.systemDefault(), so the user-facing voiceCount gate keeps its meaning. The JSON
-    // viewIn column is searched for a community section entry (stored compactly by plainGson, so no
-    // spaces around the colon) to mirror the old isCommunitySection filter.
     @Query(
         "SELECT COUNT(*) FROM (SELECT DISTINCT strftime('%Y-%m-%d', time / 1000, 'unixepoch', 'localtime') " +
             "FROM news WHERE time >= :startTime AND time <= :endTime " +
