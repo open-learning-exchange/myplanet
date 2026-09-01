@@ -25,7 +25,11 @@
 | `docs/DOMAIN_MODEL.md` | You need to understand the learning domain — roles, courses, teams, surveys, sync concepts |
 | `docs/CODE_STYLE_GUIDE.md` | You're writing code — naming, imports, coroutines, Room, Hilt, UI conventions |
 | `docs/TESTING.md` | You're writing or fixing tests — patterns to copy per layer |
-| `docs/AGENT_SPELLBOOK.md` | You're summoning another AI agent (`@claude` `@coderabbit` `@codex` `@copilot` `@dependabot` `@devin` `@jules` `@openhands`) on a PR — who answers, how fast, and with what side effects. Its "The Skill Sync" section covers maintaining the shared agent skills (`merge-prepping`, `kotlin-importing`) — how one skill repo feeds Claude Code, OpenHands, and Copilot |
+| `agents-summoning` skill — `.agents/skills/agents-summoning/SKILL.md` (or the `agents-summoning@summoning` plugin in a Claude Code session) | You're summoning another AI agent (`@coderabbitai` `@codex` `@copilot` `@devin` `@jules` `@openhands` `@dependabot`) on a PR or issue — who answers, how fast, with what side effects, and why a summon went silent. Dated receipts in the same skill's `NOTES.md`; connection checklists in its `references/connecting.md` |
+
+Reviewers speak; doers act — an unleashed doer mention (`@openhands`, `@devin`,
+`@copilot`) defaults to commits on your branch, so add "comment only" when that
+isn't wanted.
 
 ---
 
@@ -400,18 +404,19 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 - Sends Discord notifications via Treehouses CLI
 
 **Playstore Workflow** (`.github/workflows/playstore.yml`)
-- **Never scheduled** — the *Run workflow* button (linked from the release warning and the automerge stop), `gh workflow run playstore.yml`, or a `repository_dispatch` with `event_type: playstore`. `wait_minutes` waits on a runner for the next slot; `resume_automerge: true` dispatches the drain once the release lands
-- If the internal track is behind the newest GitHub release, re-uploads that release's signed `myPlanet-lite.aab` — the bundle the release workflow already built, so no rebuild and no new version code. It touches the Play Store only when the newest `release.yml` run warned that its publish failed (`force: true` overrides). Logic in `.github/scripts/playstore.sh`; track reads never commit their edit, so they spend no save quota
-- The quota is a pool of about 50 slots each freeing 24h after its own use, not a midnight reset (6514 refused at 02:57 Pacific on 2026-08-18 after 10 saves that Pacific day, run 32123984765; 6714 refused on 2026-08-26 as the 51st release in its window, run 32930850241) — at ~6 min per release a drain eats it in an afternoon. `playstore-quota.sh` estimates the next slot as the oldest one still held plus 24h plus a measured ~300s lag (6714 was refused at 08:11:16Z on 2026-08-26 and accepted at 08:12:17Z, where crisp-24h predicted 08:07:27Z), and `forecast` prints the next 10 slots in eastern time
+- Menu: `resume_automerge` (default **on** — unsticking the drain is why this gets pressed), `wait_minutes`, `dry_run`. `PLAYSTORE_TRACK`, `PLAYSTORE_DAILY_LIMIT` and `RETRY_MINUTES` are constants in the job's `env:`
+- **Never scheduled** — the *Run workflow* button (linked from the release warning and the automerge stop), `gh workflow run playstore.yml`, or a `repository_dispatch` with `event_type: playstore`, which carries no inputs and so never resumes the drain
+- If the track is behind the newest GitHub release, re-uploads that release's signed `myPlanet-lite.aab`: no rebuild, no new version code. It reads the track rather than trusting the newest `release.yml` run's warning — a track read opens an edit and deletes it unsaved, so it spends no save quota, and a release run that died before uploading leaves the same silence as one that published. The run decides two things only: wait while one is in flight, and, when the track cannot be read at all, upload blind if it warned. Logic in `.github/scripts/playstore.sh`
+- The quota is ~50 slots, each freeing 24h after its own use rather than at midnight (6514 refused 02:57 Pacific on 2026-08-18 after 10 saves that day, run 32123984765; 6714 refused on 2026-08-26 as the 51st release in its window, run 32930850241) — at ~6 min per release a drain eats it in an afternoon. `playstore-quota.sh` estimates the next slot as the oldest still held + 24h + a measured ~300s lag (6714 refused 08:11:16Z, accepted 08:12:17Z, where crisp-24h predicted 08:07:27Z); `forecast` prints the next 10 in eastern time
 
 **Automerge Workflow** (`.github/workflows/automerge.yml`)
-- Manually dispatched (`workflow_dispatch`) queue drainer for PRs labelled `automerge`
-- Order is priority tier then PR number: PRs also labelled `priority` (`priority_label` input, blank = no tier) drain first, lowest number first within each tier
-- For each labelled PR: merges the base branch in, bumps the version, waits for build + test to pass, then squash-merges
-- A conflicting PR does not stop the drain (either detection: `mergeable: CONFLICTING` or the real `git merge`): it loses `automerge`, gains `conflict` (`conflict_label` input, blank = only drop `automerge`), and the queue moves on — re-add `automerge` once resolved.
-- Logic lives in `.github/scripts/automerge.sh`; requires `AUTOMERGE_TOKEN` (the default `GITHUB_TOKEN` can't push to the protected base branch)
-- A release that never reached the Play Store stops the drain; the stop reports the estimated next save slot (eastern time, plus how many follow it) and links `playstore.yml`, which publishes that upload without a rebuild
-- A red workflow on the base is re-run before the drain gives up (`base_rerun_attempts`, default 1): every base commit is a PR head that build + test passed on just before the squash merge, so a failure there is treated as flaky until it reproduces
+- Manually dispatched queue drainer for PRs labelled `automerge`, ordered by priority tier then PR number: PRs also labelled `priority` (`PRIORITY_LABEL`, blank = no tier) drain first
+- Per PR: merge the base in, bump the version, wait for build + test on that prepared commit, squash-merge
+- Two ways a PR leaves the queue without stopping the drain — it loses `automerge`, gains a mark, and the queue moves on. **conflict** (`CONFLICT_LABEL`): `mergeable: CONFLICTING`, or the real `git merge` failing. **failing** (`FAILING_LABEL`, dark red): build or test red on the prepared commit, which is a verdict on that PR alone. Fix it and re-add `automerge`
+- What stops the drain instead: no verdict at all on the prepared commit (no run appeared, or the wait timed out — that says nothing about the PR), a red base, or a release that never reached the Play Store, whose stop names the next save slot and links `playstore.yml`
+- A red workflow gets one re-run before it counts, on the base and on a prepared commit alike (`retries`, default 1): each passed build + test on its own minutes earlier, so the first failure of the two together is treated as flaky until it repeats
+- Menu: `dry_run` (default `false`, so a dry run is the deliberate tick), `max_merges`, `labels` (`queue,priority,conflict,failing` in one comma-separated field — empty slot = that label goes unused, missing slot = the script's default) and `retries` (0–3). Every other setting is in the workflow's `env:`, so changing one is a reviewable diff and `playstore.yml`'s handover inherits it
+- Logic in `.github/scripts/automerge.sh`; needs `AUTOMERGE_TOKEN` (the default `GITHUB_TOKEN` cannot push to the protected base)
 
 **Labels Workflow** (`.github/workflows/labels.yml`)
 - Runs on `pull_request_target` (`opened`, `synchronize`, `reopened`, `ready_for_review`), so it re-labels on every push and works on fork and Dependabot PRs, where a `pull_request` token would be read-only. It never checks out PR code — it only reads diff numbers through the API

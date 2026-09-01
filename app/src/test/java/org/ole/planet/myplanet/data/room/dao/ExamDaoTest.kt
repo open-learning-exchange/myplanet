@@ -80,4 +80,60 @@ class ExamDaoTest {
         val result = examDao.getByTypeAndName("surveys", "Survey 1")
         assertNull(result)
     }
+
+    @Test
+    fun getTeamOwnedSurveys_returnsMatchingTeamOrSubmissionSurveys() = runBlocking {
+        val exam1 = StepExam().apply {
+            id = "1"
+            type = "surveys"
+            teamId = "teamA"
+        }
+        val exam2 = StepExam().apply {
+            id = "2"
+            type = "surveys"
+            teamId = "teamB"
+        }
+        val exam3 = StepExam().apply {
+            id = "3"
+            type = "surveys"
+            teamId = "teamB"
+        }
+        val exam4 = StepExam().apply {
+            id = "4"
+            type = "other"
+            teamId = "teamA"
+        }
+
+        examDao.upsertAll(listOf(exam1, exam2, exam3, exam4))
+
+        val result = examDao.getTeamOwnedSurveys(teamId = "teamA", submissionIds = listOf("2"))
+        assertEquals(listOf("1", "2"), result.map { it.id })
+    }
+
+    @Test
+    fun getAdoptableTeamSurveys_withExcludedIds_filtersCorrectly() = runBlocking {
+        val exam1 = StepExam().apply {
+            id = "1"
+            type = "surveys"
+            isTeamShareAllowed = true
+        }
+        val exam2 = StepExam().apply {
+            id = "2"
+            type = "surveys"
+            isTeamShareAllowed = true
+        }
+        val exam3 = StepExam().apply {
+            id = "3"
+            type = "surveys"
+            isTeamShareAllowed = false
+        }
+
+        examDao.upsertAll(listOf(exam1, exam2, exam3))
+
+        val resultWithExclusion = examDao.getAdoptableTeamSurveys(excludedIds = setOf("1"))
+        assertEquals(listOf("2"), resultWithExclusion.map { it.id })
+
+        val resultWithoutExclusion = examDao.getAdoptableTeamSurveys()
+        assertEquals(listOf("1", "2"), resultWithoutExclusion.map { it.id })
+    }
 }

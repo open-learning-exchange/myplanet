@@ -9,6 +9,7 @@ import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import java.nio.file.Files
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -31,8 +32,7 @@ class EnterprisesRepositoryImplTest {
     private val teamDao: TeamDao = mockk(relaxed = true)
     private val timeProvider: TimeProvider = mockk(relaxed = true)
     private val context: Context = mockk(relaxed = true)
-    private val dispatcherProvider: DispatcherProvider =
-        TestDispatcherProvider(UnconfinedTestDispatcher())
+    private val dispatcherProvider: DispatcherProvider = TestDispatcherProvider(UnconfinedTestDispatcher())
 
     private val repository = EnterprisesRepositoryImpl(
         context, teamDao, timeProvider, dispatcherProvider
@@ -45,6 +45,7 @@ class EnterprisesRepositoryImplTest {
 
     @Test
     fun `exportReportsAsCsv calculates correct profitLoss and endingBalance`() = runTest {
+        val teamId = "team123"
         val report = MyTeam().apply {
             startDate = 1000L
             endDate = 2000L
@@ -56,8 +57,14 @@ class EnterprisesRepositoryImplTest {
             wages = 10
             otherExpenses = 15
         }
+        val archivedReport = MyTeam().apply {
+            status = "archived"
+            createdDate = 4000L
+        }
 
-        val result = repository.exportReportsAsCsv(listOf(report), "Test Team")
+        coEvery { teamDao.getByTeamIdAndDocType(teamId, "report") } returns listOf(report, archivedReport)
+
+        val result = repository.exportReportsAsCsv(teamId, "Test Team")
 
         val expectedTotalIncome = 50 + 20 // 70
         val expectedTotalExpenses = 10 + 15 // 25
@@ -123,5 +130,95 @@ class EnterprisesRepositoryImplTest {
         assertArrayEquals(imageBytes, writtenFile!!.readBytes())
 
         coVerify { teamDao.upsert(any()) }
+    }
+
+    @Test
+    fun `getReportsFlow deduplicates byte-identical emissions`() = runTest {
+        val r1 = report("r1", "rev1", sales = 10)
+        val r2 = report("r1", "rev1", sales = 10)
+        coEvery { teamDao.observeByTeamIdAndDocType("team1", "report") } returns
+            flowOf(listOf(r1), listOf(r2))
+
+        val emissions = mutableListOf<List<MyTeam>>()
+        repository.getReportsFlow("team1").collect { emissions.add(it) }
+
+        assertEquals(1, emissions.size)
+    }
+
+    @Test
+    fun `getReportsFlow emits when a locally-edited financial field changes with rev unchanged`() = runTest {
+        val before = report("r1", "rev1", sales = 10)
+        val after = report("r1", "rev1", sales = 25)
+        coEvery { teamDao.observeByTeamIdAndDocType("team1", "report") } returns
+            flowOf(listOf(before), listOf(after))
+
+        val emissions = mutableListOf<List<MyTeam>>()
+        repository.getReportsFlow("team1").collect { emissions.add(it) }
+
+        assertEquals(2, emissions.size)
+        assertEquals(10, emissions[0][0].sales)
+        assertEquals(25, emissions[1][0].sales)
+    }
+
+    @Test
+    fun `getReportsFlow emits when description changes with id and rev unchanged`() = runTest {
+        val before = report("r1", "rev1", description = "old")
+        val after = report("r1", "rev1", description = "new")
+        coEvery { teamDao.observeByTeamIdAndDocType("team1", "report") } returns
+            flowOf(listOf(before), listOf(after))
+
+        val emissions = mutableListOf<List<MyTeam>>()
+        repository.getReportsFlow("team1").collect { emissions.add(it) }
+
+        assertEquals(2, emissions.size)
+        assertEquals("old", emissions[0][0].description)
+        assertEquals("new", emissions[1][0].description)
+    }
+
+    @Test
+    fun `getReportsFlow emits when a report is added`() = runTest {
+        val r1 = report("r1", "rev1", createdDate = 100L)
+        val r2 = report("r2", "rev2", createdDate = 200L)
+        coEvery { teamDao.observeByTeamIdAndDocType("team1", "report") } returns
+            flowOf(listOf(r1), listOf(r1, r2))
+
+        val emissions = mutableListOf<List<MyTeam>>()
+        repository.getReportsFlow("team1").collect { emissions.add(it) }
+
+        assertEquals(2, emissions.size)
+        assertEquals(1, emissions[0].size)
+        assertEquals(2, emissions[1].size)
+    }
+
+    @Test
+    fun `getReportsFlow filters archived reports and sorts by createdDate descending`() = runTest {
+        val r1 = report("r1", "rev1", createdDate = 100L)
+        val archived = report("ra", "reva", createdDate = 300L, status = "archived")
+        val r2 = report("r2", "rev2", createdDate = 200L)
+        coEvery { teamDao.observeByTeamIdAndDocType("team1", "report") } returns
+            flowOf(listOf(r1, archived, r2))
+
+        val emissions = mutableListOf<List<MyTeam>>()
+        repository.getReportsFlow("team1").collect { emissions.add(it) }
+
+        assertEquals(1, emissions.size)
+        assertEquals(listOf("r2", "r1"), emissions[0].map { it._id })
+    }
+
+    private fun report(
+        id: String,
+        rev: String,
+        description: String? = null,
+        sales: Int = 0,
+        createdDate: Long = 0L,
+        status: String? = null,
+    ) = MyTeam().apply {
+        _id = id
+        _rev = rev
+        docType = "report"
+        this.description = description
+        this.sales = sales
+        this.createdDate = createdDate
+        this.status = status
     }
 }
