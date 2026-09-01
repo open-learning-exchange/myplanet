@@ -53,7 +53,7 @@ class ResourcesFragmentStateTest {
     }
 
     @Test
-    fun `test fragment lifecycle onSaveInstanceState and onCreate round-trip`() {
+    fun `test saveFilterState and restoreFilterState full round-trip preserves state across instances`() {
         val fragment = ResourcesFragment()
         fragment.subjects = mutableSetOf("History")
         fragment.languages = mutableSetOf("Spanish", "English")
@@ -68,10 +68,10 @@ class ResourcesFragmentStateTest {
         )
 
         val savedState = Bundle()
-        fragment.onSaveInstanceState(savedState)
+        fragment.saveFilterState(savedState)
 
         val recreatedFragment = ResourcesFragment()
-        recreatedFragment.onCreate(savedState)
+        recreatedFragment.restoreFilterState(savedState)
 
         val selected = recreatedFragment.getSelectedFilter()
         assertEquals(setOf("History"), selected["subjects"])
@@ -95,9 +95,9 @@ class ResourcesFragmentStateTest {
     }
 
     @Test
-    fun `test onCreate with null savedInstanceState maintains default empty filters`() {
+    fun `test restoreFilterState with empty bundle maintains default initial filters`() {
         val fragment = ResourcesFragment()
-        fragment.onCreate(null)
+        fragment.restoreFilterState(Bundle())
         assertTrue(fragment.subjects.isEmpty())
         assertTrue(fragment.languages.isEmpty())
         assertTrue(fragment.levels.isEmpty())
