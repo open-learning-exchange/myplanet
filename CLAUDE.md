@@ -27,6 +27,10 @@
 | `docs/TESTING.md` | You're writing or fixing tests — patterns to copy per layer |
 | `agents-summoning` skill — `.agents/skills/agents-summoning/SKILL.md` (or the `agents-summoning@summoning` plugin in a Claude Code session) | You're summoning another AI agent (`@coderabbitai` `@codex` `@copilot` `@devin` `@jules` `@openhands` `@dependabot`) on a PR or issue — who answers, how fast, with what side effects, and why a summon went silent. Dated receipts in the same skill's `NOTES.md`; connection checklists in its `references/connecting.md` |
 
+Reviewers speak; doers act — an unleashed doer mention (`@openhands`, `@devin`,
+`@copilot`) defaults to commits on your branch, so add "comment only" when that
+isn't wanted.
+
 ---
 
 ## Codebase Structure

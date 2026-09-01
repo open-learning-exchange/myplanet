@@ -14,6 +14,10 @@ git submodule update --init --recursive
 - **merge-prepping** — rewrite PR titles into house style; source: https://github.com/dogi/merge-prepping
 - **kotlin-importing** — sort/clean Kotlin imports; source: https://github.com/dogi/kotlin-importing
 
+Reviewers speak; doers act — an unleashed doer mention (`@openhands`, `@devin`,
+`@copilot`) defaults to commits on your branch, so add "comment only" when that
+isn't wanted.
+
 ## Reference docs
 
 - CLAUDE.md — full codebase guide (architecture, build, conventions)
