@@ -140,13 +140,17 @@ class JsonUtilsTest {
         JsonUtils.getJsonArray("wrongType", obj)
         JsonUtils.getJsonObject("wrongArr", obj)
         JsonUtils.getLong("wrongType", obj)
+        JsonUtils.getBoolean("wrongType", obj)
 
-        // the isLoggable guard is consulted, so the string is never built on a normal build
-        verify(atLeast = 1) { Log.isLoggable("JsonUtils", Log.DEBUG) }
-        // expected type mismatches fall back without materialising a stack trace
+        // A wrong JSON type is a normal condition, not an exceptional one (#16652), so the
+        // accessors type-check and return their default without entering safeGet's catch.
+        // Nothing is logged and no stack trace is built. This assertion used to expect the
+        // opposite -- one throw-and-recover per value, with a debug line each -- which is
+        // what #16479 set out to make cheap; not paying for it at all is cheaper still, and
+        // it keeps the fallback off android.util.Log, which plain JVM tests cannot serve.
+        verify(exactly = 0) { Log.isLoggable(any(), any()) }
+        verify(exactly = 0) { Log.d(any(), any()) }
         verify(exactly = 0) { Log.d(any(), any(), any()) }
-        // a brief debug diagnostic still reaches the log
-        verify(atLeast = 1) { Log.d("JsonUtils", any()) }
     }
 
     @Test

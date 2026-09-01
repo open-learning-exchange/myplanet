@@ -20,10 +20,24 @@ object JsonUtils {
         return try {
             block()
         } catch (e: Exception) {
+            logFallback(e)
+            default()
+        }
+    }
+
+    /**
+     * Logging on the recovery path must never change control flow: an exception thrown from
+     * inside [safeGet]'s catch block would escape the very wrapper that exists to return a
+     * default. android.util.Log is unavailable in plain JVM unit tests, where isLoggable
+     * throws rather than answering, so the whole call is guarded.
+     */
+    private fun logFallback(e: Exception) {
+        try {
             if (Log.isLoggable(TAG, Log.DEBUG)) {
                 Log.d(TAG, "expected type mismatch, using fallback: ${e.message}")
             }
-            default()
+        } catch (_: Throwable) {
+            // No usable logger; the caller still gets its default.
         }
     }
 
@@ -55,8 +69,9 @@ object JsonUtils {
     }
 
     fun getString(array: JsonArray, index: Int): String = safeGet({ "" }) {
-        val el: JsonElement = array.get(index)
-        if (el is JsonNull) "" else el.asString
+        val el: JsonElement? = if (index in 0 until array.size()) array.get(index) else null
+        // Deliberately permissive, unlike the fieldName overload: any primitive stringifies.
+        if (el == null || !el.isJsonPrimitive) "" else el.asString
     }
 
     fun getAsJsonArray(list: List<String>?): JsonArray {
@@ -72,10 +87,10 @@ object JsonUtils {
     }
 
     fun getBoolean(fieldName: String, jsonObject: JsonObject?): Boolean = safeGet({ false }) {
-        if (jsonObject?.has(fieldName) == true) {
-            val el: JsonElement? = jsonObject.get(fieldName)
-            el !is JsonNull && el?.asBoolean == true
-        } else false
+        val el: JsonElement? = jsonObject?.takeIf { it.has(fieldName) }?.get(fieldName)
+        // asBoolean never throws for a primitive (booleans pass through, anything else goes
+        // via Boolean.parseBoolean), so a primitive check is all that is needed here.
+        if (el == null || !el.isJsonPrimitive) false else el.asBoolean
     }
 
     fun addString(`object`: JsonObject, fieldName: String, value: String?) {
@@ -99,25 +114,18 @@ object JsonUtils {
     }
 
     fun getInt(fieldName: String, jsonObject: JsonObject?): Int = safeGet({ 0 }) {
-        if (jsonObject?.has(fieldName) == true) {
-            val el: JsonElement = jsonObject.get(fieldName)
-            when {
-                el.isJsonPrimitive && el.asJsonPrimitive.isNumber -> el.asInt
-                el is JsonNull || el.asString.isEmpty() -> 0
-                else -> el.asInt
-            }
-        } else 0
+        val el: JsonElement? = jsonObject?.takeIf { it.has(fieldName) }?.get(fieldName)
+        if (el == null || !el.isJsonPrimitive) 0 else el.asJsonPrimitive.let { primitive ->
+            if (primitive.isNumber) primitive.asInt else primitive.asString.toIntOrNull() ?: 0
+        }
     }
 
     fun getFloat(fieldName: String, jsonObject: JsonObject?): Float = safeGet({ 0f }) {
-        if (jsonObject?.has(fieldName) == true) {
-            val el: JsonElement = jsonObject.get(fieldName)
-            when {
-                el.isJsonPrimitive && el.asJsonPrimitive.isNumber -> el.asFloat
-                el is JsonNull || el.asString.isEmpty() -> 0f
-                else -> el.asFloat
-            }
-        } else getInt(fieldName, jsonObject).toFloat()
+        if (jsonObject?.has(fieldName) != true) return@safeGet getInt(fieldName, jsonObject).toFloat()
+        val el: JsonElement = jsonObject.get(fieldName)
+        if (!el.isJsonPrimitive) 0f else el.asJsonPrimitive.let { primitive ->
+            if (primitive.isNumber) primitive.asFloat else primitive.asString.toFloatOrNull() ?: 0f
+        }
     }
 
     fun getJsonArray(fieldName: String, jsonObject: JsonObject?): JsonArray = safeGet({ JsonArray() }) {
@@ -138,9 +146,9 @@ object JsonUtils {
     }
 
     fun getLong(fieldName: String, jsonObject: JsonObject?): Long = safeGet({ 0L }) {
-        if (jsonObject?.has(fieldName) == true) {
-            val el: JsonElement = jsonObject.get(fieldName)
-            if (el is JsonNull) 0L else el.asLong
-        } else 0L
+        val el: JsonElement? = jsonObject?.takeIf { it.has(fieldName) }?.get(fieldName)
+        if (el == null || !el.isJsonPrimitive) 0L else el.asJsonPrimitive.let { primitive ->
+            if (primitive.isNumber) primitive.asLong else primitive.asString.toLongOrNull() ?: 0L
+        }
     }
 }
