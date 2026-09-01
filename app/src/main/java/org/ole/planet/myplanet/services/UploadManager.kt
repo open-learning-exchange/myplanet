@@ -265,7 +265,7 @@ class UploadManager @Inject constructor(
                     bulkDocs.add(teamData.serialized)
                 }
 
-                if (bulkDocs.size() == 0) return@processInBatches
+                if (bulkDocs.isEmpty()) return@processInBatches
 
                 val payload = com.google.gson.JsonObject()
                 payload.add("docs", bulkDocs)
@@ -472,7 +472,7 @@ class UploadManager @Inject constructor(
                     }
                 }
 
-                if (bulkDocsArray.size() > 0) {
+                if (!bulkDocsArray.isEmpty()) {
                     val bulkRequest = JsonObject()
                     bulkRequest.add("docs", bulkDocsArray)
 

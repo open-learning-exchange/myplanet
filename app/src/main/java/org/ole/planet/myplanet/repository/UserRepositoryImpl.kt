@@ -1223,7 +1223,7 @@ class UserRepositoryImpl @Inject constructor(
     private fun hasShelfDataUltraFast(shelfDoc: JsonObject): Boolean {
         return listOf("resourceIds", "courseIds", "meetupIds", "teamIds").any { key ->
             shelfDoc.has(key) && shelfDoc.get(key).let { element ->
-                element.isJsonArray && element.asJsonArray.size() > 0
+                element.isJsonArray && !element.asJsonArray.isEmpty()
             }
         }
     }
