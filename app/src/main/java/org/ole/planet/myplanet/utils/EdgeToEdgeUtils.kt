@@ -31,6 +31,7 @@ object EdgeToEdgeUtils {
             view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
             WindowInsetsCompat.CONSUMED
         }
+        ViewCompat.requestApplyInsets(rootView)
     }
 
     /**
@@ -63,6 +64,7 @@ object EdgeToEdgeUtils {
             )
             WindowInsetsCompat.CONSUMED
         }
+        ViewCompat.requestApplyInsets(rootView)
     }
 
     /**
@@ -85,6 +87,7 @@ object EdgeToEdgeUtils {
         val toolbarBasePaddingLeft = toolbar.paddingLeft
         val toolbarBasePaddingRight = toolbar.paddingRight
         val toolbarBasePaddingBottom = toolbar.paddingBottom
+        val toolbarBaseHeight = toolbar.minimumHeight
 
         ViewCompat.setOnApplyWindowInsetsListener(rootView) { view, windowInsets ->
             val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -95,8 +98,17 @@ object EdgeToEdgeUtils {
                 toolbarBasePaddingRight,
                 toolbarBasePaddingBottom
             )
+            val desiredHeight = toolbarBaseHeight + insets.top + toolbarBasePaddingBottom
+            toolbar.layoutParams?.let { params ->
+                if (params.height != desiredHeight) {
+                    params.height = desiredHeight
+                    toolbar.layoutParams = params
+                }
+            }
             WindowInsetsCompat.CONSUMED
         }
+
+        ViewCompat.requestApplyInsets(rootView)
     }
 
     private fun configureEdgeToEdge(
