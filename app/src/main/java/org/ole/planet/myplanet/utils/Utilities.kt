@@ -85,7 +85,7 @@ object Utilities {
     }
 
     fun toHex(arg: String?): String {
-        return arg?.toByteArray()?.let { String.format("%x", BigInteger(1, it)) } ?: ""
+        return arg?.toByteArray()?.let { BigInteger(1, it).toString(16) } ?: ""
     }
 
     fun normalizeText(str: String): String {

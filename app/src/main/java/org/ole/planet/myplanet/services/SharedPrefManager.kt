@@ -99,7 +99,7 @@ class SharedPrefManager @Inject constructor(
     }
 
     fun getSelectedTeamId(): String? {
-        return pref.getString(SELECTED_TEAM_ID, "").takeIf { !it.isNullOrEmpty() } ?: ""
+        return pref.getString(SELECTED_TEAM_ID, "") ?: ""
     }
 
     fun setSelectedTeamId(selectedTeamId: String?) {
@@ -115,7 +115,7 @@ class SharedPrefManager @Inject constructor(
     }
 
     fun getTeamName(): String? {
-        return pref.getString(TEAM_NAME, "").takeIf { !it.isNullOrEmpty() } ?: ""
+        return pref.getString(TEAM_NAME, "") ?: ""
     }
 
     fun setTeamName(teamName: String?) {

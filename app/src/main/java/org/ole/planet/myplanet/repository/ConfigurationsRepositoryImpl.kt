@@ -217,8 +217,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             val code = response.code()
             if (response.isSuccessful) {
                 val ss = withContext(dispatcherProvider.io) { response.body()?.string() }
-                val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
-                val dbCount = myList?.size ?: 0
+                val dbCount = countCommaEntries(ss)
                 dbCount >= 8
             } else {
                 code == 401
@@ -226,6 +225,18 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         } catch (_: Exception) {
             false
         }
+    }
+
+    private fun countCommaEntries(body: String?): Int {
+        if (body == null) return 0
+        var end = body.length
+        while (end > 0 && body[end - 1] == ',') end--
+        if (end == 0) return 0
+        var commaCount = 0
+        for (i in 0 until end) {
+            if (body[i] == ',') commaCount++
+        }
+        return commaCount + 1
     }
 
     override suspend fun checkCheckSum(path: String): Boolean {
@@ -380,6 +391,22 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
     override fun getPlanetType(): String? {
         return sharedPrefManager.getRawString("planetType")
+    }
+
+    override fun getParentCode(): String {
+        return sharedPrefManager.getParentCode()
+    }
+
+    override fun getCommunityName(): String {
+        return sharedPrefManager.getCommunityName()
+    }
+
+    override fun getCommunityLeaders(): String {
+        return sharedPrefManager.getCommunityLeaders()
+    }
+
+    override fun clearPreferences() {
+        sharedPrefManager.clearPreferences()
     }
 
     override suspend fun clearFirstRunStorageAndSetFlag(hasWritePermission: Boolean) {
