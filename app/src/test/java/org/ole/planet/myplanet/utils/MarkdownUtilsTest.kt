@@ -62,6 +62,13 @@ class MarkdownUtilsTest {
     }
 
     @Test
+    fun prependBaseUrlToImages_treats_dollar_in_path_literally() {
+        val markdown = "![alt](resources/pa\$th/image.png)"
+        val expected = "<img src=http://base.url/pa\$th/image.png width=150 height=100/>"
+        assertEquals(expected, MarkdownUtils.prependBaseUrlToImages(markdown, "http://base.url/"))
+    }
+
+    @Test
     fun AlignTagHandler_returns_correct_spans_for_attributes() {
         val handler = MarkdownUtils.AlignTagHandler()
         val configuration = mockk<MarkwonConfiguration>()
