@@ -243,15 +243,33 @@ class CoursesRepositoryImpl @Inject constructor(
         return myLibraryDao.getCourseResources(courseId, isOffline)
     }
 
-    internal fun matchesAllParts(title: String, parts: List<String>): Boolean {
-        return parts.all { title.contains(it) }
-    }
+    override suspend fun filterCourses(
+        searchText: String,
+        gradeLevel: String,
+        subjectLevel: String,
+        tagNames: List<String>
+    ): List<MyCourse> {
+        val courseIdsWithTags = if (tagNames.isNotEmpty()) {
+            tagsRepository.getLinkIdsForTagNames("courses", tagNames).toSet()
+        } else {
+            null
+        }
 
-    override suspend fun search(query: String): List<MyCourse> {
-        val allCourses = mapCourses(courseDao.getAll())
-        val trimmedQuery = query.trim()
+        if (tagNames.isNotEmpty() && courseIdsWithTags.isNullOrEmpty()) {
+            return emptyList()
+        }
+
+        val filteredCandidates = mapCourses(courseDao.getAll())
+            .asSequence()
+            .filter { !it.courseTitle.isNullOrEmpty() }
+            .filter { gradeLevel.isEmpty() || it.gradeLevel == gradeLevel }
+            .filter { subjectLevel.isEmpty() || it.subjectLevel == subjectLevel }
+            .filter { courseIdsWithTags == null || courseIdsWithTags.contains(it.courseId) }
+            .toList()
+
+        val trimmedQuery = searchText.trim()
         if (trimmedQuery.isEmpty()) {
-            return allCourses
+            return filteredCandidates.sortedBy { it.courseTitle?.lowercase().orEmpty() }
         }
 
         val normalizedQueryParts = trimmedQuery.splitToSequence(" ")
@@ -264,7 +282,7 @@ class CoursesRepositoryImpl @Inject constructor(
         val titleContainsQuery = mutableListOf<MyCourse>()
         val contentContainsQuery = mutableListOf<MyCourse>()
 
-        for (item in allCourses) {
+        for (item in filteredCandidates) {
             val title = item.courseTitleNormal ?: item.courseTitle?.let { Utilities.normalizeText(it) }.orEmpty()
 
             if (title.startsWith(normalizedQuery)) {
@@ -288,44 +306,6 @@ class CoursesRepositoryImpl @Inject constructor(
             }
         }
         return startsWithQuery + titleContainsQuery + contentContainsQuery
-    }
-
-    override suspend fun filterCourses(
-        searchText: String,
-        gradeLevel: String,
-        subjectLevel: String,
-        tagNames: List<String>
-    ): List<MyCourse> {
-        val courseIdsWithTags = if (tagNames.isNotEmpty()) {
-            tagsRepository.getLinkIdsForTagNames("courses", tagNames).toSet()
-        } else {
-            null
-        }
-
-        if (tagNames.isNotEmpty() && courseIdsWithTags.isNullOrEmpty()) {
-            return emptyList()
-        }
-
-        return mapCourses(courseDao.getAll())
-            .asSequence()
-            .filter { !it.courseTitle.isNullOrEmpty() }
-            .filter { course ->
-                if (searchText.isEmpty()) {
-                    true
-                } else {
-                    course.courseTitle?.contains(searchText, ignoreCase = true) == true ||
-                        course.description?.contains(searchText, ignoreCase = true) == true ||
-                        course.courseSteps?.any { step ->
-                            step.stepTitle?.contains(searchText, ignoreCase = true) == true ||
-                                step.description?.contains(searchText, ignoreCase = true) == true
-                        } == true
-                }
-            }
-            .filter { gradeLevel.isEmpty() || it.gradeLevel == gradeLevel }
-            .filter { subjectLevel.isEmpty() || it.subjectLevel == subjectLevel }
-            .filter { courseIdsWithTags == null || courseIdsWithTags.contains(it.courseId) }
-            .sortedBy { it.courseTitle?.lowercase() ?: "" }
-            .toList()
     }
 
     override suspend fun saveSearchActivity(

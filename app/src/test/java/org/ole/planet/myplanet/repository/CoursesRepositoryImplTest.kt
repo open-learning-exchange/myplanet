@@ -104,28 +104,20 @@ class CoursesRepositoryImplTest {
     }
 
     @Test
-    fun testMatchesAllParts() {
-        assertTrue(repository.matchesAllParts("hello world", listOf("hello", "world")))
-        assertFalse(repository.matchesAllParts("hello world", listOf("hello", "universe")))
-        assertTrue(repository.matchesAllParts("the quick brown fox", listOf("quick", "fox")))
-        assertTrue(repository.matchesAllParts("test", emptyList<String>()))
-    }
-
-    @Test
-    fun `search empty query returns all courses`() = runTest {
+    fun `filterCourses empty query returns all courses`() = runTest {
         coEvery { courseDao.getAll() } returns listOf(
             MyCourse(id = "id1", courseId = "id1", courseTitle = "Math", courseTitleNormal = "math")
         )
         coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
 
-        val result = repository.search("")
+        val result = repository.filterCourses("", "", "", emptyList())
 
         assertEquals(1, result.size)
         assertEquals("Math", result.first().courseTitle)
     }
 
     @Test
-    fun `search filters query parts before fetching and sorts startsWith before contains`() = runTest {
+    fun `filterCourses filters query parts and sorts startsWith before contains`() = runTest {
         coEvery { courseDao.getAll() } returns listOf(
             MyCourse(id = "1", courseId = "1", courseTitle = "Basic Math", courseTitleNormal = "basic math"),
             MyCourse(id = "2", courseId = "2", courseTitle = "Science", courseTitleNormal = "science"),
@@ -133,7 +125,7 @@ class CoursesRepositoryImplTest {
         )
         coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
 
-        val result = repository.search("Math")
+        val result = repository.filterCourses("Math", "", "", emptyList())
 
         assertEquals(2, result.size)
         assertEquals("Math 101", result[0].courseTitle)
@@ -141,14 +133,14 @@ class CoursesRepositoryImplTest {
     }
 
     @Test
-    fun `search multi word matches all parts`() = runTest {
+    fun `filterCourses multi word matches all parts`() = runTest {
         coEvery { courseDao.getAll() } returns listOf(
             MyCourse(id = "1", courseId = "1", courseTitle = "Basic Math 101", courseTitleNormal = "basic math 101"),
             MyCourse(id = "2", courseId = "2", courseTitle = "Basic Science 101", courseTitleNormal = "basic science 101")
         )
         coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
 
-        val result = repository.search("Basic Math")
+        val result = repository.filterCourses("Basic Math", "", "", emptyList())
 
         assertEquals(1, result.size)
         assertEquals("Basic Math 101", result[0].courseTitle)
@@ -368,7 +360,7 @@ class CoursesRepositoryImplTest {
     }
 
     @Test
-    fun `search ranks prefix matches first, then title contains, then content contains`() = runTest {
+    fun `filterCourses ranks prefix matches first, then title contains, then content contains`() = runTest {
         val course1 = MyCourse(id = "c1", courseId = "c1", courseTitle = "Biology 101", description = "Introductory life sciences")
         val course2 = MyCourse(id = "c2", courseId = "c2", courseTitle = "Advanced Biology", description = "Cellular mechanics")
         val course3 = MyCourse(
@@ -385,7 +377,7 @@ class CoursesRepositoryImplTest {
             CourseStep(id = "s1", courseId = "c3", stepTitle = "Molecular Biology", description = "DNA basics")
         )
 
-        val results = repository.search("Biology")
+        val results = repository.filterCourses("Biology", "", "", emptyList())
         assertEquals(3, results.size)
         assertEquals("c1", results[0].id) // Prefix match in title ("Biology 101")
         assertEquals("c2", results[1].id) // Contains in title ("Advanced Biology")
@@ -393,7 +385,7 @@ class CoursesRepositoryImplTest {
     }
 
     @Test
-    fun `filterCourses matches title, description, and step content`() = runTest {
+    fun `filterCourses matches title, description, and step content with diacritic normalization`() = runTest {
         val course1 = MyCourse(id = "c1", courseId = "c1", courseTitle = "Algebra I", description = "Basic equations", gradeLevel = "Grade 1")
         val course2 = MyCourse(id = "c2", courseId = "c2", courseTitle = "Math Overview", description = "Includes Algebra and Calculus", gradeLevel = "Grade 1")
         val course3 = MyCourse(
@@ -412,15 +404,15 @@ class CoursesRepositoryImplTest {
         )
 
         val results = repository.filterCourses(
-            searchText = "Algebra",
+            searchText = "algébra",
             gradeLevel = "Grade 1",
             subjectLevel = "",
             tagNames = emptyList()
         )
 
         assertEquals(3, results.size)
-        assertTrue(results.any { it.id == "c1" }) // matched title
-        assertTrue(results.any { it.id == "c2" }) // matched description
-        assertTrue(results.any { it.id == "c3" }) // matched step title
+        assertEquals("c1", results[0].id) // Prefix match in title
+        assertEquals("c2", results[1].id) // Title match
+        assertEquals("c3", results[2].id) // Step content match
     }
 }
