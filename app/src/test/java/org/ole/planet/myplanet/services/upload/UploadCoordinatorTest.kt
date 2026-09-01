@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.services.upload
 
-import android.content.Context
 import android.util.Log
 import com.google.gson.JsonObject
 import io.mockk.coEvery
@@ -35,7 +34,6 @@ import retrofit2.Response
 class UploadCoordinatorTest {
 
     private val uploadRepository: UploadRepository = mockk(relaxed = true)
-    private val context: Context = mockk(relaxed = true)
     private val retryQueue: RetryQueue = mockk(relaxed = true)
 
     private lateinit var uploadCoordinator: UploadCoordinator
@@ -63,7 +61,6 @@ class UploadCoordinatorTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
         uploadCoordinator = UploadCoordinator(
             uploadRepository = uploadRepository,
-            context = context,
             retryQueue = retryQueue,
             dispatcherProvider = TestDispatcherProvider(testDispatcher)
         )
@@ -122,7 +119,6 @@ class UploadCoordinatorTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
         uploadCoordinator = UploadCoordinator(
             uploadRepository = uploadRepository,
-            context = context,
             retryQueue = retryQueue,
             dispatcherProvider = TestDispatcherProvider(testDispatcher)
         )
@@ -162,7 +158,6 @@ class UploadCoordinatorTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
         uploadCoordinator = UploadCoordinator(
             uploadRepository = uploadRepository,
-            context = context,
             retryQueue = retryQueue,
             dispatcherProvider = TestDispatcherProvider(testDispatcher)
         )
@@ -196,7 +191,6 @@ class UploadCoordinatorTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
         uploadCoordinator = UploadCoordinator(
             uploadRepository = uploadRepository,
-            context = context,
             retryQueue = retryQueue,
             dispatcherProvider = TestDispatcherProvider(testDispatcher)
         )
@@ -257,7 +251,6 @@ class UploadCoordinatorTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
         uploadCoordinator = UploadCoordinator(
             uploadRepository = uploadRepository,
-            context = context,
             retryQueue = retryQueue,
             dispatcherProvider = TestDispatcherProvider(testDispatcher)
         )
@@ -297,7 +290,6 @@ class UploadCoordinatorTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
         uploadCoordinator = UploadCoordinator(
             uploadRepository = uploadRepository,
-            context = context,
             retryQueue = retryQueue,
             dispatcherProvider = TestDispatcherProvider(testDispatcher)
         )
@@ -331,7 +323,6 @@ class UploadCoordinatorTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
         uploadCoordinator = UploadCoordinator(
             uploadRepository = uploadRepository,
-            context = context,
             retryQueue = retryQueue,
             dispatcherProvider = TestDispatcherProvider(testDispatcher)
         )
