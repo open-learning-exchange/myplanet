@@ -96,7 +96,6 @@ interface ResourcesRepository {
     suspend fun batchInsertResources(documents: List<JsonObject>): List<String>
     suspend fun batchInsertMyLibrary(shelfId: String?, documents: List<JsonObject>): Int
     suspend fun getResourceListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel>
-    suspend fun getEnrichedLibraries(isMyCourseLib: Boolean, modelId: String?): List<LibraryWithMetadata>
     suspend fun getLibraryItemsByResourceIds(ids: Collection<String>): List<MyLibrary>
     suspend fun getTeamPrivateResources(teamId: String): List<MyLibrary>
     suspend fun getPublicLibraryItems(): List<MyLibrary>
