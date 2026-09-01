@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
+import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao.UploadedPhoto
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.ExamQuestion
@@ -639,5 +640,34 @@ class SubmissionsRepositoryImplTest {
         }
         val result = repository.getNormalizedSubmitterName(submission)
         assertNull(result)
+    }
+
+    @Test
+    fun `markPhotoUploaded delegates single photo to dao`() = runTest {
+        repository.markPhotoUploaded("photo1", "rev1", "remote1")
+        coVerify { submitPhotosDao.markUploaded("photo1", "rev1", "remote1") }
+    }
+
+    @Test
+    fun `markPhotoUploaded ignores null photo id`() = runTest {
+        repository.markPhotoUploaded(null, "rev1", "remote1")
+        coVerify(exactly = 0) { submitPhotosDao.markUploaded(any(), any(), any()) }
+    }
+
+    @Test
+    fun `markPhotosUploadedBatch delegates batch to dao in one call`() = runTest {
+        val uploads = listOf(
+            UploadedPhoto("photo1", "rev1", "remote1"),
+            UploadedPhoto("photo2", "rev2", "remote2"),
+            UploadedPhoto("photo3", "rev3", "remote3")
+        )
+        repository.markPhotosUploadedBatch(uploads)
+        coVerify(exactly = 1) { submitPhotosDao.markUploadedBatch(uploads) }
+    }
+
+    @Test
+    fun `markPhotosUploadedBatch does not call dao for empty batch`() = runTest {
+        repository.markPhotosUploadedBatch(emptyList())
+        coVerify(exactly = 0) { submitPhotosDao.markUploadedBatch(any()) }
     }
 }
