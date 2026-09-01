@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -13,20 +14,16 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EnterprisesRepositoryImplTest {
 
-    private val teamDao: TeamDao = mockk()
-    private val timeProvider: TimeProvider = mockk()
-    private val testDispatcher = UnconfinedTestDispatcher()
-    private val dispatcherProvider: DispatcherProvider = mockk {
-        every { default } returns testDispatcher
-        every { io } returns testDispatcher
-        every { main } returns testDispatcher
-    }
+    private val teamDao: TeamDao = mockk(relaxed = true)
+    private val timeProvider: TimeProvider = mockk(relaxed = true)
+    private val dispatcherProvider: DispatcherProvider = TestDispatcherProvider(UnconfinedTestDispatcher())
 
     private val repository = EnterprisesRepositoryImpl(
         teamDao, timeProvider, dispatcherProvider
@@ -56,6 +53,7 @@ class EnterprisesRepositoryImplTest {
 
     @Test
     fun `exportReportsAsCsv calculates correct profitLoss and endingBalance`() = runTest {
+        val teamId = "team123"
         val report = MyTeam().apply {
             startDate = 1000L
             endDate = 2000L
@@ -67,8 +65,14 @@ class EnterprisesRepositoryImplTest {
             wages = 10
             otherExpenses = 15
         }
+        val archivedReport = MyTeam().apply {
+            status = "archived"
+            createdDate = 4000L
+        }
 
-        val result = repository.exportReportsAsCsv(listOf(report), "Test Team")
+        coEvery { teamDao.getByTeamIdAndDocType(teamId, "report") } returns listOf(report, archivedReport)
+
+        val result = repository.exportReportsAsCsv(teamId, "Test Team")
 
         val expectedTotalIncome = 50 + 20 // 70
         val expectedTotalExpenses = 10 + 15 // 25
@@ -97,5 +101,98 @@ class EnterprisesRepositoryImplTest {
             .toString()
 
         assertEquals(expectedCsv, result)
+    }
+
+    @Test
+    fun `getReportsFlow deduplicates byte-identical emissions`() = runTest {
+        val r1 = report("r1", "rev1", sales = 10)
+        val r2 = report("r1", "rev1", sales = 10)
+        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
+            flowOf(listOf(r1), listOf(r2))
+
+        val emissions = mutableListOf<List<MyTeam>>()
+        repository.getReportsFlow("team1").collect { emissions.add(it) }
+
+        assertEquals(1, emissions.size)
+    }
+
+    @Test
+    fun `getReportsFlow emits when a locally-edited financial field changes with rev unchanged`() = runTest {
+        val before = report("r1", "rev1", sales = 10)
+        val after = report("r1", "rev1", sales = 25)
+        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
+            flowOf(listOf(before), listOf(after))
+
+        val emissions = mutableListOf<List<MyTeam>>()
+        repository.getReportsFlow("team1").collect { emissions.add(it) }
+
+        assertEquals(2, emissions.size)
+        assertEquals(10, emissions[0][0].sales)
+        assertEquals(25, emissions[1][0].sales)
+    }
+
+    @Test
+    fun `getReportsFlow emits when description changes with id and rev unchanged`() = runTest {
+        val before = report("r1", "rev1", description = "old")
+        val after = report("r1", "rev1", description = "new")
+        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
+            flowOf(listOf(before), listOf(after))
+
+        val emissions = mutableListOf<List<MyTeam>>()
+        repository.getReportsFlow("team1").collect { emissions.add(it) }
+
+        assertEquals(2, emissions.size)
+        assertEquals("old", emissions[0][0].description)
+        assertEquals("new", emissions[1][0].description)
+    }
+
+    @Test
+    fun `getReportsFlow emits when a report is added`() = runTest {
+        val r1 = report("r1", "rev1", createdDate = 100L)
+        val r2 = report("r2", "rev2", createdDate = 200L)
+        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
+            flowOf(listOf(r1), listOf(r1, r2))
+
+        val emissions = mutableListOf<List<MyTeam>>()
+        repository.getReportsFlow("team1").collect { emissions.add(it) }
+
+        assertEquals(2, emissions.size)
+        assertEquals(1, emissions[0].size)
+        assertEquals(2, emissions[1].size)
+    }
+
+    // Archived-report filtering and createdDate ordering now live in the DAO query
+    // (TeamDao.observeNonArchivedReportsByTeamId), so they are covered by TeamDaoTest
+    // against a real database. What the repository still owns is handing the rows on
+    // in the order the query returned them.
+    @Test
+    fun `getReportsFlow preserves the order returned by the dao`() = runTest {
+        val r2 = report("r2", "rev2", createdDate = 200L)
+        val r1 = report("r1", "rev1", createdDate = 100L)
+        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
+            flowOf(listOf(r2, r1))
+
+        val emissions = mutableListOf<List<MyTeam>>()
+        repository.getReportsFlow("team1").collect { emissions.add(it) }
+
+        assertEquals(1, emissions.size)
+        assertEquals(listOf("r2", "r1"), emissions[0].map { it._id })
+    }
+
+    private fun report(
+        id: String,
+        rev: String,
+        description: String? = null,
+        sales: Int = 0,
+        createdDate: Long = 0L,
+        status: String? = null,
+    ) = MyTeam().apply {
+        _id = id
+        _rev = rev
+        docType = "report"
+        this.description = description
+        this.sales = sales
+        this.createdDate = createdDate
+        this.status = status
     }
 }

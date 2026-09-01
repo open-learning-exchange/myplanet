@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 
 data class CommunityTabState(
@@ -21,7 +20,6 @@ data class CommunityTabState(
 
 @HiltViewModel
 class CommunityTabViewModel @Inject constructor(
-    private val sharedPrefManager: SharedPrefManager,
     private val configurationsRepository: ConfigurationsRepository,
     private val userSessionManager: UserSessionManager
 ) : ViewModel() {
@@ -31,8 +29,8 @@ class CommunityTabViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val parentCode = sharedPrefManager.getParentCode()
-            val communityName = sharedPrefManager.getCommunityName()
+            val parentCode = configurationsRepository.getParentCode()
+            val communityName = configurationsRepository.getCommunityName()
             val planetType = configurationsRepository.getPlanetType()
             val user = userSessionManager.getUserModel()
             val planetCode = user?.planetCode.orEmpty()
