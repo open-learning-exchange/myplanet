@@ -300,7 +300,7 @@ class CoursesRepositoryImpl @Inject constructor(
             .filter { gradeLevel.isEmpty() || it.gradeLevel == gradeLevel }
             .filter { subjectLevel.isEmpty() || it.subjectLevel == subjectLevel }
             .filter { courseIdsWithTags == null || courseIdsWithTags.contains(it.courseId) }
-            .sortedBy { it.courseTitle?.lowercase() ?: "" }
+            .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.courseTitle ?: "" })
             .toList()
     }
 
@@ -862,7 +862,6 @@ class CoursesRepositoryImpl @Inject constructor(
         } else {
             courseStepDao.getByCourseIds(courseIds)
                 .groupBy { it.courseId ?: "" }
-                .mapValues { entry -> entry.value.map { it } }
         }
         return courses.map { course ->
             val courseKey = course.courseId ?: course.id

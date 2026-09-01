@@ -38,7 +38,11 @@ class LifeRepositoryImpl @Inject constructor(
 
     override suspend fun updateMyLifeListOrder(list: List<MyLife>) {
         val userId = list.firstOrNull()?.userId
-        val idToIndex = list.mapIndexed { index, item -> item._id to index }.toMap()
+        val idToIndex = buildMap(list.size) {
+            list.forEachIndexed { index, item ->
+                put(item._id, index)
+            }
+        }
         val ids = idToIndex.keys.filter { it.isNotEmpty() }
         if (ids.isEmpty()) return
 
@@ -66,7 +70,7 @@ class LifeRepositoryImpl @Inject constructor(
         return imageId?.takeIf { it.isNotBlank() }
             ?: title?.takeIf { it.isNotBlank() }
             ?: _id.takeIf { it.isNotBlank() }
-            ?: System.identityHashCode(this)
+            ?: listOf(userId, isVisible, weight)
     }
 
     override suspend fun getMyLifeByUserId(userId: String?, ensureLatest: Boolean): List<MyLife> {
