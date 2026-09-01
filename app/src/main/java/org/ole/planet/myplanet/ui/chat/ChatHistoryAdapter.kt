@@ -101,10 +101,11 @@ class ChatHistoryAdapter(
 
     override fun onBindViewHolder(holder: ViewHolderChat, position: Int) {
         val item = getItem(position)
-        if (item.conversations != null && item.conversations?.isNotEmpty() == true) {
-            holder.rowChatHistoryBinding.chatTitle.text = item.conversations?.get(0)?.query
-            holder.rowChatHistoryBinding.chatTitle.contentDescription = item.conversations?.get(0)?.query
-            chatTitle = item.conversations?.get(0)?.query
+        val firstQuery = item.conversations?.getOrNull(0)?.query
+        if (firstQuery != null) {
+            holder.rowChatHistoryBinding.chatTitle.text = firstQuery
+            holder.rowChatHistoryBinding.chatTitle.contentDescription = firstQuery
+            chatTitle = firstQuery
         } else {
             holder.rowChatHistoryBinding.chatTitle.text = item.title
             holder.rowChatHistoryBinding.chatTitle.contentDescription = item.title
