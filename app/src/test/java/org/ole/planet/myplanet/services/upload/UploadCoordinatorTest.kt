@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.services.upload
 
-import android.content.Context
 import android.util.Log
 import com.google.gson.JsonObject
 import io.mockk.coEvery
@@ -27,7 +26,6 @@ import org.ole.planet.myplanet.utils.UrlUtils
 @OptIn(ExperimentalCoroutinesApi::class)
 class UploadCoordinatorTest {
 
-    private val context: Context = mockk(relaxed = true)
     private val uploadRepository: UploadRepository = mockk(relaxed = true)
     private val retryQueue: RetryQueue = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
@@ -52,7 +50,6 @@ class UploadCoordinatorTest {
 
         coordinator = UploadCoordinator(
             uploadRepository,
-            context,
             retryQueue,
             TestDispatcherProvider(testDispatcher)
         )
