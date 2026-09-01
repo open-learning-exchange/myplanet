@@ -1,9 +1,31 @@
 package org.ole.planet.myplanet.model
 
+import android.util.Log
+import io.mockk.every
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Test
 
 class HealthExaminationTest {
+
+    // JsonUtils.safeGet logs through android.util.Log on its fallback path, which the
+    // non-boolean/malformed cases below exercise, so Log needs stubbing even though
+    // formatConditions itself is pure. Mirrors JsonUtilsTest.
+    @Before
+    fun setUp() {
+        mockkStatic(Log::class)
+        every { Log.isLoggable(any(), any()) } returns true
+        every { Log.d(any(), any()) } returns 0
+        every { Log.d(any(), any(), any()) } returns 0
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
+    }
 
     @Test
     fun formatConditions_nullReturnsEmpty() {
