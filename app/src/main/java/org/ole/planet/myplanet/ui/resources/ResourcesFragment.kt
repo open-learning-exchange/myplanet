@@ -12,6 +12,7 @@ import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.annotation.VisibleForTesting
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.ImageViewCompat
@@ -83,6 +84,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private var layoutViewToggle: View? = null
     private var toggleGridButton: ImageButton? = null
     private var toggleListButton: ImageButton? = null
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal var searchTags: MutableList<TagEntity> = ArrayList()
     private lateinit var config: ChipCloudConfig
     private lateinit var adapterLibrary: ResourcesAdapter
@@ -103,6 +105,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private val viewModel: ResourcesViewModel by viewModels()
     @Inject
     lateinit var realtimeSyncManager: RealtimeSyncManager
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal var selectedDownloadFilterIndex: Int = 0   // 0 = All
     private var lastDownloadFilterIndex: Int = 0
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
@@ -135,6 +138,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         saveFilterState(outState)
     }
 
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal fun saveFilterState(outState: Bundle) {
         outState.putStringArrayList(KEY_FILTER_SUBJECTS, ArrayList(subjects))
         outState.putStringArrayList(KEY_FILTER_LANGUAGES, ArrayList(languages))
@@ -145,6 +149,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         outState.putStringArrayList(KEY_FILTER_TAG_NAMES, ArrayList(searchTags.map { it.name.orEmpty() }))
     }
 
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal fun restoreFilterState(bundle: Bundle?) {
         bundle ?: return
         bundle.getStringArrayList(KEY_FILTER_SUBJECTS)?.let { subjects = it.toMutableSet() }

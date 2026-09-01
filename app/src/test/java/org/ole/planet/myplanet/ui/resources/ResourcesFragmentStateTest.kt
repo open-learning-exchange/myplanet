@@ -53,6 +53,38 @@ class ResourcesFragmentStateTest {
     }
 
     @Test
+    fun `test fragment lifecycle onSaveInstanceState and onCreate round-trip`() {
+        val fragment = ResourcesFragment()
+        fragment.subjects = mutableSetOf("History")
+        fragment.languages = mutableSetOf("Spanish", "English")
+        fragment.levels = mutableSetOf("Grade 2")
+        fragment.mediums = mutableSetOf("Audio")
+        fragment.selectedDownloadFilterIndex = 2
+        fragment.searchTags = mutableListOf(
+            TagEntity().apply {
+                id = "tag99"
+                name = "World History"
+            }
+        )
+
+        val savedState = Bundle()
+        fragment.onSaveInstanceState(savedState)
+
+        val recreatedFragment = ResourcesFragment()
+        recreatedFragment.onCreate(savedState)
+
+        val selected = recreatedFragment.getSelectedFilter()
+        assertEquals(setOf("History"), selected["subjects"])
+        assertEquals(setOf("Spanish", "English"), selected["languages"])
+        assertEquals(setOf("Grade 2"), selected["levels"])
+        assertEquals(setOf("Audio"), selected["mediums"])
+        assertEquals(2, recreatedFragment.selectedDownloadFilterIndex)
+        assertEquals(1, recreatedFragment.searchTags.size)
+        assertEquals("tag99", recreatedFragment.searchTags[0].id)
+        assertEquals("World History", recreatedFragment.searchTags[0].name)
+    }
+
+    @Test
     fun `test restoreFilterState with null bundle does not clear or alter initial state`() {
         val fragment = ResourcesFragment()
         fragment.subjects = mutableSetOf("Math")
@@ -61,4 +93,17 @@ class ResourcesFragmentStateTest {
         assertTrue(fragment.searchTags.isEmpty())
         assertEquals(0, fragment.selectedDownloadFilterIndex)
     }
+
+    @Test
+    fun `test onCreate with null savedInstanceState maintains default empty filters`() {
+        val fragment = ResourcesFragment()
+        fragment.onCreate(null)
+        assertTrue(fragment.subjects.isEmpty())
+        assertTrue(fragment.languages.isEmpty())
+        assertTrue(fragment.levels.isEmpty())
+        assertTrue(fragment.mediums.isEmpty())
+        assertTrue(fragment.searchTags.isEmpty())
+        assertEquals(0, fragment.selectedDownloadFilterIndex)
+    }
 }
+
