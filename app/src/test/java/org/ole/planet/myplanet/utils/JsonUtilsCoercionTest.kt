@@ -12,13 +12,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 
-/**
- * Characterisation tests for the coercions every JsonUtils accessor performs on
- * wrong-typed and missing values. These pin the behaviour so it can be verified
- * unchanged across the refactor in #16652 -- they must pass identically before and
- * after. Log is stubbed here only so this class can run against the pre-fix code;
- * JsonUtilsNoLogStubTest covers the fallback path without any stubbing.
- */
+/** Pins every JsonUtils coercion so #16652 can be verified as behaviour-preserving. */
 class JsonUtilsCoercionTest {
 
     @Before
@@ -34,26 +28,19 @@ class JsonUtilsCoercionTest {
 
     private fun obj(build: JsonObject.() -> Unit) = JsonObject().apply(build)
 
-    // ---- getBoolean ----
-
     @Test
     fun getBoolean_coercions() {
         assertEquals(true, JsonUtils.getBoolean("k", obj { addProperty("k", true) }))
         assertEquals(false, JsonUtils.getBoolean("k", obj { addProperty("k", false) }))
-        // string primitives go through Boolean.parseBoolean
         assertEquals(true, JsonUtils.getBoolean("k", obj { addProperty("k", "true") }))
         assertEquals(false, JsonUtils.getBoolean("k", obj { addProperty("k", "yes") }))
-        // numbers parse as "1"/"0" -> false
         assertEquals(false, JsonUtils.getBoolean("k", obj { addProperty("k", 1) }))
-        // non-primitives and null -> false, and must not throw
         assertEquals(false, JsonUtils.getBoolean("k", obj { add("k", JsonObject()) }))
         assertEquals(false, JsonUtils.getBoolean("k", obj { add("k", JsonArray()) }))
         assertEquals(false, JsonUtils.getBoolean("k", obj { add("k", JsonNull.INSTANCE) }))
         assertEquals(false, JsonUtils.getBoolean("missing", obj { addProperty("k", true) }))
         assertEquals(false, JsonUtils.getBoolean("k", null))
     }
-
-    // ---- getLong ----
 
     @Test
     fun getLong_coercions() {
@@ -68,8 +55,6 @@ class JsonUtilsCoercionTest {
         assertEquals(0L, JsonUtils.getLong("missing", obj { addProperty("k", 1) }))
         assertEquals(0L, JsonUtils.getLong("k", null))
     }
-
-    // ---- getInt ----
 
     @Test
     fun getInt_coercions() {
@@ -86,8 +71,6 @@ class JsonUtilsCoercionTest {
         assertEquals(0, JsonUtils.getInt("k", null))
     }
 
-    // ---- getFloat ----
-
     @Test
     fun getFloat_coercions() {
         assertEquals(1.5f, JsonUtils.getFloat("k", obj { addProperty("k", 1.5f) }), 0f)
@@ -101,8 +84,6 @@ class JsonUtilsCoercionTest {
         assertEquals(0f, JsonUtils.getFloat("k", null), 0f)
     }
 
-    // ---- getString(fieldName, obj): strict, requires an actual string ----
-
     @Test
     fun getStringByField_coercions() {
         assertEquals("v", JsonUtils.getString("k", obj { addProperty("k", "v") }))
@@ -114,8 +95,6 @@ class JsonUtilsCoercionTest {
         assertEquals("", JsonUtils.getString("k", null))
     }
 
-    // ---- getString(array, index): permissive, any primitive stringifies ----
-
     @Test
     fun getStringByIndex_coercions() {
         val arr = JsonArray().apply {
@@ -126,13 +105,10 @@ class JsonUtilsCoercionTest {
         assertEquals("true", JsonUtils.getString(arr, 2))
         assertEquals("", JsonUtils.getString(arr, 3))
         assertEquals("", JsonUtils.getString(arr, 4))
-        // out of bounds must not throw
         assertEquals("", JsonUtils.getString(arr, 99))
         assertEquals("", JsonUtils.getString(arr, -1))
         assertEquals("", JsonUtils.getString(JsonArray(), 0))
     }
-
-    // ---- container accessors ----
 
     @Test
     fun containerAccessors_coercions() {

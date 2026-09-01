@@ -6,16 +6,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * Regression test for #16652.
+ * Regression test for #16652: every case takes JsonUtils' wrong-type fallback path.
  *
- * Deliberately stubs nothing: no mockkStatic(Log::class), no Robolectric. Every case below
- * takes JsonUtils' wrong-type fallback path, which used to log from inside safeGet's catch
- * block. android.util.Log throws "not mocked" in a plain JVM test, and because that throw
- * came from inside the catch it escaped safeGet entirely -- so a "safe" accessor propagated
- * instead of returning its default.
- *
- * DO NOT add Log stubbing to this class. Its whole purpose is to run without it; stubbing
- * Log here would make it pass against the bug it exists to catch.
+ * DO NOT add Log stubbing here. This class must run without it -- stubbing Log would make
+ * it pass against the bug it exists to catch.
  */
 class JsonUtilsNoLogStubTest {
 
@@ -53,11 +47,7 @@ class JsonUtilsNoLogStubTest {
         assertEquals("", JsonUtils.getString(JsonArray(), 99))
     }
 
-    /**
-     * The exact shape from #16609: a true flag alongside a non-boolean sibling. Before the
-     * fix the sibling's throw escaped the filter and the caller's own catch swallowed it,
-     * discarding every condition.
-     */
+    /** The shape from #16609: a true flag alongside a non-boolean sibling. */
     @Test
     fun mixedValidAndMalformedValues_goodValuesSurvive() {
         val conditions = JsonObject().apply {
