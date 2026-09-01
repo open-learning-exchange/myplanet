@@ -121,12 +121,10 @@ class LifeAdapter(
     }
 
     override fun onItemMoveFinished() {
-        dragList?.let { list ->
-            val finalList = list.toList()
-            reorderCallback(finalList)
-            submitList(finalList)
-            dragList = null
-        }
+        val finalList = dragList?.toList() ?: return
+        dragList = null
+        reorderCallback(finalList)
+        submitList(finalList)
     }
 
     internal inner class LifeViewHolder(val binding: RowLifeBinding) : RecyclerView.ViewHolder(binding.root),

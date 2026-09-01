@@ -184,4 +184,13 @@ object UrlUtils {
         val url = baseUrl(spm())
         return "$url$path"
     }
+
+    fun getUserInfo(userInfo: String?): Pair<String, String> {
+        val info = userInfo?.split(":")?.dropLastWhile { it.isEmpty() }
+        return if (info != null && info.size > 1) {
+            Pair(info[0], info[1])
+        } else {
+            Pair("", "")
+        }
+    }
 }

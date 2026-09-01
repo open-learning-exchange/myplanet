@@ -59,9 +59,9 @@ class ServerUrlMapper @Inject constructor(
         val altUserInfo = altUri.userInfo
 
         if (altUserInfo != null) {
-            val userinfo = getUserInfo(altUri)
-            urlUser = userinfo[0]
-            urlPwd = userinfo[1]
+            val (user, pwd) = UrlUtils.getUserInfo(altUserInfo)
+            urlUser = user
+            urlPwd = pwd
         } else {
             urlUser = "satellite"
             urlPwd = settings.getString("serverPin", "") ?: ""
@@ -109,18 +109,6 @@ class ServerUrlMapper @Inject constructor(
                 updateUrlPreferences(editor, mapping.primaryUrl.toUri(), alternativeUrl, mapping.primaryUrl, settings)
             }
         }
-    }
-
-    private fun getUserInfo(uri: Uri): Array<String> {
-        val defaultInfo = arrayOf("", "")
-        val info = uri.userInfo?.split(":")?.dropLastWhile { it.isEmpty() }?.toTypedArray()
-
-        val result = if (info != null && info.size > 1) {
-            arrayOf(info[0], info[1])
-        } else {
-            defaultInfo
-        }
-        return result
     }
 
     suspend fun isUrlDirectlyReachable(url: String): Boolean {
