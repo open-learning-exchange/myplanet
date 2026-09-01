@@ -824,7 +824,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         super.onDestroy()
     }
     companion object {
-        /** Minimum spacing between progress-dialog redraws; collapses parallel-phase status bursts. */
         private const val SYNC_STATUS_SAMPLE_MS = 150L
         private val secondsAgoRegex by lazy { Regex("^\\d{1,2} seconds ago$") }
         private val urlProtocolRegex by lazy { Regex("^https?://") }
