@@ -22,6 +22,8 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -691,5 +693,63 @@ class ResourcesRepositoryImplTest {
             unmockkObject(MainApplication)
             unmockkObject(DownloadUtils)
         }
+    }
+
+    @Test
+    fun `getResourceListModels caches models and getCachedResourceListModels returns them`() = runTest {
+        val lib = MyLibrary().apply { id = "1"; resourceId = "r1"; title = "Cached Lib" }
+        coEvery { myLibraryDao.getPublic() } returns listOf(lib)
+        coEvery { tagsRepository.getTagsForResources(any()) } returns emptyMap()
+
+        val initial = repository.getCachedResourceListModels(false, null)
+        assertNull(initial)
+
+        val loaded = repository.getResourceListModels(false, null)
+        assertEquals(1, loaded.size)
+
+        val cached = repository.getCachedResourceListModels(false, null)
+        assertNotNull(cached)
+        assertEquals(1, cached?.size)
+        assertEquals("Cached Lib", cached?.get(0)?.library?.title)
+
+        repository.clearResourceListCache()
+        assertNull(repository.getCachedResourceListModels(false, null))
+    }
+
+    @Test
+    fun `saveLocalResource clears in-memory resource list cache`() = runTest {
+        val lib = MyLibrary().apply { id = "1"; resourceId = "r1"; title = "Cached Lib" }
+        coEvery { myLibraryDao.getPublic() } returns listOf(lib)
+        coEvery { tagsRepository.getTagsForResources(any()) } returns emptyMap()
+        coEvery { myLibraryDao.countByTitle(any()) } returns 0
+        coEvery { myLibraryDao.upsert(any()) } returns Unit
+
+        repository.getResourceListModels(false, null)
+        assertNotNull(repository.getCachedResourceListModels(false, null))
+
+        val request = LocalResourceRequest(
+            title = "New Resource",
+            addedBy = "user1",
+            author = "Author",
+            year = "2026",
+            description = "Desc",
+            publisher = "Pub",
+            linkToLicense = "License",
+            openWith = "open",
+            language = "en",
+            mediaType = "pdf",
+            resourceType = "book",
+            subjects = emptyList(),
+            levels = emptyList(),
+            resourceFor = emptyList(),
+            resourceUrl = null,
+            userId = "user1",
+            isPrivateTeamResource = false,
+            teamId = null
+        )
+        val result = repository.saveLocalResource(request)
+        assertTrue(result.isSuccess)
+
+        assertNull(repository.getCachedResourceListModels(false, null))
     }
 }

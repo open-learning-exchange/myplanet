@@ -115,14 +115,13 @@ class ResourcesViewModelTest {
             title = "Library 1"
             resourceOffline = true
         }
-        val mockRating = mockk<JsonObject>(relaxed = true)
         val mockTag = TagEntity().apply {
             id = "tag1"
             name = "Tag 1"
         }
         val mockResourceItem = mockk<ResourceItem>(relaxed = true)
         coEvery { resourcesRepository.getResourceListModels(any(), any()) } returns listOf(
-            ResourceListModel(mockLibrary, mockResourceItem, mockRating, listOf(TagItem(mockTag.id, mockTag.name)))
+            ResourceListModel(mockLibrary, mockResourceItem, listOf(TagItem(mockTag.id, mockTag.name)))
         )
 
         val result = viewModel.getLibraryListModels(true, "modelId")
@@ -139,14 +138,13 @@ class ResourcesViewModelTest {
             title = "Library 1"
             resourceOffline = true
         }
-        val mockRating = mockk<JsonObject>(relaxed = true)
         val mockTag = TagEntity().apply {
             id = "tag1"
             name = "Tag 1"
         }
         val mockResourceItem = mockk<ResourceItem>(relaxed = true)
         coEvery { resourcesRepository.getResourceListModels(any(), any()) } returns listOf(
-            ResourceListModel(mockLibrary, mockResourceItem, mockRating, listOf(TagItem(mockTag.id, mockTag.name)))
+            ResourceListModel(mockLibrary, mockResourceItem, listOf(TagItem(mockTag.id, mockTag.name)))
         )
 
         viewModel.loadResources(true, "modelId")
@@ -164,7 +162,7 @@ class ResourcesViewModelTest {
         }
         val mockResourceItem = mockk<ResourceItem>(relaxed = true)
         val cached = listOf(
-            ResourceListModel(mockLibrary, mockResourceItem, null, emptyList())
+            ResourceListModel(mockLibrary, mockResourceItem, emptyList())
         )
         every { resourcesRepository.getCachedResourceListModels(true, "modelId") } returns cached
 
@@ -218,6 +216,6 @@ class ResourcesViewModelTest {
             uploadDate = null,
             filename = null
         )
-        return ResourceListModel(library, item, null, emptyList<TagItem>())
+        return ResourceListModel(library, item, emptyList<TagItem>())
     }
 }

@@ -9,9 +9,6 @@ import java.io.File
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
-import kotlin.math.ceil
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
@@ -224,6 +221,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     private suspend fun saveLibraryItem(item: MyLibrary) {
         myLibraryDao.upsert(item)
+        clearResourceListCache()
     }
 
     override suspend fun saveLocalResource(
@@ -643,7 +641,9 @@ class ResourcesRepositoryImpl @Inject constructor(
         return savedIds
     }
 
+    @Volatile
     private var cachedMyCourseLibModels: Pair<String?, List<ResourceListModel>>? = null
+    @Volatile
     private var cachedPublicLibModels: Pair<String?, List<ResourceListModel>>? = null
 
     override fun getCachedResourceListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel>? {
@@ -666,8 +666,8 @@ class ResourcesRepositoryImpl @Inject constructor(
     override suspend fun getResourceListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> {
         val enrichedLibraries = getEnrichedLibraries(isMyCourseLib, modelId)
         val models = enrichedLibraries
-            .sortedByDescending { (library, _, _) -> library.isResourceOffline() }
-            .map { (library, rating, libraryTags) ->
+            .sortedByDescending { (library, _) -> library.isResourceOffline() }
+            .map { (library, libraryTags) ->
                 val item = ResourceItem(
                     id = library.id,
                     title = library.title,
@@ -683,7 +683,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                     resourceLocalAddress = library.resourceLocalAddress
                 )
                 val tags = libraryTags.map { tag -> TagItem(tag.id, tag.name) }
-                ResourceListModel(library, item, rating, tags)
+                ResourceListModel(library, item, tags)
             }
 
         if (isMyCourseLib) {
@@ -709,7 +709,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         return allLibraryItems.map { library ->
             val resourceId = library.resourceId ?: library.id
             val tags = tagsMap[resourceId] ?: emptyList()
-            LibraryWithMetadata(library, null, tags)
+            LibraryWithMetadata(library, tags)
         }
     }
 
