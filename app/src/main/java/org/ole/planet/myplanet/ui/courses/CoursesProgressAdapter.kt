@@ -18,6 +18,8 @@ import org.ole.planet.myplanet.utils.DiffUtils
 
 class CoursesProgressAdapter(private val context: Context) : ListAdapter<CoursesProgressRow, CoursesProgressAdapter.CoursesProgressViewHolder>(DIFF_CALLBACK) {
 
+    private val textColor = ContextCompat.getColor(context, R.color.daynight_textColor)
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CoursesProgressViewHolder {
         val binding = RowMyProgressBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return CoursesProgressViewHolder(binding)
@@ -34,16 +36,14 @@ class CoursesProgressAdapter(private val context: Context) : ListAdapter<Courses
         }
         if (item.mistakes != null) holder.binding.tvTotal.text = item.mistakes.toString()
         else holder.binding.tvTotal.text = context.getString(R.string.message_placeholder, "0")
-        showStepMistakes(position, holder.binding)
+        showStepMistakes(item, holder.binding)
     }
 
-    private fun showStepMistakes(position: Int, binding: RowMyProgressBinding) {
-        val item = getItem(position)
+    private fun showStepMistakes(item: CoursesProgressRow, binding: RowMyProgressBinding) {
         val stepMistake = item.stepMistake
 
         if (stepMistake != null && stepMistake.isNotEmpty()) {
             binding.llHeader.visibility = View.VISIBLE
-            val textColor = ContextCompat.getColor(context, R.color.daynight_textColor)
 
             val currentChildCount = binding.llProgress.childCount
             val requiredChildCount = stepMistake.size
