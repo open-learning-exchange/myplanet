@@ -246,9 +246,13 @@ class ResourcesRepositoryImpl @Inject constructor(
         val destinationFile = FileUtils.getLibraryFile(externalFilesDir, id, filename)
 
         try {
-            destinationFile.parentFile?.mkdirs()
-            sourceFile.copyTo(destinationFile, overwrite = true)
+            withContext(dispatcherProvider.io) {
+                destinationFile.parentFile?.mkdirs()
+                sourceFile.copyTo(destinationFile, overwrite = true)
+            }
         } catch (e: IOException) {
+            return Result.failure(e)
+        } catch (e: SecurityException) {
             return Result.failure(e)
         }
 
@@ -283,7 +287,12 @@ class ResourcesRepositoryImpl @Inject constructor(
             }
         }
 
-        saveLibraryItem(resource)
+        try {
+            saveLibraryItem(resource)
+        } catch (e: Exception) {
+            destinationFile.delete()
+            return Result.failure(e)
+        }
 
         if (!request.isPrivateTeamResource) {
             markResourceAdded(request.userId, resource.id)
