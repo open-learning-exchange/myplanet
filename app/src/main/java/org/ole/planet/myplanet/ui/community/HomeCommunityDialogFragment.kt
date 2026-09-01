@@ -92,7 +92,7 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
         binding.llActionButtons.visibility = View.GONE
         viewLifecycleOwner.lifecycleScope.launch {
             val state = viewModel.state.filterNotNull().first()
-            binding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "${state.communityName}@${state.parentCode}", true, state.planetType)
+            binding.viewPager2.adapter = CommunityPagerAdapter(this@HomeCommunityDialogFragment, "${state.communityName}@${state.parentCode}", true, state.planetType)
             tabLayoutMediator = TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
                 tab.text = (binding.viewPager2.adapter as CommunityPagerAdapter).getPageTitle(position)
             }
