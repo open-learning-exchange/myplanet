@@ -64,6 +64,7 @@ class TeamTask {
             `object`.addProperty("description", task.description)
             `object`.addProperty("completed", task.completed)
             `object`.addProperty("completedTime", task.completedTime)
+            `object`.addProperty("status", task.effectiveStatus())
             if (user != null) `object`.add("assignee", user.serialize())
             else `object`.addProperty("assignee", "")
             `object`.add("sync", JsonUtils.gson.fromJson(task.sync, JsonObject::class.java))
