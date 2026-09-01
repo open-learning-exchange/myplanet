@@ -77,6 +77,26 @@ class LifeRepositoryImplTest {
     }
 
     @Test
+    fun getMyLifeByUserId_dedupsEquivalentBlankRowsAcrossLoads() = runTest {
+        val userId = "user123"
+        // Two equivalent blank legacy rows (no imageId, title, or _id) with identical
+        // userId/isVisible/weight content — these must dedup to a single row deterministically,
+        // regardless of object identity, on every load.
+        fun blankRow() = MyLife().apply {
+            this.userId = userId
+            isVisible = true
+            weight = 1
+        }
+        coEvery { myLifeDao.getByUserId(userId) } returns listOf(blankRow(), blankRow())
+
+        val firstLoad = repository.getMyLifeByUserId(userId)
+        val secondLoad = repository.getMyLifeByUserId(userId)
+
+        assertEquals(1, firstLoad.size)
+        assertEquals(1, secondLoad.size)
+    }
+
+    @Test
     fun updateVisibility_delegatesToDao() = runTest {
         val myLifeId = "life123"
 
