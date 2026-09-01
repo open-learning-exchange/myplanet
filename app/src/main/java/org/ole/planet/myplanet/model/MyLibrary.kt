@@ -28,7 +28,15 @@ import org.ole.planet.myplanet.utils.Utilities
  * UI/repo surface is untouched. Persistence goes
  * through [org.ole.planet.myplanet.data.room.dao.MyLibraryDao].
  */
-@Entity(tableName = "my_library", indices = [Index("_rev"), Index("titleNormal"), Index("resourceId")])
+@Entity(
+    tableName = "my_library",
+    indices = [
+        Index("_rev"),
+        Index("titleNormal"),
+        Index("resourceId"),
+        Index("isPrivate")
+    ]
+)
 open class MyLibrary {
     @PrimaryKey
     @JvmField

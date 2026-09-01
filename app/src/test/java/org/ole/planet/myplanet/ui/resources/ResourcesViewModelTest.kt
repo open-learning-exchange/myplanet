@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.resources
 
 import com.google.gson.JsonObject
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -114,20 +115,60 @@ class ResourcesViewModelTest {
             title = "Library 1"
             resourceOffline = true
         }
-        val mockRating = mockk<JsonObject>(relaxed = true)
         val mockTag = TagEntity().apply {
             id = "tag1"
             name = "Tag 1"
         }
         val mockResourceItem = mockk<ResourceItem>(relaxed = true)
         coEvery { resourcesRepository.getResourceListModels(any(), any()) } returns listOf(
-            ResourceListModel(mockLibrary, mockResourceItem, mockRating, listOf(TagItem(mockTag.id, mockTag.name)))
+            ResourceListModel(mockLibrary, mockResourceItem, listOf(TagItem(mockTag.id, mockTag.name)))
         )
 
         val result = viewModel.getLibraryListModels(true, "modelId")
 
         assertEquals(1, result.size)
         assertEquals("lib1", result[0].library.id)
+        assertEquals(1, viewModel.resourcesState.value.size)
+    }
+
+    @Test
+    fun `loadResources asynchronously updates resourcesState`() = runTest {
+        val mockLibrary = MyLibrary().apply {
+            id = "lib1"
+            title = "Library 1"
+            resourceOffline = true
+        }
+        val mockTag = TagEntity().apply {
+            id = "tag1"
+            name = "Tag 1"
+        }
+        val mockResourceItem = mockk<ResourceItem>(relaxed = true)
+        coEvery { resourcesRepository.getResourceListModels(any(), any()) } returns listOf(
+            ResourceListModel(mockLibrary, mockResourceItem, listOf(TagItem(mockTag.id, mockTag.name)))
+        )
+
+        viewModel.loadResources(true, "modelId")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(1, viewModel.resourcesState.value.size)
+        assertEquals("lib1", viewModel.resourcesState.value[0].library.id)
+    }
+
+    @Test
+    fun `getCachedResources returns cached items from repository`() = runTest {
+        val mockLibrary = MyLibrary().apply {
+            id = "lib1"
+            title = "Library 1"
+        }
+        val mockResourceItem = mockk<ResourceItem>(relaxed = true)
+        val cached = listOf(
+            ResourceListModel(mockLibrary, mockResourceItem, emptyList())
+        )
+        every { resourcesRepository.getCachedResourceListModels(true, "modelId") } returns cached
+
+        val result = viewModel.getCachedResources(true, "modelId")
+        assertEquals(1, result?.size)
+        assertEquals("lib1", result?.get(0)?.library?.id)
     }
 
     @Test
@@ -175,6 +216,6 @@ class ResourcesViewModelTest {
             uploadDate = null,
             filename = null
         )
-        return ResourceListModel(library, item, null, emptyList<TagItem>())
+        return ResourceListModel(library, item, emptyList<TagItem>())
     }
 }

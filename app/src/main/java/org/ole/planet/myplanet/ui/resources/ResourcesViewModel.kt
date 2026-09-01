@@ -78,6 +78,37 @@ class ResourcesViewModel @Inject constructor(
         resourcesRepository.saveSearchActivity(userName, searchText, planetCode, parentCode, searchTags, subjects, languages, levels, mediums)
     }
 
+    private val _resourcesState = MutableStateFlow<List<ResourceListModel>>(emptyList())
+    val resourcesState: StateFlow<List<ResourceListModel>> = _resourcesState.asStateFlow()
+    private var loadJob: Job? = null
+
+    fun getCachedResources(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel>? {
+        return resourcesRepository.getCachedResourceListModels(isMyCourseLib, modelId)?.let {
+            applyCurrentSortSynchronous(it)
+        }
+    }
+
+    fun loadResources(isMyCourseLib: Boolean, modelId: String?) {
+        val cached = getCachedResources(isMyCourseLib, modelId)
+        if (cached != null && _resourcesState.value.isEmpty()) {
+            _resourcesState.value = cached
+        }
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            val list = withContext(dispatcherProvider.io) {
+                try {
+                    applyCurrentSort(resourcesRepository.getResourceListModels(isMyCourseLib, modelId))
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    null
+                }
+            }
+            if (list != null) {
+                _resourcesState.value = list
+            }
+        }
+    }
+
     suspend fun removeResourcesFromShelf(resourceIds: List<String>, userId: String): Result<Unit> = withContext(dispatcherProvider.io) {
         resourcesRepository.removeResourcesFromShelf(resourceIds, userId)
     }
@@ -91,23 +122,33 @@ class ResourcesViewModel @Inject constructor(
     }
 
     suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> = withContext(dispatcherProvider.io) {
-        applyCurrentSort(resourcesRepository.getResourceListModels(isMyCourseLib, modelId))
+        applyCurrentSort(resourcesRepository.getResourceListModels(isMyCourseLib, modelId)).also {
+            _resourcesState.value = it
+        }
     }
 
     suspend fun toggleSortOrder(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.io) {
         sortMode = SortMode.DATE
         isAscending = !isAscending
-        applyCurrentSort(list)
+        applyCurrentSort(list).also {
+            if (_resourcesState.value.isNotEmpty()) _resourcesState.value = it
+        }
     }
 
     suspend fun toggleTitleSortOrder(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.io) {
         sortMode = SortMode.TITLE
         isTitleAscending = !isTitleAscending
-        applyCurrentSort(list)
+        applyCurrentSort(list).also {
+            if (_resourcesState.value.isNotEmpty()) _resourcesState.value = it
+        }
     }
 
     suspend fun applyCurrentSort(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.io) {
-        when (sortMode) {
+        applyCurrentSortSynchronous(list)
+    }
+
+    private fun applyCurrentSortSynchronous(list: List<ResourceListModel>): List<ResourceListModel> {
+        return when (sortMode) {
             SortMode.DATE -> {
                 if (isAscending) list.sortedBy { it.item.createdDate }
                 else list.sortedByDescending { it.item.createdDate }

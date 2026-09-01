@@ -11,7 +11,16 @@ import com.google.gson.JsonArray
  * shared [org.ole.planet.myplanet.data.room.Converters]. Persistence goes through
  * [org.ole.planet.myplanet.data.room.dao.TagDao].
  */
-@Entity(tableName = "tag", indices = [Index("name"), Index("tagId"), Index("db")])
+@Entity(
+    tableName = "tag",
+    indices = [
+        Index("name"),
+        Index("tagId"),
+        Index("db"),
+        Index("linkId"),
+        Index(value = ["db", "linkId"])
+    ]
+)
 open class TagEntity {
     // @JvmField on id/_id so Room does not see ambiguous getId/get_id accessors.
     @PrimaryKey
