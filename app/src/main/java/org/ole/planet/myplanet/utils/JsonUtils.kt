@@ -25,19 +25,12 @@ object JsonUtils {
         }
     }
 
-    /**
-     * Logging on the recovery path must never change control flow: an exception thrown from
-     * inside [safeGet]'s catch block would escape the very wrapper that exists to return a
-     * default. android.util.Log is unavailable in plain JVM unit tests, where isLoggable
-     * throws rather than answering, so the whole call is guarded.
-     */
     private fun logFallback(e: Exception) {
         try {
             if (Log.isLoggable(TAG, Log.DEBUG)) {
                 Log.d(TAG, "expected type mismatch, using fallback: ${e.message}")
             }
         } catch (_: Throwable) {
-            // No usable logger; the caller still gets its default.
         }
     }
 
@@ -70,7 +63,6 @@ object JsonUtils {
 
     fun getString(array: JsonArray, index: Int): String = safeGet({ "" }) {
         val el: JsonElement? = if (index in 0 until array.size()) array.get(index) else null
-        // Deliberately permissive, unlike the fieldName overload: any primitive stringifies.
         if (el == null || !el.isJsonPrimitive) "" else el.asString
     }
 
@@ -88,8 +80,6 @@ object JsonUtils {
 
     fun getBoolean(fieldName: String, jsonObject: JsonObject?): Boolean = safeGet({ false }) {
         val el: JsonElement? = jsonObject?.takeIf { it.has(fieldName) }?.get(fieldName)
-        // asBoolean never throws for a primitive (booleans pass through, anything else goes
-        // via Boolean.parseBoolean), so a primitive check is all that is needed here.
         if (el == null || !el.isJsonPrimitive) false else el.asBoolean
     }
 
