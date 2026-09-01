@@ -36,13 +36,6 @@ class NewsDaoTest {
         database.close()
     }
 
-    // Build the viewIn JSON through the same compact Gson that every production writer of
-    // News.viewIn uses (plainGson / JsonUtils.gson — none enable pretty-printing), so the
-    // test fails loudly the moment the serializer ever changes shape and the SQL `LIKE` on
-    // "section":"community" stops matching. SQLite's 'localtime' resolves through the C
-    // library's timezone rather than the JVM's TimeZone.getDefault(), so the test fixtures
-    // use timestamps spaced exactly 24 h apart and stay on distinct local calendar days
-    // under any fixed offset — no TZ pinning needed.
     private fun communityViewIn(): String =
         Gson().toJson(JsonArray().apply { add(JsonObject().apply {
             addProperty("section", "community")
@@ -65,7 +58,6 @@ class NewsDaoTest {
 
     @Test
     fun getTopLevelByTeam_filtersCorrectly() = runBlocking {
-        // Matches by viewableBy/viewableId
         val news1 = News().apply {
             id = UUID.randomUUID().toString()
             time = 100L
@@ -73,7 +65,6 @@ class NewsDaoTest {
             viewableId = "team1"
         }
 
-        // Matches by viewIn exact match
         val news2 = News().apply {
             id = UUID.randomUUID().toString()
             time = 200L
@@ -81,7 +72,6 @@ class NewsDaoTest {
             viewIn = "[{\"_id\":\"team1\"}]"
         }
 
-        // Does not match, wrong team
         val news3 = News().apply {
             id = UUID.randomUUID().toString()
             time = 300L
@@ -89,7 +79,6 @@ class NewsDaoTest {
             viewableId = "team2"
         }
 
-        // Malicious match: team1_sub where _ acts as wildcard if unescaped
         val news4 = News().apply {
             id = UUID.randomUUID().toString()
             time = 400L
@@ -97,7 +86,6 @@ class NewsDaoTest {
             viewIn = "[{\"_id\":\"team1Xsub\"}]"
         }
 
-        // Malicious match: team1% where % acts as wildcard if unescaped
         val news5 = News().apply {
             id = UUID.randomUUID().toString()
             time = 500L
@@ -139,27 +127,23 @@ class NewsDaoTest {
 
     @Test
     fun countTopLevelByTeam_matches_getTopLevelByTeam_size() = runBlocking {
-        // Locally-created team message: only viewIn is set (News.createNews path), no viewableBy/viewableId.
         val localTop = News().apply {
             id = UUID.randomUUID().toString()
             time = 100L
             viewIn = "[{\"_id\":\"teamA\",\"section\":\"teams\"}]"
         }
-        // Server-synced team message matched via viewableBy/viewableId.
         val syncedTop = News().apply {
             id = UUID.randomUUID().toString()
             time = 200L
             viewableBy = "teams"
             viewableId = "teamA"
         }
-        // A reply to the local message — must NOT be counted (notification tracks top-level feed).
         val reply = News().apply {
             id = UUID.randomUUID().toString()
             time = 150L
             replyTo = localTop.id
             viewIn = "[{\"_id\":\"teamA\",\"section\":\"teams\"}]"
         }
-        // A top-level message for a different team — must NOT be counted.
         val otherTeam = News().apply {
             id = UUID.randomUUID().toString()
             time = 300L
