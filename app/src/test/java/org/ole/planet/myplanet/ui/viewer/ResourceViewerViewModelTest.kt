@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.ui.viewer
 
 import io.mockk.coEvery
-import io.mockk.every
+import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -16,14 +16,12 @@ import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class ResourceViewerViewModelTest {
     private val resourcesRepository = mockk<ResourcesRepository>(relaxed = true)
-    private val sharedPrefManager = mockk<SharedPrefManager>(relaxed = true)
     private val ratingsRepository = mockk<RatingsRepository>(relaxed = true)
     private val configurationsRepository = mockk<ConfigurationsRepository>(relaxed = true)
     private lateinit var viewModel: ResourceViewerViewModel
@@ -52,12 +50,7 @@ internal class ResourceViewerViewModelTest {
         val userId = "123"
         val resourceId = "resourceId123"
 
-        every {
-            sharedPrefManager.getRawString(
-                "rating_prompted_${userId}_${resourceId}",
-                "false"
-            )
-        } returns "false"
+        coEvery { ratingsRepository.isRatingPrompted(userId, resourceId) } returns false
         coEvery { ratingsRepository.getRatingSummary("resource", resourceId, userId) } returns
                 RatingSummary(
                     userRating = 4,
@@ -76,12 +69,7 @@ internal class ResourceViewerViewModelTest {
         val userId = "123"
         val resourceId = "resourceId123"
 
-        every {
-            sharedPrefManager.getRawString(
-                "rating_prompted_${userId}_${resourceId}",
-                "false"
-            )
-        } returns "false"
+        coEvery { ratingsRepository.isRatingPrompted(userId, resourceId) } returns false
         coEvery { ratingsRepository.getRatingSummary("resource", resourceId, userId) } returns
                 RatingSummary(
                     userRating = null,
@@ -100,15 +88,11 @@ internal class ResourceViewerViewModelTest {
         val userId = "123"
         val resourceId = "resourceId123"
 
-        every {
-            sharedPrefManager.getRawString(
-                "rating_prompted_${userId}_${resourceId}",
-                "false"
-            )
-        } returns "true"
+        coEvery { ratingsRepository.isRatingPrompted(userId, resourceId) } returns true
 
         val result = viewModel.shouldShowResourceRatingDialog(userId, resourceId)
 
         assertFalse(result)
+        coVerify(exactly = 0) { ratingsRepository.getRatingSummary(any(), any(), any()) }
     }
 }
