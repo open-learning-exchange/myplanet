@@ -56,11 +56,12 @@ class ServerUrlMapper @Inject constructor(
         val altUri = alternativeUrl.toUri()
         val urlUser: String
         val urlPwd: String
+        val altUserInfo = altUri.userInfo
 
-        if (alternativeUrl.contains("@")) {
-            val (u, p) = UrlUtils.getUserInfo(altUri.userInfo)
-            urlUser = u
-            urlPwd = p
+        if (altUserInfo != null) {
+            val (user, pwd) = UrlUtils.getUserInfo(altUserInfo)
+            urlUser = user
+            urlPwd = pwd
         } else {
             urlUser = "satellite"
             urlPwd = settings.getString("serverPin", "") ?: ""
@@ -74,7 +75,7 @@ class ServerUrlMapper @Inject constructor(
             altUri.port
         }
 
-        val couchdbURL = if (alternativeUrl.contains("@")) {
+        val couchdbURL = if (altUserInfo != null) {
             alternativeUrl
         } else {
             "$scheme://$urlUser:$urlPwd@$host:$port"
@@ -90,6 +91,7 @@ class ServerUrlMapper @Inject constructor(
             putBoolean("isAlternativeUrl", true)
             apply()
         }
+        UrlUtils.invalidateHeaderCache()
     }
 
     suspend fun updateServerIfNecessary(

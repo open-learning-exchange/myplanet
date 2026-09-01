@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BasePermissionActivity
-import org.ole.planet.myplanet.callback.OnSecurityDataListener
+import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.repository.SyncRepository
@@ -161,7 +161,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         return true
     }
 
-    fun startUpload(source: String, userName: String? = null, securityCallback: OnSecurityDataListener? = null) {
+    fun startUpload(source: String, userName: String? = null, securityCallback: OnChangedListener? = null) {
         when (source) {
             "becomeMember" -> uploadMemberData(userName, securityCallback)
             "login" -> uploadLoginData()
@@ -169,7 +169,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         }
     }
 
-    private fun uploadMemberData(userName: String?, securityCallback: OnSecurityDataListener?) {
+    private fun uploadMemberData(userName: String?, securityCallback: OnChangedListener?) {
         uploadToShelfService.uploadSingleUserData(userName, object : OnSuccessListener {
             override fun onSuccess(success: String?) {
                 uploadToShelfService.uploadSingleUserHealth("org.couchdb.user:${userName}", object : OnSuccessListener {
@@ -177,7 +177,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
                         userName?.let { name ->
                             fetchAndLogUserSecurityData(name, securityCallback)
                         } ?: run {
-                            securityCallback?.onSecurityDataUpdated()
+                            securityCallback?.onChanged()
                         }
                     }
                 })
@@ -242,7 +242,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         }
     }
 
-    fun fetchAndLogUserSecurityData(name: String, securityCallback: OnSecurityDataListener? = null) {
+    fun fetchAndLogUserSecurityData(name: String, securityCallback: OnChangedListener? = null) {
         lifecycleScope.launch {
             try {
                 userRepository.fetchUserSecurityData(name)
@@ -250,7 +250,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
                 e.printStackTrace()
             } finally {
                 withContext(dispatcherProvider.main) {
-                    securityCallback?.onSecurityDataUpdated()
+                    securityCallback?.onChanged()
                 }
             }
         }

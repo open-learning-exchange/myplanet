@@ -69,7 +69,7 @@ object ServerConfigUtils {
     }
 
     private fun isLocalNetwork(url: String): Boolean {
-        val host = url.split(":").firstOrNull()?.split("/")?.firstOrNull() ?: url
+        val host = url.substringBefore(':').substringBefore('/')
         return host.startsWith("192.168.") ||
                 host.startsWith("10.") ||
                 host.matches(localNetworkRegex) ||

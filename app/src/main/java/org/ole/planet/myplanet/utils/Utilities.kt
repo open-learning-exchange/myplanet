@@ -9,10 +9,8 @@ import android.os.Looper
 import android.util.Patterns
 import android.webkit.MimeTypeMap
 import android.widget.Toast
-import androidx.core.graphics.toColorInt
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
-import fisk.chipcloud.ChipCloudConfig
 import java.math.BigInteger
 import java.text.Normalizer
 import java.util.Locale
@@ -67,15 +65,6 @@ object Utilities {
         }
     }
 
-    fun getCloudConfig(): ChipCloudConfig {
-        return ChipCloudConfig()
-            .useInsetPadding(true)
-            .checkedChipColor("#e0e0e0".toColorInt())
-            .checkedTextColor("#000000".toColorInt())
-            .uncheckedChipColor("#e0e0e0".toColorInt())
-            .uncheckedTextColor("#000000".toColorInt())
-    }
-
     fun checkNA(s: String?): String {
         return if (s.isNullOrEmpty()) "N/A" else s
     }
@@ -85,7 +74,7 @@ object Utilities {
     }
 
     fun toHex(arg: String?): String {
-        return arg?.toByteArray()?.let { String.format("%x", BigInteger(1, it)) } ?: ""
+        return arg?.toByteArray()?.let { BigInteger(1, it).toString(16) } ?: ""
     }
 
     fun normalizeText(str: String): String {
