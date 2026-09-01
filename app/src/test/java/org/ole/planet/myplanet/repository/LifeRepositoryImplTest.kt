@@ -77,6 +77,41 @@ class LifeRepositoryImplTest {
     }
 
     @Test
+    fun getMyLifeByUserId_withDefaultItems_seedsWhenEmpty() = runTest {
+        val userId = "user123"
+        val defaultItems = listOf(
+            MyLife().apply { title = "Default1"; this.userId = userId }
+        )
+        val seededItem = MyLife().apply { title = "Default1"; this.userId = userId; _id = "seeded1" }
+
+        coEvery { myLifeDao.getByUserId(userId) } returnsMany listOf(emptyList(), listOf(seededItem))
+        coEvery { myLifeDao.countByUserId(userId) } returns 0
+
+        val result = repository.getMyLifeByUserId(userId, defaultItems)
+
+        assertEquals(1, result.size)
+        assertEquals("Default1", result[0].title)
+        coVerify(exactly = 1) { myLifeDao.insertAll(any()) }
+    }
+
+    @Test
+    fun getMyLifeByUserId_withDefaultItems_doesNotSeedWhenNotEmpty() = runTest {
+        val userId = "user123"
+        val existingItem = MyLife().apply { title = "Existing"; this.userId = userId }
+        val defaultItems = listOf(
+            MyLife().apply { title = "Default1"; this.userId = userId }
+        )
+
+        coEvery { myLifeDao.getByUserId(userId) } returns listOf(existingItem)
+
+        val result = repository.getMyLifeByUserId(userId, defaultItems)
+
+        assertEquals(1, result.size)
+        assertEquals("Existing", result[0].title)
+        coVerify(exactly = 0) { myLifeDao.insertAll(any()) }
+    }
+
+    @Test
     fun getMyLifeByUserId_dedupsEquivalentBlankRowsAcrossLoads() = runTest {
         val userId = "user123"
         // Two equivalent blank legacy rows (no imageId, title, or _id) with identical
