@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.services.upload
 import android.util.Log
 import com.google.gson.JsonObject
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -16,6 +17,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
@@ -25,6 +27,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.UploadRepository
+import org.ole.planet.myplanet.repository.UploadedItemResult
 import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -46,9 +49,11 @@ class UploadCoordinatorTest {
         every { Log.w(any(), any<String>(), any()) } returns 0
         every { Log.e(any(), any()) } returns 0
         every { Log.e(any(), any(), any()) } returns 0
+        every { Log.i(any(), any()) } returns 0
 
         mockkObject(UrlUtils)
         every { UrlUtils.getUrl() } returns "http://mock.url"
+        every { UrlUtils.header } returns "mockHeader"
     }
 
     @After
@@ -356,6 +361,167 @@ class UploadCoordinatorTest {
             assertTrue("Expected CancellationException but got ${e.javaClass.simpleName}", e is CancellationException)
         }
     }
+
+    // --- retry-queue guard (folded in from #16486, fixes #16464) ---
+
+    @Test
+    fun `uploadRoom does not queue retries when all uploads succeed`() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        uploadCoordinator = UploadCoordinator(
+            uploadRepository = uploadRepository,
+            retryQueue = retryQueue,
+            dispatcherProvider = TestDispatcherProvider(testDispatcher)
+        )
+
+        val items = listOf(sampleItem("local-1"), sampleItem("local-2"))
+        coEvery { uploadRepository.postUpload(any(), any()) } returns successResponse("remote-1", "rev-1") andThen successResponse("remote-2", "rev-2")
+        coEvery { uploadRepository.markUploaded(any(), any()) } returns emptyList()
+
+        val config = roomConfig(items)
+        uploadCoordinator.uploadRoom(config)
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) {
+            retryQueue.queueFailedOperation(any(), any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `uploadRoom does not queue retries when failures are non-retryable`() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        uploadCoordinator = UploadCoordinator(
+            uploadRepository = uploadRepository,
+            retryQueue = retryQueue,
+            dispatcherProvider = TestDispatcherProvider(testDispatcher)
+        )
+
+        val items = listOf(sampleItem("local-1"), sampleItem("local-2"))
+        coEvery { uploadRepository.postUpload(any(), any()) } returns errorResponse(404)
+        coEvery { uploadRepository.markUploaded(any(), any()) } returns emptyList()
+
+        val config = roomConfig(items)
+        uploadCoordinator.uploadRoom(config)
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) {
+            retryQueue.queueFailedOperation(any(), any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `uploadRoom queues retries only for retryable failures`() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        uploadCoordinator = UploadCoordinator(
+            uploadRepository = uploadRepository,
+            retryQueue = retryQueue,
+            dispatcherProvider = TestDispatcherProvider(testDispatcher)
+        )
+
+        val items = listOf(sampleItem("local-1"), sampleItem("local-2"))
+        coEvery { uploadRepository.postUpload(any(), any()) } returns errorResponse(500)
+        coEvery { uploadRepository.markUploaded(any(), any()) } returns emptyList()
+
+        val config = roomConfig(items)
+        uploadCoordinator.uploadRoom(config)
+        advanceUntilIdle()
+
+        coVerify(exactly = 2) {
+            retryQueue.queueFailedOperation(
+                uploadType = "SampleItem",
+                error = any(),
+                payload = any(),
+                endpoint = "samples",
+                httpMethod = "POST",
+                dbId = null,
+                modelClassName = "SampleItem"
+            )
+        }
+    }
+
+    @Test
+    fun `upload does not queue retries when failures are non-retryable`() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        uploadCoordinator = UploadCoordinator(
+            uploadRepository = uploadRepository,
+            retryQueue = retryQueue,
+            dispatcherProvider = TestDispatcherProvider(testDispatcher)
+        )
+
+        val items = listOf(sampleItem("local-1"), sampleItem("local-2"))
+        coEvery { uploadRepository.postUpload(any(), any()) } returns errorResponse(404)
+        coEvery { uploadRepository.markUploaded(any(), any()) } returns emptyList()
+
+        val config = legacyConfig(items)
+        uploadCoordinator.upload(config)
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) {
+            retryQueue.queueFailedOperation(any(), any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `upload queues retries only for retryable failures`() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        uploadCoordinator = UploadCoordinator(
+            uploadRepository = uploadRepository,
+            retryQueue = retryQueue,
+            dispatcherProvider = TestDispatcherProvider(testDispatcher)
+        )
+
+        val items = listOf(sampleItem("local-1"), sampleItem("local-2"))
+        coEvery { uploadRepository.postUpload(any(), any()) } returns errorResponse(500)
+        coEvery { uploadRepository.markUploaded(any(), any()) } returns emptyList()
+
+        val config = legacyConfig(items)
+        uploadCoordinator.upload(config)
+        advanceUntilIdle()
+
+        coVerify(exactly = 2) {
+            retryQueue.queueFailedOperation(
+                uploadType = "SampleItem",
+                error = any(),
+                payload = any(),
+                endpoint = "samples",
+                httpMethod = "POST",
+                dbId = null,
+                modelClassName = "SampleItem"
+            )
+        }
+    }
+
+    private data class SampleItem(val id: String, val payload: JsonObject)
+
+    private fun sampleItem(localId: String): SampleItem =
+        SampleItem(localId, JsonObject().apply { addProperty("localId", localId) })
+
+    private fun successResponse(id: String, rev: String): Response<JsonObject> =
+        Response.success(JsonObject().apply {
+            addProperty("id", id)
+            addProperty("rev", rev)
+        })
+
+    private fun errorResponse(code: Int): Response<JsonObject> =
+        Response.error(code, "error".toResponseBody(null))
+
+    private fun roomConfig(items: List<SampleItem>) = RoomUploadConfig<SampleItem>(
+        endpoint = "samples",
+        modelClassName = "SampleItem",
+        fetchPendingItems = { items },
+        serializer = UploadSerializer.Simple { it.payload },
+        idExtractor = { it.id },
+        dbIdExtractor = null,
+        markUploaded = { _: List<UploadedItemResult> -> emptyList() }
+    )
+
+    private fun legacyConfig(items: List<SampleItem>) = UploadConfig<SampleItem>(
+        modelClass = SampleItem::class,
+        endpoint = "samples",
+        fetchPendingItems = { items },
+        serializer = UploadSerializer.Simple { it.payload },
+        idExtractor = { it.id },
+        dbIdExtractor = null
+    )
 
     private data class TestRoomItem(val id: String, val dbId: String?)
 }
