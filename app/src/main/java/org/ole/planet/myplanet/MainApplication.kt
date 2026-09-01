@@ -253,16 +253,28 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
         private fun getResponseCode(url: URL): Int {
             TrafficStats.setThreadStatsTag(NETWORK_TRAFFIC_TAG)
+            return try {
+                val headCode = executeRequest(url, "HEAD")
+                if (headCode == HttpURLConnection.HTTP_BAD_METHOD || headCode == HttpURLConnection.HTTP_NOT_IMPLEMENTED) {
+                    executeRequest(url, "GET")
+                } else {
+                    headCode
+                }
+            } finally {
+                TrafficStats.clearThreadStatsTag()
+            }
+        }
+
+        private fun executeRequest(url: URL, method: String): Int {
             val connection = url.openConnection() as HttpURLConnection
             return try {
-                connection.requestMethod = "GET"
+                connection.requestMethod = method
                 connection.connectTimeout = 5000
                 connection.readTimeout = 5000
                 connection.connect()
                 connection.responseCode
             } finally {
                 connection.disconnect()
-                TrafficStats.clearThreadStatsTag()
             }
         }
 
