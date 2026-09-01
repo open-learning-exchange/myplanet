@@ -112,6 +112,7 @@ class DownloadWorker @AssistedInject constructor(
     private suspend fun downloadFileBody(body: ResponseBody, url: String, index: Int, total: Int) {
         val fileSize = body.contentLength()
         val outputFile: File = FileUtils.getSDPathFromUrl(context, url)
+        outputFile.parentFile?.mkdirs()
         var totalBytes: Long = 0
         var lastUpdateTime = 0L
 
