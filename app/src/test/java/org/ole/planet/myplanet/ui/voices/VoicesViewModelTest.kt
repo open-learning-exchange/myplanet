@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.voices
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -141,5 +142,113 @@ class VoicesViewModelTest {
         advanceUntilIdle()
 
         assertEquals(0, result.size)
+    }
+
+    @Test
+    fun `test static label filter uses hoisted label map`() = runTest {
+        val offerNews = mockk<News>(relaxed = true) {
+            coEvery { message } returns "Offering something"
+            coEvery { labels } returns listOf("offer")
+            coEvery { userName } returns "User1"
+            coEvery { newsTitle } returns "Title1"
+        }
+        val helpNews = mockk<News>(relaxed = true) {
+            coEvery { message } returns "Need help"
+            coEvery { labels } returns listOf("help")
+            coEvery { userName } returns "User2"
+            coEvery { newsTitle } returns "Title2"
+        }
+
+        coEvery { voicesRepository.getCommunityNews(any()) } returns flowOf(listOf(offerNews, helpNews))
+
+        var result: List<News?> = emptyList()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.filteredNews.collect { result = it }
+        }
+
+        viewModel.observeCommunityNews("test_user")
+        advanceUntilIdle()
+
+        viewModel.updateSelectedLabel("Offer")
+        advanceUntilIdle()
+        assertEquals(1, result.size)
+        assertEquals(offerNews, result[0])
+
+        viewModel.updateSelectedLabel("Help wanted")
+        advanceUntilIdle()
+        assertEquals(1, result.size)
+        assertEquals(helpNews, result[0])
+    }
+
+    @Test
+    fun `test dynamic label filter resolves unknown label values`() = runTest {
+        val customLabelValue = "some:custom:label"
+        val customNews = mockk<News>(relaxed = true) {
+            coEvery { message } returns "Custom post"
+            coEvery { labels } returns listOf(customLabelValue)
+            coEvery { userName } returns "User1"
+            coEvery { newsTitle } returns "Title1"
+        }
+        val otherNews = mockk<News>(relaxed = true) {
+            coEvery { message } returns "Other post"
+            coEvery { labels } returns listOf("offer")
+            coEvery { userName } returns "User2"
+            coEvery { newsTitle } returns "Title2"
+        }
+
+        coEvery { voicesRepository.getCommunityNews(any()) } returns flowOf(listOf(customNews, otherNews))
+
+        var result: List<News?> = emptyList()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.filteredNews.collect { result = it }
+        }
+
+        viewModel.observeCommunityNews("test_user")
+        advanceUntilIdle()
+
+        val expectedDisplayName = org.ole.planet.myplanet.services.VoicesLabelManager.formatLabelValue(customLabelValue)
+        viewModel.updateSelectedLabel(expectedDisplayName)
+        advanceUntilIdle()
+
+        assertEquals(1, result.size)
+        assertEquals(customNews, result[0])
+    }
+
+    @Test
+    fun `test downloadReferencedResources skips news with empty images and downloads referenced ids`() = runTest {
+        val newsWithResource = News().apply {
+            id = "news1"
+            images = """[{"resourceId":"res-123"}]"""
+        }
+        val newsWithEmptyImages = News().apply {
+            id = "news2"
+            images = null
+        }
+        val newsWithNoResourceId = News().apply {
+            id = "news3"
+            images = """[{"resourceId":""}]"""
+        }
+
+        coEvery { resourcesRepository.getLibraryItemsByIds(any()) } returns emptyList()
+        coEvery { resourcesRepository.downloadResources(any()) } returns true
+
+        viewModel.downloadReferencedResources(listOf(newsWithResource, newsWithEmptyImages, newsWithNoResourceId))
+        advanceUntilIdle()
+
+        coVerify {
+            resourcesRepository.getLibraryItemsByIds(match { it.contains("res-123") && it.size == 1 })
+            resourcesRepository.downloadResources(any())
+        }
+    }
+
+    @Test
+    fun `test downloadReferencedResources does nothing for null news or empty list`() = runTest {
+        coEvery { resourcesRepository.getLibraryItemsByIds(any()) } returns emptyList()
+        coEvery { resourcesRepository.downloadResources(any()) } returns true
+
+        viewModel.downloadReferencedResources(listOf(null))
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { resourcesRepository.downloadResources(any()) }
     }
 }
