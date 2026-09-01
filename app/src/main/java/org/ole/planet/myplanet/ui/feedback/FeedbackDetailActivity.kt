@@ -53,8 +53,9 @@ class FeedbackDetailActivity : AppCompatActivity() {
             fb?.let {
                 feedback = it
                 activityFeedbackDetailBinding.tvDate.text = getFormattedDateWithTime(it.openTime)
+                val message = it.message
                 activityFeedbackDetailBinding.tvMessage.text =
-                    if (TextUtils.isEmpty(it.message)) "N/A" else it.message
+                    if (TextUtils.isEmpty(message)) "N/A" else message
                 replyAdapter = FeedbackReplyAdapter(this@FeedbackDetailActivity)
                 activityFeedbackDetailBinding.rvFeedbackReply.adapter = replyAdapter
                 replyAdapter?.submitList(it.messageList)
