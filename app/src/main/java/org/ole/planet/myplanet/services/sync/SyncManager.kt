@@ -322,7 +322,7 @@ class SyncManager @Inject constructor(
                     val rows = getJsonArray("rows", response)
                     syncTimeLogger.logApiCall("$url/resources/_all_docs (batch $batchCount)", batchApiDuration, true, rows.size())
 
-                    if (rows.size() == 0) {
+                    if (rows.isEmpty()) {
                         break
                     }
 

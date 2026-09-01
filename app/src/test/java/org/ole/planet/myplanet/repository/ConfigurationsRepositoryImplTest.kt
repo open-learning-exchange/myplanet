@@ -20,11 +20,14 @@ import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -58,7 +61,8 @@ class ConfigurationsRepositoryImplTest {
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val appDatabase: AppDatabase = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
-    private val serviceScope = CoroutineScope(testDispatcher)
+    // Handed to the repository under test; cancelled in @After so nothing escapes the fork.
+    private val serviceScope = CoroutineScope(SupervisorJob() + testDispatcher)
 
     private val dispatcherProvider = object : DispatcherProvider {
         override val main = testDispatcher
@@ -70,6 +74,11 @@ class ConfigurationsRepositoryImplTest {
 
     @get:Rule
     val temporaryFolder = TemporaryFolder()
+
+    @After
+    fun tearDown() {
+        serviceScope.cancel()
+    }
 
     @Before
     fun setup() {
@@ -782,5 +791,38 @@ class ConfigurationsRepositoryImplTest {
         every { sharedPrefManager.getConcatenatedLinks() } returns "[\"link1\", \"link2\"]"
 
         assertEquals(listOf("link1", "link2"), repository.getQueuedDownloads())
+    }
+
+    @Test
+    fun `getParentCode delegates to sharedPrefManager`() {
+        every { sharedPrefManager.getParentCode() } returns "parent_123"
+
+        assertEquals("parent_123", repository.getParentCode())
+        verify { sharedPrefManager.getParentCode() }
+    }
+
+    @Test
+    fun `getCommunityName delegates to sharedPrefManager`() {
+        every { sharedPrefManager.getCommunityName() } returns "test_community"
+
+        assertEquals("test_community", repository.getCommunityName())
+        verify { sharedPrefManager.getCommunityName() }
+    }
+
+    @Test
+    fun `getCommunityLeaders delegates to sharedPrefManager`() {
+        every { sharedPrefManager.getCommunityLeaders() } returns "leaders_json"
+
+        assertEquals("leaders_json", repository.getCommunityLeaders())
+        verify { sharedPrefManager.getCommunityLeaders() }
+    }
+
+    @Test
+    fun `clearPreferences delegates to sharedPrefManager`() {
+        every { sharedPrefManager.clearPreferences() } just runs
+
+        repository.clearPreferences()
+
+        verify { sharedPrefManager.clearPreferences() }
     }
 }

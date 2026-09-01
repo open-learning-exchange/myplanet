@@ -345,7 +345,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             if (configResponse.isSuccessful) {
                 val rows = configResponse.body()?.getAsJsonArray("rows")
 
-                if (rows != null && rows.size() > 0) {
+                if (rows != null && !rows.isEmpty()) {
                     val firstRow = rows[0].asJsonObject
                     val id = firstRow.getAsJsonPrimitive("id").asString
                     val doc = firstRow.getAsJsonObject("doc")
@@ -391,6 +391,22 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
     override fun getPlanetType(): String? {
         return sharedPrefManager.getRawString("planetType")
+    }
+
+    override fun getParentCode(): String {
+        return sharedPrefManager.getParentCode()
+    }
+
+    override fun getCommunityName(): String {
+        return sharedPrefManager.getCommunityName()
+    }
+
+    override fun getCommunityLeaders(): String {
+        return sharedPrefManager.getCommunityLeaders()
+    }
+
+    override fun clearPreferences() {
+        sharedPrefManager.clearPreferences()
     }
 
     override suspend fun clearFirstRunStorageAndSetFlag(hasWritePermission: Boolean) {

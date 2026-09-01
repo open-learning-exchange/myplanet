@@ -167,6 +167,43 @@ class FileUtilsTest {
     }
 
     @Test
+    fun findHtmlCoverImage_prefersNameHintOverLargerFile() {
+        File(tempDir, "cover.png").writeBytes(ByteArray(10))
+        File(tempDir, "photo.jpg").writeBytes(ByteArray(1000))
+
+        val cover = FileUtils.findHtmlCoverImage(tempDir)
+
+        assertEquals("cover.png", cover?.name)
+    }
+
+    @Test
+    fun findHtmlCoverImage_fallsBackToLargestImageWhenNoNameHint() {
+        File(tempDir, "photo.jpg").writeBytes(ByteArray(10))
+        File(tempDir, "banner.jpg").writeBytes(ByteArray(1000))
+
+        val cover = FileUtils.findHtmlCoverImage(tempDir)
+
+        assertEquals("banner.jpg", cover?.name)
+    }
+
+    @Test
+    fun findHtmlCoverImage_findsHintedImageNestedInSubdirectory() {
+        val assetsDir = File(tempDir, "assets").apply { mkdirs() }
+        File(assetsDir, "thumbnail.png").writeBytes(ByteArray(10))
+
+        val cover = FileUtils.findHtmlCoverImage(tempDir)
+
+        assertEquals("thumbnail.png", cover?.name)
+    }
+
+    @Test
+    fun findHtmlCoverImage_returnsNullWhenNoImagesPresent() {
+        File(tempDir, "index.html").writeText("<html></html>")
+
+        assertNull(FileUtils.findHtmlCoverImage(tempDir))
+    }
+
+    @Test
     fun getIdFromUrl_returnsCorrectId() {
         assertEquals("123", FileUtils.getIdFromUrl("http://example.com/resources/123/file.txt"))
         assertEquals("abc", FileUtils.getIdFromUrl("https://test.com/api/resources/abc/data"))

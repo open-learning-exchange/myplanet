@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import dagger.Lazy
 import java.util.Calendar
 import java.util.Date
+import java.util.LinkedHashSet
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
@@ -193,9 +194,10 @@ class NotificationsRepositoryImpl @Inject constructor(
 
         val tasks = teamTaskDao.getByIds(taskIds)
 
-        val teamIds = tasks.mapNotNull { it.teamId }.filter { it.isNotEmpty() }.distinct()
+        val teamIds = LinkedHashSet<String>()
+        tasks.forEach { task -> task.teamId?.takeIf { it.isNotEmpty() }?.let { teamIds.add(it) } }
         if (teamIds.isNotEmpty()) {
-            val teamMap = teamsRepository.get().getTeamNamesByIds(teamIds)
+            val teamMap = teamsRepository.get().getTeamNamesByIds(teamIds.toList())
 
             tasks.forEach { task ->
                 val taskId = task.id
@@ -215,11 +217,12 @@ class NotificationsRepositoryImpl @Inject constructor(
 
         val joinRequests = teamsRepository.get().getJoinRequestsInfo(relatedIds)
 
-        val teamIds = joinRequests.map { it.teamId }.filter { it.isNotEmpty() }.distinct()
+        val teamIds = LinkedHashSet<String>()
+        joinRequests.forEach { jr -> jr.teamId.takeIf { it.isNotEmpty() }?.let { teamIds.add(it) } }
 
-        val teamMap = teamsRepository.get().getTeamNamesByIds(teamIds)
+        val teamMap = teamsRepository.get().getTeamNamesByIds(teamIds.toList())
 
-        val intermediateList = mutableListOf<Triple<String, String, String>>()
+        val intermediateList = ArrayList<Triple<String, String, String>>(joinRequests.size)
         joinRequests.forEach { jr ->
             val id = jr.id
             if (id.isNotEmpty()) {
@@ -229,10 +232,11 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
 
         val map = mutableMapOf<String, Pair<String, String>>()
-        val userIds = intermediateList.map { it.second }.filter { it.isNotEmpty() }.distinct()
+        val userIds = LinkedHashSet<String>()
+        intermediateList.forEach { triple -> triple.second.takeIf { it.isNotEmpty() }?.let { userIds.add(it) } }
         val userMap = mutableMapOf<String, String>()
         if (userIds.isNotEmpty()) {
-            val users = userRepository.get().getUsersByIds(userIds)
+            val users = userRepository.get().getUsersByIds(userIds.toList())
             for (user in users) {
                 user.id?.let { id ->
                     userMap[id] = user.name ?: "Unknown User"
@@ -254,9 +258,10 @@ class NotificationsRepositoryImpl @Inject constructor(
 
         val tasks = teamTaskDao.getByTitles(taskTitles)
 
-        val teamIds = tasks.mapNotNull { it.teamId }.filter { it.isNotEmpty() }.distinct()
+        val teamIds = LinkedHashSet<String>()
+        tasks.forEach { task -> task.teamId?.takeIf { it.isNotEmpty() }?.let { teamIds.add(it) } }
         if (teamIds.isNotEmpty()) {
-            val teamMap = teamsRepository.get().getTeamNamesByIds(teamIds)
+            val teamMap = teamsRepository.get().getTeamNamesByIds(teamIds.toList())
 
             tasks.forEach { task ->
                 val taskTitle = task.title
@@ -336,13 +341,14 @@ class NotificationsRepositoryImpl @Inject constructor(
     }
 
     override fun resolveType(type: String, message: String, subType: String?): String {
-        if (type.lowercase(Locale.ROOT) in NotificationsRepository.KNOWN_TYPES) return type.lowercase(Locale.ROOT)
+        val lowerType = type.lowercase(Locale.ROOT)
+        if (lowerType in NotificationsRepository.KNOWN_TYPES) return lowerType
         val lower = message.lowercase(Locale.ROOT)
         // Raw server type "team" covers every team-related event (message/request/added/rejected/removed) in
         // whatever language the server rendered the message in, so classify structurally first and only fall
         // back to English message-sniffing to pick a more specific sub-bucket when it's recognizable.
-        if (type == "team") {
-            if (subType != null) return subType
+        if (lowerType == "team") {
+            if (subType != null) return subType.lowercase(Locale.ROOT)
             return when {
                 lower.contains("requested to join") || lower.contains("wants to join") ||
                     lower.contains("solicitado unirse") -> "join_request"
@@ -351,8 +357,8 @@ class NotificationsRepositoryImpl @Inject constructor(
                 else -> "team_join"
             }
         }
-        if (type == "newTask") return "task"
-        if (type == "newResource") return "resource"
+        if (lowerType == "newtask") return "task"
+        if (lowerType == "newresource") return "resource"
         return when {
             lower.contains("requested to join") || lower.contains("wants to join") -> "join_request"
             lower.contains("added you to") || lower.contains("you've been added") || lower.contains("you have been added") -> "team_join"

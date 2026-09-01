@@ -78,4 +78,35 @@ class NewsViewModelTest {
 
         assertEquals(expectedUrls, capturedResult)
     }
+
+    @Test
+    fun `re-subscribing after event is collected does not replay previous emission`() = runTest {
+        val timestamp = 123456789L
+        val expectedUrls = listOf("url1", "url2")
+        coEvery { resourcesRepository.getPrivateImageUrlsCreatedAfter(timestamp) } returns expectedUrls
+
+        var firstCollectorResult: List<String>? = null
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.privateImageUrls.collect { urls ->
+                firstCollectorResult = urls
+            }
+        }
+
+        viewModel.getPrivateImageUrlsCreatedAfter(timestamp)
+        advanceUntilIdle()
+
+        assertEquals(expectedUrls, firstCollectorResult)
+
+        job.cancel()
+
+        var reSubscribedResult: List<String>? = null
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.privateImageUrls.collect { urls ->
+                reSubscribedResult = urls
+            }
+        }
+        advanceUntilIdle()
+
+        assertEquals(null, reSubscribedResult)
+    }
 }
