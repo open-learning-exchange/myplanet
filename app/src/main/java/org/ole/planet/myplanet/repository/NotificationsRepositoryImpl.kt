@@ -341,13 +341,14 @@ class NotificationsRepositoryImpl @Inject constructor(
     }
 
     override fun resolveType(type: String, message: String, subType: String?): String {
-        if (type.lowercase(Locale.ROOT) in NotificationsRepository.KNOWN_TYPES) return type.lowercase(Locale.ROOT)
+        val lowerType = type.lowercase(Locale.ROOT)
+        if (lowerType in NotificationsRepository.KNOWN_TYPES) return lowerType
         val lower = message.lowercase(Locale.ROOT)
         // Raw server type "team" covers every team-related event (message/request/added/rejected/removed) in
         // whatever language the server rendered the message in, so classify structurally first and only fall
         // back to English message-sniffing to pick a more specific sub-bucket when it's recognizable.
-        if (type == "team") {
-            if (subType != null) return subType
+        if (lowerType == "team") {
+            if (subType != null) return subType.lowercase(Locale.ROOT)
             return when {
                 lower.contains("requested to join") || lower.contains("wants to join") ||
                     lower.contains("solicitado unirse") -> "join_request"
@@ -356,8 +357,8 @@ class NotificationsRepositoryImpl @Inject constructor(
                 else -> "team_join"
             }
         }
-        if (type == "newTask") return "task"
-        if (type == "newResource") return "resource"
+        if (lowerType == "newtask") return "task"
+        if (lowerType == "newresource") return "resource"
         return when {
             lower.contains("requested to join") || lower.contains("wants to join") -> "join_request"
             lower.contains("added you to") || lower.contains("you've been added") || lower.contains("you have been added") -> "team_join"

@@ -695,6 +695,22 @@ class NotificationsRepositoryImplTest {
     }
 
     @Test
+    fun `resolveType lowercases subType`() {
+        assertEquals("join_request", repository.resolveType("team", "غير معروف", "Join_Request"))
+    }
+
+    @Test
+    fun `resolveType classifies raw team type case insensitively`() {
+        assertEquals("team_join", repository.resolveType("Team", "Has sido eliminado de \"test GT\" team.", null))
+    }
+
+    @Test
+    fun `resolveType classifies raw newTask and newResource types case insensitively`() {
+        assertEquals("task", repository.resolveType("NEWTASK", "¿qué?", null))
+        assertEquals("resource", repository.resolveType("newresource", "¿qué?", null))
+    }
+
+    @Test
     fun `resolveType classifies raw team type as chat for posted message`() {
         assertEquals(
             "chat",
