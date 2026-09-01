@@ -155,6 +155,24 @@ class CoursesRepositoryImplTest {
     }
 
     @Test
+    fun `filterCourses sorts titles case-insensitively`() = runTest {
+        coEvery { courseDao.getAll() } returns listOf(
+            MyCourse(id = "1", courseId = "1", courseTitle = "banana", courseTitleNormal = "banana"),
+            MyCourse(id = "2", courseId = "2", courseTitle = "Apple", courseTitleNormal = "apple"),
+            MyCourse(id = "3", courseId = "3", courseTitle = "cherry", courseTitleNormal = "cherry")
+        )
+        coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
+        coEvery { tagsRepository.getLinkIdsForTagNames(any(), any()) } returns emptyList()
+
+        val result = repository.filterCourses("", "", "", emptyList())
+
+        assertEquals(3, result.size)
+        assertEquals("Apple", result[0].courseTitle)
+        assertEquals("banana", result[1].courseTitle)
+        assertEquals("cherry", result[2].courseTitle)
+    }
+
+    @Test
     fun `getCoursesByIds returns correct courses`() = runTest {
         coEvery { courseDao.getByCourseIds(listOf("id1", "id2")) } returns listOf(
             MyCourse(id = "id1", courseId = "id1", courseTitle = "Course 1"),

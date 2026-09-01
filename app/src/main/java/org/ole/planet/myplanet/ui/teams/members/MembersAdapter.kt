@@ -12,9 +12,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnMemberActionListener
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
@@ -31,7 +28,6 @@ class MembersAdapter(
 ) : ListAdapter<JoinedMemberData, MembersAdapter.MembersViewHolder>(DIFF_CALLBACK) {
     private val avatarSize: Int by lazy { context.resources.getDimensionPixelSize(R.dimen._40dp) }
     private var isLoggedInUserTeamLeader: Boolean = false
-    private val dateFormatter = DateTimeFormatter.ofPattern(TimeUtils.DATE_FORMAT).withZone(ZoneId.systemDefault())
 
     fun setUserId(userId: String?) {
         this.currentUserId = userId
@@ -103,14 +99,14 @@ class MembersAdapter(
         val member = memberData.user
         val binding = holder.binding
 
-        binding.tvTitle.text = if (member.toString() == " ") member.name else member.toString()
+        binding.tvTitle.text = member.name
         binding.tvDescription.text = context.getString(
             R.string.member_description,
             member.getRoleAsString(),
             memberData.visitCount
         )
         val lastVisitDate = if (memberData.lastVisitDate != null) {
-            dateFormatter.format(Instant.ofEpochMilli(memberData.lastVisitDate))
+            TimeUtils.getFormattedShortDate(memberData.lastVisitDate)
         } else {
             context.getString(R.string.no_visit)
         }
