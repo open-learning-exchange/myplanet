@@ -151,4 +151,59 @@ class EnterprisesFinancesViewModelTest {
         val actualTransactions = viewModel.transactions.first()
         assertEquals(mockTransactions, actualTransactions)
     }
+
+    @Test
+    fun `getTeamTransactions calculates total and updates headerState correctly`() = runTest {
+        val mockTransactions = listOf(
+            Transaction("1", 0L, "credit entry", "credit", 500, 500),
+            Transaction("2", 0L, "debit entry 1", "debit", 200, 300),
+            Transaction("3", 0L, "debit entry 2", "debit", 100, 200)
+        )
+        val teamId = "test_team_id"
+
+        coEvery {
+            teamsRepository.getTeamTransactionsWithBalance(
+                teamId = teamId,
+                startDate = null,
+                endDate = null,
+                sortAscending = true
+            )
+        } returns flowOf(mockTransactions)
+
+        viewModel.getTeamTransactions(teamId, true, null, null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val headerState = viewModel.headerState.first()
+        assertEquals(300, headerState.debit)
+        assertEquals(500, headerState.credit)
+        assertEquals(200, headerState.total)
+        assertEquals(false, headerState.isCautionVisible)
+    }
+
+    @Test
+    fun `headerState exhibits caution when total is negative`() = runTest {
+        val mockTransactions = listOf(
+            Transaction("1", 0L, "credit entry", "credit", 100, 100),
+            Transaction("2", 0L, "debit entry", "debit", 300, -200)
+        )
+        val teamId = "test_team_id"
+
+        coEvery {
+            teamsRepository.getTeamTransactionsWithBalance(
+                teamId = teamId,
+                startDate = null,
+                endDate = null,
+                sortAscending = true
+            )
+        } returns flowOf(mockTransactions)
+
+        viewModel.getTeamTransactions(teamId, true, null, null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val headerState = viewModel.headerState.first()
+        assertEquals(300, headerState.debit)
+        assertEquals(100, headerState.credit)
+        assertEquals(-200, headerState.total)
+        assertEquals(true, headerState.isCautionVisible)
+    }
 }

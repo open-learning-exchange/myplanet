@@ -7,6 +7,8 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import io.mockk.unmockkObject
+import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -301,5 +303,30 @@ class UrlUtilsTest {
         // "user:password" -> "dXNlcjpwYXNzd29yZA==" (with '=' padding)
         val result2 = UrlUtils.basicAuthHeader("user", "password")
         assertEquals("Basic dXNlcjpwYXNzd29yZA==", result2)
+    }
+
+    fun `getUrl with explicit base builds resource url without re-deriving base`() {
+        unmockkObject(UrlUtils)
+        val result = UrlUtils.getUrl("r1", "f1", "http://example.com/db")
+        assertEquals("http://example.com/db/resources/r1/f1", result)
+    }
+
+    @Test
+    fun `getUrl with explicit base resolves base once for many libraries`() {
+        unmockkObject(UrlUtils)
+        val spm = mockk<SharedPrefManager>(relaxed = true)
+        every { spm.isAlternativeUrl() } returns false
+        every { spm.getCouchdbUrl() } returns "http://example.com"
+        UrlUtils.resetForTesting()
+        UrlUtils.init(spm)
+
+        val base = UrlUtils.getUrl()
+        val urls = listOf("r1" to "f1", "r2" to "f2").map { (id, file) ->
+            UrlUtils.getUrl(id, file, base)
+        }
+
+        assertEquals("http://example.com/db/resources/r1/f1", urls[0])
+        assertEquals("http://example.com/db/resources/r2/f2", urls[1])
+        verify(exactly = 1) { spm.getCouchdbUrl() }
     }
 }
