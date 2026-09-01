@@ -82,7 +82,17 @@ class ResourcesViewModel @Inject constructor(
     val resourcesState: StateFlow<List<ResourceListModel>> = _resourcesState.asStateFlow()
     private var loadJob: Job? = null
 
+    fun getCachedResources(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel>? {
+        return resourcesRepository.getCachedResourceListModels(isMyCourseLib, modelId)?.let {
+            applyCurrentSortSynchronous(it)
+        }
+    }
+
     fun loadResources(isMyCourseLib: Boolean, modelId: String?) {
+        val cached = getCachedResources(isMyCourseLib, modelId)
+        if (cached != null && _resourcesState.value.isEmpty()) {
+            _resourcesState.value = cached
+        }
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             val list = withContext(dispatcherProvider.io) {
@@ -134,7 +144,11 @@ class ResourcesViewModel @Inject constructor(
     }
 
     suspend fun applyCurrentSort(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.io) {
-        when (sortMode) {
+        applyCurrentSortSynchronous(list)
+    }
+
+    private fun applyCurrentSortSynchronous(list: List<ResourceListModel>): List<ResourceListModel> {
+        return when (sortMode) {
             SortMode.DATE -> {
                 if (isAscending) list.sortedBy { it.item.createdDate }
                 else list.sortedByDescending { it.item.createdDate }

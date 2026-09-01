@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.resources
 
 import com.google.gson.JsonObject
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -153,6 +154,23 @@ class ResourcesViewModelTest {
 
         assertEquals(1, viewModel.resourcesState.value.size)
         assertEquals("lib1", viewModel.resourcesState.value[0].library.id)
+    }
+
+    @Test
+    fun `getCachedResources returns cached items from repository`() = runTest {
+        val mockLibrary = MyLibrary().apply {
+            id = "lib1"
+            title = "Library 1"
+        }
+        val mockResourceItem = mockk<ResourceItem>(relaxed = true)
+        val cached = listOf(
+            ResourceListModel(mockLibrary, mockResourceItem, null, emptyList())
+        )
+        every { resourcesRepository.getCachedResourceListModels(true, "modelId") } returns cached
+
+        val result = viewModel.getCachedResources(true, "modelId")
+        assertEquals(1, result?.size)
+        assertEquals("lib1", result?.get(0)?.library?.id)
     }
 
     @Test

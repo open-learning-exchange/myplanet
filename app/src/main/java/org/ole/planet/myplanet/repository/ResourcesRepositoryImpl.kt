@@ -156,6 +156,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             resource.subject = subjects?.toList() ?: emptyList()
             resource.level = levels?.toList() ?: emptyList()
             myLibraryDao.upsert(resource)
+            clearResourceListCache()
         }
     }
 
@@ -437,6 +438,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             libraryItems.forEach { it.setUserId(userId) }
             if (libraryItems.isNotEmpty()) {
                 myLibraryDao.upsertAll(libraryItems)
+                clearResourceListCache()
             }
             removedLogDao.deleteByTypeUserAndDocsChunked("resources", userId, resourceIds)
         }
@@ -475,6 +477,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         } else {
             myLibraryDao.deleteAllStalePublic()
         }
+        clearResourceListCache()
     }
 
     override suspend fun getMyLibIds(userId: String): JsonArray {
@@ -496,6 +499,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             libraryItems.forEach { it.removeUserId(userId) }
             if (libraryItems.isNotEmpty()) {
                 myLibraryDao.upsertAll(libraryItems)
+                clearResourceListCache()
             }
             removedLogDao.insertAll(
                 resourceIds.map { resourceId ->
@@ -591,6 +595,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
         if (librariesToUpsert.isNotEmpty()) {
             myLibraryDao.upsertAll(librariesToUpsert)
+            clearResourceListCache()
         }
         return processedCount
     }
@@ -633,19 +638,25 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
         if (librariesToUpsert.isNotEmpty()) {
             myLibraryDao.upsertAll(librariesToUpsert)
+            clearResourceListCache()
         }
         return savedIds
     }
 
-    private suspend fun getResourceRatingsBulk(ids: List<String>, userId: String?): Map<String?, JsonObject> {
-        val allRatings = ratingsRepository.getResourceRatings(userId)
-        val filteredRatings = HashMap<String?, JsonObject>(ceil(ids.size / 0.75).toInt())
-        for (id in ids) {
-            allRatings[id]?.let {
-                filteredRatings[id] = it
-            }
+    private var cachedMyCourseLibModels: Pair<String?, List<ResourceListModel>>? = null
+    private var cachedPublicLibModels: Pair<String?, List<ResourceListModel>>? = null
+
+    override fun getCachedResourceListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel>? {
+        return if (isMyCourseLib) {
+            cachedMyCourseLibModels?.takeIf { it.first == modelId }?.second
+        } else {
+            cachedPublicLibModels?.takeIf { it.first == modelId }?.second
         }
-        return filteredRatings
+    }
+
+    override fun clearResourceListCache() {
+        cachedMyCourseLibModels = null
+        cachedPublicLibModels = null
     }
 
     private suspend fun getResourceTagsBulk(ids: List<String>): Map<String, List<TagEntity>> {
@@ -654,7 +665,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun getResourceListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> {
         val enrichedLibraries = getEnrichedLibraries(isMyCourseLib, modelId)
-        return enrichedLibraries
+        val models = enrichedLibraries
             .sortedByDescending { (library, _, _) -> library.isResourceOffline() }
             .map { (library, rating, libraryTags) ->
                 val item = ResourceItem(
@@ -674,9 +685,16 @@ class ResourcesRepositoryImpl @Inject constructor(
                 val tags = libraryTags.map { tag -> TagItem(tag.id, tag.name) }
                 ResourceListModel(library, item, rating, tags)
             }
+
+        if (isMyCourseLib) {
+            cachedMyCourseLibModels = modelId to models
+        } else {
+            cachedPublicLibModels = modelId to models
+        }
+        return models
     }
 
-    private suspend fun getEnrichedLibraries(isMyCourseLib: Boolean, modelId: String?): List<LibraryWithMetadata> = coroutineScope {
+    private suspend fun getEnrichedLibraries(isMyCourseLib: Boolean, modelId: String?): List<LibraryWithMetadata> {
         val allLibraryItems = if (isMyCourseLib) {
             getMyLibrary(modelId)
         } else if (modelId != null) {
@@ -686,18 +704,12 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
 
         val allResourceIds = allLibraryItems.mapNotNull { it.resourceId ?: it.id }
+        val tagsMap = getResourceTagsBulk(allResourceIds)
 
-        val tagsDeferred = async { getResourceTagsBulk(allResourceIds) }
-        val ratingsDeferred = async { getResourceRatingsBulk(allResourceIds, modelId) }
-
-        val tagsMap = tagsDeferred.await()
-        val map = ratingsDeferred.await()
-
-        allLibraryItems.map { library ->
+        return allLibraryItems.map { library ->
             val resourceId = library.resourceId ?: library.id
-            val rating = map[resourceId]
             val tags = tagsMap[resourceId] ?: emptyList()
-            LibraryWithMetadata(library, rating, tags)
+            LibraryWithMetadata(library, null, tags)
         }
     }
 
@@ -709,6 +721,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     override suspend fun markResourcesAsNotOffline(resourceIds: Collection<String>) {
         if (resourceIds.isEmpty()) return
         myLibraryDao.markAsNotOfflineByResourceIds(resourceIds.toList())
+        clearResourceListCache()
     }
 
     override suspend fun getPendingResourceUploads(): List<MyLibrary> {

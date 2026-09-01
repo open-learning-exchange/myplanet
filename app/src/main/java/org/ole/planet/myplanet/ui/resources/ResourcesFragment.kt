@@ -175,7 +175,9 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
         adapterLibrary.setListener(this)
 
-        val cached = viewModel.resourcesState.value
+        val cached = viewModel.resourcesState.value.ifEmpty {
+            viewModel.getCachedResources(isMyCourseLib, model?.id) ?: emptyList()
+        }
         if (cached.isNotEmpty()) {
             allResourceModels = cached
             val filteredList = applyFilterModels(filterLocalLibraryByTag(allResourceModels, etSearch.text?.toString()?.trim().orEmpty(), searchTags))
