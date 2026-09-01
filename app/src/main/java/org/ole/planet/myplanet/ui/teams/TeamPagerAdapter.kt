@@ -5,8 +5,7 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.callback.OnMemberChangeListener
-import org.ole.planet.myplanet.callback.OnTeamUpdateListener
+import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ApplicantsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.CoursesPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.DocumentsPage
@@ -25,8 +24,8 @@ class TeamPagerAdapter(
     private val parentFragment: Fragment,
     private var pages: List<TeamPageConfig>,
     private val teamId: String?,
-    private val onMemberChangeListener: OnMemberChangeListener,
-    private val teamUpdateListener: OnTeamUpdateListener
+    private val onMemberChangeListener: OnChangedListener,
+    private val teamUpdateListener: OnChangedListener
 ) : FragmentStateAdapter(parentFragment) {
     private val itemIds = mutableMapOf<String, Long>()
     private var nextId = 1L

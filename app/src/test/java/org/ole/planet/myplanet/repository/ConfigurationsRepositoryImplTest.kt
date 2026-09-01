@@ -783,4 +783,37 @@ class ConfigurationsRepositoryImplTest {
 
         assertEquals(listOf("link1", "link2"), repository.getQueuedDownloads())
     }
+
+    @Test
+    fun `getParentCode delegates to sharedPrefManager`() {
+        every { sharedPrefManager.getParentCode() } returns "parent_123"
+
+        assertEquals("parent_123", repository.getParentCode())
+        verify { sharedPrefManager.getParentCode() }
+    }
+
+    @Test
+    fun `getCommunityName delegates to sharedPrefManager`() {
+        every { sharedPrefManager.getCommunityName() } returns "test_community"
+
+        assertEquals("test_community", repository.getCommunityName())
+        verify { sharedPrefManager.getCommunityName() }
+    }
+
+    @Test
+    fun `getCommunityLeaders delegates to sharedPrefManager`() {
+        every { sharedPrefManager.getCommunityLeaders() } returns "leaders_json"
+
+        assertEquals("leaders_json", repository.getCommunityLeaders())
+        verify { sharedPrefManager.getCommunityLeaders() }
+    }
+
+    @Test
+    fun `clearPreferences delegates to sharedPrefManager`() {
+        every { sharedPrefManager.clearPreferences() } just runs
+
+        repository.clearPreferences()
+
+        verify { sharedPrefManager.clearPreferences() }
+    }
 }
