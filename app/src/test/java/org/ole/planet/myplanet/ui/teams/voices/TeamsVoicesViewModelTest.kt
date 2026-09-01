@@ -66,8 +66,6 @@ class TeamsVoicesViewModelTest {
         val result = viewModel.getFilteredNews(teamId)
 
         assertEquals(newsList, result)
-        // The list is already fetched for the caller, so its size is the watermark — no extra
-        // count query (countTeamChats / countTopLevelByTeam) is issued here.
         coVerify(exactly = 1) { notificationsRepository.updateTeamNotification(teamId, newsList.size) }
         coVerify(exactly = 0) { voicesRepository.countTopLevelByTeam(teamId) }
         coVerify(exactly = 0) { voicesRepository.countTeamChats(teamId) }
