@@ -147,7 +147,7 @@ class LoginSyncManager @Inject constructor(
                         sharedPrefManager.setCommunityLeaders("$responseBody")
 
                         val array = JsonUtils.getJsonArray("docs", responseBody)
-                        if (array.size() > 0) {
+                        if (!array.isEmpty()) {
                             try {
                                 sharedPrefManager.setRawString("user_admin", JsonUtils.gson.toJson(array[0]))
                             } catch (e: Exception) {
