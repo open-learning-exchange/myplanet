@@ -110,10 +110,6 @@ class SubmissionsRepositoryImplTest {
         assertEquals(1, result.size)
     }
 
-    /**
-     * Emits [first] then [second] through the DAO flow and returns how many emissions reached
-     * a collector, asserting along the way that the first one always did.
-     */
     private suspend fun TestScope.countEmissionsFor(
         first: List<Submission>,
         second: List<Submission>,
