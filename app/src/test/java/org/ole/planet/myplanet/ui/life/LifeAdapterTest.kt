@@ -141,4 +141,20 @@ class LifeAdapterTest {
         assertFalse(reorderInvoked)
         assertEquals(2, reorderAdapter.itemCount)
     }
+
+    @Test
+    fun `onItemMoveFinished clears drag state before the callback so re-entry is a no-op`() {
+        var invocations = 0
+        lateinit var reentrantAdapter: LifeAdapter
+        reentrantAdapter = adapterWith {
+            invocations++
+            reentrantAdapter.onItemMoveFinished()
+        }
+
+        reentrantAdapter.submitList(listOf(lifeItem("a", 0), lifeItem("b", 1)))
+        reentrantAdapter.onItemMove(0, 1)
+        reentrantAdapter.onItemMoveFinished()
+
+        assertEquals(1, invocations)
+    }
 }
