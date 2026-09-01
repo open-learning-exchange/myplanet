@@ -293,7 +293,6 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
         val notificationMap = mutableMapOf<String, TeamNotificationInfo>()
 
-        // 1. Fetch all relevant notifications in a single query
         val notificationsResult = teamNotificationDao.getByTypeAndParentIds("chat", teamIds)
         val notificationsById = mutableMapOf<String, TeamNotification>()
         notificationsResult.forEach {
@@ -302,24 +301,16 @@ class NotificationsRepositoryImpl @Inject constructor(
             }
         }
 
-        // 2. Fetch the current top-level chat count per team. This must use the same predicate
-        //    as the watermark written by TeamsVoicesViewModel.getFilteredNews (which stores
-        //    newsList.size, i.e. getTopLevelByTeam), so the lastCount < chatCount comparison
-        //    compares like for like. The previous getTeamChatViewableIds query counted a
-        //    different set (viewableBy/viewableId only, replies included) so the badge never
-        //    cleared for teams with replies and never appeared for viewIn-only local posts.
         val chatCountsById = mutableMapOf<String, Long>()
         for (teamId in teamIds) {
             chatCountsById[teamId] = voicesRepository.countTopLevelByTeam(teamId)
         }
 
-        // 3. Fetch all relevant tasks once
         val current = timeProvider.now()
         val tomorrow = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
         val tasks = teamTaskDao.getTasksForUserBetween(userId, current, tomorrow.timeInMillis)
         val hasTask = tasks.isNotEmpty()
 
-        // 4. Combine the results in memory
         for (teamId in teamIds) {
             val notification = notificationsById[teamId]
             val chatCount = chatCountsById[teamId] ?: 0L
@@ -341,9 +332,6 @@ class NotificationsRepositoryImpl @Inject constructor(
     override fun resolveType(type: String, message: String, subType: String?): String {
         if (type.lowercase(Locale.ROOT) in NotificationsRepository.KNOWN_TYPES) return type.lowercase(Locale.ROOT)
         val lower = message.lowercase(Locale.ROOT)
-        // Raw server type "team" covers every team-related event (message/request/added/rejected/removed) in
-        // whatever language the server rendered the message in, so classify structurally first and only fall
-        // back to English message-sniffing to pick a more specific sub-bucket when it's recognizable.
         if (type == "team") {
             if (subType != null) return subType
             return when {
@@ -389,12 +377,6 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
     }
 
-    /**
-     * Raw type "team" covers join requests, team-membership changes, and chat posts alike, and the
-     * server renders `message` in the recipient's locale, so it can't be classified reliably by
-     * sniffing English/Spanish phrases. `linkParams.activeTab == "applicantTab"` is a locale-independent
-     * signal the server sends specifically for join-request notifications; use it when present.
-     */
     private fun extractTeamSubtype(rawType: String, doc: JsonObject): String? {
         if (rawType != "team") return null
         val activeTab = doc.getAsJsonObject("linkParams")?.get("activeTab")?.asString
