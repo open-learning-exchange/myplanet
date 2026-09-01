@@ -32,6 +32,7 @@ import com.afollestad.materialdialogs.MaterialDialog
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Date
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
@@ -74,7 +75,6 @@ import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
-import kotlin.time.Duration.Companion.milliseconds
 
 @AndroidEntryPoint
 abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepository.CheckVersionCallback {
