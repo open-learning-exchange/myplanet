@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.utils.JsonUtils
  */
 @Entity(tableName = "feedback", indices = [androidx.room.Index("openTime"), androidx.room.Index("owner"), androidx.room.Index("isUploaded")])
 open class Feedback {
-    // @JvmField on id/_id so Room does not see ambiguous getId/get_id accessors.
     @PrimaryKey
     @JvmField
     var id: String = ""
@@ -43,9 +42,6 @@ open class Feedback {
     var parentCode: String? = null
     var state: String? = null
 
-    // In-memory cache of the parsed `messages` array: @Ignore keeps it out of Room, @Transient
-    // keeps it out of Gson. The instance is confined to the collecting coroutine that owns this
-    // entity, so the cache needs no synchronization.
     @Ignore
     @Transient
     private var cachedMessages: JsonArray? = null
