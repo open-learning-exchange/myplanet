@@ -77,7 +77,6 @@ class TeamChatBadgeIntegrationTest {
             mockk(relaxed = true),
             teamTaskDao,
             voicesRepository,
-            mockk(relaxed = true),
         )
     }
 
