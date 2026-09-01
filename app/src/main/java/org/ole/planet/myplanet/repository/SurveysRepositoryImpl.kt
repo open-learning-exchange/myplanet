@@ -250,22 +250,19 @@ class SurveysRepositoryImpl @Inject constructor(
             .toSet()
         val filteredSubmissionIds = teamSubmissionIds - adoptedSourceSurveyIds
 
-        return examDao.getByType("surveys")
-            .asSequence()
-            .filter { it.teamId == teamId || filteredSubmissionIds.contains(it.id) }
-            .toList()
+        return examDao.getTeamOwnedSurveys(teamId, filteredSubmissionIds)
     }
 
     override suspend fun getAdoptableTeamSurveys(teamId: String?): List<StepExam> {
         if (teamId.isNullOrEmpty()) return emptyList()
-        val excludedIds = getTeamSubmissionExamIds(teamId) +
-            examDao.getByTeamIdAndType(teamId, "surveys").mapNotNull { it.sourceSurveyId }
+        val excludedIds = (getTeamSubmissionExamIds(teamId) +
+            examDao.getByTeamIdAndType(teamId, "surveys").mapNotNull { it.sourceSurveyId }).toSet()
 
-        return examDao.getByType("surveys")
-            .asSequence()
-            .filter { it.isTeamShareAllowed }
-            .filterNot { excludedIds.contains(it.id) }
-            .toList()
+        return if (excludedIds.isEmpty()) {
+            examDao.getAdoptableTeamSurveys()
+        } else {
+            examDao.getAdoptableTeamSurveys(excludedIds)
+        }
     }
 
     override suspend fun getIndividualSurveys(): List<StepExam> {

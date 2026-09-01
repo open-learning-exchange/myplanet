@@ -16,7 +16,9 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.BuildConfig
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.UrlUtils
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -157,6 +159,32 @@ class ServerUrlMapperTest {
     }
 
     @Test
+    fun testUpdateUrlPreferencesReusesParsedUserInfoWhenPasswordContainsAtSign() {
+        val editor = mockk<SharedPreferences.Editor>()
+        val settings = mockk<SharedPreferences>()
+
+        every { editor.putString(any(), any()) } returns editor
+        every { editor.putBoolean(any(), any()) } returns editor
+        every { editor.apply() } just Runs
+
+        val uri = mockk<Uri>()
+        every { uri.userInfo } returns null
+        every { uri.scheme } returns "http"
+        every { uri.host } returns "primary.com"
+
+        val alternativeUrl = "http://user:p@ss@alternative.com:5984"
+
+        val url = "http://primary.com"
+
+        serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, url, settings)
+
+        verify { editor.putString("url_user", "user") }
+        verify { editor.putString("url_pwd", "p@ss") }
+        verify { editor.putString("processedAlternativeUrl", alternativeUrl) }
+        verify { editor.apply() }
+    }
+
+    @Test
     fun testUpdateServerIfNecessaryWhenPrimaryIsDownAndAlternativeIsUp() = runTest {
         val editor = mockk<SharedPreferences.Editor>()
         val settings = mockk<SharedPreferences>()
@@ -199,5 +227,35 @@ class ServerUrlMapperTest {
         serverUrlMapper.updateServerIfNecessary(mapping, settings, isServerReachable)
 
         verify(exactly = 0) { settings.edit() }
+    }
+
+    @Test
+    fun `updateUrlPreferences invalidates UrlUtils cached header`() {
+        val spm = mockk<SharedPrefManager>(relaxed = true)
+        UrlUtils.resetForTesting()
+        UrlUtils.init(spm)
+
+        every { spm.getUrlUser() } returns "oldUser"
+        every { spm.getUrlPwd() } returns "oldPwd"
+
+        val firstHeader = UrlUtils.header
+        assertEquals("Basic " + android.util.Base64.encodeToString("oldUser:oldPwd".toByteArray(), android.util.Base64.NO_WRAP), firstHeader)
+
+        every { spm.getUrlUser() } returns "satellite"
+        every { spm.getUrlPwd() } returns "1234"
+
+        val editor = mockk<SharedPreferences.Editor>(relaxed = true)
+        val settings = mockk<SharedPreferences>(relaxed = true)
+        every { settings.getString("serverPin", "") } returns "1234"
+
+        val uri = mockk<Uri>(relaxed = true)
+        every { uri.scheme } returns "http"
+        every { uri.host } returns "primary.com"
+
+        serverUrlMapper.updateUrlPreferences(editor, uri, "https://alternative.com", "http://primary.com", settings)
+
+        val secondHeader = UrlUtils.header
+        assertEquals("Basic " + android.util.Base64.encodeToString("satellite:1234".toByteArray(), android.util.Base64.NO_WRAP), secondHeader)
+        verify(exactly = 2) { spm.getUrlUser() }
     }
 }

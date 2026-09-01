@@ -21,8 +21,18 @@ class EnterprisesFinancesViewModel @Inject constructor(
     private val teamsRepository: TeamsFinancesRepository
 ) : ViewModel() {
 
+    data class FinanceHeaderState(
+        val debit: Int = 0,
+        val credit: Int = 0,
+        val total: Int = 0,
+        val isCautionVisible: Boolean = false
+    )
+
     private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
     val transactions: StateFlow<List<Transaction>> = _transactions.asStateFlow()
+
+    private val _headerState = MutableStateFlow(FinanceHeaderState())
+    val headerState: StateFlow<FinanceHeaderState> = _headerState.asStateFlow()
 
     private val _transactionCreated = MutableSharedFlow<Result<Unit>>(extraBufferCapacity = 1)
     val transactionCreated: SharedFlow<Result<Unit>> = _transactionCreated.asSharedFlow()
@@ -44,8 +54,28 @@ class EnterprisesFinancesViewModel @Inject constructor(
                 sortAscending = sortAscending
             ).collectLatest { results ->
                 _transactions.value = results
+                calculateTotal(results)
             }
         }
+    }
+
+    private fun calculateTotal(list: List<Transaction>) {
+        var debit = 0
+        var credit = 0
+        for (team in list) {
+            if ("credit".equals(team.type, ignoreCase = true)) {
+                credit += team.amount
+            } else {
+                debit += team.amount
+            }
+        }
+        val total = credit - debit
+        _headerState.value = FinanceHeaderState(
+            debit = debit,
+            credit = credit,
+            total = total,
+            isCautionVisible = total < 0
+        )
     }
 
     fun createTransaction(

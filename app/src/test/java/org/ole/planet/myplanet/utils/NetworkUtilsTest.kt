@@ -36,6 +36,8 @@ class NetworkUtilsTest {
         // Initialize MainApplication.context which is required by NetworkUtils to avoid UninitializedPropertyAccessException
         // It is needed here because NetworkUtils gets system service from it directly
         org.ole.planet.myplanet.MainApplication.testContext = ApplicationProvider.getApplicationContext()
+        VersionUtils.resetAndroidIdCacheForTesting()
+        NetworkUtils.resetForTesting()
     }
 
     @Test

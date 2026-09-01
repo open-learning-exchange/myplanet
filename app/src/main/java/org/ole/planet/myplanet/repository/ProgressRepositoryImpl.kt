@@ -35,7 +35,7 @@ class ProgressRepositoryImpl @Inject constructor(
         val allSteps = if (courseIds.isEmpty()) {
             emptyList()
         } else {
-            courseStepDao.getByCourseIds(courseIds).map { it }
+            courseStepDao.getByCourseIds(courseIds)
         }
         val allProgresses = if (courseIds.isEmpty()) emptyList() else courseProgressDao.getByUserAndCourseIds(userId, courseIds)
 
@@ -63,12 +63,11 @@ class ProgressRepositoryImpl @Inject constructor(
         val allExams = if (courseIds.isEmpty()) {
             emptyList()
         } else {
-            examDao.getByCourseIds(courseIds).map { it }
+            examDao.getByCourseIds(courseIds)
         }
         val examsByCourseId = allExams.groupBy { it.courseId }
         val courseIdsSet = courseIds.toHashSet()
         val submissionsByCourseId = submissionDao.getExamSubmissionsByUser(userId)
-            .map { it }
             .groupBy { submission ->
                 val parentId = submission.parentId
                 if (parentId != null) {
@@ -144,10 +143,10 @@ class ProgressRepositoryImpl @Inject constructor(
         }
 
         val submissionIds = submissions.mapNotNull { it.id }
-        val allAnswers = if (submissionIds.isEmpty()) emptyList() else answerDao.getBySubmissionIds(submissionIds).map { it }
+        val allAnswers = if (submissionIds.isEmpty()) emptyList() else answerDao.getBySubmissionIds(submissionIds)
 
         val questionIds = allAnswers.mapNotNull { it.questionId }.distinct()
-        val allQuestions = if (questionIds.isEmpty()) emptyList() else questionDao.getByIds(questionIds).map { it }
+        val allQuestions = if (questionIds.isEmpty()) emptyList() else questionDao.getByIds(questionIds)
         val questionsMap = allQuestions.associateBy { it.id }
 
         val answersBySubmissionId = allAnswers.groupBy { it.submissionId }

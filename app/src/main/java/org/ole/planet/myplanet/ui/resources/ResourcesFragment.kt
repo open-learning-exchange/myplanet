@@ -6,6 +6,7 @@ import android.content.DialogInterface
 import android.content.res.ColorStateList
 import android.os.Build
 import android.os.Bundle
+import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -24,11 +25,9 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.chip.Chip
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import fisk.chipcloud.ChipCloud
-import fisk.chipcloud.ChipCloudConfig
-import fisk.chipcloud.ChipDeletedListener
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
@@ -70,7 +69,7 @@ import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
 class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelectedListener,
-    ChipDeletedListener, OnTagClickListener, OnFilterListener, RealtimeSyncMixin {
+    OnTagClickListener, OnFilterListener, RealtimeSyncMixin {
     private var _binding: FragmentMyLibraryBinding? = null
     private val binding get() = _binding!!
     private val tvAddToLib get() = binding.tvAdd
@@ -86,7 +85,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private var toggleListButton: ImageButton? = null
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal var searchTags: MutableList<TagEntity> = ArrayList()
-    private lateinit var config: ChipCloudConfig
     private lateinit var adapterLibrary: ResourcesAdapter
     var userModel: UserEntity ?= null
     var map: HashMap<String?, JsonObject>? = null
@@ -246,7 +244,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         toggleListButton = view.findViewById(R.id.toggle_list)
         layoutViewToggle = view.findViewById<View>(R.id.layout_view_toggle) ?: (toggleGridButton?.parent as? View)
         isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) ?: false
-        config = Utilities.getCloudConfig().showClose(R.color.black_overlay)
 
         initializeViews()
         setupEventListeners()
@@ -571,18 +568,9 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private fun renderSearchTagsUi() {
         if (_binding == null) return
-        if (searchTags.isNotEmpty()) {
-            tvSelected.visibility = View.VISIBLE
-            flexBoxTags.removeAllViews()
-            val chipCloud = ChipCloud(activity, flexBoxTags, config)
-            chipCloud.setDeleteListener(this)
-            chipCloud.addChips(searchTags)
-            showTagText(searchTags, tvSelected)
-        } else {
-            flexBoxTags.removeAllViews()
-            tvSelected.text = ""
-            tvSelected.visibility = View.GONE
-        }
+        tvSelected.visibility = if (searchTags.isNotEmpty()) View.VISIBLE else View.GONE
+        renderTagChips()
+        showTagText(searchTags, tvSelected)
     }
 
     private fun createAlertDialog(): AlertDialog {
@@ -707,6 +695,29 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
     }
 
+    private fun renderTagChips() {
+        val context = context ?: return
+        val chipContext = ContextThemeWrapper(context, R.style.Theme_App_Chip)
+        flexBoxTags.removeAllViews()
+        for (tag in searchTags) {
+            val chip = Chip(chipContext).apply {
+                text = tag.name
+                isCloseIconVisible = true
+                setOnCloseIconClickListener {
+                    searchTags.remove(tag)
+                    renderSearchTagsUi()
+                    if (view != null) {
+                        searchJob?.cancel()
+                        searchJob = viewLifecycleOwner.lifecycleScope.launch {
+                            applyFiltersAndUpdateUI()
+                        }
+                    }
+                }
+            }
+            flexBoxTags.addView(chip)
+        }
+    }
+
     override fun onTagSelected(tag: TagEntity) {
         searchTags = mutableListOf(tag)
         renderSearchTagsUi()
@@ -749,19 +760,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         } else {
             selectAll.isChecked = false
             selectAll.text = getString(R.string.select_all)
-        }
-    }
-
-    override fun chipDeleted(i: Int, s: String) {
-        if (i in searchTags.indices) {
-            searchTags.removeAt(i)
-        }
-        renderSearchTagsUi()
-        if (view != null) {
-            searchJob?.cancel()
-            searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                applyFiltersAndUpdateUI()
-            }
         }
     }
 

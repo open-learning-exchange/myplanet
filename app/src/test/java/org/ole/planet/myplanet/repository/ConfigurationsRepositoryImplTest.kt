@@ -20,11 +20,14 @@ import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -58,7 +61,8 @@ class ConfigurationsRepositoryImplTest {
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val appDatabase: AppDatabase = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
-    private val serviceScope = CoroutineScope(testDispatcher)
+    // Handed to the repository under test; cancelled in @After so nothing escapes the fork.
+    private val serviceScope = CoroutineScope(SupervisorJob() + testDispatcher)
 
     private val dispatcherProvider = object : DispatcherProvider {
         override val main = testDispatcher
@@ -70,6 +74,11 @@ class ConfigurationsRepositoryImplTest {
 
     @get:Rule
     val temporaryFolder = TemporaryFolder()
+
+    @After
+    fun tearDown() {
+        serviceScope.cancel()
+    }
 
     @Before
     fun setup() {
@@ -287,6 +296,76 @@ class ConfigurationsRepositoryImplTest {
     }
 
     @Test
+    fun `checkServerAvailability with string url counts trailing commas as a single entry`() = runTest(testDispatcher) {
+        val url = "http://test.url"
+        val mockBody = "1,2,3,4,5,6,7,8,,".toResponseBody("text/plain".toMediaTypeOrNull())
+        val response = Response.success(200, mockBody)
+
+        coEvery { apiInterface.isPlanetAvailable(url) } returns response
+
+        val result = repository.checkServerAvailability(url)
+
+        assertTrue(result)
+        coVerify { apiInterface.isPlanetAvailable(url) }
+    }
+
+    @Test
+    fun `checkServerAvailability with string url returns false when response is only commas`() = runTest(testDispatcher) {
+        val url = "http://test.url"
+        val mockBody = ",,,".toResponseBody("text/plain".toMediaTypeOrNull())
+        val response = Response.success(200, mockBody)
+
+        coEvery { apiInterface.isPlanetAvailable(url) } returns response
+
+        val result = repository.checkServerAvailability(url)
+
+        assertFalse(result)
+        coVerify { apiInterface.isPlanetAvailable(url) }
+    }
+
+    @Test
+    fun `checkServerAvailability with string url returns false when response body is empty`() = runTest(testDispatcher) {
+        val url = "http://test.url"
+        val mockBody = "".toResponseBody("text/plain".toMediaTypeOrNull())
+        val response = Response.success(200, mockBody)
+
+        coEvery { apiInterface.isPlanetAvailable(url) } returns response
+
+        val result = repository.checkServerAvailability(url)
+
+        assertFalse(result)
+        coVerify { apiInterface.isPlanetAvailable(url) }
+    }
+
+    @Test
+    fun `checkServerAvailability with string url keeps internal empty entries when counting`() = runTest(testDispatcher) {
+        val url = "http://test.url"
+        val mockBody = "a,,,b,,,,,,,h".toResponseBody("text/plain".toMediaTypeOrNull())
+        val response = Response.success(200, mockBody)
+
+        coEvery { apiInterface.isPlanetAvailable(url) } returns response
+
+        val result = repository.checkServerAvailability(url)
+
+        assertTrue(result)
+        coVerify { apiInterface.isPlanetAvailable(url) }
+    }
+
+    @Test
+    fun `checkServerAvailability with string url returns false when response has exactly seven items`() = runTest(testDispatcher) {
+        val url = "http://test.url"
+        val mockBody = "1,2,3,4,5,6,7".toResponseBody("text/plain".toMediaTypeOrNull())
+        val response = Response.success(200, mockBody)
+
+        coEvery { apiInterface.isPlanetAvailable(url) } returns response
+
+        val result = repository.checkServerAvailability(url)
+
+        assertFalse(result)
+        coVerify { apiInterface.isPlanetAvailable(url) }
+    }
+
+    @Test
     fun `checkServerAvailability with string url returns true when response is 401`() = runTest(testDispatcher) {
         val url = "http://test.url"
         val mockBody = "".toResponseBody("text/plain".toMediaTypeOrNull())
@@ -426,6 +505,41 @@ class ConfigurationsRepositoryImplTest {
 
         assertFalse(result)
 
+        io.mockk.unmockkObject(FileUtils)
+        io.mockk.unmockkConstructor(Sha256Utils::class)
+    }
+
+    @Test
+    fun `checkCheckSum returns false when checksum cannot be computed`() = runTest(testDispatcher) {
+        val path = "test_path"
+        val expectedChecksum = "expected_checksum"
+
+        every { sharedPrefManager.getServerUrl() } returns "http://test.url"
+        every { sharedPrefManager.isAlternativeUrl() } returns false
+        every { sharedPrefManager.getCouchdbUrl() } returns "http://test.url"
+        UrlUtils.init(sharedPrefManager)
+
+        // Mock api response
+        val mockBody = expectedChecksum.toResponseBody("text/plain".toMediaTypeOrNull())
+        val response = Response.success(200, mockBody)
+        coEvery { apiInterface.getChecksum(any()) } returns response
+
+        io.mockk.mockkStatic(android.util.Log::class)
+        every { android.util.Log.w(any(), any<String>()) } returns 0
+
+        io.mockk.mockkObject(FileUtils)
+        val mockFile = mockk<java.io.File>()
+        every { FileUtils.getSDPathFromUrl(context, path) } returns mockFile
+        every { mockFile.exists() } returns true
+
+        io.mockk.mockkConstructor(Sha256Utils::class)
+        every { anyConstructed<Sha256Utils>().getCheckSumFromFile(mockFile) } returns null
+
+        val result = repository.checkCheckSum(path)
+
+        assertFalse(result)
+
+        io.mockk.unmockkStatic(android.util.Log::class)
         io.mockk.unmockkObject(FileUtils)
         io.mockk.unmockkConstructor(Sha256Utils::class)
     }
@@ -677,5 +791,38 @@ class ConfigurationsRepositoryImplTest {
         every { sharedPrefManager.getConcatenatedLinks() } returns "[\"link1\", \"link2\"]"
 
         assertEquals(listOf("link1", "link2"), repository.getQueuedDownloads())
+    }
+
+    @Test
+    fun `getParentCode delegates to sharedPrefManager`() {
+        every { sharedPrefManager.getParentCode() } returns "parent_123"
+
+        assertEquals("parent_123", repository.getParentCode())
+        verify { sharedPrefManager.getParentCode() }
+    }
+
+    @Test
+    fun `getCommunityName delegates to sharedPrefManager`() {
+        every { sharedPrefManager.getCommunityName() } returns "test_community"
+
+        assertEquals("test_community", repository.getCommunityName())
+        verify { sharedPrefManager.getCommunityName() }
+    }
+
+    @Test
+    fun `getCommunityLeaders delegates to sharedPrefManager`() {
+        every { sharedPrefManager.getCommunityLeaders() } returns "leaders_json"
+
+        assertEquals("leaders_json", repository.getCommunityLeaders())
+        verify { sharedPrefManager.getCommunityLeaders() }
+    }
+
+    @Test
+    fun `clearPreferences delegates to sharedPrefManager`() {
+        every { sharedPrefManager.clearPreferences() } just runs
+
+        repository.clearPreferences()
+
+        verify { sharedPrefManager.clearPreferences() }
     }
 }

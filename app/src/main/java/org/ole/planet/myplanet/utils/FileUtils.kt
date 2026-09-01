@@ -48,42 +48,24 @@ object FileUtils {
         return File(externalFilesDir, "ole/$libraryId/$address")
     }
 
-    private fun createFilePath(context: Context, folder: String, filename: String): File {
+    private fun resolveFilePath(context: Context, folder: String, filename: String): File {
         val baseDirectory = File(getExternalFilesDir(context), folder)
 
-        if (filename.contains("/")) {
+        return if (filename.contains("/")) {
             val subDirPath = filename.substring(0, filename.lastIndexOf('/'))
             val fullDir = File(baseDirectory, subDirPath)
-
-            try {
-                if (!fullDir.exists() && !fullDir.mkdirs()) {
-                    throw IOException("Failed to create directory: ${fullDir.absolutePath}")
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
-                throw RuntimeException("Failed to create directory: ${fullDir.absolutePath}", e)
-            }
-
             val actualFilename = filename.substring(filename.lastIndexOf('/') + 1)
-            return File(fullDir, actualFilename)
+            File(fullDir, actualFilename)
         } else {
-            try {
-                if (!baseDirectory.exists() && !baseDirectory.mkdirs()) {
-                    throw IOException("Failed to create directory: ${baseDirectory.absolutePath}")
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
-                throw RuntimeException("Failed to create directory: ${baseDirectory.absolutePath}", e)
-            }
-            return File(baseDirectory, filename)
+            File(baseDirectory, filename)
         }
     }
 
     fun getSDPathFromUrl(context: Context, url: String?): File {
-        return createFilePath(context, "/ole/${getIdFromUrl(url)}", getResourceRelativePathFromUrl(url))
+        return resolveFilePath(context, "/ole/${getIdFromUrl(url)}", getResourceRelativePathFromUrl(url))
     }
 
-    private fun getResourceRelativePathFromUrl(url: String?): String {
+    fun getResourceRelativePathFromUrl(url: String?): String {
         return try {
             val segments = url?.toUri()?.pathSegments ?: return getFileNameFromUrl(url)
             val idx = segments.indexOf("resources")
@@ -122,6 +104,21 @@ object FileUtils {
             e.printStackTrace()
             null
         }
+    }
+
+    private val previewImageExtensions = setOf("png", "jpg", "jpeg", "gif", "webp")
+    private val previewImageNameHints = listOf("cover", "thumbnail", "thumb", "screenshot", "poster")
+
+    fun findHtmlCoverImage(resourceDir: File): File? {
+        if (!resourceDir.isDirectory) return null
+        val images = resourceDir.walkTopDown()
+            .maxDepth(4)
+            .filter { it.isFile && it.extension.lowercase() in previewImageExtensions }
+            .toList()
+        if (images.isEmpty()) return null
+        return images.firstOrNull { image ->
+            previewImageNameHints.any { image.nameWithoutExtension.lowercase().contains(it) }
+        } ?: images.maxByOrNull { it.length() }
     }
 
     fun checkFileExist(context: Context, url: String?): Boolean {
@@ -345,14 +342,12 @@ object FileUtils {
     fun totalAvailableMemory(context: Context): Long = getStorageStats(context).second
 
     fun totalAvailableMemoryRatio(context: Context): Long {
-        val total = totalMemoryCapacity(context)
-        val available = totalAvailableMemory(context)
+        val (total, available) = getStorageStats(context)
         return (available.toDouble() / total.toDouble() * 100).roundToLong()
     }
 
     fun availableOverTotalMemoryFormattedString(context: Context): String {
-        val available = totalAvailableMemory(context)
-        val total = totalMemoryCapacity(context)
+        val (total, available) = getStorageStats(context)
         return formatSize(context, available) + "/" + formatSize(context, total)
     }
 

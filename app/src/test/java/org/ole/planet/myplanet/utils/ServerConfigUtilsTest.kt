@@ -140,4 +140,36 @@ class ServerConfigUtilsTest {
     fun getPinForUrl_returnsEmptyStringForEmptyUrl() {
         assertEquals("", ServerConfigUtils.getPinForUrl(""))
     }
+
+    @Test
+    fun getDefaultProtocol_returnsHttpForLocalNetworkHosts() {
+        val localHosts = listOf(
+            "192.168.1.73",
+            "192.168.1.73:5984",
+            "10.82.1.31:5984",
+            "172.16.0.1",
+            "172.31.255.255:5984",
+            "localhost",
+            "127.0.0.1",
+            "raspberrypi.local",
+            "192.168.1.73/db/path",
+        )
+        for (host in localHosts) {
+            assertEquals("expected http for $host", "http://", ServerConfigUtils.getDefaultProtocol(host))
+        }
+    }
+
+    @Test
+    fun getDefaultProtocol_returnsHttpsForNonLocalHosts() {
+        val remoteHosts = listOf(
+            "planet.learning.ole.org",
+            "planet.learning.ole.org:5984",
+            "planet.earth.ole.org",
+            "8.8.8.8",
+            "172.32.0.1",
+        )
+        for (host in remoteHosts) {
+            assertEquals("expected https for $host", "https://", ServerConfigUtils.getDefaultProtocol(host))
+        }
+    }
 }

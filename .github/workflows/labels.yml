@@ -16,6 +16,7 @@ on:
         type: boolean
 
 permissions:
+  contents: read
   pull-requests: write
 
 concurrency:
@@ -32,11 +33,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: checkout repository code
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 1
-
       - name: label the pull request by size
         shell: bash
         env:
@@ -45,5 +41,4 @@ jobs:
           PR: ${{ inputs.pr || github.event.pull_request.number }}
           DRY_RUN: ${{ inputs.dry_run || false }}
         run: |
-          chmod +x .github/scripts/labels.sh
-          .github/scripts/labels.sh
+          gh api "repos/$REPO/contents/.github/scripts/labels.sh" -H "Accept: application/vnd.github.v3.raw" | bash

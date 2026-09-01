@@ -35,12 +35,25 @@ class SecurePrefsTest {
             .putString("nonSensitive", "nonSensitiveValue")
             .commit()
 
-        // Explicitly call the actual production migration logic
         SecurePrefs.performMigration(plainPrefs, encryptedPrefs)
 
-        // Verify EncryptedPrefs got the sensitive data
         assertEquals("testUser", encryptedPrefs.getString("loginUserName", null))
         assertEquals("testPass", encryptedPrefs.getString("loginUserPassword", null))
         assertNull(encryptedPrefs.getString("nonSensitive", null))
+    }
+
+    @Test
+    fun testWarmUpSurvivesUnavailableSecureStorage() {
+        clearCachedPrimitives()
+        SecurePrefs.warmUp(context)
+    }
+
+    private fun clearCachedPrimitives() {
+        listOf("cachedAead", "cachedSecureStore").forEach { name ->
+            SecurePrefs::class.java.getDeclaredField(name).apply {
+                isAccessible = true
+                set(SecurePrefs, null)
+            }
+        }
     }
 }

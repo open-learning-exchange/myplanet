@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6765
-        versionName = "0.67.65"
+        versionCode = 6915
+        versionName = "0.69.15"
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
@@ -23,6 +23,11 @@ android {
                 test.maxParallelForks = requested ? requested.toInteger()
                     : Math.min(Runtime.runtime.availableProcessors(), 4)
                 test.maxHeapSize = "1536m"
+                test.testLogging {
+                    events "failed"
+                    exceptionFormat = "short"
+                    showStackTraces = true
+                }
                 def shardTotal = (project.findProperty('testShardTotal') ?: '1').toInteger()
                 def shardIndex = (project.findProperty('testShardIndex') ?: '0').toInteger()
                 if (shardTotal < 1 || shardIndex < 0 || shardIndex >= shardTotal) {

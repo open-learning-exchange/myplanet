@@ -52,11 +52,9 @@ open class MyCourse(
 
     fun setUserId(userId: String?) {
         if (userId.isNullOrBlank()) return
-        val current = this.userId.orEmpty().filter { !it.isNullOrBlank() }.toMutableList()
-        if (!current.contains(userId)) {
-            current.add(userId)
-        }
-        this.userId = current.distinct()
+        val set = this.userId.orEmpty().filterTo(LinkedHashSet()) { it.isNotBlank() }
+        set.add(userId)
+        this.userId = set.toList()
     }
 
     fun removeUserId(userId: String?) {

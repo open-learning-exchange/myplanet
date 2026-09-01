@@ -56,6 +56,15 @@ class ChatHistoryAdapter(
     private lateinit var shareTargetAdapter: ChatShareTargetAdapter
 
     private val daynightGreyColor by lazy { ContextCompat.getColor(context, R.color.daynight_grey) }
+    private val shareDataMap by lazy(LazyThreadSafetyMode.NONE) {
+        mapOf(
+            context.getString(R.string.share_with_community) to listOf(context.getString(R.string.community)),
+            context.getString(R.string.share_with_team_enterprise) to listOf(
+                context.getString(R.string.teams),
+                context.getString(R.string.enterprises)
+            )
+        )
+    }
 
     init {
         submitList(chatHistoryList)
@@ -101,10 +110,11 @@ class ChatHistoryAdapter(
 
     override fun onBindViewHolder(holder: ViewHolderChat, position: Int) {
         val item = getItem(position)
-        if (item.conversations != null && item.conversations?.isNotEmpty() == true) {
-            holder.rowChatHistoryBinding.chatTitle.text = item.conversations?.get(0)?.query
-            holder.rowChatHistoryBinding.chatTitle.contentDescription = item.conversations?.get(0)?.query
-            chatTitle = item.conversations?.get(0)?.query
+        val firstQuery = item.conversations?.getOrNull(0)?.query
+        if (firstQuery != null) {
+            holder.rowChatHistoryBinding.chatTitle.text = firstQuery
+            holder.rowChatHistoryBinding.chatTitle.contentDescription = firstQuery
+            chatTitle = firstQuery
         } else {
             holder.rowChatHistoryBinding.chatTitle.text = item.title
             holder.rowChatHistoryBinding.chatTitle.contentDescription = item.title
@@ -134,7 +144,7 @@ class ChatHistoryAdapter(
             val sharedIds = getSharedViewInIds(item._id)
             val isCommunityShared = shareTargets.community?._id?.let { it in sharedIds } == true
             val sharedChildren = if (isCommunityShared) setOf(context.getString(R.string.community)) else emptySet()
-            val dataMap = getData() as? Map<String, List<String>> ?: emptyMap()
+            val dataMap = shareDataMap
 
             chatShareDialogBinding.listView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context)
             shareTargetAdapter = ChatShareTargetAdapter { clickedItem ->
@@ -295,18 +305,6 @@ class ChatHistoryAdapter(
             }
         }
         return flatList
-    }
-
-    private fun getData(): Map<String, List<String>> {
-        val expandableListDetail: MutableMap<String, List<String>> = HashMap()
-        expandableListDetail[context.getString(R.string.share_with_community)] = listOf(context.getString(R.string.community))
-
-        val teams: MutableList<String> = ArrayList()
-        teams.add(context.getString(R.string.teams))
-        teams.add(context.getString(R.string.enterprises))
-
-        expandableListDetail[context.getString(R.string.share_with_team_enterprise)] = teams
-        return expandableListDetail
     }
 
     class ViewHolderChat(val rowChatHistoryBinding: RowChatHistoryBinding) : RecyclerView.ViewHolder(rowChatHistoryBinding.root)

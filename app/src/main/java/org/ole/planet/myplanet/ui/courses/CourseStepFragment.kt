@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.withResumed
+import androidx.lifecycle.withStarted
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -54,9 +55,9 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     var stepId: String? = null
     private var nextStepId: String? = null
     private lateinit var step: CourseStep
-    private lateinit var resources: List<MyLibrary>
-    private lateinit var stepExams: List<StepExam>
-    private lateinit var stepSurvey: List<StepExam>
+    private var resources: List<MyLibrary> = emptyList()
+    private var stepExams: List<StepExam> = emptyList()
+    private var stepSurvey: List<StepExam> = emptyList()
     var user: UserEntity? = null
     private var stepNumber = 0
     private var courseTitle: String? = null
@@ -108,18 +109,19 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         loadDataJob = viewLifecycleOwner.lifecycleScope.launch {
             user = userRepository.getUserModel()
             val data = loadStepData()
-            if (viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            val title = data.step.courseId?.let { coursesRepository.getCourseTitleById(it) }
+            viewLifecycleOwner.lifecycle.withStarted {
                 step = data.step
                 resources = data.resources
                 stepExams = data.stepExams
                 stepSurvey = data.stepSurvey
 
-                courseTitle = step.courseId?.let { coursesRepository.getCourseTitleById(it) }
+                courseTitle = title
                 userHasCourse = data.userHasCourse
 
                 fragmentCourseStepBinding.btnResources.text =
-                    getString(R.string.resources_size, resources.size)
-                hideTestIfNoQuestion(data.hasExam, data.hasSurvey)
+                    getString(R.string.resources_size, data.resources.size)
+                hideTestIfNoQuestion(data.hasExam, data.hasSurvey, data.stepExams)
                 fragmentCourseStepBinding.tvTitle.text = step.stepTitle
                 val markdownContentWithLocalPaths = prependBaseUrlToImages(
                     step.description,
@@ -163,10 +165,10 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                         textWithSpans.removeSpan(urlSpan)
                     }
                 }
-                if (userHasCourse) {
-                    viewLifecycleOwner.lifecycle.withResumed {
-                        launchSaveCourseProgress()
-                    }
+            }
+            if (userHasCourse) {
+                viewLifecycleOwner.lifecycle.withResumed {
+                    launchSaveCourseProgress()
                 }
             }
         }
@@ -237,14 +239,14 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         }
     }
 
-    private fun hideTestIfNoQuestion(isTestPresent: Boolean, isSurveyPresent: Boolean) {
+    private fun hideTestIfNoQuestion(isTestPresent: Boolean, isSurveyPresent: Boolean, exams: List<StepExam>) {
         fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
         fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
-        if (stepExams.isNotEmpty()) {
+        if (exams.isNotEmpty()) {
             fragmentCourseStepBinding.btnTakeTest.text = if (isTestPresent) {
-                getString(R.string.retake_test, stepExams.size)
+                getString(R.string.retake_test, exams.size)
             } else {
-                getString(R.string.take_test, stepExams.size)
+                getString(R.string.take_test, exams.size)
             }
             fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
         }
