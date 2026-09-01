@@ -100,8 +100,6 @@ interface MyLibraryDao {
     )
     suspend fun getPrivateImagesCreatedAfter(timestamp: Long): List<MyLibrary>
 
-    // --- shelf-membership (userId JSON list) ---
-
     @Query("SELECT * FROM my_library WHERE userId LIKE :userPattern ESCAPE '\\'")
     suspend fun getForUserPattern(userPattern: String): List<MyLibrary>
 
@@ -155,8 +153,6 @@ interface MyLibraryDao {
     @Query("UPDATE my_library SET resourceOffline = 0 WHERE resourceId IN (:ids) AND resourceOffline = 1")
     suspend fun markAsNotOfflineByResourceIds(ids: List<String>)
 
-    // --- writes ---
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(item: MyLibrary)
 
@@ -166,8 +162,6 @@ interface MyLibraryDao {
     @Query("DELETE FROM my_library WHERE id IN (:ids)")
     suspend fun deleteByIds(ids: List<String>)
 
-
-    // removeDeletedResources: server-known public resources whose id fell out of the current set.
     @Query(
         "DELETE FROM my_library WHERE _rev IS NOT NULL AND _rev != '' AND isPrivate = 0 " +
             "AND resourceId NOT IN (:currentResourceIds)"
