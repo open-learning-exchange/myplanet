@@ -3,10 +3,6 @@ package org.ole.planet.myplanet.repository
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.Personal
 
-/**
- * Explicit description of the locally-editable fields of a [Personal] resource, so the UI cannot
- * mutate the Room entity directly. `null` means "leave the stored value unchanged".
- */
 data class PersonalUpdate(
     val title: String? = null,
     val description: String? = null
@@ -24,16 +20,10 @@ interface PersonalsRepository {
     )
 
     suspend fun getPersonalResources(userId: String?): Flow<List<Personal>>
-
     suspend fun deletePersonalResource(id: String)
-
     suspend fun updatePersonalResource(id: String, update: PersonalUpdate)
-
     suspend fun getPendingPersonalUploads(userId: String): List<Personal>
-
     suspend fun updatePersonalAfterSync(id: String, newId: String, rev: String)
-
     suspend fun uploadPersonalDocument(personal: Personal): Pair<String, String>?
-
     suspend fun uploadPersonal(personal: Personal): String
 }
