@@ -71,6 +71,28 @@ class VoicesRepositoryImplTest {
     }
 
     @Test
+    fun `getCommunityVoiceDateCount delegates to count query when userId is null`() = testScope.runTest {
+        coEvery { newsDao.countDistinctCommunityVoiceDates(1000L, 2000L) } returns 3
+
+        val count = repository.getCommunityVoiceDateCount(1000L, 2000L, null)
+
+        assertEquals(3, count)
+        coVerify(exactly = 1) { newsDao.countDistinctCommunityVoiceDates(1000L, 2000L) }
+        coVerify(exactly = 0) { newsDao.countDistinctCommunityVoiceDatesForUser(any(), any(), any()) }
+    }
+
+    @Test
+    fun `getCommunityVoiceDateCount delegates to user-scoped count query when userId is non-null`() = testScope.runTest {
+        coEvery { newsDao.countDistinctCommunityVoiceDatesForUser(1000L, 2000L, "user1") } returns 5
+
+        val count = repository.getCommunityVoiceDateCount(1000L, 2000L, "user1")
+
+        assertEquals(5, count)
+        coVerify(exactly = 1) { newsDao.countDistinctCommunityVoiceDatesForUser(1000L, 2000L, "user1") }
+        coVerify(exactly = 0) { newsDao.countDistinctCommunityVoiceDates(any(), any()) }
+    }
+
+    @Test
     fun `getNewsForUpload filters guest users and correctly serializes payloads`() = testScope.runTest {
         mockkStatic(TextUtils::class)
         every { TextUtils.isEmpty(any()) } answers { firstArg<CharSequence?>().isNullOrEmpty() }

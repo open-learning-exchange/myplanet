@@ -1,14 +1,21 @@
 package org.ole.planet.myplanet.ui.user
 
 import android.app.Application
+import android.content.Context
+import android.view.LayoutInflater
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.gson.JsonObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.databinding.RowOtherInfoBinding
+import org.ole.planet.myplanet.ui.user.AchievementsAdapter.Companion.PAYLOAD_EMAIL
+import org.ole.planet.myplanet.ui.user.AchievementsAdapter.Companion.PAYLOAD_PHONE
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.robolectric.annotation.Config
 
@@ -20,9 +27,11 @@ class AchievementsAdapterTest {
     val instantTaskExecutorRule = InstantTaskExecutorRule()
 
     private lateinit var adapter: AchievementsAdapter
+    private lateinit var context: Context
 
     @Before
     fun setUp() {
+        context = ApplicationProvider.getApplicationContext()
 
         val ref1 = JsonObject()
         ref1.addProperty("name", "John Doe")
@@ -111,5 +120,111 @@ class AchievementsAdapterTest {
         assertEquals("—", row1.name)
         val row2 = list[1]
         assertEquals("Bob", row2.name)
+    }
+
+    @Test
+    fun testOnBindViewHolder_withPhonePayload_updatesOnlyPhone() {
+        val ref = JsonObject()
+        ref.addProperty("name", "John Doe")
+        ref.addProperty("relationship", "Friend")
+        ref.addProperty("phone", "123-456-7890")
+        ref.addProperty("email", "john@example.com")
+        adapter = AchievementsAdapter(listOf(JsonUtils.gson.toJson(ref)))
+
+        val binding = RowOtherInfoBinding.inflate(LayoutInflater.from(context))
+        val holder = AchievementsAdapter.AchievementsViewHolder(binding)
+
+        binding.tvRefName.text = "stale"
+        binding.tvRefRelationship.text = "stale"
+        binding.tvRefPhone.text = "stale"
+        binding.tvRefEmail.text = "stale"
+
+        adapter.onBindViewHolder(holder, 0, mutableListOf<Any>(PAYLOAD_PHONE))
+
+        assertEquals("123-456-7890", binding.tvRefPhone.text.toString())
+        assertNotEquals("john@example.com", binding.tvRefEmail.text.toString())
+        assertNotEquals("John Doe", binding.tvRefName.text.toString())
+    }
+
+    @Test
+    fun testOnBindViewHolder_withEmailPayload_updatesOnlyEmail() {
+        val ref = JsonObject()
+        ref.addProperty("name", "John Doe")
+        ref.addProperty("relationship", "Friend")
+        ref.addProperty("phone", "123-456-7890")
+        ref.addProperty("email", "john@example.com")
+        adapter = AchievementsAdapter(listOf(JsonUtils.gson.toJson(ref)))
+
+        val binding = RowOtherInfoBinding.inflate(LayoutInflater.from(context))
+        val holder = AchievementsAdapter.AchievementsViewHolder(binding)
+
+        binding.tvRefPhone.text = "stale"
+        binding.tvRefEmail.text = "stale"
+
+        adapter.onBindViewHolder(holder, 0, mutableListOf<Any>(PAYLOAD_EMAIL))
+
+        assertEquals("john@example.com", binding.tvRefEmail.text.toString())
+        assertNotEquals("123-456-7890", binding.tvRefPhone.text.toString())
+    }
+
+    @Test
+    fun testOnBindViewHolder_withBothPayloads_updatesBothFields() {
+        val ref = JsonObject()
+        ref.addProperty("name", "John Doe")
+        ref.addProperty("relationship", "Friend")
+        ref.addProperty("phone", "123-456-7890")
+        ref.addProperty("email", "john@example.com")
+        adapter = AchievementsAdapter(listOf(JsonUtils.gson.toJson(ref)))
+
+        val binding = RowOtherInfoBinding.inflate(LayoutInflater.from(context))
+        val holder = AchievementsAdapter.AchievementsViewHolder(binding)
+
+        adapter.onBindViewHolder(holder, 0, mutableListOf<Any>(PAYLOAD_PHONE, PAYLOAD_EMAIL))
+
+        assertEquals("123-456-7890", binding.tvRefPhone.text.toString())
+        assertEquals("john@example.com", binding.tvRefEmail.text.toString())
+    }
+
+    @Test
+    fun testOnBindViewHolder_withUnknownPayload_fallsBackToFullBind() {
+        val ref = JsonObject()
+        ref.addProperty("name", "John Doe")
+        ref.addProperty("relationship", "Friend")
+        ref.addProperty("phone", "123-456-7890")
+        ref.addProperty("email", "john@example.com")
+        adapter = AchievementsAdapter(listOf(JsonUtils.gson.toJson(ref)))
+
+        val binding = RowOtherInfoBinding.inflate(LayoutInflater.from(context))
+        val holder = AchievementsAdapter.AchievementsViewHolder(binding)
+
+        binding.tvRefName.text = "stale"
+
+        adapter.onBindViewHolder(holder, 0, mutableListOf<Any>("UNKNOWN_PAYLOAD"))
+
+        assertEquals("John Doe", binding.tvRefName.text.toString())
+        assertEquals("Friend", binding.tvRefRelationship.text.toString())
+        assertEquals("123-456-7890", binding.tvRefPhone.text.toString())
+        assertEquals("john@example.com", binding.tvRefEmail.text.toString())
+    }
+
+    @Test
+    fun testOnBindViewHolder_withNestedPayloadList_flattensAndHandlesKnownPayloads() {
+        val ref = JsonObject()
+        ref.addProperty("name", "John Doe")
+        ref.addProperty("relationship", "Friend")
+        ref.addProperty("phone", "123-456-7890")
+        ref.addProperty("email", "john@example.com")
+        adapter = AchievementsAdapter(listOf(JsonUtils.gson.toJson(ref)))
+
+        val binding = RowOtherInfoBinding.inflate(LayoutInflater.from(context))
+        val holder = AchievementsAdapter.AchievementsViewHolder(binding)
+
+        binding.tvRefPhone.text = "stale"
+        binding.tvRefEmail.text = "stale"
+
+        adapter.onBindViewHolder(holder, 0, mutableListOf<Any>(listOf(PAYLOAD_PHONE, PAYLOAD_EMAIL)))
+
+        assertEquals("123-456-7890", binding.tvRefPhone.text.toString())
+        assertEquals("john@example.com", binding.tvRefEmail.text.toString())
     }
 }

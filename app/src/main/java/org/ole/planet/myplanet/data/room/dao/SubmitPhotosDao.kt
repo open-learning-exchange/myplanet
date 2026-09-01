@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import org.ole.planet.myplanet.model.SubmitPhotos
 
 @Dao
@@ -17,7 +18,13 @@ interface SubmitPhotosDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(photo: SubmitPhotos)
 
-    /** Returns the number of rows updated (0 means the local row was gone). */
     @Query("UPDATE submit_photos SET uploaded = 1, _rev = :rev, _id = :remoteId WHERE id = :photoId")
     suspend fun markUploaded(photoId: String, rev: String, remoteId: String): Int
+
+    @Transaction
+    suspend fun markUploadedBatch(uploads: List<UploadedPhoto>) {
+        uploads.forEach { (photoId, rev, remoteId) -> markUploaded(photoId, rev, remoteId) }
+    }
+
+    data class UploadedPhoto(val photoId: String, val rev: String, val remoteId: String)
 }

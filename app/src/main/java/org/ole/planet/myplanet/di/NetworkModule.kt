@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
 import javax.inject.Singleton
 import javax.net.SocketFactory
+import okhttp3.ConnectionPool
 import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -72,8 +73,10 @@ object NetworkModule {
         val dispatcher = Dispatcher().apply {
             maxRequestsPerHost = MAX_REQUESTS_PER_HOST
         }
+        val connectionPool = ConnectionPool(MAX_REQUESTS_PER_HOST, 5, TimeUnit.MINUTES)
         val builder = OkHttpClient.Builder()
             .dispatcher(dispatcher)
+            .connectionPool(connectionPool)
             .connectTimeout(connect, TimeUnit.SECONDS)
             .readTimeout(read, TimeUnit.SECONDS)
             .writeTimeout(write, TimeUnit.SECONDS)

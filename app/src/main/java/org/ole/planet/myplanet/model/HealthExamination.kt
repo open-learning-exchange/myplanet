@@ -48,6 +48,23 @@ class HealthExamination {
     }
 
     companion object {
+        fun formatConditions(conditions: String?): String {
+            if (conditions.isNullOrBlank()) return ""
+            return try {
+                val conditionsMap = JsonUtils.gson.fromJson(conditions, JsonObject::class.java)
+                if (conditionsMap != null) {
+                    conditionsMap.keySet()
+                        .filter { JsonUtils.getBoolean(it, conditionsMap) }
+                        .joinToString(", ")
+                } else {
+                    ""
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                ""
+            }
+        }
+
         fun fromJson(act: JsonObject?): HealthExamination {
             val myHealth = HealthExamination()
             myHealth._id = JsonUtils.getString("_id", act)

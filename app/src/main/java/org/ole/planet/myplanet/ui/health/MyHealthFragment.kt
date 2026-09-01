@@ -4,7 +4,6 @@ import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
 import android.text.TextUtils
-import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,9 +14,9 @@ import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.core.content.ContextCompat
-import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -25,6 +24,13 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
@@ -37,11 +43,17 @@ import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
+@OptIn(FlowPreview::class)
 class MyHealthFragment : Fragment() {
 
     private val viewModel: HealthViewModel by viewModels()
+
+    private companion object {
+        const val SEARCH_DEBOUNCE_MS = 300L
+    }
 
 
     @Inject
@@ -60,7 +72,7 @@ class MyHealthFragment : Fragment() {
     private lateinit var healthAdapter: HealthExaminationAdapter
     var dialog: AlertDialog? = null
 
-    private var textWatcher: TextWatcher? = null
+    private var searchJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -302,9 +314,13 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, rv: RecyclerView) {
-        textWatcher = etSearch.doAfterTextChanged { editable ->
-            viewModel.searchPatients(editable?.toString() ?: "", "joinDate", true)
-        }
+        searchJob?.cancel()
+        searchJob = etSearch.textChanges()
+            .drop(1)
+            .debounce(SEARCH_DEBOUNCE_MS)
+            .distinctUntilChanged()
+            .onEach { query -> viewModel.searchPatients(query?.toString() ?: "", "joinDate", true) }
+            .launchIn(viewLifecycleOwner.lifecycleScope)
     }
 
     override fun onResume() {
@@ -334,8 +350,8 @@ class MyHealthFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        alertHealthListBinding?.etSearch?.removeTextChangedListener(textWatcher)
-        textWatcher = null
+        searchJob?.cancel()
+        searchJob = null
 
         _binding = null
         super.onDestroyView()

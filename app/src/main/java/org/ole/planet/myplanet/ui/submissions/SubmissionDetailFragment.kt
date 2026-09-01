@@ -7,7 +7,6 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.databinding.FragmentSubmissionDetailBinding
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -33,39 +32,9 @@ class SubmissionDetailFragment : Fragment() {
     private fun setupRecyclerView() {
         adapter = QuestionAnswerAdapter()
 
-        // Use a LinearLayoutManager that forces full height calculation
         val layoutManager = object : LinearLayoutManager(context) {
             override fun canScrollVertically(): Boolean {
                 return false
-            }
-
-            override fun onMeasure(recycler: RecyclerView.Recycler, state: RecyclerView.State, widthSpec: Int, heightSpec: Int) {
-                val count = state.itemCount
-                if (count == 0 || adapter.itemCount == 0) {
-                    super.onMeasure(recycler, state, widthSpec, heightSpec)
-                    return
-                }
-
-                var totalHeight = 0
-                try {
-                    for (i in 0 until count) {
-                        if (i >= adapter.itemCount) {
-                            super.onMeasure(recycler, state, widthSpec, heightSpec)
-                            return
-                        }
-
-                        val view = recycler.getViewForPosition(i)
-                        addView(view)
-                        measureChild(view, 0, 0)
-                        totalHeight += getDecoratedMeasuredHeight(view)
-                        removeAndRecycleView(view, recycler)
-                    }
-
-                    val width = View.MeasureSpec.getSize(widthSpec)
-                    setMeasuredDimension(width, totalHeight)
-                } catch (e: Exception) {
-                    super.onMeasure(recycler, state, widthSpec, heightSpec)
-                }
             }
         }
 

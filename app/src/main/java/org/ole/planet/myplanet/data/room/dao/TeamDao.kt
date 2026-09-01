@@ -17,7 +17,6 @@ interface TeamDao {
     @Query("SELECT * FROM teams WHERE teamId = :teamId") suspend fun getAllByTeamId(teamId: String): List<MyTeam>
     @Query("SELECT * FROM teams") fun observeAll(): Flow<List<MyTeam>>
     @Query("SELECT * FROM teams WHERE docType = :docType") suspend fun getByDocType(docType: String): List<MyTeam>
-    @Query("SELECT * FROM teams WHERE docType = :docType") fun observeByDocType(docType: String): Flow<List<MyTeam>>
     @Query("SELECT * FROM teams WHERE teamId = :teamId AND docType = :docType") suspend fun getByTeamIdAndDocType(teamId: String, docType: String): List<MyTeam>
     @Query("SELECT * FROM teams WHERE teamId = :teamId AND docType = 'membership' AND isLeader = 0 AND (status IS NULL OR status != 'archived') AND (:excludeUserId IS NULL OR userId != :excludeUserId)") suspend fun getEligibleNextLeaderCandidates(teamId: String, excludeUserId: String?): List<MyTeam>
     @Query("SELECT * FROM teams WHERE teamId = :teamId AND docType = :docType") fun observeByTeamIdAndDocType(teamId: String, docType: String): Flow<List<MyTeam>>

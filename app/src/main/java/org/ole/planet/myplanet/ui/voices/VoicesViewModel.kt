@@ -53,6 +53,8 @@ class VoicesViewModel @Inject constructor(
 
     private var observeJob: Job? = null
 
+    private val labelDisplayToValue: Map<String, String> = Constants.LABELS
+
     val filteredNews: StateFlow<List<News?>> = combine(
         _baseNewsList,
         _searchQuery,
@@ -101,26 +103,27 @@ class VoicesViewModel @Inject constructor(
         val labelFiltered = if (selectedLabel == "All") {
             list
         } else {
-            val labelDisplayToValue = mutableMapOf<String, String>()
-            Constants.LABELS.forEach { (labelName, labelValue) ->
-                labelDisplayToValue[labelName] = labelValue
-            }
+            val dynamicLabelDisplayToValue = mutableMapOf<String, String>()
             list.forEach { news ->
                 news?.labels?.forEach { label ->
-                    val labelName = Constants.LABEL_VALUE_TO_NAME[label]
-                        ?: VoicesLabelManager.formatLabelValue(label)
-                    labelDisplayToValue.putIfAbsent(labelName, label)
+                    if (!labelDisplayToValue.containsValue(label)) {
+                        val labelName = Constants.LABEL_VALUE_TO_NAME[label]
+                            ?: VoicesLabelManager.formatLabelValue(label)
+                        dynamicLabelDisplayToValue.putIfAbsent(labelName, label)
+                    }
                 }
             }
+
+            val resolvedLabelValue = labelDisplayToValue[selectedLabel]
+                ?: dynamicLabelDisplayToValue[selectedLabel]
 
             list.filter { news ->
                 when {
                     selectedLabel == "Shared Chat" -> {
                         news?.chat == true || news?.viewableBy.equals("community", ignoreCase = true)
                     }
-                    labelDisplayToValue.containsKey(selectedLabel) -> {
-                        val labelValue = labelDisplayToValue[selectedLabel]
-                        news?.labels?.contains(labelValue) == true
+                    resolvedLabelValue != null -> {
+                        news?.labels?.contains(resolvedLabelValue) == true
                     }
                     else -> {
                         JsonUtils.extractSharedTeamName(news) == selectedLabel
@@ -215,7 +218,7 @@ class VoicesViewModel @Inject constructor(
     fun downloadReferencedResources(list: List<News?>) {
         val resourceIds = mutableSetOf<String>()
         list.forEach { news ->
-            if ((news?.imagesArray?.size() ?: 0) > 0) {
+            if (news?.imagesArray?.isEmpty() == false) {
                 val ob = news?.imagesArray?.get(0)?.asJsonObject
                 val resourceId = JsonUtils.getString("resourceId", ob?.asJsonObject)
                 if (!resourceId.isNullOrBlank()) {

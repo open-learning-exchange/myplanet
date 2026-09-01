@@ -320,6 +320,24 @@ class UserRepositoryImplTest {
     }
 
     @Test
+    fun `getCurrentUserId returns sharedPrefManager userId when non-blank`() = runTest {
+        every { sharedPrefManager.getUserId() } returns "pref_user_id"
+
+        val result = repository.getCurrentUserId()
+
+        assertEquals("pref_user_id", result)
+    }
+
+    @Test
+    fun `getCurrentUserId returns null when preference is blank`() = runTest {
+        every { sharedPrefManager.getUserId() } returns "   "
+
+        val result = repository.getCurrentUserId()
+
+        assertEquals(null, result)
+    }
+
+    @Test
     fun `upsertSavedUser ignores unknown sources`() = runTest {
         every { sharedPrefManager.getSavedUsers() } returns emptyList()
 

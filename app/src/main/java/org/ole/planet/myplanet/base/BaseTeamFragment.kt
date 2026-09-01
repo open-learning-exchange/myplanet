@@ -34,12 +34,16 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
     val isMemberFlow: StateFlow<Boolean> = _isMemberFlow.asStateFlow()
 
 
+    protected suspend fun ensureUserResolved(): UserEntity? {
+        return user ?: userRepository.getUserModel()?.also { user = it }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         teamId = requireArguments().getString("id", "")
 
         lifecycleScope.launch {
-            user = userRepository.getUserModel()
+            ensureUserResolved()
             loadTeamDetails()
         }
     }

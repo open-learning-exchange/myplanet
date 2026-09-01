@@ -82,4 +82,19 @@ class NotificationsAdapterTest {
         val expectedString = SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(expectedDate)
         assertEquals(expectedString, bindAndGetTimestamp(diff))
     }
+
+    @Test
+    fun `test bind updates title when formattedText changes for same notification id`() {
+        val parent = FrameLayout(context)
+        val viewHolder = adapter.onCreateViewHolder(parent, 1) as NotificationsAdapter.ItemViewHolder
+        val titleTextView = viewHolder.itemView.findViewById<TextView>(R.id.title)
+
+        val initialNotif = Notification("1", "<b>Initial</b> text", false, "test", "test", System.currentTimeMillis(), "")
+        viewHolder.bind(NotificationListItem.Item(initialNotif))
+        assertEquals("Initial text", titleTextView.text.toString())
+
+        val updatedNotif = Notification("1", "<b>Updated</b> text", false, "test", "test", System.currentTimeMillis(), "")
+        viewHolder.bind(NotificationListItem.Item(updatedNotif))
+        assertEquals("Updated text", titleTextView.text.toString())
+    }
 }

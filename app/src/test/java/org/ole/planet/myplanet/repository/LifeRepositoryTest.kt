@@ -70,7 +70,7 @@ class LifeRepositoryTest {
         val userId = "user123"
         coEvery { myLifeDao.getByUserId(userId) } returns emptyList()
 
-        val result = repository.getMyLifeByUserId(userId, ensureLatest = true)
+        val result = repository.getMyLifeByUserId(userId)
 
         assertEquals(0, result.size)
     }
