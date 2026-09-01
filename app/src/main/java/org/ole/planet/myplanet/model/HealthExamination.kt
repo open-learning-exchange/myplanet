@@ -48,13 +48,6 @@ class HealthExamination {
     }
 
     companion object {
-        /**
-         * Parses an examination's conditions JSON blob and returns the names of the
-         * conditions flagged `true`, joined by `", "`. The conditions field is a JSON
-         * object mapping a condition name to a boolean; a missing or non-boolean value
-         * is treated as `false` (tolerated), matching `HealthRepositoryImpl.getExaminationConditions`.
-         * A null/blank, malformed, or non-object document yields an empty string.
-         */
         fun formatConditions(conditions: String?): String {
             if (conditions.isNullOrBlank()) return ""
             return try {
