@@ -131,7 +131,11 @@ object UrlUtils {
     }
 
     fun getUrl(id: String?, file: String?): String {
-        return "${getUrl()}/resources/$id/$file"
+        return getUrl(id, file, getUrl())
+    }
+
+    fun getUrl(id: String?, file: String?, base: String): String {
+        return "$base/resources/$id/$file"
     }
 
     fun getUserImageUrl(userId: String?, imageName: String): String? {

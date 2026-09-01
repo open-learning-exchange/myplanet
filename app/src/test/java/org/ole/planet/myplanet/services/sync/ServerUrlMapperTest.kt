@@ -159,6 +159,32 @@ class ServerUrlMapperTest {
     }
 
     @Test
+    fun testUpdateUrlPreferencesReusesParsedUserInfoWhenPasswordContainsAtSign() {
+        val editor = mockk<SharedPreferences.Editor>()
+        val settings = mockk<SharedPreferences>()
+
+        every { editor.putString(any(), any()) } returns editor
+        every { editor.putBoolean(any(), any()) } returns editor
+        every { editor.apply() } just Runs
+
+        val uri = mockk<Uri>()
+        every { uri.userInfo } returns null
+        every { uri.scheme } returns "http"
+        every { uri.host } returns "primary.com"
+
+        val alternativeUrl = "http://user:p@ss@alternative.com:5984"
+
+        val url = "http://primary.com"
+
+        serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, url, settings)
+
+        verify { editor.putString("url_user", "user") }
+        verify { editor.putString("url_pwd", "p@ss") }
+        verify { editor.putString("processedAlternativeUrl", alternativeUrl) }
+        verify { editor.apply() }
+    }
+
+    @Test
     fun testUpdateServerIfNecessaryWhenPrimaryIsDownAndAlternativeIsUp() = runTest {
         val editor = mockk<SharedPreferences.Editor>()
         val settings = mockk<SharedPreferences>()

@@ -18,13 +18,20 @@ object CrashLogStore {
 
     private fun dir(context: Context): File = File(context.filesDir, DIR_NAME)
 
-    private fun isValidLogFile(file: File): Boolean {
-        if (!file.isFile || !file.name.endsWith(FILE_EXTENSION)) return false
+    private data class ParsedLogInfo(val time: String, val type: String)
+
+    private fun parseLogFile(file: File): ParsedLogInfo? {
+        if (!file.isFile || !file.name.endsWith(FILE_EXTENSION)) return null
         val name = file.name.removeSuffix(FILE_EXTENSION)
         val separator = name.indexOf('_')
-        if (separator <= 0) return false
-        return name.substring(0, separator).toLongOrNull() != null
+        if (separator <= 0) return null
+        val time = name.substring(0, separator)
+        if (time.toLongOrNull() == null) return null
+        val type = name.substring(separator + 1)
+        return ParsedLogInfo(time, type)
     }
+
+    private fun isValidLogFile(file: File): Boolean = parseLogFile(file) != null
 
     fun save(context: Context, type: String, error: String, timeProvider: TimeProvider): File? {
         return try {
@@ -42,12 +49,10 @@ object CrashLogStore {
 
     fun loadPendingLogs(context: Context): List<PendingLog> {
         val files = dir(context).listFiles() ?: return emptyList()
-        return files.filter { isValidLogFile(it) }.mapNotNull { file ->
+        return files.mapNotNull { file ->
+            val parsed = parseLogFile(file) ?: return@mapNotNull null
             try {
-                val name = file.name.removeSuffix(FILE_EXTENSION)
-                val separator = name.indexOf('_')
-                val time = name.substring(0, separator)
-                PendingLog(file, name.substring(separator + 1), time, file.readText())
+                PendingLog(file, parsed.type, parsed.time, file.readText())
             } catch (e: Exception) {
                 e.printStackTrace()
                 null

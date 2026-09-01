@@ -10,6 +10,7 @@ import android.net.TrafficStats
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
+import android.util.Log
 import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.hilt.work.HiltWorkerFactory
@@ -32,6 +33,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Provider
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.launchIn
@@ -106,6 +108,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
         private const val ANR_LOG_TYPE = "anr"
+        private const val LOG_TAG = "MainApplication"
         private lateinit var instance: MainApplication
 
         @VisibleForTesting
@@ -134,17 +137,33 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
         }
 
-        fun createLog(type: String, error: String = "") {
-            applicationScope.launch {
-                saveLogToRoom(type, error, "${coreDependenciesEntryPoint.timeProvider().now()}")
+        private suspend fun runBestEffort(what: String, block: suspend () -> Unit) {
+            try {
+                block()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                warnBestEffortFailed(what, e)
+            } catch (e: LinkageError) {
+                warnBestEffortFailed(what, e)
             }
         }
 
+        private fun warnBestEffortFailed(what: String, failure: Throwable) {
+            try {
+                Log.w(LOG_TAG, "$what failed", failure)
+            } catch (loggingFailure: RuntimeException) {
+            }
+        }
 
+        fun createLog(type: String, error: String = "") {
+            applicationScope.launch {
+                runBestEffort("createLog") {
+                    saveLogToRoom(type, error, "${coreDependenciesEntryPoint.timeProvider().now()}")
+                }
+            }
+        }
 
-        // A report for a failure that may kill the process (crash/ANR) must be persisted
-        // to a plain file before this runs: the Room write below can still be lost
-        // if the process dies before the coroutine persists the row.
         suspend fun saveLogToRoom(type: String, error: String, time: String): Boolean {
             val entryPoint = EntryPointAccessors.fromApplication(
                 context,
@@ -234,24 +253,38 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
         private fun getResponseCode(url: URL): Int {
             TrafficStats.setThreadStatsTag(NETWORK_TRAFFIC_TAG)
+            return try {
+                val headCode = executeRequest(url, "HEAD")
+                if (headCode == HttpURLConnection.HTTP_BAD_METHOD || headCode == HttpURLConnection.HTTP_NOT_IMPLEMENTED) {
+                    executeRequest(url, "GET")
+                } else {
+                    headCode
+                }
+            } finally {
+                TrafficStats.clearThreadStatsTag()
+            }
+        }
+
+        private fun executeRequest(url: URL, method: String): Int {
             val connection = url.openConnection() as HttpURLConnection
             return try {
-                connection.requestMethod = "GET"
+                connection.requestMethod = method
                 connection.connectTimeout = 5000
                 connection.readTimeout = 5000
                 connection.connect()
                 connection.responseCode
             } finally {
                 connection.disconnect()
-                TrafficStats.clearThreadStatsTag()
             }
         }
 
         fun persistCriticalLog(type: String, error: String) {
             val pendingFile = CrashLogStore.save(context, type, error, coreDependenciesEntryPoint.timeProvider())
             applicationScope.launch {
-                if (saveLogToRoom(type, error, "${coreDependenciesEntryPoint.timeProvider().now()}")) {
-                    pendingFile?.delete()
+                runBestEffort("persistCriticalLog") {
+                    if (saveLogToRoom(type, error, "${coreDependenciesEntryPoint.timeProvider().now()}")) {
+                        pendingFile?.delete()
+                    }
                 }
             }
         }
@@ -286,10 +319,10 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
     private fun performDeferredInitialization() {
         applicationScope.launch(dispatcherProvider.io) {
-            FileUtils.warmUp(this@MainApplication)
-            SecurePrefs.warmUp(this@MainApplication)
-            MarkdownUtils.warmUp(this@MainApplication)
-            runCatching { Class.forName("pl.droidsonroids.gif.GifInfoHandle") }
+            runBestEffort("FileUtils.warmUp") { FileUtils.warmUp(this@MainApplication) }
+            runBestEffort("SecurePrefs.warmUp") { SecurePrefs.warmUp(this@MainApplication) }
+            runBestEffort("MarkdownUtils.warmUp") { MarkdownUtils.warmUp(this@MainApplication) }
+            runBestEffort("GifInfoHandle preload") { Class.forName("pl.droidsonroids.gif.GifInfoHandle") }
         }
         applicationScope.launch {
             initApp()
