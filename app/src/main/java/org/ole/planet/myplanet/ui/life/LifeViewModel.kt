@@ -14,7 +14,6 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
@@ -22,7 +21,6 @@ class LifeViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val lifeRepository: LifeRepository,
     private val userRepository: UserRepository,
-    private val sharedPrefManager: SharedPrefManager,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
@@ -30,7 +28,8 @@ class LifeViewModel @Inject constructor(
     val myLifeList: StateFlow<List<MyLife>> = _myLifeList.asStateFlow()
 
     private suspend fun resolveUserId(): String? {
-        val raw = sharedPrefManager.getUserId().ifEmpty { userRepository.getUserModel()?.id.orEmpty() }
+        val raw = userRepository.getCurrentUserId().orEmpty()
+            .ifEmpty { userRepository.getUserModel()?.id.orEmpty() }
         return raw.takeIf { it.isNotBlank() && it != "--" }
     }
 
@@ -40,7 +39,7 @@ class LifeViewModel @Inject constructor(
                 val userId = resolveUserId()
                 var myLifeList = lifeRepository.getMyLifeByUserId(userId)
                 if (myLifeList.isEmpty()) {
-                    lifeRepository.seedMyLifeIfEmpty(userId, MyLife.defaultItems(context, userId))
+                    lifeRepository.seedMyLifeIfEmpty(userId, MyLife.defaultItems(userId, context::getString))
                     myLifeList = lifeRepository.getMyLifeByUserId(userId)
                 }
                 myLifeList

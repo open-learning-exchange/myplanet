@@ -5,11 +5,9 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.util.UUID
 import javax.inject.Inject
-
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
-
 import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.services.SharedPrefManager
 
@@ -45,7 +43,11 @@ class LifeRepositoryImpl @Inject constructor(
         if (list.isEmpty()) return
         val rawUserId = list.firstOrNull()?.userId ?: sharedPrefManager.getUserId()
         val effectiveUserId = normalizeUserId(rawUserId)
-        val idToIndex = list.mapIndexed { index, item -> item._id to index }.toMap()
+        val idToIndex = buildMap(list.size) {
+            list.forEachIndexed { index, item ->
+                put(item._id, index)
+            }
+        }
         val ids = idToIndex.keys.filter { it.isNotEmpty() }
         if (ids.isEmpty()) return
 
@@ -71,7 +73,7 @@ class LifeRepositoryImpl @Inject constructor(
         return imageId?.takeIf { it.isNotBlank() }
             ?: title?.takeIf { it.isNotBlank() }
             ?: _id.takeIf { it.isNotBlank() }
-            ?: System.identityHashCode(this)
+            ?: listOf(userId, isVisible, weight)
     }
 
     override suspend fun getMyLifeByUserId(userId: String?, ensureLatest: Boolean): List<MyLife> {
@@ -79,11 +81,19 @@ class LifeRepositoryImpl @Inject constructor(
         return myLifeDao.getByUserId(effectiveUserId).distinctBy { it.dedupKey() }.sortedBy { it.weight }
     }
 
+    private suspend fun getVisibleMyLifeByUserId(userId: String?): List<MyLife> {
+        val effectiveUserId = normalizeUserId(userId)
+        return myLifeDao.getVisibleByUserId(effectiveUserId).distinctBy { it.dedupKey() }.sortedBy { it.weight }
+    }
+
     override suspend fun getMyLifeForDashboard(userId: String, seedBase: List<MyLife>): List<MyLife> {
         val effectiveUserId = normalizeUserId(userId)
-        val allForUser = getMyLifeByUserId(effectiveUserId, ensureLatest = false)
-        if (allForUser.isNotEmpty()) {
-            return allForUser.filter { it.isVisible }.sortedBy { it.weight }
+        val visibleForUser = getVisibleMyLifeByUserId(effectiveUserId)
+        if (visibleForUser.isNotEmpty()) {
+            return visibleForUser
+        }
+        if (myLifeDao.countByUserId(effectiveUserId) > 0) {
+            return emptyList()
         }
 
         val cacheKey = effectiveUserId ?: "--"

@@ -14,7 +14,6 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
 
 @AndroidEntryPoint
 class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
@@ -23,9 +22,6 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
     private var bottomSheetBehavior: BottomSheetBehavior<View>? = null
     private var bottomSheetCallback: BottomSheetBehavior.BottomSheetCallback? = null
     private var tabLayoutMediator: TabLayoutMediator? = null
-
-    @Inject
-    lateinit var sharedPrefManager: SharedPrefManager
 
     @Inject
     lateinit var configurationsRepository: ConfigurationsRepository
@@ -93,10 +89,10 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
 
     private fun initCommunityTab() {
         binding.llActionButtons.visibility = View.GONE
-        val sParentcode = sharedPrefManager.getParentCode()
-        val communityName = sharedPrefManager.getCommunityName()
+        val sParentcode = configurationsRepository.getParentCode()
+        val communityName = configurationsRepository.getCommunityName()
         val planetType = configurationsRepository.getPlanetType()
-        binding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "$communityName@$sParentcode", true, planetType)
+        binding.viewPager2.adapter = CommunityPagerAdapter(this, "$communityName@$sParentcode", true, planetType)
         tabLayoutMediator = TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
             tab.text = (binding.viewPager2.adapter as CommunityPagerAdapter).getPageTitle(position)
         }

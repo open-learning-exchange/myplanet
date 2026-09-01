@@ -1,7 +1,7 @@
 name: myPlanet playstore
 
 # The release workflow uploads every master build to the playstore internal
-# track. Play holds about 48 save slots, each freeing 24h after its own use,
+# track. Play holds about 50 save slots, each freeing 24h after its own use,
 # and refuses the next save with "Daily save quota exceeded." -- that build
 # stays released on GitHub but off the track, and the automerge drain stops.
 
@@ -10,33 +10,18 @@ on:
     types: [playstore]
   workflow_dispatch:
     inputs:
-      track:
-        description: 'playstore track to keep current'
-        required: false
-        default: 'internal'
-        type: string
-      daily_limit:
-        description: 'saves playstore allows per day (only used to estimate the next free slot)'
-        required: false
-        default: '48'
-        type: string
-      force:
-        description: 'check the track even when the last release run reported a successful publish'
-        required: false
-        default: false
-        type: boolean
       resume_automerge:
-        description: 'dispatch the automerge drain once the pending release is published'
+        description: '🚀 resume the automerge drain'
         required: false
-        default: false
+        default: true
         type: boolean
       wait_minutes:
-        description: 'how long this run may wait on a runner for the next save slot (0 = try right away)'
+        description: '⏳ wait up to N min for a slot'
         required: false
         default: '0'
         type: string
       dry_run:
-        description: 'report what would be published, upload nothing'
+        description: '🧪 dry run — upload nothing'
         required: false
         default: false
         type: boolean
@@ -58,9 +43,9 @@ jobs:
       REPO: ${{ github.repository }}
       BASE: master
       PLAYSTORE_PACKAGE_NAME: org.ole.planet.myplanet
-      PLAYSTORE_TRACK: ${{ inputs.track || 'internal' }}
-      PLAYSTORE_DAILY_LIMIT: ${{ inputs.daily_limit || '48' }}
-      PLAYSTORE_FORCE: ${{ inputs.force || false }}
+      PLAYSTORE_TRACK: internal                  # 🛤️ the track kept current
+      PLAYSTORE_DAILY_LIMIT: '50'                # 📊 saves per day, only to estimate the next slot
+      RETRY_MINUTES: '15'                        # 🔁 after a refusal, wait this long and try once more
       WAIT_MINUTES: ${{ inputs.wait_minutes || '0' }}
       DRY_RUN: ${{ inputs.dry_run || false }}
       WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/workflows/playstore.yml
@@ -87,11 +72,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # a quota estimate that cannot be read must not hold up the upload
+          case "$WAIT_MINUTES" in *[!0-9]*|"") echo "wait_minutes must be a non-negative integer, got '$WAIT_MINUTES'" >&2; exit 1 ;; esac
+          # defaults: an unreadable estimate must not hold up the upload
           next_free_epoch=0
           next_free_local='now'
           eval "$(.github/scripts/playstore-quota.sh status || true)"
-          wait=$(( next_free_epoch + 120 - $(date -u +%s) ))
+          .github/scripts/playstore-quota.sh forecast || true
+          # no cushion here: next_free_epoch already carries the slot lag
+          wait=$(( next_free_epoch - $(date -u +%s) ))
           if [ "$wait" -le 0 ]; then
             echo "a slot should be free now -- not waiting"
             exit 0
@@ -145,6 +133,59 @@ jobs:
           fi
           echo "published=$published" >> "$GITHUB_OUTPUT"
 
+      - name: wait for the next slot before retrying
+        id: retry_wait
+        if: steps.pending.outputs.pending == 'true' && env.DRY_RUN != 'true' && steps.confirm.outputs.published != 'true' && env.RETRY_MINUTES != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          case "$RETRY_MINUTES" in *[!0-9]*|"") echo "retry_minutes must be a non-negative integer, got '$RETRY_MINUTES'" >&2; exit 1 ;; esac
+          # re-read: the refusal is evidence the pre-upload estimate was early
+          next_free_epoch=0
+          next_free_local='now'
+          eval "$(.github/scripts/playstore-quota.sh status || true)"
+          wait=$(( next_free_epoch - $(date -u +%s) ))
+          [ "$wait" -lt 0 ] && wait=0
+          if [ "$wait" -gt $(( RETRY_MINUTES * 60 )) ]; then
+            echo "the next slot is about $((wait / 60))m out, past retry_minutes=$RETRY_MINUTES -- not retrying"
+            echo "retried=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "waiting ${wait}s for the slot that frees around $next_free_local, then trying once more"
+          sleep "$wait"
+          echo "retried=true" >> "$GITHUB_OUTPUT"
+
+      - name: publish AAB to playstore (retry)
+        id: playstore_retry
+        if: steps.retry_wait.outputs.retried == 'true'
+        continue-on-error: true
+        uses: dogi/upload-google-play@v1.1.4
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+          packageName: ${{ env.PLAYSTORE_PACKAGE_NAME }}
+          releaseFiles: output/${{ steps.pending.outputs.asset }}
+          track: ${{ env.PLAYSTORE_TRACK }}
+          releaseName: ${{ steps.pending.outputs.release_name }}
+          status: completed
+
+      - name: confirm the track moved after the retry
+        id: confirm_retry
+        if: steps.retry_wait.outputs.retried == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+        run: |
+          want='${{ steps.pending.outputs.version_code }}'
+          have=$(.github/scripts/playstore.sh track-code || echo '')
+          if [ -n "$have" ]; then
+            echo "$PLAYSTORE_TRACK track is at $have, wanted $want"
+            [ "$have" -ge "$want" ] && published=true || published=false
+          else
+            published=${{ steps.playstore_retry.outcome == 'success' }}
+            echo "could not read the track -- taking the upload outcome (${{ steps.playstore_retry.outcome }})"
+          fi
+          echo "published=$published" >> "$GITHUB_OUTPUT"
+
       - name: report what happened
         if: always()
         run: |
@@ -167,18 +208,22 @@ jobs:
             exit 0
           fi
 
-          if [ '${{ steps.confirm.outputs.published }}' = 'true' ]; then
+          if [ '${{ steps.confirm.outputs.published }}' = 'true' ] || [ '${{ steps.confirm_retry.outputs.published }}' = 'true' ]; then
             echo "### playstore: published $PENDING to ${{ env.PLAYSTORE_TRACK }}" >> "$GITHUB_STEP_SUMMARY"
-            echo "$QUOTA" >> "$GITHUB_STEP_SUMMARY"
+            .github/scripts/playstore-quota.sh forecast >> "$GITHUB_STEP_SUMMARY" || echo "$QUOTA" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 
-          MESSAGE="playstore still refused $PENDING. $QUOTA. Start this workflow again then: $WORKFLOW_URL"
-          echo "::warning::${MESSAGE}"
+          # fail the job: green would read as "the track is current"
+          QUOTA_NOW=$(.github/scripts/playstore-quota.sh report || echo "$QUOTA")
+          MESSAGE="playstore still refused $PENDING. $QUOTA_NOW. Start this workflow again then: $WORKFLOW_URL"
+          echo "::error::${MESSAGE}"
           echo "### ${MESSAGE}" >> "$GITHUB_STEP_SUMMARY"
+          .github/scripts/playstore-quota.sh forecast >> "$GITHUB_STEP_SUMMARY" || true
+          exit 1
 
       - name: resume the automerge drain
-        if: steps.confirm.outputs.published == 'true' && (inputs.resume_automerge || false)
+        if: (inputs.resume_automerge || false) && env.DRY_RUN != 'true'
         env:
           GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
         run: |

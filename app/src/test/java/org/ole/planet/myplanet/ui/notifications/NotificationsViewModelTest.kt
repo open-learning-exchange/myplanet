@@ -2,7 +2,10 @@ package org.ole.planet.myplanet.ui.notifications
 
 import android.content.Context
 import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -151,61 +154,57 @@ class NotificationsViewModelTest {
     }
 
     @Test
-    fun testResolveTypeClassifiesRawTeamTypeAsJoinRequest() = runTest(testDispatcher) {
-        val payload = notification(id = "1", type = "team", isRead = false, message = "<b>Jane</b> has requested to join <b>\"My Team\"</b> team.")
-        loadNotifications(payload)
+    fun testViewModelDelegatesResolveTypeToRepository() = runTest(testDispatcher) {
+        val payload = notification(id = "1", type = "team", isRead = false, message = "whatever", subType = "join_request")
+        coEvery { repository.getNotifications(USER_ID, FILTER_ALL, false) } returns listOf(payload)
+        every { repository.resolveType("team", "whatever", "join_request") } returns "join_request"
+        backgroundScope.launch { viewModel.groupedItems.collect {} }
+
+        viewModel.loadNotifications(USER_ID, FILTER_ALL)
+        advanceUntilIdle()
 
         assertEquals("join_request", item("1").notification.type)
+        verify { repository.resolveType("team", "whatever", "join_request") }
     }
 
     @Test
-    fun testResolveTypeClassifiesRawTeamTypeInSpanishAsJoinRequest() = runTest(testDispatcher) {
-        val payload = notification(id = "1", type = "team", isRead = false, message = "test22012601 ha solicitado unirse a \"test GT\" team.")
-        loadNotifications(payload)
+    fun testLoadNotificationsExtractsRelevantTypesCaseInsensitivelyInOrder() = runTest(testDispatcher) {
+        val task1 = notification(id = "t1", type = "TaSk", isRead = false, message = "Task 1", subType = null).copy(relatedId = "rel1")
+        val other1 = notification(id = "o1", type = "OTHER", isRead = false, message = "Other 1", subType = null)
+        val join1 = notification(id = "j1", type = "joiN_rEquEst", isRead = false, message = "Join 1", subType = null).copy(relatedId = "rel2")
+        val task2 = notification(id = "t2", type = "task", isRead = false, message = "Task 2", subType = null).copy(relatedId = "rel3")
 
-        assertEquals("join_request", item("1").notification.type)
+        loadNotifications(task1, other1, join1, task2)
+
+        coVerify { repository.getTaskTeamNamesByTaskIds(listOf("rel1", "rel3")) }
+        coVerify { repository.getJoinRequestDetailsBatch(listOf("rel2")) }
+
+        val notifs = viewModel.notifications.value
+        assertEquals(4, notifs.size)
+        assertEquals("t1", notifs[0].id)
+        assertEquals("o1", notifs[1].id)
+        assertEquals("j1", notifs[2].id)
+        assertEquals("t2", notifs[3].id)
     }
 
     @Test
-    fun testResolveTypeClassifiesRawTeamTypeAsJoinRequestViaSubTypeRegardlessOfMessageLanguage() = runTest(testDispatcher) {
-        // Arabic/Nepali/etc. server messages aren't matched by the English/Spanish phrase list, so
-        // classification must rely on the structural subType (derived from linkParams) instead.
-        val payload = notification(id = "1", type = "team", isRead = false, message = "غير معروف", subType = "join_request")
-        loadNotifications(payload)
+    fun testToggleSelectionUpdatesSelectionStateOnListItems() = runTest(testDispatcher) {
+        loadNotifications(unreadTask)
 
-        assertEquals("join_request", item("1").notification.type)
-    }
+        assertFalse(item("1").isSelected)
+        assertFalse(item("1").isSelectionMode)
 
-    @Test
-    fun testResolveTypeClassifiesRawTeamTypeAsChatForPostedMessage() = runTest(testDispatcher) {
-        val payload = notification(id = "1", type = "team", isRead = false, message = "Bhushan Nim has posted a message on \"test GT\" team.")
-        loadNotifications(payload)
+        viewModel.toggleSelection("1")
+        runCurrent()
 
-        assertEquals("chat", item("1").notification.type)
-    }
+        assertTrue(item("1").isSelected)
+        assertTrue(item("1").isSelectionMode)
 
-    @Test
-    fun testResolveTypeClassifiesUnmatchedRawTeamTypeAsTeamJoin() = runTest(testDispatcher) {
-        val payload = notification(id = "1", type = "team", isRead = false, message = "Has sido eliminado de \"test GT\" team.")
-        loadNotifications(payload)
+        viewModel.toggleSelection("1")
+        runCurrent()
 
-        assertEquals("team_join", item("1").notification.type)
-    }
-
-    @Test
-    fun testResolveTypeClassifiesRawNewTaskTypeAsTask() = runTest(testDispatcher) {
-        val payload = notification(id = "1", type = "newTask", isRead = false, message = "You were assigned a new task")
-        loadNotifications(payload)
-
-        assertEquals("task", item("1").notification.type)
-    }
-
-    @Test
-    fun testResolveTypeClassifiesRawNewResourceTypeAsResource() = runTest(testDispatcher) {
-        val payload = notification(id = "1", type = "newResource", isRead = false, message = "Hay nuevos recursos en la biblioteca. ¡Haz clic para verlos!")
-        loadNotifications(payload)
-
-        assertEquals("resource", item("1").notification.type)
+        assertFalse(item("1").isSelected)
+        assertFalse(item("1").isSelectionMode)
     }
 
     private fun item(id: String): NotificationListItem.Item =
@@ -215,6 +214,12 @@ class NotificationsViewModelTest {
 
     private fun TestScope.loadNotifications(vararg payloads: NotificationPayload) {
         coEvery { repository.getNotifications(USER_ID, FILTER_ALL, false) } returns payloads.toList()
+        // The classifier now lives in the repository; for ViewModel behavior tests stub it to echo the
+        // (lowercased) raw type so grouping/expansion still exercise the ViewModel wiring. Real
+        // classification is covered in NotificationsRepositoryImplTest.
+        every { repository.resolveType(any(), any(), any()) } answers {
+            firstArg<String>().lowercase()
+        }
         backgroundScope.launch { viewModel.groupedItems.collect {} }
         viewModel.loadNotifications(USER_ID, FILTER_ALL)
         advanceUntilIdle()

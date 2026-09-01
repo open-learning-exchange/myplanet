@@ -22,9 +22,7 @@ import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
-import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.MyLibrary
-import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.ResourceItem
@@ -54,7 +52,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val teamsSyncRepositoryLazy: dagger.Lazy<TeamsSyncRepository>,
     private val myLibraryDao: MyLibraryDao,
     private val userRepository: UserRepository,
-    private val teamDao: TeamDao,
+    private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository>,
     private val userSessionManager: UserSessionManager,
     private val configurationsRepository: ConfigurationsRepository,
     private val dispatcherProvider: DispatcherProvider
@@ -192,8 +190,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun getLibraryListForUser(userId: String?): List<MyLibrary> {
         if (userId == null) return emptyList()
-        return myLibraryDao.getPublicForUserPattern(userIdPattern(userId))
-            .filter { it.needToUpdate() }
+        return myLibraryDao.getPublicNeedingUpdateForUserPattern(userIdPattern(userId))
     }
 
     override suspend fun getMyLibrary(userId: String?): List<MyLibrary> {
@@ -213,8 +210,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun countLibrariesNeedingUpdate(userId: String?): Int {
         if (userId == null) return 0
-        return myLibraryDao.getPublicForUserPattern(userIdPattern(userId))
-            .count { it.needToUpdate() }
+        return myLibraryDao.countPublicNeedingUpdateForUserPattern(userIdPattern(userId))
     }
 
     override suspend fun resourceTitleExists(title: String): Boolean {
@@ -411,13 +407,9 @@ class ResourcesRepositoryImpl @Inject constructor(
         return downloadResources(resources)
     }
 
-override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrary> {
-        var files = libraryList
-        if (files == null) {
-            files = getAllLibrariesToSync()
-        }
-        val safeFiles = files ?: emptyList()
-        val urls = DownloadUtils.downloadAllFiles(safeFiles)
+    override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrary> {
+        val files = libraryList ?: getAllLibrariesToSync()
+        val urls = DownloadUtils.downloadAllFiles(files)
 
         MainApplication.applicationScope.launch {
             if (configurationsRepository.checkServerAvailability()) {
@@ -426,11 +418,11 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
                 }
             }
         }
-        return safeFiles
+        return files
     }
 
     override suspend fun getAllLibrariesToSync(): List<MyLibrary> {
-        return myLibraryDao.getSyncable().filter { it.needToUpdate() }
+        return myLibraryDao.getSyncable()
     }
 
     override suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String): Result<Unit> {
@@ -462,14 +454,13 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
         val targetUserId = userId ?: sharedPrefManager.getUserId().ifEmpty { null }
 
         if (!targetUserId.isNullOrBlank()) {
-            val userLibrariesNeedingUpdate = myLibraryDao.getPublicForUserPattern(userIdPattern(targetUserId))
-                .filter { it.needToUpdate() }
+            val userLibrariesNeedingUpdate = myLibraryDao.getPublicNeedingUpdateForUserPattern(userIdPattern(targetUserId))
             if (userLibrariesNeedingUpdate.isNotEmpty()) {
                 return userLibrariesNeedingUpdate
             }
         }
 
-        return myLibraryDao.getPublic().filter { it.needToUpdate() }
+        return myLibraryDao.getPublicNeedingUpdate()
     }
 
     override suspend fun removeDeletedResources(currentIds: List<String?>) {
@@ -482,9 +473,9 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
     }
 
     override suspend fun getMyLibIds(userId: String): JsonArray {
-        val libs = myLibraryDao.getForUserPattern(userIdPattern(userId))
+        val ids = myLibraryDao.getIdsForUserPattern(userIdPattern(userId))
         val jsonArray = JsonArray()
-        libs.forEach { jsonArray.add(it.id) }
+        ids.forEach { jsonArray.add(it) }
         return jsonArray
     }
 
@@ -680,7 +671,7 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
             }
     }
 
-    override suspend fun getEnrichedLibraries(isMyCourseLib: Boolean, modelId: String?): List<LibraryWithMetadata> {
+    private suspend fun getEnrichedLibraries(isMyCourseLib: Boolean, modelId: String?): List<LibraryWithMetadata> {
         val allLibraryItems = if (isMyCourseLib) {
             getMyLibrary(modelId)
         } else if (modelId != null) {
@@ -703,7 +694,7 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
     }
 
     override suspend fun getResourceTitlesMap(): Map<String, String> {
-        return myLibraryDao.getWithResourceId()
+        return myLibraryDao.getResourceTitles()
             .associate { (it.resourceId ?: "") to (it.title ?: "") }
     }
 
@@ -727,22 +718,13 @@ override suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrar
         library._rev = remoteRev
         myLibraryDao.upsert(library)
 
-        // Private resources also create a local team-resource link (still a Realm model).
+        // Private resources also create a local team-resource link.
         if (library.isPrivate && !library.privateFor.isNullOrBlank()) {
-            val resolvedPlanetCode = planetCode?.takeIf { it.isNotBlank() }
-                ?: sharedPrefManager.getPlanetCode()
-            teamDao.upsert(
-                MyTeam(
-                    _id = UUID.randomUUID().toString(),
-                    teamId = library.privateFor,
-                    title = library.title,
-                    resourceId = remoteId,
-                    sourcePlanet = resolvedPlanetCode,
-                    teamType = "local",
-                    teamPlanetCode = resolvedPlanetCode,
-                    docType = "resourceLink",
-                    updated = true,
-                )
+            teamsRepositoryLazy.get().createLocalResourceLink(
+                teamId = library.privateFor!!,
+                resourceId = remoteId,
+                title = library.title,
+                planetCode = planetCode
             )
         }
         return true

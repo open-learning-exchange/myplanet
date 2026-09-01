@@ -12,8 +12,18 @@ object UrlUtils {
     @Volatile
     private var spmInstance: SharedPrefManager? = null
 
+    @Volatile
+    private var cachedHeader: String? = null
+
+    @Volatile
+    private var generation = 0
+
     fun init(sharedPrefManager: SharedPrefManager) {
-        spmInstance = sharedPrefManager
+        synchronized(this) {
+            generation++
+            spmInstance = sharedPrefManager
+            cachedHeader = null
+        }
     }
 
     private fun spm(): SharedPrefManager {
@@ -21,15 +31,42 @@ object UrlUtils {
             ?: error("UrlUtils.init(SharedPrefManager) must be called before using UrlUtils")
     }
 
+    fun invalidateHeaderCache() {
+        synchronized(this) {
+            generation++
+            cachedHeader = null
+        }
+    }
+
     @VisibleForTesting
     internal fun resetForTesting() {
-        spmInstance = null
+        synchronized(this) {
+            generation++
+            spmInstance = null
+            cachedHeader = null
+        }
     }
 
     val header: String
         get() {
-            val spm = spm()
-            return basicAuthHeader(spm.getUrlUser(), spm.getUrlPwd())
+            cachedHeader?.let { return it }
+            val currentGen: Int
+            val user: String
+            val pwd: String
+            synchronized(this) {
+                cachedHeader?.let { return it }
+                currentGen = generation
+                val spm = spm()
+                user = spm.getUrlUser()
+                pwd = spm.getUrlPwd()
+            }
+            val computed = basicAuthHeader(user, pwd)
+            synchronized(this) {
+                if (generation == currentGen) {
+                    cachedHeader = computed
+                }
+            }
+            return computed
         }
 
     fun basicAuthHeader(username: String, password: String): String {
@@ -94,7 +131,11 @@ object UrlUtils {
     }
 
     fun getUrl(id: String?, file: String?): String {
-        return "${getUrl()}/resources/$id/$file"
+        return getUrl(id, file, getUrl())
+    }
+
+    fun getUrl(id: String?, file: String?, base: String): String {
+        return "$base/resources/$id/$file"
     }
 
     fun getUserImageUrl(userId: String?, imageName: String): String? {
@@ -131,7 +172,7 @@ object UrlUtils {
 
     fun getHealthAccessUrl(spm: SharedPrefManager): String {
         val url = baseUrl(spm)
-        return String.format("%s/healthaccess?p=%s", url, spm.getServerPin().ifEmpty { "0000" })
+        return "$url/healthaccess?p=${spm.getServerPin().ifEmpty { "0000" }}"
     }
 
     fun getApkVersionUrl(spm: SharedPrefManager): String {

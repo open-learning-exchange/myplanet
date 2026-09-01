@@ -6,7 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
+import androidx.fragment.app.viewModels
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
@@ -16,12 +16,11 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.text.DateFormatSymbols
 import java.util.Calendar
 import javax.inject.Inject
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentActivitiesBinding
 import org.ole.planet.myplanet.model.OfflineActivity
-import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
@@ -29,10 +28,9 @@ class ActivitiesFragment : Fragment() {
     private var _binding: FragmentActivitiesBinding? = null
     private val binding get() = _binding!!
     private val months = DateFormatSymbols().months
+    private val viewModel: ActivitiesViewModel by viewModels()
     @Inject
-    lateinit var userSessionManager: UserSessionManager
-    @Inject
-    lateinit var activitiesRepository: ActivitiesRepository
+    lateinit var dispatcherProvider: DispatcherProvider
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentActivitiesBinding.inflate(inflater, container, false)
@@ -46,23 +44,19 @@ class ActivitiesFragment : Fragment() {
         val endMillis = Calendar.getInstance().timeInMillis
         val startMillis = Calendar.getInstance().apply { add(Calendar.YEAR, -1) }.timeInMillis
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val userName = userSessionManager.getUserModel()?.name ?: return@launch
-            val loginsFlow = activitiesRepository.getOfflineLogins(userName)
-            collectLatestWhenStarted(loginsFlow) { logins ->
-                val monthlyCounts = computeMonthlyCounts(logins, startMillis, endMillis)
-                renderChart(monthlyCounts, daynightTextColor)
-            }
+        collectLatestWhenStarted(viewModel.offlineLogins) { logins ->
+            val monthlyCounts = computeMonthlyCounts(logins, startMillis, endMillis)
+            renderChart(monthlyCounts, daynightTextColor)
         }
     }
 
-    internal fun computeMonthlyCounts(
+    internal suspend fun computeMonthlyCounts(
         logins: List<OfflineActivity>,
         startMillis: Long,
         endMillis: Long
-    ): Map<Int, Int> {
+    ): Map<Int, Int> = withContext(dispatcherProvider.default) {
         val calendar = Calendar.getInstance()
-        return logins.fold(mutableMapOf<Int, Int>()) { acc, activity ->
+        logins.fold(mutableMapOf<Int, Int>()) { acc, activity ->
             val loginTime = activity.loginTime
             if (loginTime != null && loginTime in startMillis..endMillis) {
                 calendar.timeInMillis = loginTime

@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.MyTeam
-import org.ole.planet.myplanet.repository.TeamsFinancesRepository
+import org.ole.planet.myplanet.repository.EnterprisesRepository
 
 sealed class ReportEvent {
     object ReportAdded : ReportEvent()
@@ -22,7 +22,7 @@ sealed class ReportEvent {
 
 @HiltViewModel
 class EnterprisesViewModel @Inject constructor(
-    private val teamsRepository: TeamsFinancesRepository
+    private val enterprisesRepository: EnterprisesRepository
 ) : ViewModel() {
 
     private val _reportEvent = MutableSharedFlow<ReportEvent>()
@@ -50,7 +50,7 @@ class EnterprisesViewModel @Inject constructor(
                     otherExpenses, startDate, endDate, teamId, teamType, teamPlanetCode,
                     imageName, imageData
                 )
-                teamsRepository.addReport(params)
+                enterprisesRepository.addReport(params)
                 _reportEvent.emit(ReportEvent.ReportAdded)
             } catch (e: Exception) {
                 _reportEvent.emit(ReportEvent.Error("Failed to add report. Please try again."))
@@ -78,7 +78,7 @@ class EnterprisesViewModel @Inject constructor(
                     otherExpenses, startDate, endDate, "", null, null,
                     imageName, imageData
                 )
-                teamsRepository.updateReport(reportId, params)
+                enterprisesRepository.updateReport(reportId, params)
                 _reportEvent.emit(ReportEvent.ReportUpdated)
             } catch (e: Exception) {
                 _reportEvent.emit(ReportEvent.Error("Failed to update report. Please try again."))
@@ -89,7 +89,7 @@ class EnterprisesViewModel @Inject constructor(
     fun archiveReport(reportId: String) {
         viewModelScope.launch {
             try {
-                teamsRepository.archiveReport(reportId)
+                enterprisesRepository.archiveReport(reportId)
                 _reportEvent.emit(ReportEvent.ReportArchived)
             } catch (e: Exception) {
                 _reportEvent.emit(ReportEvent.Error("Failed to delete report."))
@@ -98,10 +98,10 @@ class EnterprisesViewModel @Inject constructor(
     }
 
     suspend fun getReportsFlow(teamId: String): Flow<List<MyTeam>> {
-        return teamsRepository.getReportsFlow(teamId)
+        return enterprisesRepository.getReportsFlow(teamId)
     }
 
-    suspend fun exportReportsAsCsv(reports: List<MyTeam>, teamName: String): String {
-        return teamsRepository.exportReportsAsCsv(reports, teamName)
+    suspend fun exportReportsAsCsv(teamId: String, teamName: String): String {
+        return enterprisesRepository.exportReportsAsCsv(teamId, teamName)
     }
 }

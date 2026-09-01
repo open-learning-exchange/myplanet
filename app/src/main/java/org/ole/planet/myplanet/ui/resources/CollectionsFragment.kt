@@ -10,20 +10,17 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
-import javax.inject.Inject
 import kotlin.collections.ArrayList
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.databinding.FragmentCollectionsBinding
 import org.ole.planet.myplanet.model.TagData
 import org.ole.planet.myplanet.model.TagEntity
-import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.utils.KeyboardUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
@@ -38,12 +35,11 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
 
     private var list: List<TagEntity> = emptyList()
     private var childMap: Map<String, List<TagEntity>> = emptyMap()
-    private var filteredList: ArrayList<TagEntity> = ArrayList()
     private lateinit var adapter: ResourcesTagsAdapter
     private var dbType: String? = null
     private var listener: OnTagClickListener? = null
     private var selectedItemsList: ArrayList<TagEntity> = ArrayList()
-    private var currentTagDataList = mutableListOf<TagData>()
+    private var currentTagDataList: List<TagData> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,7 +67,7 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
                 is CollectionsState.Success -> {
                     list = state.list
                     childMap = state.childMap
-                    currentTagDataList = buildTagDataList(list).toMutableList()
+                    currentTagDataList = buildTagDataList(list)
                     adapter.submitList(currentTagDataList)
                     binding.btnOk.visibility = View.VISIBLE
                 }
@@ -111,11 +107,12 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
         val filteredParentList = if (charSequence.isEmpty()) {
             list
         } else {
+            val query = charSequence.lowercase(Locale.ROOT)
             list.filter {
-                it.name?.lowercase(Locale.ROOT)?.contains(charSequence.lowercase(Locale.ROOT)) == true
+                it.name?.lowercase(Locale.ROOT)?.contains(query) == true
             }
         }
-        currentTagDataList = buildTagDataList(filteredParentList).toMutableList()
+        currentTagDataList = buildTagDataList(filteredParentList)
         adapter.submitList(currentTagDataList)
     }
 
@@ -152,8 +149,8 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
 
     override fun onParentTagClicked(parent: TagData.Parent) {
         parent.isExpanded = !parent.isExpanded
-        currentTagDataList = buildTagDataList(list).toMutableList()
-        adapter.submitList(currentTagDataList.toList())
+        currentTagDataList = buildTagDataList(list)
+        adapter.submitList(currentTagDataList)
     }
 
     override fun onCheckboxTagSelected(tag: TagEntity) {
@@ -162,7 +159,7 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
         } else {
             selectedItemsList.add(tag)
         }
-        currentTagDataList = buildTagDataList(list).toMutableList()
+        currentTagDataList = buildTagDataList(list)
         adapter.submitList(currentTagDataList)
     }
 
@@ -172,7 +169,7 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
 
     override fun onCheckedChanged(compoundButton: CompoundButton, b: Boolean) {
         MainApplication.isCollectionSwitchOn = b
-        currentTagDataList = buildTagDataList(list).toMutableList()
+        currentTagDataList = buildTagDataList(list)
         adapter.submitList(currentTagDataList)
         binding.btnOk.visibility = if (b) View.VISIBLE else View.GONE
     }

@@ -6,14 +6,28 @@
         "repo": "dogi/kotlin-importing"
       }
     },
+    "overtaking": {
+      "source": {
+        "source": "github",
+        "repo": "dogi/branch-overtaking"
+      }
+    },
     "prepping": {
       "source": {
         "source": "github",
         "repo": "dogi/merge-prepping"
       }
+    },
+    "summoning": {
+      "source": {
+        "source": "github",
+        "repo": "dogi/agents-summoning"
+      }
     }
   },
   "enabledPlugins": {
+    "agents-summoning@summoning": true,
+    "branch-overtaking@overtaking": true,
     "kotlin-importing@importing": true,
     "merge-prepping@prepping": true
   }

@@ -5,12 +5,15 @@ import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
+import android.provider.Settings
+import androidx.test.core.app.ApplicationProvider
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -19,6 +22,11 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class)
 class VersionUtilsTest {
+
+    @Before
+    fun setUp() {
+        VersionUtils.resetAndroidIdCacheForTesting()
+    }
 
     @Test
     fun compareVersions_should_return_0_for_equal_versions() {
@@ -53,11 +61,34 @@ class VersionUtilsTest {
         VersionUtils.compareVersions("abc", "1.0.0")
     }
 
+    @Test(expected = NumberFormatException::class)
+    fun compareVersions_should_throw_on_malformed_part_after_the_order_is_decided() {
+        // Every part of both strings is parsed, so a later malformed part still throws
+        // even though the leading parts already determine the result.
+        VersionUtils.compareVersions("2.0", "1.x")
+    }
+
+    @Test(expected = NumberFormatException::class)
+    fun compareVersions_should_throw_on_trailing_malformed_part_of_the_longer_version() {
+        VersionUtils.compareVersions("1.0", "1.0.x")
+    }
+
+    @Test(expected = NumberFormatException::class)
+    fun compareVersions_should_throw_on_empty_version_string() {
+        VersionUtils.compareVersions("", "1.0.0")
+    }
+
+    @Test(expected = NumberFormatException::class)
+    fun compareVersions_should_only_strip_the_lite_suffix_from_the_first_argument() {
+        // Callers pass the server's minapk value as the second argument, which never
+        // carries the flavor suffix, so "-lite" there is a malformed part.
+        VersionUtils.compareVersions("1.0.0", "1.0.0-lite")
+    }
+
     @Test
     fun compareVersions_should_not_throw_on_insufficient_version_parts() {
-        // The implementation uses kotlin.math.min(parts1.size, parts2.size)
-        // so it actually handles "1.0" vs "1.0.0" without IndexOutOfBoundsException
-        // and returns a size comparison when the common prefix matches.
+        // Only the parts both versions have are compared, so "1.0" vs "1.0.0" is safe;
+        // when that common prefix matches, the shorter version sorts lower.
         assertTrue(VersionUtils.compareVersions("1.0", "1.0.0") < 0)
         assertTrue(VersionUtils.compareVersions("1.0.0", "1.0") > 0)
     }
@@ -190,5 +221,51 @@ class VersionUtilsTest {
 
         val versionName = VersionUtils.getVersionName(mockContext)
         assertNull(versionName)
+    }
+
+    @Test
+    fun getAndroidId_caches_non_null_id() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        Settings.Secure.putString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID,
+            "initial_android_id"
+        )
+
+        val firstCallId = VersionUtils.getAndroidId(context)
+        assertEquals("initial_android_id", firstCallId)
+
+        Settings.Secure.putString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID,
+            "changed_android_id"
+        )
+
+        val secondCallId = VersionUtils.getAndroidId(context)
+        assertEquals("initial_android_id", secondCallId)
+    }
+
+    @Test
+    fun getAndroidId_does_not_cache_null_value() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        Settings.Secure.putString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID,
+            null
+        )
+
+        val firstCallId = VersionUtils.getAndroidId(context)
+        assertNull(firstCallId)
+
+        Settings.Secure.putString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID,
+            "valid_android_id"
+        )
+
+        val secondCallId = VersionUtils.getAndroidId(context)
+        assertEquals("valid_android_id", secondCallId)
     }
 }

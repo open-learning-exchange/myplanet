@@ -23,7 +23,6 @@ import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
-import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
@@ -124,11 +123,9 @@ class SurveysRepositoryImplTest {
         coEvery { examDao.getByTeamIdAndType(teamId, "surveys") } returns listOf(
             StepExam(id = "survey1", sourceSurveyId = "source1")
         )
-        // Mock all surveys
-        coEvery { examDao.getByType("surveys") } returns listOf(
-            StepExam(id = "exam1", teamId = "other"), // Filtered by submission ID
-            StepExam(id = "survey2", teamId = teamId), // Filtered by teamId
-            StepExam(id = "survey3", teamId = "other") // Excluded
+        coEvery { examDao.getTeamOwnedSurveys(teamId, setOf("exam1")) } returns listOf(
+            StepExam(id = "exam1", teamId = "other"),
+            StepExam(id = "survey2", teamId = teamId)
         )
 
         val result = repository.getTeamOwnedSurveys(teamId)
@@ -153,12 +150,8 @@ class SurveysRepositoryImplTest {
         coEvery { examDao.getByTeamIdAndType(teamId, "surveys") } returns listOf(
             StepExam(id = "survey1", sourceSurveyId = "source1")
         )
-        // Mock all surveys
-        coEvery { examDao.getByType("surveys") } returns listOf(
-            StepExam(id = "exam1", isTeamShareAllowed = true), // Excluded (in submissions)
-            StepExam(id = "source1", isTeamShareAllowed = true), // Excluded (adopted source)
-            StepExam(id = "survey2", isTeamShareAllowed = true), // Included
-            StepExam(id = "survey3", isTeamShareAllowed = false) // Excluded (not shareable)
+        coEvery { examDao.getAdoptableTeamSurveys(setOf("exam1", "source1")) } returns listOf(
+            StepExam(id = "survey2", isTeamShareAllowed = true)
         )
 
         val result = repository.getAdoptableTeamSurveys(teamId)
