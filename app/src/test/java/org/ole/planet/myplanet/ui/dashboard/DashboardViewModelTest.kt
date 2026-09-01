@@ -96,7 +96,7 @@ class DashboardViewModelTest {
         }
 
         val events = mutableListOf<SyncUiState>()
-        val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
+        backgroundScope.launch(kotlinx.coroutines.Dispatchers.Unconfined) {
             viewModel.syncKeyIdEvent.collect { events.add(it) }
         }
 
@@ -109,7 +109,6 @@ class DashboardViewModelTest {
         assertEquals(SyncUiState.Loading, events[0])
         assertEquals(SyncUiState.Success(null), events[1])
 
-        job.cancel()
     }
     @Test
     fun `loadUserContent replaces existing collectors when called multiple times`() = runTest(testDispatcher) {

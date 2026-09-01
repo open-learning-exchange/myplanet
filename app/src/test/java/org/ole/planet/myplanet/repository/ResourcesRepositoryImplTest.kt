@@ -14,6 +14,7 @@ import io.mockk.verify
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
@@ -665,6 +666,7 @@ class ResourcesRepositoryImplTest {
             coVerify(exactly = 0) { myLibraryDao.getSyncable() }
             verify(exactly = 1) { DownloadUtils.downloadAllFiles(provided) }
         } finally {
+            scope.cancel()
             unmockkObject(MainApplication)
             unmockkObject(DownloadUtils)
         }
@@ -688,6 +690,7 @@ class ResourcesRepositoryImplTest {
             assertEquals("synced1", result[0]._id)
             coVerify(exactly = 1) { myLibraryDao.getSyncable() }
         } finally {
+            scope.cancel()
             unmockkObject(MainApplication)
             unmockkObject(DownloadUtils)
         }

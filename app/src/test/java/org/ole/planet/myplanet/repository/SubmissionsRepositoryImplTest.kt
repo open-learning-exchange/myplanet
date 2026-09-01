@@ -116,7 +116,7 @@ class SubmissionsRepositoryImplTest {
         every { submissionDao.observeByUserId("user_123") } returns flowEmitter
 
         var emissions = 0
-        val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
+        backgroundScope.launch(kotlinx.coroutines.Dispatchers.Unconfined) {
             repository.getSubmissionsFlow("user_123").collect {
                 emissions++
             }
@@ -129,7 +129,6 @@ class SubmissionsRepositoryImplTest {
         flowEmitter.emit(subListDup)
         assertEquals(1, emissions)
 
-        job.cancel()
     }
 
     @Test
@@ -141,7 +140,7 @@ class SubmissionsRepositoryImplTest {
         every { submissionDao.observeByUserId("user_123") } returns flowEmitter
 
         var emissions = 0
-        val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
+        backgroundScope.launch(kotlinx.coroutines.Dispatchers.Unconfined) {
             repository.getSubmissionsFlow("user_123").collect {
                 emissions++
             }
@@ -154,7 +153,6 @@ class SubmissionsRepositoryImplTest {
         flowEmitter.emit(subListDiffSize)
         assertEquals(2, emissions)
 
-        job.cancel()
     }
 
     @Test
@@ -166,7 +164,7 @@ class SubmissionsRepositoryImplTest {
         every { submissionDao.observeByUserId("user_123") } returns flowEmitter
 
         var emissions = 0
-        val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
+        backgroundScope.launch(kotlinx.coroutines.Dispatchers.Unconfined) {
             repository.getSubmissionsFlow("user_123").collect {
                 emissions++
             }
@@ -179,7 +177,6 @@ class SubmissionsRepositoryImplTest {
         flowEmitter.emit(subListDiffTime)
         assertEquals(2, emissions)
 
-        job.cancel()
     }
 
     @Test
