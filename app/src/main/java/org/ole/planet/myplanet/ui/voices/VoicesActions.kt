@@ -8,7 +8,6 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
-import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
@@ -21,6 +20,7 @@ import java.util.Date
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
+import org.ole.planet.myplanet.databinding.AlertInputBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
@@ -33,6 +33,7 @@ object VoicesActions {
     private val dateFormatter = ThreadLocal.withInitial { SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()) }
 
     data class EditDialogComponents(
+        val binding: AlertInputBinding,
         val view: View,
         val editText: EditText,
         val inputLayout: TextInputLayout,
@@ -43,12 +44,13 @@ object VoicesActions {
         context: Context,
         listener: OnNewsItemClickListener?
     ): EditDialogComponents {
-        val v = LayoutInflater.from(context).inflate(R.layout.alert_input, null)
-        val tlInput = v.findViewById<TextInputLayout>(R.id.tl_input)
-        val et = v.findViewById<EditText>(R.id.et_input)
-        val llImage = v.findViewById<ViewGroup>(R.id.ll_alert_image)
-        v.findViewById<View>(R.id.add_news_image).setOnClickListener { listener?.addImage(llImage) }
-        return EditDialogComponents(v, et, tlInput, llImage)
+        val binding = AlertInputBinding.inflate(LayoutInflater.from(context))
+        val v = binding.root
+        val tlInput = binding.tlInput
+        val et = binding.etInput
+        val llImage = binding.llAlertImage
+        binding.addNewsImage.setOnClickListener { listener?.addImage(llImage) }
+        return EditDialogComponents(binding, v, et, tlInput, llImage)
     }
 
     private fun loadExistingImages(context: Context, news: News?, imageLayout: ViewGroup, imagesToRemove: MutableSet<String>) {
@@ -176,9 +178,9 @@ object VoicesActions {
         launchAction: (suspend () -> Unit) -> Unit
     ) {
         val components = createEditDialogComponents(context, listener)
-        val message = components.view.findViewById<TextView>(R.id.cust_msg)
+        val message = components.binding.custMsg
         message.text = context.getString(if (isEdit) R.string.edit_post else R.string.reply)
-        val icon = components.view.findViewById<ImageView>(R.id.alert_icon)
+        val icon = components.binding.alertIcon
         icon.setImageResource(R.drawable.ic_edit)
         val imagesToRemove = mutableSetOf<String>()
 

@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.os.SystemClock
+import android.util.Log
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkInfo
@@ -113,7 +114,7 @@ class SyncRepositoryImpl @Inject constructor(
                 processedItems = dataJobs.awaitAll().sum()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("SyncRepositoryImpl", "Error in processShelfParallel", e)
         }
 
         return processedItems
@@ -128,9 +129,9 @@ class SyncRepositoryImpl @Inject constructor(
             if (array.size() == 0) return 0
 
             val validIds = mutableListOf<String>()
-            for (i in 0 until array.size()) {
-                if (array[i] !is JsonNull) {
-                    validIds.add(array[i].asString)
+            for (element in array) {
+                if (element !is JsonNull) {
+                    validIds.add(element.asString)
                 }
             }
 
@@ -174,8 +175,8 @@ class SyncRepositoryImpl @Inject constructor(
                 if (responseRows.size() == 0) continue
 
                 val documentsToProcess = mutableListOf<JsonObject>()
-                for (j in 0 until responseRows.size()) {
-                    val rowObj = responseRows[j].asJsonObject
+                for (rowElement in responseRows) {
+                    val rowObj = rowElement.asJsonObject
                     if (rowObj.has("doc")) {
                         val doc = getJsonObject("doc", rowObj)
                         documentsToProcess.add(doc)
@@ -201,7 +202,7 @@ class SyncRepositoryImpl @Inject constructor(
             }
 
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("SyncRepositoryImpl", "Error in processShelfDataOptimizedSync", e)
             logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} failed: ${e.message}")
         }
         return processedCount
