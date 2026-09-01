@@ -1,8 +1,8 @@
 # Merge plan — open-learning-exchange/myplanet
 
-**BASE** `master` @ `a00781114a0bf834fe0f001256caa242497fc8d8`  
-**PR heads fetched** 2026-09-01T18:09:41Z  
-**Labels this run** MERGE=`merge` (24) · PRIORITY=`priority` (1) · READY=`ready` (1) · QUEUE=`automerge` (0) · `conflict` (2)
+**BASE** `master` @ `9193cfa247013a5aaa08cab881a66fc6abf47ef5`  
+**PR heads fetched** 2026-09-01T19:49:02Z  
+**Labels this run** MERGE=`merge` (12) · PRIORITY=`priority` (0) · READY=`ready` (3) · QUEUE=`automerge` (5) · `conflict` (0)
 
 Re-run if BASE moves for any reason other than executing it.
 
@@ -10,93 +10,69 @@ Re-run if BASE moves for any reason other than executing it.
 
 | wave | n | merged | still open | closed unmerged |
 |---|---|---|---|---|
-| 1 | 13 | **10** | 3 | 0 |
-| 2 (held) | 3 | 0 | 3 | 0 |
-| 3 (broken) | 18 | 1 | 17 | 0 |
+| 1 | 18 | **12** | 6 | 0 |
+| 2 (held) | 4 | 0 | 4 | 0 |
+| 3 (broken) | 2 | 0 | 2 | 0 |
 
-12 commits landed, 10 from wave 1. The 2 outside it were [16620](https://github.com/open-learning-exchange/myplanet/pull/16620) — which was broken at plan time, got rebased, and merged — and [16656](https://github.com/open-learning-exchange/myplanet/pull/16656), a `priority`+`ready` PR that was never in a merge wave.
+12 commits landed and **all 12 came from wave 1**.
 
-### The rebase backlog is drained
+### Held PRs rot — now confirmed by a natural experiment
 
-**All 17 previously-broken PRs that were still open have been rebased clean.** Every one of their heads moved and every one now merges cleanly against BASE; none remain broken.
+The previous plan noted that labelled PRs were getting rebased while held ones decayed. This interval tested it cleanly:
 
-The broken bucket across the last three plans: **27 → 18 → 2**. The `conflict` labelling applied two runs ago is the visible cause — the labelled list got worked through, and the label was correctly cleared on 15 of the 17.
-
-The two remaining broken PRs are both ones that were *held* in the previous wave 2 rather than labelled: [16398](https://github.com/open-learning-exchange/myplanet/pull/16398) and [16639](https://github.com/open-learning-exchange/myplanet/pull/16639). Held PRs keep decaying; labelled ones got fixed.
-
-## Wave 1 — 18 PRs
-
-Verified: all 18 chained cumulatively onto BASE with **zero** merge failures. 3267 changed lines.
-
-|  |  |  |  |  |  |
-|---|---|---|---|---|---|
-| [16335](https://github.com/open-learning-exchange/myplanet/pull/16335) | [16367](https://github.com/open-learning-exchange/myplanet/pull/16367) | [16368](https://github.com/open-learning-exchange/myplanet/pull/16368) | [16370](https://github.com/open-learning-exchange/myplanet/pull/16370) | [16442](https://github.com/open-learning-exchange/myplanet/pull/16442) | [16508](https://github.com/open-learning-exchange/myplanet/pull/16508) |
-| [16526](https://github.com/open-learning-exchange/myplanet/pull/16526) | [16551](https://github.com/open-learning-exchange/myplanet/pull/16551) | [16554](https://github.com/open-learning-exchange/myplanet/pull/16554) | [16577](https://github.com/open-learning-exchange/myplanet/pull/16577) | [16585](https://github.com/open-learning-exchange/myplanet/pull/16585) | [16595](https://github.com/open-learning-exchange/myplanet/pull/16595) |
-| [16599](https://github.com/open-learning-exchange/myplanet/pull/16599) | [16605](https://github.com/open-learning-exchange/myplanet/pull/16605) | [16607](https://github.com/open-learning-exchange/myplanet/pull/16607) | [16655](https://github.com/open-learning-exchange/myplanet/pull/16655) | [16658](https://github.com/open-learning-exchange/myplanet/pull/16658) | [16659](https://github.com/open-learning-exchange/myplanet/pull/16659) |
-
-| # | diff | title |
+| group | n | outcome |
 |---|---|---|
-| [16335](https://github.com/open-learning-exchange/myplanet/pull/16335) | 90 | all: smoother url utils credential handling (fixes #16309) |
-| [16367](https://github.com/open-learning-exchange/myplanet/pull/16367) | 62 | enterprises: smoother repository context injecting (fixes #16343) |
-| [16368](https://github.com/open-learning-exchange/myplanet/pull/16368) | 81 | life: smoother life repository seed inserting (fixes #16328) |
-| [16370](https://github.com/open-learning-exchange/myplanet/pull/16370) | 33 | community: smoother home community dialog handling (fixes #16327) |
-| [16442](https://github.com/open-learning-exchange/myplanet/pull/16442) | 75 | all: smoother notifications enrichment view modelling (fixes #16402) |
-| [16508](https://github.com/open-learning-exchange/myplanet/pull/16508) | 80 | life: smoother life adapting (fixes #16505) |
-| [16526](https://github.com/open-learning-exchange/myplanet/pull/16526) | 219 | all: smoother version utils testing (fixes #16504) |
-| [16551](https://github.com/open-learning-exchange/myplanet/pull/16551) | 188 | all: smoother notifications repository batch id filtering (fixes #16548) |
-| [16554](https://github.com/open-learning-exchange/myplanet/pull/16554) | 105 | all: smoother collection emptiness checking (fixes #16553) |
-| [16577](https://github.com/open-learning-exchange/myplanet/pull/16577) | 279 | all: smoother user repository view modelling (fixes #16571) |
-| [16585](https://github.com/open-learning-exchange/myplanet/pull/16585) | 1060 | all: smoother dictionary teams achievement view modelling (fixes #16576) |
-| [16595](https://github.com/open-learning-exchange/myplanet/pull/16595) | 280 | all: smoother error log tagging (fixes #16358) |
-| [16599](https://github.com/open-learning-exchange/myplanet/pull/16599) | 27 | all: smoother notifications type resolving (fixes #16419) |
-| [16605](https://github.com/open-learning-exchange/myplanet/pull/16605) | 258 | all: smoother notifications voices repository querying (fixes #16418) |
-| [16607](https://github.com/open-learning-exchange/myplanet/pull/16607) | 188 | login: smoother storage category selection view modelling (fixes #16449) |
-| [16655](https://github.com/open-learning-exchange/myplanet/pull/16655) | 9 | resources: rethrow CancellationException in downloads (fixes #16654) |
-| [16658](https://github.com/open-learning-exchange/myplanet/pull/16658) | 107 | resource: copy file to app storage on add (fixes #16657) |
-| [16659](https://github.com/open-learning-exchange/myplanet/pull/16659) | 126 | all: smoother coroutine scope testing (fixes #16653) |
+| previously **labelled** `conflict` | 17 | all 17 rebased clean |
+| previously **held** in wave 2 | 4 | **3 decayed into broken**, heads never moved |
 
-## Wave 2 — 4 held
+The three that decayed — [16096](https://github.com/open-learning-exchange/myplanet/pull/16096), [16503](https://github.com/open-learning-exchange/myplanet/pull/16503), [16600](https://github.com/open-learning-exchange/myplanet/pull/16600) — have unmoved heads, so nobody touched them; BASE simply advanced past them. Only [16441](https://github.com/open-learning-exchange/myplanet/pull/16441) survived. A held PR carries no visible signal that it needs work, so nothing gets worked. That is an argument for labelling held PRs, not only base-broken ones.
 
-Five symmetric conflict edges among the candidates (0 asymmetric across all 12 overlapping pairs). These need a rebase, not a reordering.
+## Wave 1 — 6 PRs
 
-| held | conflicts with |
-|---|---|
-| [16096](https://github.com/open-learning-exchange/myplanet/pull/16096) | [16368](https://github.com/open-learning-exchange/myplanet/pull/16368), [16508](https://github.com/open-learning-exchange/myplanet/pull/16508) |
-| [16441](https://github.com/open-learning-exchange/myplanet/pull/16441) | [16595](https://github.com/open-learning-exchange/myplanet/pull/16595) |
-| [16503](https://github.com/open-learning-exchange/myplanet/pull/16503) | [16526](https://github.com/open-learning-exchange/myplanet/pull/16526) |
-| [16600](https://github.com/open-learning-exchange/myplanet/pull/16600) | [16442](https://github.com/open-learning-exchange/myplanet/pull/16442) |
+Verified: all 6 chained cumulatively onto BASE with **zero** merge failures. 2074 changed lines. **No same-file overlap at all**, so no semantic risk from co-landing this run.
 
-[16096](https://github.com/open-learning-exchange/myplanet/pull/16096) is the highest-degree hub at 2; sacrificing it is what admits both #16368 and #16508.
+| # | diff | labels | title |
+|---|---|---|---|
+| [16585](https://github.com/open-learning-exchange/myplanet/pull/16585) | 1060 | `enormous` `experiment` | all: smoother dictionary teams achievement view modelling (fixes #16576) |
+| [16595](https://github.com/open-learning-exchange/myplanet/pull/16595) | 280 | `automerge` `enormous` | all: smoother error log tagging (fixes #16358) |
+| [16607](https://github.com/open-learning-exchange/myplanet/pull/16607) | 188 | `automerge` `enormous` | login: smoother storage category detail view modelling (fixes #16449) |
+| [16639](https://github.com/open-learning-exchange/myplanet/pull/16639) | 430 | `enormous` | sync: smoother upload pipelines unifying (fixes #16638) |
+| [16655](https://github.com/open-learning-exchange/myplanet/pull/16655) | 9 | `automerge` `small` | sync: smoother download repository service cancelling (fixes #16654) |
+| [16658](https://github.com/open-learning-exchange/myplanet/pull/16658) | 107 | `automerge` `large` | resources: smoother repository file copying (fixes #16657) |
 
-## Wave 3 — 2 broken against BASE
+## Wave 2 — 1 held
 
-[16398](https://github.com/open-learning-exchange/myplanet/pull/16398) · [16639](https://github.com/open-learning-exchange/myplanet/pull/16639) — neither carries a `conflict` label.
+[16441](https://github.com/open-learning-exchange/myplanet/pull/16441) conflicts with [16595](https://github.com/open-learning-exchange/myplanet/pull/16595) (1 symmetric edge, 0 asymmetric across the single overlapping pair). Given the finding above, this one deserves a `conflict` label rather than a silent hold.
 
-## Priority — 1 PR, protection still free
+## Wave 3 — 5 broken against BASE
 
-[16659](https://github.com/open-learning-exchange/myplanet/pull/16659) (`priority` `ready`) is clean and conflicts with nothing, so greedy MIS is 18 with or without protection — cost **0 PRs**, the sixth consecutive run. It merges inside wave 1.
+[16096](https://github.com/open-learning-exchange/myplanet/pull/16096) · [16398](https://github.com/open-learning-exchange/myplanet/pull/16398) · [16503](https://github.com/open-learning-exchange/myplanet/pull/16503) · [16600](https://github.com/open-learning-exchange/myplanet/pull/16600) · [16605](https://github.com/open-learning-exchange/myplanet/pull/16605)
 
-## Label accuracy — 4 rows are now wrong
+## The `conflict` label has gone fully out of sync
 
-| # | label says | reality |
-|---|---|---|
-| [16577](https://github.com/open-learning-exchange/myplanet/pull/16577) | `conflict` | merges clean (rebased, label not cleared) |
-| [16595](https://github.com/open-learning-exchange/myplanet/pull/16595) | `conflict` | merges clean (rebased, label not cleared) |
-| [16398](https://github.com/open-learning-exchange/myplanet/pull/16398) | no label | **broken** |
-| [16639](https://github.com/open-learning-exchange/myplanet/pull/16639) | no label | **broken** |
+**5 PRs are broken and 0 carry the label.** Every `conflict` label was cleared during this interval, including on PRs that then broke again:
 
-Both stale rows are in wave 1, so the label contradicts the plan there.
+- [16398](https://github.com/open-learning-exchange/myplanet/pull/16398) — labelled 15:24, cleared by hand at 15:44, rebased, and is **broken again** now.
+- [16096](https://github.com/open-learning-exchange/myplanet/pull/16096), [16503](https://github.com/open-learning-exchange/myplanet/pull/16503), [16600](https://github.com/open-learning-exchange/myplanet/pull/16600) — decayed out of the held set, never labelled.
+- [16605](https://github.com/open-learning-exchange/myplanet/pull/16605) — broke after landing in the previous wave 1.
+
+The label was the mechanism that drained 27 broken PRs down to 2 over two intervals. It is now carrying no information.
+
+## A queued PR is conflicting
+
+[16605](https://github.com/open-learning-exchange/myplanet/pull/16605) carries `automerge` **and** is broken against BASE. Per `.github/scripts/automerge.sh` a conflicting PR loses `automerge`, gains `conflict`, and the drain moves on — so it self-corrects, but it costs a queue cycle. The other four queued PRs ([16595](https://github.com/open-learning-exchange/myplanet/pull/16595), [16607](https://github.com/open-learning-exchange/myplanet/pull/16607), [16655](https://github.com/open-learning-exchange/myplanet/pull/16655), [16658](https://github.com/open-learning-exchange/myplanet/pull/16658)) are all clean and all in wave 1.
+
+## Priority
+
+No open PR carries `priority` this run, so protection is moot. It has cost 0 PRs in every run where it applied.
+
+## `ready` impact (report only — never merged by this plan)
+
+3 `ready`-only PRs are clean. Landing wave 1 breaks **1**: [16661](https://github.com/open-learning-exchange/myplanet/pull/16661).
 
 ## Caveats
 
 - Conflict detection is **textual**. A clean merge is not a passing build.
-- **Semantic risk is the highest in several runs** — 17 of the 22 candidates were rebased within the last few hours, and six same-file clusters land together in wave 1:
-  - `NotificationsRepositoryImpl.kt` — #16551, #16599, #16605 (three PRs)
-  - `NotificationsRepositoryImplTest.kt` — #16551, #16599
-  - `ConfigurationsRepositoryImpl.kt` — #16554, #16595
-  - `VoicesRepositoryImpl.kt` — #16554, #16605
-  - `ConfigurationsRepositoryImplTest.kt` — #16595, #16659
-  - `ResourcesRepositoryImplTest.kt` — #16658, #16659
-  Run tests mid-wave, not only at the end. A clean three-way merge on a file three PRs just rewrote is exactly where textual agreement and semantic agreement diverge.
-- [16585](https://github.com/open-learning-exchange/myplanet/pull/16585) is 1060 lines, by far the largest in the wave.
+- [16585](https://github.com/open-learning-exchange/myplanet/pull/16585) is the largest in the wave at 1060 lines and carries an **`experiment`** label, added 18:00 today. That label has no description in the repo, so this plan does not treat it as a gate — but it is worth a human decision before queueing a 1060-line experiment.
+- [16639](https://github.com/open-learning-exchange/myplanet/pull/16639) is 430 lines and was broken at the previous plan; it has been rebased and is clean now, so it is freshly landed work and the likeliest in the wave to break again if execution is slow.
 - Every wave-1 title is house style, so nothing to hand off.
