@@ -7,6 +7,8 @@ import com.google.gson.JsonParser
 import io.mockk.every
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import io.mockk.unmockkStatic
+import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -180,5 +182,56 @@ class FeedbackTest {
 
         // When an exception is thrown, the "messages" property is not added
         assertNull(jsonObject.get("messages"))
+    }
+
+    @Test
+    fun testMessagesCachedAcrossAccesses() {
+        val expectedArray = JsonArray().apply {
+            add(JsonObject().apply { addProperty("message", "First message"); addProperty("user", "user0"); addProperty("time", "time0") })
+            add(JsonObject().apply { addProperty("message", "Second message"); addProperty("user", "user1"); addProperty("time", "time1") })
+        }
+        val feedback = Feedback()
+        feedback.messages = """[{"message": "First message", "user": "user0", "time": "time0"},
+            {"message": "Second message", "user": "user1", "time": "time1"}]"""
+
+        mockkStatic(JsonParser::class)
+        every { JsonParser.parseString(any()) } returns expectedArray
+
+        try {
+            // Repeated reads of both derived views share one parse of the backing string.
+            assertEquals("First message", feedback.message)
+            assertEquals(1, feedback.messageList?.size)
+            assertEquals("Second message", feedback.messageList?.get(0)?.message)
+            repeat(5) { feedback.message }
+            repeat(5) { feedback.messageList }
+
+            verify(exactly = 1) { JsonParser.parseString(any()) }
+        } finally {
+            unmockkStatic(JsonParser::class)
+        }
+    }
+
+    @Test
+    fun testCacheInvalidatedOnMessagesChange() {
+        val feedback = Feedback()
+        feedback.messages = """[{"message": "first", "user": "u", "time": "t"}]"""
+        assertEquals("first", feedback.message)
+
+        feedback.messages = """[{"message": "second", "user": "u", "time": "t"}]"""
+        // After reassigning messages the cache must be invalidated.
+        assertEquals("second", feedback.message)
+    }
+
+    @Test
+    fun testCacheInvalidatedOnSetMessages() {
+        val feedback = Feedback()
+        feedback.messages = """[{"message": "first", "user": "u", "time": "t"}]"""
+        assertEquals("first", feedback.message)
+
+        val jsonArray = JsonArray().apply {
+            add(JsonObject().apply { addProperty("message", "second"); addProperty("user", "u"); addProperty("time", "t") })
+        }
+        feedback.setMessages(jsonArray)
+        assertEquals("second", feedback.message)
     }
 }

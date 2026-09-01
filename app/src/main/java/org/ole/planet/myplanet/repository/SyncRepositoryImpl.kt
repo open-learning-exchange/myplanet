@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.os.SystemClock
+import android.util.Log
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkInfo
@@ -44,28 +45,19 @@ class SyncRepositoryImpl @Inject constructor(
     private val transactionSyncManager: dagger.Lazy<TransactionSyncManager>,
     private val syncTimeLogger: SyncTimeLogger
 ) : SyncRepository {
-    override fun uploadLoginData(): Flow<SyncUiState> {
-        val workRequest = OneTimeWorkRequest.Builder(UserDataWorker::class.java)
-            .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to UserDataWorker.UPLOAD_TYPE_LOGIN))
-            .build()
-        val workManager = WorkManager.getInstance(context)
-        workManager.enqueueUniqueWork(
-            "UploadUserData_Login",
-            ExistingWorkPolicy.REPLACE,
-            workRequest
-        )
-        return workManager.getWorkInfoByIdFlow(workRequest.id).map { workInfo ->
-            mapWorkInfoToState(workInfo)
-        }
-    }
+    override fun uploadLoginData(): Flow<SyncUiState> =
+        enqueueUserDataUpload("UploadUserData_Login", UserDataWorker.UPLOAD_TYPE_LOGIN)
 
-    override fun uploadBulkData(): Flow<SyncUiState> {
+    override fun uploadBulkData(): Flow<SyncUiState> =
+        enqueueUserDataUpload("UploadUserData_Bulk", UserDataWorker.UPLOAD_TYPE_BULK)
+
+    private fun enqueueUserDataUpload(uniqueWorkName: String, uploadType: String): Flow<SyncUiState> {
         val workRequest = OneTimeWorkRequest.Builder(UserDataWorker::class.java)
-            .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to UserDataWorker.UPLOAD_TYPE_BULK))
+            .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to uploadType))
             .build()
         val workManager = WorkManager.getInstance(context)
         workManager.enqueueUniqueWork(
-            "UploadUserData_Bulk",
+            uniqueWorkName,
             ExistingWorkPolicy.REPLACE,
             workRequest
         )
@@ -122,7 +114,7 @@ class SyncRepositoryImpl @Inject constructor(
                 processedItems = dataJobs.awaitAll().sum()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("SyncRepositoryImpl", "Error in processShelfParallel", e)
         }
 
         return processedItems
@@ -137,9 +129,9 @@ class SyncRepositoryImpl @Inject constructor(
             if (array.isEmpty()) return 0
 
             val validIds = mutableListOf<String>()
-            for (i in 0 until array.size()) {
-                if (array[i] !is JsonNull) {
-                    validIds.add(array[i].asString)
+            for (element in array) {
+                if (element !is JsonNull) {
+                    validIds.add(element.asString)
                 }
             }
 
@@ -183,8 +175,8 @@ class SyncRepositoryImpl @Inject constructor(
                 if (responseRows.isEmpty()) continue
 
                 val documentsToProcess = mutableListOf<JsonObject>()
-                for (j in 0 until responseRows.size()) {
-                    val rowObj = responseRows[j].asJsonObject
+                for (rowElement in responseRows) {
+                    val rowObj = rowElement.asJsonObject
                     if (rowObj.has("doc")) {
                         val doc = getJsonObject("doc", rowObj)
                         documentsToProcess.add(doc)
@@ -210,7 +202,7 @@ class SyncRepositoryImpl @Inject constructor(
             }
 
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("SyncRepositoryImpl", "Error in processShelfDataOptimizedSync", e)
             logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} failed: ${e.message}")
         }
         return processedCount

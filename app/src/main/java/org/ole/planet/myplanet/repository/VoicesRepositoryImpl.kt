@@ -4,9 +4,6 @@ import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.HashMap
 import javax.inject.Inject
@@ -300,15 +297,12 @@ class VoicesRepositoryImpl @Inject constructor(
         newsDao.upsert(news)
     }
 
-    override suspend fun getCommunityVoiceDates(startTime: Long, endTime: Long, userId: String?): List<String> {
-        val results = if (userId != null) {
-            newsDao.getInTimeRangeForUser(startTime, endTime, userId)
+    override suspend fun getCommunityVoiceDateCount(startTime: Long, endTime: Long, userId: String?): Int {
+        return if (userId != null) {
+            newsDao.countDistinctCommunityVoiceDatesForUser(startTime, endTime, userId)
         } else {
-            newsDao.getInTimeRange(startTime, endTime)
+            newsDao.countDistinctCommunityVoiceDates(startTime, endTime)
         }
-        return results.filter { isCommunitySection(it) }
-            .map { getDateFromTimestamp(it.time) }
-            .distinct()
     }
 
     override suspend fun getNewsById(id: String): News? {
@@ -351,31 +345,6 @@ class VoicesRepositoryImpl @Inject constructor(
         news.updateMessage(message)
         newsDao.upsert(news)
         return newsDao.getById(newsId)
-    }
-
-    private fun isCommunitySection(news: News): Boolean {
-        news.viewIn?.let { viewInStr ->
-            try {
-                val viewInArray = org.json.JSONArray(viewInStr)
-                for (i in 0 until viewInArray.length()) {
-                    val viewInObj = viewInArray.getJSONObject(i)
-                    if (viewInObj.optString("section") == "community") {
-                        return true
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-        return false
-    }
-
-    private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-
-    private fun getDateFromTimestamp(timestamp: Long): String {
-        return Instant.ofEpochMilli(timestamp)
-            .atZone(ZoneId.systemDefault())
-            .format(dateFormatter)
     }
 
     override suspend fun getPlanetNewsMessages(planetCode: String?): List<News> {

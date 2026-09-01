@@ -872,14 +872,15 @@ class VoicesAdapter(
 
         val imagesToLoad = news?.parsedImagesArray ?: news?.imagesArray
         imagesToLoad?.let { imagesArray ->
+            val size = imagesArray.size()
             if (!imagesArray.isEmpty()) {
-                if (imagesArray.size() == 1) {
+                if (size == 1) {
                     val ob = imagesArray[0]?.asJsonObject
                     val resourceId = JsonUtils.getString("resourceId", ob)
                     loadLibraryImage(binding, resourceId)
                 } else {
                     binding.llNewsImages.visibility = View.VISIBLE
-                    for (i in 0 until imagesArray.size()) {
+                    for (i in 0 until size) {
                         val ob = imagesArray[i]?.asJsonObject
                         val resourceId = JsonUtils.getString("resourceId", ob)
                         addLibraryImageToContainer(binding, resourceId)

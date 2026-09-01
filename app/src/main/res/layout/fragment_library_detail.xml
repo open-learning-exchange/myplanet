@@ -72,7 +72,7 @@
                         android:layout_gravity="center_vertical"
                         android:background="@drawable/buttonyellow"
                         android:contentDescription="@string/remove"
-                        android:src="@drawable/close_x"
+                        android:src="@drawable/baseline_close_24"
                         android:text="@string/remove"
                         app:tint="@color/md_black_1000" />
                 </LinearLayout>
