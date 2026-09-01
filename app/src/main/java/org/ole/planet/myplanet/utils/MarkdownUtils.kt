@@ -31,6 +31,7 @@ import org.commonmark.node.Image
 object MarkdownUtils {
     @Volatile private var markwonInstance: Markwon? = null
     private val imagePattern = Pattern.compile("!\\[.*?]\\((.*?)\\)")
+    private val linkMovementMethod = CustomLinkMovementMethod()
 
     fun warmUp(context: Context) {
         if (markwonInstance == null) {
@@ -65,7 +66,7 @@ object MarkdownUtils {
     fun setMarkdownText(textView: TextView, markdown: String) {
         val markwon = create(textView.context)
         markwon.setMarkdown(textView, markdown)
-        textView.movementMethod = CustomLinkMovementMethod()
+        textView.movementMethod = linkMovementMethod
     }
 
     private class CustomImageSpan(private val theme: MarkwonTheme, private val url: String) : ClickableSpan() {

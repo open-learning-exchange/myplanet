@@ -1,7 +1,10 @@
 package org.ole.planet.myplanet.utils
 
 import android.text.Layout
+import android.text.method.MovementMethod
 import android.text.style.AlignmentSpan
+import android.widget.TextView
+import androidx.test.core.app.ApplicationProvider
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
@@ -11,6 +14,8 @@ import io.noties.markwon.MarkwonConfiguration
 import io.noties.markwon.RenderProps
 import io.noties.markwon.html.HtmlTag
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -100,5 +105,23 @@ class MarkdownUtilsTest {
     fun AlignTagHandler_supportedTags_returns_align() {
         val handler = MarkdownUtils.AlignTagHandler()
         assertTrue(handler.supportedTags().contains("align"))
+    }
+
+    @Test
+    fun setMarkdownText_reuses_same_movement_method_instance() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        MarkdownUtils.warmUp(context)
+
+        val first = TextView(context)
+        MarkdownUtils.setMarkdownText(first, "# Hello")
+        val firstMovementMethod: MovementMethod? = first.movementMethod
+        assertNotNull(firstMovementMethod)
+
+        val second = TextView(context)
+        MarkdownUtils.setMarkdownText(second, "# World")
+        val secondMovementMethod: MovementMethod? = second.movementMethod
+        assertNotNull(secondMovementMethod)
+
+        assertSame(firstMovementMethod, secondMovementMethod)
     }
 }
