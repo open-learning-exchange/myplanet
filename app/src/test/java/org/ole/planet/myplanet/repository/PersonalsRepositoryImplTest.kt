@@ -10,6 +10,7 @@ import io.mockk.mockkObject
 import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.unmockkObject
+import io.mockk.verify
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -26,6 +27,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.model.Personal
+import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -37,7 +39,7 @@ class PersonalsRepositoryImplTest {
     private lateinit var personalDao: PersonalDao
     private lateinit var apiInterface: ApiInterface
     private lateinit var uploadRepository: UploadRepository
-    private lateinit var context: Context
+    private lateinit var deviceNameProvider: DeviceNameProvider
     private lateinit var repository: PersonalsRepositoryImpl
 
     @Before
@@ -46,21 +48,24 @@ class PersonalsRepositoryImplTest {
         personalDao = mockk(relaxed = true)
         apiInterface = mockk(relaxed = true)
         uploadRepository = mockk(relaxed = true)
-        context = mockk(relaxed = true)
+        deviceNameProvider = mockk(relaxed = true)
+        every { deviceNameProvider.getCustomDeviceName() } returns "mock-custom-device-name"
 
         mockkObject(UrlUtils)
         every { UrlUtils.header } returns "mock-header"
         every { UrlUtils.getUrl() } returns "mock-url"
 
+        // NetworkUtils is no longer used by the repository, but keep its statics mocked in case
+        // shared helpers (e.g. Personal.serialize) reach into it indirectly.
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "mock-unique-id"
         every { NetworkUtils.getDeviceName() } returns "mock-device-name"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "mock-custom-device-name"
+        every { NetworkUtils.getCustomDeviceName(any<Context>()) } returns "mock-custom-device-name"
 
         mockkObject(FileUtils)
         every { FileUtils.getFileNameFromUrl(any()) } returns "test.txt"
 
-        repository = PersonalsRepositoryImpl(personalDao, apiInterface, uploadRepository, context)
+        repository = PersonalsRepositoryImpl(personalDao, apiInterface, uploadRepository, deviceNameProvider)
     }
 
     @After
@@ -135,11 +140,10 @@ class PersonalsRepositoryImplTest {
     }
 
     @Test
-    fun `deletePersonalResource deletes both _id and id`() = runTest {
+    fun `deletePersonalResource deletes by _id or id in a single statement`() = runTest {
         repository.deletePersonalResource("test-id")
 
-        coVerify { personalDao.deleteByDocId("test-id") }
-        coVerify { personalDao.deleteById("test-id") }
+        coVerify(exactly = 1) { personalDao.deleteByIdOrDocId("test-id") }
     }
 
     @Test
@@ -148,14 +152,10 @@ class PersonalsRepositoryImplTest {
         coEvery { personalDao.findByDocId("test-id") } returns personalByDocId
         coEvery { personalDao.findById("test-id") } returns null
 
-        var updateCount = 0
-        repository.updatePersonalResource("test-id") { personal ->
-            personal.title = "New Title"
-            updateCount++
-        }
+        repository.updatePersonalResource("test-id", PersonalUpdate(title = "New Title", description = "Desc"))
 
-        assertEquals(1, updateCount)
         assertEquals("New Title", personalByDocId.title)
+        assertEquals("Desc", personalByDocId.description)
         coVerify(exactly = 1) { personalDao.update(personalByDocId) }
         coVerify(exactly = 0) { personalDao.findById(any()) }
     }
@@ -166,15 +166,36 @@ class PersonalsRepositoryImplTest {
         coEvery { personalDao.findByDocId("test-id") } returns null
         coEvery { personalDao.findById("test-id") } returns personalById
 
-        var updateCount = 0
-        repository.updatePersonalResource("test-id") { personal ->
-            personal.title = "New Title"
-            updateCount++
-        }
+        repository.updatePersonalResource("test-id", PersonalUpdate(title = "New Title", description = "Desc"))
 
-        assertEquals(1, updateCount)
         assertEquals("New Title", personalById.title)
+        assertEquals("Desc", personalById.description)
         coVerify(exactly = 1) { personalDao.update(personalById) }
+    }
+
+    @Test
+    fun `updatePersonalResource leaves unchanged fields alone when null`() = runTest {
+        val personalByDocId = Personal().apply {
+            title = "Old Title"
+            description = "Old Desc"
+        }
+        coEvery { personalDao.findByDocId("test-id") } returns personalByDocId
+
+        repository.updatePersonalResource("test-id", PersonalUpdate(title = "New Title"))
+
+        assertEquals("New Title", personalByDocId.title)
+        assertEquals("Old Desc", personalByDocId.description)
+        coVerify(exactly = 1) { personalDao.update(personalByDocId) }
+    }
+
+    @Test
+    fun `updatePersonalResource does nothing when entity is not found`() = runTest {
+        coEvery { personalDao.findByDocId("missing-id") } returns null
+        coEvery { personalDao.findById("missing-id") } returns null
+
+        repository.updatePersonalResource("missing-id", PersonalUpdate(title = "New Title"))
+
+        coVerify(exactly = 0) { personalDao.update(any()) }
     }
 
     @Test
@@ -209,6 +230,24 @@ class PersonalsRepositoryImplTest {
         assertEquals("new-id", result?.first)
         assertEquals("rev-1", result?.second)
         coVerify { personalDao.updateUploadedStatus("test-id", "new-id", "rev-1") }
+    }
+
+    @Test
+    fun `uploadPersonalDocument sources customDeviceName from DeviceNameProvider without Context`() = runTest {
+        val personal = Personal().apply { id = "test-id" }
+        every { deviceNameProvider.getCustomDeviceName() } returns "provider-device-name"
+
+        val responseJson = JsonObject().apply {
+            addProperty("id", "new-id")
+            addProperty("rev", "rev-1")
+        }
+        val bodySlot = slot<JsonObject>()
+        coEvery { apiInterface.postDoc(any(), any(), any(), capture(bodySlot)) } returns Response.success(responseJson)
+
+        repository.uploadPersonalDocument(personal)
+
+        assertEquals("provider-device-name", bodySlot.captured.get("customDeviceName").asString)
+        verify(exactly = 1) { deviceNameProvider.getCustomDeviceName() }
     }
 
     @Test
