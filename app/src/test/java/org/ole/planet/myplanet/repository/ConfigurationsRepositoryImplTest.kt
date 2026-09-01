@@ -141,7 +141,7 @@ class ConfigurationsRepositoryImplTest {
         val result = repository.checkHealth()
 
         assertEquals("Network connection error", result)
-        verify { Log.e("ConfigurationsRepositoryImpl", "Health access request failed", any<Throwable>()) }
+        verify { Log.e("ConfigurationsRepository", "Health access request failed", any<Throwable>()) }
     }
 
     @Test

@@ -53,10 +53,6 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     private val timeProvider: TimeProvider,
     @PlainGson private val gson: Gson
 ) : ConfigurationsRepository {
-    companion object {
-        private const val TAG = "ConfigurationsRepositoryImpl"
-    }
-
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
     companion object {
