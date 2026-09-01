@@ -5,12 +5,15 @@ import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
+import android.provider.Settings
+import androidx.test.core.app.ApplicationProvider
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -19,6 +22,11 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class)
 class VersionUtilsTest {
+
+    @Before
+    fun setUp() {
+        VersionUtils.resetAndroidIdCacheForTesting()
+    }
 
     @Test
     fun compareVersions_should_return_0_for_equal_versions() {
@@ -231,5 +239,51 @@ class VersionUtilsTest {
 
         val versionName = VersionUtils.getVersionName(mockContext)
         assertNull(versionName)
+    }
+
+    @Test
+    fun getAndroidId_caches_non_null_id() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        Settings.Secure.putString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID,
+            "initial_android_id"
+        )
+
+        val firstCallId = VersionUtils.getAndroidId(context)
+        assertEquals("initial_android_id", firstCallId)
+
+        Settings.Secure.putString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID,
+            "changed_android_id"
+        )
+
+        val secondCallId = VersionUtils.getAndroidId(context)
+        assertEquals("initial_android_id", secondCallId)
+    }
+
+    @Test
+    fun getAndroidId_does_not_cache_null_value() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        Settings.Secure.putString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID,
+            null
+        )
+
+        val firstCallId = VersionUtils.getAndroidId(context)
+        assertNull(firstCallId)
+
+        Settings.Secure.putString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID,
+            "valid_android_id"
+        )
+
+        val secondCallId = VersionUtils.getAndroidId(context)
+        assertEquals("valid_android_id", secondCallId)
     }
 }

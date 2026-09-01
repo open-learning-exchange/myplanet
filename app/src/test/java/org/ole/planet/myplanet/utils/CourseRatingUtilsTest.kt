@@ -89,4 +89,32 @@ class CourseRatingUtilsTest {
         verify { ratingCount.text = "0 ratings" }
         verify { ratingBar.rating = 0f }
     }
+
+    @Test
+    fun showRating_withNullRatingSummary_setsDefaultValues() {
+        every { context.getString(R.string.rating_count_format, 0) } returns "0 ratings"
+
+        CourseRatingUtils.showRating(context, null as org.ole.planet.myplanet.repository.RatingSummary?, average, ratingCount, ratingBar)
+
+        verify { average.text = "0.00" }
+        verify { ratingCount.text = "0 ratings" }
+        verify { ratingBar.rating = 0f }
+    }
+
+    @Test
+    fun showRating_withValidRatingSummary_setsAverageTotalAndUserRating() {
+        val ratingSummary = org.ole.planet.myplanet.repository.RatingSummary(
+            existingRating = null,
+            averageRating = 4.2f,
+            totalRatings = 50,
+            userRating = 5
+        )
+        every { context.getString(R.string.rating_count_format, 50) } returns "50 ratings"
+
+        CourseRatingUtils.showRating(context, ratingSummary, average, ratingCount, ratingBar)
+
+        verify { average.text = "4.20" }
+        verify { ratingCount.text = "50 ratings" }
+        verify { ratingBar.rating = 5.0f }
+    }
 }

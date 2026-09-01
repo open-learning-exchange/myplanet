@@ -31,6 +31,7 @@ import org.commonmark.node.Image
 object MarkdownUtils {
     @Volatile private var markwonInstance: Markwon? = null
     private val imagePattern = Pattern.compile("!\\[.*?]\\((.*?)\\)")
+    private val linkMovementMethod = CustomLinkMovementMethod()
 
     fun warmUp(context: Context) {
         if (markwonInstance == null) {
@@ -65,7 +66,7 @@ object MarkdownUtils {
     fun setMarkdownText(textView: TextView, markdown: String) {
         val markwon = create(textView.context)
         markwon.setMarkdown(textView, markdown)
-        textView.movementMethod = CustomLinkMovementMethod()
+        textView.movementMethod = linkMovementMethod
     }
 
     private class CustomImageSpan(private val theme: MarkwonTheme, private val url: String) : ClickableSpan() {
@@ -84,10 +85,12 @@ object MarkdownUtils {
         width: Int = 150,
         height: Int = 100
     ): String {
-        val matcher = markdownContent?.let { imagePattern.matcher(it) }
-            ?: return markdownContent.orEmpty()
-        val result = StringBuffer()
+        val content = markdownContent ?: return markdownContent.orEmpty()
+        val matcher = imagePattern.matcher(content)
+        val result = StringBuilder()
+        var last = 0
         while (matcher.find()) {
+            result.append(content, last, matcher.start())
             val relativePath = matcher.group(1)
             val modifiedPath = if (relativePath != null && relativePath.startsWith("resources/")) {
                 relativePath.substring("resources/".length)
@@ -95,9 +98,10 @@ object MarkdownUtils {
                 relativePath
             }
             val fullUrl = baseUrl + modifiedPath
-            matcher.appendReplacement(result, "<img src=$fullUrl width=$width height=$height/>")
+            result.append("<img src=$fullUrl width=$width height=$height/>")
+            last = matcher.end()
         }
-        matcher.appendTail(result)
+        result.append(content, last, content.length)
         return result.toString()
     }
 

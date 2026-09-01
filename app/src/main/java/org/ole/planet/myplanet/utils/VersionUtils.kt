@@ -5,10 +5,14 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import androidx.core.content.pm.PackageInfoCompat.getLongVersionCode
 
 object VersionUtils {
     private const val TAG = "VersionUtils"
+
+    @Volatile
+    private var cachedAndroidId: String? = null
 
     fun getVersionCode(context: Context): Int {
         try {
@@ -35,8 +39,18 @@ object VersionUtils {
         return ""
     }
 
-    fun getAndroidId(context: Context): String {
-        return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+    fun getAndroidId(context: Context): String? {
+        cachedAndroidId?.let { return it }
+        val id = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+        if (id != null) {
+            cachedAndroidId = id
+        }
+        return id
+    }
+
+    @VisibleForTesting
+    internal fun resetAndroidIdCacheForTesting() {
+        cachedAndroidId = null
     }
 
     fun isVersionAllowed(currentVersion: String, minApkVersion: String): Boolean {

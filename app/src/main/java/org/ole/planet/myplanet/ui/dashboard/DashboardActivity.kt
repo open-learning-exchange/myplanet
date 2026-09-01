@@ -31,7 +31,9 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
@@ -158,6 +160,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (isFirstLaunch) handleInitialFragment()
         addBackPressCallback()
         collectUiState()
+        startLastSyncStatusTicker()
 
         lifecycleScope.launch {
             user = userSessionManager.getUserModel()
@@ -444,12 +447,17 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
+    internal fun isAtRootDashboard(): Boolean {
+        val currentFrag = supportFragmentManager.findFragmentById(R.id.fragment_container)
+        return isRootDashboardFragment(currentFrag)
+    }
+
     private fun addBackPressCallback() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 when {
                     result?.isDrawerOpen == true -> result?.closeDrawer()
-                    supportFragmentManager.backStackEntryCount > 1 -> FragmentNavigator.popBackStack(supportFragmentManager)
+                    supportFragmentManager.backStackEntryCount > 0 && !isAtRootDashboard() -> FragmentNavigator.popBackStack(supportFragmentManager)
                     else -> promptLogout()
                 }
             }
@@ -598,6 +606,17 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             TimeUtils.getRelativeTime(lastSyncMillis, timeProvider)
         }
         binding.dashboardLastSyncStatus.text = getString(R.string.dashboard_sync_status, timeText)
+    }
+
+    private fun startLastSyncStatusTicker() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                while (true) {
+                    delay(LAST_SYNC_STATUS_REFRESH_INTERVAL_MS)
+                    updateLastSyncStatus()
+                }
+            }
+        }
     }
 
     private fun onRealmDataChange() {
@@ -1124,5 +1143,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     companion object {
         const val MESSAGE_PROGRESS = "message_progress"
         var isFromNotificationAction = false
+        private const val LAST_SYNC_STATUS_REFRESH_INTERVAL_MS = 60_000L
+
+        fun isRootDashboardFragment(fragment: Fragment?): Boolean {
+            return fragment == null || fragment is BellDashboardFragment || fragment is InactiveDashboardFragment
+        }
     }
 }

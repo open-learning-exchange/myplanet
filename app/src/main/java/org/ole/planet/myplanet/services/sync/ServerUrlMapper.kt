@@ -10,6 +10,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
 class ServerUrlMapper @Inject constructor(
@@ -55,8 +56,9 @@ class ServerUrlMapper @Inject constructor(
         val altUri = alternativeUrl.toUri()
         val urlUser: String
         val urlPwd: String
+        val altUserInfo = altUri.userInfo
 
-        if (alternativeUrl.contains("@")) {
+        if (altUserInfo != null) {
             val userinfo = getUserInfo(altUri)
             urlUser = userinfo[0]
             urlPwd = userinfo[1]
@@ -73,7 +75,7 @@ class ServerUrlMapper @Inject constructor(
             altUri.port
         }
 
-        val couchdbURL = if (alternativeUrl.contains("@")) {
+        val couchdbURL = if (altUserInfo != null) {
             alternativeUrl
         } else {
             "$scheme://$urlUser:$urlPwd@$host:$port"
@@ -89,6 +91,7 @@ class ServerUrlMapper @Inject constructor(
             putBoolean("isAlternativeUrl", true)
             apply()
         }
+        UrlUtils.invalidateHeaderCache()
     }
 
     suspend fun updateServerIfNecessary(
