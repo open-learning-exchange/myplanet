@@ -8,14 +8,6 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import org.ole.planet.myplanet.utils.JsonUtils
 
-/**
- * Room replacement for the former `Feedback` model. Uploaded (Room upload path) and
- * synced; persistence goes through [org.ole.planet.myplanet.data.room.dao.FeedbackDao]. The replies
- * are stored as a JSON array string in [messages]; the derived [messageList]/[message] views are
- * ignored by Room. The parsed [JsonArray] is memoized in [cachedMessages] (ignored by Room) and
- * invalidated whenever [messages] is reassigned (including via [setMessages]), so repeated reads
- * don't re-parse the JSON string.
- */
 @Entity(tableName = "feedback", indices = [androidx.room.Index("openTime"), androidx.room.Index("owner"), androidx.room.Index("isUploaded")])
 open class Feedback {
     @PrimaryKey
