@@ -54,6 +54,7 @@ class InlineResourceAdapter(
 
     private var externalFilesDir: File? = null
     private val textCache = mutableMapOf<String, String>()
+    private val htmlCoverCache = mutableMapOf<String, File?>()
 
     private var adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
 
@@ -91,6 +92,7 @@ class InlineResourceAdapter(
                 val file = FileUtils.getLibraryFile(dir, prev.id, address)
                 val prefix = file.absolutePath
                 textCache.keys.removeAll { it.startsWith(prefix) }
+                htmlCoverCache.remove(prev.id)
             }
         }
     }
@@ -107,6 +109,7 @@ class InlineResourceAdapter(
         super.onDetachedFromRecyclerView(recyclerView)
         adapterScope.cancel()
         textCache.clear()
+        htmlCoverCache.clear()
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
@@ -185,6 +188,7 @@ class InlineResourceAdapter(
                     mimeType?.startsWith("video") == true -> showVideoPreview(binding, context, resourceFile)
                     mimeType?.contains("pdf") == true -> showPdfPreview(holder, resourceFile)
                     mimeType?.startsWith("audio") == true -> showAudioPreview(holder, resourceFile)
+                    mimeType?.contains("html") == true -> showHtmlPreview(binding, context, resource.id, File(externalFilesDir, "ole/${resource.id}"))
                     mimeType?.contains("csv") == true || resource.resourceLocalAddress?.endsWith(".csv") == true -> showCsvPreview(holder, resourceFile)
                     mimeType?.startsWith("text") == true || resource.resourceLocalAddress?.endsWith(".txt") == true || resource.resourceLocalAddress?.endsWith(".md") == true -> showTextPreview(holder, resourceFile)
                 }
@@ -236,6 +240,26 @@ class InlineResourceAdapter(
             holder.binding.ivResourcePreview.scaleType = ImageView.ScaleType.FIT_CENTER
             holder.binding.ivResourcePreview.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
             holder.binding.ivResourcePreview.setImageBitmap(bitmap)
+        }
+    }
+
+    private suspend fun showHtmlPreview(binding: ItemInlineResourceBinding, context: Context, resourceId: String, resourceDir: File) {
+        val coverImage = if (htmlCoverCache.containsKey(resourceId)) {
+            htmlCoverCache.getValue(resourceId)
+        } else {
+            withContext(dispatcherProvider.io) { FileUtils.findHtmlCoverImage(resourceDir) }.also {
+                htmlCoverCache[resourceId] = it
+            }
+        }
+        if (coverImage != null) {
+            binding.ivResourcePreview.visibility = View.VISIBLE
+            Glide.with(context)
+                .load(coverImage)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .centerCrop()
+                .placeholder(R.drawable.ole_logo)
+                .error(R.drawable.ole_logo)
+                .into(binding.ivResourcePreview)
         }
     }
 

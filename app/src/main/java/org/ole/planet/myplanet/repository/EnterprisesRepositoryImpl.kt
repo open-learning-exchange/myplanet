@@ -1,12 +1,13 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.Context
 import com.google.gson.JsonObject
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.MyTeam
@@ -16,6 +17,7 @@ import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.distinctByContent
 
 class EnterprisesRepositoryImpl @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     private val teamDao: TeamDao,
     private val timeProvider: TimeProvider,
     private val dispatcherProvider: DispatcherProvider
@@ -127,7 +129,7 @@ class EnterprisesRepositoryImpl @Inject constructor(
 
     private suspend fun attachTeamImage(teamId: String, imageName: String, imageData: ByteArray) {
         if (teamId.isBlank()) return
-        val destFile = MyTeam.getAttachmentFile(MainApplication.context, teamId, imageName) ?: return
+        val destFile = MyTeam.getAttachmentFile(context, teamId, imageName) ?: return
         withContext(dispatcherProvider.io) {
             destFile.parentFile?.mkdirs()
             destFile.writeBytes(imageData)

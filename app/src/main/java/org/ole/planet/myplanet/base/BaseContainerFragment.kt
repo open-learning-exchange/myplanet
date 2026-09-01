@@ -196,6 +196,10 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
 
             if (indexExists) {
+                val resourceId = items.resourceId
+                if (resourceId != null) {
+                    resourcesRepository.reconcileHtmlResourceOffline(resourceId)
+                }
                 resourcesRepository.trackResourceOpen(items)
                 val intent = Intent(activity, WebViewActivity::class.java)
                 intent.putExtra("RESOURCE_ID", items.id)
