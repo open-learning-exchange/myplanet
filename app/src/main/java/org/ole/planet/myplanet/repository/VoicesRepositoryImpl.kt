@@ -153,7 +153,12 @@ class VoicesRepositoryImpl @Inject constructor(
             .map { allNews ->
                 allNews.mapNotNull { news ->
                     news.viewIn?.takeIf { it.isNotEmpty() }?.let { s ->
-                        news.parsedViewIn = try { gson.fromJson(s, JsonArray::class.java) } catch (e: Exception) { null }
+                        news.parsedViewIn = try {
+                            gson.fromJson(s, JsonArray::class.java)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            null
+                        }
                     }
 
                     if (isVisibleToUser(news, userIdentifier)) {
@@ -194,6 +199,7 @@ class VoicesRepositoryImpl @Inject constructor(
                 val array = try {
                     if (viewInStr.isNullOrEmpty()) JsonArray() else gson.fromJson(viewInStr, JsonArray::class.java)
                 } catch (e: Exception) {
+                    e.printStackTrace()
                     null
                 } ?: JsonArray()
 
@@ -237,6 +243,7 @@ class VoicesRepositoryImpl @Inject constructor(
         val ar = try {
             if (viewInStr.isNullOrEmpty()) null else gson.fromJson(viewInStr, JsonArray::class.java)
         } catch (e: Exception) {
+            e.printStackTrace()
             null
         }
 
