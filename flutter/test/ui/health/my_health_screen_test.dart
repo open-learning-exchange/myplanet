@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
@@ -52,6 +53,7 @@ void main() {
   Future<UserRow> seedPatient(
     AppDatabase db, {
     String id = 'user-a',
+    String? couchId,
     String? name = 'alice',
     String? firstName = 'Alice',
     String? lastName = 'Smith',
@@ -62,7 +64,9 @@ void main() {
     await db.userDao.upsert(
       UsersCompanion.insert(
         id: id,
-        couchId: Value(id),
+        // A member registered on this device keeps its local id and gains a
+        // `couchId` when the upload lands, so the two are not always equal.
+        couchId: Value(couchId ?? id),
         name: Value(name),
         firstName: Value(firstName),
         lastName: Value(lastName),
@@ -186,9 +190,16 @@ void main() {
           healthRepositoryProvider.overrideWith((ref) => repoFor(db)),
         ],
         pushTargets: {
-          '/health/add': (_) => const Scaffold(body: Text('add-health')),
-          '/health/examination': (_) =>
-              const Scaffold(body: Text('add-examination')),
+          // The query is rendered so a test can assert which patient the
+          // editors were handed.
+          '/health/add': (context) => Scaffold(
+            body: Text('add-health?${GoRouterState.of(context).uri.query}'),
+          ),
+          '/health/examination': (context) => Scaffold(
+            body: Text(
+              'add-examination?${GoRouterState.of(context).uri.query}',
+            ),
+          ),
         },
       ),
     );
@@ -445,6 +456,74 @@ void main() {
   });
 
   group('actions', () {
+    /// `showAlert`'s Edit is `putExtra("userId", mh._id)` — the profile row's
+    /// own id, the one that row was created under. The *user* row's `id` is
+    /// not interchangeable with it: for a member registered on this device the
+    /// two differ, and handing over the user id makes the form miss the
+    /// profile row, mint a second one under a new key, and drop the
+    /// examination it is editing out of the patient's record.
+    testWidgets('editing an examination carries the profile row id', (
+      tester,
+    ) async {
+      final db = AppDatabase.memory();
+      final user = await seedPatient(
+        db,
+        id: '1750000000000',
+        couchId: 'org.couchdb.user:jane',
+      );
+      await seedHealthRecord(
+        db,
+        repoFor(db),
+        userId: 'org.couchdb.user:jane',
+        examinations: [
+          {'temperature': 38.2, 'pulse': 88},
+        ],
+      );
+      await pumpScreen(tester, session: user, database: db);
+
+      // A tall surface rather than `scrollTo`: dragging the body far enough
+      // to reach the history strip pulls the `RefreshIndicator`, whose reload
+      // swaps the whole body for a spinner mid-drag and leaves
+      // `dragUntilVisible` with no scrollable to hold on to.
+      tester.view.physicalSize = const Size(1200, 4000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpAndSettle();
+
+      // The card labels its vitals (`Temp: 38.2°C`), so this is a substring.
+      await tester.tap(find.textContaining('38.2°C'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Edit'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('userId=org.couchdb.user%3Ajane'),
+        findsOneWidget,
+      );
+    });
+
+    /// `updateHealth` is `putExtra("userId", userId)`, the selected patient —
+    /// the port sent nobody and the editor fell back to the signed-in user.
+    testWidgets('the profile editor carries the selected patient', (
+      tester,
+    ) async {
+      final db = AppDatabase.memory();
+      final user = await seedPatient(
+        db,
+        id: '1750000000000',
+        couchId: 'org.couchdb.user:jane',
+      );
+      await pumpScreen(tester, session: user, database: db);
+
+      await tester.tap(find.byIcon(Icons.edit));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('userId=org.couchdb.user%3Ajane'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('offers add-record to a user without the health role', (
       tester,
     ) async {

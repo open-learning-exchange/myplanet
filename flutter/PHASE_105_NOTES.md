@@ -200,9 +200,13 @@ in its `UserDao`.
   them and `getByProfileId` reports a single examination while the database
   holds two. The test counts rows, not record entries; asserted the other way it
   passes on the broken code.
-* **A stale error outlived its retry.** `error ?? this.error` cannot clear, so
-  the screen went on reporting a failure the retry had fixed. `copyWith` takes a
-  `clearError` flag and `save` sets it.
+* **A stale error could not be cleared.** `error ?? this.error` cannot clear,
+  so a failed save's message outlived its retry. `copyWith` takes a
+  `clearError` flag and `save` sets it. One correction to the first draft of
+  these notes, which claimed the screen "went on reporting a failure the retry
+  had fixed": it did not, because the screen read `examState.error` nowhere at
+  all. That was a latent defect with no symptom until the failure branch below
+  gave it one — which is now what depends on it.
 * **`HealthQueue.queuePending` read `sessionProvider` with `valueOrNull`** on a
   path where nothing watches it, so every queued outbox row carried a null user.
   Awaited now, inside the caller's `try` — Phase 100's rule.
@@ -212,6 +216,111 @@ in its `UserDao`.
   the matches for "a", and two quick taps in the picker could leave the screen
   on the first patient. Both notifiers now carry a generation counter and a
   superseded request publishes nothing.
+
+### A second round, after the parity audit
+
+A `parity-auditor` pass over the finished work confirmed the nine claims it was
+asked to challenge — with one magnitude error in the eighth — and found nine
+more divergences. Six are fixed here, each demonstrated failing first.
+
+**The Edit action handed the form the wrong id, and this phase is what made it
+reachable.** `HealthExaminationAdapter.showAlert`'s Edit is
+`putExtra("userId", mh._id)` — the *profile row's* own id, the id that row was
+created under. The new `&userId=` on the Edit route carried
+`data.user?.id`, the **user** row's id, and the two are not interchangeable:
+for a member registered on this device they differ for good. Handing over the
+user id made the form miss the profile row, `initHealth()` mint a second
+`userKey`, `saveHealthProfileBlob` create a *second* profile row, and the
+examination being edited drop out of `getByProfileId(oldKey)` — after which two
+rows matched the patient and the screen went quiet again, the exact symptom this
+phase set out to remove. The card now takes `profileRowId` (which was already
+in hand as `record.healthPojo.id`) and the Edit push uses it.
+
+**`conditions` crossed the wire in the wrong shape, in both directions.**
+`serialize` is `addJson(object, "conditions", gson.fromJson(conditions,
+JsonObject))` — a nested JSON **object**, omitted when null or empty — and
+`fromJson` reads it back with `gson.toJson(getJsonObject("conditions", act))`.
+The port uploaded the stored JSON *string*, which `getJsonObject` sees as a
+primitive and discards, and on sync-in stored `doc['conditions']?.toString()`,
+which for a decoded Map is `{Malaria: true}` — not JSON, so `parseConditions`
+threw and returned `{}`. Both halves lose data silently and a re-save makes it
+permanent: tick a diagnosis in either app, sync, and the other shows none;
+save an edit there and the ticks are gone. Two new top-level functions
+(`conditionsObject`, `conditionsJsonFromDoc`) with tests on both directions.
+
+**Nothing put a saved examination on screen.** `MyHealthFragment.onResume`
+re-runs `selectPatient(userId)`, which is what makes a just-recorded
+examination appear when the activity finishes. The port popped and left
+`MyHealthScreen`'s state untouched, so the record was saved and invisible until
+the next sync — the same gap this phase fixed for the *profile* editor and
+missed for the examination editor, which is the screen the phase was about.
+
+**A failed save reported success and closed the form.** `saveResult == false`
+toasts `unable_to_add_health_record` and deliberately does **not** close the
+activity. `save` catches everything into `state.error`, so the screen's own
+`try` always succeeded: a drift failure reported a record that had been saved.
+The screen now reads the state back (one new `app_en.arb` key,
+`unableToAddHealthRecord`).
+
+Writing that test immediately caught the overreach in it: with the harness's
+real `serverConfigProvider` reaching `PlanetPrefs`, the *queue* step threw and
+a perfectly saved record reported as failed. So `_onSaved` sits in its own
+`try` now — the row is durable and carries `isUpdated`, so the next drain takes
+it anyway, and Kotlin's false `saveResult` means the database write failed, not
+the upload. Phase 103's user-information screen draws the same line for the
+same reason.
+
+**`getByIdOrUserId` lacks Kotlin's `LIMIT 1`** (`HealthExaminationDao.kt:11`),
+so where two rows match — a device carrying rows from the older build — Kotlin
+picks one and keeps working while `getSingleOrNull` throws out of every caller
+and `selectPatient` swallows it into a screen that never updates again. Added,
+for the same reason `UserDao.getById` got one.
+
+**`TimeUtils.getAge` was off by one for a future date of birth.**
+`Period.between` truncates toward zero, so a date three years and nine months
+away is -3; the same before-the-anniversary decrement applied to a negative
+difference gives -4. Only reachable from a synced profile (the picker caps at
+today), but it is the `age` an examination uploads. The port also accepted two
+shapes the Kotlin formatters reject (`19900615`, and a timestamp whose
+milliseconds are not `.000`), which now return 0. The `getAge` tests moved to
+`test/core/utils/time_utils_test.dart`, where their siblings live.
+
+### From the audit, found and deliberately left
+
+* **`serialize` derives `_id` from `row.id`** where Kotlin uses `userId`
+  (`HealthExamination.kt:96`, and it omits `_id` entirely while `userId` is
+  empty). Identical for every examination and for a profile row created after
+  the account uploaded; different for the profile row of a member whose account
+  uploaded later. Left because changing it re-keys the uploaded document for
+  rows an older build already wrote — a legacy-row question that wants its own
+  slice, alongside `getUpdated()`'s `userId.isNotNull()` vs Kotlin's
+  `userId != ''`.
+* **`UserMapper.fromDoc` keys the cached row on the document `_id`
+  unconditionally**, where `buildUserFromJson` reuses the existing row through
+  `getUserByAnyId` and keeps its local `id` (`UserRepositoryImpl.kt:297-308`).
+  So a member registered offline who later signs in online can end up with two
+  rows, and `getById(couchId)` now matches both — `limit(1)` then picks by scan
+  order, which for this slice can resolve the patient to the row *without* the
+  `key`/`iv` that encrypted their records. The fix belongs on the mapper, not
+  on `getById`; it is out of this lane and worth a round of its own.
+* **The examination form's vitals are all optional here and all required in
+  Kotlin.** `isValidInput` ends each check with `text.isNotEmpty`, so a blank
+  form cannot be saved, and it *accepts* a non-numeric value (`getFloat` falls
+  through to 0, which `|| == 0f` allows). The port allows a blank record and
+  rejects `0` and non-numeric text. Left alone: it is a gate change with its
+  own risk, and replicating the accept-anything-as-zero half is a quirk worth
+  discussing rather than porting silently.
+* **Kotlin does not open the detail dialog for a record it cannot decrypt**
+  (`HealthExaminationAdapter.kt:118-123`), and its title is the date alone
+  where the port's is `date — creator`.
+* **A cleared birth date cannot be cleared**: `updateUserHealthProfile` always
+  writes `dob` and `convertDDMMYYYYToISO("")` is `""`;
+  `saveHealthProfile` keeps the stored value when the field is blank.
+* The whole-`conditions`-map deviation (Kotlin's `mapConditions` starts empty
+  and only collects checkboxes the user toggles, so a Kotlin re-save drops the
+  ones it did not touch) belongs in `docs/kotlin-to-flutter-migration.md` under
+  *Faithful quirks*. Not added here, to keep this round off a file other lanes
+  are editing — **for the integrator to fold in.**
 
 ### Inherited red: `public_survey_screen_test`
 
@@ -280,7 +389,7 @@ same wrong calls happily.
 ## For the integrator
 
 * **New `app_en.arb` keys**: `summaryOfAchievements`, `myGoalsDescription`,
-  `myPurposeDescription`. **Changed**: `fileNotFound` now takes `{fileName}`
+  `myPurposeDescription`, `unableToAddHealthRecord`. **Changed**: `fileNotFound` now takes `{fileName}`
   (with a `placeholders` block). The five locale files are untouched, so those
   four strings fall back to English / drop the filename until the translation
   pass.

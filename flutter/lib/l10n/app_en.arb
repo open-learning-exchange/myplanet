@@ -992,6 +992,7 @@
   "conditions": "Conditions",
   "selfExamination": "Self-examination",
   "healthRecordAdded": "Health record added successfully",
+  "unableToAddHealthRecord": "Unable to add health record.",
   "selectHealthMember": "Select member",
   "newPatient": "New patient",
   "sortJoinDateDesc": "Newest first",

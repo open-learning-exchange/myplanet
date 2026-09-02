@@ -659,9 +659,29 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
 
       if (!mounted) return;
 
+      // `saveResult` is a per-save event: false toasts
+      // `unable_to_add_health_record` and leaves the form open, true toasts
+      // and closes. `save` swallows its own failures into `state.error`, so
+      // without reading that back every failure — a drift error, a session
+      // that will not resolve — reported a record that had been saved.
+      final state = ref.read(examinationNotifierProvider(params));
+      if (!state.saved || state.error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).unableToAddHealthRecord),
+          ),
+        );
+        return;
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context).healthRecordAdded)),
       );
+      // `MyHealthFragment.onResume` re-selects the patient when this screen
+      // finishes, which is what puts the new examination on the strip. Without
+      // it the record was saved and invisible until the next sync.
+      await ref.read(patientDetailProvider.notifier).refresh();
+      if (!mounted) return;
       context.pop();
     } catch (e) {
       if (!mounted) return;

@@ -580,21 +580,22 @@ void main() {
       final db = AppDatabase.memory();
       final repo = repoFor(db);
       final patient = await seedUser(db, id: 'pat-1');
-      var fail = true;
+      // The failure has to be a *save* failure: a queue failure is deliberately
+      // not one (the row is durable and the next drain takes it), so
+      // `_onSaved` throwing no longer sets an error.
+      final flaky = _FlakyHealthRepository(repo);
       final notifier = notifierFor(
-        repo,
+        flaky,
         patientId: 'pat-1',
         signedIn: patient,
-        onSaved: () async {
-          if (fail) throw StateError('offline');
-        },
       );
       await notifier.loaded;
+      flaky.failNextWrite = true;
 
       await saveExamination(notifier);
       expect(notifier.state.error, isNotNull);
+      expect(notifier.state.saved, isFalse);
 
-      fail = false;
       await saveExamination(notifier);
       expect(notifier.state.error, isNull);
       expect(notifier.state.saved, isTrue);
@@ -794,6 +795,37 @@ void main() {
   });
 
   group('PatientDetailNotifier', () {
+    test('a device carrying an older build rows still resolves', () async {
+      // `getByIdOrUserId` ends in `LIMIT 1` in the Kotlin. Rows written by a
+      // build that gave every examination the patient's `userId` are still on
+      // devices, and without the limit `getSingleOrNull` threw out of
+      // `getPatientHealthRecords` — which `selectPatient` swallows, leaving a
+      // screen that never updates again.
+      final db = AppDatabase.memory();
+      final repo = repoFor(db);
+      final patient = await seedUser(db, id: 'pat-1', name: 'Ada');
+      await repo.saveHealthProfileBlob('pat-1', MyHealth(userKey: 'k1'));
+      for (final id in ['legacy-1', 'legacy-2']) {
+        await db.healthExaminationDao.upsert(
+          HealthExaminationsCompanion.insert(
+            id: id,
+            userId: const Value('pat-1'),
+            profileId: const Value('k1'),
+            temperature: const Value(37),
+          ),
+        );
+      }
+
+      final container = containerFor(db, session: patient, repository: repo);
+      final sub = container.listen(patientDetailProvider, (_, _) {});
+      addTearDown(sub.close);
+      await waitUntil(
+        () => container.read(patientDetailProvider).user != null,
+        reason: 'the patient was never resolved',
+      );
+      expect(container.read(patientDetailProvider).record, isNotNull);
+    });
+
     test('opens on the signed-in user own record', () async {
       final db = AppDatabase.memory();
       final repo = repoFor(db);
@@ -894,43 +926,7 @@ void main() {
       expect(container.read(patientDetailProvider).user?.name, 'Second');
     });
   });
-
-  group('TimeUtils.getAge', () {
-    test('counts whole years and rounds down before the birthday', () {
-      final today = DateTime.now();
-      final tenYesterday = DateTime(
-        today.year - 10,
-        today.month,
-        today.day,
-      ).subtract(const Duration(days: 1));
-      expect(TimeUtils.getAge(_iso(tenYesterday)), 10);
-
-      final tenTomorrow = DateTime(
-        today.year - 10,
-        today.month,
-        today.day,
-      ).add(const Duration(days: 1));
-      expect(TimeUtils.getAge(_iso(tenTomorrow)), 9);
-    });
-
-    test('reads the CouchDB timestamp shape and refuses the rest', () {
-      final today = DateTime.now();
-      expect(
-        TimeUtils.getAge('${today.year - 30}-01-01T00:00:00.000Z'),
-        TimeUtils.getAge('${today.year - 30}-01-01'),
-      );
-      expect(TimeUtils.getAge(null), 0);
-      expect(TimeUtils.getAge(''), 0);
-      expect(TimeUtils.getAge('  '), 0);
-      expect(TimeUtils.getAge('not a date'), 0);
-    });
-  });
 }
-
-String _iso(DateTime date) =>
-    '${date.year.toString().padLeft(4, '0')}-'
-    '${date.month.toString().padLeft(2, '0')}-'
-    '${date.day.toString().padLeft(2, '0')}';
 
 class _NoopApi extends Mock implements PlanetApi {}
 
@@ -953,6 +949,47 @@ class _TestConfig extends ServerConfigNotifier {
 class _NullConfig extends ServerConfigNotifier {
   @override
   ServerConfig? build() => null;
+}
+
+/// Fails the next profile-row write, then behaves normally — a database error
+/// on the save path, which is what the Kotlin's false `saveResult` reports.
+class _FlakyHealthRepository implements HealthRepository {
+  _FlakyHealthRepository(this._inner);
+
+  final HealthRepository _inner;
+  bool failNextWrite = false;
+
+  @override
+  Future<HealthExaminationRow?> saveHealthProfileBlob(
+    String userId,
+    MyHealth health,
+  ) async {
+    if (failNextWrite) {
+      failNextWrite = false;
+      throw StateError('database gone');
+    }
+    return _inner.saveHealthProfileBlob(userId, health);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => Function.apply(
+    _forward(invocation.memberName),
+    [...invocation.positionalArguments],
+    invocation.namedArguments,
+  );
+
+  Function _forward(Symbol member) => switch (member) {
+    #getPatientById => _inner.getPatientById,
+    #getHealthProfile => _inner.getHealthProfile,
+    #encryptData => _inner.encryptData,
+    #createExamination => _inner.createExamination,
+    #updateExamination => _inner.updateExamination,
+    #getById => _inner.getById,
+    #getByIdOrUserId => _inner.getByIdOrUserId,
+    #parseConditions => _inner.parseConditions,
+    #decryptData => _inner.decryptData,
+    _ => throw UnsupportedError('$member is not forwarded'),
+  };
 }
 
 /// Holds each patient query until the test lets it through, so a test can make

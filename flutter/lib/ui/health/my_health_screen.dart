@@ -345,6 +345,7 @@ class _HealthContent extends ConsumerWidget {
                             userId: data.user?.id ?? '',
                             userMap: data.userMap,
                             createdBy: data.createdByOf[exam.id],
+                            profileRowId: data.examination?.id,
                           );
                         },
                       ),
@@ -461,6 +462,7 @@ class _ExaminationCard extends ConsumerWidget {
     required this.userId,
     required this.userMap,
     this.createdBy,
+    this.profileRowId,
   });
   final HealthExaminationRow exam;
   final String userId;
@@ -469,6 +471,15 @@ class _ExaminationCard extends ConsumerWidget {
   /// The examiner from the record's decrypted `data`, not the `creatorId`
   /// column — see [HealthRecord.createdByOf].
   final String? createdBy;
+
+  /// The patient's profile row id, which the Edit action passes on as the
+  /// examination form's patient: `showAlert`'s Edit is
+  /// `putExtra("userId", mh._id)`, the id that row was created under. The
+  /// user row's `id` is not interchangeable with it — for a member registered
+  /// on this device the two differ, and the form would then mint a second
+  /// profile row under a new key and drop the examination it was editing out
+  /// of the patient's record.
+  final String? profileRowId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -564,6 +575,7 @@ class _ExaminationCard extends ConsumerWidget {
         userId: userId,
         userMap: userMap,
         createdBy: createdBy,
+        profileRowId: profileRowId,
       ),
     );
   }
@@ -581,6 +593,7 @@ class _ExaminationDetailDialog extends ConsumerWidget {
     required this.userId,
     required this.userMap,
     this.createdBy,
+    this.profileRowId,
   });
   final HealthExaminationRow exam;
   final String userId;
@@ -588,6 +601,9 @@ class _ExaminationDetailDialog extends ConsumerWidget {
 
   /// See [HealthRecord.createdByOf].
   final String? createdBy;
+
+  /// See [_ExaminationCard.profileRowId].
+  final String? profileRowId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -694,7 +710,7 @@ class _ExaminationDetailDialog extends ConsumerWidget {
             Navigator.of(context).pop();
             context.push(
               '${Routes.addExamination}?id=${Uri.encodeQueryComponent(exam.id)}'
-              '&userId=${Uri.encodeQueryComponent(userId)}',
+              '&userId=${Uri.encodeQueryComponent(profileRowId ?? userId)}',
             );
           },
           child: Text(l10n.edit),

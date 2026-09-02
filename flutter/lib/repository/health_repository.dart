@@ -774,7 +774,7 @@ class HealthRepository {
       weight: Value(_parseDouble(doc['weight'])),
       vision: Value(doc['vision']?.toString()),
       hearing: Value(doc['hearing']?.toString()),
-      conditions: Value(doc['conditions']?.toString()),
+      conditions: Value(conditionsJsonFromDoc(doc['conditions'])),
       selfExamination: Value(doc['selfExamination'] == true),
       planetCode: Value(doc['planetCode']?.toString()),
       hasInfo: Value(doc['hasInfo'] == true),
@@ -829,7 +829,39 @@ class HealthRepository {
       if (row.creatorId != null) 'creatorId': row.creatorId,
       if (row.gender != null) 'gender': row.gender,
       'age': row.age,
-      if (row.conditions != null) 'conditions': row.conditions,
+      // `addJson(object, "conditions", gson.fromJson(conditions, JsonObject))`
+      // — a nested object, omitted when null or empty. Sending the stored JSON
+      // *string* instead put a primitive where `getJsonObject` expects an
+      // object, so Kotlin read no conditions at all and its next save of the
+      // same record overwrote them with its own map.
+      if (conditionsObject(row.conditions) != null)
+        'conditions': conditionsObject(row.conditions),
     };
+  }
+
+  /// The `conditions` map as a JSON object, or null when there is nothing to
+  /// send — `JsonUtils.addJson` skips a null or empty object.
+  static Map<String, dynamic>? conditionsObject(String? conditionsJson) {
+    if (conditionsJson == null || conditionsJson.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(conditionsJson);
+      if (decoded is! Map || decoded.isEmpty) return null;
+      return decoded.map((key, value) => MapEntry(key.toString(), value));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// The stored form of a synced document's `conditions`.
+  ///
+  /// `conditions = gson.toJson(getJsonObject("conditions", act))` — the nested
+  /// object, re-encoded as JSON. `toString()` on the decoded Map, which is
+  /// what this did, yields `{Malaria: true}`: not JSON, so `parseConditions`
+  /// threw and the record read as having no conditions, and saving that edit
+  /// wrote the empty map back over them.
+  static String? conditionsJsonFromDoc(dynamic value) {
+    if (value is Map) return jsonEncode(value);
+    if (value is String && value.isNotEmpty) return value;
+    return null;
   }
 }

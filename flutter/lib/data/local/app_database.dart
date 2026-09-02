@@ -2731,9 +2731,18 @@ class HealthExaminationDao extends DatabaseAccessor<AppDatabase>
   HealthExaminationDao(super.db);
 
   /// Get health examination by id or userId.
-  Future<HealthExaminationRow?> getByIdOrUserId(String id) => (select(
-    healthExaminations,
-  )..where((h) => h.id.equals(id) | h.userId.equals(id))).getSingleOrNull();
+  ///
+  /// `HealthExaminationDao.getByIdOrUserId` ends in `LIMIT 1`, and that is not
+  /// decoration: where two rows match — a device that carries rows from an
+  /// older build, or two profile rows for one patient — Kotlin picks one and
+  /// keeps working while `getSingleOrNull` throws `Bad state: Too many
+  /// elements` out of every caller, which `selectPatient` then swallows into a
+  /// screen that silently stops updating.
+  Future<HealthExaminationRow?> getByIdOrUserId(String id) =>
+      (select(healthExaminations)
+            ..where((h) => h.id.equals(id) | h.userId.equals(id))
+            ..limit(1))
+          .getSingleOrNull();
 
   /// Get health examination by id.
   Future<HealthExaminationRow?> getById(String id) => (select(

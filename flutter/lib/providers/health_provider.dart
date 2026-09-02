@@ -54,7 +54,6 @@ final healthDataProvider = FutureProvider.family<HealthData?, String>((
   final userDao = ref.watch(userDaoProvider);
   final user = await userDao.getById(userId);
   final examination = await repo.getByIdOrUserId(userId);
-  final examinations = await repo.getForUser(userId);
 
   // `data` is AES ciphertext, exactly as `HealthExaminationActivity` writes
   // it. Parsing it as JSON — which is what this did — always threw, and the
@@ -63,12 +62,11 @@ final healthDataProvider = FutureProvider.family<HealthData?, String>((
     await repo.decryptData(userId, examination?.data),
   );
 
-  return HealthData(
-    user: user,
-    examination: examination,
-    myHealth: myHealth,
-    examinations: examinations,
-  );
+  // No examination list: `loadHealthData` carries none, and `getForUser`
+  // matches on `userId`, which an examination row does not key by — see
+  // `createExamination`. The one consumer (`AddHealthActivity`'s form) reads
+  // the user and the profile.
+  return HealthData(user: user, examination: examination, myHealth: myHealth);
 });
 
 /// Decrypts a single examination's encrypted `data` blob for display in the
@@ -453,7 +451,17 @@ class ExaminationNotifier extends StateNotifier<ExaminationState> {
       // Queued from inside `save` rather than from each screen: an
       // examination that reaches the database and not the outbox is the
       // failure this whole path exists to prevent.
-      await _onSaved?.call();
+      //
+      // In its own `try` because the row is already durable and carries
+      // `isUpdated`, so the next drain queues it anyway: a server config that
+      // is not loaded yet, or a session that will not resolve, is not a
+      // failure to save, and reporting it as one would tell the examiner their
+      // record was lost. `saveExamination`'s own failure — the database write
+      // — is what the Kotlin's false `saveResult` means. Phase 103's
+      // user-information screen draws the same line.
+      try {
+        await _onSaved?.call();
+      } catch (_) {}
 
       state = state.copyWith(isSaving: false, saved: true);
     } catch (e) {
