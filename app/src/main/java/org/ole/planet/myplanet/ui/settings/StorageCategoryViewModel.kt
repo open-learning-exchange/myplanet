@@ -24,7 +24,10 @@ data class StorageCategoryUiState(
     val isLoading: Boolean = false,
     val isDeleting: Boolean = false,
     val isEmpty: Boolean = false
-)
+) {
+    val checkedCount: Int get() = items.count { it.isChecked }
+    val allChecked: Boolean get() = checkedCount == items.size && items.isNotEmpty()
+}
 
 @HiltViewModel
 class StorageCategoryViewModel @Inject constructor(
@@ -75,7 +78,19 @@ class StorageCategoryViewModel @Inject constructor(
         }
     }
 
-    fun deleteItems(items: List<OfflineResourceItem>) {
+    fun deleteSelected() {
+        val selected = _uiState.value.items.filter { it.isChecked }
+        if (selected.isEmpty()) return
+        deleteItems(selected)
+    }
+
+    fun deleteAll() {
+        val items = _uiState.value.items
+        if (items.isEmpty()) return
+        deleteItems(items)
+    }
+
+    private fun deleteItems(items: List<OfflineResourceItem>) {
         if (_uiState.value.isDeleting) return
         _uiState.update { it.copy(isDeleting = true) }
         viewModelScope.launch(dispatcherProvider.io) {

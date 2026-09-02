@@ -24,7 +24,7 @@ object VersionUtils {
                 return pInfo.versionCode
             }
         } catch (e: PackageManager.NameNotFoundException) {
-            Log.w(TAG, "Package info not found while reading version code", e)
+            Log.w(TAG, "Failed to get version code", e)
         }
         return 0
     }
@@ -34,7 +34,7 @@ object VersionUtils {
             val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
             return pInfo.versionName
         } catch (e: PackageManager.NameNotFoundException) {
-            Log.w(TAG, "Package info not found while reading version name", e)
+            Log.w(TAG, "Failed to get version name", e)
         }
         return ""
     }

@@ -2,14 +2,17 @@ package org.ole.planet.myplanet.utils
 
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLog
 
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [Build.VERSION_CODES.O_MR1])
@@ -22,6 +25,7 @@ class SecurePrefsTest {
     @Before
     fun setup() {
         context = ApplicationProvider.getApplicationContext()
+        ShadowLog.reset()
     }
 
     @Test
@@ -40,6 +44,15 @@ class SecurePrefsTest {
         assertEquals("testUser", encryptedPrefs.getString("loginUserName", null))
         assertEquals("testPass", encryptedPrefs.getString("loginUserPassword", null))
         assertNull(encryptedPrefs.getString("nonSensitive", null))
+    }
+
+    @Test
+    fun decryptStringReturnsNullAndLogsTaggedErrorOnGarbageInput() {
+        val result = SecurePrefs.decryptString(context, "!!!not-valid-base64-or-ciphertext!!!")
+
+        assertNull(result)
+        val logged = ShadowLog.getLogsForTag("SecurePrefs")
+        assertTrue(logged.any { it.type == Log.ERROR && it.msg!!.contains("decrypt") })
     }
 
     @Test
