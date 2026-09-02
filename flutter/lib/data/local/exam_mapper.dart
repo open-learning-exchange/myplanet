@@ -30,7 +30,7 @@ class ExamMapper {
   static ExamMapping? fromDoc(Map<String, dynamic> doc) {
     final id = JsonUtils.getString('_id', doc);
     final type = JsonUtils.getString('type', doc);
-    if (id.isEmpty || id.startsWith('_design/') || type == 'surveys') {
+    if (id.isEmpty || id.startsWith('_design') || type == 'surveys') {
       return null;
     }
     final questions = parseQuestions(id, doc['questions']);
@@ -65,10 +65,21 @@ class ExamMapper {
         teamId: Value(JsonUtils.getStringOrNull('teamId', doc)),
         teamShareAllowed: Value(JsonUtils.getBool('teamShareAllowed', doc)),
         sourceSurveyId: Value(JsonUtils.getStringOrNull('sourceSurveyId', doc)),
-        noOfQuestions: Value(questions.length),
+        // Kotlin counts the raw array on both walks
+        // (`StepExam.insertCourseStepsExams`:
+        // `getJsonArray("questions", exam).size()`), not the questions it
+        // managed to parse. Counting the parsed ones made the two walks
+        // disagree on the same row whenever an entry was not an object, and
+        // the last walk won.
+        noOfQuestions: Value(_rawQuestionCount(doc)),
       ),
       questions: questions,
     );
+  }
+
+  static int _rawQuestionCount(Map<String, dynamic> doc) {
+    final raw = doc['questions'];
+    return raw is List ? raw.length : 0;
   }
 
   /// The lowercased choice **ids** that count as correct.
@@ -168,7 +179,28 @@ class ExamMapper {
         ),
       );
     }
-    return questions;
+    return lastWinsById(questions, (q) => q.id.value);
+  }
+
+  /// Kotlin's `questionDao.upsertAll` is `@Upsert`, so a list carrying the same
+  /// primary key twice simply lets the later row win. The port inserts a
+  /// question batch with `batch.insertAll`, which raises
+  /// `UNIQUE constraint failed` instead — and because `CoursesRepository.sync`
+  /// has no `try`, that would abort the whole courses walk, skip its remaining
+  /// pages and its cleanup, and fail the sync area.
+  ///
+  /// It is reachable with ordinary data rather than adversarial data: the id
+  /// falls back to a positional `$examId-$index` / `$surveyId:$index`, so a
+  /// document mixing an unlabelled first question with a second whose own `id`
+  /// is `"0"` collides. Deduplicating here keeps the Kotlin's last-wins
+  /// semantics and takes the abort off the table.
+  static List<T> lastWinsById<T>(List<T> rows, String Function(T) id) {
+    if (rows.length < 2) return rows;
+    final byId = <String, T>{};
+    for (final row in rows) {
+      byId[id(row)] = row;
+    }
+    return byId.length == rows.length ? rows : byId.values.toList();
   }
 
   /// Port of `CoursesRepositoryImpl.collectRoomExam(stepJson, "exam", …)` —
@@ -183,6 +215,16 @@ class ExamMapper {
   ///
   /// [stepIdFor] is [CourseMapper.stepIdFor], passed in rather than imported so
   /// the two mappers stay independent.
+  ///
+  /// **One deliberate divergence.** Kotlin types a `steps[i].exam` with no
+  /// `type` key as `"exam"` (`collectRoomExam`'s `else examKey`) and then only
+  /// ever looks for `"courses"` (`CoursesRepositoryImpl.kt:530`), so its Take
+  /// Test button stays hidden for a test that exists — silently, with no
+  /// error. The port has no `type` column and finds the exam by `stepId`
+  /// alone, so it shows the button. This is the mirror image of the
+  /// type-less-survey divergence recorded on `SurveyMapper.fromCourseDoc`, and
+  /// the same judgement: a test the learner cannot reach is a worse outcome
+  /// than one they can.
   static List<ExamMapping> fromCourseDoc(
     Map<String, dynamic> doc, {
     required String Function(String courseId, int stepIndex) stepIdFor,
@@ -193,8 +235,12 @@ class ExamMapper {
     // Kotlin files an embedded document by its own `type` when it has one
     // (`type = if (examJson.has("type")) … else examKey`), so a `steps[i].exam`
     // that declares itself a survey is a survey there too and
-    // `getByStepIdAndType(stepId, "courses")` would not return it.
-    accept: (examJson) => JsonUtils.getString('type', examJson) != 'surveys',
+    // `getByStepIdAndType(stepId, "courses")` would not return it. It is not
+    // *lost* there, though — it lands in the one table as a survey and the
+    // Take Survey button finds it — so `SurveyMapper.fromCourseDoc` picks the
+    // same object up off the `exam` key. Filtering here without that would
+    // have dropped it on the floor.
+    accept: (examJson) => !isSurveyType(examJson),
     build: (examId, stepId, courseId, examJson) => ExamMapping(
       exam: ExamsCompanion.insert(
         id: examId,
@@ -221,11 +267,7 @@ class ExamMapper {
         sourceSurveyId: Value(
           JsonUtils.getStringOrNull('sourceSurveyId', examJson),
         ),
-        noOfQuestions: Value(
-          examJson['questions'] is List
-              ? (examJson['questions']! as List).length
-              : 0,
-        ),
+        noOfQuestions: Value(_rawQuestionCount(examJson)),
       ),
       questions: parseQuestions(
         examId,
@@ -272,6 +314,15 @@ class ExamMapper {
     }
     return mapped;
   }
+
+  /// Whether an embedded assessment belongs in the `surveys` table.
+  ///
+  /// Kotlin has one table and decides at query time on `type`; the port has to
+  /// decide here. Both `steps[i].exam` and `steps[i].survey` are routed by this
+  /// so neither key can strand a document in the wrong table — or, worse, in
+  /// neither.
+  static bool isSurveyType(Map<String, dynamic> json) =>
+      JsonUtils.getString('type', json) == 'surveys';
 
   /// `Value(doc[key])` when the document carries the key, `Value.absent()` when
   /// it does not — so an upsert leaves a column another writer owns alone.

@@ -172,11 +172,68 @@ absent join. Fixed in the same shape, and `stepSurveysProvider` now returns rows
    first and both go into one `upsertAll`. The port's two tables make the
    question unaskable.
 
+## A second audit, on the finished implementation
+
+Phase 110's harder-won lesson, repeated exactly: **an audit of the ground truth
+does not audit the implementation.** The first pass established the Kotlin and
+the fix was green — format clean, analyze clean, 1822 tests, CI green on
+`7a1b78a9`. A second pass pointed at my own diff found **twelve** findings, four
+of them serious, and one of my new tests then uncovered a thirteenth.
+
+The pattern worth recording: *every* one of the serious findings was hidden by
+the friendliest possible fixture. `step_assessment_sync_test.dart` embedded the
+**same map objects** in the course document that it served from the exams
+database, so the two copies were byte-identical, always had an `_id`, and always
+carried questions. That single shape hid four separate defects.
+
+| # | defect | pre-fix failure |
+|---|---|---|
+| A | **the exams walk deleted step assessments in the same sync pass.** I had reasoned that a course test is also an `exams` document so it is in that walk's keep set — true for the happy case, and false for four classes of row: a locally derived id (Kotlin's `ifBlank` fallback), an `_id` this satellite has not replicated, a step survey whose standalone document is not `type: "surveys"`, and `total_rows == 0` on the exams database, which runs `deleteNotIn([])` and empties both tables. `complete`/`hadBatchFailure` does not help: these ids are structurally absent from the keep set however complete the walk | `a derived-id step assessment survives the exams walk prune` — the row is written by the courses area and gone after the surveys area |
+| B | **nothing ever cleared a stale `stepId` again.** `Value.absent()` fixed the clobber and removed the only mechanism that ever *retired* a join. Kotlin can afford that: its step ids are a hash of the step's own JSON. The port's are positional (`'$courseId:$index'`), so deleting a step shifts every later id down one and the removed step's exam silently reappears under whatever step took its slot | `removing a step releases the exam it used to carry` — step `course-1:0` inherited `exam-1` |
+| C | **both step buttons navigated nowhere.** `'${Routes.exam}/${exam.id}'` concatenates the route *pattern*: `/courses/exam/:examId/exam-1`, which matches no route and lands on go_router's error page. The survey button was wrong twice over — same pattern bug, and it aimed at `PublicSurveyScreen` (anonymous, network-fetched) where Kotlin's `btnTakeSurvey` opens the signed-in user's own submission | `the step view offers Take test…` — `Found 0 widgets with text "EXAM_ROUTE exam-1"`; `Record survey opens the signed-in survey screen` — `Found 0 widgets with text "SURVEY_ROUTE survey-1"` |
+| D | **`stepExamProvider` cached a pre-sync `null` for the process lifetime.** A `FutureProvider.family` with no `autoDispose` and nothing invalidating it: open a course before the sync writes the join and the step never offers its test until restart. Latent before, because nothing ever wrote the join; now the sole gate on the feature. Kotlin re-reads in `CourseStepFragment.onViewCreated` | reasoning, then `.autoDispose` |
+| E | **a `steps[i].exam` typed `surveys` was dropped entirely.** My `accept` filter skipped it on the reasoning that "it is a survey there too" — but nothing then filed it as one, because `SurveyMapper.fromCourseDoc` only read the `survey` key. Kotlin writes it and its Take Survey button finds it. A test had pinned the loss as intended | `leaves a step exam that declares itself a survey to SurveyMapper` |
+| F | **a duplicate question id aborted the whole courses walk.** `batch.insertAll` raises `UNIQUE constraint failed` where Kotlin's `@Upsert` lets the later row win, and neither `sync` catches — so the remaining pages and the cleanup are skipped and the area fails. Reachable without adversarial data: the id falls back to a positional `$examId-$index`, which a later question may carry as its own `id` | `duplicate question ids do not produce a duplicate row` |
+| G | **the thirteenth, which the fix for A/B surfaced rather than the audit.** `exam_questions.id` is the question's own document id, unique only *within* an exam — so **two different exams carrying a question `q1` collide globally**. My new test hit it immediately. Kotlin has the same primary key and loses one question silently to `@Upsert`; the port threw. Fixed where Kotlin fixes it, at the DAO: `insertAllOnConflictUpdate` | `SqliteException(1555): UNIQUE constraint failed: exam_questions.id` out of `SurveysRepository.sync` |
+| H | **the courses walk wiped questions the exams walk wrote.** `ExamDao.upsertAll` deletes an exam's questions before reinserting the map entry, and I wrote an entry for every step exam including an empty list — so a course embedding an exam with no `questions` array emptied it. Kotlin's `questionDao` never deletes | `the courses walk does not wipe questions the exams walk wrote` |
+| I | **Take test appeared on a course the learner had not joined.** `CourseStepFragment.onViewCreated` hides *both* buttons when `!userHasCourse`, after `hideTestIfNoQuestion` has shown them. The port computed `isMyCourse` and passed it only to the navigation bar | `a course the learner has not joined offers neither` |
+| J | **`noOfQuestions` disagreed between the two walks.** Kotlin counts the raw array on both (`getJsonArray("questions", exam).size()`); `fromDoc` counted the parsed rows, so a non-object entry made the same row's count depend on which walk ran last | `noOfQuestions counts the raw array, as the Kotlin does` |
+
+**And one gap the join made fixable, which the diff had left on the table.**
+`CourseStepFragment.saveCourseProgress` passes
+`if (stepExams.isEmpty()) true else null` (`:97`): a step with no test is passed
+by reaching it. The port passed `null` unconditionally — because until this phase
+nothing could tell the two apart, `stepExams` being precisely the join that did
+not exist. **A course with no tests could therefore never complete.** Now
+ported.
+
+Fixes for A and B, and for G, are in `app_database.dart`: `deleteNotIn` on both
+tables spares rows with a non-null `stepId` (Kotlin has no prune here at all, so
+sparing is the closer behaviour), a new `releaseStepJoinsForCourse` on each DAO
+detaches the assessments a course document no longer claims — which hands the
+spared row back to the prune, so sparing is not immortality — and the question
+batches upsert instead of insert.
+
+Two findings were left as reported rather than fixed, both outside the join:
+Kotlin relabels the buttons `retake_test`/`redo_survey` from
+`hasSubmission(...)`, which the port does not; and `SurveyDao.getByCourseId` has
+no type filter where Kotlin's is `getByCourseIdAndType(courseId, "survey")` —
+singular, i.e. only type-less embedded step surveys — so the mandatory-survey
+block now fires for step surveys Kotlin's query would never match. That block is
+gated to one hardcoded onboarding course, so the blast radius is a single course.
+
 ## For the integrator
 
-- **Three files outside Lane A's set were touched, all minimally, all reported
-  rather than assumed.** None is owned by Lane B (`lib/l10n/`) or Lane C
-  (`lib/ui/teams/`, `teams_provider`, `teams_repository*`):
+- **Files outside Lane A's set were touched, all reported rather than assumed.**
+  None is owned by Lane B (`lib/l10n/`) or Lane C (`lib/ui/teams/`,
+  `teams_provider`, `teams_repository*`):
+  - **`lib/data/local/app_database.dart`** — the largest crossing, and not
+    optional: without it the feature loses data on every sync (defect A above).
+    `ExamDao.deleteNotIn` and `SurveyDao.deleteNotIn` gain a
+    `stepId IS NULL` restriction; each DAO gains `releaseStepJoinsForCourse`;
+    the two question batches move from `insertAll` to
+    `insertAllOnConflictUpdate`. No schema change — no column, no index, no
+    version bump.
   - `lib/providers/app_providers.dart` — two added arguments to
     `coursesRepositoryProvider`, because `CoursesRepository` now needs `ExamDao`
     and `SurveyDao` to write the rows the course document carries.
@@ -185,17 +242,11 @@ absent join. Fixed in the same shape, and `stepSurveysProvider` now returns rows
     passing on a fixture shape the server does not produce and read as if it
     covered the real path.
   - `test/support/` untouched.
-- **A note is owed to `SurveyDao.deleteNotIn` and `ExamDao.deleteNotIn` in
-  `app_database.dart`**, which this lane did not own: they now prune rows the
-  *courses* walk wrote, and are safe only because a step's exam and survey are
-  also documents of the `exams` database. **The one row that is not:** an
-  embedded exam or survey with no `_id` of its own, which takes Kotlin's
-  `ifBlank { "$courseId-$stepId-$examKey" }` fallback. That id can never be in
-  the exams walk's keep set, so such a row is written by the courses area and
-  deleted by the surveys area within the same sync pass. The clean fix is to
-  spare rows with a non-null `stepId` in both `deleteNotIn`s — one predicate
-  each, in a file this lane does not own. Kotlin has **no** delete-except-ids on
-  the exams table at all, so sparing them is if anything closer to it.
+- **The `exams`/`surveys` prune is now a two-writer question.** Both
+  `deleteNotIn`s belong to the `exams` database walk but the tables no longer
+  belong to it alone; the `stepId IS NULL` restriction and
+  `releaseStepJoinsForCourse` are a pair and neither is safe to remove without
+  the other. Both carry the reasoning at the code.
 - **`ProgressRepository.courseProgress` has no UI caller.** Worth a phase: the
   per-step question count and mistake total it computes are exactly what
   Kotlin's `ProgressGridAdapter` renders.

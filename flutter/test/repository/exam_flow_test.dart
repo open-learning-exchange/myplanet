@@ -61,7 +61,10 @@ void main() {
     });
   }
 
-  Map<String, dynamic> examDoc(String id, {String? stepId}) => {
+  Map<String, dynamic> examDoc(
+    String id, {
+    String? stepId,
+  }) => <String, dynamic>{
     '_id': id,
     // `'exam'` is the type `insertCourseStepsExams` falls back to for a
     // document with no `type` key at all; a real course test is `'courses'`.
@@ -124,10 +127,14 @@ void main() {
     });
 
     test('a stale exam and its questions are evicted', () async {
-      stubExamsDatabase([examDoc('exam-1')]);
+      // No `stepId`: the real shape of a standalone `exams` document, and the
+      // shape this prune is for. A row that *does* carry one belongs to the
+      // courses walk and is deliberately spared — see `ExamDao.deleteNotIn`.
+      final noStep = examDoc('exam-1')..remove('stepId');
+      stubExamsDatabase([noStep]);
       await surveys.sync(config: config);
 
-      stubExamsDatabase([examDoc('exam-2')]);
+      stubExamsDatabase([examDoc('exam-2')..remove('stepId')]);
       await surveys.sync(config: config);
 
       expect(await database.examDao.getById('exam-1'), isNull);

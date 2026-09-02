@@ -54,13 +54,16 @@ class SurveyMapper {
         );
       }
     }
-    return questions;
+    // See `ExamMapper.lastWinsById`: the port's `batch.insertAll` raises on a
+    // duplicate id where Kotlin's `@Upsert` lets the later row win, and the
+    // positional id fallback here makes that reachable.
+    return ExamMapper.lastWinsById(questions, (q) => q.id.value);
   }
 
   static SurveyMapping? fromDoc(Map<String, dynamic> doc) {
     final id = JsonUtils.getString('_id', doc);
     final type = JsonUtils.getString('type', doc);
-    if (id.isEmpty || id.startsWith('_design/') || type != 'surveys') {
+    if (id.isEmpty || id.startsWith('_design') || type != 'surveys') {
       return null;
     }
     final questions = _parseQuestions(id, doc['questions']);
@@ -111,41 +114,59 @@ class SurveyMapper {
   static List<SurveyMapping> fromCourseDoc(
     Map<String, dynamic> doc, {
     required String Function(String courseId, int stepIndex) stepIdFor,
-  }) => ExamMapper.mapStepExams(
-    doc,
-    stepIdFor: stepIdFor,
-    examKey: 'survey',
-    build: (surveyId, stepId, courseId, surveyJson) => SurveyMapping(
-      survey: SurveysCompanion.insert(
-        id: surveyId,
-        rev: Value(JsonUtils.getStringOrNull('_rev', surveyJson)),
-        name: Value(JsonUtils.getStringOrNull('name', surveyJson)),
-        description: Value(
-          JsonUtils.getStringOrNull('description', surveyJson),
-        ),
-        createdDate: Value(JsonUtils.getLong('createdDate', surveyJson)),
-        updatedDate: Value(JsonUtils.getLong('updatedDate', surveyJson)),
-        adoptionDate: Value(JsonUtils.getLong('adoptionDate', surveyJson)),
-        createdBy: Value(JsonUtils.getStringOrNull('createdBy', surveyJson)),
-        totalMarks: Value(JsonUtils.getInt('totalMarks', surveyJson)),
-        passingPercentage: Value(
-          JsonUtils.getStringOrNull('passingPercentage', surveyJson),
-        ),
-        sourcePlanet: Value(
-          JsonUtils.getStringOrNull('sourcePlanet', surveyJson),
-        ),
-        teamId: Value(JsonUtils.getStringOrNull('teamId', surveyJson)),
-        teamShareAllowed: Value(
-          JsonUtils.getBool('teamShareAllowed', surveyJson),
-        ),
-        sourceSurveyId: Value(
-          JsonUtils.getStringOrNull('sourceSurveyId', surveyJson),
-        ),
-        courseId: Value(courseId),
-        stepId: Value(stepId),
-      ),
-      questions: _parseQuestions(surveyId, surveyJson['questions']),
+  }) => [
+    // Both keys, because Kotlin has one table and files by `type`: a
+    // `steps[i].exam` that declares itself `type: "surveys"` is a survey there
+    // and its Take Survey button works. `ExamMapper.fromCourseDoc` skips those,
+    // so without this pass they would be written nowhere at all.
+    ...ExamMapper.mapStepExams(
+      doc,
+      stepIdFor: stepIdFor,
+      examKey: 'exam',
+      accept: ExamMapper.isSurveyType,
+      build: _build,
     ),
+    ...ExamMapper.mapStepExams(
+      doc,
+      stepIdFor: stepIdFor,
+      examKey: 'survey',
+      build: _build,
+    ),
+  ];
+
+  static SurveyMapping _build(
+    String surveyId,
+    String stepId,
+    String courseId,
+    Map<String, dynamic> surveyJson,
+  ) => SurveyMapping(
+    survey: SurveysCompanion.insert(
+      id: surveyId,
+      rev: Value(JsonUtils.getStringOrNull('_rev', surveyJson)),
+      name: Value(JsonUtils.getStringOrNull('name', surveyJson)),
+      description: Value(JsonUtils.getStringOrNull('description', surveyJson)),
+      createdDate: Value(JsonUtils.getLong('createdDate', surveyJson)),
+      updatedDate: Value(JsonUtils.getLong('updatedDate', surveyJson)),
+      adoptionDate: Value(JsonUtils.getLong('adoptionDate', surveyJson)),
+      createdBy: Value(JsonUtils.getStringOrNull('createdBy', surveyJson)),
+      totalMarks: Value(JsonUtils.getInt('totalMarks', surveyJson)),
+      passingPercentage: Value(
+        JsonUtils.getStringOrNull('passingPercentage', surveyJson),
+      ),
+      sourcePlanet: Value(
+        JsonUtils.getStringOrNull('sourcePlanet', surveyJson),
+      ),
+      teamId: Value(JsonUtils.getStringOrNull('teamId', surveyJson)),
+      teamShareAllowed: Value(
+        JsonUtils.getBool('teamShareAllowed', surveyJson),
+      ),
+      sourceSurveyId: Value(
+        JsonUtils.getStringOrNull('sourceSurveyId', surveyJson),
+      ),
+      courseId: Value(courseId),
+      stepId: Value(stepId),
+    ),
+    questions: _parseQuestions(surveyId, surveyJson['questions']),
   );
 
   /// `Value(doc[key])` when the document carries the key, `Value.absent()`

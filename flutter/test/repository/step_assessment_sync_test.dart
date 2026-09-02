@@ -176,4 +176,169 @@ void main() {
     expect(await db.examDao.getById('exam-1'), isNotNull);
     expect(await db.examDao.questionsFor('exam-1'), hasLength(1));
   });
+
+  test('a derived-id step assessment survives the exams walk prune', () async {
+    // The friendly fixture above hides this: there, the embedded copy and
+    // the standalone document are the same object, so the id is always in
+    // the exams walk's keep set. An embedded exam with no `_id` of its own
+    // takes Kotlin's `ifBlank { "$courseId-$stepId-$examKey" }` fallback,
+    // which by construction can never be an `_all_docs` id — so the courses
+    // area wrote the row and the surveys area deleted it in the same pass.
+    when(
+      () => api.getJsonObject(
+        '$dbUrl/courses/_all_docs?limit=0',
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).thenAnswer(
+      (_) async => NetworkSuccess<Map<String, dynamic>>({'total_rows': 1}),
+    );
+    when(
+      () => api.getJsonObject(
+        '$dbUrl/courses/_all_docs?include_docs=true&limit=50&skip=0',
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).thenAnswer(
+      (_) async => NetworkSuccess<Map<String, dynamic>>({
+        'rows': [
+          {
+            'id': 'course-2',
+            'doc': {
+              '_id': 'course-2',
+              'courseTitle': 'Local',
+              'steps': [
+                {
+                  'stepTitle': 'Assessment',
+                  'exam': {
+                    'name': 'Unpublished test',
+                    'questions': [
+                      {'id': 'q1', 'title': 'One?', 'type': 'input'},
+                    ],
+                  },
+                  'survey': {
+                    'name': 'Unpublished survey',
+                    'questions': [
+                      {'id': 's1', 'title': 'How?', 'type': 'input'},
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      }),
+    );
+    await courses.sync(config: config);
+
+    final stepId = CourseMapper.stepIdFor('course-2', 0);
+    expect(
+      (await db.examDao.getByStepIds([stepId])).single.id,
+      'course-2-course-2:0-exam',
+    );
+
+    // An exams database that has never heard of either.
+    stubExamsDatabase([examDoc]);
+    await surveys.sync(config: config);
+
+    expect(
+      (await db.examDao.getByStepIds([stepId])).single.id,
+      'course-2-course-2:0-exam',
+      reason: 'a locally derived id can never be in the exams walk keep set',
+    );
+    expect(await db.surveyDao.getByStepId(stepId), hasLength(1));
+  });
+
+  test('removing a step releases the exam it used to carry', () async {
+    // The port's step id is positional, so deleting a step shifts every later
+    // step down one slot. Without the release the old exam would reappear
+    // under whatever step inherited `course-1:1`.
+    stubCourses();
+    await courses.sync(config: config);
+    expect(
+      (await db.examDao.getByStepIds([
+        CourseMapper.stepIdFor('course-1', 1),
+      ])).single.id,
+      'exam-1',
+    );
+
+    when(
+      () => api.getJsonObject(
+        '$dbUrl/courses/_all_docs?include_docs=true&limit=50&skip=0',
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).thenAnswer(
+      (_) async => NetworkSuccess<Map<String, dynamic>>({
+        'rows': [
+          {
+            'id': 'course-1',
+            'doc': {
+              '_id': 'course-1',
+              'courseTitle': 'Water',
+              'steps': [
+                {'stepTitle': 'Intro'},
+              ],
+            },
+          },
+        ],
+      }),
+    );
+    await courses.sync(config: config);
+
+    expect(
+      await db.examDao.getByStepIds([CourseMapper.stepIdFor('course-1', 0)]),
+      isEmpty,
+      reason: 'the surviving step must not inherit the removed step exam',
+    );
+    expect(await db.surveyDao.getByStepId('course-1:0'), isEmpty);
+    // The row itself is kept, detached, so the exams walk can prune it.
+    expect((await db.examDao.getById('exam-1'))?.stepId, isNull);
+  });
+
+  test(
+    'the courses walk does not wipe questions the exams walk wrote',
+    () async {
+      // `ExamDao.upsertAll` deletes an exam's questions before reinserting the
+      // map entry, so an embedded copy carrying no `questions` array would
+      // empty an exam the other walk had filled.
+      stubExamsDatabase([examDoc, surveyDoc]);
+      await surveys.sync(config: config);
+      expect(await db.examDao.questionsFor('exam-1'), hasLength(1));
+
+      when(
+        () => api.getJsonObject(
+          '$dbUrl/courses/_all_docs?limit=0',
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer(
+        (_) async => NetworkSuccess<Map<String, dynamic>>({'total_rows': 1}),
+      );
+      when(
+        () => api.getJsonObject(
+          '$dbUrl/courses/_all_docs?include_docs=true&limit=50&skip=0',
+          authHeader: any(named: 'authHeader'),
+        ),
+      ).thenAnswer(
+        (_) async => NetworkSuccess<Map<String, dynamic>>({
+          'rows': [
+            {
+              'id': 'course-1',
+              'doc': {
+                '_id': 'course-1',
+                'courseTitle': 'Water',
+                'steps': [
+                  {'stepTitle': 'Intro'},
+                  {
+                    'stepTitle': 'Assessment',
+                    'exam': {'_id': 'exam-1', 'type': 'courses'},
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+      );
+      await courses.sync(config: config);
+
+      expect(await db.examDao.questionsFor('exam-1'), hasLength(1));
+    },
+  );
 }

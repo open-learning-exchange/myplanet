@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/data/local/converters.dart';
 import 'package:myplanet/data/local/exam_mapper.dart';
+import 'package:myplanet/data/local/survey_mapper.dart';
 
 void main() {
   Map<String, dynamic> examDoc({
@@ -253,13 +254,66 @@ void main() {
       expect(mapped.single.questions.single.body.value, 'Which is wet?');
     });
 
-    test('leaves a step exam that declares itself a survey alone', () {
-      expect(
-        ExamMapper.fromCourseDoc(
-          courseDoc(exam: {'_id': 's-1', 'type': 'surveys'}),
-          stepIdFor: stepIdFor,
+    test('leaves a step exam that declares itself a survey to SurveyMapper', () {
+      // Not dropped: Kotlin files it by its own `type`, so it lands in the one
+      // table as a survey and the Take Survey button finds it.
+      // `SurveyMapper.fromCourseDoc` reads the `exam` key for exactly these.
+      final doc = courseDoc(exam: {'_id': 's-1', 'type': 'surveys'});
+      expect(ExamMapper.fromCourseDoc(doc, stepIdFor: stepIdFor), isEmpty);
+      final asSurvey = SurveyMapper.fromCourseDoc(doc, stepIdFor: stepIdFor);
+      expect(asSurvey.single.survey.id.value, 's-1');
+      expect(asSurvey.single.survey.stepId.value, 'course-1:0');
+    });
+
+    test('duplicate question ids do not produce a duplicate row', () {
+      // `batch.insertAll` raises `UNIQUE constraint failed` where Kotlin's
+      // `@Upsert` lets the later row win, and `CoursesRepository.sync` has no
+      // `try` — so this would abort the whole courses walk. Reachable without
+      // adversarial data: an unlabelled first question takes the positional id
+      // `exam-1-0`, which a second question may carry as its own `id`.
+      final mapped = ExamMapper.fromCourseDoc(
+        courseDoc(
+          exam: {
+            '_id': 'exam-1',
+            'questions': [
+              {'title': 'First'},
+              {'id': 'exam-1-0', 'title': 'Second'},
+            ],
+          },
         ),
-        isEmpty,
+        stepIdFor: stepIdFor,
+      );
+      final ids = mapped.single.questions.map((q) => q.id.value).toList();
+      expect(ids.toSet(), hasLength(ids.length));
+      expect(mapped.single.questions.single.header.value, 'Second');
+    });
+
+    test('noOfQuestions counts the raw array, as the Kotlin does', () {
+      // `getJsonArray("questions", exam).size()` on both walks. Counting the
+      // parsed rows instead made the two walks disagree on the same row.
+      final mapped = ExamMapper.fromCourseDoc(
+        courseDoc(
+          exam: {
+            '_id': 'exam-1',
+            'questions': [
+              {'id': 'q1', 'title': 'Real'},
+              'not an object',
+            ],
+          },
+        ),
+        stepIdFor: stepIdFor,
+      );
+      expect(mapped.single.exam.noOfQuestions.value, 2);
+      expect(mapped.single.questions, hasLength(1));
+      expect(
+        ExamMapper.fromDoc({
+          '_id': 'exam-1',
+          'questions': [
+            {'id': 'q1', 'title': 'Real'},
+            'not an object',
+          ],
+        })!.exam.noOfQuestions.value,
+        2,
       );
     });
 

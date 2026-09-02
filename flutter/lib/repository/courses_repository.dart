@@ -190,6 +190,10 @@ class CoursesRepository {
       final examQuestionRows = <String, List<ExamQuestionsCompanion>>{};
       final surveyRows = <SurveysCompanion>[];
       final surveyQuestionRows = <String, List<SurveyQuestionsCompanion>>{};
+      // Per course, the assessments its document still claims — anything else
+      // attached to it is a step the author has removed.
+      final examIdsByCourse = <String, Set<String>>{};
+      final surveyIdsByCourse = <String, Set<String>>{};
 
       // Preserve shelf membership already recorded for these courses. Fetched
       // once per page rather than once per row — a large sync would otherwise
@@ -223,19 +227,36 @@ class CoursesRepository {
         stepRows.addAll(parsed.steps);
         savedIds.add(parsed.course.id.value);
 
+        // A question map entry is written only when the embedded object
+        // actually carried questions. `ExamDao.upsertAll` deletes an exam's
+        // questions before reinserting the entry's list, so passing an empty
+        // one for an embedded object with no `questions` array would wipe the
+        // questions the `exams` database walk had written for the same exam —
+        // leaving it openable with nothing in it. Kotlin's `questionDao` never
+        // deletes, so skipping is the faithful half as well as the safe one.
         for (final mapping in ExamMapper.fromCourseDoc(
           doc,
           stepIdFor: CourseMapper.stepIdFor,
         )) {
           examRows.add(mapping.exam);
-          examQuestionRows[mapping.exam.id.value] = mapping.questions;
+          examIdsByCourse
+              .putIfAbsent(courseId, () => <String>{})
+              .add(mapping.exam.id.value);
+          if (mapping.questions.isNotEmpty) {
+            examQuestionRows[mapping.exam.id.value] = mapping.questions;
+          }
         }
         for (final mapping in SurveyMapper.fromCourseDoc(
           doc,
           stepIdFor: CourseMapper.stepIdFor,
         )) {
           surveyRows.add(mapping.survey);
-          surveyQuestionRows[mapping.survey.id.value] = mapping.questions;
+          surveyIdsByCourse
+              .putIfAbsent(courseId, () => <String>{})
+              .add(mapping.survey.id.value);
+          if (mapping.questions.isNotEmpty) {
+            surveyQuestionRows[mapping.survey.id.value] = mapping.questions;
+          }
         }
       }
 
@@ -251,6 +272,21 @@ class CoursesRepository {
       }
       if (surveyRows.isNotEmpty) {
         await _surveyDao.upsertAll(surveyRows, surveyQuestionRows);
+      }
+      // Retire the joins this page's course documents no longer claim. Runs
+      // for every course on the page, not only those that still have an
+      // assessment, so removing the last test from a course clears it too.
+      for (final doc in docs) {
+        final courseId = JsonUtils.getString('_id', doc);
+        if (courseId.isEmpty) continue;
+        await _examDao.releaseStepJoinsForCourse(
+          courseId,
+          examIdsByCourse[courseId] ?? const <String>{},
+        );
+        await _surveyDao.releaseStepJoinsForCourse(
+          courseId,
+          surveyIdsByCourse[courseId] ?? const <String>{},
+        );
       }
 
       skip += rows.length;
