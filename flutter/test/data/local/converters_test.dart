@@ -28,6 +28,20 @@ void main() {
       expect(ExamChoice.listFromJson(null), isEmpty);
     });
 
+    test('reads the label out of `res` when there is no `text`', () {
+      // `ExamAnswerUtils.choiceDisplayValue` is `text` first with `res` only
+      // as a fallback, and `insertCorrectChoice`'s single-id branch reads
+      // `res` — so exam documents do carry choices labelled that way.
+      // Reading `text` alone left them with a blank label, which is also what
+      // the answer then recorded as its value.
+      expect(
+        ExamChoice.listFromJson([
+          {'id': 'power', 'res': 'Power'},
+        ]),
+        [const ExamChoice(id: 'power', text: 'Power')],
+      );
+    });
+
     test('falls back to the text when a choice carries no id', () {
       expect(
         ExamChoice.listFromJson([

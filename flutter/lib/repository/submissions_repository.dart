@@ -10,6 +10,7 @@ import '../core/utils/json_utils.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
+import '../data/local/converters.dart';
 
 /// Offline list portion of `repository/SubmissionsRepositoryImpl.kt`.
 class SubmissionsRepository {
@@ -136,17 +137,39 @@ class SubmissionsRepository {
       answers: {
         id: [
           for (final question in questions)
-            SubmissionAnswersCompanion.insert(
-              id: '$id:${_rawQuestionId(question)}',
+            _surveyAnswer(
               submissionId: id,
-              questionId: Value(_rawQuestionId(question)),
-              value: Value(answers[question.id]?.value),
-              valueChoices: Value(answers[question.id]?.choices ?? const []),
+              question: question,
+              draft: answers[question.id],
             ),
         ],
       },
     );
     return id;
+  }
+
+  /// One survey answer row, shaped by [AnswerShape] so it matches what the
+  /// exam path writes — Kotlin has a single `saveExamAnswer` for both.
+  SubmissionAnswersCompanion _surveyAnswer({
+    required String submissionId,
+    required SurveyQuestionRow question,
+    required SubmissionDraftAnswer? draft,
+  }) {
+    final shape = AnswerShape.forQuestion(
+      type: question.type,
+      choices: question.choices,
+      selected: (draft?.choices ?? const <String>[])
+          .map(ExamChoice.decode)
+          .whereType<ExamChoice>(),
+      text: draft?.value,
+    );
+    return SubmissionAnswersCompanion.insert(
+      id: '$submissionId:${_rawQuestionId(question)}',
+      submissionId: submissionId,
+      questionId: Value(_rawQuestionId(question)),
+      value: Value(shape.value),
+      valueChoices: Value(shape.valueChoices),
+    );
   }
 
   /// Replaces the answer rows on an existing survey submission (resuming a
@@ -172,12 +195,10 @@ class SubmissionsRepository {
       answers: {
         submissionId: [
           for (final question in questions)
-            SubmissionAnswersCompanion.insert(
-              id: '$submissionId:${_rawQuestionId(question)}',
+            _surveyAnswer(
               submissionId: submissionId,
-              questionId: Value(_rawQuestionId(question)),
-              value: Value(answers[question.id]?.value),
-              valueChoices: Value(answers[question.id]?.choices ?? const []),
+              question: question,
+              draft: answers[question.id],
             ),
         ],
       },
@@ -255,20 +276,51 @@ class SubmissionsRepository {
       answers: {
         id: [
           for (final question in questions)
-            SubmissionAnswersCompanion.insert(
-              id: '$id:${question.id}',
+            _examAnswer(
               submissionId: id,
-              examId: Value(exam.id),
-              questionId: Value(question.id),
-              value: Value(answers[question.id]?.value),
-              valueChoices: Value(answers[question.id]?.choiceIds ?? const []),
-              isPassed: Value(answers[question.id]?.isCorrect ?? false),
-              grade: Value((answers[question.id]?.isCorrect ?? false) ? 1 : 0),
+              examId: exam.id,
+              question: question,
+              draft: answers[question.id],
             ),
         ],
       },
     );
     return id;
+  }
+
+  /// One graded exam answer row.
+  ///
+  /// The screen hands over choice **ids** — that is what a radio/checkbox
+  /// records and what grading compares against — and [AnswerShape] turns them
+  /// into the `{id, text}` objects `saveExamAnswer` stores, resolving each
+  /// label from the question the way `getChoiceTextById` does. The port used to
+  /// store the bare ids, so a choice answer reached Planet as a list of ids
+  /// where Kotlin sends objects (or, for a single choice, the display text).
+  SubmissionAnswersCompanion _examAnswer({
+    required String submissionId,
+    required String examId,
+    required ExamQuestionRow question,
+    required ExamDraftAnswer? draft,
+  }) {
+    final shape = AnswerShape.forQuestion(
+      type: question.type,
+      choices: question.choices,
+      selected: (draft?.choiceIds ?? const <String>[]).map(
+        (id) => ExamChoice(id: id, text: ''),
+      ),
+      text: draft?.value,
+    );
+    final isCorrect = draft?.isCorrect ?? false;
+    return SubmissionAnswersCompanion.insert(
+      id: '$submissionId:${question.id}',
+      submissionId: submissionId,
+      examId: Value(examId),
+      questionId: Value(question.id),
+      value: Value(shape.value),
+      valueChoices: Value(shape.valueChoices),
+      isPassed: Value(isCorrect),
+      grade: Value(isCorrect ? 1 : 0),
+    );
   }
 
   /// Attaches the profile collected by `UserInformationFragment` to an attempt.
@@ -533,9 +585,15 @@ class SubmissionsRepository {
         for (final answer in answers)
           {
             if (answer.questionId != null) 'questionId': answer.questionId,
-            'value': answer.valueChoices.isNotEmpty
-                ? _answerChoices(answer.valueChoices)
-                : answer.value,
+            // `Answer.createObject` sends `value` whenever it is non-empty
+            // and only falls back to `valueChoicesArray` when it is not — so
+            // a `select` answer reaches Planet as the bare display text and
+            // the object array is what a `selectMultiple` (whose `value` is
+            // the empty string) sends. The port had this precedence the other
+            // way round, which sent an array where Kotlin sends a string.
+            'value': (answer.value?.isNotEmpty ?? false)
+                ? answer.value
+                : _answerChoices(answer.valueChoices),
             'mistakes': answer.mistakes,
             'passed': answer.isPassed,
           },
@@ -544,24 +602,24 @@ class SubmissionsRepository {
   }
 
   /// Port of `Answer.valueChoicesArray`, which sends each stored choice as the
-  /// object it came from (`gson.fromJson(choice, JsonObject::class.java)`) —
+  /// object it came from (`gson.fromJson(choice, JsonObject::class.java)`):
   /// Planet expects `answers[].value` to be `{id, text}` objects for a choice
-  /// question, not strings. An entry that is not JSON is sent as it stands,
-  /// which is how the exam path's bare choice ids survive; Kotlin has no such
-  /// entries and would throw on one.
+  /// question, not strings.
+  ///
+  /// Every entry is now a choice object — both write paths go through
+  /// [AnswerShape], and the sync-in stores the server's own objects — so the
+  /// "send a non-JSON entry through untouched" branch this used to carry for
+  /// the exam path's bare ids is gone. A bare entry an earlier build left
+  /// behind still uploads as an object rather than poisoning the whole queue
+  /// (`SubmissionsUploader.queuePending` serializes every pending row in one
+  /// unguarded loop, so throwing the way `gson.fromJson` does would block
+  /// every other submission): [ExamChoice.decode] resolves it to
+  /// `{id: raw, text: raw}`, which is what Kotlin's own unresolvable-id
+  /// fallback produces.
   static List<Object?> _answerChoices(List<String> raw) => [
-    for (final choice in raw) _parseChoice(choice),
+    for (final entry in raw)
+      if (ExamChoice.decode(entry) case final choice?) choice.toJson(),
   ];
-
-  static Object? _parseChoice(String raw) {
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is Map<String, dynamic>) return decoded;
-    } on FormatException {
-      // Not JSON — send the entry through untouched.
-    }
-    return raw;
-  }
 
   /// `parent` and `user` are stored locally as JSON *text*, but Kotlin uploads
   /// them as nested objects — `object.add("parent", ...)` and
@@ -707,8 +765,20 @@ class SubmissionsRepository {
     required String? examId,
   }) {
     final rawValue = json['value'];
+    // Kotlin stores `valueElement.asJsonArray.map { it.toString() }`, and
+    // Gson's `JsonElement.toString()` emits **JSON**. Dart's `Map.toString()`
+    // emits `{id: paris, text: Paris}`, which is not JSON — so a synced choice
+    // answer was cached in a form nothing downstream could read back: the
+    // re-upload sent that literal as a quoted string where Planet expects the
+    // object, the detail screen and the PDF export printed it verbatim, and
+    // the correctness check could not recover the id. A bare-string element
+    // is stored unquoted; Gson keeps its quotes there, but then Kotlin's own
+    // `valueChoicesArray` throws casting the primitive to a `JsonObject`, so
+    // the unquoted form is the better of the two.
     final choices = rawValue is List
-        ? rawValue.map((value) => value.toString()).toList(growable: false)
+        ? rawValue
+              .map((value) => value is Map ? jsonEncode(value) : '$value')
+              .toList(growable: false)
         : const <String>[];
     final questionId = JsonUtils.getStringOrNull('questionId', json);
     return SubmissionAnswersCompanion.insert(
@@ -799,7 +869,103 @@ class SubmissionDraftAnswer {
   });
   final String? questionId;
   final String? value;
+
+  /// The picked choices as stored answer entries — see [ExamChoice.encode].
+  /// [AnswerShape.forQuestion] re-resolves them against the question, so a
+  /// caller that only has ids may pass those instead.
   final List<String> choices;
+}
+
+/// The `value` / `valueChoices` pair one answered question is stored as.
+///
+/// Port of the branch at the top of `SubmissionsRepositoryImpl.saveExamAnswer`,
+/// which is the **single** writer for both exams and surveys in the Kotlin app
+/// (`ExamTakingFragment` runs both; its `type` only picks the grading and the
+/// status). The port has three writers — [SubmissionsRepository.createExamDraft],
+/// [SubmissionsRepository.createSurveyDraft] and
+/// [SubmissionsRepository.updateSurveyAnswers] — so the shape lives here, once,
+/// rather than being re-derived per screen.
+///
+/// The two halves are not independent: `Answer.createObject` sends `value`
+/// whenever it is non-empty and only falls back to `valueChoicesArray` when it
+/// is not, so which of them Kotlin fills decides what reaches Planet.
+class AnswerShape {
+  const AnswerShape({required this.value, required this.valueChoices});
+
+  final String? value;
+  final List<String> valueChoices;
+
+  /// [selected] are the picked choices; [text] is whatever a text field,
+  /// textarea or rating scale holds.
+  ///
+  /// * `select` — `value` is the choice's display text (`ansForCheck`, i.e.
+  ///   `getChoiceTextById`) and `valueChoices` the one choice object, or `[]`
+  ///   when nothing is picked. Kotlin's radio group records a single id, so
+  ///   only the first selection is read.
+  /// * `selectMultiple` — `value` is the **empty string**, which is what makes
+  ///   `createObject` send the object array, and `valueChoices` one object per
+  ///   pick.
+  /// * anything else — `value` is [text] and `valueChoices` is empty
+  ///   (`valueChoices = null` in Kotlin; the column here is not nullable).
+  ///
+  /// The `hasOtherOption` branches are not ported: the port renders no "Other"
+  /// choice on either screen, so `otherVisible` is never true and there is
+  /// nothing to carry. It stays part of the open `hasOtherOption` gap — and
+  /// closing it needs a `hasOtherOption` column on `survey_questions`, which
+  /// `ExamQuestions` has but `SurveyQuestions` does not. That table is not in
+  /// `localAuthorityTables`, so `createAll` rebuilds it and the column costs
+  /// only a schema bump, no hand-written step.
+  static AnswerShape forQuestion({
+    required String? type,
+    required List<ExamChoice> choices,
+    required Iterable<ExamChoice> selected,
+    String? text,
+  }) {
+    final normalized = type?.toLowerCase();
+    // `ExamTakingFragment.startExam` and `saveExamAnswer` both compare the
+    // type with `ignoreCase = true`.
+    if (normalized == 'selectmultiple') {
+      return AnswerShape(
+        value: '',
+        valueChoices: [
+          for (final choice in selected) _resolve(choices, choice).encode(),
+        ],
+      );
+    }
+    // A question that offers choices and got a pick is a choice question even
+    // when its type says nothing. `saveExamAnswer` has no such clause and
+    // needs none — `ExamTakingFragment.startExam` renders no input at all for
+    // an unrecognised type, so the answer cannot exist — but the port's survey
+    // card renders a radio group off `choices.isNotEmpty` and reads the type
+    // only to pick checkboxes over radios. Falling through to the plain-text
+    // branch here would discard a pick the screen had just accepted.
+    if (normalized == 'select' || (choices.isNotEmpty && selected.isNotEmpty)) {
+      final picked = selected.isEmpty
+          ? null
+          : _resolve(choices, selected.first);
+      return AnswerShape(
+        value: picked?.text ?? '',
+        valueChoices: picked == null ? const [] : [picked.encode()],
+      );
+    }
+    return AnswerShape(value: text, valueChoices: const []);
+  }
+
+  /// The choice as the question defines it.
+  ///
+  /// `saveExamAnswer` resolves the text from the question
+  /// (`getChoiceTextById`), not from whatever the screen was holding, and
+  /// falls back to the id when the question no longer offers the choice. An
+  /// entry that carries its own text is honoured before that last fallback —
+  /// that only happens for a stored answer whose question has since changed,
+  /// where the recorded label is better than the raw id.
+  static ExamChoice _resolve(List<ExamChoice> choices, ExamChoice selected) {
+    final text = ExamChoice.textById(choices, selected.id);
+    if (text != selected.id) return ExamChoice(id: selected.id, text: text);
+    return selected.text.isEmpty
+        ? ExamChoice(id: selected.id, text: selected.id)
+        : selected;
+  }
 }
 
 /// One question's answer on an exam attempt.
@@ -817,7 +983,11 @@ class ExamDraftAnswer {
   final String? value;
 
   /// Ids of the selected choices — ids, not labels, because that is what
-  /// `correctChoices` holds and what the server's answer documents store.
+  /// `correctChoices` holds and what a radio/checkbox records
+  /// (`addCompoundButton` puts the choice's `id` in the button's tag).
+  /// [AnswerShape] pairs each one with the label the question gives it, which
+  /// is the `{id, text}` object a stored answer and an uploaded document
+  /// actually carry.
   final List<String> choiceIds;
 
   final bool isCorrect;

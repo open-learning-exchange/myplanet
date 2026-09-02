@@ -160,10 +160,21 @@ class SubmissionsExporter {
   /// Port of `SubmissionsRepositoryExporter.formatAnswer`: each stored choice
   /// is the `{id, text}` object as a JSON string, so the label has to be
   /// decoded out of it — joining the entries verbatim printed raw JSON.
+  ///
+  /// `value` is read first and the choices only when it is empty, which is
+  /// `formatAnswer`'s own order and the same precedence `Answer.createObject`
+  /// uses for the upload. The two orders are not actually distinguishable
+  /// here — a `select` row carries the same label in both halves, a
+  /// `selectMultiple` row has an empty `value`, and a synced row has only one
+  /// of the two — so this is one rule everywhere rather than a fix. The one
+  /// place the precedence *is* observable is `SubmissionsRepository.serialize`,
+  /// where the two branches produce different JSON types.
   String _answerValue(SubmissionAnswerRow answer) =>
-      answer.valueChoices.isNotEmpty
+      (answer.value?.isNotEmpty ?? false)
+      ? answer.value!
+      : answer.valueChoices.isNotEmpty
       ? ExamChoice.labelsFor(answer.valueChoices)
-      : answer.value ?? 'No answer';
+      : 'No answer';
 
   /// Recovers the raw question id from the `submissionId:rawQuestionId` row id.
   ///

@@ -476,7 +476,8 @@ void main() {
 
       // Adding the second correct choice would have passed it.
       final answers = await db.select(db.submissionAnswers).get();
-      expect(answers.single.valueChoices, ['c1']);
+      // Stored as the choice object `saveExamAnswer` writes, not the bare id.
+      expect(answers.single.valueChoices, ['{"id":"c1","text":"Red"}']);
       expect(answers.single.isPassed, isFalse);
     });
 

@@ -136,10 +136,33 @@ class _AnswerTile extends StatelessWidget {
         // paths decode the label out rather than printing the entry.
         ? ExamChoice.labelsFor(answer.valueChoices)
         : l10n.noAnswer;
-    final normalized = [
-      answer.value,
-      ...answer.valueChoices,
-    ].whereType<String>().map((value) => value.toLowerCase()).toSet();
+    // `correctChoices` holds choice **ids**, lowercased — both from
+    // `ExamMapper._parseCorrectChoices` and from the `correctChoice` array a
+    // synced question carries. A stored answer entry is the whole
+    // `{id, text}` object, so it has to be reduced to its id before the
+    // comparison; comparing the entries verbatim only ever matched the exam
+    // path while it stored bare ids, and matched nothing once both paths
+    // stored objects the way `saveExamAnswer` does.
+    //
+    // This indicator is the port's own: Kotlin's `getSubmissionDetail`
+    // computes `isCorrect = question.getCorrectChoice()?.contains(answer
+    // .value) == true`, but `QuestionAnswerAdapter.bind` never reads the
+    // field and `item_question_answer.xml` has no view for it, so the Kotlin
+    // detail screen shows no correctness at all. There is therefore no Kotlin
+    // rendering to be faithful to, and its comparison is not available to
+    // copy either: it pits the display *text* against a list of ids for
+    // `select`, and for `selectMultiple` `answer.value` is the empty string.
+    // Comparing ids is what `ExamGrading` does and follows the precedent
+    // `ExamMapper._parseCorrectChoices` already set and documented.
+    //
+    // `isPassed` stays the first signal: it is the verdict Kotlin actually
+    // computes and uploads.
+    final normalized = {
+      if (answer.value?.isNotEmpty ?? false) answer.value!.toLowerCase(),
+      for (final entry in answer.valueChoices)
+        if (ExamChoice.decode(entry) case final choice?)
+          choice.id.toLowerCase(),
+    };
     final correct =
         question != null &&
         question!.correctChoices.isNotEmpty &&

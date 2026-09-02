@@ -48,7 +48,17 @@ class ExamChoice {
       return raw.isEmpty ? null : ExamChoice(id: raw, text: raw);
     }
     if (raw is Map) {
-      final text = raw['text']?.toString() ?? '';
+      // `text` first with `res` only as a fallback, which is
+      // `ExamAnswerUtils.choiceDisplayValue` and what
+      // `SubmissionsRepository._questionFromJson` already does for the
+      // display column. Exam documents really do label choices with `res` —
+      // `ExamQuestion.insertCorrectChoice`'s single-id branch reads it — and
+      // reading `text` alone left those with a blank label *and* recorded a
+      // blank value on the answer. Kotlin's `addCompoundButton` does read
+      // `text` alone and so draws them blank; the port keeps one display rule
+      // instead, the same call Phase 104 made for the cached choice labels.
+      var text = raw['text']?.toString() ?? '';
+      if (text.isEmpty) text = raw['res']?.toString() ?? '';
       final id = raw['id']?.toString() ?? text;
       if (id.isEmpty && text.isEmpty) return null;
       return ExamChoice(id: id.isEmpty ? text : id, text: text);
@@ -57,6 +67,40 @@ class ExamChoice {
   }
 
   Map<String, dynamic> toJson() => {'id': id, 'text': text};
+
+  /// This choice as one stored answer entry.
+  ///
+  /// `saveExamAnswer` writes `"""{"id":"\$id","text":"\$text"}"""` into
+  /// `valueChoices`, and `Answer.valueChoicesArray` parses it straight back
+  /// with `gson.fromJson(choice, JsonObject::class.java)`.
+  String encode() => jsonEncode(toJson());
+
+  /// Reads one stored answer entry back.
+  ///
+  /// The single reader for a `valueChoices` entry, wherever it came from: the
+  /// choice object both write paths store, or a bare id an earlier build of
+  /// the exam path wrote. A bare entry resolves to `{id: raw, text: raw}`,
+  /// which is exactly what Kotlin's own unresolvable-id fallback produces —
+  /// `getChoiceTextById` returns `map[id] ?: id`, so `saveExamAnswer` writes
+  /// the id as the text too.
+  static ExamChoice? decode(String raw) {
+    try {
+      return ExamChoice.fromJson(jsonDecode(raw));
+    } on FormatException {
+      return ExamChoice.fromJson(raw);
+    }
+  }
+
+  /// Port of `ExamAnswerUtils.getChoiceTextById`: the display text of the
+  /// choice [id] names, or [id] itself when the question no longer offers it
+  /// (`map[id] ?: id`). A choice with no display value is left out of the
+  /// lookup, so it too falls back to its id.
+  static String textById(Iterable<ExamChoice> choices, String id) {
+    for (final choice in choices) {
+      if (choice.id == id && choice.text.isNotEmpty) return choice.text;
+    }
+    return id;
+  }
 
   /// Parses a document's `choices` array. Anything that is neither an object
   /// nor a non-empty string is dropped, matching `ExamTakingFragment`, which

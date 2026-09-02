@@ -6,6 +6,7 @@ import 'package:myplanet/core/network/network_result.dart';
 import 'package:myplanet/core/sync/sync_result.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/data/local/converters.dart';
 import 'package:myplanet/repository/submissions_repository.dart';
 
 class MockPlanetApi extends Mock implements PlanetApi {}
@@ -226,6 +227,184 @@ void main() {
     expect(questions.single.choices, ['Water', 'Power', 'Other']);
   });
 
+  test('a survey select answer carries the choice text as its value', () async {
+    // `saveExamAnswer`'s `select` branch sets `value = ansForCheck`, the
+    // choice's display text — and `Answer.createObject` sends `value`
+    // whenever it is non-empty. The survey screen has no text field on a
+    // choice question, so it hands the repository an empty string; deriving
+    // the value from the question is where Kotlin does it.
+    await database.surveyDao.upsertAll(
+      [SurveysCompanion.insert(id: 'survey-1', name: const Value('Services'))],
+      {
+        'survey-1': [
+          SurveyQuestionsCompanion.insert(
+            id: 'survey-1:q-1',
+            surveyId: 'survey-1',
+            questionId: const Value('q-1'),
+            type: const Value('select'),
+            choices: const Value([
+              ExamChoice(id: 'water', text: 'Water'),
+              ExamChoice(id: 'power', text: 'Power'),
+            ]),
+            position: 0,
+          ),
+        ],
+      },
+    );
+    final survey = (await database.surveyDao.getById('survey-1'))!;
+    final questions = await database.surveyDao.questionsFor('survey-1');
+
+    final id = await repository.createSurveyDraft(
+      survey: survey,
+      questions: questions,
+      userId: 'user-1',
+      answers: const {
+        'survey-1:q-1': SubmissionDraftAnswer(
+          questionId: 'q-1',
+          value: '',
+          choices: ['{"id":"water","text":"Water"}'],
+        ),
+      },
+      now: DateTime.fromMillisecondsSinceEpoch(1000),
+    );
+
+    final answers = await database.submissionDao.answersFor(id);
+    expect(answers.single.value, 'Water');
+    expect(answers.single.valueChoices, ['{"id":"water","text":"Water"}']);
+
+    final payload = await repository.serialize((await repository.getById(id))!);
+    expect((payload['answers'] as List).single, containsPair('value', 'Water'));
+  });
+
+  test('a survey selectMultiple answer uploads objects', () async {
+    await database.surveyDao.upsertAll(
+      [SurveysCompanion.insert(id: 'survey-2', name: const Value('Services'))],
+      {
+        'survey-2': [
+          SurveyQuestionsCompanion.insert(
+            id: 'survey-2:q-1',
+            surveyId: 'survey-2',
+            questionId: const Value('q-1'),
+            type: const Value('selectMultiple'),
+            choices: const Value([
+              ExamChoice(id: 'water', text: 'Water'),
+              ExamChoice(id: 'power', text: 'Power'),
+            ]),
+            position: 0,
+          ),
+        ],
+      },
+    );
+    final survey = (await database.surveyDao.getById('survey-2'))!;
+    final questions = await database.surveyDao.questionsFor('survey-2');
+
+    final id = await repository.createSurveyDraft(
+      survey: survey,
+      questions: questions,
+      userId: 'user-1',
+      answers: const {
+        'survey-2:q-1': SubmissionDraftAnswer(
+          questionId: 'q-1',
+          value: '',
+          choices: [
+            '{"id":"water","text":"Water"}',
+            '{"id":"power","text":"Power"}',
+          ],
+        ),
+      },
+      now: DateTime.fromMillisecondsSinceEpoch(1000),
+    );
+
+    // Kotlin's `selectMultiple` branch sets `value = ""`, which is what sends
+    // `valueChoicesArray` instead of a string.
+    final answers = await database.submissionDao.answersFor(id);
+    expect(answers.single.value, '');
+
+    final payload = await repository.serialize((await repository.getById(id))!);
+    expect((payload['answers'] as List).single['value'], [
+      {'id': 'water', 'text': 'Water'},
+      {'id': 'power', 'text': 'Power'},
+    ]);
+  });
+
+  test('a choice pick survives a question with no type', () async {
+    // `take_survey_screen` renders choices whenever the question offers any,
+    // reading only `selectmultiple` off the type to pick checkboxes over
+    // radios — so a document that names no type still gets a radio group and
+    // a real answer. Shaping that answer through the plain-text branch (which
+    // is what `saveExamAnswer` does for an unrecognised type) would discard
+    // the pick silently. Kotlin never faces the case: `startExam` renders
+    // *nothing* for a type-less question, so it is unanswerable there.
+    await database.surveyDao.upsertAll(
+      [SurveysCompanion.insert(id: 'survey-3', name: const Value('Services'))],
+      {
+        'survey-3': [
+          SurveyQuestionsCompanion.insert(
+            id: 'survey-3:q-1',
+            surveyId: 'survey-3',
+            questionId: const Value('q-1'),
+            choices: const Value([ExamChoice(id: 'water', text: 'Water')]),
+            position: 0,
+          ),
+        ],
+      },
+    );
+    final survey = (await database.surveyDao.getById('survey-3'))!;
+
+    final id = await repository.createSurveyDraft(
+      survey: survey,
+      questions: await database.surveyDao.questionsFor('survey-3'),
+      userId: 'user-1',
+      answers: const {
+        'survey-3:q-1': SubmissionDraftAnswer(
+          questionId: 'q-1',
+          value: '',
+          choices: ['{"id":"water","text":"Water"}'],
+        ),
+      },
+      now: DateTime.fromMillisecondsSinceEpoch(1000),
+    );
+
+    final answers = await database.submissionDao.answersFor(id);
+    expect(answers.single.valueChoices, ['{"id":"water","text":"Water"}']);
+    expect(answers.single.value, 'Water');
+  });
+
+  test('a synced choice answer is cached as JSON, not as a Dart map', () async {
+    // Kotlin stores `valueElement.asJsonArray.map { it.toString() }`, and
+    // Gson's `JsonElement.toString()` emits JSON. Dart's `Map.toString()`
+    // emits `{id: paris, text: Paris}` — not JSON, so nothing downstream can
+    // read it back: the re-upload sent that literal as a *string* where
+    // Planet expects the object, and the detail screen and the PDF export
+    // printed it verbatim.
+    await repository.upsertDocuments([
+      {
+        '_id': 'synced-1',
+        'userId': 'user-1',
+        'status': 'complete',
+        'answers': [
+          {
+            'questionId': 'q-1',
+            'value': [
+              {'id': 'paris', 'text': 'Paris'},
+            ],
+          },
+        ],
+      },
+    ]);
+
+    final answers = await repository.answersFor('synced-1');
+    expect(answers.single.valueChoices, ['{"id":"paris","text":"Paris"}']);
+    // And it round-trips: the entry the sync stored is one the uploader can
+    // send back as an object.
+    final payload = await repository.serialize(
+      (await repository.getById('synced-1'))!,
+    );
+    expect((payload['answers'] as List).single['value'], [
+      {'id': 'paris', 'text': 'Paris'},
+    ]);
+  });
+
   test('serializes an answer choice as the object it was stored as', () async {
     // Port of `Answer.valueChoicesArray`, which sends each entry back through
     // `gson.fromJson(choice, JsonObject::class.java)`: Planet expects
@@ -252,10 +431,16 @@ void main() {
     ]);
   });
 
-  test('serializes a bare choice id untouched', () async {
-    // The exam path stores plain choice ids in `valueChoices`; Kotlin has no
-    // such entries and `gson.fromJson` would throw on one, so they are passed
-    // through rather than dropped.
+  test('serializes a bare entry as an object, not as a bare id', () async {
+    // The exam path used to store plain choice ids and `_answerChoices`
+    // carried a "send a non-JSON entry untouched" branch to let them past.
+    // Both write paths go through `AnswerShape` now, so that tolerance is
+    // gone: an entry an earlier build left behind resolves to
+    // `{id: raw, text: raw}`, which is what Kotlin's own unresolvable-id
+    // fallback produces (`getChoiceTextById` returns `map[id] ?: id`).
+    // It is not left to throw the way `gson.fromJson` would, because
+    // `SubmissionsUploader.queuePending` serializes every pending row in one
+    // unguarded loop and one such row would block the whole queue.
     final id = await repository.createDraft(
       userId: 'user-1',
       type: 'exam',
@@ -268,7 +453,9 @@ void main() {
 
     final payload = await repository.serialize((await repository.getById(id))!);
     final answer = (payload['answers'] as List).single as Map;
-    expect(answer['value'], ['choice-a']);
+    expect(answer['value'], [
+      {'id': 'choice-a', 'text': 'choice-a'},
+    ]);
   });
 
   test(
