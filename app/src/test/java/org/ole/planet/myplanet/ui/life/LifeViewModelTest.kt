@@ -16,6 +16,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.MyLife
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
@@ -96,11 +97,52 @@ class LifeViewModelTest {
     }
 
     @Test
-    fun `updateMyLifeListOrder calls repository`() = runTest {
+    fun `updateMyLifeListOrder calls repository and updates state flow`() = runTest {
         val list = listOf(MyLife("img1", "user_123", "Item 1"))
         viewModel.updateMyLifeListOrder(list)
         testDispatcher.scheduler.advanceUntilIdle()
 
+        assertEquals(list, viewModel.myLifeList.value)
         coVerify(exactly = 1) { lifeRepository.updateMyLifeListOrder(list) }
+    }
+
+    @Test
+    fun `loadMyLifeList treats placeholder userId as no user`() = runTest {
+        coEvery { userRepository.getCurrentUserId() } returns "--"
+        val item = MyLife("img1", null, "Item 1")
+        coEvery { lifeRepository.getMyLifeByUserId(null, any()) } returns listOf(item)
+
+        viewModel.loadMyLifeList()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(listOf(item), viewModel.myLifeList.value)
+        coVerify(exactly = 1) { lifeRepository.getMyLifeByUserId(null, any()) }
+    }
+
+    @Test
+    fun `loadMyLifeList falls back to user repository id when current userId is empty`() = runTest {
+        val item = MyLife("img1", "userFromRepo", "Item 1")
+        coEvery { userRepository.getCurrentUserId() } returns ""
+        coEvery { userRepository.getUserModel() } returns UserEntity("userFromRepo", name = "Test User")
+        coEvery { lifeRepository.getMyLifeByUserId("userFromRepo", any()) } returns listOf(item)
+
+        viewModel.loadMyLifeList()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(listOf(item), viewModel.myLifeList.value)
+        coVerify(exactly = 1) { lifeRepository.getMyLifeByUserId("userFromRepo", any()) }
+    }
+
+    @Test
+    fun `loadMyLifeList falls back to no user when neither source has an id`() = runTest {
+        coEvery { userRepository.getCurrentUserId() } returns null
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { lifeRepository.getMyLifeByUserId(null, any()) } returns emptyList()
+
+        viewModel.loadMyLifeList()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(emptyList<MyLife>(), viewModel.myLifeList.value)
+        coVerify(exactly = 1) { lifeRepository.getMyLifeByUserId(null, any()) }
     }
 }
