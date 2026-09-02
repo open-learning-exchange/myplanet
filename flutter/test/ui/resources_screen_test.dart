@@ -305,4 +305,40 @@ void main() {
     expect(topOf('Old'), lessThan(topOf('Mid')));
     expect(topOf('Mid'), lessThan(topOf('New')));
   });
+
+  // `ResourcesFragment.setupAddResourceButtonListener` does
+  // `addResource.visibility = if (isMyCourseLib) VISIBLE else GONE`
+  // (ResourcesFragment.kt:454-455). `isMyCourseLib` is the port's
+  // `resourceShelfOnlyProvider`, so the add button is the My Library
+  // affordance, not the catalog's.
+  Future<void> pumpWithShelf(
+    WidgetTester tester, {
+    required bool shelfOnly,
+  }) async {
+    await tester.pumpWidget(
+      wrapScreen(
+        const ResourcesScreen(),
+        overrides: [
+          resourceShelfOnlyProvider.overrideWith((ref) => shelfOnly),
+          resourcesStreamProvider.overrideWith(
+            (ref) =>
+                Stream.value([buildLibraryRow(id: 'r1', title: 'Algebra')]),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('My Library offers the add-resource button', (tester) async {
+    await pumpWithShelf(tester, shelfOnly: true);
+    expect(find.byType(FloatingActionButton), findsOneWidget);
+  });
+
+  testWidgets('the catalog does not offer the add-resource button', (
+    tester,
+  ) async {
+    await pumpWithShelf(tester, shelfOnly: false);
+    expect(find.byType(FloatingActionButton), findsNothing);
+  });
 }

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/session_provider.dart';
@@ -83,7 +84,10 @@ class _AddResourceScreenState extends ConsumerState<AddResourceScreen> {
       setState(() {
         _titleController.text = row.title ?? '';
         _authorController.text = row.author ?? '';
-        _yearController.text = row.year ?? DateTime.now().year.toString();
+        // `prefillFields` sets the field to the stored year verbatim
+        // (AddResourceActivity.kt:126). Falling back to this year here would
+        // restamp a row whose year the server never carried.
+        _yearController.text = row.year ?? '';
         _descriptionController.text = row.description ?? '';
         _publisherController.text = row.publisher ?? '';
         _licenseController.text = row.linkToLicense ?? '';
@@ -125,7 +129,19 @@ class _AddResourceScreenState extends ConsumerState<AddResourceScreen> {
     });
 
     final repo = ref.read(resourcesRepositoryProvider);
-    final user = ref.read(sessionProvider).valueOrNull;
+    // `ref.read(sessionProvider).valueOrNull` is null until something else
+    // resolves the provider, and this screen never watches it — in the app the
+    // router's `ref.listen` happens to keep it resolved, so the loss was
+    // invisible. Awaiting the future is what `AddResourceActivity` does
+    // (`userSessionManager.getUserModel()` in onCreate). A rejecting session
+    // costs the attribution, never the resource.
+    UserRow? user;
+    try {
+      user = await ref.read(sessionProvider.future);
+    } catch (_) {
+      user = null;
+    }
+    if (!mounted) return;
 
     String? error;
     if (_isEditMode) {
@@ -470,12 +486,18 @@ class _DropdownField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // A synced row carries whatever the server wrote — `mediaType: "HTML"`,
+    // an ISO language code — and `DropdownButton` asserts that a non-null
+    // value matches exactly one item. The Kotlin spinner simply stays on its
+    // hint for a value it does not know (`setupHintSpinner`), so drop the
+    // unknown one rather than taking the screen down with it.
+    final known = options.contains(value) ? value : null;
     return DropdownButtonFormField<String>(
       decoration: InputDecoration(
         labelText: label,
         border: const OutlineInputBorder(),
       ),
-      initialValue: value,
+      initialValue: known,
       items: [
         for (final option in options)
           DropdownMenuItem(value: option, child: Text(option)),

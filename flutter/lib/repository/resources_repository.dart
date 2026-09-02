@@ -100,8 +100,14 @@ class ResourcesRepository {
       filename: Value(request.resourceUrl?.split('/').last),
       isPrivate: Value(request.isPrivateTeamResource),
       privateFor: Value(request.isPrivateTeamResource ? request.teamId : null),
+      // `MyLibrary.setUserId` returns early on a null or blank id, so the
+      // shelf list stays empty. A `[""]` entry is not a harmless placeholder:
+      // it fails the My Library predicate and passes the catalog one, putting
+      // the row everywhere except the library of the user who made it.
       userId: Value(
-        request.isPrivateTeamResource ? const [] : [request.userId ?? ''],
+        request.isPrivateTeamResource || (request.userId ?? '').isEmpty
+            ? const []
+            : [request.userId!],
       ),
     );
     await _dao.upsertAll([companion]);

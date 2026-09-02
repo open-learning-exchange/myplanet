@@ -133,7 +133,7 @@ class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
     });
 
     return Scaffold(
-      floatingActionButton: !_selecting && !shelfOnly
+      floatingActionButton: !_selecting && shelfOnly
           ? FloatingActionButton(
               tooltip: l10n.addResource,
               onPressed: () => context.push(Routes.addResource),
