@@ -63,6 +63,10 @@ void main() {
 
   Map<String, dynamic> examDoc(String id, {String? stepId}) => {
     '_id': id,
+    // `'exam'` is the type `insertCourseStepsExams` falls back to for a
+    // document with no `type` key at all; a real course test is `'courses'`.
+    // Both reach the exams table now — the mapper's rule is "anything that is
+    // not a survey" — so this fixture stays valid.
     'type': 'exam',
     'name': 'Exam $id',
     'courseId': 'course-1',
@@ -105,7 +109,15 @@ void main() {
       expect(await database.examDao.questionsFor('exam-1'), hasLength(1));
     });
 
-    test('an exam is reachable from its step', () async {
+    test('a document-carried stepId is still honoured', () async {
+      // **Not the path a course test takes**, and the fixture is not a shape
+      // Planet produces: `StepExam.serializeExam` emits no `stepId`, so an
+      // `exams`-database document has no step id to carry, and the Kotlin's
+      // exams walk passes `""` for it (`SurveysRepositoryImpl.kt:387`). Phase
+      // 113 moved the real join onto the `courses` walk — see
+      // `step_assessment_sync_test.dart`. This only pins that a document that
+      // *does* carry the key is still written with it, which is what keeps
+      // `_presentOrAbsent` honest.
       stubExamsDatabase([examDoc('exam-1', stepId: 'step-7')]);
       await surveys.sync(config: config);
       expect((await database.examDao.getByStepId('step-7'))?.id, 'exam-1');

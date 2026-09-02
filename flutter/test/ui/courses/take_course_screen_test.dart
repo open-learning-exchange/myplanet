@@ -4,6 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/data/local/course_mapper.dart';
+import 'package:myplanet/data/local/exam_mapper.dart';
+import 'package:myplanet/data/local/survey_mapper.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/courses_providers.dart';
 import 'package:myplanet/providers/ratings_provider.dart';
@@ -269,4 +272,77 @@ void main() {
     );
     expect(find.byType(AlertDialog), findsNothing);
   });
+
+  testWidgets(
+    'the step view offers Take test and Take survey for an embedded pair',
+    (tester) async {
+      // Phase 113. Same reachability proof as `course_detail_screen_test`, on
+      // the other entry into `TakeExamScreen`. Neither `stepExamProvider` nor
+      // `stepSurveysProvider` is overridden: both do their own lookup against
+      // a database filled by the mappers the courses walk now runs, so the
+      // `exams.stepId == course_steps.id` join is the thing under test.
+      final db = AppDatabase.memory();
+      addTearDown(db.close);
+
+      const doc = {
+        '_id': 'course-1',
+        'courseTitle': 'Algebra',
+        'steps': [
+          {
+            'stepTitle': 'First',
+            'exam': {
+              '_id': 'exam-1',
+              'type': 'courses',
+              'name': 'Step test',
+              'questions': [
+                {'id': 'q1', 'title': 'One?', 'type': 'input'},
+              ],
+            },
+            'survey': {
+              '_id': 'survey-1',
+              'type': 'surveys',
+              'name': 'Step survey',
+              'questions': [
+                {'id': 's1', 'title': 'How was it?', 'type': 'input'},
+              ],
+            },
+          },
+        ],
+      };
+      final parsed = CourseMapper.fromDoc(doc)!;
+      await db.courseDao.upsertAll([parsed.course], parsed.steps);
+      for (final mapping in ExamMapper.fromCourseDoc(
+        doc,
+        stepIdFor: CourseMapper.stepIdFor,
+      )) {
+        await db.examDao.upsertAll(
+          [mapping.exam],
+          {mapping.exam.id.value: mapping.questions},
+        );
+      }
+      for (final mapping in SurveyMapper.fromCourseDoc(
+        doc,
+        stepIdFor: CourseMapper.stepIdFor,
+      )) {
+        await db.surveyDao.upsertAll(
+          [mapping.survey],
+          {mapping.survey.id.value: mapping.questions},
+        );
+      }
+      final steps = await db.courseDao.getSteps('course-1');
+
+      await pumpScreen(
+        tester,
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          courseStepsProvider(
+            'course-1',
+          ).overrideWith((ref) => Stream.value(steps)),
+        ],
+      );
+
+      expect(find.text('Take test'), findsOneWidget);
+      expect(find.text('Record survey'), findsOneWidget);
+    },
+  );
 }

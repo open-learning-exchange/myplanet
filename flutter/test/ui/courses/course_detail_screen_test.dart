@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/data/local/course_mapper.dart';
+import 'package:myplanet/data/local/exam_mapper.dart';
+import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/courses_providers.dart';
 import 'package:myplanet/providers/ratings_provider.dart';
 import 'package:myplanet/providers/session_provider.dart';
@@ -223,4 +226,60 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Step A'), findsOneWidget);
   });
+
+  testWidgets(
+    'a step carrying an embedded exam offers Take exam, from a real sync',
+    (tester) async {
+      // Phase 113. The reachability proof, and the reason it is written this
+      // way: the join is `exams.stepId == course_steps.id`, and until this
+      // phase nothing in the port ever wrote one. Overriding `stepExamProvider`
+      // here would prove only that the button renders when handed an exam —
+      // which it always did. So the database is filled by the real courses
+      // walk from a real-shaped course document, and the provider does its own
+      // lookup.
+      final db = AppDatabase.memory();
+      addTearDown(db.close);
+
+      const doc = {
+        '_id': 'c1',
+        'courseTitle': 'Water',
+        'steps': [
+          {
+            'stepTitle': 'Assessment',
+            'exam': {
+              '_id': 'exam-1',
+              'type': 'courses',
+              'name': 'Step test',
+              'questions': [
+                {'id': 'q1', 'title': 'Which is wet?', 'type': 'input'},
+              ],
+            },
+          },
+        ],
+      };
+      final parsed = CourseMapper.fromDoc(doc)!;
+      await db.courseDao.upsertAll([parsed.course], parsed.steps);
+      for (final mapping in ExamMapper.fromCourseDoc(
+        doc,
+        stepIdFor: CourseMapper.stepIdFor,
+      )) {
+        await db.examDao.upsertAll(
+          [mapping.exam],
+          {mapping.exam.id.value: mapping.questions},
+        );
+      }
+
+      final steps = await db.courseDao.getSteps('c1');
+      await pumpScreen(
+        tester,
+        course: buildCourseRow(id: 'c1', courseTitle: 'Water'),
+        steps: steps,
+        overrides: [appDatabaseProvider.overrideWithValue(db)],
+      );
+
+      await tester.tap(find.text('Assessment'));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(FilledButton, 'Take exam'), findsOneWidget);
+    },
+  );
 }
