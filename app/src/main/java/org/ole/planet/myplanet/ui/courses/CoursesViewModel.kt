@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.CourseProgressState
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.Tag
+import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -161,9 +162,10 @@ class CoursesViewModel @Inject constructor(
         selectedGrade: String,
         selectedSubject: String,
         tagNames: List<String>,
-        progressFilter: String = ""
+        progressFilter: String = "",
+        tags: List<TagEntity> = emptyList()
     ) {
-        val filterState = FilterState(searchText, selectedGrade, selectedSubject, tagNames, progressFilter)
+        val filterState = FilterState(searchText, selectedGrade, selectedSubject, tagNames, progressFilter, tags)
         currentFilterState = filterState
         viewModelScope.launch {
             val newState = withContext(dispatcherProvider.io) {
