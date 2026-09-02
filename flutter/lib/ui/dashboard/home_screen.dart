@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/local/app_database.dart';
+import '../../data/local/user_mapper.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/challenge_provider.dart';
@@ -78,7 +79,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         // account published to its `userdb-*` database. The Kotlin gates on
         // `TextUtils.isEmpty(user.key)`; the notifier's SyncRunning check is
         // the `syncJob?.isActive` re-entrancy guard.
-        if (!user.id.startsWith('guest') && (user.key?.isEmpty ?? true)) {
+        if (!UserMapper.isGuest(user) && (user.key?.isEmpty ?? true)) {
           ref
               .read(healthKeyIvSyncProvider.notifier)
               .sync(user.rolesList.join(','));
@@ -146,7 +147,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final evaluator = ref.read(challengeEvaluatorProvider);
     final data = await evaluator.evaluate(
       userId: session.id,
-      isGuest: session.id.startsWith('guest'),
+      isGuest: UserMapper.isGuest(session),
       serverUrl: config.serverUrl,
     );
     if (data == null || !mounted) return;
@@ -192,7 +193,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _surveyCheckDone = true;
 
     // Guests never see the dialog, exactly as the Kotlin guards it.
-    if (session.id.startsWith('guest')) return;
+    if (UserMapper.isGuest(session)) return;
 
     final prefs = ref.read(planetPrefsProvider);
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -342,7 +343,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ? 'Planet ${prefs.communityName}'
               : l10n.appTitle);
 
-    final isGuest = session != null && session.id.startsWith('guest');
+    final isGuest = session != null && UserMapper.isGuest(session);
 
     // `DashboardActivity.handleGuestAccess`: a logged-in user with no roles
     // and no admin flag sees the inactive dashboard instead of the full

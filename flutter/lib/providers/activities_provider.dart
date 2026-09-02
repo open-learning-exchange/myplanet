@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/server_config.dart';
 import '../core/sync/sync_result.dart';
 import '../data/local/app_database.dart';
+import '../data/local/user_mapper.dart';
 import '../repository/activities_repository.dart';
 import 'app_providers.dart';
 import 'session_provider.dart';
@@ -116,7 +117,7 @@ class ActivityLog {
   /// swallows it — a lost row costs a checkbox, not a sync.
   Future<void> recordSyncChallengeAction() async {
     final user = ref.read(sessionProvider).valueOrNull;
-    if (user == null || user.id.startsWith('guest')) return;
+    if (user == null || UserMapper.isGuest(user)) return;
     try {
       await ref
           .read(activitiesRepositoryProvider)

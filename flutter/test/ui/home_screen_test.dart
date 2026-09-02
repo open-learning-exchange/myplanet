@@ -673,7 +673,13 @@ void main() {
         wrapScreen(
           const HomeScreen(),
           overrides: await homeOverrides(
-            user: _user('guest-ada'),
+            // `guest_ada`, not `guest-ada`. This fixture used to carry a
+            // hyphen while the three other guest fixtures in this file used
+            // the underscore, and the pre-Phase-112 five-character
+            // `startsWith('guest')` could not tell them apart — so a row
+            // `createGuestUser` can never write was standing in for a guest.
+            // `UserMapper.guestIdPrefix` is `guest_`.
+            user: _user('guest_ada'),
             keyIvSync: keyIvSync,
           ),
         ),

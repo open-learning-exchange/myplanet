@@ -5,7 +5,9 @@ import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/background/background_scheduler.dart';
 import 'package:myplanet/core/prefs/planet_prefs.dart';
+import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
+import 'package:myplanet/providers/session_provider.dart';
 import 'package:myplanet/ui/settings/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -203,6 +205,146 @@ void main() {
     expect(find.text('Version 0.62.98'), findsOneWidget);
     expect(find.text('Build 6298'), findsOneWidget);
   });
+
+  /// `SettingsActivity.SettingFragment` gates the destructive and the storage
+  /// actions on `user?.id?.startsWith("guest") == true` and offers
+  /// `DialogUtils.guestDialog` instead (`SettingsActivity.kt:221`, `:249`,
+  /// `:286`). Neither gate had a test, and both read
+  /// `ref.read(sessionProvider).valueOrNull` on a screen that never watches
+  /// `sessionProvider` — so the session resolved to `null`, the gate fell
+  /// through, and a guest reached the only destructive action in the app.
+  group('guest gates', () {
+    testWidgets('a guest tapping Reset app is offered membership', (
+      tester,
+    ) async {
+      final prefs = await _prefs();
+      await tester.pumpWidget(
+        wrapScreen(
+          const SettingsScreen(),
+          overrides: [
+            planetPrefsProvider.overrideWithValue(prefs),
+            sessionProvider.overrideWith(
+              () => _TestSessionNotifier(_guestRow()),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.text('Reset app'),
+        300,
+        scrollable: _settingsScrollable(),
+      );
+      await tester.tap(find.text('Reset app'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'You are currently a guest user. To access this feature, become a member.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Are you sure?'), findsNothing);
+    });
+
+    testWidgets('a guest tapping Storage Management is offered membership', (
+      tester,
+    ) async {
+      final prefs = await _prefs();
+      await tester.pumpWidget(
+        wrapScreen(
+          const SettingsScreen(),
+          overrides: [
+            planetPrefsProvider.overrideWithValue(prefs),
+            sessionProvider.overrideWith(
+              () => _TestSessionNotifier(_guestRow()),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.text('Storage Management'),
+        300,
+        scrollable: _settingsScrollable(),
+      );
+      await tester.tap(find.text('Storage Management'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'You are currently a guest user. To access this feature, become a member.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    /// The other half of the gate: a member still reaches the confirmation.
+    testWidgets('a member tapping Reset app gets the confirmation', (
+      tester,
+    ) async {
+      final prefs = await _prefs();
+      await tester.pumpWidget(
+        wrapScreen(
+          const SettingsScreen(),
+          overrides: [
+            planetPrefsProvider.overrideWithValue(prefs),
+            sessionProvider.overrideWith(
+              () => _TestSessionNotifier(_memberRow()),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.text('Reset app'),
+        300,
+        scrollable: _settingsScrollable(),
+      );
+      await tester.tap(find.text('Reset app'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Are you sure?'), findsOneWidget);
+    });
+  });
+}
+
+/// The row `createGuestUser('ada')` produces: `buildGuestUserJson`
+/// (`UserRepositoryImpl.kt:146-153`) keys the document `guest_ada`, and
+/// `applyJsonToUser` writes that to both the row key and the `_id` column.
+UserRow _guestRow() => UserRow(
+  id: 'guest_ada',
+  couchId: 'guest_ada',
+  name: 'ada',
+  rolesList: const ['guest'],
+  userAdmin: false,
+  joinDate: 0,
+  isArchived: false,
+  isUpdated: false,
+);
+
+/// A member registered on this device whose upload has landed.
+UserRow _memberRow() => UserRow(
+  id: '1699999999999',
+  couchId: 'org.couchdb.user:ada',
+  name: 'ada',
+  rolesList: const ['learner'],
+  userAdmin: false,
+  joinDate: 0,
+  isArchived: false,
+  isUpdated: false,
+);
+
+class _TestSessionNotifier extends SessionNotifier {
+  _TestSessionNotifier(this.user);
+
+  final UserRow? user;
+
+  @override
+  Future<UserRow?> build() async => user;
 }
 
 Finder _settingsScrollable() => find

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/local/app_database.dart';
+import '../../data/local/user_mapper.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/session_provider.dart';
 import '../components/guest_dialog.dart';
@@ -20,7 +21,7 @@ class DashboardDrawer extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final session = ref.watch(sessionProvider).valueOrNull;
-    final isGuest = session?.id.startsWith('guest') ?? false;
+    final isGuest = session != null && UserMapper.isGuest(session);
 
     return NavigationDrawer(
       children: [

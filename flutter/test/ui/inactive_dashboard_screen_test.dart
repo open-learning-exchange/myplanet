@@ -162,8 +162,19 @@ void main() {
   testWidgets('guest user sees the full dashboard, not inactive', (
     tester,
   ) async {
+    // `guest_123`, not `guest-123`. The hyphen spelled the prefix a fourth
+    // way and the pre-Phase-112 five-character `startsWith('guest')` could
+    // not tell it from `UserMapper.guestIdPrefix`, so this fixture was a row
+    // `createGuestUser` can never write.
+    //
+    // `rolesList` stays empty on purpose, and that too is not a real guest
+    // row: `buildGuestUserJson` sends `roles: ["guest"]`, which would keep
+    // `rolesList.isEmpty` false and the inactive branch shut on its own. The
+    // empty list is what makes this test about the `!isGuest` clause rather
+    // than about the roles.
     final user = UserRow(
-      id: 'guest-123',
+      id: 'guest_123',
+      couchId: 'guest_123',
       name: 'guest',
       rolesList: const [],
       userAdmin: false,

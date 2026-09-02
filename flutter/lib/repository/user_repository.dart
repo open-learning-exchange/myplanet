@@ -175,9 +175,21 @@ class UserRepository {
 
   /// Port of `UserRepositoryImpl.authenticateUser`.
   ///
-  /// Guest accounts have an empty `_id` and store their password in plaintext;
-  /// everyone else is checked with the same PBKDF2 comparison as the online
-  /// path.
+  /// The branch is `if (it._id?.isEmpty() == true)`
+  /// (`UserRepositoryImpl.kt:862`), and despite how it reads it is **not** a
+  /// guest check — a guest row's `_id` is `guest_<username>`, not empty
+  /// (`buildGuestUserJson`), so a guest takes the *other* branch and fails
+  /// against a null `derived_key`. That is correct: guest re-entry never comes
+  /// through here, it goes back through `showGuestLoginDialog`, which
+  /// recognises the stored row and re-offers it without a password
+  /// (`GuestLoginExtensions.kt:64`).
+  ///
+  /// What the branch actually selects is an account with **no server
+  /// identity** — a member registered offline, whose document had no `_id`, so
+  /// `applyJsonToUser` wrote `""` and the plaintext password it typed. The
+  /// port stores that absent id as `null` rather than `''`, so both are
+  /// tested. Everyone with a server identity is checked with the same PBKDF2
+  /// comparison as the online path.
   Future<LoginResult> loginOffline({
     required String username,
     required String password,
@@ -192,8 +204,8 @@ class UserRepository {
       return const LoginFailure(LoginFailureReason.userNotFound);
     }
 
-    final isGuest = user.couchId == null || user.couchId!.isEmpty;
-    final authenticated = isGuest
+    final hasNoServerIdentity = user.couchId == null || user.couchId!.isEmpty;
+    final authenticated = hasNoServerIdentity
         ? user.password == password
         : AndroidDecrypter.androidDecrypter(
             username,
@@ -242,8 +254,12 @@ class UserRepository {
     }
 
     final existing = await _userDao.getByName(username);
-    final taken =
-        existing != null && !(existing.couchId?.startsWith('guest') ?? false);
+    // Kotlin reads `_id.orEmpty().startsWith("guest")` here
+    // (`UserRepositoryImpl.kt:832`) — a guest may re-take their own name,
+    // because becoming a member *reuses* that row (`migrateGuestUser`) rather
+    // than adding one. `UserMapper.isGuest` is the same rule read off both id
+    // columns; see its doc comment for why both.
+    final taken = existing != null && !UserMapper.isGuest(existing);
     return taken ? messages.taken : null;
   }
 
