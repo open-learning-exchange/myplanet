@@ -28,9 +28,15 @@ class TeamCoursesScreen extends ConsumerWidget {
     // creator who is not the leader.
     final creatorId = ref.watch(teamProvider(teamId)).valueOrNull?.userId;
     final currentUserId = ref.watch(sessionProvider).valueOrNull?.id;
+    // Both sides must be non-empty as well as non-null. Kotlin's
+    // `sharedPrefManager.getUserId().ifEmpty { "--" }` sentinel exists to
+    // stop an empty id matching an empty creator; without it a team document
+    // with no `userId` would hand the unlink to a session with no id.
     final canRemove =
         creatorId != null &&
+        creatorId.isNotEmpty &&
         currentUserId != null &&
+        currentUserId.isNotEmpty &&
         creatorId.toLowerCase() == currentUserId.toLowerCase();
     return Scaffold(
       appBar: AppBar(title: Text(l10n.teamCourses)),

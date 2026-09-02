@@ -210,6 +210,16 @@ final teamFinancesActionsProvider = Provider<TeamFinancesActions>(
 /// the server never had.
 bool _serverKnowsRow(String? rev) => rev != null && rev.trim().isNotEmpty;
 
+/// The signed-in user's id, resolved rather than read — see
+/// [TeamMembershipActions._session] for why the rejection is swallowed.
+Future<String?> _sessionUserId(Ref ref) async {
+  try {
+    return (await ref.read(sessionProvider.future))?.id;
+  } catch (_) {
+    return null;
+  }
+}
+
 class TeamMembershipActions {
   TeamMembershipActions(this.ref);
   final Ref ref;
@@ -219,11 +229,23 @@ class TeamMembershipActions {
   /// null until something else resolves it, and every action below then took
   /// its `return false` branch silently. Latent in the app only because the
   /// router holds a `ref.listen`; not a guarantee this class can rely on.
-  /// Callers keep the await inside their own `try`/error path, because a
-  /// future can reject where `valueOrNull` could not.
-  Future<UserRow?> _session() => ref.read(sessionProvider.future);
-
-  Future<String?> _userId() async => (await _session())?.id;
+  ///
+  /// **The rejection is swallowed here, deliberately.** Awaiting `.future`
+  /// resolves the session properly, but a future rejects where `valueOrNull`
+  /// could only be null — and not one of the five call sites wraps the await:
+  /// `team_members_screen`'s `_handleMemberAction` shows its "operation
+  /// failed" snackbar off the returned `false`, and the join button and the
+  /// leave dialog are both fire-and-forget `onPressed`s. Throwing would lose
+  /// that message and escape as an uncaught async error, which is strictly
+  /// worse than the `false` it replaced. Returning null keeps every action's
+  /// existing contract: it reports failure, and the caller says so.
+  Future<UserRow?> _session() async {
+    try {
+      return await ref.read(sessionProvider.future);
+    } catch (_) {
+      return null;
+    }
+  }
 
   String? get _endpoint {
     final config = ref.read(serverConfigProvider);
@@ -330,6 +352,15 @@ class TeamMembershipActions {
   Future<bool> respond(String requestId, {required bool accept}) async {
     final endpoint = _endpoint;
     if (endpoint == null) return false;
+    // Resolved *before* `respondToRequest`, as the four actions above do.
+    // This was the one session read placed after its own local write, and
+    // `respondToRequest` has already converted the request row into a
+    // `membership` with `isUpdated = true` by then. The outbox is the only
+    // upload route — `TeamDao` has no pending sweep and `TeamsUploader` has
+    // no rescan — so failing between the two left the accepted member on
+    // this device and nowhere else, permanently.
+    final user = await _session();
+    if (user == null) return false;
     final original = await ref.read(teamsRepositoryProvider).getById(requestId);
     if (original == null) return false;
     final updated = await ref
@@ -347,7 +378,7 @@ class TeamMembershipActions {
             payload: accept
                 ? TeamsRepository.serializeTeamDocument(updated)
                 : {'_id': original.id, '_rev': original.rev, '_deleted': true},
-            userId: await _userId(),
+            userId: user.id,
           );
     }
     return true;
@@ -389,15 +420,22 @@ class TeamResourceActions {
         .read(teamsRepositoryProvider)
         .removeResourceLink(teamId, resource.resourceId!);
     if (row == null) return false;
-    await ref
-        .read(outboxRepositoryProvider)
-        .enqueue(
-          uploadType: 'teamResource',
-          itemId: row.id,
-          endpoint: '${UrlUtils.credentialFreeDbUrl(config)}/teams',
-          payload: {'_id': row.id, '_rev': row.rev, '_deleted': true},
-          userId: ref.read(sessionProvider).valueOrNull?.id,
-        );
+    // The fourth tombstone in this file, and it needs the same guard as the
+    // three in `TeamMembershipActions`: `removeResourceLink` hard-deletes a
+    // row that has no `rev` until it uploads. Now reachable by far more
+    // users, because the add gate this phase corrected to plain membership
+    // lets any member create such a link in the first place.
+    if (_serverKnowsRow(row.rev)) {
+      await ref
+          .read(outboxRepositoryProvider)
+          .enqueue(
+            uploadType: 'teamResource',
+            itemId: row.id,
+            endpoint: '${UrlUtils.credentialFreeDbUrl(config)}/teams',
+            payload: {'_id': row.id, '_rev': row.rev, '_deleted': true},
+            userId: (await _sessionUserId(ref)),
+          );
+    }
     return true;
   }
 }

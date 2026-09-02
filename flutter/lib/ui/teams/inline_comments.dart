@@ -28,6 +28,12 @@ class _InlineCommentsState extends ConsumerState<InlineComments> {
   final _controller = TextEditingController();
   bool _expanded = false;
 
+  /// The send button is never disabled and the text now survives the write
+  /// (it is cleared only on success, so a failure leaves it to retry), so
+  /// without this a second tap during an in-flight write posted the comment
+  /// twice. Before the clear moved, the second tap was a no-op by accident.
+  bool _sending = false;
+
   @override
   void dispose() {
     _controller.dispose();
@@ -107,8 +113,10 @@ class _InlineCommentsState extends ConsumerState<InlineComments> {
   }
 
   Future<void> _addComment() async {
+    if (_sending) return;
     final text = _controller.text.trim();
     if (text.isEmpty) return;
+    _sending = true;
     try {
       // This widget never *watches* `sessionProvider`, so
       // `ref.read(...).valueOrNull` is null until something else resolves it
@@ -131,9 +139,11 @@ class _InlineCommentsState extends ConsumerState<InlineComments> {
           );
       // Cleared only once the write has landed, so a failure leaves the text
       // in the field to retry rather than discarding it.
-      _controller.clear();
+      if (mounted) _controller.clear();
     } catch (_) {
       // A rejecting session or a failed write must not take the thread down.
+    } finally {
+      _sending = false;
     }
   }
 }

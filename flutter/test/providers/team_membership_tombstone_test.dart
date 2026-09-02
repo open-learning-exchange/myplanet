@@ -15,6 +15,14 @@ class _TestServerConfig extends ServerConfigNotifier {
   ServerConfig? build() => config;
 }
 
+/// A session whose `build` rejects — an unavailable `planetPrefs`, a failed
+/// `userDao` read. `.valueOrNull` was null here and every action returned
+/// `false`; a `.future` rejects instead, which is a different contract.
+class _FailingSessionNotifier extends SessionNotifier {
+  @override
+  Future<UserRow?> build() async => throw StateError('prefs unavailable');
+}
+
 /// A session that resolves only after a delay. `TeamMembershipActions` is a
 /// plain `Provider`, so nothing it holds ever *watches* `sessionProvider`; a
 /// bare `ref.read(...).valueOrNull` is null for this whole window.
@@ -181,6 +189,73 @@ void main() {
     );
     expect(queued.length, 1);
     expect(await database.teamDao.getById('m-synced'), isNull);
+  });
+
+  ProviderContainer failingSessionContainer() {
+    final c = ProviderContainer(
+      overrides: [
+        appDatabaseProvider.overrideWithValue(database),
+        outboxRepositoryProvider.overrideWithValue(
+          OutboxRepository(database.outboxDao),
+        ),
+        serverConfigProvider.overrideWith(() => _TestServerConfig(config)),
+        sessionProvider.overrideWith(_FailingSessionNotifier.new),
+      ],
+    );
+    addTearDown(c.dispose);
+    return c;
+  }
+
+  test('a rejecting session reports failure rather than throwing', () async {
+    // Before the session fix these returned `false` on a null read, and
+    // `team_members_screen`'s `_handleMemberAction` showed an "Operation
+    // failed" snackbar off that. A future *rejects* where `valueOrNull` could
+    // not, and no caller wraps the await — the join button and the leave
+    // dialog are both fire-and-forget — so a throw loses the message and
+    // escapes as an uncaught async error.
+    await seedMembership(id: 'm-synced', rev: '2-abc');
+    final c = failingSessionContainer();
+
+    await expectLater(
+      c.read(teamMembershipActionsProvider).leave('team-1'),
+      completion(isFalse),
+    );
+  });
+
+  test('a rejecting session cannot strand an accepted join request', () async {
+    // `respond` resolved the session *after* `respondToRequest` had already
+    // converted the request row to a `membership` with `isUpdated = true`.
+    // A rejection there threw past the enqueue, and the outbox is the only
+    // upload route — `TeamDao` has no pending sweep and `TeamsUploader` has
+    // no rescan — so the accepted member existed on the leader's device and
+    // nowhere else, permanently. Resolve the user before the local write.
+    await database.teamDao.upsert(
+      TeamsCompanion.insert(
+        id: 'req-1',
+        rev: const Value('3-def'),
+        teamId: const Value('team-1'),
+        userId: const Value('user-2'),
+        docType: const Value('request'),
+      ),
+    );
+    final c = failingSessionContainer();
+
+    final ok = await c
+        .read(teamMembershipActionsProvider)
+        .respond('req-1', accept: true);
+
+    expect(ok, isFalse, reason: 'the caller must learn it failed');
+    // Nothing was queued, so nothing may have been written either.
+    final queued = await database.outboxDao.due(
+      DateTime.now().millisecondsSinceEpoch,
+    );
+    expect(queued, isEmpty);
+    final row = await database.teamDao.getById('req-1');
+    expect(
+      row?.docType,
+      'request',
+      reason: 'the request must not be converted with no route to upload it',
+    );
   });
 
   test('removing a member who never synced enqueues nothing', () async {

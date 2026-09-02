@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/session_provider.dart';
 import 'package:myplanet/providers/teams_provider.dart';
 import 'package:myplanet/ui/teams/team_courses_screen.dart';
+import 'package:myplanet/ui/teams/team_members_screen.dart';
 import 'package:myplanet/ui/teams/team_resources_screen.dart';
 
 import '../../support/widget_harness.dart';
@@ -46,6 +49,62 @@ TeamRow _membership({bool isLeader = false}) =>
     _row(id: 'm1', teamId: 'team-1', userId: 'user-1', isLeader: isLeader);
 
 void main() {
+  group('the members list name and avatar', () {
+    // `team_members_screen` hand-rolled `displayName` and its initial — the
+    // third copy in this directory, and broken the same two ways the
+    // leaderboard's was: no middle name, and no trim, so a synced
+    // `"name": " jane "` rendered untrimmed behind a blank avatar (`' '` is
+    // not empty, so the `isEmpty ? '?'` guard does not fire).
+    testWidgets('a middle name is shown and a padded name is trimmed', (
+      tester,
+    ) async {
+      final database = AppDatabase.memory();
+      addTearDown(database.close);
+      await database.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'u-mid',
+          firstName: const Value('Ada'),
+          middleName: const Value('Byron'),
+          lastName: const Value('Lovelace'),
+        ),
+      );
+      await database.userDao.upsert(
+        UsersCompanion.insert(id: 'u-pad', name: const Value(' jane ')),
+      );
+
+      await tester.pumpWidget(
+        wrapScreen(
+          const TeamMembersScreen(teamId: 'team-1'),
+          overrides: [
+            appDatabaseProvider.overrideWithValue(database),
+            teamMembersProvider('team-1').overrideWith(
+              (ref) => Stream.value([
+                _row(id: 'm1', teamId: 'team-1', userId: 'u-mid'),
+                _row(id: 'm2', teamId: 'team-1', userId: 'u-pad'),
+              ]),
+            ),
+            teamRequestsProvider(
+              'team-1',
+            ).overrideWith((ref) => Stream.value(const <TeamRow>[])),
+            teamMembershipsProvider.overrideWith(
+              (ref) => Stream.value(const {}),
+            ),
+            sessionProvider.overrideWith(
+              () =>
+                  _TestSessionNotifier(buildUserRow(id: 'user-1', name: 'ada')),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ada Byron Lovelace'), findsOneWidget);
+      expect(find.text('jane'), findsOneWidget);
+      // 'J', not the space that a blank avatar renders.
+      expect(find.text('J'), findsOneWidget);
+    });
+  });
+
   group('team resources', () {
     Widget harness({TeamRow? membership}) => wrapScreen(
       const TeamResourcesScreen(teamId: 'team-1'),
@@ -173,6 +232,18 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.link_off), findsOneWidget);
+    });
+
+    testWidgets('an empty creator id does not match an empty session id', (
+      tester,
+    ) async {
+      // Kotlin's `getUserId().ifEmpty { "--" }` sentinel exists for this.
+      await tester.pumpWidget(
+        harness(membership: _membership(), creatorId: '', userId: ''),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.link_off), findsNothing);
     });
 
     testWidgets('the creator match ignores case', (tester) async {

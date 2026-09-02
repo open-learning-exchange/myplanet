@@ -49,7 +49,12 @@ class _TeamLeaderboardScreenState extends ConsumerState<TeamLeaderboardScreen> {
       _failed = false;
     });
     try {
-      await _gather(token);
+      // Captured at entry, not read after the awaits. Reading it late meant a
+      // stale load recomputed with the *current* period and produced the same
+      // answer, which made the `_loadToken` guard below unobservable — and
+      // left a real hazard latent: any future work that depends on the period
+      // before the last await would have silently used the wrong one.
+      await _gather(token, _period);
     } catch (_) {
       // Without this the exception escaped, `_loading` stayed true, and the
       // screen sat on an indefinite spinner with no way out.
@@ -63,7 +68,7 @@ class _TeamLeaderboardScreenState extends ConsumerState<TeamLeaderboardScreen> {
     }
   }
 
-  Future<void> _gather(int token) async {
+  Future<void> _gather(int token, _Period period) async {
     final db = ref.read(appDatabaseProvider);
     final teamsRepo = ref.read(teamsRepositoryProvider);
     final progressRepo = ref.read(progressRepositoryProvider);
@@ -133,7 +138,7 @@ class _TeamLeaderboardScreenState extends ConsumerState<TeamLeaderboardScreen> {
           .toList();
     }
 
-    final periodStart = _period == _Period.thisMonth
+    final periodStart = period == _Period.thisMonth
         ? TeamLeaderboardCalculator.startOfCurrentMonth(
             DateTime.now().millisecondsSinceEpoch,
           )

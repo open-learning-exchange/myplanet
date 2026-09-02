@@ -109,11 +109,12 @@ class TeamsScreen extends ConsumerWidget {
                         separatorBuilder: (_, _) => const SizedBox(height: 6),
                         itemBuilder: (context, index) {
                           final team = teams[index];
-                          final membership =
-                              memberships[team.id] ??
-                              (team.teamId == null
-                                  ? null
-                                  : memberships[team.teamId]);
+                          // Keyed on the team document's `_id` alone, as
+                          // `getTeamMemberStatuses` is. The
+                          // `memberships[team.teamId]` fallback removed here
+                          // could never resolve, for the reason given at the
+                          // detail screen's own lookup below.
+                          final membership = memberships[team.id];
                           return Card(
                             child: ListTile(
                               leading: Icon(
@@ -418,9 +419,10 @@ class _TeamDetailScreenState extends ConsumerState<TeamDetailScreen> {
                             context.push('${Routes.teams}/${team.id}/reports'),
                       ),
                     // Kotlin gates `FinancesPage` on `isEnterprise`; the
-                    // port also offers it to a plain team's members, a
-                    // surplus recorded in
-                    // `docs/kotlin-to-flutter-migration.md`.
+                    // port also offers it to a plain team's members. That
+                    // surplus is recorded in `CLAUDE.md`'s Phase 99 prose —
+                    // *not* in `docs/kotlin-to-flutter-migration.md`, whose
+                    // deviations list has no team-finances entry.
                     if (isEnterprise || membership != null)
                       ListTile(
                         leading: const Icon(

@@ -272,6 +272,56 @@ void main() {
     },
   );
 
+  testWidgets('double-tapping Send posts the comment once', (tester) async {
+    // The clear moved to *after* the write so a failure leaves the text to
+    // retry — but the send button is never disabled, so the text now
+    // survives the in-flight write and a second tap re-sent it. Before the
+    // move the second tap was a no-op (`text.isEmpty`), so the retry fix
+    // needs an in-flight guard to hold both properties at once.
+    final repository = _MockVoicesRepository();
+    final gate = Completer<NewsRow>();
+    when(
+      () => repository.addComment(
+        parentId: any(named: 'parentId'),
+        teamId: any(named: 'teamId'),
+        message: any(named: 'message'),
+        userId: any(named: 'userId'),
+        userName: any(named: 'userName'),
+        planetCode: any(named: 'planetCode'),
+        parentCode: any(named: 'parentCode'),
+      ),
+    ).thenAnswer((_) => gate.future);
+
+    await tester.pumpWidget(
+      _harness(comments: const [], user: _user, repository: repository),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('0 comments'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'once please');
+    await tester.tap(find.byIcon(Icons.send_outlined));
+    await tester.pump();
+    // The first write has not landed, so the field still holds the text.
+    await tester.tap(find.byIcon(Icons.send_outlined));
+    await tester.pump();
+
+    gate.complete(_comment());
+    await tester.pumpAndSettle();
+
+    verify(
+      () => repository.addComment(
+        parentId: any(named: 'parentId'),
+        teamId: any(named: 'teamId'),
+        message: 'once please',
+        userId: any(named: 'userId'),
+        userName: any(named: 'userName'),
+        planetCode: any(named: 'planetCode'),
+        parentCode: any(named: 'parentCode'),
+      ),
+    ).called(1);
+  });
+
   testWidgets('a failed comment stream shows an error, not an empty thread', (
     tester,
   ) async {

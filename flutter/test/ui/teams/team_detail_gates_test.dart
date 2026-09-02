@@ -79,13 +79,8 @@ UserRow _user({String id = 'user-1', String name = 'ada'}) => UserRow(
 );
 
 /// Every entry `buildPages` puts behind the `isMyTeam || isPublic` branch.
-const _gatedEntries = [
-  'Members',
-  'Tasks',
-  'Team Calendar',
-  'Team surveys',
-  'Discussions',
-];
+/// `Members` is deliberately absent: Kotlin shows it on both sides.
+const _gatedEntries = ['Tasks', 'Team Calendar', 'Team surveys', 'Discussions'];
 
 void main() {
   late _MockTeamMembershipActions actions;
@@ -157,14 +152,18 @@ void main() {
 
       expect(find.text('Plan'), findsOneWidget);
       expect(find.text('Members'), findsOneWidget);
-      for (final entry in _gatedEntries.where((e) => e != 'Members')) {
+      for (final entry in _gatedEntries) {
         expect(
           find.text(entry),
           findsNothing,
           reason: '$entry is behind the member/public gate',
         );
       }
-      expect(find.text('Team resources'), findsNothing);
+      // The labels are `l10n.teamResources` = "Resources" and
+      // `l10n.teamCourses` = "Team courses". Asserting the wrong string here
+      // gave a negative that could never match, and so would have passed with
+      // the gate removed.
+      expect(find.text('Resources'), findsNothing);
       expect(find.text('Team courses'), findsNothing);
     });
 

@@ -436,7 +436,140 @@ files are Lane B's.
 `flutter test` — **1860 pass**, against 1801 at the branch base: exactly the 59
 new tests, no regressions.
 
-## 13. Mutation-testing this lane's own tests
+## 13. The second audit pass, and the four defects this phase itself introduced
+
+Phase 110's lesson — an audit of the Kotlin ground truth does not audit the
+implementation — earned its keep. The second pass, pointed at this lane's own
+finished diff while it was green, found **four defects the phase introduced**
+and **two tests passing for the wrong reason**. All six are fixed below, each
+demonstrated failing first.
+
+### The four introduced defects
+
+1. **`respond(accept: true)` could strand an accepted join request. Data
+   loss, and mine.** `_userId()` was the one session read placed *after* its
+   own local write: `respondToRequest` has already converted the request row
+   into a `membership` with `isUpdated = true` by then. Awaiting `.future`
+   made that line able to **reject**, where the `.valueOrNull` it replaced
+   could only be null — so a rejecting session threw past the enqueue, and the
+   outbox is the only upload route (`TeamDao` has no pending sweep,
+   `TeamsUploader` no rescan). The accepted member existed on the leader's
+   device and nowhere else, permanently, compounded by §8.1's shadowing. The
+   user is now resolved *before* the local write, as the other four actions
+   already did.
+
+   **The general shape: `await`ing a future where a synchronous read used to
+   sit adds a throw to a code path that could not throw before.** Every such
+   swap needs its position relative to the writes re-examined, not just its
+   `try` boundary.
+
+2. **Three actions threw where they used to return `false`.** The doc comment
+   this phase wrote stated a caller contract — "callers keep the await inside
+   their own `try`" — and **not one of the five call sites satisfied it**:
+   `team_members_screen`'s `_handleMemberAction` shows its failure snackbar
+   off the returned `false`, and both the join button and the leave dialog are
+   fire-and-forget `onPressed`s. So the fix lost the user's error message and
+   escaped as an uncaught async error: strictly worse than what it replaced.
+   `_session()` now swallows the rejection and returns null, which resolves
+   the session properly *and* keeps every action's existing contract.
+
+   **A doc comment asserting a caller contract is worth nothing until the
+   callers are checked.** Writing one felt like discharging the obligation.
+
+3. **Double-tapping Send posted the comment twice.** Moving `_controller.clear()`
+   after the await — so a failed post leaves the text to retry — also let the
+   text survive the in-flight write, and the send button is never disabled.
+   Before the move, the second tap was a no-op *by accident*. A `_sending`
+   guard now holds both properties deliberately.
+
+4. **The null-`_rev` guard covered three of the four tombstones in the file.**
+   `TeamResourceActions.remove` enqueues the same
+   `{_id, _rev, _deleted: true}` payload four functions below the new helper
+   and did not use it. Worse, §6's corrected add gate *widened* the reach:
+   giving ordinary members the add FAB makes "link a resource offline, unlink
+   before the drain" a path many more users can take. **A fix that widens who
+   can reach a code path inherits that path's latent defects.**
+
+   Reported, not fixed: Kotlin's `removeResourceLink`
+   (`TeamsRepositoryImpl.kt:707-715`) does not delete or tombstone at all — it
+   blanks `resourceId = ""` and sets `updated = true`. That is a deeper
+   divergence than the guard, and it needs the §8.1 upload sweep to exist
+   first.
+
+### Corrections to claims this phase made
+
+- **The tie-break rationale was overstated.** Both the comment and the notes
+  claimed ties "could swap rank between two loads of unchanged data". They
+  could not, for a team under 32 members: Dart's `List.sort` uses a *stable*
+  insertion sort below that threshold, and `watchMembers` orders by
+  `userId ASC`, so the input order was already deterministic. `toSet()` is a
+  `LinkedHashSet` and preserves insertion order too, so the `Set` was a red
+  herring. The total order is kept — it is right for any size, and ranking
+  ties by name beats ranking them by an opaque id — but it is now documented
+  as **a deliberate choice against no specification**, not a defect fix.
+- **`skipLoadingOnReload` fixes the flash, not the work.** §4 named the defect
+  as blanking the list *and* re-running `watchCatalog` + `memberStatuses` +
+  `recentVisitCounts` per keystroke. The flag only suppresses the loading
+  branch; all three queries still run on every character, where Kotlin
+  debounces 300 ms and filters in memory. **Half of that defect is still
+  open** — a debounce on `teamsSearchProvider` is the missing piece.
+- **Two comments cited a document that does not contain the claim.** The
+  team-finances surplus is recorded in `CLAUDE.md`'s Phase 99 prose, *not* in
+  `docs/kotlin-to-flutter-migration.md`, whose deviations list has no such
+  entry. Corrected at the line and here.
+- **The leaderboard's class docs named Kotlin files that do not exist**
+  ("Port of `model/TeamLeaderboardEntry.kt`"). §3 says this correctly; the
+  source comments contradicted it, which is the version a reader finds first.
+  Now both say there is no counterpart.
+
+### One dead assertion, and what it means
+
+`team_detail_gates_test.dart` asserted `find.text('Team resources')` is absent.
+The label is `l10n.teamResources` = **"Resources"**; "Team courses" is the one
+that carries the prefix. So that negative could never match and would have
+passed with the gate removed. The gate was still pinned by the sibling
+assertions, so this was a dead line rather than a hole — but it is exactly the
+trap the brief warned about, and mutation testing found it only because a
+*different* assertion caught the mutation first. **A negative assertion that
+passes tells you nothing until you have seen it fail.**
+
+### Verified correct, so recorded rather than re-litigated
+
+- `canView = membership != null || team.isPublic` matches `buildPages` on
+  every cell of the M/P/E truth table except the one pre-existing
+  `member && !enterprise` finances surplus. Kotlin's `isMyTeam` is
+  caller-supplied, but every entry point either derives it from the same
+  membership row or hard-codes `true` on a path that already implies
+  membership — so deriving it breaks nothing, and is *better* on the dashboard
+  path, where Kotlin's `refreshTeamDetails` re-reads a stale argument.
+- `skipLoadingOnReload` genuinely does not suppress the first load
+  (`isReloading` requires `hasValue || hasError`) and does not suppress errors.
+- **CLAUDE.md's "Phase 75 harness trap" is stale for the current graph.**
+  `teamsRepositoryProvider` reaches `planetApiProvider` and
+  `appDatabaseProvider` — **not** `planetPrefsProvider`. The live trap is
+  `appDatabaseProvider → AppDatabase.open()`, which `wrapScreen` already
+  redirects to `AppDatabase.memory()`. So `team_courses_screen`'s new
+  `teamProvider` watch is safe, and the three tests that do not override it
+  get `creatorId == null` from a real empty query — the right answer for the
+  right reason.
+- `_logVisitOnce` still drops the visit for the whole mount when the user is
+  *null*, and that is parity: `createTeamLog` does nothing for a null
+  `getUserModel()` either. Only the rejecting-session case was the defect.
+
+### Still open, reported not fixed
+
+- **`voices_screen.dart:301-304` was not migrated to `initialFor`**, so the
+  duplicate the helper exists to eliminate survives. It is byte-identical and
+  therefore harmless, and `lib/ui/voices/` is outside this lane's file set —
+  unlike `team_members_screen`, which was both broken *and* in
+  `lib/ui/teams/`, and so was fixed. That is the line: cross a boundary for a
+  defect, not for tidiness.
+- **A search debounce**, per the correction above.
+- One cosmetic consequence of using the shared `displayName`: two members with
+  no name at all now both render "myPlanet learner" where they previously
+  showed distinct user ids.
+
+## 14. Mutation-testing this lane's own tests
 
 Per the brief's "the button looks usable is not the button works", every gate
 this phase added was mutated away and the suite re-run, to prove the tests fail
@@ -449,8 +582,19 @@ for the reason they claim:
 | the last-member gate removed | 1 |
 | `onPressed` calls `leave` directly, as before | 3 (dialog appears, No, Yes) |
 | `_session()` back to `.valueOrNull` | **0 — see below** |
+| `_loadToken` guard removed | **0 — see §13** |
+| `canView = true`, after the dead assertion was fixed | 2 (unchanged) |
+| the empty-creator-id sentinel removed | 1 |
 
-That last row is the one worth recording. **The four original tombstone tests
+Two rows came back 0, and both mattered.
+
+The `_loadToken` row is in §13: the guard was unobservable because `_period`
+was read *after* every await, so a stale load recomputed with the current
+period and produced the same answer. Capturing the period at load entry — the
+correct semantics anyway — makes the guard load-bearing, and the mutation now
+fails the test that claims to cover it.
+
+The `_session()` row is the one worth recording at length. **The four original tombstone tests
 could not catch a regression of the `_session()` fix**, because each one does
 `await container.read(sessionProvider.future)` before acting — which resolves
 the provider and makes `.valueOrNull` non-null, the very condition the defect

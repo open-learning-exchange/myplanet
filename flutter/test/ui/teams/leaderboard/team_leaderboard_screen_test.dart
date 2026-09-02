@@ -383,7 +383,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     // The screen must show what This month asked for, not the late all-time
-    // result: the old submission is outside the current month.
+    // result: the old submission is outside the current month. The period is
+    // captured when each load starts, so the stale load really does carry
+    // all-time numbers and only the `_loadToken` guard keeps them off screen.
     expect(find.text('0/0 surveys'), findsOneWidget);
     expect(find.text('1/0 surveys'), findsNothing);
   });
