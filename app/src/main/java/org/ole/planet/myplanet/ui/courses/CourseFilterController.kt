@@ -23,7 +23,8 @@ data class FilterState(
     val grade: String,
     val subject: String,
     val tagNames: List<String>,
-    val progressFilter: String = ""
+    val progressFilter: String = "",
+    val tags: List<TagEntity> = emptyList()
 ) {
     val isActive: Boolean
         get() = searchText.isNotEmpty() || grade.isNotEmpty() || subject.isNotEmpty() || tagNames.isNotEmpty() || progressFilter.isNotEmpty()
@@ -103,7 +104,7 @@ class CourseFilterController(
         if (::spnSubject.isInitialized) {
             restoreSpinnerSelection(spnSubject, state.subject)
         }
-        restoreTags(state.tagNames, availableTags)
+        restoreTags(state.tags, state.tagNames, availableTags)
         progressFilter = state.progressFilter
         if (::tvSelected.isInitialized) {
             refreshTagText()
@@ -132,14 +133,23 @@ class CourseFilterController(
         }
     }
 
-    private fun restoreTags(tagNames: List<String>, availableTags: List<TagEntity>) {
+    private fun restoreTags(tags: List<TagEntity>, tagNames: List<String>, availableTags: List<TagEntity>) {
         searchTags.clear()
         val seenNames = HashSet<String>()
-        tagNames.forEach { name ->
-            if (seenNames.add(name)) {
-                val matchedTag = availableTags.find { it.name == name }
-                    ?: TagEntity().apply { this.name = name }
-                searchTags.add(matchedTag)
+        if (tags.isNotEmpty()) {
+            tags.forEach { tag ->
+                val name = tag.name
+                if (name != null && seenNames.add(name)) {
+                    searchTags.add(tag)
+                }
+            }
+        } else {
+            tagNames.forEach { name ->
+                if (seenNames.add(name)) {
+                    val matchedTag = availableTags.find { it.name == name }
+                        ?: TagEntity().apply { this.name = name }
+                    searchTags.add(matchedTag)
+                }
             }
         }
     }
@@ -214,7 +224,8 @@ class CourseFilterController(
             grade = grade,
             subject = subject,
             tagNames = searchTags.mapNotNull { it.name },
-            progressFilter = progressFilter
+            progressFilter = progressFilter,
+            tags = searchTags.toList()
         )
     }
 
