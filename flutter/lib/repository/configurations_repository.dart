@@ -69,7 +69,7 @@ class ConfigurationsRepository {
   ///
   /// Kept in step with `version:` in pubspec.yaml by hand, which is exactly why
   /// production reads the runtime value instead: see [_resolveAppVersion].
-  static const String defaultAppVersion = '0.67.25';
+  static const String defaultAppVersion = '0.69.18';
 
   /// The placeholder `package_info_plus` reports when no manifest values are
   /// available — under `flutter test`, and on any platform that declines the
