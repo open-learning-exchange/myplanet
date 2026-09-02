@@ -224,12 +224,12 @@ it is independent of how that path ends.
   `SurveyQuestions.choices` whose generated DDL is identical — see §1.
   Cleared with the integrator, who confirmed the swap stays: a converter is
   not a schema change, so it needs no allocated number.
-- `flutter/pubspec.lock` is left exactly as the merge brought it. A
-  `flutter pub get` on 3.44.8 wants `intl` 0.20.2, `matcher` 0.12.19, `meta`
-  1.18.0 and `test_api` one patch below the committed entries, so the lock in
-  git was resolved by a different SDK. CI resolves the way 3.44.8 does, so
-  nothing is broken — but the file will keep drifting on any `pub get` until
-  it is re-resolved on the pinned SDK.
+- `flutter/pubspec.lock` is left exactly as the merge brought it, and that is
+  the right state: `2a9e0f7` re-resolved it on 3.44.8, and a `flutter pub get`
+  on that SDK now produces no diff (`intl` 0.20.2, `matcher` 0.12.19, `meta`
+  1.18.0, `test_api` 0.7.11). Before that merge the lock had been resolved by
+  a different SDK and drifted on every `pub get` here — worth knowing as the
+  symptom, not as an open item.
 - On the formatter-drift warning: my independent `dart format` run on 3.44.8
   reformatted `outbox_repository_test.dart` to **byte-identical** content to
   `e4c3b46`'s hand-restore, which is the useful confirmation that 3.44.8 is
