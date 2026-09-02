@@ -221,8 +221,9 @@ it is independent of how that path ends.
   files are untouched.
 - **No schema bump** (still v44) and no table shape changed. The one
   `lib/data/local/tables.dart` edit is a converter swap on
-  `SurveyQuestions.choices` whose generated DDL is identical — see §1. If you
-  would rather that came through you, it is a two-line revert plus the mapper.
+  `SurveyQuestions.choices` whose generated DDL is identical — see §1.
+  Cleared with the integrator, who confirmed the swap stays: a converter is
+  not a schema change, so it needs no allocated number.
 - `flutter/pubspec.lock` is left exactly as the merge brought it. A
   `flutter pub get` on 3.44.8 wants `intl` 0.20.2, `matcher` 0.12.19, `meta`
   1.18.0 and `test_api` one patch below the committed entries, so the lock in
