@@ -5,6 +5,8 @@ import android.widget.FrameLayout
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.mockk
+import java.util.Locale
+import java.util.TimeZone
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -14,9 +16,6 @@ import org.ole.planet.myplanet.callback.OnMemberActionListener
 import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.teams.members.MembersAdapter.Companion.PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED
-import org.ole.planet.myplanet.utils.TimeUtils
-import java.util.Locale
-import java.util.TimeZone
 
 @RunWith(AndroidJUnit4::class)
 class MembersAdapterTest {
