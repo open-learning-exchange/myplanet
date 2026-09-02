@@ -81,6 +81,7 @@ class ConfigurationsRepositoryImplTest {
 
     @After
     fun tearDown() {
+        unmockkStatic(Log::class)
         serviceScope.cancel()
     }
 
@@ -101,11 +102,6 @@ class ConfigurationsRepositoryImplTest {
             TestTimeProvider(),
             Gson()
         )
-    }
-
-    @After
-    fun tearDown() {
-        unmockkStatic(Log::class)
     }
 
     @Test
