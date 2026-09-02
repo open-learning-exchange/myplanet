@@ -57,7 +57,6 @@ import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
 import org.ole.planet.myplanet.databinding.FragmentResourceViewerBinding
 import org.ole.planet.myplanet.model.MyLibrary
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.AudioRecorder
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
@@ -97,7 +96,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private val viewModel: ResourceViewerViewModel by viewModels()
     @Inject lateinit var dispatcherProvider: DispatcherProvider
     @Inject lateinit var ttsManager: TTSManager
-    @Inject lateinit var userRepository: UserRepository
     private var authSessionUpdater: AuthSessionUpdater? = null
     private var isResourceFinished: Boolean = false
     fun isResourceFinished(): Boolean = isResourceFinished

@@ -27,10 +27,10 @@ import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewFeature
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import java.io.File
 import java.io.FileInputStream
 import java.net.URLConnection
+import javax.inject.Inject
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityWebViewBinding
