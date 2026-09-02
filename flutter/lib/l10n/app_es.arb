@@ -1775,10 +1775,7 @@
   "@submitExam": {
     "x-mt": true
   },
-  "incorrectAnswer": "respuesta incorrecta",
-  "@incorrectAnswer": {
-    "x-mt": true
-  },
+  "incorrectAnswer": "Respuesta incorrecta, por favor inténtalo de nuevo",
   "correctAnswers": "Correcto",
   "@correctAnswers": {
     "x-mt": true

@@ -162,11 +162,11 @@ void main() {
     // the map and say in the commit message who reviewed it. Adding an
     // unreviewed one means flagging it `x-mt`, which leaves them alone.
     const humanReviewed = {
-      'ar': 259,
-      'es': 234,
-      'fr': 260,
-      'ne': 259,
-      'so': 259,
+      'ar': 260,
+      'es': 235,
+      'fr': 261,
+      'ne': 260,
+      'so': 260,
     };
 
     for (final code in locales) {

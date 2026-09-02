@@ -476,7 +476,7 @@ void main() {
       await tester.tap(find.text('Next'));
       await settleExam(tester);
 
-      expect(find.text('Incorrect answer'), findsOneWidget);
+      expect(find.text('Incorrect answer, please try again'), findsOneWidget);
       expect(
         find.text('Question 1 / 2'),
         findsOneWidget,
@@ -493,7 +493,7 @@ void main() {
       await tester.tap(find.text('Next'));
       await settleExam(tester);
 
-      expect(find.text('Incorrect answer'), findsNothing);
+      expect(find.text('Incorrect answer, please try again'), findsNothing);
       expect(find.text('Question 2 / 2'), findsOneWidget);
     });
 
@@ -555,7 +555,7 @@ void main() {
       await tester.tap(find.text('Submit exam'));
       await settleExam(tester);
 
-      expect(find.text('Incorrect answer'), findsNothing);
+      expect(find.text('Incorrect answer, please try again'), findsNothing);
       expect(find.text('Exam Complete'), findsOneWidget);
     });
 
@@ -632,7 +632,7 @@ void main() {
       await tester.tap(find.text('Submit exam'));
       await settleExam(tester);
 
-      expect(find.text('Incorrect answer'), findsOneWidget);
+      expect(find.text('Incorrect answer, please try again'), findsOneWidget);
       expect(find.text('Exam Complete'), findsNothing);
       final answers = await db.select(db.submissionAnswers).get();
       // Recorded, with its mistake — the attempt is not thrown away, it just
@@ -692,7 +692,7 @@ void main() {
       await tester.tap(find.text('Submit exam'));
       await settleExam(tester);
 
-      expect(find.text('Incorrect answer'), findsNothing);
+      expect(find.text('Incorrect answer, please try again'), findsNothing);
       expect(find.text('Exam Complete'), findsOneWidget);
       final answers = await db.select(db.submissionAnswers).get();
       expect(answers.single.mistakes, 0);
@@ -878,7 +878,7 @@ void main() {
         find.text('Could not save your exam. Please try again.'),
         findsOneWidget,
       );
-      expect(find.text('Incorrect answer'), findsNothing);
+      expect(find.text('Incorrect answer, please try again'), findsNothing);
       expect(find.text('Exam Complete'), findsNothing);
       // The submit button is live again rather than stuck on its spinner.
       expect(find.text('Question 1 / 1'), findsOneWidget);

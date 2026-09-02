@@ -1776,10 +1776,7 @@
   "@submitExam": {
     "x-mt": true
   },
-  "incorrectAnswer": "[Nepali] Incorrect answer",
-  "@incorrectAnswer": {
-    "x-mt": true
-  },
+  "incorrectAnswer": "तपाईंले गलत उत्तर दिएका छन्, कृपया पुन: प्रयास गर्नुहोस्",
   "correctAnswers": "[Nepali] Correct",
   "@correctAnswers": {
     "x-mt": true

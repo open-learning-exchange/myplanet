@@ -875,7 +875,7 @@
   "examComplete": "Exam Complete",
   "examUnavailable": "Exam is unavailable",
   "submitExam": "Submit exam",
-  "incorrectAnswer": "Incorrect answer",
+  "incorrectAnswer": "Incorrect answer, please try again",
   "correctAnswers": "Correct",
   "yourAnswer": "Your answer",
   "previous": "Previous",

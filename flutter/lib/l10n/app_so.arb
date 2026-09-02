@@ -1776,10 +1776,7 @@
   "@submitExam": {
     "x-mt": true
   },
-  "incorrectAnswer": "[Somali] Incorrect answer",
-  "@incorrectAnswer": {
-    "x-mt": true
-  },
+  "incorrectAnswer": "Jawaab aan sax ahayn, fadlan isku day",
   "correctAnswers": "[Somali] Correct",
   "@correctAnswers": {
     "x-mt": true

@@ -1660,10 +1660,7 @@
   "@submitExam": {
     "x-mt": true
   },
-  "incorrectAnswer": "إجابة غير صحيحة",
-  "@incorrectAnswer": {
-    "x-mt": true
-  },
+  "incorrectAnswer": "إجابة غير صحيحة، يرجى المحاولة مرة أخرى",
   "correctAnswers": "صحيح",
   "@correctAnswers": {
     "x-mt": true
