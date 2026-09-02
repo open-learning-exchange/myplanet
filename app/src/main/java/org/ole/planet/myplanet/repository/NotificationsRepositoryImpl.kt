@@ -338,9 +338,6 @@ class NotificationsRepositoryImpl @Inject constructor(
         val lowerType = type.lowercase(Locale.ROOT)
         if (lowerType in NotificationsRepository.KNOWN_TYPES) return lowerType
         val lower = message.lowercase(Locale.ROOT)
-        // Raw server type "team" covers every team-related event (message/request/added/rejected/removed) in
-        // whatever language the server rendered the message in, so classify structurally first and only fall
-        // back to English message-sniffing to pick a more specific sub-bucket when it's recognizable.
         if (lowerType == "team") {
             if (subType != null) return subType.lowercase(Locale.ROOT)
             return when {
