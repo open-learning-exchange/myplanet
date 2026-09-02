@@ -84,6 +84,29 @@ UI package at a time. Conventions worth remembering across slices:
     screen that walks the filesystem inline is therefore untestable — route
     the read through a repository seam and mock it in widget tests (as
     `storage_breakdown_screen_test.dart` does via `getOfflineResourceItems`).
+  - **Never `pumpAndSettle` while a spinner is on screen.** A button that
+    swaps its icon for a `CircularProgressIndicator` during an async action
+    (`take_exam_screen`'s Submit, while `_isSubmitting`) keeps an indefinite
+    animation running, so `pumpAndSettle` spins to its **ten-minute** default
+    and the test looks hung rather than failed. Drive those flows with
+    `runAsync` + `pump` rounds. Real `dart:io` inside such a flow needs
+    generously more rounds than drift's in-memory reads do — a
+    `Directory.create` + `writeAsBytes` pair took roughly five times as many
+    as everything else in `take_exam_screen_test.dart`.
+  - **Bytes on disk and the row that points at them need one key.** The
+    write side and the read-back side must derive the path from the same id,
+    or the read silently finds nothing. `take_exam_screen` filed a capture
+    under the *submission* id while `SubmitPhotosUploader` looked for it under
+    the *photo row* id, so no verification photo ever uploaded and nothing
+    logged an error. Where the id is minted inside a repository, expose the
+    derivation (`SubmissionsRepository.photoIdFor`) rather than letting the
+    caller guess.
+  - **Providers a screen reads but never watches.** `ref.read(someAsyncProvider)
+    .valueOrNull` is `null` until something else in the graph has resolved that
+    provider. `take_exam_screen` read `sessionProvider` that way and dropped the
+    whole graded attempt when it came back null; the shipping app only hid it
+    because the router holds a `ref.listen` on the session. Await
+    `<provider>.future` when the screen genuinely needs the value.
   - **Platform channels as seams**: when a feature needs a platform-only API
     with no pure-Dart equivalent (device free space via Android
     `StorageStatsManager`, etc.), define an abstract Dart seam

@@ -396,6 +396,28 @@ class SubmissionsRepository {
   /// `SubmissionDao.markPublicSubmitted` for why no revision is recorded.
   Future<void> markPublicSubmitted(String id) => _dao.markPublicSubmitted(id);
 
+  /// The id [addSubmissionPhoto] files a capture under.
+  ///
+  /// Public because the JPEG has to be written under *this* id and no other:
+  /// `SubmitPhotosUploader._uploadAttachment` reads the bytes back with
+  /// `SubmitPhotosFiles.existingFileFor(photoId: <row id>)`, so a caller that
+  /// saves them under some other key — the submission id, say — leaves the
+  /// lookup to miss and the document to upload without its attachment. A
+  /// caller therefore derives the id first, writes the bytes, and passes the
+  /// same [capturedAt] back in so the row lands on the same key.
+  static String photoIdFor({
+    required String submissionId,
+    required DateTime capturedAt,
+    String? examId,
+    String? courseId,
+  }) => sha1
+      .convert(
+        utf8.encode(
+          'photo:$submissionId:$examId:$courseId:${capturedAt.millisecondsSinceEpoch}',
+        ),
+      )
+      .toString();
+
   /// Port of `SubmissionsRepositoryImpl.addSubmissionPhoto`.
   ///
   /// The id is a sha1 of the row's identifying tuple so a re-capture after a
@@ -414,13 +436,12 @@ class SubmissionsRepository {
     DateTime? now,
   }) async {
     final capturedAt = now ?? DateTime.now();
-    final id = sha1
-        .convert(
-          utf8.encode(
-            'photo:$submissionId:$examId:$courseId:${capturedAt.millisecondsSinceEpoch}',
-          ),
-        )
-        .toString();
+    final id = photoIdFor(
+      submissionId: submissionId,
+      capturedAt: capturedAt,
+      examId: examId,
+      courseId: courseId,
+    );
     await _photosDao.insert(
       SubmitPhotosTableCompanion.insert(
         id: id,
