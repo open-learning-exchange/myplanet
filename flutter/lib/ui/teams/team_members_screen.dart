@@ -7,6 +7,7 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/teams_provider.dart';
+import '../components/profile_avatar.dart';
 import '../router.dart';
 
 class TeamMembersScreen extends ConsumerWidget {
@@ -87,17 +88,15 @@ class _MembersList extends ConsumerWidget {
                 final user = userId.isEmpty
                     ? null
                     : ref.watch(userByIdProvider(userId)).valueOrNull;
-                final fullName = user == null
-                    ? ''
-                    : [user.firstName, user.lastName]
-                          .where((p) => p != null && p.trim().isNotEmpty)
-                          .join(' ');
-                final displayName = fullName.isNotEmpty
-                    ? fullName
-                    : (user?.name ?? userId);
-                final initial = displayName.isEmpty
-                    ? '?'
-                    : displayName.characters.first.toUpperCase();
+                // `profile_avatar.dart` is the port's single source for a
+                // user's name and initial. The local copies this replaces
+                // were the third in this directory and broken the same two
+                // ways the leaderboard's were: no middle name, and no trim —
+                // so a synced `"name": " jane "` rendered untrimmed behind a
+                // blank avatar, because `' '` is not empty and the
+                // `isEmpty ? '?'` guard never fired.
+                final name = user == null ? userId : displayName(user);
+                final initial = initialFor(name);
                 final currentUserId = ref
                     .watch(sessionProvider)
                     .valueOrNull
@@ -105,9 +104,7 @@ class _MembersList extends ConsumerWidget {
                 final isOwnCard = userId == currentUserId;
                 return ListTile(
                   leading: CircleAvatar(child: Text(initial)),
-                  title: Text(
-                    displayName.isEmpty ? l10n.unknownMember : displayName,
-                  ),
+                  title: Text(name.isEmpty ? l10n.unknownMember : name),
                   subtitle: row.isLeader ? Text(l10n.leader) : null,
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,

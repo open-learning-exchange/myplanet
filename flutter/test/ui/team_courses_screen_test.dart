@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/courses_providers.dart';
+import 'package:myplanet/providers/session_provider.dart';
 import 'package:myplanet/providers/teams_provider.dart';
 import 'package:myplanet/ui/teams/team_courses_screen.dart';
 
@@ -29,6 +30,36 @@ TeamRow _leaderMembership(String teamId) => TeamRow(
   amount: 0,
   isUpdated: false,
 );
+
+/// A team document whose `userId` — the creator, per `getTeamCreator` — is
+/// [creatorId].
+TeamRow _teamOwnedBy(String creatorId) => TeamRow(
+  id: 'team-1',
+  userId: creatorId,
+  courses: const [],
+  createdDate: 0,
+  limit: 0,
+  isPublic: false,
+  isLeader: false,
+  beginningBalance: 0,
+  sales: 0,
+  otherIncome: 0,
+  wages: 0,
+  otherExpenses: 0,
+  startDate: 0,
+  endDate: 0,
+  updatedDate: 0,
+  date: 0,
+  amount: 0,
+  isUpdated: false,
+);
+
+class _TestSessionNotifier extends SessionNotifier {
+  _TestSessionNotifier(this.user);
+  final UserRow? user;
+  @override
+  Future<UserRow?> build() async => user;
+}
 
 void main() {
   testWidgets('shows the empty state when no courses are linked', (
@@ -80,9 +111,12 @@ void main() {
     expect(find.byIcon(Icons.link_off), findsNothing);
   });
 
-  testWidgets('a leader sees the add-course and remove buttons', (
+  testWidgets('the team creator sees the add-course and remove buttons', (
     tester,
   ) async {
+    // Add is gated on plain membership and remove on being the team's
+    // **creator** (`TeamCoursesFragment.kt:44-46`), not on leadership — see
+    // `test/ui/teams/team_add_remove_gates_test.dart`. This user is both.
     final rows = [buildCourseRow(id: 'c1', courseTitle: 'Algebra 1')];
     final memberships = {'team-1': _leaderMembership('team-1')};
 
@@ -93,6 +127,14 @@ void main() {
           teamCoursesProvider('team-1').overrideWith((ref) async => rows),
           teamMembershipsProvider.overrideWith(
             (ref) => Stream.value(memberships),
+          ),
+          teamProvider(
+            'team-1',
+          ).overrideWith((ref) async => _teamOwnedBy('creator-1')),
+          sessionProvider.overrideWith(
+            () => _TestSessionNotifier(
+              buildUserRow(id: 'creator-1', name: 'ada'),
+            ),
           ),
           teamCourseActionsProvider.overrideWith(
             (ref) => _MockTeamCourseActions(),

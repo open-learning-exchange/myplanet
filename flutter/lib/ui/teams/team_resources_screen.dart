@@ -14,9 +14,14 @@ class TeamResourcesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final resources = ref.watch(teamResourcesProvider(teamId));
-    final canManage =
-        ref.watch(teamMembershipsProvider).valueOrNull?[teamId]?.isLeader ??
-        false;
+    final membership = ref.watch(teamMembershipsProvider).valueOrNull?[teamId];
+    // Two different gates, as `TeamResourcesFragment` has: the add FAB is
+    // `isVisible = isMember` (`:51-52`, `isMemberFlow` → plain membership),
+    // while remove is `isTeamLeader` (`:73`). One `isLeader` flag drove both
+    // here, so an ordinary member could not link a resource Kotlin lets them
+    // link — the Phase 99 shape.
+    final canAdd = membership != null;
+    final canRemove = membership?.isLeader ?? false;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.teamResources)),
       body: resources.when(
@@ -35,7 +40,7 @@ class TeamResourcesScreen extends ConsumerWidget {
                       leading: const Icon(Icons.description_outlined),
                       title: Text(row.title ?? l10n.untitledResource),
                       subtitle: Text(row.description ?? ''),
-                      trailing: canManage
+                      trailing: canRemove
                           ? IconButton(
                               tooltip: l10n.removeFromTeam,
                               icon: const Icon(Icons.link_off),
@@ -49,7 +54,7 @@ class TeamResourcesScreen extends ConsumerWidget {
                 },
               ),
       ),
-      floatingActionButton: canManage
+      floatingActionButton: canAdd
           ? FloatingActionButton.extended(
               onPressed: () => _chooseResource(context, ref),
               icon: const Icon(Icons.add_link),

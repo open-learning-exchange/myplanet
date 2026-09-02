@@ -1,9 +1,15 @@
 import '../../../repository/progress_repository.dart'
     show CourseProgressSummary;
 
-/// Port of `model/TeamLeaderboardEntry.kt`. One row per team member in the
-/// leaderboard: their display name, courses completed, surveys completed,
-/// and whether they are the current user (for highlighting).
+/// One row per team member in the leaderboard: their display name, courses
+/// completed, surveys completed, and whether they are the current user (for
+/// highlighting).
+///
+/// **There is no Kotlin counterpart.** `app/` has no `ui/teams/leaderboard/`
+/// and no `TeamLeaderboardEntry.kt` — `grep -rn "eaderboard" app/src/main
+/// --include=*.kt` finds nothing. Phase 73 ported this from the unmerged
+/// upstream `14880` branch, so anything here is unverifiable against the
+/// shipping app and must not be described as parity.
 class TeamLeaderboardEntry {
   const TeamLeaderboardEntry({
     required this.userId,
@@ -28,9 +34,10 @@ class TeamLeaderboardEntry {
   final String? userImage;
 }
 
-/// Port of `TeamLeaderboardCalculator`. Pure logic: given members, course
-/// progress, and survey completion timestamps, build the ranked list sorted
-/// by courses completed then surveys completed (both descending).
+/// Pure logic: given members, course progress, and survey completion
+/// timestamps, build the ranked list sorted by courses completed then surveys
+/// completed (both descending). No Kotlin counterpart — see
+/// [TeamLeaderboardEntry].
 class TeamLeaderboardCalculator {
   const TeamLeaderboardCalculator._();
 
@@ -76,7 +83,21 @@ class TeamLeaderboardCalculator {
     entries.sort((a, b) {
       final byCourses = b.coursesCompleted.compareTo(a.coursesCompleted);
       if (byCourses != 0) return byCourses;
-      return b.surveysCompleted.compareTo(a.surveysCompleted);
+      final bySurveys = b.surveysCompleted.compareTo(a.surveysCompleted);
+      if (bySurveys != 0) return bySurveys;
+      // A total order, so a displayed *rank* is reproducible. The stronger
+      // claim this comment first made — that ties could shuffle between two
+      // loads of unchanged data — was overstated: Dart's `List.sort` uses a
+      // stable insertion sort below 32 elements, and `watchMembers` orders by
+      // `userId ASC`, so a team under 32 members was already deterministic
+      // (ranked by user id). This makes it deterministic for any size, and
+      // ranks ties by name rather than by an opaque id — a deliberate choice,
+      // not a port: there is no Kotlin leaderboard to match (see the class
+      // doc), so nothing specifies the tie order.
+      final byName = a.displayName.toLowerCase().compareTo(
+        b.displayName.toLowerCase(),
+      );
+      return byName != 0 ? byName : a.userId.compareTo(b.userId);
     });
     return entries;
   }

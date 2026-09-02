@@ -137,6 +137,18 @@ String displayName(UserRow user) {
   return username == null || username.isEmpty ? 'myPlanet learner' : username;
 }
 
+/// The first character of a bare display-name string, upper-cased, with `?`
+/// for a name that is absent, empty, or whitespace-only.
+///
+/// `''.characters.first` throws `StateError`, so a `name ?? '?'` guard is not
+/// enough — a synced row can carry an empty string as readily as a null. Use
+/// this wherever the only thing to hand is a name rather than a [UserRow];
+/// prefer [ProfileAvatar] when a [UserRow] is available.
+String initialFor(String? name) {
+  final trimmed = (name ?? '').trim();
+  return trimmed.isEmpty ? '?' : trimmed.characters.first.toUpperCase();
+}
+
 /// Up to two initials (first + last name), falling back to the first letter
 /// of the username, then `MP` — shared with the profile screen's own copy.
 String _initials(UserRow user) {

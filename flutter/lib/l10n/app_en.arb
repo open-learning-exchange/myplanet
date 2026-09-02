@@ -696,6 +696,7 @@
   "assigneeId": "Assignee ID",
   "teamDiscussions": "Discussions",
   "teamMembers": "Members",
+  "teamDocuments": "Documents",
   "members": "Members",
   "joinRequests": "Join requests",
   "noMembers": "No members yet",
@@ -706,6 +707,7 @@
   "decline": "Decline",
   "joinTeam": "Request to join",
   "leaveTeam": "Leave team",
+  "confirmLeaveTeam": "Are you sure you want to leave this team?",
   "requestPending": "Request pending",
   "teamResources": "Resources",
   "resourcesUnavailable": "Resources are unavailable",
@@ -821,6 +823,7 @@
     "placeholders": { "count": {"type": "int"} }
   },
   "noComments": "No comments yet",
+  "commentsUnavailable": "Comments are unavailable",
   "leaderboard": "Leaderboard",
   "allTime": "All time",
   "thisMonth": "This month",
@@ -832,6 +835,11 @@
   "@surveysCompleted": {
     "placeholders": { "completed": {"type": "int"}, "total": {"type": "int"} }
   },
+  "visitsCount": "{count} visits",
+  "@visitsCount": {
+    "placeholders": { "count": {"type": "int"} }
+  },
+  "leaderboardUnavailable": "The leaderboard is unavailable",
   "error": "Error",
   "close": "Close",
   "filter": "Filter",

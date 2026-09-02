@@ -6,6 +6,7 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/voices_provider.dart';
+import '../components/profile_avatar.dart';
 
 /// Inline comment thread for a team task or meetup. Port of the inline
 /// comments from `15112-team-tasks-meetups-comment-threads` — comments are
@@ -26,6 +27,12 @@ class InlineComments extends ConsumerStatefulWidget {
 class _InlineCommentsState extends ConsumerState<InlineComments> {
   final _controller = TextEditingController();
   bool _expanded = false;
+
+  /// The send button is never disabled and the text now survives the write
+  /// (it is cleared only on success, so a failure leaves it to retry), so
+  /// without this a second tap during an in-flight write posted the comment
+  /// twice. Before the clear moved, the second tap was a no-op by accident.
+  bool _sending = false;
 
   @override
   void dispose() {
@@ -72,6 +79,14 @@ class _InlineCommentsState extends ConsumerState<InlineComments> {
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
             )
+          else if (comments.hasError)
+            Padding(
+              padding: const EdgeInsets.only(left: 24, bottom: 4),
+              child: Text(
+                l10n.commentsUnavailable,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            )
           else if (comments.valueOrNull?.isEmpty == true)
             Padding(
               padding: const EdgeInsets.only(left: 24, bottom: 4),
@@ -98,22 +113,38 @@ class _InlineCommentsState extends ConsumerState<InlineComments> {
   }
 
   Future<void> _addComment() async {
+    if (_sending) return;
     final text = _controller.text.trim();
     if (text.isEmpty) return;
-    final user = ref.read(sessionProvider).valueOrNull;
-    if (user == null) return;
-    _controller.clear();
-    await ref
-        .read(voicesRepositoryProvider)
-        .addComment(
-          parentId: widget.parentId,
-          teamId: widget.teamId,
-          message: text,
-          userId: user.id,
-          userName: user.name,
-          planetCode: user.planetCode,
-          parentCode: user.parentCode,
-        );
+    _sending = true;
+    try {
+      // This widget never *watches* `sessionProvider`, so
+      // `ref.read(...).valueOrNull` is null until something else resolves it
+      // and the comment was dropped with no error and no record. In the app
+      // the router holds a `ref.listen`, which is what made it latent.
+      // The await sits inside the `try` because a future can reject where
+      // `valueOrNull` could not.
+      final user = await ref.read(sessionProvider.future);
+      if (user == null) return;
+      await ref
+          .read(voicesRepositoryProvider)
+          .addComment(
+            parentId: widget.parentId,
+            teamId: widget.teamId,
+            message: text,
+            userId: user.id,
+            userName: user.name,
+            planetCode: user.planetCode,
+            parentCode: user.parentCode,
+          );
+      // Cleared only once the write has landed, so a failure leaves the text
+      // in the field to retry rather than discarding it.
+      if (mounted) _controller.clear();
+    } catch (_) {
+      // A rejecting session or a failed write must not take the thread down.
+    } finally {
+      _sending = false;
+    }
   }
 }
 
@@ -144,7 +175,9 @@ class _CommentTile extends StatelessWidget {
           CircleAvatar(
             radius: 12,
             child: Text(
-              (comment.userName ?? '?').characters.first.toUpperCase(),
+              // `''.characters.first` throws `StateError`, and a synced `News`
+              // row can carry an empty `userName` — `??` only guards null.
+              initialFor(comment.userName),
               style: const TextStyle(fontSize: 12),
             ),
           ),
