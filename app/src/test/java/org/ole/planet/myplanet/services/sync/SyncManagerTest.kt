@@ -1,13 +1,17 @@
 package org.ole.planet.myplanet.services.sync
 
+import android.app.Application
 import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.TestScope
@@ -17,21 +21,31 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.SyncRepository
+import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(manifest = Config.NONE, application = Application::class)
 class SyncManagerTest {
 
     private lateinit var syncManager: SyncManager
-    private val context: Context = mockk(relaxed = true)
+    private val context: Context = ApplicationProvider.getApplicationContext()
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val apiInterface: ApiInterface = mockk(relaxed = true)
     private val transactionSyncManager: TransactionSyncManager = mockk(relaxed = true)
@@ -42,27 +56,33 @@ class SyncManagerTest {
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = TestDispatcherProvider(testDispatcher)
     private val listener: OnSyncListener = mockk(relaxed = true)
+    private val userSyncRepository: UserSyncRepository = mockk(relaxed = true)
+    private val userRepository: UserRepository = mockk(relaxed = true)
+    private val syncRepository: SyncRepository = mockk(relaxed = true)
+    private val syncTimeLogger: SyncTimeLogger = mockk(relaxed = true)
+    private val userModel: UserEntity = mockk(relaxed = true)
 
     @Before
     fun setup() {
         mockkObject(MainApplication.Companion)
         every { MainApplication.createLog(any(), any()) } returns Unit
+        coEvery { userRepository.getUserModel() } returns userModel
 
         syncManager = SyncManager(
-            context,
-            sharedPrefManager,
-            apiInterface,
-            transactionSyncManager,
-            resourcesRepository,
-            loginSyncManager,
-            testScope,
-            activitiesRepository,
-            dispatcherProvider,
-            TestTimeProvider(),
-            mockk(),
-            mockk(relaxed = true),
-            mockk(),
-            mockk(relaxed = true)
+            context = context,
+            sharedPrefManager = sharedPrefManager,
+            apiInterface = apiInterface,
+            transactionSyncManager = transactionSyncManager,
+            resourcesRepository = resourcesRepository,
+            loginSyncManager = loginSyncManager,
+            syncScope = testScope,
+            activitiesRepository = activitiesRepository,
+            dispatcherProvider = dispatcherProvider,
+            timeProvider = TestTimeProvider(),
+            userSyncRepository = userSyncRepository,
+            userRepository = userRepository,
+            syncRepository = syncRepository,
+            syncTimeLogger = syncTimeLogger
         )
     }
 
@@ -81,14 +101,14 @@ class SyncManagerTest {
 
     @Test
     fun `start authenticates and reports failure when authentication fails`() = runTest {
-        every { context.getString(org.ole.planet.myplanet.R.string.invalid_configuration) } returns "Invalid configuration"
         coEvery { transactionSyncManager.authenticate() } returns false
+        val expectedMessage = context.getString(org.ole.planet.myplanet.R.string.invalid_configuration)
 
         syncManager.start(listener, "sync", listOf("exams"))
 
         verify { listener.onSyncStarted() }
         coVerify { transactionSyncManager.authenticate() }
-        verify { listener.onSyncFailed("Invalid configuration") }
+        verify { listener.onSyncFailed(expectedMessage) }
     }
 
     @Test
@@ -101,5 +121,27 @@ class SyncManagerTest {
 
         verify(exactly = 0) { listener.onSyncComplete() }
         verify(exactly = 0) { listener.onSyncFailed(any()) }
+    }
+
+    @Test
+    fun `shelf data is pushed before any table is pulled`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+
+        syncManager.start(listener, "sync", listOf())
+
+        coVerifyOrder {
+            userSyncRepository.uploadShelfData(userModel)
+            transactionSyncManager.syncDb(any())
+        }
+    }
+
+    @Test
+    fun `cancellation while pushing shelf data aborts sync before any table is pulled`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+        coEvery { userSyncRepository.uploadShelfData(any()) } throws CancellationException("cancelled")
+
+        syncManager.start(listener, "sync", listOf())
+
+        coVerify(exactly = 0) { transactionSyncManager.syncDb(any()) }
     }
 }

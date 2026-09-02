@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -260,6 +261,8 @@ class SyncManager @Inject constructor(
     private suspend fun pushCurrentUserShelf() {
         try {
             userRepository.getUserModel()?.let { userSyncRepository.uploadShelfData(it) }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e("SyncManager", "Failed to push shelf data before sync", e)
         }
