@@ -166,9 +166,33 @@ void main() {
     expect(abandoned.map((row) => row.itemId).toSet(), {legacyId});
   });
 
+  test('a delivered record stops being reported as stranded', () async {
+    // The upgrade sequence a real device sees: the record is refused first, the
+    // repair lands later. Nothing sweeps an abandoned row — `enqueue` never
+    // reuses one and `cleanup()` has no caller — so without withdrawing them on
+    // success the screen would warn about a record that is on the server, for
+    // the life of the install, with no action to offer.
+    final legacyId = await seedLegacyPair();
+
+    await queueAndDrain();
+    expect(await database.outboxDao.abandoned(HealthUploader.type), isNotEmpty);
+
+    await database.customStatement('SELECT 1');
+    await database.migration.onUpgrade(database.createMigrator(), 44, 45);
+    await queueAndDrain();
+
+    expect(couch.documents.containsKey(legacyId), isTrue);
+    expect(
+      await database.outboxDao.abandoned(HealthUploader.type),
+      isEmpty,
+      reason:
+          'the record arrived, so the refusals that said it had not must go',
+    );
+  });
+
   test('creatorId is serialized from profileId, as Kotlin does', () async {
     // `JsonUtils.addString(object, "creatorId", health.profileId)`
-    // (`HealthExamination.kt:110`). The columns are equal for anything either
+    // (`HealthExamination.kt:111`). The columns are equal for anything either
     // app authors, so this only bites on a document Planet wrote and this
     // device edited — where the port used to send the server's `creatorId`
     // back and Kotlin replaces it.

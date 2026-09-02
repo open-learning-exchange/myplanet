@@ -2,14 +2,21 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'dart:io';
+
+import 'package:myplanet/core/config/server_config.dart';
+import 'package:myplanet/core/network/network_result.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/session_provider.dart';
 import 'package:myplanet/repository/health_repository.dart';
+import 'package:myplanet/repository/outbox_drainer.dart';
+import 'package:myplanet/repository/outbox_repository.dart';
 import 'package:myplanet/ui/components/profile_avatar.dart';
 import 'package:myplanet/ui/health/my_health_screen.dart';
 
@@ -31,6 +38,28 @@ class _TestSessionNotifier extends SessionNotifier {
 }
 
 class _NoopApi extends Mock implements PlanetApi {}
+
+/// Every send fails as a transport error, which the drainer treats as
+/// retryable — so a row it touches stays queued rather than being abandoned or
+/// deleted.
+class _UnreachableApi extends Mock implements PlanetApi {
+  @override
+  Future<NetworkResult<Map<String, dynamic>>> sendJsonObject(
+    String url, {
+    required Map<String, dynamic> body,
+    String method = 'POST',
+    String? authHeader,
+  }) async => const NetworkException(SocketException('offline'));
+}
+
+class _TestServerConfigNotifier extends ServerConfigNotifier {
+  @override
+  ServerConfig? build() => const ServerConfig(
+    serverUrl: 'https://planet.example',
+    couchDbUrl: 'https://satellite:1234@planet.example:443',
+    pin: '1234',
+  );
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -176,12 +205,14 @@ void main() {
     WidgetTester tester, {
     required UserRow? session,
     AppDatabase? database,
+    List<Override> overrides = const [],
   }) async {
     final db = database ?? AppDatabase.memory();
     await tester.pumpWidget(
       wrapScreen(
         const MyHealthScreen(),
         overrides: [
+          ...overrides,
           sessionProvider.overrideWith(() => _TestSessionNotifier(session)),
           appDatabaseProvider.overrideWith((ref) {
             ref.onDispose(db.close);
@@ -641,6 +672,72 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.cloud_off), findsOneWidget);
+    });
+
+    testWidgets('the caution shows even when no patient resolves', (
+      tester,
+    ) async {
+      // "No patient resolves" is exactly the state a clinician might be in
+      // while wondering where a reading went, and the refusal is a
+      // device-level fact rather than a property of the selected patient.
+      final db = AppDatabase.memory();
+      await abandon(db, 'health-1');
+      await pumpScreen(tester, session: null, database: db);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Health record not available'), findsOneWidget);
+      expect(find.byIcon(Icons.cloud_off), findsOneWidget);
+    });
+
+    testWidgets('the caution offers a retry that re-queues the record', (
+      tester,
+    ) async {
+      // Kotlin re-attempts every failed health upload on each sync; the port
+      // re-queues only from the examination form's save, so without this the
+      // banner names a problem the clinician has no way to act on.
+      final db = AppDatabase.memory();
+      final user = await seedPatient(db);
+      await db.healthExaminationDao.upsert(
+        HealthExaminationsCompanion.insert(
+          id: 'health-1',
+          userId: const Value('health-1'),
+          pulse: const Value(72),
+          isUpdated: const Value(true),
+        ),
+      );
+      await abandon(db, 'health-1');
+      await pumpScreen(
+        tester,
+        session: user,
+        database: db,
+        // `serverConfigProvider` reaches `planetPrefsProvider`, which the
+        // widget-test harness leaves as `UnimplementedError` — the Phase 75
+        // trap. The retry reads it to decide whether it can drain.
+        overrides: [
+          serverConfigProvider.overrideWith(_TestServerConfigNotifier.new),
+          // `outboxDrainerProvider` builds every uploader, several of which
+          // reach `planetPrefsProvider` too. A drainer over an unreachable
+          // server exercises the same path: the send fails as a transport
+          // error, which is retryable, so the fresh operation stays queued.
+          outboxDrainerProvider.overrideWith(
+            (ref) => OutboxDrainer(
+              _UnreachableApi(),
+              OutboxRepository(db.outboxDao),
+            ),
+          ),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(TextButton, 'Retry'));
+      await tester.pumpAndSettle();
+
+      // A fresh operation alongside the abandoned one, because `enqueue`
+      // ignores an abandoned row rather than reusing it — which is what makes
+      // the retry a real re-attempt.
+      final open = await db.outboxDao.findOpen('health', 'health-1');
+      expect(open, isNotNull);
+      expect(open!.status, OutboxDao.statusPending);
     });
 
     testWidgets('the count is of records, not of attempts', (tester) async {

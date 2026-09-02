@@ -10,6 +10,7 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/health_provider.dart';
 import '../../providers/sync_state.dart';
+import '../../repository/personals_uploader.dart';
 import '../components/profile_avatar.dart';
 import '../router.dart';
 
@@ -101,7 +102,16 @@ class MyHealthScreen extends ConsumerWidget {
     final user = detail.user;
     final record = detail.record;
     if (user == null) {
-      return Center(child: Text(l10n.healthRecordNotAvailable));
+      // The banner rides above this branch as well: a record the server refused
+      // is a device-level fact, and "no patient resolves" is exactly the state
+      // a clinician might be in while wondering where a reading went.
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const _RejectedUploadsBanner(),
+          Center(child: Text(l10n.healthRecordNotAvailable)),
+        ],
+      );
     }
     final data = HealthData(
       user: user,
@@ -411,6 +421,7 @@ class _RejectedUploadsBanner extends ConsumerWidget {
     if (count == 0) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Card(
       color: theme.colorScheme.errorContainer,
       child: Padding(
@@ -421,16 +432,35 @@ class _RejectedUploadsBanner extends ConsumerWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                AppLocalizations.of(context).healthRecordsRejected(count),
+                l10n.healthRecordsRejected(count),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onErrorContainer,
                 ),
               ),
             ),
+            // Without this the banner names a problem and offers nothing to do
+            // about it. Kotlin re-attempts every failed health upload on every
+            // sync (`UploadToShelfService.uploadHealth`, run from
+            // `AutoSyncWorker`); the port re-queues only from the examination
+            // form's own save, so a stranded record has no other way back onto
+            // the wire. `enqueue` ignores the abandoned row and writes a fresh
+            // pending one, so this is a real retry rather than a nudge.
+            TextButton(onPressed: () => _retry(ref), child: Text(l10n.retry)),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _retry(WidgetRef ref) async {
+    await ref.read(healthQueueProvider).queuePending();
+    final config = ref.read(serverConfigProvider);
+    if (config != null) {
+      await ref
+          .read(outboxDrainerProvider)
+          .drain(authHeader: PersonalsUploader.authHeaderFor(config));
+    }
+    ref.invalidate(rejectedHealthRecordCountProvider);
   }
 }
 

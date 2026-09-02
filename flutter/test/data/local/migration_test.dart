@@ -297,8 +297,20 @@ void main() {
       ),
     );
 
+    /// The patient's profile row — the document a legacy examination collides
+    /// with, and the reason the collision exists at all.
+    Future<void> seedProfileRow() => database.healthExaminationDao.upsert(
+      HealthExaminationsCompanion.insert(
+        id: 'org.couchdb.user:ada',
+        userId: const Value('org.couchdb.user:ada'),
+        data: const Value('profile-ciphertext'),
+        isUpdated: const Value(true),
+      ),
+    );
+
     test('re-keys a legacy examination onto its own id', () async {
       await seedUser();
+      await seedProfileRow();
       await database.healthExaminationDao.upsert(
         HealthExaminationsCompanion.insert(
           id: 'health-1725000000000000',
@@ -315,6 +327,37 @@ void main() {
       );
       expect(row!.userId, 'health-1725000000000000');
       expect(row.pulse, 72, reason: 'the reading itself is untouched');
+    });
+
+    test('leaves a legacy row that became the profile row alone', () async {
+      // `saveHealthProfileBlob` resolves the profile row with
+      // `getByIdOrUserId`, which matches a legacy examination row through its
+      // `userId` column — and then keeps `id: Value(existing.id)`. So on a
+      // device with no separate profile row, the first post-Phase-105 save
+      // turns the legacy examination row *into* the patient's profile row,
+      // keeping its `health-…` id. Every other conjunct of the repair matches
+      // that row; re-keying it would publish the health profile under a
+      // millisecond timestamp no server can resolve to a person, which is the
+      // harm this repair exists to prevent.
+      await seedUser();
+      await database.healthExaminationDao.upsert(
+        HealthExaminationsCompanion.insert(
+          id: 'health-1725000000000005',
+          userId: const Value('org.couchdb.user:ada'),
+          data: const Value('profile-ciphertext'),
+          isUpdated: const Value(true),
+        ),
+      );
+
+      await runUpgrade(from: 44);
+
+      expect(
+        (await database.healthExaminationDao.getById(
+          'health-1725000000000005',
+        ))!.userId,
+        'org.couchdb.user:ada',
+        reason: 'no row is keyed on that userId, so there is no collision',
+      );
     });
 
     test("leaves a locally-registered member's profile row alone", () async {
@@ -372,6 +415,7 @@ void main() {
       // it while keeping that revision would post a revision of a document
       // that does not exist under the new id — the same 409, newly ours.
       await seedUser();
+      await seedProfileRow();
       await database.healthExaminationDao.upsert(
         HealthExaminationsCompanion.insert(
           id: 'health-1725000000000001',
@@ -396,6 +440,7 @@ void main() {
       // A row with a `profileId` is either recorded after Phase 105 or pulled
       // from the server; neither is the shape being repaired.
       await seedUser();
+      await seedProfileRow();
       await database.healthExaminationDao.upsert(
         HealthExaminationsCompanion.insert(
           id: 'health-1725000000000002',
@@ -418,6 +463,7 @@ void main() {
     test('leaves a clean row alone', () async {
       // Nothing queues it, so it is not in the collision.
       await seedUser();
+      await seedProfileRow();
       await database.healthExaminationDao.upsert(
         HealthExaminationsCompanion.insert(
           id: 'health-1725000000000003',
@@ -439,6 +485,7 @@ void main() {
       // `health_examinations` is preserved, so the upgrade that carries the
       // repair must not be the thing that discards the reading.
       await seedUser();
+      await seedProfileRow();
       await database.healthExaminationDao.upsert(
         HealthExaminationsCompanion.insert(
           id: 'health-1725000000000004',

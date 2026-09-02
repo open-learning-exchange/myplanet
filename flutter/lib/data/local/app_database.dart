@@ -339,12 +339,33 @@ class AppDatabase extends _$AppDatabase {
       //    the server carries the one Planet stored. This is the positive
       //    identification, not an id-prefix guess: Phase 107 declined to write
       //    the guess, and it was right to.
-      //  * `_id IS NULL AND _rev IS NULL` — a row that already uploaded owns a
-      //    revision of the document its old `userId` names. Re-keying it while
-      //    keeping that `_rev` would post a revision of a document that does
-      //    not exist under the new id: the same 409, newly caused by us. Those
-      //    rows are left alone; the mess they made on the server predates this
-      //    and a migration cannot unpick it.
+      //  * `_rev IS NULL` — a row that already uploaded owns a revision, and
+      //    nothing on the row records *which document* it is a revision of.
+      //    Before Phase 107 `serialize` keyed the upload on the row's own `id`
+      //    (`713c5ad` is the line that changed it to `userId`), and
+      //    `markUploaded` writes `rev` and nothing else — so an old `_rev` may
+      //    belong to the `health-…` document or to the patient's, and the
+      //    repair is right for one and wrong for the other. Left alone rather
+      //    than guessed at; these rows remain a loss path, recorded in
+      //    `PHASE_111_NOTES.md`. `_id IS NULL` rides along: `couchId` is only
+      //    ever written by `_docToCompanion`, whose rows have `userId == id`
+      //    and are already excluded, so it adds nothing and is kept only to
+      //    say plainly that a row with a server identity is not repairable.
+      //  * `EXISTS (… p.id = user_id)` — the collision must actually exist.
+      //    This is the conjunct the first cut of the repair lacked, and its
+      //    absence was not theoretical: `saveHealthProfileBlob` resolves the
+      //    profile row with `getByIdOrUserId`, which matches a legacy
+      //    examination row *through its `userId` column*, and the else-branch
+      //    then keeps `id: Value(existing.id)` — so on a device with no
+      //    separate profile row the first post-Phase-105 save turns the legacy
+      //    examination row into the patient's profile row, `id = 'health-…'`
+      //    and all. Every other conjunct here still matches it, and re-keying
+      //    it would publish the health profile under a millisecond timestamp
+      //    no server can resolve to a person: the exact harm this repair
+      //    exists to prevent, caused by the repair. A converted row is the
+      //    only row for its patient, so requiring a row keyed on the `userId`
+      //    being replaced excludes it and keeps the true positive, where the
+      //    profile row is what the examination is colliding with.
       //  * `id NOT IN (users)` — a *profile* row's id is the patient's user
       //    row key (`saveHealthProfileBlob`), and `UserDao.getById` matches
       //    `_id` as well as `id`, so both columns are checked. This is what
@@ -361,7 +382,9 @@ class AppDatabase extends _$AppDatabase {
           'AND _id IS NULL '
           'AND _rev IS NULL '
           'AND id NOT IN (SELECT id FROM users) '
-          'AND id NOT IN (SELECT _id FROM users WHERE _id IS NOT NULL)',
+          'AND id NOT IN (SELECT _id FROM users WHERE _id IS NOT NULL) '
+          'AND EXISTS (SELECT 1 FROM health_examinations AS p '
+          'WHERE p.id = health_examinations.user_id)',
         );
       }
     },
@@ -1761,6 +1784,22 @@ class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
             )
             ..orderBy([(row) => OrderingTerm(expression: row.createdAt)]))
           .get();
+
+  /// Drops the abandoned rows recorded against one item.
+  ///
+  /// An abandoned row is never reused — [findOpen] ignores it — and `cleanup()`
+  /// has no caller, so without this a record that is refused once is reported
+  /// as stranded for the life of the install, including after a later attempt
+  /// delivers it. The uploader calls this when the server finally accepts the
+  /// record, which is the only event that makes the old refusals untrue.
+  Future<int> clearAbandonedFor(String uploadType, String itemId) =>
+      (delete(outboxEntries)..where(
+            (row) =>
+                row.uploadType.equals(uploadType) &
+                row.itemId.equals(itemId) &
+                row.status.equals(statusAbandoned),
+          ))
+          .go();
 
   /// Operations of [uploadType] the queue has given up on.
   ///

@@ -70,6 +70,12 @@ class HealthUploader {
       // same document instead of conflicting against a stale `_rev`; clearing
       // `isUpdated` is what stops it being queued a second time.
       await _dao.markUploaded(row.itemId, rev);
+      // And the record is no longer stranded, so the refusals that said it was
+      // must go with it. An abandoned row is never reused and nothing sweeps
+      // them, so leaving them would have `MyHealthScreen` warn about a record
+      // that is on the server — for the life of the install, with no action to
+      // offer. This is the only event that makes an old refusal untrue.
+      await _outbox.clearAbandoned(type, row.itemId);
     }
     return result;
   };
