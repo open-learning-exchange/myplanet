@@ -537,6 +537,7 @@ reproduced the same silence from a new trigger.
 | `docs/CODE_STYLE_GUIDE.md` | You're writing code — naming, imports, coroutines, Room, Hilt, UI conventions |
 | `docs/TESTING.md` | You're writing or fixing tests — patterns to copy per layer |
 | `docs/kotlin-to-flutter-migration.md` | You're working on the Flutter port in `flutter/` — scope, technology mapping, ported slices, open problems |
+| `docs/PROGRESS_RATING.md` | You're reporting how far along a long port/rewrite is — the two-number (parity / shippable) rating, the rules that stop it drifting, and the two countable metrics it must be reported with. Project-agnostic; portable to any repo |
 | `agents-summoning` skill — `.agents/skills/agents-summoning/SKILL.md` (or the `agents-summoning@summoning` plugin in a Claude Code session) | You're summoning another AI agent (`@coderabbitai` `@codex` `@copilot` `@devin` `@jules` `@openhands` `@dependabot`) on a PR or issue — who answers, how fast, with what side effects, and why a summon went silent. Dated receipts in the same skill's `NOTES.md`; connection checklists in its `references/connecting.md` |
 | `.claude/agents/*.md` | You're delegating Flutter-port work to a subagent — `parity-auditor` (is a slice really at parity?), `port-implementer` (write a slice), `harvest-triage` (which upstream commits the port must follow), `flutter-ci-green` (get the gate passing). Each pins its own model and effort |
 
