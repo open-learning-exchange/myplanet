@@ -184,7 +184,13 @@ class _AnswerTile extends StatelessWidget {
               ? '$value\n${l10n.availableChoices}: ${question!.choices.join(', ')}'
               : value,
         ),
-        trailing: answer.grade > 0 ? Text('${answer.grade}') : null,
+        // No trailing mark. `saveExamAnswer` writes `grade = 1` for **every**
+        // exam answer, right or wrong — a "worth one mark" marker rather than
+        // a score — so a badge reading it would say "1" on every row and mean
+        // nothing. `QuestionAnswerAdapter.bind` renders it nowhere either.
+        // The leading icon carries the verdict; `mistakes` carries how many
+        // tries it took, and the courses-progress screen is where Kotlin
+        // shows that.
       ),
     );
   }

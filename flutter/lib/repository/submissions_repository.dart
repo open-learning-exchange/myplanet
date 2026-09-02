@@ -11,6 +11,7 @@ import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
 import '../data/local/converters.dart';
+import 'exam_grading.dart';
 
 /// Offline list portion of `repository/SubmissionsRepositoryImpl.kt`.
 class SubmissionsRepository {
@@ -210,34 +211,76 @@ class SubmissionsRepository {
   static String _rawQuestionId(SurveyQuestionRow question) =>
       question.questionId ?? question.id;
 
-  /// Records a completed exam attempt, with its grade, as an uploadable
-  /// submission.
+  /// Opens an exam attempt, the port of `SubmissionsRepositoryImpl
+  /// .startExamSession` + `createExamSubmission` as `ExamTakingFragment
+  /// .initializeExamData` calls them for `type == "exam"`.
   ///
-  /// Kotlin's `ExamTakingFragment` writes a `RealmSubmission` per attempt and
-  /// `UploadManager` sends it. Without this the port graded an exam into a
-  /// dialog and dropped the result when the dialog closed — the attempt never
-  /// reached the device, let alone the server.
-  Future<String> createExamDraft({
+  /// Kotlin creates the submission **before** the first question is shown and
+  /// writes each answer as the learner passes it ([saveExamAnswer]), because
+  /// `mistakes` is an accumulator: it is `(existing?.mistakes ?: 0) + 1` per
+  /// wrong attempt, and there is no "existing" to add to unless the row is
+  /// already on disk. The port used to grade the whole attempt in widget state
+  /// and write it once at the end, which is why `mistakes` was structurally
+  /// stuck at its column default.
+  ///
+  /// The exam branch passes `recreate = true` with `deleteStale`, so a second
+  /// entry to the same exam discards the previous local attempt rather than
+  /// resuming it — the survey branch is the one that offers resume. The
+  /// `pending` status plus `isUpdated: false` is what keeps a half-finished
+  /// attempt out of `pendingUploads`; Kotlin gets the same effect from
+  /// `getPendingSubmissions`' `WHERE status = 'complete'` filter.
+  Future<String> startExamSession({
     required ExamRow exam,
     required List<ExamQuestionRow> questions,
     required String userId,
-    required Map<String, ExamDraftAnswer> answers,
     String? courseId,
     DateTime? now,
   }) async {
+    final resolvedCourseId = (courseId?.isNotEmpty ?? false)
+        ? courseId
+        : exam.courseId;
+    final parentId = examParentId(examId: exam.id, courseId: resolvedCourseId);
+    // Retried three times like `startExamSession`'s own loop
+    // (`SubmissionsRepositoryImpl.kt:420-435`, whose comment names transient
+    // SQLite constraints during rapid operations). Without it a single failed
+    // write ends the exam: the screen has one caller and nothing else opens an
+    // attempt.
+    Object? lastError;
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        return await _openExamSession(
+          exam: exam,
+          questions: questions,
+          userId: userId,
+          parentId: parentId,
+          now: now,
+        );
+      } on Exception catch (error) {
+        lastError = error;
+      }
+    }
+    throw StateError(
+      'Failed to start exam session after 3 attempts: $lastError',
+    );
+  }
+
+  Future<String> _openExamSession({
+    required ExamRow exam,
+    required List<ExamQuestionRow> questions,
+    required String userId,
+    required String parentId,
+    DateTime? now,
+  }) async {
+    await _deleteExamSubmissions(parentId: parentId, userId: userId);
     final timestamp = (now ?? DateTime.now()).millisecondsSinceEpoch;
     final id = sha1
         .convert(utf8.encode('$userId:$timestamp:${exam.id}'))
         .toString();
-    final correct = questions
-        .where((question) => answers[question.id]?.isCorrect ?? false)
-        .length;
-    final grade = questions.isEmpty ? 0 : (correct * 100) ~/ questions.length;
     await _dao.upsertAll(
       [
         SubmissionsCompanion.insert(
           id: id,
-          parentId: Value(courseId ?? exam.courseId),
+          parentId: Value(parentId),
           parent: Value(
             jsonEncode({
               '_id': exam.id,
@@ -251,10 +294,17 @@ class SubmissionsRepository {
           type: const Value('exam'),
           startTime: Value(timestamp),
           lastUpdateTime: Value(timestamp),
-          grade: Value(grade),
-          status: const Value('complete'),
+          // Deliberately left at 0. `createExamSubmission` never sets a
+          // submission-level grade for an exam and neither does
+          // `saveExamAnswer`: the attempt goes up as `requires grading` and
+          // Planet's grading queue writes the mark, which the sync-in reads
+          // back into this column. The port used to compute a percentage here
+          // on the device, which under the retry gate would be 100% every
+          // time — every answer in a finished attempt is correct by
+          // construction.
+          status: const Value('pending'),
           uploaded: const Value(false),
-          isUpdated: const Value(true),
+          isUpdated: const Value(false),
         ),
       ],
       questions: {
@@ -266,6 +316,9 @@ class SubmissionsRepository {
               header: Value(question.header),
               body: Value(question.body),
               type: Value(question.type),
+              // The labels only: this column is a display list
+              // (`availableChoices`), and `SubmissionQuestions` is a preserved
+              // table whose converter cannot change here.
               choices: Value(
                 question.choices.map((choice) => choice.text).toList(),
               ),
@@ -273,54 +326,170 @@ class SubmissionsRepository {
             ),
         ],
       },
-      answers: {
-        id: [
-          for (final question in questions)
-            _examAnswer(
-              submissionId: id,
-              examId: exam.id,
-              question: question,
-              draft: answers[question.id],
-            ),
-        ],
-      },
     );
     return id;
   }
 
-  /// One graded exam answer row.
+  /// `"$examId@$courseId"`, or the bare exam id when the exam belongs to no
+  /// course — the shape `createExamSubmission` writes
+  /// (`SubmissionsRepositoryImpl.kt:449-456`) and `deleteExamSubmissions`
+  /// searches by (`:344-350`).
   ///
-  /// The screen hands over choice **ids** — that is what a radio/checkbox
-  /// records and what grading compares against — and [AnswerShape] turns them
-  /// into the `{id, text}` objects `saveExamAnswer` stores, resolving each
-  /// label from the question the way `getChoiceTextById` does. The port used to
-  /// store the bare ids, so a choice answer reached Planet as a list of ids
-  /// where Kotlin sends objects (or, for a single choice, the display text).
-  SubmissionAnswersCompanion _examAnswer({
+  /// The port used to store the bare `courseId` here, which
+  /// `ProgressRepository._examIdFromParent` reads as the exam id — it takes
+  /// the leading `@`-delimited segment — so the per-step mistake counts could
+  /// never find their exam even once `mistakes` was populated.
+  static String examParentId({required String examId, String? courseId}) =>
+      (courseId?.isNotEmpty ?? false) ? '$examId@$courseId' : examId;
+
+  /// Records one answer and returns whether it was **correct** — the verdict
+  /// `updateAnsDb` hands back to `btnNext`/`btnSubmit`, which is what makes a
+  /// wrong answer refuse to advance.
+  ///
+  /// Port of the exam half of `SubmissionsRepositoryImpl.saveExamAnswer`
+  /// (`:491-579`). Every field it writes is Kotlin's:
+  ///
+  ///  * `mistakes` — `(existing?.mistakes ?: 0) + 1` when this attempt is
+  ///    wrong, otherwise the count so far. It accumulates across retries of
+  ///    the same question within one attempt, is uploaded by
+  ///    [serialize] (`Answer.createObject` sends `"mistakes"`), and is what
+  ///    the courses-progress screen totals per step.
+  ///  * `isPassed` — the verdict for this attempt. In a *finished* attempt
+  ///    every answer is `true`, but as a consequence rather than an
+  ///    assertion: the learner cannot leave a question until it is right.
+  ///  * `grade` — `1` for every exam answer, right or wrong. It is a
+  ///    "worth one mark" marker, not a score, and `createObject` does not
+  ///    upload it. See `submission_detail_screen` for why nothing renders it.
+  ///  * the submission's `status` — `requires grading` on the final answer of
+  ///    an explicit submission, `pending` otherwise. `complete` is the survey
+  ///    value; an exam is not complete until somebody marks it.
+  Future<bool> saveExamAnswer({
     required String submissionId,
-    required String examId,
     required ExamQuestionRow question,
-    required ExamDraftAnswer? draft,
-  }) {
+    required ExamDraftAnswer answer,
+    required bool isFinal,
+    required bool isExplicitSubmission,
+    DateTime? now,
+  }) async {
+    final isCorrect = ExamGrading.isCorrect(
+      question: question,
+      choiceIds: answer.choiceIds,
+      text: answer.value,
+    );
     final shape = AnswerShape.forQuestion(
       type: question.type,
       choices: question.choices,
-      selected: (draft?.choiceIds ?? const <String>[]).map(
-        (id) => ExamChoice(id: id, text: ''),
-      ),
-      text: draft?.value,
+      selected: answer.choiceIds.map((id) => ExamChoice(id: id, text: '')),
+      text: answer.value,
     );
-    final isCorrect = draft?.isCorrect ?? false;
-    return SubmissionAnswersCompanion.insert(
-      id: '$submissionId:${question.id}',
-      submissionId: submissionId,
-      examId: Value(examId),
-      questionId: Value(question.id),
-      value: Value(shape.value),
-      valueChoices: Value(shape.valueChoices),
-      isPassed: Value(isCorrect),
-      grade: Value(isCorrect ? 1 : 0),
-    );
+    final answerId = '$submissionId:${question.id}';
+    // `isCorrect` is part of the status condition, which Kotlin's is not:
+    // `onClick` assigns `isExplicitSubmission = true`
+    // (`ExamTakingFragment.kt:630-632`) *before* it calls `updateAnsDb`, so a
+    // **wrong** press of Finish writes `requires grading` for an exam the
+    // learner has not finished. Not ported, and the port-specific reason is
+    // the strong one: here the status also decides `isUpdated`, and
+    // `submissions_screen`'s draft flow sweeps `queuePending` for the whole
+    // user, so reproducing it would leak a half-finished attempt onto the wire
+    // on any unrelated upload. (Kotlin's own consequence is narrower than it
+    // looks — `isStepCompleted` is read from one place,
+    // `TakeCourseFragment.changeNextButtonState`, whose body is wrapped in a
+    // single hardcoded `courseId` — and it does not self-heal the way a first
+    // reading suggests: `btnBack` saves at the still-final index with the
+    // sticky flag still set, so it re-writes `requires grading`; only the next
+    // save at a non-final index returns it to `pending`.)
+    final status = isFinal && isExplicitSubmission && isCorrect
+        ? 'requires grading'
+        : 'pending';
+    // One transaction around the read *and* the write, because `upsertAll`
+    // replaces a submission's whole answer set: a read outside it lets two
+    // concurrent saves interleave read/read/write/write and revert the first,
+    // losing a `mistakes` increment. Drift nests this as a savepoint inside
+    // `upsertAll`'s own transaction.
+    //
+    // Reading the set and rewriting it is itself a workaround: `SubmissionDao`
+    // has no way to touch one answer row, and adding one would mean editing
+    // `app_database.dart`, which another lane owns this round. The rows are one
+    // per question, so the read is small; a follow-up should add
+    // `SubmissionDao.upsertAnswer` and drop the rewrite.
+    await _dao.transaction(() async {
+      final existing = await _dao.answersFor(submissionId);
+      final previous = existing.where((row) => row.id == answerId).firstOrNull;
+      final companions = [
+        for (final row in existing)
+          if (row.id != answerId) row.toCompanion(false),
+        SubmissionAnswersCompanion.insert(
+          id: answerId,
+          submissionId: submissionId,
+          examId: Value(question.examId),
+          questionId: Value(question.id),
+          value: Value(shape.value),
+          valueChoices: Value(shape.valueChoices),
+          mistakes: Value((previous?.mistakes ?? 0) + (isCorrect ? 0 : 1)),
+          isPassed: Value(isCorrect),
+          grade: const Value(1),
+        ),
+      ];
+      await _dao.upsertAll(
+        [
+          SubmissionsCompanion(
+            id: Value(submissionId),
+            status: Value(status),
+            lastUpdateTime: Value(
+              (now ?? DateTime.now()).millisecondsSinceEpoch,
+            ),
+            // Kotlin's `updateStatusAndLastUpdate` sets `isUpdated = 1` on
+            // every save, and its exam-specific upload config
+            // (`UploadConfigs.ExamResults` -> `getPendingExamResults`) has no
+            // status filter at all — so a half-finished Kotlin attempt goes up
+            // as `pending` on the next sync, and `deleteExamSubmissions` then
+            // POSTs a second document for the retake. The port's
+            // `pendingUploads` is likewise status-blind (`isUpdated == true`,
+            // deliberately: filtering on `status = 'complete'` the way
+            // `getPendingSubmissions` does would strand every exam, since an
+            // exam is never `complete`), so this flag is the gate instead: an
+            // attempt becomes uploadable exactly when it is submitted.
+            isUpdated: Value(status == 'requires grading'),
+          ),
+        ],
+        answers: {submissionId: companions},
+      );
+    });
+    return isCorrect;
+  }
+
+  /// Port of `SubmissionsRepositoryImpl.deleteExamSubmissions` — every local
+  /// attempt at this exam for this user, answers and questions included.
+  ///
+  /// Kotlin's `deleteByParentAndUser` has no status filter, so an already
+  /// uploaded attempt goes too: the server keeps its document and the device
+  /// keeps only the attempt in progress.
+  ///
+  /// The query is built here rather than in `SubmissionDao` because
+  /// `app_database.dart` belongs to another lane this round and the DAO has no
+  /// delete-by-parent. It should move there — it is the only place in this
+  /// repository that reaches for a table directly.
+  Future<void> _deleteExamSubmissions({
+    required String parentId,
+    required String userId,
+  }) async {
+    final stale = await _dao.getExamSubmissionsByUser(userId);
+    final ids = stale
+        .where((row) => row.parentId == parentId)
+        .map((row) => row.id)
+        .toList();
+    if (ids.isEmpty) return;
+    await _dao.transaction(() async {
+      await (_dao.delete(
+        _dao.submissionAnswers,
+      )..where((row) => row.submissionId.isIn(ids))).go();
+      await (_dao.delete(
+        _dao.submissionQuestions,
+      )..where((row) => row.submissionId.isIn(ids))).go();
+      await (_dao.delete(
+        _dao.submissions,
+      )..where((row) => row.id.isIn(ids))).go();
+    });
   }
 
   /// Attaches the profile collected by `UserInformationFragment` to an attempt.
@@ -970,14 +1139,12 @@ class AnswerShape {
 
 /// One question's answer on an exam attempt.
 ///
-/// Unlike a survey answer this carries a verdict: exams are graded on the
-/// device against the correct-choice ids that came down with the question.
+/// It carries no verdict. `saveExamAnswer` grades the answer itself, from the
+/// question's own `correctChoices`, exactly as Kotlin does — the value written
+/// to the row and the value returned to the gate are then one computation
+/// rather than two that can disagree.
 class ExamDraftAnswer {
-  const ExamDraftAnswer({
-    this.value,
-    this.choiceIds = const [],
-    this.isCorrect = false,
-  });
+  const ExamDraftAnswer({this.value, this.choiceIds = const []});
 
   /// Free text, or the selected rating rendered as a string.
   final String? value;
@@ -989,8 +1156,6 @@ class ExamDraftAnswer {
   /// is the `{id, text}` object a stored answer and an uploaded document
   /// actually carry.
   final List<String> choiceIds;
-
-  final bool isCorrect;
 
   bool get isEmpty => (value == null || value!.isEmpty) && choiceIds.isEmpty;
 }
