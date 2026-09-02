@@ -219,3 +219,231 @@ recorded here instead.
 * Files touched: `lib/data/local/user_mapper.dart`,
   `lib/repository/user_repository.dart`, `lib/repository/health_repository.dart`,
   `lib/data/local/app_database.dart`, and the three test files.
+
+---
+
+# A second round, after the parity audit
+
+A `parity-auditor` pass confirmed all five claims above, corrected two of them,
+reviewed the fix, and found three gaps in it plus fourteen divergences nobody
+had claimed. Three more defects are fixed here, each demonstrated failing
+first; the rest are recorded below, because several are outside this lane's
+files and two are more severe than anything this phase set out to fix.
+
+The two corrections are worth keeping. On the headline: the audit reached the
+same conclusion the measurement above did — SQLite full-scans an unindexed
+`users` and returns the older, key-bearing row, so the undecryptable-records
+harm was **latent**. But it named the harm that was *live* and that this phase
+had described only as "a duplicate name", and it is worse than cosmetic:
+
+> **An online login stopped refreshing the member's row.** Everything
+> `applyJsonToUser` writes unguarded — `rolesList`, `derived_key`, `salt`,
+> `password_scheme`, `iterations`, `isArchived`, `userAdmin`, `_rev` — landed
+> on the duplicate, while the session kept resolving the original.
+
+So: a manager grants a role, resets a password, or archives an account in
+Planet; the member signs in online on this device; role-gated UI stays locked,
+and `loginOffline` goes on verifying against the **stale** `derived_key`/`salt`
+— the old password keeps working offline and the new one fails. That is the
+defect the fix actually removed, and it needed no scan-order luck at all.
+
+## 5. The health profile row uploaded under a millisecond timestamp
+
+The second correction overturns a call made above. This note argued that
+`saveHealthProfileBlob`'s `userId: Value(user?.couchId ?? userId)` fallback was
+a harmless improvement on Kotlin's `pojo?.userId = user?._id` and should stay.
+It is not harmless, and the reason is the rule this phase had just finished
+describing: **`userId` is what decides whether `getUpdated()` selects the row
+at all.**
+
+Kotlin writes null for a member whose account has not uploaded, `userId != ''`
+withholds the row, and nothing is sent until the account has a server identity
+— at which point `app_providers`' `updateUserId` stamps the CouchDB id in and
+the row uploads correctly. The port's fallback wrote the device-local
+`'<millis>'` id, which is neither null nor empty, so the row *was* selected and
+POSTed to `/health` keyed on a millisecond timestamp that no server and no
+other device can resolve to a person. Two apps, one recording nothing and one
+recording an unaddressable document, and the port's was the wrong one.
+
+Both `saveHealthProfileBlob` and `saveHealthProfile` now write
+`Value(user?.couchId)`, and both **re-stamp** it on every later save, which is
+what `updateUserHealthProfile` does unconditionally
+(`HealthRepositoryImpl.kt:231`) and the port's update branches did not.
+
+*Failing-first:* "a member with no couchId gets a null userId, so nothing
+uploads" finds the local id in the column and a row in `getUpdated()`. The
+third test in that group ("a later profile save re-stamps the couchId") passes
+either way — `patientIdOf` already prefers the couch id, so the value was
+already right on that path — and is a regression guard, not evidence.
+
+## 6. A rejected manager login cached the account anyway
+
+`checkManagerAndInsert` (`LoginSyncManager.kt:167-175`) tests
+`isManager(jsonDoc)` and returns **before** `saveUser`. The port wrote the row
+and rejected afterwards, leaving behind an account the Kotlin declines to keep.
+The check moved ahead of the cache, and it now reads the document rather than
+the stored row — `UserMapper.docIsManager`, a port of
+`LoginSyncManager.isManager(jsonDoc)`, because at that point there is
+deliberately no row to read.
+
+*Failing-first:* "a rejected manager login caches nothing" finds a row.
+
+## 7. A test that had stopped testing, again
+
+`user_mapper_test`'s "is null when there are no attachments" asserted
+`companion.userImage.value, isNull` — and `Value.absent().value` is *also*
+null, so it passed identically before and after the fix in §3 and could not see
+the distinction that fix exists to make. Both attachment tests now assert
+`.present`, which fails on the pre-fix unconditional write (verified). Twelve
+companion-level tests join them, covering the identity resolution, the
+`generateLocalId` fallback, the `password` guard, and the six guarded fields
+the repository-level tests do not reach (`email`, `middleName`, `gender`,
+`dob`, `age`, and the empty-stored-value branch).
+
+This is the third phase in a row to find a fixture or assertion that had
+absorbed a bug instead of reporting it (Phase 103's achievements uploader,
+Phase 105's `seedHealthRecord`). The tell here was different and worth
+naming: **an assertion that reads `.value` off a drift companion cannot
+distinguish "wrote null" from "wrote nothing"**, and that distinction is the
+entire subject of every preserve-the-stored-value fix this port keeps making.
+Assert `.present`.
+
+## The gap this phase's own fix leaves open
+
+**Legacy health rows are now a live question rather than a deferred one, and
+the integrator has to decide it.** §4 argued that re-keying documents on
+`userId` was safe because the port is unshipped. The audit sharpened the
+outcome and I was wrong about its shape: a pre-Phase-105 examination row
+(`id = 'health-<micros>'`, `userId = <patientId>`) does not merely overwrite
+the patient's profile document — whichever of the two documents is POSTed
+second gets a **409 conflict**, which is not in the outbox's retryable class,
+so that record never reaches the server and nothing logs it. `saveHealthProfileBlob`
+writes before `createExamination`, so the profile usually wins and the
+examination is the record that vanishes.
+
+There is no in-code fix for this: the ambiguity is in the stored rows, not in
+`serialize`, and telling a legacy examination row apart from a profile row
+needs a heuristic on the id prefix that I am not willing to write. The two
+honest options are a one-time data repair in a migration step
+(`UPDATE health_examinations SET user_id = id` for the rows that predate
+Phase 105) — which needs a schema number I have not allocated — or accepting
+the exposure.
+
+**My recommendation is to accept it**, and the reason is specific rather than
+general: for such a row to matter it must be `isUpdated = true` *and* have
+`userId != id`, and Phase 105 established that the rows written that way were
+the ones the port **could not record successfully at all** — invisible to the
+screen, and destroying the profile row on the second save. They exist, if
+anywhere, on a development emulator that has since been wiped. If the
+integrator knows of a device carrying them, ask me for the repair and allocate
+a number; the statement is one line and `health_examinations` is a preserved
+table, so a bump runs it without losing anything else.
+
+**Duplicate rows an older dev build already wrote are not healed either.**
+Kotlin has `cleanupDuplicateUsers` (`UserRepositoryImpl.kt:837-856`: group
+`getDuplicateUsers()` by name, sort `org.couchdb.user:` ahead of `guest_`,
+`deleteByIds` the rest), called from `BecomeMemberActivity.kt:204`. The port
+has neither it nor `UserDao.getDuplicateUsers`/`deleteByIds`. Deliberately not
+written here: its caller is `become_member_screen.dart`, which this lane does
+not own, and an uncalled repository method is exactly the smell Phase 90 went
+back and corrected. It wants the round that also fixes the two registration
+defects below, since that is the same file.
+
+## From the audit — found, verified, and outside this lane
+
+The first two are the severe ones. Both are in `_buildNewUserDoc`
+(`user_repository.dart`, which *is* my file) but neither can be fixed usefully
+without `become_member_screen.dart`, which is not, so they are reported rather
+than half-fixed.
+
+* **A member registered by the port cannot use the app.** `createMember` sends
+  `roles: ["learner"]` (`UserRepositoryImpl.kt:522`); the port sends
+  `<String>[]` and stores `rolesList: const []`
+  (`become_member_screen.dart:265`). `home_screen.dart:351-358` then renders
+  `InactiveDashboardScreen` for `rolesList.isEmpty && !userAdmin`, so
+  registering through the port's own become-member screen and logging in gives
+  "User not activated, please contact administrator" with no path forward on
+  the device. The string `learner` appears nowhere in `flutter/lib`. Fixing
+  only the document half leaves the member inactive until their first *online*
+  login, which is why both halves belong in one change.
+* **The profile the member just typed never reaches Planet.**
+  `_buildNewUserDoc` sends `name`/`password`/`type`/`roles`/`isUserAdmin`/
+  `joinDate`/`planetCode`/`parentCode`. `createMember`
+  (`UserRepositoryImpl.kt:501-526`) also sends firstName, lastName,
+  middleName, email, language, level, phoneNumber, birthDate, gender and
+  `betaEnabled`. The port's local row is written `isUpdated: false`, and
+  `pendingSyncUsers` matches only a blank `couchId` or the dirty flag, so once
+  `uploadNewUser` fills `couchId` nothing ever ships those columns. Register
+  "Ada Lovelace, ada@example.org" and the Planet account has no name and no
+  email, and no other device ever learns them. The values are all on the local
+  row, so `_buildNewUserDoc` reading it by `localId` is the shape of the fix.
+* **Nothing re-queues a dirty health row.** Kotlin re-scans `getUpdated()` on
+  every `AutoSyncWorker` (`:113`) and `UserDataWorker` (`:54`) run, and runs
+  `getUpdatedForUser` during become-member
+  (`ProcessUserDataActivity.kt:175`). In the port `HealthUploader.queuePending`
+  has exactly one caller — `onSaved` after a save
+  (`health_provider.dart:485`) — `HealthQueue.queuePending` returns 0 when
+  `serverConfigProvider` is null, and the sync centre wires health as **pull
+  only** (`dashboard_sync_provider.dart:252`). An examination whose save-time
+  enqueue was skipped stays on the handset indefinitely, and
+  `getUpdatedForUser` has no caller at all. This one matters more after §5,
+  which deliberately makes more rows wait for a server identity: something has
+  to come back for them.
+* **`applyJsonToUser`'s `planetCode` preference write is unported.**
+  `UserRepositoryImpl.kt:273-275` pushes the *document's* `planetCode` into
+  `SharedPreferences` on every login, and `getPlanetCode()` feeds a
+  submission's `source`, the survey filter, the voices planet code and the
+  become-member document. The port only stores the configured community code.
+  They differ for a user whose `_users` document names a different community
+  than the server they signed in against. A pure mapper cannot do this; it
+  needs a side effect in `_cacheUserDoc`, and `UserRepository`'s constructor
+  is `(api, userDao)` — adding `PlanetPrefs` touches `app_providers.dart`.
+* **The become-member → login handoff is dead code.**
+  `become_member_screen.dart:229-236` passes
+  `extra: {username, password, isNewMember}`; nothing reads `state.extra`, and
+  `isNewMember` has one grep hit — its own write. Kotlin's
+  `LoginActivity.handleAutoLogin` (`:214-232`) auto-submits after 500 ms. The
+  port's new member has to retype both.
+* **`user_uploader.dart:171-175` describes behaviour the code does not have.**
+  Its comment says clearing a stale local file path stops `readImageBytes`
+  re-embedding the photo; `markUploaded` writes only `couchId`, `rev` and
+  `isUpdated`. So `userImage` keeps the picker path after a successful upload
+  and every later profile edit re-embeds the same JPEG. Note this is the
+  *other* end of §3: the path must survive a re-login (fixed) and must **not**
+  survive a successful upload (not fixed). Both belong to whoever owns
+  `user_uploader.dart`.
+* **`JsonUtils.getString` coerces where Kotlin refuses.** Kotlin returns `""`
+  unless the primitive `isString` (`JsonUtils.kt:57-61`); the port stringifies
+  anything, so a document with a numeric `age: 42` yields `""` in Kotlin and
+  `"42"` in the port. `json_utils.dart` is not this lane's file.
+* **`serialize`'s remaining field-level differences**, beyond the `creatorId`
+  source already noted above: `JsonUtils.addFloat`/`addInteger`/`addLong` omit
+  **zeros**, so Kotlin drops `temperature`/`pulse`/`height`/`weight`/`date`
+  when they are 0 while the port always sends them; and Kotlin sends
+  `"data": null` where the port omits the key. Left as a deliberate
+  improvement (a real reading of 0 is worth sending) rather than ported, but
+  now written down.
+* **`cacheDocuments` skips rows with `isUpdated == true`
+  (`health_repository.dart:754`) — an undocumented improvement.** Kotlin's
+  `bulkInsertFromSync` (`HealthRepositoryImpl.kt:81-92`) upserts
+  unconditionally with `isUpdated = false`, so a server copy overwrites a
+  pending local edit and clears its dirty flag. The port is right and Kotlin
+  loses data; it belongs in *Faithful quirks* (inverted) in
+  `docs/kotlin-to-flutter-migration.md`, which this round is keeping off.
+  **For the integrator to fold in**, alongside Phase 105's own deferred entry.
+
+## For the integrator — updated
+
+* **Still no schema change**, and still no number requested — but read *The gap
+  this phase's own fix leaves open* first: there is one repair statement that
+  would need a number if the integrator judges any dev device to be carrying
+  pre-Phase-105 health rows. My recommendation is that it does not.
+* **No new `app_en.arb` keys.**
+* Files touched, all within this lane: `lib/data/local/user_mapper.dart`,
+  `lib/repository/user_repository.dart`,
+  `lib/repository/health_repository.dart`, `lib/data/local/app_database.dart`
+  (two query bodies only), and three test files.
+* The follow-up worth scheduling next is the become-member round: `learner`,
+  the profile fields on the creation document, `cleanupDuplicateUsers` with
+  its caller, and the dead auto-login handoff are one file's worth of work and
+  the first of them means a member the port registers cannot currently use it.

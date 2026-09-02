@@ -1521,6 +1521,25 @@ void main() {
       },
     );
 
+    test('a rejected manager login caches nothing', () async {
+      // `checkManagerAndInsert` (`LoginSyncManager.kt:167-175`) tests
+      // `isManager(jsonDoc)` and returns **before** `saveUser`, so a
+      // manager-mode sign-in by a non-manager leaves the table untouched.
+      // Writing the row first and rejecting afterwards cached an account the
+      // Kotlin declines to cache.
+      serverReturns(userDoc());
+
+      final result = await repository.loginOnline(
+        config: config,
+        username: 'ada',
+        password: _password,
+        isManagerMode: true,
+      );
+
+      expect((result as LoginFailure).reason, LoginFailureReason.notAManager);
+      expect(await db.userDao.getAllUsers(), isEmpty);
+    });
+
     test('a first sign-in still keys the row on the document id', () async {
       // No local row: `buildUserFromJson` falls through to
       // `UserEntity().apply { this.id = id }`, so the CouchDB `_id` is the

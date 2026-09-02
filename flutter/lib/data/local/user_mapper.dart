@@ -260,6 +260,17 @@ class UserMapper {
     return await file.readAsBytes();
   }
 
+  /// Port of `LoginSyncManager.isManager(jsonDoc)` — the same predicate as
+  /// [isManager], read off the account **document** rather than a stored row.
+  /// `checkManagerAndInsert` applies it before caching anything, so it has to
+  /// be answerable without a row.
+  static bool docIsManager(Map<String, dynamic> doc) =>
+      JsonUtils.getBool('isUserAdmin', doc) ||
+      JsonUtils.getStringList(
+        'roles',
+        doc,
+      ).any((role) => role.toLowerCase() == 'manager');
+
   /// Port of `UserEntity.isManager()` - the manager/admin role check the login
   /// screen applies when `isManagerMode` is set.
   static bool isManager(UserRow user) =>

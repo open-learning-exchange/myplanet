@@ -129,14 +129,20 @@ class UserRepository {
       return const LoginFailure(LoginFailureReason.invalidCredentials);
     }
 
-    // Port of `checkManagerAndInsert`: cache the account so the next sign-in
-    // works offline.
+    // `checkManagerAndInsert` (`LoginSyncManager.kt:167-175`) tests the
+    // **document** and returns before `saveUser`, so a manager-mode sign-in by
+    // a non-manager caches nothing. Reading the stored row instead and
+    // rejecting afterwards left an account behind that the Kotlin declines to
+    // keep.
+    if (isManagerMode && !UserMapper.docIsManager(doc)) {
+      return const LoginFailure(LoginFailureReason.notAManager);
+    }
+
+    // Port of `checkManagerAndInsert`'s `saveUser`: cache the account so the
+    // next sign-in works offline.
     final stored = await _cacheUserDoc(doc);
     if (stored == null) {
       return const LoginFailure(LoginFailureReason.userNotFound);
-    }
-    if (isManagerMode && !UserMapper.isManager(stored)) {
-      return const LoginFailure(LoginFailureReason.notAManager);
     }
     return LoginSuccess(stored);
   }

@@ -281,17 +281,32 @@ class HealthRepository {
       await _dao.upsert(
         HealthExaminationsCompanion(
           id: Value(userId),
-          userId: Value(user?.couchId ?? userId),
+          // `createPojo`: `pojo?.userId = user?._id` — the patient's CouchDB
+          // id, and **null** for a member whose account has not uploaded.
+          // There used to be a `?? userId` fallback here, and it was not
+          // inert: `userId` is what decides whether
+          // [HealthExaminationDao.getUpdated] selects the row, so the local
+          // `'<millis>'` id it fell back to made the port POST a `/health`
+          // document keyed on a millisecond timestamp that no server and no
+          // other device can resolve to a person. Kotlin withholds the row
+          // until the account has a server identity, and
+          // `app_providers`' `updateUserId` stamps it in when the upload
+          // lands.
+          userId: Value(user?.couchId),
           data: Value(encrypted),
           isUpdated: const Value(true),
           date: Value(DateTime.now().millisecondsSinceEpoch),
         ),
       );
     } else {
+      final user = await _userDao.getById(userId);
       await _dao.upsert(
         HealthExaminationsCompanion(
           id: Value(existing.id),
-          userId: Value(existing.userId),
+          // Re-stamped on every save, as `updateUserHealthProfile` does
+          // (`HealthRepositoryImpl.kt:231`): once the account uploads this
+          // becomes the CouchDB id, and while it has not it stays null.
+          userId: Value(user?.couchId ?? existing.userId),
           data: Value(encrypted),
           isUpdated: const Value(true),
         ),
@@ -371,7 +386,9 @@ class HealthRepository {
       await _dao.upsert(
         HealthExaminationsCompanion(
           id: Value(userId),
-          userId: Value(user.couchId ?? user.id),
+          // `healthPojo.userId = userModel?._id` — null until the account
+          // uploads. See the note in [saveHealthProfileBlob].
+          userId: Value(user.couchId),
           data: Value(encrypted),
           isUpdated: const Value(true),
           date: Value(DateTime.now().millisecondsSinceEpoch),
@@ -381,7 +398,8 @@ class HealthRepository {
       await _dao.upsert(
         HealthExaminationsCompanion(
           id: Value(exam.id),
-          userId: Value(exam.userId),
+          // Re-stamped every save, per `HealthRepositoryImpl.kt:231`.
+          userId: Value(user.couchId ?? exam.userId),
           data: Value(encrypted),
           isUpdated: const Value(true),
         ),

@@ -1043,6 +1043,107 @@ void main() {
       expect(await repository.getUpdated(), isEmpty);
     });
   });
+  group('the profile row waits for a server identity', () {
+    // `updateUserHealthProfile` re-stamps `healthPojo.userId = userModel?._id`
+    // on **every** profile save (`HealthRepositoryImpl.kt:231`), and
+    // `createPojo` writes the same value when it creates the row
+    // (`HealthExaminationActivity.kt:377`). For a member whose account has not
+    // uploaded that is null, `getUpdated()`'s `userId != ''` withholds the
+    // row, and Kotlin uploads nothing until the account has a CouchDB id —
+    // at which point `updateUserId` fills it in (`app_providers.dart:399`).
+    //
+    // The port's `?? userId` fallback wrote the device-local `'<millis>'` id
+    // instead, which is neither null nor empty, so the row was selected and
+    // POSTed to `/health` under a millisecond timestamp no server and no
+    // other device can resolve to a person.
+
+    test(
+      'a member with no couchId gets a null userId, so nothing uploads',
+      () async {
+        final repository = createRepository();
+        await database.userDao.upsert(
+          const UsersCompanion(id: Value('1700000000000'), name: Value('ada')),
+        );
+
+        await repository.saveHealthProfile('1700000000000', {
+          'emergencyContact': '555-0100',
+        });
+
+        final row = await database.healthExaminationDao.getByIdOrUserId(
+          '1700000000000',
+        );
+        expect(row?.userId, isNull);
+        expect(
+          await repository.getUpdated(),
+          isEmpty,
+          reason:
+              'Kotlin withholds this row until the account exists on a '
+              'server; the fallback made it upload under a local timestamp',
+        );
+      },
+    );
+
+    test('the couchId is stamped in once the account uploads', () async {
+      final repository = createRepository();
+      await database.userDao.upsert(
+        const UsersCompanion(id: Value('1700000000000'), name: Value('ada')),
+      );
+      await repository.saveHealthProfile('1700000000000', {
+        'emergencyContact': '555-0100',
+      });
+
+      // The upload lands, and `app_providers`' `updateUserId` rewrites the
+      // row — the third part of the rule.
+      await database.userDao.updateUserSecurityData(
+        localId: '1700000000000',
+        couchId: 'org.couchdb.user:ada',
+        rev: '1-a',
+        passwordScheme: null,
+        derivedKey: null,
+        salt: null,
+        iterations: null,
+      );
+      await database.healthExaminationDao.updateUserId(
+        '1700000000000',
+        'org.couchdb.user:ada',
+      );
+
+      final pending = await repository.getUpdated();
+      expect(pending, hasLength(1));
+      expect(
+        HealthRepository.serialize(pending.single)['_id'],
+        'org.couchdb.user:ada',
+      );
+    });
+
+    test(
+      'a later profile save re-stamps the couchId rather than dropping it',
+      () async {
+        final repository = createRepository();
+        await database.userDao.upsert(
+          const UsersCompanion(
+            id: Value('1700000000000'),
+            couchId: Value('org.couchdb.user:ada'),
+            name: Value('ada'),
+          ),
+        );
+
+        // `patientIdOf` prefers the couch id, which is the id the health
+        // screens address a patient by once the account exists.
+        await repository.saveHealthProfile('org.couchdb.user:ada', {
+          'notes': 'first',
+        });
+        await repository.saveHealthProfile('org.couchdb.user:ada', {
+          'notes': 'second',
+        });
+
+        final row = await database.healthExaminationDao.getByIdOrUserId(
+          'org.couchdb.user:ada',
+        );
+        expect(row?.userId, 'org.couchdb.user:ada');
+      },
+    );
+  });
 }
 
 class MockPlanetApi extends Mock implements PlanetApi {}

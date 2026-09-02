@@ -24,13 +24,19 @@ void main() {
       expect(companion.userImage.value, 'ada.png');
     });
 
-    test('is null when there are no attachments', () {
+    test('writes nothing when there are no attachments', () {
       final companion = UserMapper.fromDoc({
         '_id': 'org.couchdb.user:ada',
         'name': 'ada',
       });
 
-      expect(companion.userImage.value, isNull);
+      // `addImageUrl` touches `userImage` only inside
+      // `if (jsonDoc?.has("_attachments") == true)`, so an absent attachments
+      // block leaves the stored value alone. Asserting on `.value` cannot see
+      // that: `Value.absent().value` is also null, so the assertion passed
+      // identically while the mapper was nulling the column — including a
+      // local file path a queued photo upload had not sent yet.
+      expect(companion.userImage.present, isFalse);
     });
 
     test('ignores a top-level userImage field in favour of attachments', () {
@@ -46,14 +52,16 @@ void main() {
       expect(companion.userImage.value, 'real.png');
     });
 
-    test('is null for an empty attachments object', () {
+    test('writes nothing for an empty attachments object', () {
       final companion = UserMapper.fromDoc({
         '_id': 'org.couchdb.user:ada',
         'name': 'ada',
         '_attachments': <String, dynamic>{},
       });
 
-      expect(companion.userImage.value, isNull);
+      // `firstOrNull()?.key` is null, and the assignment is behind
+      // `if (key1 != null)`.
+      expect(companion.userImage.present, isFalse);
     });
   });
 
@@ -304,6 +312,163 @@ void main() {
       expect(UserMapper.isManager(userWith(roles: ['comanager'])), isFalse);
       expect(UserMapper.isManager(userWith(roles: ['managers'])), isFalse);
       expect(UserMapper.isManager(userWith(roles: ['team manager'])), isFalse);
+    });
+  });
+  group('UserMapper.fromDoc identity and field guards', () {
+    UserRow row({
+      String id = '1700000000000',
+      String? couchId = 'org.couchdb.user:ada',
+      String? email,
+      String? middleName,
+      String? gender,
+      String? dob,
+      String? age,
+    }) {
+      return UserRow(
+        id: id,
+        couchId: couchId,
+        name: 'ada',
+        rolesList: const [],
+        userAdmin: false,
+        joinDate: 0,
+        email: email,
+        middleName: middleName,
+        gender: gender,
+        dob: dob,
+        age: age,
+        isArchived: false,
+        isUpdated: false,
+      );
+    }
+
+    Map<String, dynamic> doc([Map<String, dynamic> extra = const {}]) => {
+      '_id': 'org.couchdb.user:ada',
+      'name': 'ada',
+      ...extra,
+    };
+
+    test('an existing row keeps its own id', () {
+      // `applyJsonToUser` reassigns `id` only `if (id.isNullOrBlank())`.
+      expect(
+        UserMapper.fromDoc(doc(), existing: row()).id.value,
+        '1700000000000',
+      );
+    });
+
+    test('with no existing row the document id is the key', () {
+      expect(UserMapper.fromDoc(doc()).id.value, 'org.couchdb.user:ada');
+    });
+
+    test('a document with no _id falls back to a generated key', () {
+      // Kotlin's `takeIf { it.isNotEmpty() } ?: UUID.randomUUID().toString()`.
+      final companion = UserMapper.fromDoc({
+        'name': 'ada',
+      }, generateLocalId: () => 'generated-1');
+      expect(companion.id.value, 'generated-1');
+      expect(companion.couchId.value, isNull);
+    });
+
+    test('a document with no _id takes the plaintext password', () {
+      // `if (_id?.isEmpty() == true) password = …`, read *after*
+      // `_id = newId` — so the document's `_id`, not the row's prior one.
+      final guest = UserMapper.fromDoc({
+        'name': 'ada',
+        'password': 'plain',
+      }, generateLocalId: () => 'generated-1');
+      expect(guest.password.value, 'plain');
+
+      // A real `_users` document never has its password read.
+      final normal = UserMapper.fromDoc(doc({'password': 'plain'}));
+      expect(normal.password.present, isFalse);
+    });
+
+    test('every guarded field keeps a stored value the document omits', () {
+      final companion = UserMapper.fromDoc(
+        doc(),
+        existing: row(
+          email: 'ada@example.org',
+          middleName: 'Augusta',
+          gender: 'female',
+          dob: '1815-12-10',
+          age: '36',
+        ),
+      );
+
+      // The six the repository-level tests do not reach.
+      expect(companion.email.present, isFalse);
+      expect(companion.middleName.present, isFalse);
+      expect(companion.gender.present, isFalse);
+      expect(companion.dob.present, isFalse);
+      expect(companion.age.present, isFalse);
+    });
+
+    test('a guarded field is written when the stored one is empty', () {
+      // `old.isNullOrEmpty()` — an empty stored value is overwritten with the
+      // document's, even when that is empty too.
+      final companion = UserMapper.fromDoc(doc(), existing: row(email: ''));
+      expect(companion.email.present, isTrue);
+      expect(companion.email.value, isNull);
+    });
+
+    test('an unguarded field is written even when the document omits it', () {
+      // `derived_key`/`salt`/`roles` are assigned unconditionally: the account
+      // document is their authority, and an online login has to be able to
+      // revoke a role or reset a credential.
+      final companion = UserMapper.fromDoc(doc(), existing: row());
+      expect(companion.derivedKey.present, isTrue);
+      expect(companion.derivedKey.value, isNull);
+      expect(companion.rolesList.value, isEmpty);
+    });
+
+    test('joinDate treats 0 as the empty value', () {
+      final stored = UserRow(
+        id: '1700000000000',
+        name: 'ada',
+        rolesList: const [],
+        userAdmin: false,
+        joinDate: 1600000000000,
+        isArchived: false,
+        isUpdated: false,
+      );
+      expect(
+        UserMapper.fromDoc(doc(), existing: stored).joinDate.present,
+        isFalse,
+      );
+      expect(
+        UserMapper.fromDoc(
+          doc({'joinDate': 1700000000001}),
+          existing: stored,
+        ).joinDate.value,
+        1700000000001,
+      );
+    });
+  });
+
+  group('UserMapper.docIsManager', () {
+    test('reads the manager role case-insensitively', () {
+      expect(
+        UserMapper.docIsManager({
+          'roles': ['Manager'],
+        }),
+        isTrue,
+      );
+      expect(
+        UserMapper.docIsManager({
+          'roles': ['learner'],
+        }),
+        isFalse,
+      );
+    });
+
+    test('isUserAdmin alone is enough', () {
+      expect(
+        UserMapper.docIsManager({'roles': <String>[], 'isUserAdmin': true}),
+        isTrue,
+      );
+    });
+
+    test('a document with neither is not a manager', () {
+      expect(UserMapper.docIsManager({'name': 'ada'}), isFalse);
     });
   });
 }
