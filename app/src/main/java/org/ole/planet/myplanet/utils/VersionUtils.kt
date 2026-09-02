@@ -71,7 +71,6 @@ object VersionUtils {
 
     private fun parseIntSegments(version: String): IntArray {
         if (version.isEmpty()) {
-            // Mirrors split("."): "" -> [""], and "".toInt() throws NumberFormatException.
             throw NumberFormatException(version)
         }
         val segments = mutableListOf<Int>()
