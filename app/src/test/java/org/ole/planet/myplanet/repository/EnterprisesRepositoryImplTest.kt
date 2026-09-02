@@ -214,10 +214,6 @@ class EnterprisesRepositoryImplTest {
         assertEquals(2, emissions[1].size)
     }
 
-    // Archived-report filtering and createdDate ordering now live in the DAO query
-    // (TeamDao.observeNonArchivedReportsByTeamId), so they are covered by TeamDaoTest
-    // against a real database. What the repository still owns is handing the rows on
-    // in the order the query returned them.
     @Test
     fun `getReportsFlow preserves the order returned by the dao`() = runTest {
         val r2 = report("r2", "rev2", createdDate = 200L)
