@@ -469,6 +469,13 @@ at a behaviour the port never had.
 | `docs/TESTING.md` | You're writing or fixing tests — patterns to copy per layer |
 | `docs/kotlin-to-flutter-migration.md` | You're working on the Flutter port in `flutter/` — scope, technology mapping, ported slices, open problems |
 | `agents-summoning` skill — `.agents/skills/agents-summoning/SKILL.md` (or the `agents-summoning@summoning` plugin in a Claude Code session) | You're summoning another AI agent (`@coderabbitai` `@codex` `@copilot` `@devin` `@jules` `@openhands` `@dependabot`) on a PR or issue — who answers, how fast, with what side effects, and why a summon went silent. Dated receipts in the same skill's `NOTES.md`; connection checklists in its `references/connecting.md` |
+| `.claude/agents/*.md` | You're delegating Flutter-port work to a subagent — `parity-auditor` (is a slice really at parity?), `port-implementer` (write a slice), `harvest-triage` (which upstream commits the port must follow), `flutter-ci-green` (get the gate passing). Each pins its own model and effort |
+
+Reach for the four `.claude/agents` subagents by name when the work fits one: they carry the
+port's conventions, and each pins its own model and effort so a session need not restate either.
+`harvest-triage` is the cheap one — drop it to `model: haiku` if a batch gets large. Parity
+judgements go to `parity-auditor` at `effort: max`, never to a cheaper agent; it is where the
+drift traps and the broken round trips have actually been found.
 
 Reviewers speak; doers act — an unleashed doer mention (`@openhands`, `@devin`,
 `@copilot`) defaults to commits on your branch, so add "comment only" when that
