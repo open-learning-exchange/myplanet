@@ -281,17 +281,32 @@ class HealthRepository {
       await _dao.upsert(
         HealthExaminationsCompanion(
           id: Value(userId),
-          userId: Value(user?.couchId ?? userId),
+          // `createPojo`: `pojo?.userId = user?._id` — the patient's CouchDB
+          // id, and **null** for a member whose account has not uploaded.
+          // There used to be a `?? userId` fallback here, and it was not
+          // inert: `userId` is what decides whether
+          // [HealthExaminationDao.getUpdated] selects the row, so the local
+          // `'<millis>'` id it fell back to made the port POST a `/health`
+          // document keyed on a millisecond timestamp that no server and no
+          // other device can resolve to a person. Kotlin withholds the row
+          // until the account has a server identity, and
+          // `app_providers`' `updateUserId` stamps it in when the upload
+          // lands.
+          userId: Value(user?.couchId),
           data: Value(encrypted),
           isUpdated: const Value(true),
           date: Value(DateTime.now().millisecondsSinceEpoch),
         ),
       );
     } else {
+      final user = await _userDao.getById(userId);
       await _dao.upsert(
         HealthExaminationsCompanion(
           id: Value(existing.id),
-          userId: Value(existing.userId),
+          // Re-stamped on every save, as `updateUserHealthProfile` does
+          // (`HealthRepositoryImpl.kt:231`): once the account uploads this
+          // becomes the CouchDB id, and while it has not it stays null.
+          userId: Value(user?.couchId ?? existing.userId),
           data: Value(encrypted),
           isUpdated: const Value(true),
         ),
@@ -371,7 +386,9 @@ class HealthRepository {
       await _dao.upsert(
         HealthExaminationsCompanion(
           id: Value(userId),
-          userId: Value(user.couchId ?? user.id),
+          // `healthPojo.userId = userModel?._id` — null until the account
+          // uploads. See the note in [saveHealthProfileBlob].
+          userId: Value(user.couchId),
           data: Value(encrypted),
           isUpdated: const Value(true),
           date: Value(DateTime.now().millisecondsSinceEpoch),
@@ -381,7 +398,8 @@ class HealthRepository {
       await _dao.upsert(
         HealthExaminationsCompanion(
           id: Value(exam.id),
-          userId: Value(exam.userId),
+          // Re-stamped every save, per `HealthRepositoryImpl.kt:231`.
+          userId: Value(user.couchId ?? exam.userId),
           data: Value(encrypted),
           isUpdated: const Value(true),
         ),
@@ -809,9 +827,25 @@ class HealthRepository {
   }
 
   /// Serialize a row to JSON for upload.
+  ///
+  /// The document is keyed on `userId`, not on the row's own id:
+  /// `if (!health.userId.isNullOrEmpty()) object.addProperty("_id", health.userId)`
+  /// (`HealthExamination.kt:96`). The two differ for the profile row of a
+  /// member registered on this device — `createPojo` writes `_id` = the
+  /// patient id the screen was opened with and `userId` = the patient's
+  /// CouchDB id, which `app_providers`' `updateUserId` fills in once the
+  /// account uploads — and `userId` is the id the sync-in direction would key
+  /// the row on (`_docToCompanion`: `userId: doc['_id']`), so it is the
+  /// document's identity in both directions.
+  ///
+  /// A blank `userId` omits `_id` entirely, which would make CouchDB mint a
+  /// fresh document on every drain. That branch is unreachable from the
+  /// upload path because [HealthExaminationDao.getUpdated] excludes those rows
+  /// — `userId != ''` — and the two rules only work as a pair.
   static Map<String, dynamic> serialize(HealthExaminationRow row) {
+    final docId = row.userId ?? '';
     return {
-      if (row.id.isNotEmpty) '_id': row.id,
+      if (docId.isNotEmpty) '_id': docId,
       if (row.rev != null && row.rev!.isNotEmpty) '_rev': row.rev,
       if (row.data != null) 'data': row.data,
       'temperature': row.temperature,
