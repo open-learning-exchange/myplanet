@@ -72,7 +72,7 @@ void main() {
       stubChatResponse({
         'status': 'Success',
         'chat': 'Reykjavik.',
-        'couchdb': {'id': 'server-doc-1', 'rev': '1-a'},
+        'couchDBResponse': {'id': 'server-doc-1', 'rev': '1-a'},
       });
 
       final result = await repository.sendNewChatRequest(
@@ -92,7 +92,7 @@ void main() {
       stubChatResponse({
         'status': 'Success',
         'chat': 'Reykjavik.',
-        'couchdb': {'rev': '1-a'},
+        'couchDBResponse': {'rev': '1-a'},
       });
 
       final result = await repository.sendNewChatRequest(
@@ -126,7 +126,7 @@ void main() {
           NetworkSuccess<Map<String, dynamic>>({
             'status': 'Success',
             'chat': 'Reykjavik.',
-            'couchdb': {'id': 'server-doc-2', 'rev': '1-b'},
+            'couchDBResponse': {'id': 'server-doc-2', 'rev': '1-b'},
           }),
         ]);
 
