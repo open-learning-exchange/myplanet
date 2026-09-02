@@ -17,3 +17,11 @@ updates:
     commit-message:
       prefix: "all:"
     open-pull-requests-limit: 15
+  - package-ecosystem: "gitsubmodule"
+    directories:
+      - "/"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "all:"
+    open-pull-requests-limit: 5

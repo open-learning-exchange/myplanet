@@ -152,14 +152,10 @@ class PersonalsRepositoryImplTest {
         coEvery { personalDao.findByDocId("test-id") } returns personalByDocId
         coEvery { personalDao.findById("test-id") } returns null
 
-        var updateCount = 0
-        repository.updatePersonalResource("test-id") { personal ->
-            personal.title = "New Title"
-            updateCount++
-        }
+        repository.updatePersonalResource("test-id", PersonalUpdate(title = "New Title", description = "Desc"))
 
-        assertEquals(1, updateCount)
         assertEquals("New Title", personalByDocId.title)
+        assertEquals("Desc", personalByDocId.description)
         coVerify(exactly = 1) { personalDao.update(personalByDocId) }
         coVerify(exactly = 0) { personalDao.findById(any()) }
     }
@@ -170,15 +166,36 @@ class PersonalsRepositoryImplTest {
         coEvery { personalDao.findByDocId("test-id") } returns null
         coEvery { personalDao.findById("test-id") } returns personalById
 
-        var updateCount = 0
-        repository.updatePersonalResource("test-id") { personal ->
-            personal.title = "New Title"
-            updateCount++
-        }
+        repository.updatePersonalResource("test-id", PersonalUpdate(title = "New Title", description = "Desc"))
 
-        assertEquals(1, updateCount)
         assertEquals("New Title", personalById.title)
+        assertEquals("Desc", personalById.description)
         coVerify(exactly = 1) { personalDao.update(personalById) }
+    }
+
+    @Test
+    fun `updatePersonalResource leaves unchanged fields alone when null`() = runTest {
+        val personalByDocId = Personal().apply {
+            title = "Old Title"
+            description = "Old Desc"
+        }
+        coEvery { personalDao.findByDocId("test-id") } returns personalByDocId
+
+        repository.updatePersonalResource("test-id", PersonalUpdate(title = "New Title"))
+
+        assertEquals("New Title", personalByDocId.title)
+        assertEquals("Old Desc", personalByDocId.description)
+        coVerify(exactly = 1) { personalDao.update(personalByDocId) }
+    }
+
+    @Test
+    fun `updatePersonalResource does nothing when entity is not found`() = runTest {
+        coEvery { personalDao.findByDocId("missing-id") } returns null
+        coEvery { personalDao.findById("missing-id") } returns null
+
+        repository.updatePersonalResource("missing-id", PersonalUpdate(title = "New Title"))
+
+        coVerify(exactly = 0) { personalDao.update(any()) }
     }
 
     @Test

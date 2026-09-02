@@ -10,6 +10,8 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.News
@@ -96,6 +98,29 @@ class JsonUtilsTest {
     }
 
     @Test
+    fun testAddJsonWithNullValue() {
+        val obj = JsonObject()
+        JsonUtils.addJson(obj, "field", null)
+        assertFalse(obj.has("field"))
+    }
+
+    @Test
+    fun testAddJsonWithEmptyObject() {
+        val obj = JsonObject()
+        JsonUtils.addJson(obj, "field", JsonObject())
+        assertFalse(obj.has("field"))
+    }
+
+    @Test
+    fun testAddJsonWithNonEmptyObject() {
+        val obj = JsonObject()
+        val value = JsonObject().apply { addProperty("inner", "val") }
+        JsonUtils.addJson(obj, "field", value)
+        assertTrue(obj.has("field"))
+        assertEquals("val", obj.getAsJsonObject("field").get("inner").asString)
+    }
+
+    @Test
     fun testGetJsonArray() {
         val obj = JsonObject()
         val arr = JsonArray()
@@ -140,13 +165,12 @@ class JsonUtilsTest {
         JsonUtils.getJsonArray("wrongType", obj)
         JsonUtils.getJsonObject("wrongArr", obj)
         JsonUtils.getLong("wrongType", obj)
+        JsonUtils.getBoolean("wrongType", obj)
 
-        // the isLoggable guard is consulted, so the string is never built on a normal build
-        verify(atLeast = 1) { Log.isLoggable("JsonUtils", Log.DEBUG) }
-        // expected type mismatches fall back without materialising a stack trace
+        // #16652: accessors type-check instead of throwing, so the catch is never entered.
+        verify(exactly = 0) { Log.isLoggable(any(), any()) }
+        verify(exactly = 0) { Log.d(any(), any()) }
         verify(exactly = 0) { Log.d(any(), any(), any()) }
-        // a brief debug diagnostic still reaches the log
-        verify(atLeast = 1) { Log.d("JsonUtils", any()) }
     }
 
     @Test
