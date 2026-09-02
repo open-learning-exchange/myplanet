@@ -38,6 +38,25 @@
 // A consequence worth knowing: because existing values win, the script cannot
 // *correct* a translation already in the .arb. Delete the key first, then
 // re-run, if the XML has a better one.
+//
+// Machine-translation flags (Phase 109) survive a re-run too, and are kept
+// *honest* across one. `"@<key>": {"x-mt": true}` in a locale file marks a
+// string as unreviewed machine output; ~560 keys per locale carry it. The merge
+// carries those blocks over verbatim, and then reconciles them, because merely
+// preserving them is not enough:
+//
+//   * a key this script derives from the Kotlin XML is a human translation
+//     already shipping in the Android app, so if a stale `x-mt` block is
+//     sitting there — the workflow above, delete the key and re-run to pick up
+//     a better translation, leaves exactly that — the flag is dropped;
+//   * a flag whose key has no value at all is dropped, so it cannot land on
+//     whatever value is written for that key next and mislabel it.
+//
+// `test/l10n/placeholder_integrity_test.dart` pins both ends of this.
+//
+// Usage, again from `flutter/`:
+//   dart tool/arb_from_strings_xml.dart --unreviewed        # list what needs a
+//   dart tool/arb_from_strings_xml.dart --unreviewed fr     # human, per locale
 
 import 'dart:convert';
 import 'dart:io';
@@ -47,7 +66,18 @@ import 'package:xml/xml.dart';
 /// Locales with a `values-<code>` directory in the Kotlin app.
 const defaultLocales = ['ar', 'fr', 'ne', 'so'];
 
+/// Every locale that ships an `.arb`. `es` has no Kotlin `values-es`, so it is
+/// not derivable — but it does carry machine-translated strings to review.
+const allLocales = ['ar', 'es', 'fr', 'ne', 'so'];
+
+/// The ARB attribute marking a string as unreviewed machine translation.
+const machineTranslatedFlag = 'x-mt';
+
 void main(List<String> args) {
+  if (args.isNotEmpty && args.first == '--unreviewed') {
+    _reportUnreviewed(args.skip(1).toList());
+    return;
+  }
   final locales = args.isEmpty ? defaultLocales : args;
   final resDir = Directory('../app/src/main/res');
   if (!resDir.existsSync()) {
@@ -88,6 +118,14 @@ void main(List<String> args) {
       if (templateValue is! String) continue;
       // ICU syntax of any kind is out of scope — see the header.
       if (templateValue.contains('{')) continue;
+      // So is Kotlin's printf syntax. Three template keys — `communityEarnings`,
+      // `perSurvey`, `yourEarnings` — declare ICU placeholders but write their
+      // English with `%1$d`/`%1$s`, which ICU never interpolates: the generated
+      // getter takes the argument and drops it, in every language including
+      // English. Deriving a translation would spread that defect into the
+      // locale files, where the placeholder guard then fails on it. Leave them
+      // absent until `app_en.arb` is corrected to `{amount}`/`{status}`.
+      if (_printfSpecifier.hasMatch(templateValue)) continue;
       final wanted = templateValue.trim();
 
       final named = byCamelCase[key] ?? const [];
@@ -143,19 +181,99 @@ void main(List<String> args) {
       if (!derived.containsKey(entry.key)) preserved++;
     }
     var added = 0;
+    final humanDerived = <String>{};
     for (final key in keys) {
       final value = derived[key];
       if (value == null || merged.containsKey(key)) continue;
       merged[key] = value;
+      humanDerived.add(key);
       added++;
     }
 
+    final cleared = _reconcileMachineTranslationFlags(merged, humanDerived);
+
     file.writeAsStringSync('${_encodeArb(merged)}\n');
     stdout.writeln(
-      'app_$locale.arb: ${merged.length - 1} strings '
+      'app_$locale.arb: ${_messageKeys(merged).length} strings '
       '($byName by name, $byText by shared English) of ${keys.length} keys'
-      ' — $added added, $preserved kept that the XML does not derive',
+      ' — $added added, $preserved kept that the XML does not derive,'
+      ' ${_machineTranslatedKeys(merged).length} still unreviewed'
+      '${cleared == 0 ? '' : ' ($cleared flag(s) cleared)'}',
     );
+  }
+}
+
+/// Kotlin's `%s`/`%d`/`%1$s` format specifiers, which ICU does not interpolate.
+final _printfSpecifier = RegExp(r'%\d*\$?[sd]');
+
+/// Translatable entries — not `@@locale`, not an `@key` metadata block.
+Iterable<String> _messageKeys(Map<String, Object?> arb) =>
+    arb.keys.where((key) => !key.startsWith('@') && arb[key] is String);
+
+/// Keys flagged as unreviewed machine translation.
+Iterable<String> _machineTranslatedKeys(Map<String, Object?> arb) => arb.keys
+    .where((key) => key.startsWith('@') && key != '@@locale')
+    .where((key) {
+      final meta = arb[key];
+      return meta is Map && meta[machineTranslatedFlag] == true;
+    })
+    .map((key) => key.substring(1));
+
+/// Drops `x-mt` flags that have stopped being true, and returns how many.
+///
+/// Two cases, both of which this script itself creates:
+///
+///   * [humanDerived] is what this run carried across from the Kotlin
+///     `strings.xml` — translations already shipping in the Android app. A flag
+///     on one of those is stale by definition.
+///   * a flag whose key carries no value marks nothing. Left in place it would
+///     attach itself to the next value written for that key.
+///
+/// A metadata block that also declares placeholders keeps them: only the flag
+/// is removed, and only an emptied block is deleted outright.
+int _reconcileMachineTranslationFlags(
+  Map<String, Object?> merged,
+  Set<String> humanDerived,
+) {
+  final translated = _messageKeys(merged).toSet();
+  var cleared = 0;
+
+  for (final key in _machineTranslatedKeys(merged).toList()) {
+    if (!humanDerived.contains(key) && translated.contains(key)) continue;
+    final meta = Map<String, Object?>.from(merged['@$key']! as Map);
+    meta.remove(machineTranslatedFlag);
+    if (meta.isEmpty) {
+      merged.remove('@$key');
+    } else {
+      merged['@$key'] = meta;
+    }
+    cleared++;
+  }
+
+  return cleared;
+}
+
+/// Prints the strings still awaiting a human, per locale.
+///
+/// This is the whole point of the marking: ~560 keys per locale are Google
+/// Translate output sitting indistinguishably beside translations derived from
+/// the Kotlin app. A reviewer needs to see exactly which.
+void _reportUnreviewed(List<String> args) {
+  for (final locale in args.isEmpty ? allLocales : args) {
+    final file = File('lib/l10n/app_$locale.arb');
+    if (!file.existsSync()) {
+      stderr.writeln('No app_$locale.arb — skipped.');
+      continue;
+    }
+    final arb = _readArb(file.path);
+    final unreviewed = _machineTranslatedKeys(arb).toList();
+    stdout.writeln(
+      '# $locale — ${unreviewed.length} unreviewed of '
+      '${_messageKeys(arb).length} translated',
+    );
+    for (final key in unreviewed) {
+      stdout.writeln('$key\t${arb[key]}');
+    }
   }
 }
 
@@ -176,16 +294,48 @@ Map<String, String> _readStringsXml(String path) {
   return result;
 }
 
-/// Strips Android's whitespace-preserving quoting.
+/// Strips Android's whitespace-preserving quoting and backslash escapes.
 ///
 /// `<string name="x">"Select resources: "</string>` is the XML way to keep a
 /// trailing space; the quotes are not part of the value. Reading `innerText`
 /// verbatim carried them into the `.arb`, and the app then displayed them.
+///
+/// Android also escapes apostrophes and quotes with a backslash, which the XML
+/// parser leaves alone because they are not XML syntax: `values-fr` writes
+/// `Impossible d\'ajouter un dossier de santé.` The backslash is Android's, not
+/// the string's, and carrying it across would put a literal `d\'ajouter` on a
+/// French screen. Every escape Android documents is undone here; an unknown one
+/// keeps its backslash rather than being silently eaten.
 String _unquote(String raw) {
-  if (raw.length > 1 && raw.startsWith('"') && raw.endsWith('"')) {
-    return raw.substring(1, raw.length - 1);
+  final quoted = raw.length > 1 && raw.startsWith('"') && raw.endsWith('"')
+      ? raw.substring(1, raw.length - 1)
+      : raw;
+
+  final buffer = StringBuffer();
+  for (var i = 0; i < quoted.length; i++) {
+    if (quoted[i] != r'\' || i + 1 == quoted.length) {
+      buffer.write(quoted[i]);
+      continue;
+    }
+    final escaped = quoted[i + 1];
+    switch (escaped) {
+      case "'":
+      case '"':
+      case '@':
+      case '?':
+      case r'\':
+        buffer.write(escaped);
+      case 'n':
+        buffer.write('\n');
+      case 't':
+        buffer.write('\t');
+      default:
+        buffer.write(quoted[i]);
+        continue; // not an escape — keep the backslash and re-read the next char
+    }
+    i++;
   }
-  return raw;
+  return buffer.toString();
 }
 
 String _camelCase(String snakeCase) {

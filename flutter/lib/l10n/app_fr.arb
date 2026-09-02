@@ -2,80 +2,260 @@
   "@@locale": "fr",
   "appTitle": "myPlanet",
   "serverConfigurationTitle": "Connectez-vous à un serveur Planet",
+  "@serverConfigurationTitle": {
+    "x-mt": true
+  },
   "serverUrlLabel": "URL du serveur",
+  "@serverUrlLabel": {
+    "x-mt": true
+  },
   "serverUrlHint": "https://planet.example.org",
+  "@serverUrlHint": {
+    "x-mt": true
+  },
   "serverPinLabel": "Code PIN du serveur",
+  "@serverPinLabel": {
+    "x-mt": true
+  },
   "connect": "Connecter",
+  "@connect": {
+    "x-mt": true
+  },
   "serverUrlNotConfigured": "URL du serveur non configurée",
   "deviceCouldNotReachLocalServer": "l'appareil n'a pas pu atteindre le serveur. vérifiez si vous êtes connecté au bon réseau Wi-Fi pour le serveur local (communauté).",
+  "@deviceCouldNotReachLocalServer": {
+    "x-mt": true
+  },
   "deviceCouldNotReachNationServer": "l\\'appareil n\\'a pas pu atteindre le serveur. vérifiez si vous êtes connecté à Internet et réessayez.",
   "connectionFailed": "Échec de la connexion !",
   "connectedToCommunity": "Connecté à {code}",
+  "@connectedToCommunity": {
+    "x-mt": true
+  },
   "changeServer": "Changer de serveur",
+  "@changeServer": {
+    "x-mt": true
+  },
   "login": "Connexion",
   "name": "Nom",
   "password": "Mot de passe",
   "signInOffline": "Connectez-vous hors ligne",
+  "@signInOffline": {
+    "x-mt": true
+  },
   "invalidCredentials": "Le nom ou le mot de passe est incorrect.",
+  "@invalidCredentials": {
+    "x-mt": true
+  },
   "userNotFound": "Utilisateur introuvable.",
+  "@userNotFound": {
+    "x-mt": true
+  },
   "missingAuthData": "Réponse du serveur manquant de données d'authentification.",
+  "@missingAuthData": {
+    "x-mt": true
+  },
   "serverError": "Erreur de serveur. Veuillez réessayer plus tard.",
+  "@serverError": {
+    "x-mt": true
+  },
   "networkError": "Serveur inaccessible. Vérifiez votre connexion Internet.",
+  "@networkError": {
+    "x-mt": true
+  },
   "emptyCredentials": "Le nom d'utilisateur et le mot de passe sont requis.",
+  "@emptyCredentials": {
+    "x-mt": true
+  },
   "notAManager": "Ce compte n'est pas un gestionnaire.",
+  "@notAManager": {
+    "x-mt": true
+  },
   "savedAccounts": "Comptes enregistrés",
+  "@savedAccounts": {
+    "x-mt": true
+  },
   "resources": "Ressources",
   "search": "Rechercher",
   "sync": "Synchroniser",
+  "@sync": {
+    "x-mt": true
+  },
   "cancel": "Annuler",
   "settings": "Paramètres",
   "backgroundSync": "Synchronisation en arrière-plan",
+  "@backgroundSync": {
+    "x-mt": true
+  },
   "backgroundSyncDescription": "Envoyez les modifications en attente et actualisez les données d'apprentissage lorsque l'application est fermée",
+  "@backgroundSyncDescription": {
+    "x-mt": true
+  },
   "syncFrequency": "Fréquence de synchronisation",
+  "@syncFrequency": {
+    "x-mt": true
+  },
   "every15Minutes": "Toutes les 15 minutes",
+  "@every15Minutes": {
+    "x-mt": true
+  },
   "every30Minutes": "Toutes les 30 minutes",
+  "@every30Minutes": {
+    "x-mt": true
+  },
   "everyHour": "Toutes les heures",
+  "@everyHour": {
+    "x-mt": true
+  },
   "every6Hours": "Toutes les 6 heures",
+  "@every6Hours": {
+    "x-mt": true
+  },
   "lastBackgroundRun": "Dernière exécution en arrière-plan",
+  "@lastBackgroundRun": {
+    "x-mt": true
+  },
   "backgroundNeverRun": "Aucune exécution en arrière-plan n'a encore été enregistrée",
+  "@backgroundNeverRun": {
+    "x-mt": true
+  },
   "backgroundSucceeded": "Terminé avec succès",
+  "@backgroundSucceeded": {
+    "x-mt": true
+  },
   "backgroundRetryRequested": "Incomplet – Android réessayera",
+  "@backgroundRetryRequested": {
+    "x-mt": true
+  },
   "backgroundSkipped": "Sauté",
+  "@backgroundSkipped": {
+    "x-mt": true
+  },
   "backgroundUnknown": "Résultat inconnu",
+  "@backgroundUnknown": {
+    "x-mt": true
+  },
   "backgroundScheduleFailed": "La préférence a été enregistrée, mais Android n'a pas pu mettre à jour le calendrier. Il sera réessayé au redémarrage de l'application.",
+  "@backgroundScheduleFailed": {
+    "x-mt": true
+  },
   "backgroundFailedSteps": "Il faut réessayer : {steps}",
+  "@backgroundFailedSteps": {
+    "x-mt": true
+  },
   "logOut": "Se déconnecter",
+  "@logOut": {
+    "x-mt": true
+  },
   "noDataAvailable": "Aucune donnée disponible",
   "ok": "OK",
   "home": "Accueil",
   "moreOptions": "Plus d'options",
+  "@moreOptions": {
+    "x-mt": true
+  },
   "appTheme": "Thème de l'application",
+  "@appTheme": {
+    "x-mt": true
+  },
   "aiChat": "Chat IA",
+  "@aiChat": {
+    "x-mt": true
+  },
   "syncNow": "Synchronisez maintenant",
+  "@syncNow": {
+    "x-mt": true
+  },
   "syncCenter": "Centre de synchronisation",
+  "@syncCenter": {
+    "x-mt": true
+  },
   "syncAll": "Synchroniser tout",
+  "@syncAll": {
+    "x-mt": true
+  },
   "syncing": "Synchronisation…",
   "waiting": "En attendant",
+  "@waiting": {
+    "x-mt": true
+  },
   "events": "Événements",
+  "@events": {
+    "x-mt": true
+  },
   "surveys": "Sondages",
   "syncReady": "Prêt à synchroniser",
+  "@syncReady": {
+    "x-mt": true
+  },
   "syncForegroundNotice": "Gardez myPlanet ouvert jusqu'à la fin de la synchronisation. Les écritures hors ligne en attente restent durables si la connexion est interrompue.",
+  "@syncForegroundNotice": {
+    "x-mt": true
+  },
   "syncProgress": "Synchronisation de {completed} de {total} zones",
+  "@syncProgress": {
+    "x-mt": true
+  },
   "syncAllSuccessful": "Toutes les {count} zones ont été synchronisées avec succès",
+  "@syncAllSuccessful": {
+    "x-mt": true
+  },
   "syncCompletedWithFailures": "Synchronisation terminée : {success} réussie, {failed} échouée",
+  "@syncCompletedWithFailures": {
+    "x-mt": true
+  },
   "itemsSynced": "{count, plural, =0{Up to date} =1{1 item synced} other{{count} items synced}}",
+  "@itemsSynced": {
+    "x-mt": true
+  },
   "lastSyncTimestamp": "Dernière synchronisation réussie : {date}",
+  "@lastSyncTimestamp": {
+    "x-mt": true
+  },
   "syncResourcesDescription": "Actualiser la bibliothèque d'apprentissage hors ligne",
+  "@syncResourcesDescription": {
+    "x-mt": true
+  },
   "syncCoursesDescription": "Actualiser les cours, les étapes et les abonnements étagères",
+  "@syncCoursesDescription": {
+    "x-mt": true
+  },
   "syncTeamsDescription": "Actualiser les équipes, les adhésions et les données d'entreprise",
+  "@syncTeamsDescription": {
+    "x-mt": true
+  },
   "syncEventsDescription": "Actualiser les rencontres et la participation",
+  "@syncEventsDescription": {
+    "x-mt": true
+  },
   "syncSurveysDescription": "Actualiser les formulaires et les missions d'enquête",
+  "@syncSurveysDescription": {
+    "x-mt": true
+  },
   "syncVoicesDescription": "Actualiser les discussions et les réponses de la communauté",
+  "@syncVoicesDescription": {
+    "x-mt": true
+  },
   "syncFeedbackDescription": "Actualiser les fils de commentaires et les réponses",
+  "@syncFeedbackDescription": {
+    "x-mt": true
+  },
   "syncChatDescription": "Actualiser l'historique des conversations IA",
+  "@syncChatDescription": {
+    "x-mt": true
+  },
   "syncHealthDescription": "Actualiser les dossiers de santé cryptés",
+  "@syncHealthDescription": {
+    "x-mt": true
+  },
   "syncActivitiesDescription": "Actualiser l'historique de connexion depuis le serveur",
+  "@syncActivitiesDescription": {
+    "x-mt": true
+  },
   "syncNotificationsDescription": "Actualiser les notifications du serveur et télécharger les états de lecture",
+  "@syncNotificationsDescription": {
+    "x-mt": true
+  },
   "homeMyLibrary": "maBibliothèque",
   "homeMyCourses": "mesCours",
   "homeMyTeams": "mesÉquipes",
@@ -89,101 +269,323 @@
   "subjectLabelSocialStudies": "Sciences sociales",
   "subjectLabelTechnology": "Technologie",
   "surveysToComplete": "You have {count, plural, =1{1 survey} other{{count} surveys}} to complete",
+  "@surveysToComplete": {
+    "x-mt": true
+  },
   "lastSynced": "Dernière synchronisation : {time}",
+  "@lastSynced": {
+    "x-mt": true
+  },
   "neverSynced": "jamais synchronisé",
   "justNow": "À l\\'instant",
   "minutesAgo": "{count, plural, =1{1 minute ago} other{{count} minutes ago}}",
+  "@minutesAgo": {
+    "x-mt": true
+  },
   "hoursAgo": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
+  "@hoursAgo": {
+    "x-mt": true
+  },
   "daysAgo": "{count, plural, =1{1 day ago} other{{count} days ago}}",
+  "@daysAgo": {
+    "x-mt": true
+  },
   "syncingResources": "Synchronisation des ressources… {completed} sur {total}",
+  "@syncingResources": {
+    "x-mt": true
+  },
   "syncedResources": "{count, plural, =0{No resources synced} =1{1 resource synced} other{{count} resources synced}}",
+  "@syncedResources": {
+    "x-mt": true
+  },
   "syncFailed": "Échec de la synchronisation : {message}",
+  "@syncFailed": {
+    "x-mt": true
+  },
   "availableOffline": "Disponible hors ligne",
+  "@availableOffline": {
+    "x-mt": true
+  },
   "courses": "Cours",
   "myCourses": "Mes cours",
+  "@myCourses": {
+    "x-mt": true
+  },
   "allCourses": "Tous les cours",
+  "@allCourses": {
+    "x-mt": true
+  },
   "courseSteps": "{count, plural, =0{No steps} =1{1 step} other{{count} steps}}",
+  "@courseSteps": {
+    "x-mt": true
+  },
   "stepNumber": "Étape {number}",
+  "@stepNumber": {
+    "x-mt": true
+  },
   "resourcesInStep": "{count, plural, =0{No resources} =1{1 resource} other{{count} resources}}",
+  "@resourcesInStep": {
+    "x-mt": true
+  },
   "gradeLevel": "Niveau scolaire",
+  "@gradeLevel": {
+    "x-mt": true
+  },
   "subjectLevel": "Sujet",
+  "@subjectLevel": {
+    "x-mt": true
+  },
   "allLevels": "Tous",
   "clearFilters": "Effacer les filtres",
+  "@clearFilters": {
+    "x-mt": true
+  },
   "joinCourse": "Ajouter à mes cours",
+  "@joinCourse": {
+    "x-mt": true
+  },
   "leaveCourse": "Supprimer de mes cours",
+  "@leaveCourse": {
+    "x-mt": true
+  },
   "syncedCourses": "{count, plural, =0{No courses synced} =1{1 course synced} other{{count} courses synced}}",
+  "@syncedCourses": {
+    "x-mt": true
+  },
   "courseNotFound": "Cours introuvable",
+  "@courseNotFound": {
+    "x-mt": true
+  },
   "calendar": "Calendrier",
   "profile": "Profil",
   "profileUnavailable": "Profil indisponible",
+  "@profileUnavailable": {
+    "x-mt": true
+  },
   "username": "Nom d'utilisateur",
+  "@username": {
+    "x-mt": true
+  },
   "email": "E-mail",
   "phone": "Téléphone",
+  "@phone": {
+    "x-mt": true
+  },
   "level": "Niveau",
+  "@level": {
+    "x-mt": true
+  },
   "levels": "Niveaux",
+  "@levels": {
+    "x-mt": true
+  },
   "language": "Langue",
   "languages": "Langues",
   "gender": "Sexe",
   "dateOfBirth": "Date de naissance",
+  "@dateOfBirth": {
+    "x-mt": true
+  },
   "planetCode": "Code de la planète",
+  "@planetCode": {
+    "x-mt": true
+  },
   "accountDetails": "Détails du compte",
+  "@accountDetails": {
+    "x-mt": true
+  },
   "noProfileDetails": "Aucun détail de profil n'est disponible.",
+  "@noProfileDetails": {
+    "x-mt": true
+  },
   "profilePhotoFor": "Photo de profil pour {name}",
+  "@profilePhotoFor": {
+    "x-mt": true
+  },
   "editProfile": "Modifier le profil",
+  "@editProfile": {
+    "x-mt": true
+  },
   "changePhoto": "Changer la photo de profil",
+  "@changePhoto": {
+    "x-mt": true
+  },
   "photoUpdated": "Photo de profil mise à jour",
+  "@photoUpdated": {
+    "x-mt": true
+  },
   "photoUpdateFailed": "Impossible d'enregistrer la photo",
+  "@photoUpdateFailed": {
+    "x-mt": true
+  },
   "firstName": "Prénom",
+  "@firstName": {
+    "x-mt": true
+  },
   "middleName": "Deuxième prénom",
+  "@middleName": {
+    "x-mt": true
+  },
   "lastName": "Nom de famille",
+  "@lastName": {
+    "x-mt": true
+  },
   "save": "Enregistrer",
   "profileSaved": "Profil enregistré sur cet appareil",
+  "@profileSaved": {
+    "x-mt": true
+  },
   "invalidEmail": "Entrez une adresse e-mail valide",
+  "@invalidEmail": {
+    "x-mt": true
+  },
   "appearance": "Apparence",
+  "@appearance": {
+    "x-mt": true
+  },
   "systemTheme": "Utiliser le thème de l'appareil",
+  "@systemTheme": {
+    "x-mt": true
+  },
   "lightTheme": "Clair",
   "darkTheme": "Sombre",
   "server": "Serveur",
+  "@server": {
+    "x-mt": true
+  },
   "serverUrl": "URL du serveur",
+  "@serverUrl": {
+    "x-mt": true
+  },
   "notConfigured": "Non configuré",
+  "@notConfigured": {
+    "x-mt": true
+  },
   "communityCode": "Code communautaire",
+  "@communityCode": {
+    "x-mt": true
+  },
   "about": "À propos de",
   "offlineLearningApp": "Apprentissage hors ligne avec Planet",
+  "@offlineLearningApp": {
+    "x-mt": true
+  },
   "appVersion": "Version {version}",
+  "@appVersion": {
+    "x-mt": true
+  },
   "buildNumber": "Construire {number}",
+  "@buildNumber": {
+    "x-mt": true
+  },
   "learningTools": "Outils d'apprentissage",
+  "@learningTools": {
+    "x-mt": true
+  },
   "dictionary": "Dictionnaire",
   "dictionaryDescription": "Rechercher des définitions téléchargées hors ligne",
+  "@dictionaryDescription": {
+    "x-mt": true
+  },
   "dictionaryUnavailable": "Dictionnaire indisponible",
+  "@dictionaryUnavailable": {
+    "x-mt": true
+  },
   "searchDictionary": "Rechercher un mot",
+  "@searchDictionary": {
+    "x-mt": true
+  },
   "dictionaryWordCount": "{count, plural, =0{No downloaded words} =1{1 downloaded word} other{{count} downloaded words}}",
+  "@dictionaryWordCount": {
+    "x-mt": true
+  },
   "downloadDictionary": "Télécharger le dictionnaire",
+  "@downloadDictionary": {
+    "x-mt": true
+  },
   "retryDownload": "Réessayez le téléchargement",
+  "@retryDownload": {
+    "x-mt": true
+  },
   "dictionaryDownloadFailed": "Le dictionnaire n'a pas pu être téléchargé. Vos données hors ligne existantes n'ont pas été modifiées.",
+  "@dictionaryDownloadFailed": {
+    "x-mt": true
+  },
   "wordNotFound": "Mot non disponible dans le dictionnaire hors ligne",
+  "@wordNotFound": {
+    "x-mt": true
+  },
   "meaning": "Signification",
+  "@meaning": {
+    "x-mt": true
+  },
   "synonyms": "Synonymes",
+  "@synonyms": {
+    "x-mt": true
+  },
   "antonyms": "Antonymes",
+  "@antonyms": {
+    "x-mt": true
+  },
   "notifications": "Notifications",
+  "@notifications": {
+    "x-mt": true
+  },
   "notification": "Notification",
+  "@notification": {
+    "x-mt": true
+  },
   "notificationsUnavailable": "Notifications indisponibles",
+  "@notificationsUnavailable": {
+    "x-mt": true
+  },
   "markAllRead": "Marquer tout comme lu",
+  "@markAllRead": {
+    "x-mt": true
+  },
   "all": "Tous",
   "read": "Lire",
+  "@read": {
+    "x-mt": true
+  },
   "unreadCount": "Non lu ({count})",
+  "@unreadCount": {
+    "x-mt": true
+  },
   "noNotifications": "Aucune notification",
   "noUnreadNotifications": "Aucune notification non lue",
   "noReadNotifications": "Aucune notification lue",
   "delete": "Supprimer",
   "deleteNotification": "Supprimer la notification ?",
+  "@deleteNotification": {
+    "x-mt": true
+  },
   "deleteNotificationConfirmation": "Cette notification sera supprimée de cet appareil.",
+  "@deleteNotificationConfirmation": {
+    "x-mt": true
+  },
   "taskNotification": "Tâche",
+  "@taskNotification": {
+    "x-mt": true
+  },
   "chatNotification": "Discussion",
   "replyNotification": "Nouvelle réponse",
+  "@replyNotification": {
+    "x-mt": true
+  },
   "resourceNotification": "Ressources",
   "storageNotification": "Avertissement de stockage",
+  "@storageNotification": {
+    "x-mt": true
+  },
   "joinRequestNotification": "Demande d'adhésion",
+  "@joinRequestNotification": {
+    "x-mt": true
+  },
   "teamNotification": "Mise à jour de l'équipe",
+  "@teamNotification": {
+    "x-mt": true
+  },
   "tasks": "Tâches",
   "notifGroupJoinRequests": "Demandes d\\'adhésion",
   "notifGroupTeamUpdates": "Mises à jour de l\\'équipe",
@@ -192,83 +594,293 @@
   "notificationGroupSystem": "Système",
   "notificationGroupOther": "Autre",
   "myLife": "Ma vie",
+  "@myLife": {
+    "x-mt": true
+  },
   "myLifeUnavailable": "Ma vie n'est pas disponible",
+  "@myLifeUnavailable": {
+    "x-mt": true
+  },
   "noLifeItems": "Non Articles de ma vie",
+  "@noLifeItems": {
+    "x-mt": true
+  },
   "shownOnDashboard": "Montré",
+  "@shownOnDashboard": {
+    "x-mt": true
+  },
   "hiddenFromDashboard": "Caché",
+  "@hiddenFromDashboard": {
+    "x-mt": true
+  },
   "hideItem": "Masquer {title}",
+  "@hideItem": {
+    "x-mt": true
+  },
   "showItem": "Afficher {title}",
+  "@showItem": {
+    "x-mt": true
+  },
   "reorderItem": "Réorganiser {title}",
+  "@reorderItem": {
+    "x-mt": true
+  },
   "myHealth": "Ma santé",
+  "@myHealth": {
+    "x-mt": true
+  },
   "achievements": "Réalisations",
+  "@achievements": {
+    "x-mt": true
+  },
   "submissions": "Soumissions",
+  "@submissions": {
+    "x-mt": true
+  },
   "submission": "Soumission",
+  "@submission": {
+    "x-mt": true
+  },
   "submissionsUnavailable": "Les soumissions ne sont pas disponibles",
+  "@submissionsUnavailable": {
+    "x-mt": true
+  },
   "noSubmissions": "Aucune soumission pour l'instant",
+  "@noSubmissions": {
+    "x-mt": true
+  },
   "pending": "En attente",
+  "@pending": {
+    "x-mt": true
+  },
   "submissionGrade": "Note : {grade}",
+  "@submissionGrade": {
+    "x-mt": true
+  },
   "refresh": "Rafraîchir",
+  "@refresh": {
+    "x-mt": true
+  },
   "complete": "Complet",
+  "@complete": {
+    "x-mt": true
+  },
   "noMatchingSubmissions": "Aucune soumission ne correspond à ce filtre",
+  "@noMatchingSubmissions": {
+    "x-mt": true
+  },
   "submissionsSynced": "{count, plural, =0{Submissions are up to date} =1{1 submission synced} other{{count} submissions synced}}",
+  "@submissionsSynced": {
+    "x-mt": true
+  },
   "submissionDetails": "Détails de la soumission",
+  "@submissionDetails": {
+    "x-mt": true
+  },
   "submissionNotFound": "Soumission introuvable",
+  "@submissionNotFound": {
+    "x-mt": true
+  },
   "unknown": "Inconnu",
+  "@unknown": {
+    "x-mt": true
+  },
   "nA": "N / A",
+  "@nA": {
+    "x-mt": true
+  },
   "otherDiagnosis": "Autre diagnostic",
+  "@otherDiagnosis": {
+    "x-mt": true
+  },
   "add": "Ajouter",
+  "@add": {
+    "x-mt": true
+  },
   "status": "Statut",
   "lastUpdated": "Dernière mise à jour",
+  "@lastUpdated": {
+    "x-mt": true
+  },
   "grade": "Grade",
+  "@grade": {
+    "x-mt": true
+  },
   "submittedBy": "Soumis par",
   "submissionType": "Type",
   "uploadStatus": "Statut de téléchargement",
+  "@uploadStatus": {
+    "x-mt": true
+  },
   "uploaded": "Téléchargé",
+  "@uploaded": {
+    "x-mt": true
+  },
   "answers": "Réponses",
+  "@answers": {
+    "x-mt": true
+  },
   "answersUnavailable": "Les réponses ne sont pas disponibles",
+  "@answersUnavailable": {
+    "x-mt": true
+  },
   "noAnswers": "Aucune réponse n'a été enregistrée avec cette soumission",
+  "@noAnswers": {
+    "x-mt": true
+  },
   "noAnswer": "Pas de réponse",
+  "@noAnswer": {
+    "x-mt": true
+  },
   "questionNumber": "Question {number}",
+  "@questionNumber": {
+    "x-mt": true
+  },
   "newSubmission": "Nouvelle soumission",
+  "@newSubmission": {
+    "x-mt": true
+  },
   "answer": "Répondre",
+  "@answer": {
+    "x-mt": true
+  },
   "availableChoices": "Choix",
+  "@availableChoices": {
+    "x-mt": true
+  },
   "exportPdf": "Exporter un PDF",
+  "@exportPdf": {
+    "x-mt": true
+  },
   "pdfExportFailed": "Le PDF n'a pas pu être créé",
+  "@pdfExportFailed": {
+    "x-mt": true
+  },
   "pdfSaved": "PDF enregistré dans {path}",
+  "@pdfSaved": {
+    "x-mt": true
+  },
   "mySurveys": "Mes enquêtes",
+  "@mySurveys": {
+    "x-mt": true
+  },
   "references": "Références",
   "myPersonals": "Mes rencontres",
+  "@myPersonals": {
+    "x-mt": true
+  },
   "featureComingSoon": "Cette fonctionnalité n'est pas encore portée",
+  "@featureComingSoon": {
+    "x-mt": true
+  },
   "maps": "Cartes",
   "englishDictionary": "dictionnaire anglais",
+  "@englishDictionary": {
+    "x-mt": true
+  },
   "offlineMapsComingSoon": "Les cartes hors ligne ne sont pas encore portées",
+  "@offlineMapsComingSoon": {
+    "x-mt": true
+  },
   "addPersonal": "Ajouter un objet personnel",
+  "@addPersonal": {
+    "x-mt": true
+  },
   "editPersonal": "Modifier un objet personnel",
+  "@editPersonal": {
+    "x-mt": true
+  },
   "deletePersonal": "Supprimer un objet personnel ?",
+  "@deletePersonal": {
+    "x-mt": true
+  },
   "deletePersonalConfirmation": "Supprimer « {title} » de cet appareil ?",
+  "@deletePersonalConfirmation": {
+    "x-mt": true
+  },
   "personalsUnavailable": "Les objets personnels ne sont pas disponibles",
+  "@personalsUnavailable": {
+    "x-mt": true
+  },
   "noPersonals": "Aucun objet personnel pour l'instant. Ajoutez une note privée pour commencer.",
+  "@noPersonals": {
+    "x-mt": true
+  },
   "duplicateTitle": "Un objet personnel portant ce titre existe déjà",
+  "@duplicateTitle": {
+    "x-mt": true
+  },
   "attachFile": "Joindre un fichier",
+  "@attachFile": {
+    "x-mt": true
+  },
   "attachedFile": "Ci-joint : {name}",
+  "@attachedFile": {
+    "x-mt": true
+  },
   "noFileSelected": "No file selected",
+  "@noFileSelected": {
+    "x-mt": true
+  },
   "removeFile": "Supprimer le fichier",
+  "@removeFile": {
+    "x-mt": true
+  },
   "savedOffline": "Enregistré hors ligne – en attente de téléchargement",
+  "@savedOffline": {
+    "x-mt": true
+  },
   "edit": "Modifier",
   "title": "Titre",
   "titleRequired": "Entrez un titre",
+  "@titleRequired": {
+    "x-mt": true
+  },
   "rateCourse": "Tarifer le cours",
+  "@rateCourse": {
+    "x-mt": true
+  },
   "rateTitle": "Tarifer {title}",
+  "@rateTitle": {
+    "x-mt": true
+  },
   "ratingsUnavailable": "Les notes ne sont pas disponibles",
+  "@ratingsUnavailable": {
+    "x-mt": true
+  },
   "ratingSummary": "{average} from {count, plural, =1{1 rating} other{{count} ratings}}",
+  "@ratingSummary": {
+    "x-mt": true
+  },
   "ratingCompact": "{average} ({count})",
+  "@ratingCompact": {
+    "x-mt": true
+  },
   "ratingOutOfFive": "Note : {rating} sur 5",
+  "@ratingOutOfFive": {
+    "x-mt": true
+  },
   "setRating": "Définir la note sur {rating}",
+  "@setRating": {
+    "x-mt": true
+  },
   "ratingRequired": "Choisissez une note",
+  "@ratingRequired": {
+    "x-mt": true
+  },
   "commentOptional": "Commentaire (facultatif)",
+  "@commentOptional": {
+    "x-mt": true
+  },
   "submitRating": "Soumettre une évaluation",
+  "@submitRating": {
+    "x-mt": true
+  },
   "skip": "Passer",
   "next": "Suivant",
+  "@next": {
+    "x-mt": true
+  },
   "getStarted": "COMMENCER",
   "welcomeToMyPlanet": "Bienvenue sur myPlanet",
   "learnOffline": "Apprendre hors ligne",
@@ -276,292 +888,1003 @@
   "unleashLearningPower": "Libérer le pouvoir d\\'apprendre",
   "onboardingWelcomeDescription": "Votre passerelle vers un apprentissage illimité",
   "onboardingOfflineDescription": "Téléchargez des ressources pour l'apprentissage hors ligne.\nAccédez aux connaissances en déplacement.",
+  "@onboardingOfflineDescription": {
+    "x-mt": true
+  },
   "onboardingOpenDescription": "Choisissez vos intérêts et plongez dans le contenu interactif.\nCréez votre parcours d’apprentissage unique.",
+  "@onboardingOpenDescription": {
+    "x-mt": true
+  },
   "onboardingPowerDescription": "Explorez un monde de connaissances à portée de main.\n\n🌍 Accès hors ligne : apprenez sans frontières, à tout moment.\n🎯 Personnalisé : personnalisez votre parcours d'apprentissage.\n📚 Interactif : interagissez avec des vidéos, des livres et des jeux.\n\nCommencez votre parcours d'apprentissage sans limites avec myPlanet !",
+  "@onboardingPowerDescription": {
+    "x-mt": true
+  },
   "onboardingServerPrepHint": "Avant de vous connecter, vous aurez besoin de votre adresse de serveur Planet et de votre code PIN. Demandez à votre administrateur de communauté si vous ne les avez pas encore.",
+  "@onboardingServerPrepHint": {
+    "x-mt": true
+  },
   "pageProgress": "Page {current} de {total}",
+  "@pageProgress": {
+    "x-mt": true
+  },
   "meetups": "Rencontres",
+  "@meetups": {
+    "x-mt": true
+  },
   "syncPendingMeetups": "Synchroniser les rencontres en attente",
+  "@syncPendingMeetups": {
+    "x-mt": true
+  },
   "meetupsUnavailable": "Les Meetups ne sont pas disponibles",
+  "@meetupsUnavailable": {
+    "x-mt": true
+  },
   "noMeetups": "Pas encore de rencontres",
+  "@noMeetups": {
+    "x-mt": true
+  },
   "dateNotSet": "Date non fixée",
+  "@dateNotSet": {
+    "x-mt": true
+  },
   "untitledMeetup": "Rencontre sans titre",
+  "@untitledMeetup": {
+    "x-mt": true
+  },
   "addMeetup": "Ajouter une rencontre",
+  "@addMeetup": {
+    "x-mt": true
+  },
   "meetupDetails": "Détails du Meetup",
+  "@meetupDetails": {
+    "x-mt": true
+  },
   "meetupNotFound": "Meetup introuvable",
+  "@meetupNotFound": {
+    "x-mt": true
+  },
   "createdBy": "Créé par",
+  "@createdBy": {
+    "x-mt": true
+  },
   "category": "Catégorie",
+  "@category": {
+    "x-mt": true
+  },
   "location": "Emplacement",
   "link": "Lien",
   "recurring": "Récurrent",
+  "@recurring": {
+    "x-mt": true
+  },
   "description": "Description",
+  "@description": {
+    "x-mt": true
+  },
   "leaveMeetup": "Quitter la rencontre",
+  "@leaveMeetup": {
+    "x-mt": true
+  },
   "joinMeetup": "Rejoignez la rencontre",
+  "@joinMeetup": {
+    "x-mt": true
+  },
   "editMeetup": "Modifier la rencontre",
+  "@editMeetup": {
+    "x-mt": true
+  },
   "startTime": "Heure de début",
+  "@startTime": {
+    "x-mt": true
+  },
   "endTime": "Heure de fin",
+  "@endTime": {
+    "x-mt": true
+  },
   "none": "Aucun",
   "daily": "Quotidien",
   "weekly": "Hebdomadaire",
   "syncMeetups": "Synchroniser les rencontres",
+  "@syncMeetups": {
+    "x-mt": true
+  },
   "searchMeetups": "Rechercher des rencontres",
+  "@searchMeetups": {
+    "x-mt": true
+  },
   "sortMeetups": "Trier les rencontres",
+  "@sortMeetups": {
+    "x-mt": true
+  },
   "sortResources": "Trier les ressources",
+  "@sortResources": {
+    "x-mt": true
+  },
   "newestFirst": "Le plus récent en premier",
+  "@newestFirst": {
+    "x-mt": true
+  },
   "oldestFirst": "Le plus ancien en premier",
+  "@oldestFirst": {
+    "x-mt": true
+  },
   "titleAscending": "Titre A à Z",
+  "@titleAscending": {
+    "x-mt": true
+  },
   "titleDescending": "Titre Z-A",
+  "@titleDescending": {
+    "x-mt": true
+  },
   "startDate": "Date de début",
+  "@startDate": {
+    "x-mt": true
+  },
   "endDate": "Date de fin",
+  "@endDate": {
+    "x-mt": true
+  },
   "timeNotSet": "Heure non réglée",
+  "@timeNotSet": {
+    "x-mt": true
+  },
   "syncSurveys": "Synchroniser les enquêtes",
+  "@syncSurveys": {
+    "x-mt": true
+  },
   "searchSurveys": "Rechercher des enquêtes",
+  "@searchSurveys": {
+    "x-mt": true
+  },
   "sortSurveys": "Trier les enquêtes",
+  "@sortSurveys": {
+    "x-mt": true
+  },
   "surveysUnavailable": "Les enquêtes ne sont pas disponibles",
+  "@surveysUnavailable": {
+    "x-mt": true
+  },
   "noSurveys": "Aucune enquête disponible",
+  "@noSurveys": {
+    "x-mt": true
+  },
   "untitledSurvey": "Enquête sans titre",
+  "@untitledSurvey": {
+    "x-mt": true
+  },
   "takeSurvey": "Répondre à l'enquête",
+  "@takeSurvey": {
+    "x-mt": true
+  },
   "surveyLoadFailed": "L'enquête n'a pas pu être chargée",
+  "@surveyLoadFailed": {
+    "x-mt": true
+  },
   "surveyHasNoQuestions": "Cette enquête ne comporte aucune question",
+  "@surveyHasNoQuestions": {
+    "x-mt": true
+  },
   "submitSurvey": "Soumettre l'enquête",
+  "@submitSurvey": {
+    "x-mt": true
+  },
   "answerRequiredQuestions": "Répondez à toutes les questions requises",
+  "@answerRequiredQuestions": {
+    "x-mt": true
+  },
   "voices": "Voix",
+  "@voices": {
+    "x-mt": true
+  },
   "searchVoices": "Rechercher des voix",
+  "@searchVoices": {
+    "x-mt": true
+  },
   "syncVoices": "Synchroniser les voix",
+  "@syncVoices": {
+    "x-mt": true
+  },
   "noVoices": "Pas encore de voix",
+  "@noVoices": {
+    "x-mt": true
+  },
   "voicesUnavailable": "Les voix ne sont pas disponibles",
+  "@voicesUnavailable": {
+    "x-mt": true
+  },
   "shareYourVoice": "Partagez votre voix",
+  "@shareYourVoice": {
+    "x-mt": true
+  },
   "postVoice": "Poste",
+  "@postVoice": {
+    "x-mt": true
+  },
   "replyToVoice": "Répondre",
   "writeAReply": "Écrivez une réponse",
+  "@writeAReply": {
+    "x-mt": true
+  },
   "repliesCount": "{count, plural, =0{No replies} =1{1 reply} other{{count} replies}}",
+  "@repliesCount": {
+    "x-mt": true
+  },
   "edited": "Édité",
+  "@edited": {
+    "x-mt": true
+  },
   "editVoice": "Modifier",
   "deleteVoice": "Supprimer",
   "deleteVoiceConfirm": "Supprimer ce message et toutes ses réponses ?",
+  "@deleteVoiceConfirm": {
+    "x-mt": true
+  },
   "voiceDeleted": "Message supprimé",
+  "@voiceDeleted": {
+    "x-mt": true
+  },
   "emptyMessageNotAllowed": "Écrivez d'abord quelque chose",
+  "@emptyMessageNotAllowed": {
+    "x-mt": true
+  },
   "thread": "Fil",
+  "@thread": {
+    "x-mt": true
+  },
   "surveySubmitFailed": "Impossible d'enregistrer vos réponses",
+  "@surveySubmitFailed": {
+    "x-mt": true
+  },
   "sendSurveyTo": "Sélectionnez les utilisateurs auxquels envoyer l'enquête",
+  "@sendSurveyTo": {
+    "x-mt": true
+  },
   "sendSurvey": "Envoyer le sondage",
+  "@sendSurvey": {
+    "x-mt": true
+  },
   "surveySentToUsers": "Survey sent to selected users",
+  "@surveySentToUsers": {
+    "x-mt": true
+  },
   "noUsersAvailable": "Aucun utilisateur disponible",
+  "@noUsersAvailable": {
+    "x-mt": true
+  },
   "teams": "Équipes",
   "syncTeams": "Synchroniser les équipes",
+  "@syncTeams": {
+    "x-mt": true
+  },
   "searchTeams": "Équipes de recherche",
+  "@searchTeams": {
+    "x-mt": true
+  },
   "teamsUnavailable": "Les équipes ne sont pas disponibles",
+  "@teamsUnavailable": {
+    "x-mt": true
+  },
   "noTeams": "Aucune équipe disponible",
+  "@noTeams": {
+    "x-mt": true
+  },
   "untitledTeam": "Équipe sans titre",
+  "@untitledTeam": {
+    "x-mt": true
+  },
   "teamDetails": "Détails de l'équipe",
+  "@teamDetails": {
+    "x-mt": true
+  },
   "teamNotFound": "Équipe introuvable",
+  "@teamNotFound": {
+    "x-mt": true
+  },
   "publicTeam": "Équipe publique",
+  "@publicTeam": {
+    "x-mt": true
+  },
   "privateTeam": "Équipe privée",
+  "@privateTeam": {
+    "x-mt": true
+  },
   "enterprises": "Entreprises",
   "searchEnterprises": "Rechercher des entreprises",
+  "@searchEnterprises": {
+    "x-mt": true
+  },
   "leader": "Chef",
+  "@leader": {
+    "x-mt": true
+  },
   "leave": "Partir",
+  "@leave": {
+    "x-mt": true
+  },
   "remove": "Retirer",
+  "@remove": {
+    "x-mt": true
+  },
   "makeLeader": "Faire un leader",
+  "@makeLeader": {
+    "x-mt": true
+  },
   "leftTeam": "Équipe de gauche",
+  "@leftTeam": {
+    "x-mt": true
+  },
   "memberRemoved": "Membre supprimé",
+  "@memberRemoved": {
+    "x-mt": true
+  },
   "leaderUpdated": "Leader mis à jour",
+  "@leaderUpdated": {
+    "x-mt": true
+  },
   "member": "Membre",
+  "@member": {
+    "x-mt": true
+  },
   "teamLeader": "Vous dirigez cette équipe",
+  "@teamLeader": {
+    "x-mt": true
+  },
   "teamMember": "Vous êtes membre",
+  "@teamMember": {
+    "x-mt": true
+  },
   "services": "Services",
   "rules": "Règles",
+  "@rules": {
+    "x-mt": true
+  },
   "teamCourses": "Cours en équipe",
+  "@teamCourses": {
+    "x-mt": true
+  },
   "membersCount": "{count, plural, =0{No members} =1{1 member} other{{count} members}}",
+  "@membersCount": {
+    "x-mt": true
+  },
   "teamTasks": "Tâches",
   "tasksUnavailable": "Les tâches ne sont pas disponibles",
+  "@tasksUnavailable": {
+    "x-mt": true
+  },
   "noTeamTasks": "Aucune tâche pour l'instant",
+  "@noTeamTasks": {
+    "x-mt": true
+  },
   "noDeadline": "Pas de date limite",
+  "@noDeadline": {
+    "x-mt": true
+  },
   "untitledTask": "Tâche sans titre",
+  "@untitledTask": {
+    "x-mt": true
+  },
   "addTask": "Ajouter une tâche",
+  "@addTask": {
+    "x-mt": true
+  },
   "editTask": "Modifier la tâche",
+  "@editTask": {
+    "x-mt": true
+  },
   "deleteTask": "Supprimer la tâche",
+  "@deleteTask": {
+    "x-mt": true
+  },
   "taskTitle": "Titre de la tâche",
+  "@taskTitle": {
+    "x-mt": true
+  },
   "assigneeId": "ID du cessionnaire",
+  "@assigneeId": {
+    "x-mt": true
+  },
   "teamDiscussions": "Discussions",
+  "@teamDiscussions": {
+    "x-mt": true
+  },
   "teamMembers": "Membres",
   "members": "Membres",
   "joinRequests": "Demandes d'adhésion",
+  "@joinRequests": {
+    "x-mt": true
+  },
   "noMembers": "Pas encore de membres",
+  "@noMembers": {
+    "x-mt": true
+  },
   "membersUnavailable": "Les membres ne sont pas disponibles",
+  "@membersUnavailable": {
+    "x-mt": true
+  },
   "unknownMember": "Membre inconnu",
+  "@unknownMember": {
+    "x-mt": true
+  },
   "noJoinRequests": "Aucune demande en attente",
+  "@noJoinRequests": {
+    "x-mt": true
+  },
   "accept": "Accepter",
   "decline": "Déclin",
+  "@decline": {
+    "x-mt": true
+  },
   "joinTeam": "Demander à rejoindre",
   "leaveTeam": "Quitter l'équipe",
+  "@leaveTeam": {
+    "x-mt": true
+  },
   "requestPending": "Demande en attente",
+  "@requestPending": {
+    "x-mt": true
+  },
   "teamResources": "Ressources",
   "resourcesUnavailable": "Les ressources ne sont pas disponibles",
+  "@resourcesUnavailable": {
+    "x-mt": true
+  },
   "noTeamResources": "Aucune ressource liée à cette équipe",
+  "@noTeamResources": {
+    "x-mt": true
+  },
   "untitledResource": "Ressource sans titre",
+  "@untitledResource": {
+    "x-mt": true
+  },
   "removeFromTeam": "Supprimer de l'équipe",
+  "@removeFromTeam": {
+    "x-mt": true
+  },
   "addResource": "Ajouter une ressource",
+  "@addResource": {
+    "x-mt": true
+  },
   "editResource": "Modifier la ressource",
+  "@editResource": {
+    "x-mt": true
+  },
   "resourceUpdated": "Ressource mise à jour",
+  "@resourceUpdated": {
+    "x-mt": true
+  },
   "resourceAddedToTeam": "Ressource ajoutée à l'équipe",
+  "@resourceAddedToTeam": {
+    "x-mt": true
+  },
   "descriptionIsRequired": "Une description est requise",
+  "@descriptionIsRequired": {
+    "x-mt": true
+  },
   "levelIsRequired": "Le niveau est requis",
+  "@levelIsRequired": {
+    "x-mt": true
+  },
   "subjectIsRequired": "Le sujet est obligatoire",
+  "@subjectIsRequired": {
+    "x-mt": true
+  },
   "selectFile": "Sélectionnez un fichier",
+  "@selectFile": {
+    "x-mt": true
+  },
   "fileSelected": "File selected",
+  "@fileSelected": {
+    "x-mt": true
+  },
   "privateResource": "Ressource privée",
+  "@privateResource": {
+    "x-mt": true
+  },
   "saveChanges": "Enregistrer les modifications",
+  "@saveChanges": {
+    "x-mt": true
+  },
   "selectOpenWith": "Sélectionnez ouvrir avec",
+  "@selectOpenWith": {
+    "x-mt": true
+  },
   "selectMedia": "Sélectionner un média",
+  "@selectMedia": {
+    "x-mt": true
+  },
   "selectResourceType": "Sélectionnez le type de ressource",
+  "@selectResourceType": {
+    "x-mt": true
+  },
   "linkToLicense": "Lien vers la licence",
+  "@linkToLicense": {
+    "x-mt": true
+  },
   "noResourcesToAdd": "Toutes les ressources disponibles sont déjà liées",
+  "@noResourcesToAdd": {
+    "x-mt": true
+  },
   "coursesUnavailable": "Les cours ne sont pas disponibles",
+  "@coursesUnavailable": {
+    "x-mt": true
+  },
   "noTeamCourses": "Aucun cours lié à cette équipe",
+  "@noTeamCourses": {
+    "x-mt": true
+  },
   "untitledCourse": "Cours sans titre",
+  "@untitledCourse": {
+    "x-mt": true
+  },
   "addCourse": "Ajouter un cours",
+  "@addCourse": {
+    "x-mt": true
+  },
   "noCoursesToAdd": "Tous les cours disponibles sont déjà liés",
+  "@noCoursesToAdd": {
+    "x-mt": true
+  },
   "financialReports": "Rapports financiers",
+  "@financialReports": {
+    "x-mt": true
+  },
   "reportsUnavailable": "Les rapports ne sont pas disponibles",
+  "@reportsUnavailable": {
+    "x-mt": true
+  },
   "noReports": "Pas encore de rapports financiers",
+  "@noReports": {
+    "x-mt": true
+  },
   "addReport": "Ajouter un rapport",
+  "@addReport": {
+    "x-mt": true
+  },
   "editReport": "Modifier le rapport",
+  "@editReport": {
+    "x-mt": true
+  },
   "archiveReport": "Archiver",
   "beginningBalance": "Solde d'ouverture",
+  "@beginningBalance": {
+    "x-mt": true
+  },
   "sales": "Ventes",
   "otherIncome": "Autres revenus",
+  "@otherIncome": {
+    "x-mt": true
+  },
   "wages": "Salaires",
+  "@wages": {
+    "x-mt": true
+  },
   "otherExpenses": "Autres dépenses",
+  "@otherExpenses": {
+    "x-mt": true
+  },
   "totalIncome": "Revenu total",
+  "@totalIncome": {
+    "x-mt": true
+  },
   "totalExpenses": "Dépenses totales",
+  "@totalExpenses": {
+    "x-mt": true
+  },
   "profitLoss": "Bénéfice/perte",
+  "@profitLoss": {
+    "x-mt": true
+  },
   "endingBalance": "Solde final",
+  "@endingBalance": {
+    "x-mt": true
+  },
   "negativeBalance": "Le solde actuel est négatif !",
+  "@negativeBalance": {
+    "x-mt": true
+  },
   "reportDateDetails": "Rapport créé le : {created} | Mis à jour le : {updated}",
+  "@reportDateDetails": {
+    "x-mt": true
+  },
   "chatHistory": "Historique des discussions",
+  "@chatHistory": {
+    "x-mt": true
+  },
   "chat": "Discussion",
   "newChat": "Nouvelle discussion",
+  "@newChat": {
+    "x-mt": true
+  },
   "searchChats": "Rechercher des discussions",
+  "@searchChats": {
+    "x-mt": true
+  },
   "noChats": "Pas encore de chat",
+  "@noChats": {
+    "x-mt": true
+  },
   "noSearchResults": "Aucune discussion correspondante",
+  "@noSearchResults": {
+    "x-mt": true
+  },
   "untitledChat": "Discussion sans titre",
+  "@untitledChat": {
+    "x-mt": true
+  },
   "fullConversationResponse": "Réponse complète à la conversation",
+  "@fullConversationResponse": {
+    "x-mt": true
+  },
   "response": "Réponse",
+  "@response": {
+    "x-mt": true
+  },
   "chatConversation": "Conversation",
+  "@chatConversation": {
+    "x-mt": true
+  },
   "newConversation": "Nouvelle conversation",
+  "@newConversation": {
+    "x-mt": true
+  },
   "startConversation": "Démarrer une nouvelle conversation",
+  "@startConversation": {
+    "x-mt": true
+  },
   "typeMessage": "Tapez un message…",
+  "@typeMessage": {
+    "x-mt": true
+  },
   "selectAiProvider": "Sélectionnez le fournisseur d'IA",
+  "@selectAiProvider": {
+    "x-mt": true
+  },
   "aiProviders": "Fournisseurs d'IA",
+  "@aiProviders": {
+    "x-mt": true
+  },
   "aiProviderAvailable": "{name} (disponible)",
+  "@aiProviderAvailable": {
+    "x-mt": true
+  },
   "aiProviderUnavailable": "{name} (indisponible)",
+  "@aiProviderUnavailable": {
+    "x-mt": true
+  },
   "feedback": "Retour d\\'information",
   "feedbackNotFound": "Commentaires introuvables",
+  "@feedbackNotFound": {
+    "x-mt": true
+  },
   "feedbackSaved": "Commentaires enregistrés",
+  "@feedbackSaved": {
+    "x-mt": true
+  },
   "isUrgent": "Est-ce urgent ?",
+  "@isUrgent": {
+    "x-mt": true
+  },
   "feedbackType": "Type de commentaires",
+  "@feedbackType": {
+    "x-mt": true
+  },
   "feedbackTypeRequired": "Please select a feedback type",
+  "@feedbackTypeRequired": {
+    "x-mt": true
+  },
   "yourFeedback": "Vos commentaires",
+  "@yourFeedback": {
+    "x-mt": true
+  },
   "pleaseEnterFeedback": "Veuillez entrer vos commentaires",
+  "@pleaseEnterFeedback": {
+    "x-mt": true
+  },
   "question": "Question",
   "bug": "Bogue",
   "suggestion": "Suggestion",
   "priority": "Priorité",
   "openDate": "Date d'ouverture",
+  "@openDate": {
+    "x-mt": true
+  },
   "replies": "Réponses",
+  "@replies": {
+    "x-mt": true
+  },
   "pleaseEnterReply": "Veuillez saisir une réponse",
   "untitledFeedback": "Commentaires sans titre",
+  "@untitledFeedback": {
+    "x-mt": true
+  },
   "yes": "Oui",
   "no": "Non",
   "submit": "Soumettre",
   "takeTest": "Faire un test",
+  "@takeTest": {
+    "x-mt": true
+  },
   "recordSurvey": "Enquête record",
+  "@recordSurvey": {
+    "x-mt": true
+  },
   "react": "Réagir",
+  "@react": {
+    "x-mt": true
+  },
   "pickReaction": "Choisissez une réaction",
+  "@pickReaction": {
+    "x-mt": true
+  },
   "comments": "Commentaires",
+  "@comments": {
+    "x-mt": true
+  },
   "addComment": "Ajouter un commentaire",
+  "@addComment": {
+    "x-mt": true
+  },
   "commentsCount": "{count} commentaires",
+  "@commentsCount": {
+    "x-mt": true
+  },
   "noComments": "Pas encore de commentaires",
+  "@noComments": {
+    "x-mt": true
+  },
   "leaderboard": "Classement",
+  "@leaderboard": {
+    "x-mt": true
+  },
   "allTime": "Tout le temps",
+  "@allTime": {
+    "x-mt": true
+  },
   "thisMonth": "Ce mois-ci",
+  "@thisMonth": {
+    "x-mt": true
+  },
   "coursesCompleted": "{completed}/{total} cours",
+  "@coursesCompleted": {
+    "x-mt": true
+  },
   "surveysCompleted": "{completed}/{total} enquêtes",
+  "@surveysCompleted": {
+    "x-mt": true
+  },
   "error": "Erreur",
+  "@error": {
+    "x-mt": true
+  },
   "close": "Fermer",
   "filter": "Filtre",
   "type": "Type",
   "apply": "Appliquer",
+  "@apply": {
+    "x-mt": true
+  },
   "unavailable": "indisponible",
+  "@unavailable": {
+    "x-mt": true
+  },
   "chatsUnavailable": "Les discussions n'ont pas pu être chargées",
+  "@chatsUnavailable": {
+    "x-mt": true
+  },
   "community": "Communauté",
   "communityLeaders": "Dirigeants de communauté",
   "nationLeaders": "Dirigeants nationaux",
+  "@nationLeaders": {
+    "x-mt": true
+  },
   "ourVoices": "Nos voix",
+  "@ourVoices": {
+    "x-mt": true
+  },
   "finances": "Finances",
   "reports": "rapports",
   "transaction": "Transaction",
+  "@transaction": {
+    "x-mt": true
+  },
   "transactions": "Transactions",
+  "@transactions": {
+    "x-mt": true
+  },
   "addTransaction": "Ajouter une transaction",
   "noTransactions": "Aucune transaction pour l'instant",
+  "@noTransactions": {
+    "x-mt": true
+  },
   "debit": "Débit",
   "credit": "Crédit",
   "balance": "Solde",
   "amount": "Montant",
   "note": "Note",
+  "@note": {
+    "x-mt": true
+  },
   "date": "Date",
   "fromDate": "À partir du jour",
+  "@fromDate": {
+    "x-mt": true
+  },
   "toDate": "À ce jour",
+  "@toDate": {
+    "x-mt": true
+  },
   "reset": "Réinitialiser",
+  "@reset": {
+    "x-mt": true
+  },
   "noteRequired": "La note est requise",
   "amountRequired": "Le montant doit être supérieur à 0",
+  "@amountRequired": {
+    "x-mt": true
+  },
   "transactionAdded": "Transaction ajoutée",
   "addReceipt": "Ajouter un reçu",
+  "@addReceipt": {
+    "x-mt": true
+  },
   "receiptSelected": "Receipt selected",
+  "@receiptSelected": {
+    "x-mt": true
+  },
   "noReceipt": "Aucun reçu joint",
+  "@noReceipt": {
+    "x-mt": true
+  },
   "receipt": "Reçu",
+  "@receipt": {
+    "x-mt": true
+  },
   "viewReceipt": "Afficher le reçu",
+  "@viewReceipt": {
+    "x-mt": true
+  },
   "noLeadersAvailable": "Aucun dirigeant disponible",
+  "@noLeadersAvailable": {
+    "x-mt": true
+  },
   "noServicesAvailable": "Aucun service disponible",
+  "@noServicesAvailable": {
+    "x-mt": true
+  },
   "noDescriptionAvailable": "Aucune description disponible",
   "takeExam": "Passer l'examen",
+  "@takeExam": {
+    "x-mt": true
+  },
   "examLoadFailed": "L'examen n'a pas pu être chargé",
+  "@examLoadFailed": {
+    "x-mt": true
+  },
   "examHasNoQuestions": "Cet examen ne comporte pas de questions",
+  "@examHasNoQuestions": {
+    "x-mt": true
+  },
   "examComplete": "Examen terminé",
+  "@examComplete": {
+    "x-mt": true
+  },
   "examUnavailable": "L'examen n'est pas disponible",
+  "@examUnavailable": {
+    "x-mt": true
+  },
   "submitExam": "Soumettre l'examen",
+  "@submitExam": {
+    "x-mt": true
+  },
   "incorrectAnswer": "Réponse incorrecte",
+  "@incorrectAnswer": {
+    "x-mt": true
+  },
   "correctAnswers": "Correct",
+  "@correctAnswers": {
+    "x-mt": true
+  },
   "yourAnswer": "Votre Réponse",
+  "@yourAnswer": {
+    "x-mt": true
+  },
   "previous": "Précédent",
   "finish": "Terminer",
   "exitExam": "Examen de sortie ?",
+  "@exitExam": {
+    "x-mt": true
+  },
   "exitExamMessage": "Votre progression sera perdue.",
+  "@exitExamMessage": {
+    "x-mt": true
+  },
   "exit": "Quitter",
   "download": "Télécharger",
   "downloading": "Téléchargement…",
+  "@downloading": {
+    "x-mt": true
+  },
   "downloadFailed": "Le téléchargement a échoué.",
+  "@downloadFailed": {
+    "x-mt": true
+  },
   "resourceNotDownloaded": "Cette ressource n'est pas encore sur votre appareil.",
+  "@resourceNotDownloaded": {
+    "x-mt": true
+  },
   "retry": "Réessayer",
+  "@retry": {
+    "x-mt": true
+  },
   "fieldRequired": "Requis",
+  "@fieldRequired": {
+    "x-mt": true
+  },
   "examSubmitFailed": "Impossible d'enregistrer votre examen. Veuillez réessayer.",
+  "@examSubmitFailed": {
+    "x-mt": true
+  },
   "yourInformation": "Vos informations",
+  "@yourInformation": {
+    "x-mt": true
+  },
   "showAdditionalFields": "Afficher les champs supplémentaires",
+  "@showAdditionalFields": {
+    "x-mt": true
+  },
   "hideAdditionalFields": "Masquer les champs supplémentaires",
+  "@hideAdditionalFields": {
+    "x-mt": true
+  },
   "phoneNumber": "Numéro de téléphone",
+  "@phoneNumber": {
+    "x-mt": true
+  },
   "birthDate": "Date de naissance",
+  "@birthDate": {
+    "x-mt": true
+  },
   "selectDate": "Sélectionnez une date",
+  "@selectDate": {
+    "x-mt": true
+  },
   "male": "Mâle",
+  "@male": {
+    "x-mt": true
+  },
   "female": "Femelle",
+  "@female": {
+    "x-mt": true
+  },
   "yearOfBirth": "Année de naissance",
   "yearOfBirthRequired": "L'année de naissance est obligatoire",
+  "@yearOfBirthRequired": {
+    "x-mt": true
+  },
   "invalidYear": "Veuillez entrer une année valide",
+  "@invalidYear": {
+    "x-mt": true
+  },
   "yearBetween": "L'année doit être comprise entre {min} et {max}",
+  "@yearBetween": {
+    "x-mt": true
+  },
   "thankYouForTakingSurvey": "Merci d'avoir répondu à cette enquête",
+  "@thankYouForTakingSurvey": {
+    "x-mt": true
+  },
   "errorSavingProfile": "Erreur lors de l'enregistrement du profil",
+  "@errorSavingProfile": {
+    "x-mt": true
+  },
   "videoPlayer": "Lecteur vidéo",
+  "@videoPlayer": {
+    "x-mt": true
+  },
   "audioPlayer": "Lecteur audio",
+  "@audioPlayer": {
+    "x-mt": true
+  },
   "videoFileNotFound": "Fichier vidéo introuvable localement",
   "unableToLoadVideo": "Impossible de charger la vidéo",
   "audioFileNotFound": "Fichier audio introuvable localement",
@@ -577,68 +1900,227 @@
   "errorOccurred": "Erreur : {error}",
   "openingResource": "Ouverture : {title}",
   "loadingMedia": "Chargement...",
+  "@loadingMedia": {
+    "x-mt": true
+  },
   "resourceUnavailable": "Cette ressource n'est pas disponible pour une visualisation hors ligne",
+  "@resourceUnavailable": {
+    "x-mt": true
+  },
   "healthRecordNotAvailable": "Carnet de santé non disponible",
+  "@healthRecordNotAvailable": {
+    "x-mt": true
+  },
   "updateHealth": "Mettre à jour la santé",
+  "@updateHealth": {
+    "x-mt": true
+  },
   "addHealthRecord": "Ajouter un dossier de santé",
+  "@addHealthRecord": {
+    "x-mt": true
+  },
   "healthProfile": "Profil de santé",
+  "@healthProfile": {
+    "x-mt": true
+  },
   "specialNeeds": "Besoins spéciaux",
+  "@specialNeeds": {
+    "x-mt": true
+  },
   "otherNeeds": "Autres besoins",
+  "@otherNeeds": {
+    "x-mt": true
+  },
   "emergencyContact": "Personne à contacter en cas d'urgence",
+  "@emergencyContact": {
+    "x-mt": true
+  },
   "contactNumber": "Numéro de contact",
+  "@contactNumber": {
+    "x-mt": true
+  },
   "vitalSigns": "Signes vitaux",
+  "@vitalSigns": {
+    "x-mt": true
+  },
   "temperature": "Température",
+  "@temperature": {
+    "x-mt": true
+  },
   "pulse": "Impulsion",
+  "@pulse": {
+    "x-mt": true
+  },
   "height": "Hauteur",
+  "@height": {
+    "x-mt": true
+  },
   "weight": "Poids",
+  "@weight": {
+    "x-mt": true
+  },
   "bloodPressure": "Pression artérielle",
+  "@bloodPressure": {
+    "x-mt": true
+  },
   "vision": "Vision",
   "hearing": "Audition",
   "examinationHistory": "Historique des examens",
+  "@examinationHistory": {
+    "x-mt": true
+  },
   "personalInformation": "Informations personnelles",
+  "@personalInformation": {
+    "x-mt": true
+  },
   "birthPlace": "Lieu de naissance",
+  "@birthPlace": {
+    "x-mt": true
+  },
   "contactName": "Nom du contact",
+  "@contactName": {
+    "x-mt": true
+  },
   "contactType": "Type de contact",
+  "@contactType": {
+    "x-mt": true
+  },
   "healthInformation": "Informations sur la santé",
+  "@healthInformation": {
+    "x-mt": true
+  },
   "requiredField": "Ce champ est obligatoire",
+  "@requiredField": {
+    "x-mt": true
+  },
   "healthSavedSuccessfully": "Données de santé enregistrées avec succès",
+  "@healthSavedSuccessfully": {
+    "x-mt": true
+  },
   "examinationDetails": "Détails de l'examen",
+  "@examinationDetails": {
+    "x-mt": true
+  },
   "allergies": "Allergies",
   "diagnosis": "Diagnostic",
   "medications": "Médicaments",
   "immunizations": "Vaccinations",
+  "@immunizations": {
+    "x-mt": true
+  },
   "treatments": "Traitements",
   "observations": "Observations",
+  "@observations": {
+    "x-mt": true
+  },
   "referrals": "Références",
   "labTests": "Tests de laboratoire",
+  "@labTests": {
+    "x-mt": true
+  },
   "xrays": "Radiographies",
   "conditions": "Conditions",
+  "@conditions": {
+    "x-mt": true
+  },
   "selfExamination": "Auto-examen",
+  "@selfExamination": {
+    "x-mt": true
+  },
   "healthRecordAdded": "Dossier de santé ajouté avec succès",
+  "@healthRecordAdded": {
+    "x-mt": true
+  },
   "selectHealthMember": "Sélectionner un membre",
+  "@selectHealthMember": {
+    "x-mt": true
+  },
   "newPatient": "Nouveau patient",
+  "@newPatient": {
+    "x-mt": true
+  },
   "sortJoinDateDesc": "Le plus récent en premier",
+  "@sortJoinDateDesc": {
+    "x-mt": true
+  },
   "sortJoinDateAsc": "Le plus ancien en premier",
+  "@sortJoinDateAsc": {
+    "x-mt": true
+  },
   "sortNameAsc": "Nom A à Z",
+  "@sortNameAsc": {
+    "x-mt": true
+  },
   "sortNameDesc": "Nom Z-A",
+  "@sortNameDesc": {
+    "x-mt": true
+  },
   "searchMembers": "Rechercher des membres",
+  "@searchMembers": {
+    "x-mt": true
+  },
   "dismiss": "Ignorer",
   "addMember": "Ajouter un membre",
   "invalidNumber": "Numéro invalide",
+  "@invalidNumber": {
+    "x-mt": true
+  },
   "tempRangeError": "La température doit être comprise entre 30 et 40",
+  "@tempRangeError": {
+    "x-mt": true
+  },
   "pulseRangeError": "Le pouls doit être compris entre 40 et 120",
+  "@pulseRangeError": {
+    "x-mt": true
+  },
   "heightRangeError": "La hauteur doit être comprise entre 1 et 250",
+  "@heightRangeError": {
+    "x-mt": true
+  },
   "weightRangeError": "Le poids doit être compris entre 1 et 150",
+  "@weightRangeError": {
+    "x-mt": true
+  },
   "bloodPressureFormatError": "La tension artérielle doit être systolique/diastolique",
+  "@bloodPressureFormatError": {
+    "x-mt": true
+  },
   "bloodPressureRangeError": "La tension artérielle doit être comprise entre 60/40 et 300/200",
+  "@bloodPressureRangeError": {
+    "x-mt": true
+  },
   "bloodPressureNotNumbers": "Systolique et diastolique doivent être des nombres",
+  "@bloodPressureNotNumbers": {
+    "x-mt": true
+  },
   "temp": "Température",
+  "@temp": {
+    "x-mt": true
+  },
   "bp": "PA",
+  "@bp": {
+    "x-mt": true
+  },
   "offlineMaps": "Cartes hors ligne",
+  "@offlineMaps": {
+    "x-mt": true
+  },
   "centerOnDefault": "Centrer sur l'emplacement par défaut",
+  "@centerOnDefault": {
+    "x-mt": true
+  },
   "storage": "Stockage",
+  "@storage": {
+    "x-mt": true
+  },
   "storageManagement": "Gestion du stockage",
+  "@storageManagement": {
+    "x-mt": true
+  },
   "storageTotalDownloaded": "Total téléchargé",
+  "@storageTotalDownloaded": {
+    "x-mt": true
+  },
   "storageVideos": "Vidéos",
   "storageAudio": "Audio",
   "storagePdfs": "PDFs",
@@ -646,16 +2128,34 @@
   "storageOther": "Autre",
   "fileCountOne": "1 fichier",
   "fileCountMany": "{count} fichiers",
+  "@fileCountMany": {
+    "x-mt": true
+  },
   "storageUnknownResource": "Ressource inconnue",
+  "@storageUnknownResource": {
+    "x-mt": true
+  },
   "areYouSure": "Êtes-vous sûr ?",
   "cancelAddingExamination": "Are you sure you want to cancel adding examination? The data will be lost.",
   "yesIWantToExit": "Yes, I want to exit.",
   "inactiveMessage": "User not activated, please contact administrator or manager to activate your account.",
   "submitFeedback": "Submit Feedback",
   "failedToDelete": "Échec de la suppression : {error}",
+  "@failedToDelete": {
+    "x-mt": true
+  },
   "storageDeleteSelectedConfirm": "Delete {count} selected items?",
+  "@storageDeleteSelectedConfirm": {
+    "x-mt": true
+  },
   "storageDeleteConfirm": "Supprimer tous les {category} fichiers ?",
+  "@storageDeleteConfirm": {
+    "x-mt": true
+  },
   "storageSelectedCount": "{count} selected",
+  "@storageSelectedCount": {
+    "x-mt": true
+  },
   "deleteSelected": "Supprimer la sélection",
   "deleteAll": "Tout supprimer",
   "selectAll": "Sélectionner tout",
@@ -665,63 +2165,171 @@
   "coursesSelected": "{count, plural, =1{1 sélectionné} other{{count} sélectionnés}}",
   "leaveCoursesConfirm": "{count, plural, =1{Voulez-vous vraiment supprimer ce cours ?} other{Voulez-vous vraiment supprimer ces cours ?}}",
   "noStorageUsed": "Aucun fichier téléchargé trouvé",
+  "@noStorageUsed": {
+    "x-mt": true
+  },
   "availableSpace": "Espace disponible",
+  "@availableSpace": {
+    "x-mt": true
+  },
   "freeUpSpace": "Libérer de l'espace",
+  "@freeUpSpace": {
+    "x-mt": true
+  },
   "freeUpSpaceConfirm": "Cela supprimera toutes les ressources téléchargées pour libérer de l'espace de stockage. Continuer?",
+  "@freeUpSpaceConfirm": {
+    "x-mt": true
+  },
   "storageFreedSummary": "Freed {bytes}. {count, plural, =0{No files removed} =1{1 file removed} other{{count} files removed}}.",
+  "@storageFreedSummary": {
+    "x-mt": true
+  },
   "freeUpSpaceFailed": "Impossible de libérer de l'espace : {error}",
+  "@freeUpSpaceFailed": {
+    "x-mt": true
+  },
   "enterUsername": "Entrez le nom d'utilisateur",
+  "@enterUsername": {
+    "x-mt": true
+  },
   "enterPassword": "Entrez le mot de passe",
+  "@enterPassword": {
+    "x-mt": true
+  },
   "retypePassword": "retaper le mot de passe",
+  "@retypePassword": {
+    "x-mt": true
+  },
   "becomeMember": "devenir membre",
   "toAccessThisFeatureBecomeAMember": "vous êtes actuellement un utilisateur invité. pour accéder à cette fonctionnalité, devenez membre.",
   "creatingMember": "Création d'un compte membre...",
+  "@creatingMember": {
+    "x-mt": true
+  },
   "passwordsDoNotMatch": "Les mots de passe ne correspondent pas",
   "pleaseSelectGender": "Veuillez sélectionner le genre",
   "pleaseEnterPassword": "Veuillez entrer un mot de passe",
   "usernameAlreadyExists": "Le nom d'utilisateur existe déjà",
+  "@usernameAlreadyExists": {
+    "x-mt": true
+  },
   "usernameCannotBeEmpty": "Le nom d\\'utilisateur ne peut pas être vide",
   "invalidUsername": "Nom d\\'utilisateur invalide",
   "usernameMustStartWithLetterOrNumber": "Doit commencer par une lettre ou un chiffre",
   "usernameOnlyLettersNumbers": "Seules les lettres a à z, les chiffres et \"_\", \".\", \"-\" sont autorisés",
+  "@usernameOnlyLettersNumbers": {
+    "x-mt": true
+  },
   "usernameTaken": "Nom d\\'utilisateur déjà pris",
   "memberCreatedOffline": "Compte membre créé hors ligne",
+  "@memberCreatedOffline": {
+    "x-mt": true
+  },
   "memberCreatedOnline": "Compte membre créé avec succès",
+  "@memberCreatedOnline": {
+    "x-mt": true
+  },
   "congratulations": "Félicitations! Défi terminé",
   "dailyVoices": "de 5 Voix quotidiennes",
   "voicesProgress": "{count} sur 5 voix quotidiennes",
+  "@voicesProgress": {
+    "x-mt": true
+  },
   "progressLabel": "Progrès : {percent} %",
+  "@progressLabel": {
+    "x-mt": true
+  },
   "courseNotStarted": "Cours : Non commencé",
+  "@courseNotStarted": {
+    "x-mt": true
+  },
   "syncCompletedChallenge": "Synchronisation terminée",
+  "@syncCompletedChallenge": {
+    "x-mt": true
+  },
   "rememberSync": "N\\'oubliez pas de synchroniser l\\'application mobile.",
   "challengeDialogTitle": "Défi quotidien",
+  "@challengeDialogTitle": {
+    "x-mt": true
+  },
   "start": "Commencer",
+  "@start": {
+    "x-mt": true
+  },
   "continuation": "Continuer",
+  "@continuation": {
+    "x-mt": true
+  },
   "plan": "Plan",
   "mission": "Mission et Services",
   "editPlan": "Modifier le plan",
   "teamPlan": "Quel est le projet de votre équipe ?",
+  "@teamPlan": {
+    "x-mt": true
+  },
   "entMission": "Quelle est la Mission de votre entreprise ?",
+  "@entMission": {
+    "x-mt": true
+  },
   "entServices": "Quels sont les services fournis par votre entreprise ?",
   "entRules": "Quelles sont les règles de votre entreprise ?",
   "noMissionDefined": "L\\'entreprise n\\'a pas de mission et de services.",
   "noPlanDefined": "Cette équipe n'a pas de plan défini.",
+  "@noPlanDefined": {
+    "x-mt": true
+  },
   "noDescriptionDefined": "Cette équipe n'a pas de description définie.",
+  "@noDescriptionDefined": {
+    "x-mt": true
+  },
   "enterpriseName": "Nom de l'entreprise",
+  "@enterpriseName": {
+    "x-mt": true
+  },
   "teamName": "Nom de l'équipe",
+  "@teamName": {
+    "x-mt": true
+  },
   "teamType": "Type d'équipe",
+  "@teamType": {
+    "x-mt": true
+  },
   "local": "Locale",
+  "@local": {
+    "x-mt": true
+  },
   "isPublic": "Public",
   "nameRequired": "Le nom est requis",
   "nameIsRequired": "Veuillez entrer un nom",
   "createdOn": "Créé le",
+  "@createdOn": {
+    "x-mt": true
+  },
   "courseDetails": "Détails du cours",
+  "@courseDetails": {
+    "x-mt": true
+  },
   "addedToCourse": "Ajouté à vos cours",
+  "@addedToCourse": {
+    "x-mt": true
+  },
   "removedFromCourse": "Supprimé de vos cours",
+  "@removedFromCourse": {
+    "x-mt": true
+  },
   "pleaseCompleteSurvey": "veuillez compléter le sondage pour terminer le cours",
   "takeCourse": "Suivre un cours",
+  "@takeCourse": {
+    "x-mt": true
+  },
   "teamCalendar": "Calendrier de l'équipe",
+  "@teamCalendar": {
+    "x-mt": true
+  },
   "noMeetupsOnDate": "Aucune rencontre à cette date",
+  "@noMeetupsOnDate": {
+    "x-mt": true
+  },
   "myProgress": "Ma progression",
   "progress": "Progrès",
   "orderByTitle": "Trier par titre",
@@ -731,42 +2339,129 @@
   "progressFilterInProgress": "En cours",
   "progressFilterCompleted": "Terminé",
   "stepProgress": "{current} étapes sur {max}",
+  "@stepProgress": {
+    "x-mt": true
+  },
   "noEnrolledCourses": "Vous n'êtes inscrit à aucun cours",
+  "@noEnrolledCourses": {
+    "x-mt": true
+  },
   "mistakes": "Erreurs",
   "step": "Étape",
+  "@step": {
+    "x-mt": true
+  },
   "untitledResourceTitle": "Ressource sans titre",
+  "@untitledResourceTitle": {
+    "x-mt": true
+  },
   "author": "Auteur",
+  "@author": {
+    "x-mt": true
+  },
   "publisher": "Éditeur",
   "license": "Licence",
+  "@license": {
+    "x-mt": true
+  },
   "addedBy": "Ajouté par",
+  "@addedBy": {
+    "x-mt": true
+  },
   "resourceInformation": "Informations sur les ressources",
+  "@resourceInformation": {
+    "x-mt": true
+  },
   "resourceFor": "Pour",
+  "@resourceFor": {
+    "x-mt": true
+  },
   "mediaType": "Type de média",
+  "@mediaType": {
+    "x-mt": true
+  },
   "resourceType": "Type de ressource",
+  "@resourceType": {
+    "x-mt": true
+  },
   "subject": "Sujet",
+  "@subject": {
+    "x-mt": true
+  },
   "year": "Année",
   "timesRated": "Temps évalués",
+  "@timesRated": {
+    "x-mt": true
+  },
   "addToMyLibrary": "Ajouter à ma bibliothèque",
+  "@addToMyLibrary": {
+    "x-mt": true
+  },
   "removeFromMyLibrary": "Supprimer de ma bibliothèque",
+  "@removeFromMyLibrary": {
+    "x-mt": true
+  },
   "addedToMyLibrary": "Ajouté à ma bibliothèque",
+  "@addedToMyLibrary": {
+    "x-mt": true
+  },
   "removedFromMyLibrary": "Supprimé de ma bibliothèque",
+  "@removedFromMyLibrary": {
+    "x-mt": true
+  },
   "myLibrary": "Ma bibliothèque",
+  "@myLibrary": {
+    "x-mt": true
+  },
   "allResources": "Toutes les ressources",
+  "@allResources": {
+    "x-mt": true
+  },
   "viewResource": "Afficher la ressource",
+  "@viewResource": {
+    "x-mt": true
+  },
   "view": "afficher",
   "linkNotAvailable": "Lien non disponible",
   "noRatings": "Aucune note pour l'instant",
+  "@noRatings": {
+    "x-mt": true
+  },
   "basedOnRatings": "based on {count, plural, =1{1 rating} other{{count} ratings}}",
+  "@basedOnRatings": {
+    "x-mt": true
+  },
   "rating": "Notation",
+  "@rating": {
+    "x-mt": true
+  },
   "operationFailed": "L'opération a échoué",
+  "@operationFailed": {
+    "x-mt": true
+  },
   "filterResources": "Filtrer les ressources",
+  "@filterResources": {
+    "x-mt": true
+  },
   "teamSurveys": "Enquêtes d\\'équipe",
   "adoptableSurveys": "Enquêtes disponibles à adopter",
+  "@adoptableSurveys": {
+    "x-mt": true
+  },
   "noAdoptableSurveys": "Aucune enquête disponible pour adopter",
+  "@noAdoptableSurveys": {
+    "x-mt": true
+  },
   "adoptSurvey": "Adopter le sondage",
   "surveyAdopted": "Enquête adoptée",
+  "@surveyAdopted": {
+    "x-mt": true
+  },
   "completedCourse": "cours terminé",
   "userNameWithLogins": "{name} ({logins})",
+  "@userNameWithLogins": {
+    "x-mt": true
+  },
   "remindMeLater": "Me rappeler plus tard",
   "remindLater": "Rappeler plus tard",
   "setReminder": "Définir un rappel",
@@ -774,7 +2469,13 @@
   "hours": "heures",
   "days": "Jours",
   "reminderSurveysToComplete": "Reminder: You have {count, plural, =1{1 survey} other{{count} surveys}} to complete",
+  "@reminderSurveysToComplete": {
+    "x-mt": true
+  },
   "myActivities": "Mes activités",
+  "@myActivities": {
+    "x-mt": true
+  },
   "chartLabel": "Nbre de connexions",
   "selectLanguage": "Sélectionner la langue",
   "english": "english",
@@ -784,27 +2485,78 @@
   "arabic": "عربى",
   "french": "français",
   "activitySummary": "Activité",
+  "@activitySummary": {
+    "x-mt": true
+  },
   "lastLogin": "Dernière connexion",
+  "@lastLogin": {
+    "x-mt": true
+  },
   "memberDetail": "Détail du membre",
+  "@memberDetail": {
+    "x-mt": true
+  },
   "numberOfVisits": "Nombre de visites",
+  "@numberOfVisits": {
+    "x-mt": true
+  },
   "noLogoutRecord": "Aucun enregistrement de déconnexion trouvé",
+  "@noLogoutRecord": {
+    "x-mt": true
+  },
   "totalVisits": "Visites totales",
+  "@totalVisits": {
+    "x-mt": true
+  },
   "mostOpenedResource": "Ressource la plus ouverte",
+  "@mostOpenedResource": {
+    "x-mt": true
+  },
   "numberOfResourcesOpened": "Nombre de ressources ouvertes",
+  "@numberOfResourcesOpened": {
+    "x-mt": true
+  },
   "resourceOpenedTimes": "{title} ouvert {count} fois",
+  "@resourceOpenedTimes": {
+    "x-mt": true
+  },
   "resourcesOpenedTimes": "{count, plural, =1{Resource opened 1 time} other{Resource opened {count} times}}",
+  "@resourcesOpenedTimes": {
+    "x-mt": true
+  },
   "serverReachable": "Server reachable",
+  "@serverReachable": {
+    "x-mt": true
+  },
   "serverUnreachable": "Serveur inaccessible",
+  "@serverUnreachable": {
+    "x-mt": true
+  },
   "serverChecking": "Vérification du serveur",
+  "@serverChecking": {
+    "x-mt": true
+  },
   "gridView": "Vue en grille",
   "listView": "Vue en liste",
   "disclaimer": "Avis de non-responsabilité",
   "aboutContent": "### MaPlanète\n\nmyPlanet est un outil d'apprentissage conçu pour fonctionner avec l'application Web Planet. Il a été utilisé pour améliorer l’éducation préscolaire, les écoles secondaires, la santé des villages, le développement de la main-d’œuvre des jeunes et le développement économique et communautaire.\n\nPlanet Houses est un référentiel de ressources gratuites, en libre accès et du domaine public, au profit de tous les apprenants.\n\nmyPlanet est conçu pour être accessible à tous, partout et à tout moment. Il est portable, abordable, évolutif et durable. Il fonctionne sur n'importe quel appareil Android tel que les tablettes et les téléphones mobiles. Il fonctionne aussi bien sur Internet que sur Internet.\n\nCette application permet aux écoles et aux communautés de disposer d'une bibliothèque multimédia complète et d'un système d'apprentissage qui se connecte périodiquement à Planet. Les appareils configurés peuvent contenir le tableau de bord personnel des apprenants. Cela garantit que les apprenants peuvent lire des livres sur leur étagère et suivre des cours hors ligne, c'est-à-dire sans connexion à un serveur central. Les apprenants sont encouragés à noter entre une et cinq étoiles les ressources qu'ils utilisent et les cours qu'ils suivent. Périodiquement, les apprenants peuvent se synchroniser avec un serveur. Les données d'activité sont téléchargées et les nouvelles ressources sont téléchargées en quelques minutes sur myPlanet pour une utilisation hors ligne.\n\nLe tableau de bord contient également un enregistrement des réalisations, un calendrier des événements et un système de discussion interne pour communiquer avec les autres membres.\n\nmyPlanet s'est révélé très efficace pour améliorer les opportunités d'apprentissage pour plus de cinquante mille apprenants dans plus de 100 sites, dans des écoles du Népal, du Ghana, du Kenya et du Rwanda, auprès de réfugiés syriens en Jordanie, de réfugiés somaliens au Kenya et d'agents de santé villageois en Ouganda.",
+  "@aboutContent": {
+    "x-mt": true
+  },
   "disclaimerContent": "# Disclaimer\n\nLast updated: January 10, 2020\n\n# Interpretation and Definitions\n\n## Interpretation\n\nThe words of which the initial letter is capitalized have meanings defined under the following conditions.\n\nThe following definitions shall have the same meaning regardless of whether they appear in singular or in plural.\n\n## Definitions\n\nFor the purposes of this Disclaimer:\n\n- **Company** (referred to as either \"the Company\", \"We\", \"Us\" or \"Our\" in this Cookies Policy) refers to myPlanet.\n- **You** means the individual accessing the Service, or the company, or other legal entity on behalf of which such individual is accessing or using the Service, as applicable.\n- **Application** means the software program provided by the Company downloaded by You on any electronic device named myPlanet.\n- **Service** refers to the Application.\n\n# Disclaimer\n\nThe information contained on the Service is for general information purposes only.\n\nThe Company assumes no responsibility for errors or omissions in the contents of the Service.\n\nIn no event shall the Company be liable for any special, direct, indirect, consequential, or incidental damages or any damages whatsoever, whether in an action of contract, negligence or other tort, arising out of or in connection with the use of the Service or the contents of the Service. The Company reserves the right to make additions, deletions, or modifications to the contents on the Service at any time without prior notice.\n\nThe Company does not warrant that the Service is free of viruses or other harmful components.\n\n# Medical Information Disclaimer\n\nThe information about health provided by the Service is not intended to diagnose, treat, cure or prevent disease. Products, services, information, and other content provided by the Service, including information linking to third-party websites are provided for informational purposes only.\n\nInformation offered by the Service is not comprehensive and does not cover all diseases, ailments, physical conditions or their treatment.\n\nIndividuals are different and may react differently to different products. Comments made on the Service by employees or other users are strictly their own personal views made in their own personal capacity and are not claims made by the Company nor do they represent the position or view of the Company.\n\nThe Company is not liable for any information provided by the Service with regard to recommendations regarding supplements for any health purposes.\n\nThe Company makes no guarantee or warranty with respect to any products or services sold. The Company is not responsible for any damages for information or services provided even if the Company has been advised of the possibility of damages.\n\n# External Links Disclaimer\n\nThe Service may contain links to external websites that are not provided or maintained by or in any way affiliated with the Company.\n\nPlease note that the Company does not guarantee the accuracy, relevance, timeliness, or completeness of any information on these external websites.\n\n# Errors and Omissions Disclaimer\n\nThe information given by the Service is for general guidance on matters of interest only. Even if the Company takes every precaution to ensure that the content of the Service is both current and accurate, errors can occur. Plus, given the changing nature of laws, rules, and regulations, there may be delays, omissions, or inaccuracies in the information contained on the Service.\n\nThe Company is not responsible for any errors or omissions, or for the results obtained from the use of this information.\n\n# Fair Use Disclaimer\n\nThe Company may use copyrighted material which has not always been specifically authorized by the copyright owner. The Company is making such material available for criticism, comment, news reporting, teaching, scholarship, or research.\n\nThe Company believes this constitutes a \"fair use\" of any such copyrighted material as provided for in section 107 of the United States Copyright law.\n\nIf You wish to use copyrighted material from the Service for your own purposes that go beyond fair use, You must obtain permission from the copyright owner.\n\n# Views Expressed Disclaimer\n\nThe Service may contain views and opinions which are those of the authors and do not necessarily reflect the official policy or position of any other author, agency, organization, employer, or company, including the Company.\n\nComments published by users are their sole responsibility and the users will take full responsibility, liability, and blame for any libel or litigation that results from something written in or as a direct result of something written in a comment. The Company is not liable for any comment published by users and reserves the right to delete any comment for any reason whatsoever.\n\n# No Responsibility Disclaimer\n\nThe information on the Service is provided with the understanding that the Company is not herein engaged in rendering legal, accounting, tax, or other professional advice and services. As such, it should not be used as a substitute for consultation with professional accounting, tax, legal, or other competent advisers.\n\nIn no event shall the Company or its suppliers be liable for any special, incidental, indirect, or consequential damages whatsoever arising out of or in connection with your access or use or inability to access or use the Service.\n\n# \"Use at Your Own Risk\" Disclaimer\n\nAll information in the Service is provided \"as is\", with no guarantee of completeness, accuracy, timeliness, or of the results obtained from the use of this information, and without warranty of any kind, express or implied, including, but not limited to warranties of performance, merchantability, and fitness for a particular purpose.\n\nThe Company will not be liable to You or anyone else for any decision made or action taken in reliance on the information given by the Service or for any consequential, special, or similar damages, even if advised of the possibility of such damages.\n\n## Contact Us\n\nIf you have any questions about this Disclaimer, You can contact Us:\n\n- By email: myplanet@ole.org\n- By visiting this page on our website: [https://ole.org/contact](https://ole.org/contact)",
+  "@disclaimerContent": {
+    "x-mt": true
+  },
   "shareWithCommunity": "Partager avec la communauté",
   "confirmShareCommunity": "Êtes-vous sûr de vouloir partager ce contenu avec la communauté ?",
   "voiceShared": "Post partagé avec la communauté",
+  "@voiceShared": {
+    "x-mt": true
+  },
   "voiceUnshared": "Supprimé de la communauté",
+  "@voiceUnshared": {
+    "x-mt": true
+  },
   "exportCsv": "Exporter CSV",
   "csvFileSavedSuccessfully": "fichier CSV enregistré avec succès.",
   "failedToSaveCsvFile": "échec de l'enregistrement du fichier CSV.",
@@ -843,6 +2595,9 @@
   "currentCv": "CV actuel : {name}",
   "update": "Mettre à jour",
   "fillRequiredFields": "Veuillez remplir les champs obligatoires : {fields}",
+  "@fillRequiredFields": {
+    "x-mt": true
+  },
   "@currentCv": {
     "placeholders": {
       "name": {
@@ -851,14 +2606,41 @@
     }
   },
   "textSize": "Taille du texte",
+  "@textSize": {
+    "x-mt": true
+  },
   "selectTextSize": "Sélectionnez la taille du texte",
+  "@selectTextSize": {
+    "x-mt": true
+  },
   "textSizeSmall": "Petit",
+  "@textSizeSmall": {
+    "x-mt": true
+  },
   "textSizeMedium": "Moyen",
+  "@textSizeMedium": {
+    "x-mt": true
+  },
   "textSizeLarge": "Grand",
+  "@textSizeLarge": {
+    "x-mt": true
+  },
   "resetApp": "Réinitialiser l'application",
+  "@resetApp": {
+    "x-mt": true
+  },
   "clearAllDataConfirm": "Êtes-vous sûr de vouloir effacer toutes les données ?",
+  "@clearAllDataConfirm": {
+    "x-mt": true
+  },
   "dataCleared": "Toutes les données effacées",
+  "@dataCleared": {
+    "x-mt": true
+  },
   "dataManagement": "Gestion des données",
+  "@dataManagement": {
+    "x-mt": true
+  },
   "resourceTitleAlreadyExists": "Une ressource avec ce titre existe déjà",
   "failedToUpdateResource": "Échec de la mise à jour de la ressource"
 }
