@@ -89,11 +89,10 @@ class _FakePhotoCapture implements PhotoCapture {
 class _ThrowingSubmissionsRepository extends Fake
     implements SubmissionsRepository {
   @override
-  Future<String> createExamDraft({
+  Future<String> startExamSession({
     required ExamRow exam,
     required List<ExamQuestionRow> questions,
     required String userId,
-    required Map<String, ExamDraftAnswer> answers,
     String? courseId,
     DateTime? now,
   }) async => throw Exception('disk full');
@@ -209,6 +208,18 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 100));
     }
+  }
+
+  /// Waits out a snackbar.
+  ///
+  /// The `incorrect_ans` / "please answer" snackbars float over the bottom of
+  /// the screen, which is exactly where the Next and Submit buttons live, so a
+  /// tap that follows one lands on the snackbar instead of the button. Kotlin
+  /// has the same overlap (`Snackbar.make(binding.root, ...)`); the tests just
+  /// have to let it go away first.
+  Future<void> clearSnackBar(WidgetTester tester) async {
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump();
   }
 
   Future<void> pumpExam(
@@ -344,8 +355,12 @@ void main() {
       await pumpExam(tester);
 
       expect(find.text('Previous'), findsNothing, reason: 'first question');
-      await tester.tap(find.text('Next'));
+      // Answering first, and answering correctly, is now the precondition for
+      // moving on at all — see the retry gate group.
+      await tester.tap(find.text('Paris'));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('Next'));
+      await settleExam(tester);
 
       expect(find.text('Question 2 / 2'), findsOneWidget);
       expect(find.text('Spell it'), findsOneWidget);
@@ -354,7 +369,7 @@ void main() {
       expect(find.text('Submit exam'), findsOneWidget);
 
       await tester.tap(find.text('Previous'));
-      await tester.pumpAndSettle();
+      await settleExam(tester);
       expect(find.text('Question 1 / 2'), findsOneWidget);
     });
 
@@ -371,7 +386,7 @@ void main() {
       await tester.tap(find.text('Paris'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Next'));
-      await tester.pumpAndSettle();
+      await settleExam(tester);
 
       // The second question's field is its own, not seeded from question one.
       expect(find.widgetWithText(TextField, 'Paris'), findsNothing);
@@ -379,79 +394,170 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Previous'));
-      await tester.pumpAndSettle();
+      await settleExam(tester);
       final radio = tester.widget<RadioGroup<String>>(
         find.byType(RadioGroup<String>),
       );
       expect(radio.groupValue, 'c2', reason: 'the choice is still selected');
 
       await tester.tap(find.text('Next'));
-      await tester.pumpAndSettle();
+      await settleExam(tester);
       expect(find.widgetWithText(TextField, 'Paris'), findsOneWidget);
     });
   });
 
-  group('submitting', () {
-    testWidgets('a fully correct attempt is persisted and scored 100%', (
-      tester,
-    ) async {
-      await seedTwoQuestionExam();
-      await pumpExam(tester);
-
-      await tester.tap(find.text('Paris'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Next'));
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), 'Paris');
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Submit exam'));
-      await settleExam(tester);
-
-      expect(find.text('Exam Complete'), findsOneWidget);
-      expect(find.text('100%'), findsOneWidget);
-      expect(find.text('Correct: 2 / 2'), findsOneWidget);
-      expect(find.text('Saved offline — pending upload'), findsOneWidget);
-
-      // The attempt reached the database, which is the whole point: a graded
-      // exam that lives only in a dialog is lost when the dialog closes.
-      final saved = await db.select(db.submissions).get();
-      expect(saved, hasLength(1));
-      expect(saved.single.grade, 100);
-      expect(saved.single.status, 'complete');
-      expect(saved.single.userId, 'user-1');
-      expect(saved.single.uploaded, isFalse);
-
-      final answers = await db.select(db.submissionAnswers).get();
-      expect(answers, hasLength(2));
-      expect(answers.every((answer) => answer.isPassed), isTrue);
-    });
-
-    testWidgets('a wrong choice scores zero and is still recorded', (
-      tester,
-    ) async {
+  /// Kotlin's exam is a retry model: `updateAnsDb` returns the verdict and
+  /// both `btnNext` and `btnSubmit` bail with the `incorrect_ans` snackbar
+  /// when it is false, so the learner cannot leave a question until the answer
+  /// is right. Every test in this group failed before the gate was ported —
+  /// the screen advanced on any answer, graded once at the end, and never
+  /// wrote `mistakes` at all.
+  group('the retry gate', () {
+    testWidgets('a wrong answer does not advance and says so', (tester) async {
       await seedTwoQuestionExam();
       await pumpExam(tester);
 
       await tester.tap(find.text('Lyon'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Next'));
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), 'Lyon');
-      await tester.pumpAndSettle();
+      await settleExam(tester);
 
+      expect(find.text('Incorrect answer'), findsOneWidget);
+      expect(
+        find.text('Question 1 / 2'),
+        findsOneWidget,
+        reason: 'a wrong answer keeps the learner on its question',
+      );
+    });
+
+    testWidgets('a right answer advances', (tester) async {
+      await seedTwoQuestionExam();
+      await pumpExam(tester);
+
+      await tester.tap(find.text('Paris'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Next'));
+      await settleExam(tester);
+
+      expect(find.text('Incorrect answer'), findsNothing);
+      expect(find.text('Question 2 / 2'), findsOneWidget);
+    });
+
+    /// The accumulator. `mistakes` is `(existing?.mistakes ?: 0) + 1` per
+    /// wrong attempt, which only works because the row is already on disk —
+    /// the whole reason the attempt is persisted before the first question
+    /// rather than graded in widget state at the end.
+    testWidgets('each wrong attempt adds a mistake, and the right one does '
+        'not clear them', (tester) async {
+      await seedTwoQuestionExam();
+      await pumpExam(tester);
+
+      // Two wrong tries.
+      for (var attempt = 0; attempt < 2; attempt++) {
+        await tester.tap(find.text('Lyon'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Next'));
+        await settleExam(tester);
+        await clearSnackBar(tester);
+      }
+      expect(find.text('Question 1 / 2'), findsOneWidget);
+
+      await tester.tap(find.text('Paris'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Next'));
+      await settleExam(tester);
+
+      expect(find.text('Question 2 / 2'), findsOneWidget);
+      final answers = await db.select(db.submissionAnswers).get();
+      final q1 = answers.firstWhere((answer) => answer.questionId == 'q1');
+      expect(q1.mistakes, 2);
+      expect(q1.isPassed, isTrue, reason: 'the answer that got through');
+      expect(q1.value, 'Paris');
+      // `grade = 1` for every exam answer, right or wrong — a "worth one
+      // mark" marker, not a score.
+      expect(q1.grade, 1);
+    });
+
+    /// `checkTextAnswer` is `correctChoices.any { ans.contains(it) }`, not
+    /// equality — `ExamAnswerUtilsTest.testCheckCorrectAnswer_InputText`
+    /// asserts "the expected word is here" passes a key of "expected word".
+    /// The port had exact equality, which under the gate refuses a right
+    /// answer that carries a stray word and leaves the learner stuck.
+    testWidgets('a text answer passes by containment, as Kotlin marks it', (
+      tester,
+    ) async {
+      await seedExam();
+      await seedQuestion(
+        id: 'q1',
+        position: 0,
+        type: 'input',
+        header: 'Spell it',
+        correctChoices: const ['paris'],
+      );
+      await pumpExam(tester);
+
+      await tester.enterText(find.byType(TextField), 'It is Paris, I think');
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Submit exam'));
       await settleExam(tester);
 
-      expect(find.text('0%'), findsOneWidget);
-      expect(find.text('Correct: 0 / 2'), findsOneWidget);
-      final saved = await db.select(db.submissions).get();
-      expect(saved.single.grade, 0);
+      expect(find.text('Incorrect answer'), findsNothing);
+      expect(find.text('Exam Complete'), findsOneWidget);
     });
 
-    /// `selectMultiple` is all-or-nothing in `ExamGrading.isSelectionCorrect`,
-    /// matching the Kotlin's marking: a subset of the answer key does not pass.
-    testWidgets('a partial multi-select answer does not pass', (tester) async {
+    /// `isQuestionAnswered` gates the press before any answer is written:
+    /// Kotlin toasts `please_select_write_your_answer_to_continue` and
+    /// returns. Without this an empty press would score a mistake against a
+    /// question the learner had not answered yet.
+    testWidgets('pressing on with no answer asks for one instead of scoring '
+        'a mistake', (tester) async {
+      await seedTwoQuestionExam();
+      await pumpExam(tester);
+
+      await tester.tap(find.text('Next'));
+      await settleExam(tester);
+
+      expect(
+        find.text('Please select / write your answer to continue'),
+        findsOneWidget,
+      );
+      expect(find.text('Question 1 / 2'), findsOneWidget);
+      expect(
+        await db.select(db.submissionAnswers).get(),
+        isEmpty,
+        reason: 'nothing was answered, so nothing is a mistake',
+      );
+    });
+
+    /// `btnBack` calls `updateAnsDb()` and then moves regardless of the
+    /// verdict (`ExamTakingFragment.kt:187-194`) — going back is the one route
+    /// out of a question left wrong, and it still records the mistake.
+    testWidgets('going back records the answer as it stands', (tester) async {
+      await seedTwoQuestionExam();
+      await pumpExam(tester);
+
+      await tester.tap(find.text('Paris'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Next'));
+      await settleExam(tester);
+      await tester.enterText(find.byType(TextField), 'Lyon');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Previous'));
+      await settleExam(tester);
+
+      expect(find.text('Question 1 / 2'), findsOneWidget);
+      final answers = await db.select(db.submissionAnswers).get();
+      final q2 = answers.firstWhere((answer) => answer.questionId == 'q2');
+      expect(q2.mistakes, 1);
+      expect(q2.isPassed, isFalse);
+    });
+
+    /// `checkMultipleSelectAnswer` compares the whole sorted set, so a subset
+    /// is wrong — and under the gate that means it does not advance.
+    testWidgets('a partial multi-select answer does not get through', (
+      tester,
+    ) async {
       await seedExam();
       await seedQuestion(
         id: 'q1',
@@ -472,13 +578,148 @@ void main() {
       await tester.tap(find.text('Submit exam'));
       await settleExam(tester);
 
-      expect(find.text('0%'), findsOneWidget);
-
-      // Adding the second correct choice would have passed it.
+      expect(find.text('Incorrect answer'), findsOneWidget);
+      expect(find.text('Exam Complete'), findsNothing);
       final answers = await db.select(db.submissionAnswers).get();
-      // Stored as the choice object `saveExamAnswer` writes, not the bare id.
+      // Recorded, with its mistake — the attempt is not thrown away, it just
+      // does not finish the exam.
       expect(answers.single.valueChoices, ['{"id":"c1","text":"Red"}']);
       expect(answers.single.isPassed, isFalse);
+      expect(answers.single.mistakes, 1);
+
+      await clearSnackBar(tester);
+      await tester.tap(find.text('Blue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Submit exam'));
+      await settleExam(tester);
+
+      expect(find.text('Exam Complete'), findsOneWidget);
+      final passed = await db.select(db.submissionAnswers).get();
+      expect(passed.single.isPassed, isTrue);
+      expect(passed.single.mistakes, 1, reason: 'the earlier try still counts');
+    });
+
+    /// A question whose document carries no answer key is the one place the
+    /// port deliberately parts from Kotlin. Kotlin's three check helpers all
+    /// open with `if (correctChoices == null) return false`, and
+    /// `insertCorrectChoice` is only called for `select*` types with choices —
+    /// so a Kotlin exam containing one free-text question cannot be finished
+    /// at all. The gate presupposes a right answer exists; when the document
+    /// names none, any answer will do.
+    testWidgets('a question with no answer key accepts any answer', (
+      tester,
+    ) async {
+      await seedExam();
+      await seedQuestion(
+        id: 'q1',
+        position: 0,
+        type: 'textarea',
+        header: 'Tell us what you thought',
+      );
+      await pumpExam(tester);
+
+      await tester.enterText(find.byType(TextField), 'It was fine');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Submit exam'));
+      await settleExam(tester);
+
+      expect(find.text('Incorrect answer'), findsNothing);
+      expect(find.text('Exam Complete'), findsOneWidget);
+      final answers = await db.select(db.submissionAnswers).get();
+      expect(answers.single.mistakes, 0);
+      expect(answers.single.isPassed, isTrue);
+    });
+  });
+
+  group('submitting', () {
+    testWidgets('a finished exam is sent for grading rather than scored', (
+      tester,
+    ) async {
+      await seedTwoQuestionExam(courseId: 'course-1');
+      await pumpExam(tester, courseId: 'course-1');
+
+      await tester.tap(find.text('Paris'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Next'));
+      await settleExam(tester);
+      await tester.enterText(find.byType(TextField), 'Paris');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Submit exam'));
+      await settleExam(tester);
+
+      expect(find.text('Exam Complete'), findsOneWidget);
+      expect(
+        find.text('Thank you for taking this exam! We wish you all the best.'),
+        findsOneWidget,
+      );
+      expect(find.text('Saved offline — pending upload'), findsOneWidget);
+      // `continueExam` shows no score, and under the gate a percentage could
+      // only ever read 100%.
+      expect(find.text('100%'), findsNothing);
+      expect(find.textContaining('Correct:'), findsNothing);
+
+      final saved = await db.select(db.submissions).get();
+      expect(saved, hasLength(1));
+      expect(saved.single.status, 'requires grading');
+      // `createExamSubmission` sets no submission-level grade for an exam and
+      // neither does `saveExamAnswer`: Planet marks it and the sync-in reads
+      // the mark back into this column.
+      expect(saved.single.grade, 0);
+      expect(saved.single.userId, 'user-1');
+      expect(saved.single.uploaded, isFalse);
+      // `"$examId@$courseId"`, the shape `createExamSubmission` writes and
+      // `ProgressRepository._examIdFromParent` splits to find the exam — the
+      // port stored the bare course id, so the per-step mistake counts could
+      // never match their exam.
+      expect(saved.single.parentId, 'exam-1@course-1');
+      expect(await db.submissionDao.pendingUploads('user-1'), hasLength(1));
+
+      final answers = await db.select(db.submissionAnswers).get();
+      expect(answers, hasLength(2));
+      expect(answers.every((answer) => answer.isPassed), isTrue);
+      expect(answers.every((answer) => answer.grade == 1), isTrue);
+      expect(answers.every((answer) => answer.examId == 'exam-1'), isTrue);
+    });
+
+    /// The invariant Phase 106 could only state as an assertion, now a
+    /// consequence: every answer in a finished attempt is `isPassed`, because
+    /// no wrong one can be left behind — and `mistakes` is what records that
+    /// it took three tries.
+    testWidgets('a finished attempt passes every answer and keeps the '
+        'mistake count', (tester) async {
+      await seedTwoQuestionExam();
+      await pumpExam(tester);
+
+      await tester.tap(find.text('Lyon'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Next'));
+      await settleExam(tester);
+      await clearSnackBar(tester);
+      await tester.tap(find.text('Paris'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Next'));
+      await settleExam(tester);
+
+      await tester.enterText(find.byType(TextField), 'Lyon');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Submit exam'));
+      await settleExam(tester);
+      expect(find.text('Exam Complete'), findsNothing);
+      await clearSnackBar(tester);
+
+      await tester.enterText(find.byType(TextField), 'Paris');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Submit exam'));
+      await settleExam(tester);
+
+      expect(find.text('Exam Complete'), findsOneWidget);
+      final answers = await db.select(db.submissionAnswers).get();
+      expect(answers.every((answer) => answer.isPassed), isTrue);
+      expect(
+        {for (final answer in answers) answer.questionId: answer.mistakes},
+        {'q1': 1, 'q2': 1},
+      );
     });
 
     testWidgets('Finish closes the result dialog and leaves the exam', (
@@ -493,6 +734,8 @@ void main() {
       );
       await pumpExam(tester);
 
+      await tester.enterText(find.byType(TextField), 'anything at all');
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Submit exam'));
       await settleExam(tester);
       expect(find.text('Exam Complete'), findsOneWidget);
@@ -504,10 +747,10 @@ void main() {
       expect(find.text('Exam Complete'), findsNothing);
     });
 
-    /// The submit path awaits `sessionProvider.future` — which, unlike the
+    /// The exam session awaits `sessionProvider.future` — which, unlike the
     /// `ref.read(...).valueOrNull` it replaced, can also *reject*. Left
     /// uncaught that reproduces the silence the await was introduced to
-    /// remove: the graded attempt gone with nothing on screen.
+    /// remove: the attempt gone with nothing on screen.
     testWidgets('a rejecting session reports the failure instead of silence', (
       tester,
     ) async {
@@ -523,6 +766,8 @@ void main() {
         overrides: [sessionProvider.overrideWith(_FailingSessionNotifier.new)],
       );
 
+      await tester.enterText(find.byType(TextField), 'anything at all');
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Submit exam'));
       await settleExam(tester);
 
@@ -533,6 +778,9 @@ void main() {
       expect(find.text('Exam Complete'), findsNothing);
     });
 
+    /// A failed *save* must not be reported as a wrong answer: the learner
+    /// would be told their answer was incorrect when the truth is that
+    /// nothing was written.
     testWidgets('a failed save reports it and keeps the user on the exam', (
       tester,
     ) async {
@@ -552,6 +800,8 @@ void main() {
         ],
       );
 
+      await tester.enterText(find.byType(TextField), 'anything at all');
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Submit exam'));
       await settleExam(tester);
 
@@ -559,6 +809,7 @@ void main() {
         find.text('Could not save your exam. Please try again.'),
         findsOneWidget,
       );
+      expect(find.text('Incorrect answer'), findsNothing);
       expect(find.text('Exam Complete'), findsNothing);
       // The submit button is live again rather than stuck on its spinner.
       expect(find.text('Question 1 / 1'), findsOneWidget);
@@ -624,6 +875,8 @@ void main() {
       );
       await pumpExam(tester, courseId: 'course-1');
 
+      await tester.enterText(find.byType(TextField), 'anything at all');
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Submit exam'));
       await settleExam(tester);
 
@@ -663,6 +916,8 @@ void main() {
       );
       await pumpExam(tester, courseId: 'course-1');
 
+      await tester.enterText(find.byType(TextField), 'anything at all');
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Submit exam'));
       // The only test that waits on a real file write, so it needs the most
       // wall-clock time: eight rounds is enough for drift, not for
@@ -716,6 +971,8 @@ void main() {
       );
       await pumpExam(tester, courseId: 'course-1');
 
+      await tester.enterText(find.byType(TextField), 'anything at all');
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Submit exam'));
       await settleExam(tester);
 

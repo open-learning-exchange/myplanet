@@ -8,10 +8,21 @@ import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/session_provider.dart';
-import '../../repository/exam_grading.dart';
 import '../../repository/submissions_repository.dart';
 
-/// Port of `ExamTakingFragment.kt` for course exams with grading.
+/// Port of `ExamTakingFragment.kt` / `BaseExamFragment.kt` for course exams.
+///
+/// Kotlin's exam model is a **retry** model, not a score model. The attempt is
+/// persisted before the first question is shown (`startExamSession`), each
+/// answer is written as the learner passes it (`updateAnsDb` ->
+/// `saveExamAnswer`), and the verdict that call returns is a gate: `btnNext`
+/// and `btnSubmit` both bail with the `incorrect_ans` snackbar when it is
+/// false (`ExamTakingFragment.kt:196-204`, `:641-645`), so the learner stays
+/// on the question and retries until it is right. That is why `mistakes`
+/// accumulates and why every answer in a finished attempt is `isPassed` — a
+/// consequence of the gate, not an assertion. There is no score at the end:
+/// `continueExam` shows a thank-you dialog (`BaseExamFragment.kt:127-148`) and
+/// the submission goes up as `requires grading` for Planet to mark.
 ///
 /// Supports multiple question types:
 /// - `select`: Single choice (radio buttons)
@@ -48,7 +59,12 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
   final Map<String, TextEditingController> _controllers = {};
 
   bool _isSubmitting = false;
+  bool _isSaving = false;
   List<ExamQuestionRow> _questions = const [];
+
+  /// The attempt this exam is being answered into, created once per mount.
+  String? _submissionId;
+  Future<String>? _session;
 
   @override
   void dispose() {
@@ -240,6 +256,7 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
   Widget _buildNavigationButtons(BuildContext context, int totalQuestions) {
     final l10n = AppLocalizations.of(context);
     final isLast = _currentIndex >= totalQuestions - 1;
+    final busy = _isSaving || _isSubmitting;
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -248,7 +265,7 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
         children: [
           if (_currentIndex > 0)
             OutlinedButton.icon(
-              onPressed: () => setState(() => _currentIndex--),
+              onPressed: busy ? null : _goBack,
               icon: const Icon(Icons.arrow_back),
               label: Text(l10n.previous),
             )
@@ -256,7 +273,7 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
             const SizedBox.shrink(),
           if (isLast)
             FilledButton.icon(
-              onPressed: _isSubmitting ? null : () => _submitExam(context),
+              onPressed: busy ? null : () => _submitExam(context),
               icon: _isSubmitting
                   ? const SizedBox.square(
                       dimension: 18,
@@ -267,7 +284,7 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
             )
           else
             FilledButton.icon(
-              onPressed: () => setState(() => _currentIndex++),
+              onPressed: busy ? null : () => _advance(context),
               icon: const Icon(Icons.arrow_forward),
               label: Text(l10n.next),
             ),
@@ -276,23 +293,100 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
     );
   }
 
-  void _recordChoices(ExamQuestionRow question, List<String> choiceIds) {
-    _answers[question.id] = ExamDraftAnswer(
-      choiceIds: List.unmodifiable(choiceIds),
-      isCorrect: ExamGrading.isSelectionCorrect(question, choiceIds),
-    );
+  /// Whether the current question has an answer to submit at all.
+  ///
+  /// Port of `isQuestionAnswered` (`ExamTakingFragment.kt:290-322`), minus its
+  /// `hasOtherOption` clause, which the port has no "Other" choice to reach.
+  /// Kotlin returns `false` for an unrecognised type because `startExam`
+  /// renders no input for one; the port renders a text field, so the rule
+  /// follows what the widget can actually hold rather than the type name.
+  bool _isAnswered(ExamQuestionRow question) {
+    final answer = _answers[question.id];
+    return answer != null && !answer.isEmpty;
   }
 
-  void _recordText(ExamQuestionRow question, String value) {
-    _answers[question.id] = ExamDraftAnswer(
-      value: value,
-      isCorrect: ExamGrading.isTextCorrect(question, value),
-    );
+  /// `btnBack`. Kotlin saves the current answer before moving
+  /// (`ExamTakingFragment.kt:187-194`) and then moves regardless of the
+  /// verdict — going back is the one way to leave a question wrong, and it
+  /// still records the mistake.
+  Future<void> _goBack() async {
+    if (_currentIndex == 0) return;
+    final question = _questions[_currentIndex];
+    if (_isAnswered(question)) {
+      await _saveCurrentAnswer(question, isFinal: false, isExplicit: false);
+    }
+    if (mounted) setState(() => _currentIndex--);
   }
 
-  Future<void> _submitExam(BuildContext context) async {
+  /// `btnNext`: save, and advance only if the answer was right.
+  Future<void> _advance(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
+    final question = _questions[_currentIndex];
+    if (!_isAnswered(question)) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.pleaseAnswerToContinue)),
+      );
+      return;
+    }
+    final correct = await _saveCurrentAnswer(
+      question,
+      isFinal: false,
+      isExplicit: false,
+    );
+    if (!mounted) return;
+    if (correct != true) {
+      if (correct == false) {
+        messenger.showSnackBar(SnackBar(content: Text(l10n.incorrectAnswer)));
+      }
+      return;
+    }
+    setState(() => _currentIndex++);
+  }
+
+  /// Writes the current answer through `saveExamAnswer` and returns its
+  /// verdict, or `null` when the save itself failed — the caller must not read
+  /// a failed save as a wrong answer, or the learner would be told their
+  /// answer was incorrect when the truth is that nothing was recorded.
+  Future<bool?> _saveCurrentAnswer(
+    ExamQuestionRow question, {
+    required bool isFinal,
+    required bool isExplicit,
+  }) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context);
+    setState(() => _isSaving = true);
+    try {
+      final submissionId = await _ensureSession();
+      return await ref
+          .read(submissionsRepositoryProvider)
+          .saveExamAnswer(
+            submissionId: submissionId,
+            question: question,
+            answer: _answers[question.id] ?? const ExamDraftAnswer(),
+            isFinal: isFinal,
+            isExplicitSubmission: isExplicit,
+          );
+    } catch (_) {
+      if (mounted) {
+        messenger.showSnackBar(SnackBar(content: Text(l10n.examSubmitFailed)));
+      }
+      return null;
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  /// The attempt every answer is written into, created on first use.
+  ///
+  /// Kotlin opens the session in `initializeExamData`, before the first
+  /// question is drawn. Creating it here instead keeps `build` free of side
+  /// effects, and the only difference it makes is that abandoning an exam
+  /// without answering anything leaves no row behind — where Kotlin leaves an
+  /// empty `pending` attempt that its next `deleteStale` clears.
+  Future<String> _ensureSession() => _session ??= _createSession();
+
+  Future<String> _createSession() async {
     // Awaited rather than read off the current `AsyncValue`. Kotlin's
     // `initializeExamData` resolves its own user (`userSessionManager
     // .getUserModel()`) before the exam is usable; a bare
@@ -301,38 +395,77 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
     // watches it. That silently dropped the whole attempt: no dialog, no
     // snackbar, the graded answers discarded. It only stays hidden in the
     // shipping app because the router holds a `ref.listen` on the session.
-    final UserRow? user;
-    try {
-      user = await ref.read(sessionProvider.future);
-    } catch (_) {
-      // Awaiting a future means it can also reject, which `ref.read(...)
-      // .valueOrNull` could not. Leaving that uncaught would reproduce the
-      // very silence this await was introduced to remove — the attempt lost
-      // with nothing on screen — so it reports the same failure the save path
-      // does.
-      if (!mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text(l10n.examSubmitFailed)));
+    final user = await ref.read(sessionProvider.future);
+    final exam = await ref.read(examProvider(widget.examId).future);
+    if (user == null || exam == null) {
+      // Cleared so a retry can try again rather than replaying this failure
+      // for the rest of the mount.
+      _session = null;
+      throw StateError('An exam attempt needs a signed-in user and an exam');
+    }
+    final id = await ref
+        .read(submissionsRepositoryProvider)
+        .startExamSession(
+          exam: exam,
+          questions: _questions,
+          userId: user.id,
+          courseId: widget.courseId,
+        );
+    _submissionId = id;
+    return id;
+  }
+
+  void _recordChoices(ExamQuestionRow question, List<String> choiceIds) {
+    _answers[question.id] = ExamDraftAnswer(
+      choiceIds: List.unmodifiable(choiceIds),
+    );
+  }
+
+  void _recordText(ExamQuestionRow question, String value) {
+    _answers[question.id] = ExamDraftAnswer(value: value);
+  }
+
+  /// `btn_submit` on the last question — `onClick`
+  /// (`ExamTakingFragment.kt:626-653`).
+  ///
+  /// The order is Kotlin's and it matters: save, gate on the verdict, and only
+  /// then capture the verification photo and finish. A wrong final answer
+  /// takes the `incorrect_ans` branch before `capturePhoto()` is reached, so
+  /// the camera never opens for an attempt that is not finished.
+  Future<void> _submitExam(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final question = _questions[_currentIndex];
+    if (!_isAnswered(question)) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.pleaseAnswerToContinue)),
+      );
       return;
     }
-    if (!mounted) return;
-    final exam = ref.read(examProvider(widget.examId)).valueOrNull;
-    if (user == null || exam == null) return;
-
-    setState(() => _isSubmitting = true);
 
     // Persist before showing anything. The attempt is the deliverable — a
     // dialog the user dismisses is not a record of it.
+    final correct = await _saveCurrentAnswer(
+      question,
+      isFinal: true,
+      isExplicit: true,
+    );
+    if (!mounted) return;
+    if (correct != true) {
+      if (correct == false) {
+        messenger.showSnackBar(SnackBar(content: Text(l10n.incorrectAnswer)));
+      }
+      return;
+    }
+
+    final exam = ref.read(examProvider(widget.examId)).valueOrNull;
+    final submissionId = _submissionId;
+    if (exam == null || submissionId == null) return;
+
+    setState(() => _isSubmitting = true);
     try {
-      final submissionId = await ref
-          .read(submissionsRepositoryProvider)
-          .createExamDraft(
-            exam: exam,
-            questions: _questions,
-            userId: user.id,
-            answers: _answers,
-            courseId: widget.courseId,
-          );
-      await _captureVerificationPhoto(submissionId, exam, user.id);
+      final user = await ref.read(sessionProvider.future);
+      await _captureVerificationPhoto(submissionId, exam, user!.id);
       final config = ref.read(serverConfigProvider);
       if (config != null) {
         await ref
@@ -343,7 +476,7 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
             .queuePending(config: config);
       }
       if (!mounted) return;
-      await _showResult(exam);
+      await _showResult();
     } catch (_) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
@@ -413,17 +546,20 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
     }
   }
 
-  Future<void> _showResult(ExamRow exam) async {
+  /// `continueExam`'s end-of-exam dialog (`BaseExamFragment.kt:132-147`):
+  /// "Thank you for taking this exam! We wish you all the best." and a
+  /// `Finish` button that pops the screen.
+  ///
+  /// There is no score here, and that is the point. The port used to compute a
+  /// percentage and compare it with `passingPercentage`, which the retry gate
+  /// makes meaningless — every answer in a finished attempt is correct, so the
+  /// dialog would congratulate every learner with 100% however many times they
+  /// got a question wrong. The record of that is `mistakes`, which the
+  /// courses-progress screen shows per step, and the mark is Planet's to
+  /// write: the attempt uploads as `requires grading`.
+  Future<void> _showResult() async {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final correctCount = _questions
-        .where((question) => _answers[question.id]?.isCorrect ?? false)
-        .length;
-    final total = _questions.length;
-    final score = total > 0 ? (correctCount * 100) ~/ total : 0;
-    // The exam carries its own bar; only fall back to 70 when it names none.
-    final passMark = int.tryParse(exam.passingPercentage ?? '') ?? 70;
-    final passed = score >= passMark;
 
     await showDialog<void>(
       context: context,
@@ -433,14 +569,13 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              passed ? Icons.celebration : Icons.emoji_events,
-              size: 64,
-              color: passed ? Colors.green : Colors.orange,
-            ),
+            const Icon(Icons.celebration, size: 64, color: Colors.green),
             const SizedBox(height: 16),
-            Text('$score%', style: theme.textTheme.headlineLarge),
-            Text('${l10n.correctAnswers}: $correctCount / $total'),
+            Text(
+              l10n.thankYouForTakingExam,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
             Text(l10n.savedOffline, style: theme.textTheme.bodySmall),
           ],

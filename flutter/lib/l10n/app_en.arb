@@ -1407,5 +1407,7 @@
   "dataCleared": "All data cleared",
   "dataManagement": "Data management",
   "resourceTitleAlreadyExists": "A resource with this title already exists",
-  "failedToUpdateResource": "Failed to update resource"
+  "failedToUpdateResource": "Failed to update resource",
+  "thankYouForTakingExam": "Thank you for taking this exam! We wish you all the best.",
+  "pleaseAnswerToContinue": "Please select / write your answer to continue"
 }

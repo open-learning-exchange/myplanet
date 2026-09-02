@@ -191,12 +191,22 @@ class _SubmissionsScreenState extends ConsumerState<SubmissionsScreen> {
   }
 }
 
+/// Whether a submission is finished from the learner's side.
+///
+/// `requires grading` is on the list because that is the status
+/// `saveExamAnswer` gives a **finished exam** — `complete` is the survey
+/// value, and an exam is not complete until somebody marks it. Without it a
+/// submitted exam would sit under Pending until its upload landed, which is
+/// the opposite of what the learner just did.
+/// `SurveysRepositoryImpl.kt:310` treats the two the same way
+/// (`status == "complete" || status == "requires grading"`).
 bool _isComplete(SubmissionRow row) =>
     row.uploaded ||
     const {
       'complete',
       'completed',
       'graded',
+      'requires grading',
     }.contains(row.status?.trim().toLowerCase());
 
 class _SubmissionTile extends StatelessWidget {
