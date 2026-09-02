@@ -435,3 +435,38 @@ files are Lane B's.
 `flutter analyze` — no issues.
 `flutter test` — **1860 pass**, against 1801 at the branch base: exactly the 59
 new tests, no regressions.
+
+## 13. Mutation-testing this lane's own tests
+
+Per the brief's "the button looks usable is not the button works", every gate
+this phase added was mutated away and the suite re-run, to prove the tests fail
+for the reason they claim:
+
+| mutation | tests that failed |
+|---|---|
+| `canView = true` | 2 (private team, private enterprise's reports) |
+| `isGuest = false` | 1 (guest not offered membership) |
+| the last-member gate removed | 1 |
+| `onPressed` calls `leave` directly, as before | 3 (dialog appears, No, Yes) |
+| `_session()` back to `.valueOrNull` | **0 — see below** |
+
+That last row is the one worth recording. **The four original tombstone tests
+could not catch a regression of the `_session()` fix**, because each one does
+`await container.read(sessionProvider.future)` before acting — which resolves
+the provider and makes `.valueOrNull` non-null, the very condition the defect
+needs to be absent. The fix was real and the tests passed; they simply were not
+guarding it. A fifth test now drives `leave` against a `_DelayedSessionNotifier`
+without pre-resolving anything, and it does fail under that mutation.
+
+Two general lessons:
+
+- **A test that sets up the happy precondition cannot detect the bug that
+  precondition hides.** Pre-resolving a provider to make a test deterministic is
+  exactly what makes it blind to a read-but-never-watched regression. If the
+  defect is "this code does not resolve X itself", the test must not resolve X
+  either.
+- **Mutation-test the gate, not just the fix.** Four of the five mutations were
+  caught, which is what made the fifth informative. Failing-first evidence
+  proves a test detects the *original* defect; it does not prove the test will
+  detect the defect coming back, because the fix may have changed the test's own
+  setup in the meantime.

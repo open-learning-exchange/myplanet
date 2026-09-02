@@ -15,6 +15,17 @@ class _TestServerConfig extends ServerConfigNotifier {
   ServerConfig? build() => config;
 }
 
+/// A session that resolves only after a delay. `TeamMembershipActions` is a
+/// plain `Provider`, so nothing it holds ever *watches* `sessionProvider`; a
+/// bare `ref.read(...).valueOrNull` is null for this whole window.
+class _DelayedSessionNotifier extends SessionNotifier {
+  _DelayedSessionNotifier(this.user);
+  final UserRow? user;
+  @override
+  Future<UserRow?> build() =>
+      Future.delayed(const Duration(milliseconds: 50), () => user);
+}
+
 class _TestSessionNotifier extends SessionNotifier {
   _TestSessionNotifier(this.user);
   final UserRow? user;
@@ -128,6 +139,48 @@ void main() {
       DateTime.now().millisecondsSinceEpoch,
     );
     expect(queued, isEmpty);
+  });
+
+  test('leaving works before anything else has resolved the session', () async {
+    // The tests above `await container.read(sessionProvider.future)` first,
+    // which makes `.valueOrNull` non-null and so cannot catch a regression of
+    // the read-but-never-watched shape. This one deliberately does not
+    // pre-resolve it: `TeamMembershipActions` must resolve the session itself.
+    await seedMembership(id: 'm-synced', rev: '2-abc');
+    final container = ProviderContainer(
+      overrides: [
+        appDatabaseProvider.overrideWithValue(database),
+        outboxRepositoryProvider.overrideWithValue(
+          OutboxRepository(database.outboxDao),
+        ),
+        serverConfigProvider.overrideWith(() => _TestServerConfig(config)),
+        sessionProvider.overrideWith(
+          () => _DelayedSessionNotifier(
+            UserRow(
+              id: 'user-1',
+              name: 'ada',
+              rolesList: const ['learner'],
+              userAdmin: false,
+              joinDate: 0,
+              isArchived: false,
+              isUpdated: false,
+            ),
+          ),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final ok = await container
+        .read(teamMembershipActionsProvider)
+        .leave('team-1');
+
+    expect(ok, isTrue, reason: 'the leave must not take a silent failure path');
+    final queued = await database.outboxDao.due(
+      DateTime.now().millisecondsSinceEpoch,
+    );
+    expect(queued.length, 1);
+    expect(await database.teamDao.getById('m-synced'), isNull);
   });
 
   test('removing a member who never synced enqueues nothing', () async {
