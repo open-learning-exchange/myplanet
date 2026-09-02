@@ -10,6 +10,7 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/session_provider.dart';
 import '../../repository/local_resource_request.dart';
+import '../../repository/resources_repository.dart';
 
 /// Port of `ui/resources/AddResourceActivity.kt` (the metadata form) and the
 /// file-pick half of `AddResourceFragment` (the bottom sheet that picks a
@@ -143,7 +144,7 @@ class _AddResourceScreenState extends ConsumerState<AddResourceScreen> {
     }
     if (!mounted) return;
 
-    String? error;
+    LocalResourceError? error;
     if (_isEditMode) {
       error = await repo.updateLocalResource(
         resourceId: widget.editResourceId!,
@@ -184,7 +185,19 @@ class _AddResourceScreenState extends ConsumerState<AddResourceScreen> {
     setState(() => _saving = false);
 
     if (error != null) {
-      setState(() => _titleError = error);
+      final l10n = AppLocalizations.of(context);
+      // `AddResourceActivity` annotates the title field for a title problem
+      // (`tlTitle.error`, :204-207) and toasts a failed edit (:164-167).
+      switch (error) {
+        case LocalResourceError.titleMissing:
+          setState(() => _titleError = l10n.titleIsRequired);
+        case LocalResourceError.titleAlreadyExists:
+          setState(() => _titleError = l10n.resourceTitleAlreadyExists);
+        case LocalResourceError.notFound:
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.failedToUpdateResource)),
+          );
+      }
     } else {
       final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(

@@ -234,7 +234,7 @@
   "addAnAchievement": "Ajouter une réalisation",
   "addReference": "Ajouter une référence",
   "addAReference": "Ajouter une référence",
-  "selectResources": "\"Sélectionner des ressources: \"",
+  "selectResources": "Sélectionner des ressources: ",
   "myGoals": "Mes Objectifs",
   "myPurpose": "Mon But",
   "noGoalAdded": "Aucun objectif n\\'a encore été défini",
@@ -265,5 +265,7 @@
   },
   "update": "Mettre à jour",
   "view": "afficher",
-  "linkNotAvailable": "Lien non disponible"
+  "linkNotAvailable": "Lien non disponible",
+  "resourceTitleAlreadyExists": "Une ressource avec ce titre existe déjà",
+  "failedToUpdateResource": "Échec de la mise à jour de la ressource"
 }

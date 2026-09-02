@@ -264,5 +264,7 @@
   },
   "update": "تحديث",
   "view": "عرض",
-  "linkNotAvailable": "الرابط غير متاح"
+  "linkNotAvailable": "الرابط غير متاح",
+  "resourceTitleAlreadyExists": "يوجد مورد بهذا العنوان بالفعل",
+  "failedToUpdateResource": "فشل تحديث المورد"
 }

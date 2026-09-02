@@ -233,7 +233,7 @@
   "addAnAchievement": "Kudar Guul",
   "addReference": "Ku dar rasmiga ah",
   "addAReference": "Kudar Tixraac",
-  "selectResources": "\"Xullo khadka: \"",
+  "selectResources": "Xullo khadka: ",
   "myGoals": "Hadafyadayda",
   "myPurpose": "Ujeedadayda",
   "noGoalAdded": "Weli hadaf lama dejin",
@@ -264,5 +264,7 @@
   },
   "update": "Cusbooneysiin",
   "view": "eeg",
-  "linkNotAvailable": "Xogta lama helin"
+  "linkNotAvailable": "Xogta lama helin",
+  "resourceTitleAlreadyExists": "Kheyraad leh cinwaankan hore ayuu u jiray",
+  "failedToUpdateResource": "Cusbooneysiin kheyraadka waxay ku guuldareysatay"
 }

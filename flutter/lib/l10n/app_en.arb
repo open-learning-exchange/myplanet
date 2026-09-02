@@ -1347,7 +1347,7 @@
   "addAnAchievement": "Add an Achievement",
   "addReference": "Add Reference",
   "addAReference": "Add a Reference",
-  "selectResources": "\"Select resources: \"",
+  "selectResources": "Select resources: ",
   "myGoals": "My Goals",
   "myPurpose": "My Purpose",
   "noGoalAdded": "No goals set yet",
@@ -1393,5 +1393,7 @@
   "resetApp": "Reset app",
   "clearAllDataConfirm": "Are you sure you want to clear all data?",
   "dataCleared": "All data cleared",
-  "dataManagement": "Data management"
+  "dataManagement": "Data management",
+  "resourceTitleAlreadyExists": "A resource with this title already exists",
+  "failedToUpdateResource": "Failed to update resource"
 }
