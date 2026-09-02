@@ -342,9 +342,12 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
     }
   }
 
-  /// Pops `false`: `PublicSurveyActivity.uploadCompletedSubmission` looks for
-  /// a submission the dialog marked `complete`, so a cancel leaves Kotlin with
-  /// nothing to POST.
+  /// Pops `false` to report that nothing was saved. Note that this does NOT
+  /// stop the answer sheet being posted: `saveExamAnswer` marked the
+  /// submission `complete` on the last question before this screen opened
+  /// (`SubmissionsRepositoryImpl.kt:550`), and `UserInformationFragment`'s
+  /// Cancel writes nothing at all (`:112-118`). Declining only omits the
+  /// `user` object from the body.
   Future<void> _cancel(BuildContext context) async {
     Navigator.of(context).pop(false);
   }

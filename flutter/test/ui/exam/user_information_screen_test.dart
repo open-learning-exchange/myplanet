@@ -458,10 +458,10 @@ void main() {
     });
 
     testWidgets('cancel pops false', (tester) async {
-      // `public_survey_screen` reads this to decide whether to POST the answer
-      // sheet: `PublicSurveyActivity.uploadCompletedSubmission` finds no
-      // `complete` submission when the dialog is cancelled, so a cancel has to
-      // send nothing.
+      // Reports that nothing was saved. It must NOT be read as "do not
+      // post": Kotlin uploads from `onFragmentDetached` on both the save and
+      // the cancel path, because the sheet was already `complete` before this
+      // screen opened. Gating the POST on this value loses the answers.
       await pumpScreen(tester);
 
       await tester.tap(find.widgetWithText(OutlinedButton, 'Cancel'));
