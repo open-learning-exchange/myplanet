@@ -125,7 +125,8 @@ class SurveysRepositoryImpl @Inject constructor(
                 put("noOfQuestions", exam.noOfQuestions)
                 put("isFromNation", exam.isFromNation)
             }.toString()
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            e.printStackTrace()
             "{}"
         }
     }
@@ -154,7 +155,8 @@ class SurveysRepositoryImpl @Inject constructor(
                     })
                 }
             }.toString()
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            e.printStackTrace()
             "{}"
         }
     }
