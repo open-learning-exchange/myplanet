@@ -41,6 +41,7 @@ import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SyncRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -67,6 +68,7 @@ class SyncManager @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val timeProvider: TimeProvider,
     private val userSyncRepository: UserSyncRepository,
+    private val userRepository: UserRepository,
     private val syncRepository: SyncRepository,
     private val syncTimeLogger: SyncTimeLogger
 ) {
@@ -139,6 +141,10 @@ class SyncManager @Inject constructor(
         try {
 
             initializeSync()
+            
+            syncTimeLogger.startProcess("shelf_push")
+            pushCurrentUserShelf()
+            syncTimeLogger.endProcess("shelf_push")
 
             // Phase 1: Sync non-library tables in parallel
             // Note: teams, meetups, and courses base tables are synced here, then augmented by library sync
@@ -249,6 +255,14 @@ class SyncManager @Inject constructor(
             }
         }
         create(context, R.mipmap.ic_launcher, "Syncing data", "Please wait...")
+    }
+
+    private suspend fun pushCurrentUserShelf() {
+        try {
+            userRepository.getUserModel()?.let { userSyncRepository.uploadShelfData(it) }
+        } catch (e: Exception) {
+            Log.e("SyncManager", "Failed to push shelf data before sync", e)
+        }
     }
 
     fun cancelBackgroundSync() {

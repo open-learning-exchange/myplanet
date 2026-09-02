@@ -60,6 +60,7 @@ class SyncManagerTest {
             dispatcherProvider,
             TestTimeProvider(),
             mockk(),
+            mockk(relaxed = true),
             mockk(),
             mockk(relaxed = true)
         )
