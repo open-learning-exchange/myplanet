@@ -413,6 +413,53 @@ search gap this pass missed. Two audits of one batch disagreeing on what it
 implies is the useful lesson — a diff that only renames a file can still point
 at a behaviour the port never had.
 
+`TakeExamScreen` has its first tests: 16 covering the question renderers, the
+counter and title fallback, Next/Previous with the per-question answer map,
+grading and persistence of an attempt, the result dialog and its pop, the exit
+prompt, and all three verification-photo branches. They found two defects, both
+demonstrated failing on the pre-fix code.
+
+**The verification photo never reached CouchDB.** `_captureVerificationPhoto`
+wrote the JPEG with `SubmitPhotosFiles.write(photoId: submissionId, …)`, but
+`SubmitPhotosUploader._uploadAttachment` reads it back with
+`SubmitPhotosFiles.existingFileFor(photoId: row.itemId, …)` — the
+**`submit_photos` row's** id, a different sha1 (`photo:<submission>:<exam>:…`
+against `<user>:<timestamp>:<exam>`). The lookup therefore missed on every
+capture, `_uploadAttachment` returned early on its "a missing file is a no-op,
+not an error" branch, and the document uploaded without the photo a certified
+course exists to collect. Nothing failed loudly. `SubmissionsRepository`
+now exposes `photoIdFor(…)`, the derivation `addSubmissionPhoto` already used
+internally, so the screen mints the row id first, writes the bytes under it, and
+passes the same `capturedAt` back in. **When bytes and a row have to find each
+other later, one side must derive the key and hand it to the other** — the same
+shape as the Phase 74 reactions round trip, where each half passed alone and
+only the pair was wrong.
+
+**Submitting could silently discard the attempt.** `_submitExam` read the user
+as `ref.read(sessionProvider).valueOrNull`, which is `null` until something else
+resolves that provider — and this screen never watches it. The early
+`if (user == null …) return` then dropped the graded answers with no dialog, no
+snackbar and no record. In the shipping app the router's
+`ref.listen(sessionProvider, …)` keeps it resolved, so the bug is latent there;
+it is real for any caller that does not, and it made every submit path
+untestable in isolation. The screen now awaits `sessionProvider.future`, which
+is what Kotlin does (`initializeExamData` resolves its own
+`userSessionManager.getUserModel()` before the exam is usable).
+
+**A note for writing tests here:** never `pumpAndSettle` after tapping Submit.
+While `_isSubmitting` is true the button holds a `CircularProgressIndicator`,
+and that indefinite animation spins `pumpAndSettle` to its ten-minute default —
+the same failure-that-looks-like-a-hang as the resource viewer's. The photo path
+additionally needs generous `runAsync` rounds: `SubmitPhotosFiles` is real
+`dart:io`, and the write plus the row that follows it takes noticeably more
+wall-clock time than the drift reads elsewhere in the file.
+
+Also worth recording, because it is easy to assume otherwise: the exam screen
+does **not** carry the mandatory-survey block. That check lives in
+`take_course_screen.dart`'s `_onFinish`, gated on `MANDATORY_SURVEY_COURSE_ID`,
+which is where the Kotlin has it too (`TakeCourseFragment.onFinishStep`).
+Neither `ExamTakingFragment` nor `BaseExamFragment` looks at surveys at all.
+
 ### Documentation Map
 
 | Document | Read it when… |

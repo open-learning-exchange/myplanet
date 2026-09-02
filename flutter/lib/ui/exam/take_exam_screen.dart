@@ -293,7 +293,16 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
   Future<void> _submitExam(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    final user = ref.read(sessionProvider).valueOrNull;
+    // Awaited rather than read off the current `AsyncValue`. Kotlin's
+    // `initializeExamData` resolves its own user (`userSessionManager
+    // .getUserModel()`) before the exam is usable; a bare
+    // `ref.read(sessionProvider).valueOrNull` instead reports `null` whenever
+    // nothing else has resolved the provider yet — and this screen never
+    // watches it. That silently dropped the whole attempt: no dialog, no
+    // snackbar, the graded answers discarded. It only stays hidden in the
+    // shipping app because the router holds a `ref.listen` on the session.
+    final user = await ref.read(sessionProvider.future);
+    if (!mounted) return;
     final exam = ref.read(examProvider(widget.examId)).valueOrNull;
     if (user == null || exam == null) return;
 
@@ -355,8 +364,23 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
     try {
       final photo = await PhotoCapture.instance.capture();
       if (photo == null) return;
+      // The bytes go under the *photo row's* id, not the submission's. The
+      // uploader resolves them with
+      // `SubmitPhotosFiles.existingFileFor(photoId: row.id)`, so writing them
+      // under the submission id — two different sha1s — made that lookup miss
+      // every time: the document uploaded, the attachment step returned early,
+      // and the verification photo a certified course exists to collect never
+      // left the device. Deriving the id up front keeps the write and the
+      // read-back on one key, which is what `SubmitPhotosFiles` documents.
+      final capturedAt = DateTime.now();
+      final photoId = SubmissionsRepository.photoIdFor(
+        submissionId: submissionId,
+        capturedAt: capturedAt,
+        examId: exam.id,
+        courseId: courseId,
+      );
       final file = await SubmitPhotosFiles.write(
-        photoId: submissionId,
+        photoId: photoId,
         filename: photo.filename,
         bytes: photo.bytes,
       );
@@ -368,6 +392,7 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
             courseId: courseId,
             memberId: memberId,
             photoLocation: file?.path,
+            now: capturedAt,
           );
     } on Exception {
       // The capture or the write can fail on a device with no camera or no
