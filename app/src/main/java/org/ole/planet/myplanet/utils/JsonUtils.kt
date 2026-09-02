@@ -54,12 +54,17 @@ object JsonUtils {
         return ""
     }
 
-    fun getString(fieldName: String, jsonObject: JsonObject?): String = safeGet({ "" }) {
+    private fun <T> getPrimitive(fieldName: String, jsonObject: JsonObject?, default: T, extract: (JsonElement) -> T): T = safeGet({ default }) {
         if (jsonObject?.has(fieldName) == true) {
             val el: JsonElement = jsonObject.get(fieldName)
-            if (el is JsonNull || !el.isJsonPrimitive || !el.asJsonPrimitive.isString) "" else el.asString
-        } else ""
+            if (el is JsonNull) default else extract(el)
+        } else default
     }
+
+    fun getString(fieldName: String, jsonObject: JsonObject?): String =
+        getPrimitive(fieldName, jsonObject, "") { el ->
+            if (el.isJsonPrimitive && el.asJsonPrimitive.isString) el.asString else ""
+        }
 
     fun getString(array: JsonArray, index: Int): String = safeGet({ "" }) {
         val el: JsonElement? = if (index in 0 until array.size()) array.get(index) else null
