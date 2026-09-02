@@ -143,10 +143,16 @@ class _HealthContent extends ConsumerWidget {
       // gesture is the port's own addition — which is why its handler was
       // left empty, advertising a refresh that did nothing. Re-reading the
       // selected patient is what the affordance already promises.
-      onRefresh: () => ref.read(patientDetailProvider.notifier).refresh(),
+      onRefresh: () async {
+        // The banner is a `FutureProvider`, so the pull that re-reads the
+        // patient is also what re-reads whether anything is still stranded.
+        ref.invalidate(rejectedHealthRecordCountProvider);
+        await ref.read(patientDetailProvider.notifier).refresh();
+      },
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          const _RejectedUploadsBanner(),
           // User profile card
           Card(
             child: Padding(
@@ -385,6 +391,47 @@ String resolveCreatorName(String createdBy, Map<String, UserRow> userMap) {
     return createdBy.substring(colonIndex + 1).trim();
   }
   return createdBy;
+}
+
+/// Says so when the server has permanently refused a health record.
+///
+/// The port's own addition — Kotlin has no counterpart, because it has no
+/// permanent-failure state to report: `uploadHealthData` swallows the response
+/// and leaves `isUpdated` set, so the next sync tries again forever. The outbox
+/// classifies a 409 as permanent instead, which is a better model of what a
+/// conflict means and a worse one to keep silent about. A reading that never
+/// reached the server, on a screen that shows it as recorded, is the failure
+/// this app can least afford.
+class _RejectedUploadsBanner extends ConsumerWidget {
+  const _RejectedUploadsBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final count = ref.watch(rejectedHealthRecordCountProvider).valueOrNull ?? 0;
+    if (count == 0) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    return Card(
+      color: theme.colorScheme.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Icon(Icons.cloud_off, color: theme.colorScheme.onErrorContainer),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                AppLocalizations.of(context).healthRecordsRejected(count),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onErrorContainer,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _InfoRow extends StatelessWidget {

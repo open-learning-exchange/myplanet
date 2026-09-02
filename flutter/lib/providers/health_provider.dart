@@ -10,6 +10,7 @@ import 'sync_state.dart';
 import '../data/local/app_database.dart';
 import '../data/local/health_models.dart';
 import '../repository/health_repository.dart';
+import '../repository/health_uploader.dart';
 import 'app_providers.dart';
 import 'session_provider.dart';
 
@@ -176,6 +177,33 @@ class HealthQueue {
 }
 
 final healthQueueProvider = Provider<HealthQueue>(HealthQueue.new);
+
+/// How many health records the server has refused for good.
+///
+/// [OutboxDrainer] treats any `code < 500` as permanent, so a 409 — the
+/// conflict a legacy row's `_id` collision produces — abandons the operation on
+/// its first attempt. The row is kept rather than deleted, and until now that
+/// keeping *was* the whole of the observability: nothing selected an abandoned
+/// row, nothing counted one, and no screen said a word. A reading a clinician
+/// took stayed on the handset while the app behaved as though it had been
+/// filed.
+///
+/// Counted by distinct `itemId`, not by row: [OutboxRepository.enqueue] only
+/// looks for an *open* operation, so a record refused again on every save
+/// leaves one abandoned row per attempt. What the clinician needs to know is
+/// how many records are stranded, not how many times the app has tried.
+///
+/// A [FutureProvider] rather than a stream: the count only moves when a drain
+/// finishes, and holding a live drift query open for the life of the screen
+/// leaves a pending timer that fails every widget test in the file — the
+/// screen re-reads it on build and on pull-to-refresh, which is when a
+/// clinician would look.
+final rejectedHealthRecordCountProvider = FutureProvider<int>((ref) async {
+  final rows = await ref
+      .watch(outboxDaoProvider)
+      .abandoned(HealthUploader.type);
+  return rows.map((row) => row.itemId).toSet().length;
+});
 
 /// Pull of the `health` database, giving `HealthRepository.sync` its first
 /// caller — it was written and never invoked, so a device that had not

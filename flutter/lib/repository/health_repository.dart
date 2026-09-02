@@ -860,7 +860,17 @@ class HealthRepository {
       if (row.planetCode != null) 'planetCode': row.planetCode,
       'hasInfo': row.hasInfo,
       if (row.profileId != null) 'profileId': row.profileId,
-      if (row.creatorId != null) 'creatorId': row.creatorId,
+      // Both wire fields come from `profileId`:
+      // `addString(object, "creatorId", health.profileId)`
+      // (`HealthExamination.kt:110`). It reads like a copy-paste slip and may
+      // well be one, but it is the shape Planet has always been sent, and the
+      // two columns are equal by construction in anything either app authors
+      // — `saveData` sets both to `health.userKey`, and so does the port's
+      // form. Where they can differ is a document Planet itself wrote, pulled
+      // in and then edited here: Kotlin overwrites the server's `creatorId`
+      // with `profileId` on the way back out and the port used to preserve it,
+      // which is a divergence in the one case the field is load-bearing.
+      if (row.profileId != null) 'creatorId': row.profileId,
       if (row.gender != null) 'gender': row.gender,
       'age': row.age,
       // `addJson(object, "conditions", gson.fromJson(conditions, JsonObject))`

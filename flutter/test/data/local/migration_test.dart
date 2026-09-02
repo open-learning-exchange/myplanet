@@ -282,6 +282,184 @@ void main() {
     expect((await database.healthExaminationDao.getById('exam-1'))?.pulse, 72);
   });
 
+  group('the v45 legacy-examination repair', () {
+    // Before Phase 105 the examination form wrote the *patient's* id into a new
+    // row's `userId`, which is the column `HealthRepository.serialize` keys the
+    // uploaded document on — so the row claimed the patient's profile document
+    // and took a 409 nothing surfaced. `health_legacy_conflict_test.dart` holds
+    // the end-to-end loss; these pin the predicate's edges, because re-keying
+    // the wrong row would cause the same conflict in the other direction.
+    Future<void> seedUser() => database.userDao.upsert(
+      UsersCompanion.insert(
+        id: 'local-9',
+        name: const Value('ada'),
+        couchId: const Value('org.couchdb.user:ada'),
+      ),
+    );
+
+    test('re-keys a legacy examination onto its own id', () async {
+      await seedUser();
+      await database.healthExaminationDao.upsert(
+        HealthExaminationsCompanion.insert(
+          id: 'health-1725000000000000',
+          userId: const Value('org.couchdb.user:ada'),
+          pulse: const Value(72),
+          isUpdated: const Value(true),
+        ),
+      );
+
+      await runUpgrade(from: 44);
+
+      final row = await database.healthExaminationDao.getById(
+        'health-1725000000000000',
+      );
+      expect(row!.userId, 'health-1725000000000000');
+      expect(row.pulse, 72, reason: 'the reading itself is untouched');
+    });
+
+    test("leaves a locally-registered member's profile row alone", () async {
+      // The row this predicate exists to protect: its id is the member's local
+      // user key and its `userId` is the CouchDB id the account was given, so
+      // the two legitimately differ. Re-keying it would post the profile under
+      // a millisecond timestamp no server can resolve to a person.
+      await seedUser();
+      await database.healthExaminationDao.upsert(
+        HealthExaminationsCompanion.insert(
+          id: 'local-9',
+          userId: const Value('org.couchdb.user:ada'),
+          isUpdated: const Value(true),
+        ),
+      );
+
+      await runUpgrade(from: 44);
+
+      expect(
+        (await database.healthExaminationDao.getById('local-9'))!.userId,
+        'org.couchdb.user:ada',
+      );
+    });
+
+    test('leaves a profile row keyed on the CouchDB id alone', () async {
+      // `UserDao.getById` matches `_id` as well as `id`, so a profile row can
+      // be keyed on either. Both columns are checked.
+      await database.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'local-8',
+          name: const Value('bea'),
+          couchId: const Value('org.couchdb.user:bea'),
+        ),
+      );
+      await database.healthExaminationDao.upsert(
+        HealthExaminationsCompanion.insert(
+          id: 'org.couchdb.user:bea',
+          userId: const Value('local-8'),
+          isUpdated: const Value(true),
+        ),
+      );
+
+      await runUpgrade(from: 44);
+
+      expect(
+        (await database.healthExaminationDao.getById(
+          'org.couchdb.user:bea',
+        ))!.userId,
+        'local-8',
+      );
+    });
+
+    test('leaves a row that already uploaded alone', () async {
+      // Its `_rev` belongs to the document its old `userId` names. Re-keying
+      // it while keeping that revision would post a revision of a document
+      // that does not exist under the new id — the same 409, newly ours.
+      await seedUser();
+      await database.healthExaminationDao.upsert(
+        HealthExaminationsCompanion.insert(
+          id: 'health-1725000000000001',
+          userId: const Value('org.couchdb.user:ada'),
+          couchId: const Value('org.couchdb.user:ada'),
+          rev: const Value('3-abc'),
+          isUpdated: const Value(true),
+        ),
+      );
+
+      await runUpgrade(from: 44);
+
+      expect(
+        (await database.healthExaminationDao.getById(
+          'health-1725000000000001',
+        ))!.userId,
+        'org.couchdb.user:ada',
+      );
+    });
+
+    test('leaves a row carrying a profileId alone', () async {
+      // A row with a `profileId` is either recorded after Phase 105 or pulled
+      // from the server; neither is the shape being repaired.
+      await seedUser();
+      await database.healthExaminationDao.upsert(
+        HealthExaminationsCompanion.insert(
+          id: 'health-1725000000000002',
+          userId: const Value('org.couchdb.user:ada'),
+          profileId: const Value('user-key-1'),
+          isUpdated: const Value(true),
+        ),
+      );
+
+      await runUpgrade(from: 44);
+
+      expect(
+        (await database.healthExaminationDao.getById(
+          'health-1725000000000002',
+        ))!.userId,
+        'org.couchdb.user:ada',
+      );
+    });
+
+    test('leaves a clean row alone', () async {
+      // Nothing queues it, so it is not in the collision.
+      await seedUser();
+      await database.healthExaminationDao.upsert(
+        HealthExaminationsCompanion.insert(
+          id: 'health-1725000000000003',
+          userId: const Value('org.couchdb.user:ada'),
+        ),
+      );
+
+      await runUpgrade(from: 44);
+
+      expect(
+        (await database.healthExaminationDao.getById(
+          'health-1725000000000003',
+        ))!.userId,
+        'org.couchdb.user:ada',
+      );
+    });
+
+    test('the repair does not cost the record it repairs', () async {
+      // `health_examinations` is preserved, so the upgrade that carries the
+      // repair must not be the thing that discards the reading.
+      await seedUser();
+      await database.healthExaminationDao.upsert(
+        HealthExaminationsCompanion.insert(
+          id: 'health-1725000000000004',
+          userId: const Value('org.couchdb.user:ada'),
+          pulse: const Value(88),
+          data: const Value('ciphertext'),
+          isUpdated: const Value(true),
+        ),
+      );
+
+      await runUpgrade(from: 44);
+
+      final row = await database.healthExaminationDao.getById(
+        'health-1725000000000004',
+      );
+      expect(row!.pulse, 88);
+      expect(row.data, 'ciphertext');
+      expect(row.isUpdated, isTrue, reason: 'it still has to be uploaded');
+    });
+  });
+
   test('the health encryption key survives a schema upgrade', () async {
     // `key`/`iv` are generated on this device and never uploaded. Dropping
     // them would leave every health record already encrypted with them

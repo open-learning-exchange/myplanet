@@ -109,7 +109,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 44;
+  int get schemaVersion => 45;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -309,6 +309,60 @@ class AppDatabase extends _$AppDatabase {
       // reactions, so the nullable column's default is correct.
       if (from < 42) {
         await _addColumnIfMissing(m, newsEntries, newsEntries.reactions);
+      }
+
+      // v45 is a one-time data repair, not a shape change: see
+      // `PHASE_111_NOTES.md`. Before Phase 105 the examination form wrote the
+      // *patient's* id into a new examination row's `userId`, and
+      // `HealthRepository.serialize` keys the uploaded document on `userId` —
+      // so such a row claims the same CouchDB `_id` as the patient's own
+      // profile row. The profile is written first, wins, and the examination
+      // takes a 409, which [OutboxDrainer] classifies as permanent. The
+      // clinician's reading then never reaches the server.
+      //
+      // Setting `userId` to the row's own id is what Phase 105 made every new
+      // examination do (`createExamination`: `userId ?? id`), and what
+      // `_docToCompanion` maintains for every synced row — so the repaired row
+      // is indistinguishable from one recorded today, and posts as its own
+      // document.
+      //
+      // The predicate is deliberately narrow, because re-keying the wrong row
+      // would create the same conflict in the other direction. Every conjunct
+      // excludes something real:
+      //
+      //  * `is_updated = 1` — a clean row is not queued for upload at all, so
+      //    it cannot be in the collision. Phase 107 drew the same boundary.
+      //  * `user_id <> id` — the post-Phase-105 shape and every synced row
+      //    have them equal, and are untouched.
+      //  * `profile_id IS NULL` — the pre-Phase-105 form wrote no `profileId`
+      //    (that was the same phase's headline finding), while every row from
+      //    the server carries the one Planet stored. This is the positive
+      //    identification, not an id-prefix guess: Phase 107 declined to write
+      //    the guess, and it was right to.
+      //  * `_id IS NULL AND _rev IS NULL` — a row that already uploaded owns a
+      //    revision of the document its old `userId` names. Re-keying it while
+      //    keeping that `_rev` would post a revision of a document that does
+      //    not exist under the new id: the same 409, newly caused by us. Those
+      //    rows are left alone; the mess they made on the server predates this
+      //    and a migration cannot unpick it.
+      //  * `id NOT IN (users)` — a *profile* row's id is the patient's user
+      //    row key (`saveHealthProfileBlob`), and `UserDao.getById` matches
+      //    `_id` as well as `id`, so both columns are checked. This is what
+      //    keeps the repair off the profile row of a member registered on this
+      //    device, whose `userId` is legitimately the CouchDB id its own key
+      //    is not.
+      if (from < 45) {
+        await customStatement(
+          'UPDATE health_examinations SET user_id = id '
+          'WHERE is_updated = 1 '
+          'AND user_id IS NOT NULL '
+          'AND user_id <> id '
+          'AND profile_id IS NULL '
+          'AND _id IS NULL '
+          'AND _rev IS NULL '
+          'AND id NOT IN (SELECT id FROM users) '
+          'AND id NOT IN (SELECT _id FROM users WHERE _id IS NOT NULL)',
+        );
       }
     },
   );
@@ -1692,6 +1746,38 @@ class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
           ..limit(1))
         .getSingleOrNull();
   }
+
+  /// Every operation recorded for one item, whatever its status.
+  ///
+  /// [findOpen] deliberately ignores an `abandoned` row so a fresh enqueue is
+  /// never blocked by one; the consequence is that a permanently-refused write
+  /// leaves a row behind that nothing else selects. This is how the record of
+  /// that refusal is read back.
+  Future<List<OutboxRow>> forItem(String uploadType, String itemId) =>
+      (select(outboxEntries)
+            ..where(
+              (row) =>
+                  row.uploadType.equals(uploadType) & row.itemId.equals(itemId),
+            )
+            ..orderBy([(row) => OrderingTerm(expression: row.createdAt)]))
+          .get();
+
+  /// Operations of [uploadType] the queue has given up on.
+  ///
+  /// A 409 is `permanent` to [OutboxDrainer] — `code < 500` — so a conflicting
+  /// write is abandoned on its first attempt and never retried under that row.
+  /// Nothing read these until now, which is why a health record the server
+  /// refused could vanish with no error anywhere: the row was kept, and the
+  /// keeping was the whole of the "observability".
+  Future<List<OutboxRow>> abandoned(String uploadType) =>
+      (select(outboxEntries)
+            ..where(
+              (row) =>
+                  row.uploadType.equals(uploadType) &
+                  row.status.equals(statusAbandoned),
+            )
+            ..orderBy([(row) => OrderingTerm(expression: row.createdAt)]))
+          .get();
 
   /// Pending operations whose backoff has elapsed, oldest first.
   Future<List<OutboxRow>> due(int now) {

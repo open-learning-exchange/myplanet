@@ -577,4 +577,98 @@ void main() {
       expect(find.text('Alicia Smith'), findsOneWidget);
     });
   });
+
+  group('records the server refused', () {
+    // The outbox classifies a 409 as permanent, so a health record whose `_id`
+    // collides with another document is abandoned on its first attempt. Nothing
+    // read that state before — the reading stayed on the handset while the
+    // screen listed it as recorded.
+    Future<void> abandon(AppDatabase db, String itemId) async {
+      await db.outboxDao.upsert(
+        OutboxEntriesCompanion.insert(
+          id: 'op-$itemId',
+          uploadType: 'health',
+          itemId: itemId,
+          payload: '{}',
+          endpoint: 'https://planet.example/db/health',
+          createdAt: 1000,
+          status: const Value('abandoned'),
+          httpCode: const Value(409),
+        ),
+      );
+    }
+
+    testWidgets('nothing is said when every record was delivered', (
+      tester,
+    ) async {
+      final db = AppDatabase.memory();
+      final user = await seedPatient(db);
+      await pumpScreen(tester, session: user, database: db);
+
+      expect(find.byIcon(Icons.cloud_off), findsNothing);
+    });
+
+    testWidgets('a stranded record is reported on the screen', (tester) async {
+      final db = AppDatabase.memory();
+      final user = await seedPatient(db);
+      await abandon(db, 'health-1');
+      await pumpScreen(tester, session: user, database: db);
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.cloud_off), findsOneWidget);
+      expect(
+        find.textContaining('1 health record could not be sent'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('pull to refresh picks up a newly stranded record', (
+      tester,
+    ) async {
+      final db = AppDatabase.memory();
+      final user = await seedPatient(db);
+      await pumpScreen(tester, session: user, database: db);
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.cloud_off), findsNothing);
+
+      // A drain finished behind the screen's back and gave up on a record.
+      await abandon(db, 'health-1');
+      await tester.fling(
+        find.byType(RefreshIndicator),
+        const Offset(0, 300),
+        1000,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.cloud_off), findsOneWidget);
+    });
+
+    testWidgets('the count is of records, not of attempts', (tester) async {
+      // A doomed record earns a fresh abandoned row on every save, because
+      // `enqueue` only looks for an *open* operation. Counting rows would show
+      // a number that climbs while nothing new is wrong.
+      final db = AppDatabase.memory();
+      final user = await seedPatient(db);
+      await abandon(db, 'health-1');
+      await db.outboxDao.upsert(
+        OutboxEntriesCompanion.insert(
+          id: 'op-retry',
+          uploadType: 'health',
+          itemId: 'health-1',
+          payload: '{}',
+          endpoint: 'https://planet.example/db/health',
+          createdAt: 2000,
+          status: const Value('abandoned'),
+          httpCode: const Value(409),
+        ),
+      );
+      await pumpScreen(tester, session: user, database: db);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('1 health record could not be sent'),
+        findsOneWidget,
+      );
+    });
+  });
 }
