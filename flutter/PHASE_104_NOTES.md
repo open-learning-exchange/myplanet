@@ -186,12 +186,20 @@ Ten new tests fail on the pre-fix code (`git stash push -- flutter/lib`, then
   `surveys_repository_test`'s `questions.last.choices` now expects
   `ExamChoice` pairs.
 
-**1631 tests, 1626 passing; the only failures are the 5 known-red
-`public_survey_screen_test` `submitting` cases** the integrator flagged as a
-cross-lane disagreement over the `saved != true` gate. They fail identically to
-the baseline (`No matching calls … only the survey fetch`, i.e. the POST never
-fires) — my changes neither fixed, worsened, nor changed them, and I did not
-touch those five tests or the gate.
+**1631 tests, all passing** on Flutter 3.44.8 (the version `flutter.yml`
+pins), format clean and analyze clean.
+
+While this phase was in flight, the five `public_survey_screen_test`
+`submitting` cases were red on the fork point — a cross-lane disagreement over
+Phase 103's `saved != true` gate. Throughout my work they failed *identically*
+to the baseline (`No matching calls … only the survey fetch`, i.e. the POST
+never fired); my changes neither fixed, worsened, nor altered them, and I
+touched neither those tests nor the gate. `origin/…-d3gmrd` at `2a9e0f7` then
+reverted the gate — the parity audit found Kotlin does post a declined profile
+step — and awaited `sessionProvider.future` in `_submit`/`_leave`. That merge
+is in this branch, and with it the five pass. My zero-question guard sits on
+the corrected submit path: it returns before `_submit` is reachable at all, so
+it is independent of how that path ends.
 
 ## Test-harness notes
 
@@ -215,21 +223,24 @@ touch those five tests or the gate.
   `lib/data/local/tables.dart` edit is a converter swap on
   `SurveyQuestions.choices` whose generated DDL is identical — see §1. If you
   would rather that came through you, it is a two-line revert plus the mapper.
-- `flutter/pubspec.lock` is left as committed. My local `flutter pub get`
-  (SDK 3.44.8, the version `flutter.yml` pins) resolves `intl` 0.20.2,
-  `matcher` 0.12.19, `meta` 1.18.0 and `test_api` a patch below the committed
-  entries, so the committed lock was produced by a slightly different SDK. CI
-  resolves the way I did, so nothing is broken — but the file drifts on any
-  `pub get` here.
+- `flutter/pubspec.lock` is left exactly as the merge brought it. A
+  `flutter pub get` on 3.44.8 wants `intl` 0.20.2, `matcher` 0.12.19, `meta`
+  1.18.0 and `test_api` one patch below the committed entries, so the lock in
+  git was resolved by a different SDK. CI resolves the way 3.44.8 does, so
+  nothing is broken — but the file will keep drifting on any `pub get` until
+  it is re-resolved on the pinned SDK.
+- On the formatter-drift warning: my independent `dart format` run on 3.44.8
+  reformatted `outbox_repository_test.dart` to **byte-identical** content to
+  `e4c3b46`'s hand-restore, which is the useful confirmation that 3.44.8 is
+  the version to trust for that gate. Nothing of mine is in that file now.
 
 ## Gaps found and deliberately left
 
-- **`_submit` on `public_survey_screen` still reads `sessionProvider` with
-  `.valueOrNull`.** Same shape as the defect fixed in `take_survey_screen`
-  above, but it is resolved in practice on that path (`UserInformationScreen`
-  reads it first and is awaited), Phase 102's two destination tests pass on the
-  unmodified code, and that region of `_submit` is where the incoming
-  cross-lane fix lands. Worth doing once that has settled.
+- ~~`_submit` on `public_survey_screen` still reads `sessionProvider` with
+  `.valueOrNull`.~~ **Closed by the merge**: `2a9e0f7` awaits
+  `sessionProvider.future` in both `_submit` and `_leave`, which is the same
+  fix this phase applied to `take_survey_screen` — a **fourth** instance of
+  that shape, found independently by two lanes in one round.
 - `_answerChoices`' tolerance for a non-JSON entry exists because the exam path
   stores bare choice ids in `valueChoices` where Kotlin's
   `ExamTakingFragment` stores choice objects. Making the two paths agree is a
