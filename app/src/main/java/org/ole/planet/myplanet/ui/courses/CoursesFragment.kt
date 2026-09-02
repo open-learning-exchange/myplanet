@@ -225,6 +225,10 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         var lastState: FilterState? = null
         var isFirstEmission = true
         collectLatestWhenStarted(filterController.filterState) { state ->
+            val chipRow = view?.findViewById<LinearLayout>(R.id.chip_filter_row)
+            if (chipRow != null) {
+                renderCourseChipSelection(chipRow)
+            }
             if (isFirstEmission) {
                 isFirstEmission = false
                 if (!state.isActive) {
@@ -331,6 +335,9 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         }
         requireView().findViewById<View>(R.id.btn_clear_tags)?.setOnClickListener {
             bottomSheet.visibility = View.GONE
+            if (::filterController.isInitialized) {
+                filterController.clearAll()
+            }
         }
         orderByDate = requireView().findViewById(R.id.order_by_date_button)
         orderByTitle = requireView().findViewById(R.id.order_by_title_button)
