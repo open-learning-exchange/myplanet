@@ -8,6 +8,7 @@ import com.google.gson.JsonObject
 import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.data.api.ChatApiService
@@ -20,7 +21,6 @@ import org.ole.planet.myplanet.model.ContentData
 import org.ole.planet.myplanet.model.ContinueChatRequest
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.Data
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper

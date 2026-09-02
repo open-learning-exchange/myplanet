@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.user
 
+import android.content.Context
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -9,7 +10,6 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemUserBinding
 import org.ole.planet.myplanet.model.UserEntity
-import android.content.Context
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeUtils

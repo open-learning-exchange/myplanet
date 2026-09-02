@@ -52,6 +52,7 @@ import java.io.File
 import java.util.regex.Pattern
 import javax.inject.Inject
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
@@ -458,20 +459,33 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             .into(imageViewer)
     }
 
-    private fun setupTextViewer() {
+    private suspend fun setupTextViewer() {
         binding.stubText.visibility = View.VISIBLE
         val textFileTitle = binding.root.findViewById<TextView>(R.id.textFileTitle)
         val textContent = binding.root.findViewById<TextView>(R.id.textContent)
         textFileTitle.text = title
 
         val file = File(externalFilesDir, "ole/$filePath")
-        if (file.exists()) {
-            val text = file.readText()
-            if (type == ResourceType.MARKDOWN) {
-                MarkdownUtils.setMarkdownText(textContent, text)
+        if (!file.exists()) return
+
+        val (text, truncated) = withContext(dispatcherProvider.io) {
+            val raw = file.readText()
+            if (raw.length > MAX_TEXT_VIEWER_CHARS) {
+                raw.substring(0, MAX_TEXT_VIEWER_CHARS) to true
             } else {
-                textContent.text = text
+                raw to false
             }
+        }
+
+        if (!isAdded) return
+
+        if (type == ResourceType.MARKDOWN) {
+            MarkdownUtils.setMarkdownText(textContent, text)
+        } else {
+            textContent.text = text
+        }
+        if (truncated) {
+            Utilities.toast(requireContext(), getString(R.string.text_content_truncated))
         }
     }
 
@@ -577,6 +591,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         private const val PIP_ASPECT_RATIO_DENOMINATOR = 1000
         private const val DRAG_SLOP_DP = 24f
         private const val DRAG_THRESHOLD_DP = 150f
+        private const val MAX_TEXT_VIEWER_CHARS = 500_000
         private const val ARG_RESOURCE_ID = "resourceId"
         private const val ARG_FILE_PATH = "filePath"
         private const val ARG_TITLE = "title"

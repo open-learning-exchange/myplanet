@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
-import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
@@ -251,22 +250,19 @@ class SurveysRepositoryImpl @Inject constructor(
             .toSet()
         val filteredSubmissionIds = teamSubmissionIds - adoptedSourceSurveyIds
 
-        return examDao.getByType("surveys")
-            .asSequence()
-            .filter { it.teamId == teamId || filteredSubmissionIds.contains(it.id) }
-            .toList()
+        return examDao.getTeamOwnedSurveys(teamId, filteredSubmissionIds)
     }
 
     override suspend fun getAdoptableTeamSurveys(teamId: String?): List<StepExam> {
         if (teamId.isNullOrEmpty()) return emptyList()
-        val excludedIds = getTeamSubmissionExamIds(teamId) +
-            examDao.getByTeamIdAndType(teamId, "surveys").mapNotNull { it.sourceSurveyId }
+        val excludedIds = (getTeamSubmissionExamIds(teamId) +
+            examDao.getByTeamIdAndType(teamId, "surveys").mapNotNull { it.sourceSurveyId }).toSet()
 
-        return examDao.getByType("surveys")
-            .asSequence()
-            .filter { it.isTeamShareAllowed }
-            .filterNot { excludedIds.contains(it.id) }
-            .toList()
+        return if (excludedIds.isEmpty()) {
+            examDao.getAdoptableTeamSurveys()
+        } else {
+            examDao.getAdoptableTeamSurveys(excludedIds)
+        }
     }
 
     override suspend fun getIndividualSurveys(): List<StepExam> {

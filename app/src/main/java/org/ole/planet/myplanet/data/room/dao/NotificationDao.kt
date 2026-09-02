@@ -9,7 +9,7 @@ import org.ole.planet.myplanet.model.AppNotification
 
 @Dao
 interface NotificationDao {
-    @Query("UPDATE notifications SET isRead = 1, needsSync = CASE WHEN isFromServer = 1 THEN 1 ELSE needsSync END WHERE userId = :userId AND type = :type AND isRead = 0")
+    @Query("UPDATE notifications SET isRead = 1, needsSync = CASE WHEN isFromServer = 1 THEN 1 ELSE needsSync END WHERE userId IS :userId AND type = :type AND isRead = 0")
     suspend fun markSummaryAsRead(userId: String?, type: String): Int
 
     @Query("UPDATE notifications SET isRead = 1, needsSync = CASE WHEN isFromServer = 1 THEN 1 ELSE needsSync END WHERE id = :notificationId")
@@ -35,6 +35,12 @@ interface NotificationDao {
 
     @Query("SELECT * FROM notifications WHERE id IN (:ids)")
     suspend fun getByIds(ids: List<String>): List<AppNotification>
+
+    @Query("SELECT id FROM notifications WHERE id IN (:ids)")
+    suspend fun getIdsByIds(ids: List<String>): List<String>
+
+    @Query("SELECT id FROM notifications WHERE userId = :userId AND isRead = 0")
+    suspend fun getUnreadIds(userId: String): List<String>
 
     @Query("UPDATE notifications SET isRead = 1, createdAt = :createdAt, needsSync = CASE WHEN isFromServer = 1 THEN 1 ELSE needsSync END WHERE id IN (:ids)")
     suspend fun markAsRead(ids: List<String>, createdAt: Date): Int

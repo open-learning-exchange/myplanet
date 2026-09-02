@@ -260,16 +260,12 @@ class UploadManager @Inject constructor(
                 val uploadedTeams = mutableMapOf<String, String>()
 
                 val bulkDocs = com.google.gson.JsonArray()
-                val teamMap = mutableMapOf<String, org.ole.planet.myplanet.repository.TeamUploadData>()
 
                 batch.forEach { teamData ->
-                    teamData.teamId?.let { id ->
-                        teamMap[id] = teamData
-                    }
                     bulkDocs.add(teamData.serialized)
                 }
 
-                if (bulkDocs.size() == 0) return@processInBatches
+                if (bulkDocs.isEmpty()) return@processInBatches
 
                 val payload = com.google.gson.JsonObject()
                 payload.add("docs", bulkDocs)
@@ -282,10 +278,13 @@ class UploadManager @Inject constructor(
                     val responseBody = response.body()
 
                     if (response.isSuccessful && responseBody != null) {
+                        if (responseBody.size() < batch.size) {
+                            Log.w(TAG, "Team bulk upload response returned ${responseBody.size()} result(s) for a batch of ${batch.size}; ${batch.size - responseBody.size()} team(s) were not processed and will retry next sync")
+                        }
                         for (i in 0 until responseBody.size()) {
                             val element = responseBody.get(i).asJsonObject
                             val id = getString("id", element)
-                            val teamData = teamMap[id] ?: continue
+                            val teamData = batch.getOrNull(i) ?: continue
 
                             if (element.has("error")) {
                                 // 200 bulk response code prevents retry here, as per doc errors aren't retried
@@ -298,7 +297,7 @@ class UploadManager @Inject constructor(
                                     if (!teamData.imageName.isNullOrEmpty() && rev.isNotEmpty()) {
                                         rev = uploadTeamImageAttachment(id, rev, teamData.imageName)
                                     }
-                                    uploadedTeams[id] = rev
+                                    uploadedTeams[teamData.teamId ?: id] = rev
                                 }
                             }
                         }
@@ -473,7 +472,7 @@ class UploadManager @Inject constructor(
                     }
                 }
 
-                if (bulkDocsArray.size() > 0) {
+                if (!bulkDocsArray.isEmpty()) {
                     val bulkRequest = JsonObject()
                     bulkRequest.add("docs", bulkDocsArray)
 

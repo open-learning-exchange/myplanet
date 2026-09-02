@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.util.Base64
+import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Calendar
@@ -10,7 +11,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.CourseDao
@@ -53,6 +53,7 @@ class CoursesRepositoryImpl @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val tagsRepository: TagsRepository,
     private val ratingsRepository: RatingsRepository,
+    private val resourcesRepository: ResourcesRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val certificationDao: CertificationDao,
     private val courseDao: CourseDao,
@@ -301,7 +302,7 @@ class CoursesRepositoryImpl @Inject constructor(
             .filter { gradeLevel.isEmpty() || it.gradeLevel == gradeLevel }
             .filter { subjectLevel.isEmpty() || it.subjectLevel == subjectLevel }
             .filter { courseIdsWithTags == null || courseIdsWithTags.contains(it.courseId) }
-            .sortedBy { it.courseTitle?.lowercase() ?: "" }
+            .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.courseTitle ?: "" })
             .toList()
     }
 
@@ -811,7 +812,7 @@ class CoursesRepositoryImpl @Inject constructor(
         }
 
         val correctChoiceArray = JsonUtils.getJsonArray("correctChoice", questionJson)
-        return if (correctChoiceArray.size() > 0) {
+        return if (!correctChoiceArray.isEmpty()) {
             correctChoiceArray.map { resolveChoiceValue(it.asString) }
         } else {
             val correctChoice = JsonUtils.getString("correctChoice", questionJson)
@@ -852,6 +853,16 @@ class CoursesRepositoryImpl @Inject constructor(
         }
         if (libraries.isNotEmpty()) {
             myLibraryDao.upsertAll(libraries)
+            libraries.forEach { library ->
+                if (library.mediaType == "HTML" && library.resourceLocalAddress.isNullOrBlank()) {
+                    val resourceId = library.resourceId ?: return@forEach
+                    try {
+                        resourcesRepository.reconcileHtmlResourceOffline(resourceId)
+                    } catch (e: Exception) {
+                        Log.w("CoursesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
+                    }
+                }
+            }
         }
     }
 
@@ -863,7 +874,6 @@ class CoursesRepositoryImpl @Inject constructor(
         } else {
             courseStepDao.getByCourseIds(courseIds)
                 .groupBy { it.courseId ?: "" }
-                .mapValues { entry -> entry.value.map { it } }
         }
         return courses.map { course ->
             val courseKey = course.courseId ?: course.id
@@ -883,10 +893,10 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     private fun mergeUserIds(existingUserIds: List<String>?, newUserId: String?): List<String>? {
-        val merged = existingUserIds.orEmpty().filter { !it.isNullOrBlank() }.toMutableList()
-        if (!newUserId.isNullOrBlank() && !merged.contains(newUserId)) {
-            merged.add(newUserId)
+        val set = existingUserIds.orEmpty().filterTo(LinkedHashSet()) { it.isNotBlank() }
+        if (!newUserId.isNullOrBlank()) {
+            set.add(newUserId)
         }
-        return merged.distinct().takeIf { it.isNotEmpty() }
+        return set.toList().takeIf { it.isNotEmpty() }
     }
 }

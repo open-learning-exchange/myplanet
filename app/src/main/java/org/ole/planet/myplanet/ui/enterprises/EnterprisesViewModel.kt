@@ -101,7 +101,7 @@ class EnterprisesViewModel @Inject constructor(
         return enterprisesRepository.getReportsFlow(teamId)
     }
 
-    suspend fun exportReportsAsCsv(reports: List<MyTeam>, teamName: String): String {
-        return enterprisesRepository.exportReportsAsCsv(reports, teamName)
+    suspend fun exportReportsAsCsv(teamId: String, teamName: String): String {
+        return enterprisesRepository.exportReportsAsCsv(teamId, teamName)
     }
 }

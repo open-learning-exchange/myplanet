@@ -1,7 +1,10 @@
 package org.ole.planet.myplanet.base
 
 import android.Manifest
+import android.app.AppOpsManager
+import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Process
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import io.mockk.every
@@ -23,12 +26,16 @@ class BasePermissionActivityTest {
         activity = mockk<BasePermissionActivity>(relaxed = true)
         every { activity.checkPermission(any()) } answers { callOriginal() }
         every { activity.getNotificationPermissionStatus() } answers { callOriginal() }
+        every { activity.getUsagesPermission(any()) } answers { callOriginal() }
         every { activity.handleFilePermissionsResult(any(), any()) } answers { callOriginal() }
         mockkStatic(ContextCompat::class)
+        mockkStatic(Process::class)
+        every { Process.myUid() } returns 1000
     }
 
     @After
     fun teardown() {
+        unmockkStatic(Process::class)
         unmockkStatic(ContextCompat::class)
     }
 
@@ -94,5 +101,48 @@ class BasePermissionActivityTest {
         activity.handleFilePermissionsResult(permissions, grantResults)
 
         io.mockk.verify { activity.showMediaPermissionsDeniedDialog(listOf(Manifest.permission.READ_MEDIA_IMAGES)) }
+    }
+
+    @Test
+    fun `getUsagesPermission returns true when app ops mode is ALLOWED`() {
+        val context = mockk<Context>(relaxed = true)
+        val appOps = mockk<AppOpsManager>()
+        every { context.getSystemService(Context.APP_OPS_SERVICE) } returns appOps
+        every { context.packageName } returns "org.ole.planet.myplanet"
+        every { appOps.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, any(), any()) } returns AppOpsManager.MODE_ALLOWED
+        every { appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, any(), any()) } returns AppOpsManager.MODE_ALLOWED
+
+        val result = activity.getUsagesPermission(context)
+
+        assertTrue(result)
+    }
+
+    @Test
+    fun `getUsagesPermission returns false when app ops mode is ERRORED`() {
+        val context = mockk<Context>(relaxed = true)
+        val appOps = mockk<AppOpsManager>()
+        every { context.getSystemService(Context.APP_OPS_SERVICE) } returns appOps
+        every { context.packageName } returns "org.ole.planet.myplanet"
+        every { appOps.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, any(), any()) } returns AppOpsManager.MODE_ERRORED
+        every { appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, any(), any()) } returns AppOpsManager.MODE_ERRORED
+
+        val result = activity.getUsagesPermission(context)
+
+        assertFalse(result)
+    }
+
+    @Test
+    fun `getUsagesPermission checks permission when app ops mode is DEFAULT`() {
+        val context = mockk<Context>(relaxed = true)
+        val appOps = mockk<AppOpsManager>()
+        every { context.getSystemService(Context.APP_OPS_SERVICE) } returns appOps
+        every { context.packageName } returns "org.ole.planet.myplanet"
+        every { appOps.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, any(), any()) } returns AppOpsManager.MODE_DEFAULT
+        every { appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, any(), any()) } returns AppOpsManager.MODE_DEFAULT
+        every { context.checkCallingOrSelfPermission(Manifest.permission.PACKAGE_USAGE_STATS) } returns PackageManager.PERMISSION_GRANTED
+
+        val result = activity.getUsagesPermission(context)
+
+        assertTrue(result)
     }
 }

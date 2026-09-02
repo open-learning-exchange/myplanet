@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.model
 
-
 import io.mockk.every
-import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import org.junit.After

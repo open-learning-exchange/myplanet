@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.databinding.ItemTeamListBinding
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.StableIdGenerator
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class TeamsAdapter(
@@ -30,6 +31,16 @@ class TeamsAdapter(
     private var actionRequestedString: String? = null
     private var actionRequestToJoinString: String? = null
     private var pendingColor: Int = 0
+
+    init {
+        setHasStableIds(true)
+    }
+
+    override fun getItemId(position: Int): Long {
+        val item = getItem(position)
+        val id = StableIdGenerator.generateStringId(item._id)
+        return if (id != RecyclerView.NO_ID) id else StableIdGenerator.generateFallbackId(item)
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TeamsViewHolder {
         if (actionEditString == null) {

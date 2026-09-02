@@ -16,14 +16,12 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
-import org.ole.planet.myplanet.callback.OnMemberChangeListener
+import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.callback.OnTeamPageListener
-import org.ole.planet.myplanet.callback.OnTeamUpdateListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
@@ -44,7 +42,7 @@ import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpdateListener {
+class TeamDetailFragment : BaseTeamFragment() {
 
     @Inject
     lateinit var userSessionManager: UserSessionManager
@@ -208,7 +206,9 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
             currentAdapter.updatePages(pageConfigs)
         } else {
             binding.viewPager2.adapter = TeamPagerAdapter(
-                this, pageConfigs, team?._id, this, this
+                this, pageConfigs, team?._id,
+                OnChangedListener { onMemberChanged() },
+                OnChangedListener { onTeamDetailsUpdated() }
             )
             binding.tabLayout.tabMode = TabLayout.MODE_SCROLLABLE
             binding.tabLayout.isInlineLabel = true
@@ -389,7 +389,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         }
     }
 
-    override fun onMemberChanged() {
+    private fun onMemberChanged() {
         _binding ?: return
         _binding?.let { binding ->
             val teamId = team?._id ?: return@let
@@ -404,7 +404,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         }
     }
 
-    override fun onTeamDetailsUpdated() {
+    private fun onTeamDetailsUpdated() {
         viewLifecycleOwner.lifecycleScope.launch {
             refreshTeamDetails()
         }

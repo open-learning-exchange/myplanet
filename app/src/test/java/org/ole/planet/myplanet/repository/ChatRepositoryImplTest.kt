@@ -23,10 +23,9 @@ import org.ole.planet.myplanet.data.room.dao.ChatDao
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatResponse
-import org.ole.planet.myplanet.model.CouchDBResponse
 import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.CouchDBResponse
 import org.ole.planet.myplanet.model.News
-import kotlinx.coroutines.Dispatchers
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.TestDispatcherProvider

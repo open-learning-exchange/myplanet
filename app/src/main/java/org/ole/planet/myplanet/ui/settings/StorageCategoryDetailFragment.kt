@@ -1,15 +1,12 @@
 package org.ole.planet.myplanet.ui.settings
 
 import android.app.Dialog
-import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -17,8 +14,6 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentStorageCategoryDetailBinding
 import org.ole.planet.myplanet.databinding.ItemDownloadedResourceBinding
@@ -35,27 +30,20 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
     private val viewModel: StorageCategoryViewModel by viewModels()
 
     private var categoryLabel: String = ""
-    private var extensions: Set<String> = emptySet()
-    private var allKnownExtensions: Set<String> = emptySet()
+    private var categoryIndex: Int = -1
 
     private lateinit var adapter: ResourceAdapter
 
     companion object {
         private const val ARG_LABEL = "label"
-        private const val ARG_EXTENSIONS = "extensions"
-        private const val ARG_ALL_KNOWN = "all_known"
+        private const val ARG_CATEGORY_INDEX = "category_index"
         const val RESULT_KEY = "category_deleted"
         const val PAYLOAD_CHECKED_CHANGED = "payload_checked_changed"
 
-        fun newInstance(
-            label: String,
-            extensions: List<String>,
-            allKnownExtensions: List<String>
-        ) = StorageCategoryDetailFragment().apply {
+        fun newInstance(label: String, categoryIndex: Int) = StorageCategoryDetailFragment().apply {
             arguments = Bundle().apply {
                 putString(ARG_LABEL, label)
-                putStringArrayList(ARG_EXTENSIONS, ArrayList(extensions))
-                putStringArrayList(ARG_ALL_KNOWN, ArrayList(allKnownExtensions))
+                putInt(ARG_CATEGORY_INDEX, categoryIndex)
             }
         }
     }
@@ -63,21 +51,14 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         categoryLabel = arguments?.getString(ARG_LABEL) ?: ""
-        extensions = arguments?.getStringArrayList(ARG_EXTENSIONS)?.toSet() ?: emptySet()
-        allKnownExtensions = arguments?.getStringArrayList(ARG_ALL_KNOWN)?.toSet() ?: emptySet()
+        categoryIndex = arguments?.getInt(ARG_CATEGORY_INDEX, -1) ?: -1
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
-        dialog.setOnShowListener { d: DialogInterface ->
-            val sheet = (d as BottomSheetDialog)
-                .findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
-            sheet?.let {
-                BottomSheetBehavior.from(it).apply {
-                    state = BottomSheetBehavior.STATE_EXPANDED
-                    skipCollapsed = true
-                }
-            }
+        dialog.behavior.apply {
+            state = BottomSheetBehavior.STATE_EXPANDED
+            skipCollapsed = true
         }
         return dialog
     }
@@ -104,21 +85,25 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         }
 
         binding.deleteSelectedButton.setOnClickListener {
-            val selected = viewModel.uiState.value.items.filter { it.isChecked }
-            confirmDelete(selected.size, getString(R.string.storage_delete_selected_confirm, selected.size)) {
-                deleteItems(selected)
+            val checkedCount = viewModel.uiState.value.checkedCount
+            confirmDelete(checkedCount, getString(R.string.storage_delete_selected_confirm, checkedCount)) {
+                viewModel.deleteSelected()
             }
         }
 
         binding.deleteAllButton.setOnClickListener {
-            val items = viewModel.uiState.value.items
-            confirmDelete(items.size, getString(R.string.storage_delete_confirm, categoryLabel)) {
-                deleteItems(items)
+            val count = viewModel.uiState.value.items.size
+            confirmDelete(count, getString(R.string.storage_delete_confirm, categoryLabel)) {
+                viewModel.deleteAll()
             }
         }
 
         observeViewModel()
-        viewModel.loadResources(extensions, allKnownExtensions)
+        val category = StorageCategories.all.getOrNull(categoryIndex)
+        viewModel.loadResources(
+            extensions = category?.extensions ?: emptySet(),
+            allKnownExtensions = StorageCategories.allKnownExtensions
+        )
     }
 
     private fun observeViewModel() {
@@ -142,7 +127,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
                 binding.selectAllDivider.visibility = View.VISIBLE
 
                 adapter.submitList(state.items)
-                updateSelectionState(state.items)
+                updateSelectionState(state)
             }
 
             if (state.isDeleting) {
@@ -157,10 +142,10 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         }
     }
 
-    private fun updateSelectionState(items: List<OfflineResourceItem>) {
+    private fun updateSelectionState(state: StorageCategoryUiState) {
         if (_binding == null) return
-        val checkedCount = items.count { it.isChecked }
-        val allChecked = checkedCount == items.size && items.isNotEmpty()
+        val checkedCount = state.checkedCount
+        val allChecked = state.allChecked
 
         binding.selectAllCheckbox.isChecked = allChecked
         binding.deleteSelectedButton.isEnabled = checkedCount > 0
@@ -180,11 +165,6 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
             .setPositiveButton(R.string.yes) { _, _ -> onConfirm() }
             .setNegativeButton(R.string.no, null)
             .show()
-    }
-
-    private fun deleteItems(toDelete: List<OfflineResourceItem>) {
-        if (_binding == null) return
-        viewModel.deleteItems(toDelete)
     }
 
     private val DIFF_CALLBACK = DiffUtils.itemCallback<OfflineResourceItem>(

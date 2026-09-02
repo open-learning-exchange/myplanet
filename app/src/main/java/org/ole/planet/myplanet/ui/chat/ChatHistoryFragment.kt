@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
@@ -36,7 +35,6 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
 private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
-
 
 @AndroidEntryPoint
 class ChatHistoryFragment : Fragment() {
@@ -96,8 +94,6 @@ class ChatHistoryFragment : Fragment() {
             }
         }
 
-        refreshChatHistory()
-
         binding.searchBar.textChanges()
             .drop(1)
             .debounce(300)
@@ -145,11 +141,6 @@ class ChatHistoryFragment : Fragment() {
                 sharedViewModel.searchChats(binding.searchBar.text.toString(), isFullSearch, isQuestion)
             }
         }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        refreshChatHistory()
     }
 
     fun refreshChatHistory() {
@@ -253,7 +244,6 @@ class ChatHistoryFragment : Fragment() {
         _binding = null
         super.onDestroyView()
     }
-
 }
 
 class ChatHistoryOnBackPressedCallback(private val slidingPaneLayout: SlidingPaneLayout) :

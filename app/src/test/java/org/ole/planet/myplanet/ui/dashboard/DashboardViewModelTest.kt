@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import android.app.Application
+import com.google.gson.JsonArray
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
@@ -11,6 +13,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -94,7 +97,7 @@ class DashboardViewModelTest {
         }
 
         val events = mutableListOf<SyncUiState>()
-        val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.syncKeyIdEvent.collect { events.add(it) }
         }
 
@@ -106,8 +109,6 @@ class DashboardViewModelTest {
         assertEquals(2, events.size)
         assertEquals(SyncUiState.Loading, events[0])
         assertEquals(SyncUiState.Success(null), events[1])
-
-        job.cancel()
     }
     @Test
     fun `loadUserContent replaces existing collectors when called multiple times`() = runTest(testDispatcher) {
@@ -256,5 +257,27 @@ class DashboardViewModelTest {
         assertEquals(0, state.courses.size)
         assertEquals(0, state.teams.size)
         assertEquals(0, state.library.size)
+    }
+
+    @Test
+    fun `evaluateChallengeDialog uses voice date count for both user and community counts`() = runTest(testDispatcher) {
+        val userId = "user1"
+        val validUrl = "https://example.org"
+
+        coEvery { progressRepository.fetchCourseData(userId) } returns JsonArray()
+        coEvery { voicesRepository.getCommunityVoiceDateCount(any(), any(), eq(userId)) } returns 5
+        coEvery { voicesRepository.getCommunityVoiceDateCount(any(), any(), isNull()) } returns 7
+        coEvery { coursesRepository.getCourseTitleById(any()) } returns "Course"
+        coEvery { submissionsRepository.hasPendingSurvey(any(), eq(userId)) } returns false
+        every { application.getString(any(), any<String>()) } returns "completed"
+        every { application.getString(any(), any<String>(), any<Int>(), any<Int>()) } returns "in progress"
+        coEvery { progressRepository.hasUserCompletedSync(userId) } returns false
+
+        viewModel.evaluateChallengeDialog(userId, isGuest = false, validUrls = listOf(validUrl), serverUrl = validUrl)
+
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { voicesRepository.getCommunityVoiceDateCount(any(), any(), eq(userId)) }
+        coVerify(exactly = 1) { voicesRepository.getCommunityVoiceDateCount(any(), any(), isNull()) }
     }
 }

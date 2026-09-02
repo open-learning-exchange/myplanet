@@ -10,8 +10,13 @@ manual clone, other agents), initialize them yourself:
 git submodule update --init --recursive
 ```
 
+- **agents-summoning** — summon other AI agents on PRs/issues: who answers, how to leash a doer, why a summon went silent; source: https://github.com/dogi/agents-summoning
 - **merge-prepping** — rewrite PR titles into house style; source: https://github.com/dogi/merge-prepping
 - **kotlin-importing** — sort/clean Kotlin imports; source: https://github.com/dogi/kotlin-importing
+
+Reviewers speak; doers act — an unleashed doer mention (`@openhands`, `@devin`,
+`@copilot`) defaults to commits on your branch, so add "comment only" when that
+isn't wanted.
 
 ## Reference docs
 
@@ -19,7 +24,6 @@ git submodule update --init --recursive
 - docs/DOMAIN_MODEL.md — learning domain: roles, courses, teams, surveys, sync
 - docs/CODE_STYLE_GUIDE.md — naming, imports, coroutines, Room, Hilt, UI
 - docs/TESTING.md — test patterns per layer
-- docs/AGENT_SPELLBOOK.md — summoning AI agents on PRs + "The Skill Sync": how the shared skills are wired up and maintained
 
 ## Flutter port — state of the port (in `flutter/`)
 
@@ -111,13 +115,16 @@ UI package at a time. Conventions worth remembering across slices:
     instead. The repo's impl method can delegate to the same pure function so
     repository tests still exercise it through the interface. (Phase 75,
     `searchChatsForMode`/`sortChatsByRecency`.)
-  - **Dart NFD / combining-mark gap**: Dart's core library has no NFD
-    normalizer, and its `RegExp` rejects the `\p{InCombiningDiacriticalMarks}`
+  - **Accent folding: use `core/utils/text_utils.normalizeText`. Do not
+    hand-roll a decomposition table.** Dart's core library has no NFD
+    normalizer and its `RegExp` rejects the `\p{InCombiningDiacriticalMarks}`
     block name (`FormatException: Invalid property name`, even with
-    `unicode: true`). For accent-insensitive search, hand-roll decomposition
-    for the Latin-1 Supplement block (U+00C0–U+00FF) and drop U+0300–U+036F
-    in the same pass — see `lib/core/utils/text_normalize.dart`. A
-    precomposed "café" (NFC, the Dart default) would otherwise survive a
-    naive regex strip untouched. The original port's `_normalizeText` had
-    this bug for months; it surfaced only when a test asserted on the
-    normalized output rather than the search result.
+    `unicode: true`) — which is real, and already solved: `text_utils`
+    folds via the `diacritic` package. An earlier slice wrote a second
+    `normalizeText` over a hand-written Latin-1 table in
+    `core/utils/text_normalize.dart`; the two disagreed on 7 of 15 accented
+    samples (`Škoda` → `škoda` vs `skoda`, `Māori` → `māori` vs `maori`),
+    and because chat search used one while resource search used the other,
+    `skoda` found the resource `Škoda` but not a chat about it. That file was
+    deleted in Phase 78 and its divergences are pinned in
+    `text_utils_test.dart`, so a narrower reimplementation fails the suite.

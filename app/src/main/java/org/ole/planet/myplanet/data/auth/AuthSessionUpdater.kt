@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.data.auth
 
+import android.util.Log
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
-import android.util.Log
 import dagger.assisted.AssistedInject
 import java.io.DataOutputStream
 import java.net.HttpURLConnection

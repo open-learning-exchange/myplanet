@@ -24,7 +24,6 @@ import com.github.chrisbanes.photoview.PhotoView
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
-import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnChatItemClickListener
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
@@ -43,6 +42,7 @@ import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
+import org.ole.planet.myplanet.utils.StableIdGenerator
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.makeExpandable
 
@@ -188,6 +188,13 @@ class VoicesAdapter(
     init {
         fetchTeamLeaderStatus()
         preParseNews(parentNews)
+        setHasStableIds(true)
+    }
+
+    override fun getItemId(position: Int): Long {
+        val item = getItem(position)
+        val id = StableIdGenerator.generateStringId(item.id)
+        return if (id != RecyclerView.NO_ID) id else StableIdGenerator.generateFallbackId(item)
     }
 
     private fun fetchTeamLeaderStatus() {
@@ -865,14 +872,15 @@ class VoicesAdapter(
 
         val imagesToLoad = news?.parsedImagesArray ?: news?.imagesArray
         imagesToLoad?.let { imagesArray ->
-            if (imagesArray.size() > 0) {
-                if (imagesArray.size() == 1) {
+            val size = imagesArray.size()
+            if (!imagesArray.isEmpty()) {
+                if (size == 1) {
                     val ob = imagesArray[0]?.asJsonObject
                     val resourceId = JsonUtils.getString("resourceId", ob)
                     loadLibraryImage(binding, resourceId)
                 } else {
                     binding.llNewsImages.visibility = View.VISIBLE
-                    for (i in 0 until imagesArray.size()) {
+                    for (i in 0 until size) {
                         val ob = imagesArray[i]?.asJsonObject
                         val resourceId = JsonUtils.getString("resourceId", ob)
                         addLibraryImageToContainer(binding, resourceId)

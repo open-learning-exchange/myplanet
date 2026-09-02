@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.data.auth
 
+import android.util.Log
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import java.lang.reflect.Method
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -14,11 +16,9 @@ import org.junit.After
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
-import io.mockk.mockkStatic
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
-import android.util.Log
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AuthSessionUpdaterTest {

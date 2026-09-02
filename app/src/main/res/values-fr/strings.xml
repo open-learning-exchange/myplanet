@@ -740,6 +740,7 @@
     <string name="sync_step_of">Étape %1$d sur %2$d</string>
     <string name="sync_items_of">%1$d / %2$d</string>
     <string name="sync_table_progress">%1$s  ·  %2$d / %3$d tables</string>
+    <string name="sync_in_progress_wait">Synchronisation en cours. Veuillez attendre la fin.</string>
     <string name="sync_shelves_progress">%1$d / %2$d étagères</string>
     <string name="team_leader">Chef d\'équipe</string>
     <string name="select_resource">"Sélectionner la ressource: "</string>
@@ -1268,6 +1269,7 @@
     <string name="current_cv">CV actuel : %s</string>
     <string name="select_pdf_only">Veuillez sélectionner un fichier PDF</string>
     <string name="file_not_found">Fichier introuvable : %s</string>
+    <string name="text_content_truncated">Le fichier est trop volumineux pour être affiché en entier — seule la première partie est affichée</string>
     <string name="chat_already_shared_to_destination">Cette discussion a déjà été partagée vers cette destination</string>
     <string name="load_earlier_messages">Charger les messages précédents</string>
     <string name="already_shared">Déjà partagé</string>
@@ -1386,5 +1388,10 @@
     <string name="filter_pdfs">PDF</string>
     <string name="downloaded">Téléchargé</string>
     <string name="not_downloaded">Non téléchargé</string>
+    <string-array name="download_filter">
+        <item>Tout</item>
+        <item>Téléchargé</item>
+        <item>Non téléchargé</item>
+    </string-array>
 
 </resources>

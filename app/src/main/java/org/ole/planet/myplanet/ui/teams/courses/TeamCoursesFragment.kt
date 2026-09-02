@@ -104,7 +104,7 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val existingIds = teamsRepository.getTeamCourseIds(teamId)
+                val existingIds = teamsRepository.getTeamCourseIds(teamId).toSet()
                 val allCourses = coursesRepository.getAllCourses()
                 val availableCourses = allCourses.filter { it.courseId !in existingIds }
 

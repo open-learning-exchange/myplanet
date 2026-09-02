@@ -10,7 +10,6 @@ import android.os.Build
 import android.os.SystemClock
 import android.util.Log
 import androidx.core.content.edit
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.Instant
@@ -42,7 +41,6 @@ import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SyncRepository
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -68,7 +66,6 @@ class SyncManager @Inject constructor(
     private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider,
     private val timeProvider: TimeProvider,
-    private val teamsRepository: TeamsRepository,
     private val userSyncRepository: UserSyncRepository,
     private val syncRepository: SyncRepository,
     private val syncTimeLogger: SyncTimeLogger
@@ -216,7 +213,7 @@ class SyncManager @Inject constructor(
             Log.d("SyncPerf", "SYNC FAILED after ${totalSyncTime}ms")
             Log.d("SyncPerf", "Error: ${err.message}")
             Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-            err.printStackTrace()
+            Log.e("SyncManager", "Full sync failed", err)
             handleException(err.message)
         } finally {
             destroy()
@@ -325,7 +322,7 @@ class SyncManager @Inject constructor(
                     val rows = getJsonArray("rows", response)
                     syncTimeLogger.logApiCall("$url/resources/_all_docs (batch $batchCount)", batchApiDuration, true, rows.size())
 
-                    if (rows.size() == 0) {
+                    if (rows.isEmpty()) {
                         break
                     }
 
@@ -381,7 +378,7 @@ class SyncManager @Inject constructor(
                         }
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e("SyncManager", "Resource batch failed", e)
                     batchSizer.recordFailure()
                     hadBatchFailure = true
                     syncTimeLogger.logDetail("resource_sync", "Batch $batchCount failed: ${e.message}")
@@ -404,7 +401,7 @@ class SyncManager @Inject constructor(
                     syncTimeLogger.logDbOperation("delete_cleanup", "resources", cleanupDuration, newIds.size - validNewIds.size)
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("SyncManager", "Resource cleanup failed", e)
                 syncTimeLogger.logDetail("resource_sync", "Cleanup failed: ${e.message}")
             }
             syncTimeLogger.endProcess("resource_sync_main", processedItems)
@@ -415,7 +412,7 @@ class SyncManager @Inject constructor(
             val seconds = (resourceSyncTime % 60000) / 1000
             Log.d("SyncPerf", "  ✓ Resources sync completed: ${minutes}m ${seconds}s - $processedItems items")
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("SyncManager", "Resource sync failed", e)
             syncTimeLogger.endProcess("resource_sync_main", processedItems)
             val resourceSyncEndTime = SystemClock.elapsedRealtime()
             Log.d("SyncPerf", "  ✗ Resources sync failed after ${resourceSyncEndTime - resourceSyncStartTime}ms: ${e.message}")
@@ -551,7 +548,7 @@ class SyncManager @Inject constructor(
             val totalDuration = SystemClock.elapsedRealtime() - librarySyncStartTime
             Log.d("SyncPerf", "  ✓ Library sync completed: ${totalDuration}ms - $processedItems items from ${shelvesWithData.size} shelves")
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("SyncManager", "Library sync failed", e)
             syncTimeLogger.endProcess("library_sync_main", processedItems)
             val failDuration = SystemClock.elapsedRealtime() - librarySyncStartTime
             Log.d("SyncPerf", "  ✗ Library sync failed after ${failDuration}ms: ${e.message}")
