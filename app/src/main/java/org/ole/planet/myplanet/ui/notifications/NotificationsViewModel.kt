@@ -87,7 +87,6 @@ class NotificationsViewModel @Inject constructor(
                 .mapNotNull { it.relatedId }
                 .distinct()
 
-            // Parse each task notification's date once and reuse it for both the team-name lookup and rendering.
             val parsedTaskDates: Map<String, Pair<String, String>?> =
                 taskNotifications.associateBy({ it.id }, { parseTaskDate(it.message) })
 
@@ -364,7 +363,6 @@ class NotificationsViewModel @Inject constructor(
         val resolvedType = notificationsRepository.resolveType(notification.type, notification.message, notification.subType)
         val formattedText = when (resolvedType) {
             "task" -> {
-                // containsKey, not ?: — a cached null (message had no date) must short-circuit and not re-parse.
                 val parsedDate = if (parsedTaskDates.containsKey(notification.id)) {
                     parsedTaskDates[notification.id]
                 } else {
@@ -390,7 +388,6 @@ class NotificationsViewModel @Inject constructor(
             }
             "join_request" -> {
                 if (!notification.type.equals("join_request", ignoreCase = true)) {
-                    // Server notification with pre-formatted message
                     notification.message
                 } else {
                     val relatedId = notification.relatedId
