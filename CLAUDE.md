@@ -506,6 +506,28 @@ does **not** carry the mandatory-survey block. That check lives in
 which is where the Kotlin has it too (`TakeCourseFragment.onFinishStep`).
 Neither `ExamTakingFragment` nor `BaseExamFragment` looks at surveys at all.
 
+Phase 100 gives `TakeExamScreen` its first coverage (16 tests) and closes two
+defects they found. **The certified-course verification photo never uploaded**:
+the screen wrote the JPEG under the *submission* id while
+`SubmitPhotosUploader` reads it back with
+`SubmitPhotosFiles.existingFileFor(photoId: row.itemId)` — the `submit_photos`
+row id, a sha1 of `'photo:$submissionId:$examId:$courseId:$capturedAtMillis'`.
+The lookup missed on every capture and the attachment step took its
+"a missing file is a no-op" branch, so the document uploaded, the photo stayed
+on the device, and nothing logged an error. `SubmissionsRepository.photoIdFor`
+now exposes the derivation, and the caller mints the id, writes the bytes under
+it, and passes the **same `capturedAt`** back in — the timestamp is inside the
+hash, so a second `DateTime.now()` would re-open the gap. **Bytes on disk and
+the row that points at them need one key.** Second, `_submitExam` read the user
+with `ref.read(sessionProvider).valueOrNull` on a screen that never watches
+that provider, so it was null until something else resolved it and the early
+return discarded the graded attempt with no dialog, no snackbar and no row —
+latent only because the router holds a `ref.listen` on the session. **A
+provider a screen reads but never watches is null; await its `.future`.** On
+harvest that fix needed amending: the `await` sat outside the method's `try`,
+and a future can reject where `valueOrNull` could not, so a rejecting session
+reproduced the same silence from a new trigger.
+
 ### Documentation Map
 
 | Document | Read it when… |
@@ -522,7 +544,10 @@ Reach for the four `.claude/agents` subagents by name when the work fits one: th
 port's conventions, and each pins its own model and effort so a session need not restate either.
 `harvest-triage` is the cheap one — drop it to `model: haiku` if a batch gets large. Parity
 judgements go to `parity-auditor` at `effort: max`, never to a cheaper agent; it is where the
-drift traps and the broken round trips have actually been found.
+drift traps and the broken round trips have actually been found. One harness caveat: a session reads
+`.claude/agents/` at **startup**, so an agent file added or pulled mid-session is not callable
+until the session restarts — `Agent type '<name>' not found` with only the built-ins listed is
+that, not a malformed definition.
 
 Reviewers speak; doers act — an unleashed doer mention (`@openhands`, `@devin`,
 `@copilot`) defaults to commits on your branch, so add "comment only" when that

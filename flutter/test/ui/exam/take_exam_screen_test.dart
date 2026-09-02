@@ -51,6 +51,12 @@ class _TestSessionNotifier extends SessionNotifier {
   Future<UserRow?> build() async => user;
 }
 
+/// A session whose future rejects, for the submit path's error branch.
+class _FailingSessionNotifier extends SessionNotifier {
+  @override
+  Future<UserRow?> build() async => throw Exception('session unavailable');
+}
+
 class _TestServerConfig extends ServerConfigNotifier {
   _TestServerConfig(this.config);
 
@@ -494,6 +500,35 @@ void main() {
       await settleExam(tester);
 
       expect(find.text('ROOT_PAGE'), findsOneWidget);
+      expect(find.text('Exam Complete'), findsNothing);
+    });
+
+    /// The submit path awaits `sessionProvider.future` — which, unlike the
+    /// `ref.read(...).valueOrNull` it replaced, can also *reject*. Left
+    /// uncaught that reproduces the silence the await was introduced to
+    /// remove: the graded attempt gone with nothing on screen.
+    testWidgets('a rejecting session reports the failure instead of silence', (
+      tester,
+    ) async {
+      await seedExam();
+      await seedQuestion(
+        id: 'q1',
+        position: 0,
+        type: 'input',
+        header: 'Anything',
+      );
+      await pumpExam(
+        tester,
+        overrides: [sessionProvider.overrideWith(_FailingSessionNotifier.new)],
+      );
+
+      await tester.tap(find.text('Submit exam'));
+      await settleExam(tester);
+
+      expect(
+        find.text('Could not save your exam. Please try again.'),
+        findsOneWidget,
+      );
       expect(find.text('Exam Complete'), findsNothing);
     });
 

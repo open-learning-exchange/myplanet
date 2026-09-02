@@ -301,7 +301,19 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
     // watches it. That silently dropped the whole attempt: no dialog, no
     // snackbar, the graded answers discarded. It only stays hidden in the
     // shipping app because the router holds a `ref.listen` on the session.
-    final user = await ref.read(sessionProvider.future);
+    final UserRow? user;
+    try {
+      user = await ref.read(sessionProvider.future);
+    } catch (_) {
+      // Awaiting a future means it can also reject, which `ref.read(...)
+      // .valueOrNull` could not. Leaving that uncaught would reproduce the
+      // very silence this await was introduced to remove — the attempt lost
+      // with nothing on screen — so it reports the same failure the save path
+      // does.
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text(l10n.examSubmitFailed)));
+      return;
+    }
     if (!mounted) return;
     final exam = ref.read(examProvider(widget.examId)).valueOrNull;
     if (user == null || exam == null) return;
