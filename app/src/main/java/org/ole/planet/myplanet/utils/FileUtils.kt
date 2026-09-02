@@ -64,23 +64,53 @@ object FileUtils {
     }
 
     fun getSDPathFromUrl(context: Context, url: String?): File {
-        return resolveFilePath(context, "/ole/${getIdFromUrl(url)}", getResourceRelativePathFromUrl(url))
+        val segments = parseUrlSegments(url)
+        return resolveFilePath(context, "/ole/${getIdFromSegments(segments)}", getResourceRelativePathFromSegments(segments))
     }
 
     fun getResourceRelativePathFromUrl(url: String?): String {
+        return getResourceRelativePathFromSegments(parseUrlSegments(url))
+    }
+
+    private fun parseUrlSegments(url: String?): List<String>? {
         return try {
-            val segments = url?.toUri()?.pathSegments ?: return getFileNameFromUrl(url)
+            url?.toUri()?.pathSegments
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to parse path segments from url", e)
+            null
+        }
+    }
+
+    private fun getIdFromSegments(segments: List<String>?): String {
+        if (segments == null) return ""
+        val idx = segments.indexOf("resources")
+        return if (idx != -1 && idx + 1 < segments.size) segments[idx + 1] else ""
+    }
+
+    private fun getResourceRelativePathFromSegments(segments: List<String>?): String {
+        if (segments == null) return ""
+        return try {
             val idx = segments.indexOf("resources")
             if (idx != -1 && idx + 2 < segments.size) {
                 segments.subList(idx + 2, segments.size).joinToString("/") {
                     URLDecoder.decode(it, StandardCharsets.UTF_8.name())
                 }
             } else {
-                getFileNameFromUrl(url)
+                getFileNameFromSegments(segments)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to resolve resource relative path from url", e)
-            getFileNameFromUrl(url)
+            getFileNameFromSegments(segments)
+        }
+    }
+
+    private fun getFileNameFromSegments(segments: List<String>?): String {
+        val lastSegment = segments?.lastOrNull() ?: return ""
+        return try {
+            URLDecoder.decode(lastSegment, StandardCharsets.UTF_8.name())
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to decode file name from url segment", e)
+            ""
         }
     }
 
@@ -136,9 +166,8 @@ object FileUtils {
 
     fun getFileNameFromUrl(url: String?): String {
         return try {
-            url?.toUri()?.lastPathSegment?.let {
-                URLDecoder.decode(it, StandardCharsets.UTF_8.name())
-            } ?: ""
+            val segments = url?.toUri()?.pathSegments
+            getFileNameFromSegments(segments)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to extract file name from url", e)
             ""
@@ -147,10 +176,8 @@ object FileUtils {
 
     fun getIdFromUrl(url: String?): String {
         return try {
-            url?.toUri()?.pathSegments?.let { segments ->
-                val idx = segments.indexOf("resources")
-                if (idx != -1 && idx + 1 < segments.size) segments[idx + 1] else ""
-            } ?: ""
+            val segments = url?.toUri()?.pathSegments
+            getIdFromSegments(segments)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to extract resource id from url", e)
             ""

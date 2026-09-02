@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.utils
 
-import android.util.Base64
 import android.util.Log
+import java.util.Base64
 import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
 import java.net.URLEncoder
@@ -71,7 +71,7 @@ object UrlUtils {
 
     fun basicAuthHeader(username: String, password: String): String {
         val credentials = "$username:$password".toByteArray()
-        return "Basic ${Base64.encodeToString(credentials, Base64.NO_WRAP)}"
+        return "Basic ${Base64.getEncoder().encodeToString(credentials)}"
     }
 
     val hostUrl: String
