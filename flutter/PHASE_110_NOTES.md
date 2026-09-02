@@ -112,6 +112,39 @@ evidence: `a right answer advances` (the un-gated screen advanced too) and
 `a text answer passes by containment` (the un-gated screen finished the exam
 regardless of the verdict — its real evidence is defect 8's probe).
 
+## A second audit, on the finished implementation
+
+The first audit established the Kotlin. A second one attacked the port, and
+found four more defects in my own code plus one false claim in these notes.
+Worth recording as a pattern: **an audit of the ground truth does not audit the
+implementation**, and the implementation defects were the more dangerous half.
+
+| # | defect | pre-fix failure |
+|---|---|---|
+| 11 | **`_ensureSession` memoised a *rejected* future.** `_session ??= _createSession()` caches the failure, so after one transient error — a rejecting session, one failed write — no later press ever re-ran the body. The exam was over for the rest of the mount: every press replayed the same error, no submission row, no answers, the only way out to leave the screen. Kotlin is more forgiving twice over: `startExamSession` retries the local write three times (`SubmissionsRepositoryImpl.kt:420-435`) and a later press re-enters `saveExamAnswer`, whose `sub == null` chain re-finds a submission. The retry is now ported; `_ensureSession` clears a rejection | `a second press after a transient failure gets through` — `Expected: <2> / Actual: <1>`: `startExamSession` never called again |
+| 12 | **The renderer was case-sensitive where the grader and the shaper are not.** `_buildAnswerInput` matched `question.type` exactly; `ExamGrading.isCorrect` and `AnswerShape.forQuestion` both lowercase first, as Kotlin's `ignoreCase = true` comparisons do. A question typed `"Select"` therefore drew a **text field**, the typed answer went through `AnswerShape`'s select branch and was stored as the **empty string**, and the grader graded an empty selection against a non-empty key. The learner's answer discarded and the gate unable to open — where before the gate the same mismatch only cost a mark | `a capitalised select still renders its choices` — `Found 0 widgets with type "RadioGroup<String>"` |
+| 13 | **The retry snackbar sat on the retry button.** Flutter's 4-second default, `SnackBarBehavior.fixed`, over the bottom of the screen — which is where this screen's forward button is. Three wrong tries meant about twelve seconds of unusable button. Kotlin's overlap is narrower and I had asserted it was the same: `btnBack`/`btnNext` are `ImageButton`s in the **top** bar (`fragment_exam_taking.xml:30`, `:62`), so only its Submit is ever covered. Fixed with Kotlin's own `LENGTH_LONG` (2750 ms) and by dismissing the snackbar the moment the answer changes — the action that always precedes the next press | showed up *in the tests*: the second tap of the recovery test was absorbed by the snackbar's exit transition, which `pump(5s)` starts but does not finish |
+| 14 | **`user!` after re-awaiting the session.** A logout mid-exam threw into the failure branch and reported "Could not save your exam" for an attempt that was already written and already `requires grading`. Now the record stands and only the photo and the queueing are skipped | reasoning, not a test — the window needs a logout between the final save and the photo step |
+
+And one claim in these notes that was simply false: that the read-modify-write
+in `saveExamAnswer` was "inside one `transaction`". It was not; see *For the
+integrator*. It is now.
+
+The audit also caught a test that **passed while the screen was dead** — the
+pre-existing `a failed save reports it and keeps the user on the exam` asserts
+the button is live again and stops, so defect 11 sailed straight through it.
+The new test presses a second time. That is the failure mode to look for in
+this file: every assertion here is about what is on screen, and "the button
+looks usable" is not "the button works".
+
+Three tests were added for changes the audit found untested: `_isComplete`'s
+`requires grading` entry (the only change in this slice that alters an existing
+screen), the dropped `grade` badge, and `_goBack` on an unanswered question.
+The badge one needed `scrollUntilVisible` — the detail body is a
+`ListView(children: [...])`, so the answer card sits below the 600px test fold
+and a negative assertion would otherwise pass because nothing was mounted
+rather than because nothing was drawn. Same trap Phase 95 recorded.
+
 ## The three decisions Phase 106 asked for
 
 ### Per-answer `grade`: take Kotlin's field, drop the badge
@@ -185,16 +218,33 @@ Three, all recorded at the code:
    no route past but abandoning the exam, and it is not hypothetical: every
    `ratingScale` question in an exam is in that position, as is any `input`
    whose author supplied no key. **This is the one place I think Kotlin's
-   behaviour is wrong for this app**, and the integrator can overrule it. An
-   *unanswered* question still fails, so the gate keeps its other job.
+   behaviour is wrong for this app**, and the integrator can overrule it.
+
+   The cost, which the second audit made me state rather than leave implied: a
+   *malformed* exam — an author who forgot the key on a genuine
+   multiple-choice question — now silently accepts any answer and uploads
+   `passed: true`, where Kotlin fails loudly by trapping the learner. Under
+   `requires grading` a teacher marks it anyway, so what is lost is a
+   meaningless `passed` rather than a wrong grade. That still seems the better
+   trade against an exam nobody can finish, but it is a judgement about
+   learners, not a mechanical gap. An *unanswered* question still fails.
 2. **A wrong press of Finish leaves the attempt `pending`.** Kotlin assigns
    `isExplicitSubmission = true` at `:631` *before* calling `updateAnsDb`, so a
    wrong final answer writes `requires grading` for an exam the learner has not
-   finished — and `isStepCompleted` (`status != 'pending'`) then unlocks the
-   next course step off a wrong answer. Pressing Back flips it back, which is
-   how the bug stays quiet. Not ported; here the status also decides
-   `isUpdated`, so it would additionally queue a half-finished attempt for
-   upload.
+   finished. Not ported, and the port-specific reason is the strong one: here
+   the status also decides `isUpdated`, and `submissions_screen`'s draft flow
+   sweeps `queuePending` for the whole user, so reproducing it would leak a
+   half-finished attempt onto the wire on any unrelated upload.
+
+   Two corrections to what an earlier draft of this note claimed about the
+   Kotlin side, both from the second audit. `isStepCompleted` is not general
+   step unlocking: it is consulted from one place,
+   `TakeCourseFragment.changeNextButtonState`, whose whole body is wrapped in
+   `if (courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac")` — one hardcoded
+   course. And the bug does **not** self-heal the way "pressing Back flips it
+   back" suggests: `btnBack` saves at the still-final index with the sticky
+   flag still set, so it re-writes `requires grading`; only the next save at a
+   non-final index returns it to `pending`.
 3. **A half-finished attempt is not uploadable.** `getPendingExamResults` is
    status-blind, so a Kotlin attempt abandoned mid-exam goes up as `pending` on
    the next sync — and since `deleteExamSubmissions` then recreates the row
@@ -203,11 +253,27 @@ Three, all recorded at the code:
    `queuePending` is also swept by unrelated callers (`submissions_screen`), so
    without this an exam in progress would leak out on any other upload.
 
+4. **Going back on an *unanswered* question records nothing.** Kotlin's
+   `btnBack` saves unconditionally, so an untouched question is written with
+   `mistakes + 1` and `isPassed = false` — and that row **uploads**, because
+   `getPendingExamResults` has no status filter and `Answer.createObject` sends
+   `mistakes`. Scoring a mistake against a question the learner never answered,
+   and reporting it to Planet, is a defect rather than a behaviour. The cost is
+   that the two apps report different mistake totals for identical learner
+   behaviour. (Added after the second audit, which caught that the guard was
+   already in the code and undocumented — a divergence that changes an uploaded
+   field, hiding behind a doc comment that described Kotlin's behaviour as if
+   it were the port's.)
+
 And one structural difference: the port creates the session on the **first
 save** rather than before the first question is drawn, to keep `build` free of
-side effects. The only behavioural consequence is that abandoning an exam
-without answering anything leaves no row, where Kotlin leaves an empty
-`pending` attempt its next `deleteStale` clears.
+side effects. Two behavioural consequences, the second of which is an
+improvement the first draft of this note missed: abandoning an exam without
+answering anything leaves no row (Kotlin leaves an empty `pending` attempt its
+next `deleteStale` clears), and **opening an exam and backing out no longer
+destroys the previous attempt** — Kotlin deletes stale attempts on screen open,
+before a single answer, so it has a wider window in which a queued-but-undrained
+upload can be lost.
 
 ## Kotlin behaviours deliberately **not** ported
 
@@ -217,15 +283,6 @@ Recorded so a later phase does not read them as gaps. All from the audit.
   reachable only with `cont == true` for an exam (the `!cont` path returned
   already) and `cont` is unconditionally `true` for a survey. `isLastAnsvalid`
   is written and read nowhere.
-- **Kotlin's free-text verdict reads stale state.** `updateAnsDb` passes `ans`,
-  and for `input`/`textarea` `ans` is never updated from the EditText —
-  `saveCurrentAnswer` and the text watcher both write `answerData.singleAnswer`
-  instead. So a free-text answer is graded against `""` on the first press and
-  marked wrong; navigating away and back re-renders, `loadSavedAnswer` assigns
-  `ans`, and the same answer then passes. **A Kotlin free-text exam question
-  can only be passed by leaving it and coming back.** The stored `value` is
-  correct throughout; only the verdict is computed from the stale field. The
-  port grades the answer it recorded, so this cannot arise.
 - **Two parsers race over `exam_questions`.** `"exams"` and `"courses"` sync
   concurrently (`SyncManager.kt:145-169`), both produce the same row id, and
   `QuestionDao.upsertAll` is `@Upsert` — a full-row replace. So whichever walk
@@ -245,6 +302,26 @@ Recorded so a later phase does not read them as gaps. All from the audit.
   the question is answered. The port keeps its one forward button per state
   (Next, then Submit on the last question). The gating is identical; only the
   button count differs.
+- **`continueExam`'s other half.** `BaseExamFragment.kt:133` does two things:
+  the thank-you dialog *and*
+  `saveCourseProgress(exam?.courseId, stepNumber, sub?.status == "graded")`.
+  `_showResult` ports only the dialog. Omitting it is nil-or-positive: `sub` is
+  the in-memory object `createExamSubmission` returned and `saveExamAnswer`
+  updates the row without mutating it, so `sub?.status == "graded"` is
+  **always false** and Kotlin's call writes `passed = false` — clearing a step
+  that had previously passed. Note that the port's own
+  `ProgressRepository.updateCourseProgress` has **no caller anywhere**, while
+  its doc comment and `app_database.dart:2929` both claim "used by the exam
+  path"; those two comments want correcting, in a file this lane does not own.
+- **Kotlin's free-text verdict reads stale state, and worse than first
+  recorded.** `updateAnsDb` passes `ans`, which for `input`/`textarea` is never
+  updated from the EditText — so the answer is graded against `""` on the first
+  press. Navigating away and back re-renders, `loadSavedAnswer` assigns `ans`,
+  and the same answer then passes. On the **first** question `btnBack` is
+  `GONE`, so there is nowhere to navigate to: **a Kotlin exam whose first
+  question is free-text and carries a key cannot be finished at all.** The
+  stored `value` is correct throughout (it arrives via the `otherText`
+  channel); only the verdict is wrong. The port grades the answer it recorded.
 - **`hasOtherOption`** stays unported, as Phase 106 recorded, so
   `handleChecked`'s `ans = "other"` — which `getChoiceTextById` cannot resolve
   and which therefore traps the learner on any `select` where they pick
@@ -271,9 +348,14 @@ Recorded so a later phase does not read them as gaps. All from the audit.
   should become `SubmissionDao.deleteExamSubmissions(parentId, userId)`.
   Likewise `saveExamAnswer` reads the whole answer set and rewrites it, because
   `upsertAll`'s `answers:` map replaces a submission's answers wholesale; a
-  `SubmissionDao.upsertAnswer` would drop that round trip. Neither is a
-  correctness problem — both are inside one `transaction` — and the rows are
-  one per question.
+  `SubmissionDao.upsertAnswer` would drop that round trip. The rows are one per
+  question, so the read is small. An earlier draft of this note claimed both
+  were "inside one `transaction`" and therefore harmless; **that was false** —
+  the read sat outside, so two concurrent saves could interleave
+  read/read/write/write and revert the first, losing a `mistakes` increment.
+  `saveExamAnswer` now wraps the read and the write in one `_dao.transaction`
+  (drift nests it as a savepoint inside `upsertAll`'s own). The round trip in
+  `_deleteExamSubmissions` has the same shape but no interleaving caller.
 - **A note is owed to `SubmissionDao.pendingUploads`** saying its missing
   status filter is deliberate, because an exam is never `complete` and
   `getPendingSubmissions`' `status = 'complete'` would strand every one. Same
@@ -283,14 +365,23 @@ Recorded so a later phase does not read them as gaps. All from the audit.
   act on either: the premise is an inference from Kotlin's DAO queries rather
   than a captured Planet document, and it is cheap to settle with one `curl`
   against a Planet `exams` database. Worth a phase of its own.
-  1. **`TakeExamScreen` may be unreachable.** Its only entry is
-     `course_detail_screen.dart:190`, gated on `ExamDao.getByStepId`. But
-     `exam_mapper.dart:57` takes `stepId` from the exam document's own `stepId`
-     key — which the Kotlin never reads from there — while the port's step ids
-     are synthetic (`course_mapper.dart:117`, `'$courseId:$stepIndex'`). The
-     lookup can only match a document that literally carries
-     `"stepId": "<courseId>:<index>"`. The button may never render.
-  2. **Nothing may fill `exams`/`exam_questions` for a real course test.** The
+  1. **`TakeExamScreen` is unreachable with real synced data, and this half is
+     settled in-repo — no `curl` needed.** Both entries —
+     `course_detail_screen.dart:190` and `take_course_screen.dart:373` (the
+     first draft of this note named only the former) — resolve the exam through
+     `ExamDao.getByStepId`. But `exam_mapper.dart:57` takes `stepId` from the
+     exam document's own `stepId` key, which the Kotlin never reads from there
+     (`CoursesRepositoryImpl.kt:679` mints the step's own id and `:745` assigns
+     it to the exam), while the port's step ids are synthetic
+     (`course_mapper.dart:118`, `'$courseId:$stepIndex'`). **Nothing in the port
+     ever writes an `exams.stepId` equal to a `course_steps.id`**, so the two
+     ends of its own join cannot meet except by coincidence — which is why every
+     fixture has to hand-fake it. The same lookup gates the payoff of defect 7:
+     `progress_repository.dart:72-75` builds `examByStep` from
+     `getByStepIds(...)`, so the per-step mistake totals the fixed `parentId`
+     restores are still unobservable.
+  2. **Nothing may fill `exams`/`exam_questions` for a real course test.**
+     This half *is* the inference — it is the one a `curl` would settle. The
      only writer is `surveys_repository.dart:295` via `ExamMapper.fromDoc`,
      which returns `null` unless `type == 'exam'` — while the in-repo Kotlin
      evidence (`CoursesRepositoryImpl` reads exams as

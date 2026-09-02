@@ -240,6 +240,37 @@ class SubmissionsRepository {
         ? courseId
         : exam.courseId;
     final parentId = examParentId(examId: exam.id, courseId: resolvedCourseId);
+    // Retried three times like `startExamSession`'s own loop
+    // (`SubmissionsRepositoryImpl.kt:420-435`, whose comment names transient
+    // SQLite constraints during rapid operations). Without it a single failed
+    // write ends the exam: the screen has one caller and nothing else opens an
+    // attempt.
+    Object? lastError;
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        return await _openExamSession(
+          exam: exam,
+          questions: questions,
+          userId: userId,
+          parentId: parentId,
+          now: now,
+        );
+      } on Exception catch (error) {
+        lastError = error;
+      }
+    }
+    throw StateError(
+      'Failed to start exam session after 3 attempts: $lastError',
+    );
+  }
+
+  Future<String> _openExamSession({
+    required ExamRow exam,
+    required List<ExamQuestionRow> questions,
+    required String userId,
+    required String parentId,
+    DateTime? now,
+  }) async {
     await _deleteExamSubmissions(parentId: parentId, userId: userId);
     final timestamp = (now ?? DateTime.now()).millisecondsSinceEpoch;
     final id = sha1
@@ -352,63 +383,78 @@ class SubmissionsRepository {
       text: answer.value,
     );
     final answerId = '$submissionId:${question.id}';
-    // `answersFor` + a full rewrite rather than a targeted update: the DAO's
-    // `upsertAll` replaces a submission's whole answer set, and adding a
-    // `SubmissionDao` method to touch one row would mean editing
-    // `app_database.dart`, which another lane owns this round. The rows are
-    // one per question, so the read is small; a follow-up should move this to
-    // `SubmissionDao.upsertAnswer` and drop the round trip.
-    final existing = await _dao.answersFor(submissionId);
-    final previous = existing.where((row) => row.id == answerId).firstOrNull;
-    final companions = [
-      for (final row in existing)
-        if (row.id != answerId) row.toCompanion(false),
-      SubmissionAnswersCompanion.insert(
-        id: answerId,
-        submissionId: submissionId,
-        examId: Value(question.examId),
-        questionId: Value(question.id),
-        value: Value(shape.value),
-        valueChoices: Value(shape.valueChoices),
-        mistakes: Value((previous?.mistakes ?? 0) + (isCorrect ? 0 : 1)),
-        isPassed: Value(isCorrect),
-        grade: const Value(1),
-      ),
-    ];
-    // `isCorrect` is part of the condition, which Kotlin's is not: `onClick`
-    // assigns `isExplicitSubmission = true` at `ExamTakingFragment.kt:631`
-    // *before* it calls `updateAnsDb`, so a **wrong** press of Finish writes
-    // `requires grading` for an exam the learner has not finished — and
-    // `isStepCompleted` (`status != 'pending'`) then unlocks the next course
-    // step off the back of a wrong answer. Pressing Back flips it to
-    // `pending` again, which is how the bug stays quiet. Here the status
-    // would additionally decide `isUpdated`, so reproducing it would queue a
-    // half-finished attempt for upload.
+    // `isCorrect` is part of the status condition, which Kotlin's is not:
+    // `onClick` assigns `isExplicitSubmission = true`
+    // (`ExamTakingFragment.kt:630-632`) *before* it calls `updateAnsDb`, so a
+    // **wrong** press of Finish writes `requires grading` for an exam the
+    // learner has not finished. Not ported, and the port-specific reason is
+    // the strong one: here the status also decides `isUpdated`, and
+    // `submissions_screen`'s draft flow sweeps `queuePending` for the whole
+    // user, so reproducing it would leak a half-finished attempt onto the wire
+    // on any unrelated upload. (Kotlin's own consequence is narrower than it
+    // looks — `isStepCompleted` is read from one place,
+    // `TakeCourseFragment.changeNextButtonState`, whose body is wrapped in a
+    // single hardcoded `courseId` — and it does not self-heal the way a first
+    // reading suggests: `btnBack` saves at the still-final index with the
+    // sticky flag still set, so it re-writes `requires grading`; only the next
+    // save at a non-final index returns it to `pending`.)
     final status = isFinal && isExplicitSubmission && isCorrect
         ? 'requires grading'
         : 'pending';
-    await _dao.upsertAll(
-      [
-        SubmissionsCompanion(
-          id: Value(submissionId),
-          status: Value(status),
-          lastUpdateTime: Value((now ?? DateTime.now()).millisecondsSinceEpoch),
-          // Kotlin's `updateStatusAndLastUpdate` sets `isUpdated = 1` on every
-          // save, and its exam-specific upload config
-          // (`UploadConfigs.ExamResults` -> `getPendingExamResults`) has no
-          // status filter at all — so a half-finished Kotlin attempt goes up
-          // as `pending` on the next sync, and `deleteExamSubmissions` then
-          // POSTs a second document for the retake. The port's
-          // `pendingUploads` is likewise status-blind (`isUpdated == true`,
-          // deliberately: filtering on `status = 'complete'` the way
-          // `getPendingSubmissions` does would strand every exam, since an
-          // exam is never `complete`), so this flag is the gate instead: an
-          // attempt becomes uploadable exactly when it is submitted.
-          isUpdated: Value(status == 'requires grading'),
+    // One transaction around the read *and* the write, because `upsertAll`
+    // replaces a submission's whole answer set: a read outside it lets two
+    // concurrent saves interleave read/read/write/write and revert the first,
+    // losing a `mistakes` increment. Drift nests this as a savepoint inside
+    // `upsertAll`'s own transaction.
+    //
+    // Reading the set and rewriting it is itself a workaround: `SubmissionDao`
+    // has no way to touch one answer row, and adding one would mean editing
+    // `app_database.dart`, which another lane owns this round. The rows are one
+    // per question, so the read is small; a follow-up should add
+    // `SubmissionDao.upsertAnswer` and drop the rewrite.
+    await _dao.transaction(() async {
+      final existing = await _dao.answersFor(submissionId);
+      final previous = existing.where((row) => row.id == answerId).firstOrNull;
+      final companions = [
+        for (final row in existing)
+          if (row.id != answerId) row.toCompanion(false),
+        SubmissionAnswersCompanion.insert(
+          id: answerId,
+          submissionId: submissionId,
+          examId: Value(question.examId),
+          questionId: Value(question.id),
+          value: Value(shape.value),
+          valueChoices: Value(shape.valueChoices),
+          mistakes: Value((previous?.mistakes ?? 0) + (isCorrect ? 0 : 1)),
+          isPassed: Value(isCorrect),
+          grade: const Value(1),
         ),
-      ],
-      answers: {submissionId: companions},
-    );
+      ];
+      await _dao.upsertAll(
+        [
+          SubmissionsCompanion(
+            id: Value(submissionId),
+            status: Value(status),
+            lastUpdateTime: Value(
+              (now ?? DateTime.now()).millisecondsSinceEpoch,
+            ),
+            // Kotlin's `updateStatusAndLastUpdate` sets `isUpdated = 1` on
+            // every save, and its exam-specific upload config
+            // (`UploadConfigs.ExamResults` -> `getPendingExamResults`) has no
+            // status filter at all — so a half-finished Kotlin attempt goes up
+            // as `pending` on the next sync, and `deleteExamSubmissions` then
+            // POSTs a second document for the retake. The port's
+            // `pendingUploads` is likewise status-blind (`isUpdated == true`,
+            // deliberately: filtering on `status = 'complete'` the way
+            // `getPendingSubmissions` does would strand every exam, since an
+            // exam is never `complete`), so this flag is the gate instead: an
+            // attempt becomes uploadable exactly when it is submitted.
+            isUpdated: Value(status == 'requires grading'),
+          ),
+        ],
+        answers: {submissionId: companions},
+      );
+    });
     return isCorrect;
   }
 

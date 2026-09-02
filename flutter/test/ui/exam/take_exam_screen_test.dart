@@ -10,6 +10,7 @@ import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/files/submit_photos_files.dart';
 import 'package:myplanet/core/system/device_identity.dart';
 import 'package:myplanet/core/system/photo_capture.dart';
+import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/data/local/converters.dart';
 import 'package:myplanet/providers/app_providers.dart';
@@ -82,10 +83,54 @@ class _FakePhotoCapture implements PhotoCapture {
   }
 }
 
-/// Fails the persist step the way a full disk or a closed database would, so
-/// the screen's failure branch can be exercised. A [Fake] rather than a mock
-/// because `createExamDraft` takes an `ExamRow`, and mocktail's `any()` would
-/// need a registered fallback for it.
+/// Fails the first [startExamSession] and then delegates, so a retry can be
+/// shown to recover rather than replaying the same error. A [Fake] rather than
+/// a mock because `startExamSession` takes an `ExamRow`, and mocktail's `any()`
+/// would need a registered fallback for it.
+class _FlakySubmissionsRepository extends Fake
+    implements SubmissionsRepository {
+  _FlakySubmissionsRepository(this._inner);
+
+  final SubmissionsRepository _inner;
+  int calls = 0;
+
+  @override
+  Future<String> startExamSession({
+    required ExamRow exam,
+    required List<ExamQuestionRow> questions,
+    required String userId,
+    String? courseId,
+    DateTime? now,
+  }) async {
+    calls++;
+    if (calls == 1) throw Exception('transient');
+    return _inner.startExamSession(
+      exam: exam,
+      questions: questions,
+      userId: userId,
+      courseId: courseId,
+      now: now,
+    );
+  }
+
+  @override
+  Future<bool> saveExamAnswer({
+    required String submissionId,
+    required ExamQuestionRow question,
+    required ExamDraftAnswer answer,
+    required bool isFinal,
+    required bool isExplicitSubmission,
+    DateTime? now,
+  }) => _inner.saveExamAnswer(
+    submissionId: submissionId,
+    question: question,
+    answer: answer,
+    isFinal: isFinal,
+    isExplicitSubmission: isExplicitSubmission,
+    now: now,
+  );
+}
+
 class _ThrowingSubmissionsRepository extends Fake
     implements SubmissionsRepository {
   @override
@@ -212,14 +257,23 @@ void main() {
 
   /// Waits out a snackbar.
   ///
-  /// The `incorrect_ans` / "please answer" snackbars float over the bottom of
-  /// the screen, which is exactly where the Next and Submit buttons live, so a
-  /// tap that follows one lands on the snackbar instead of the button. Kotlin
-  /// has the same overlap (`Snackbar.make(binding.root, ...)`); the tests just
-  /// have to let it go away first.
+  /// The `incorrect_ans` / "please answer" snackbars sit over the bottom of
+  /// the screen, which is where this screen's Next and Submit buttons live, so
+  /// a tap that follows one lands on the snackbar instead of the button.
+  ///
+  /// Kotlin's overlap is narrower, not the same: `btnBack` and `btnNext` are
+  /// `ImageButton`s in the **top** bar (`fragment_exam_taking.xml:30`, `:62`),
+  /// so only its Submit is covered. The screen answers that by using Kotlin's
+  /// own 2750 ms `LENGTH_LONG` and by dismissing the snackbar as soon as the
+  /// answer changes — so in practice a learner who edits their answer before
+  /// pressing again is never blocked. These tests press again *without*
+  /// editing, which is the one path that still has to wait.
   Future<void> clearSnackBar(WidgetTester tester) async {
     await tester.pump(const Duration(seconds: 5));
-    await tester.pump();
+    // And settle, not just pump: jumping time past the duration starts the
+    // exit transition but does not finish it, and a half-faded snackbar still
+    // absorbs a tap aimed at the button underneath it.
+    await tester.pumpAndSettle();
   }
 
   Future<void> pumpExam(
@@ -600,12 +654,27 @@ void main() {
     });
 
     /// A question whose document carries no answer key is the one place the
-    /// port deliberately parts from Kotlin. Kotlin's three check helpers all
-    /// open with `if (correctChoices == null) return false`, and
-    /// `insertCorrectChoice` is only called for `select*` types with choices —
-    /// so a Kotlin exam containing one free-text question cannot be finished
-    /// at all. The gate presupposes a right answer exists; when the document
-    /// names none, any answer will do.
+    /// port deliberately parts from Kotlin. `extractCorrectChoices` returns
+    /// `emptyList()` when `correctChoice` is absent or blank, and every check
+    /// helper is then vacuously false — so no answer can satisfy the question
+    /// and there is no route past it but abandoning the exam. Every
+    /// `ratingScale` question in an exam is in that position, as is any
+    /// `input`/`textarea` whose author supplied no key. The gate presupposes a
+    /// right answer exists; when the document names none, any answer will do.
+    ///
+    /// (An earlier draft of this comment said `insertCorrectChoice` is only
+    /// called for `select*` types "so a Kotlin exam containing one free-text
+    /// question cannot be finished at all". That is the reading Phase 110's
+    /// audit overturned: `CoursesRepositoryImpl.extractCorrectChoices` — the
+    /// parser a course exam actually goes through — runs for **every**
+    /// question regardless of type, so a keyed free-text question is
+    /// gradeable. The trap is the missing key, not the type.)
+    ///
+    /// The cost, stated because it is real: a *malformed* exam — an author who
+    /// forgot the key on a genuine multiple-choice question — now accepts any
+    /// answer and uploads `passed: true`, where Kotlin fails loudly by
+    /// trapping the learner. Under `requires grading` a teacher marks it
+    /// anyway, so what is lost is a meaningless `passed`, not a wrong grade.
     testWidgets('a question with no answer key accepts any answer', (
       tester,
     ) async {
@@ -982,4 +1051,149 @@ void main() {
       expect(find.text('Exam Complete'), findsOneWidget);
     });
   });
+
+  group('recovering from a failed save', () {
+    /// The defect: `_ensureSession` memoised the session future with `??=`, so
+    /// a **rejected** future stayed cached and no later press ever re-ran the
+    /// body. One transient failure ended the exam for the rest of the mount —
+    /// every press replayed the same error, with no submission row and no
+    /// answers, and the only way out was to leave the screen.
+    ///
+    /// The pre-existing `a failed save reports it…` test could not catch this:
+    /// it asserts the button is live again and stops, so it passed while the
+    /// screen was dead. This one presses a second time.
+    testWidgets('a second press after a transient failure gets through', (
+      tester,
+    ) async {
+      final real = SubmissionsRepository(
+        _UnusedApi(),
+        db.submissionDao,
+        db.submitPhotosDao,
+        db.surveyDao,
+      );
+      final flaky = _FlakySubmissionsRepository(real);
+
+      await seedTwoQuestionExam();
+      await pumpExam(
+        tester,
+        overrides: [submissionsRepositoryProvider.overrideWithValue(flaky)],
+      );
+
+      await tester.tap(find.text('Paris'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Next'));
+      await settleExam(tester);
+
+      expect(
+        find.text('Could not save your exam. Please try again.'),
+        findsOneWidget,
+      );
+      expect(find.text('Question 1 / 2'), findsOneWidget);
+      await clearSnackBar(tester);
+
+      // Same answer, pressed again. Nothing else changed.
+      await tester.tap(find.text('Next'));
+      await settleExam(tester);
+
+      expect(
+        flaky.calls,
+        2,
+        reason: 'the rejected session must not be memoised',
+      );
+      expect(find.text('Question 2 / 2'), findsOneWidget);
+      final answers = await db.select(db.submissionAnswers).get();
+      expect(answers.single.questionId, 'q1');
+      expect(answers.single.isPassed, isTrue);
+    });
+  });
+
+  group('question types the server did not lowercase', () {
+    /// `ExamGrading.isCorrect` and `AnswerShape.forQuestion` both normalise the
+    /// type (Kotlin compares with `ignoreCase = true`); the renderer matched
+    /// exactly. So a question typed `"Select"` drew a **text field**, the typed
+    /// answer went through `AnswerShape`'s select branch and was stored as the
+    /// empty string, and the grader graded an empty selection against a
+    /// non-empty key — the answer discarded and the gate unable to open.
+    testWidgets('a capitalised select still renders its choices', (
+      tester,
+    ) async {
+      await seedExam();
+      await seedQuestion(
+        id: 'q1',
+        position: 0,
+        type: 'Select',
+        header: 'Capital city',
+        choices: const [
+          ExamChoice(id: 'c1', text: 'Lyon'),
+          ExamChoice(id: 'c2', text: 'Paris'),
+        ],
+        correctChoices: const ['c2'],
+      );
+      await pumpExam(tester);
+
+      expect(find.byType(RadioGroup<String>), findsOneWidget);
+      expect(find.byType(TextField), findsNothing);
+
+      await tester.tap(find.text('Paris'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Submit exam'));
+      await settleExam(tester);
+
+      expect(find.text('Exam Complete'), findsOneWidget);
+      final answers = await db.select(db.submissionAnswers).get();
+      expect(answers.single.valueChoices, ['{"id":"c2","text":"Paris"}']);
+      expect(answers.single.isPassed, isTrue);
+    });
+
+    testWidgets('a capitalised selectMultiple still renders its checkboxes', (
+      tester,
+    ) async {
+      await seedExam();
+      await seedQuestion(
+        id: 'q1',
+        position: 0,
+        type: 'SelectMultiple',
+        header: 'Pick two',
+        choices: const [
+          ExamChoice(id: 'c1', text: 'Red'),
+          ExamChoice(id: 'c2', text: 'Blue'),
+        ],
+        correctChoices: const ['c1', 'c2'],
+      );
+      await pumpExam(tester);
+
+      expect(find.byType(CheckboxListTile), findsNWidgets(2));
+      expect(find.byType(TextField), findsNothing);
+    });
+  });
+
+  group('going back on an unanswered question', () {
+    /// A deliberate divergence: Kotlin's `btnBack` saves unconditionally, so an
+    /// untouched question is written with `mistakes + 1` and `isPassed = false`
+    /// — and that row uploads, because `getPendingExamResults` has no status
+    /// filter. Scoring a mistake against a question the learner never answered
+    /// is a defect, not a behaviour.
+    testWidgets('records nothing rather than a mistake', (tester) async {
+      await seedTwoQuestionExam();
+      await pumpExam(tester);
+
+      await tester.tap(find.text('Paris'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Next'));
+      await settleExam(tester);
+
+      // Question two is untouched.
+      await tester.tap(find.text('Previous'));
+      await settleExam(tester);
+
+      expect(find.text('Question 1 / 2'), findsOneWidget);
+      final answers = await db.select(db.submissionAnswers).get();
+      expect(answers, hasLength(1));
+      expect(answers.single.questionId, 'q1');
+    });
+  });
 }
+
+/// Only ever handed to a [SubmissionsRepository] that the test drives through
+/// its local DAOs; no method on it is called.
+class _UnusedApi extends Fake implements PlanetApi {}

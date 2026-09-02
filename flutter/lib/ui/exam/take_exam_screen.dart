@@ -158,12 +158,21 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
   }
 
   Widget _buildAnswerInput(BuildContext context, ExamQuestionRow question) {
-    switch (question.type ?? 'input') {
+    // Lowercased, because `ExamGrading.isCorrect` and `AnswerShape.forQuestion`
+    // both are — `startExam` and `saveExamAnswer` compare the type with
+    // `ignoreCase = true`. Matching exactly here while they normalise made a
+    // question typed `"Select"` render a **text field**: the learner's typed
+    // answer then went through `AnswerShape`'s select branch, which looks for a
+    // pick, finds none, and stores the empty string, while the grader graded an
+    // empty selection against a non-empty key. The answer was discarded and the
+    // gate could never open — a dead end where before the gate it only cost a
+    // mark.
+    switch (question.type?.toLowerCase() ?? 'input') {
       case 'select':
         return _buildRadioGroup(question);
-      case 'selectMultiple':
+      case 'selectmultiple':
         return _buildCheckboxGroup(question);
-      case 'ratingScale':
+      case 'ratingscale':
         return _buildRatingScale(question);
       case 'textarea':
         return _buildTextField(context, question, maxLines: 5);
@@ -295,7 +304,7 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
 
   /// Whether the current question has an answer to submit at all.
   ///
-  /// Port of `isQuestionAnswered` (`ExamTakingFragment.kt:290-322`), minus its
+  /// Port of `isQuestionAnswered` (`ExamTakingFragment.kt:289-322`), minus its
   /// `hasOtherOption` clause, which the port has no "Other" choice to reach.
   /// Kotlin returns `false` for an unrecognised type because `startExam`
   /// renders no input for one; the port renders a text field, so the rule
@@ -305,10 +314,21 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
     return answer != null && !answer.isEmpty;
   }
 
-  /// `btnBack`. Kotlin saves the current answer before moving
-  /// (`ExamTakingFragment.kt:187-194`) and then moves regardless of the
-  /// verdict — going back is the one way to leave a question wrong, and it
-  /// still records the mistake.
+  /// `btnBack` (`ExamTakingFragment.kt:189-194`). Kotlin saves the current
+  /// answer before moving and then moves regardless of the verdict — going
+  /// back is the one route out of a question left wrong, and it still records
+  /// the mistake.
+  ///
+  /// **One deliberate divergence**: the save is guarded on the question being
+  /// answered, where Kotlin's is unconditional. For an untouched question
+  /// Kotlin's `ans` is `""`, every check helper fails it, and it writes a row
+  /// with `mistakes + 1` and `isPassed = false` — which then **uploads**,
+  /// because `getPendingExamResults` has no status filter and
+  /// `Answer.createObject` sends `mistakes`. Scoring a mistake against a
+  /// question the learner never answered, and reporting it to Planet, is a
+  /// defect rather than a behaviour. The cost of not porting it is that the
+  /// two apps report different mistake totals for identical learner
+  /// behaviour.
   Future<void> _goBack() async {
     if (_currentIndex == 0) return;
     final question = _questions[_currentIndex];
@@ -324,9 +344,7 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
     final messenger = ScaffoldMessenger.of(context);
     final question = _questions[_currentIndex];
     if (!_isAnswered(question)) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.pleaseAnswerToContinue)),
-      );
+      _showRetryPrompt(messenger, l10n.pleaseAnswerToContinue);
       return;
     }
     final correct = await _saveCurrentAnswer(
@@ -337,7 +355,7 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
     if (!mounted) return;
     if (correct != true) {
       if (correct == false) {
-        messenger.showSnackBar(SnackBar(content: Text(l10n.incorrectAnswer)));
+        _showRetryPrompt(messenger, l10n.incorrectAnswer);
       }
       return;
     }
@@ -384,7 +402,31 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
   /// effects, and the only difference it makes is that abandoning an exam
   /// without answering anything leaves no row behind — where Kotlin leaves an
   /// empty `pending` attempt that its next `deleteStale` clears.
-  Future<String> _ensureSession() => _session ??= _createSession();
+  ///
+  /// Memoised so every answer lands in one attempt, but **only on success**. A
+  /// rejected future left in `_session` is one `??=` never re-runs, so a single
+  /// transient failure — a rejecting session, one failed write — would end the
+  /// exam for the rest of the mount: every later press would replay the same
+  /// error, with no submission row and no answers, and the only way out would
+  /// be to leave the screen. Kotlin is more forgiving still: `startExamSession`
+  /// retries the local write three times
+  /// (`SubmissionsRepositoryImpl.kt:420-435`) and, having only toasted on
+  /// failure, lets the next press re-enter `saveExamAnswer`, whose
+  /// `sub == null` fallback chain re-finds a submission. The retry is ported;
+  /// the fallback chain is not, because the port has one caller and it can just
+  /// try again.
+  Future<String> _ensureSession() async {
+    final pending = _session;
+    if (pending != null) return pending;
+    final attempt = _createSession();
+    _session = attempt;
+    try {
+      return await attempt;
+    } catch (_) {
+      _session = null;
+      rethrow;
+    }
+  }
 
   Future<String> _createSession() async {
     // Awaited rather than read off the current `AsyncValue`. Kotlin's
@@ -398,9 +440,6 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
     final user = await ref.read(sessionProvider.future);
     final exam = await ref.read(examProvider(widget.examId).future);
     if (user == null || exam == null) {
-      // Cleared so a retry can try again rather than replaying this failure
-      // for the rest of the mount.
-      _session = null;
       throw StateError('An exam attempt needs a signed-in user and an exam');
     }
     final id = await ref
@@ -416,13 +455,42 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
   }
 
   void _recordChoices(ExamQuestionRow question, List<String> choiceIds) {
+    _clearFeedback();
     _answers[question.id] = ExamDraftAnswer(
       choiceIds: List.unmodifiable(choiceIds),
     );
   }
 
   void _recordText(ExamQuestionRow question, String value) {
+    _clearFeedback();
     _answers[question.id] = ExamDraftAnswer(value: value);
+  }
+
+  /// Tells the learner their answer was wrong, without sitting on the button
+  /// they need next.
+  ///
+  /// Kotlin's `incorrect_ans` snackbar overlaps only its **Submit** button:
+  /// `btnBack` and `btnNext` are `ImageButton`s in the *top* bar
+  /// (`fragment_exam_taking.xml:30`, `:62`), so its retry path is never
+  /// blocked. This screen's forward button is at the bottom, under the
+  /// snackbar, so three wrong tries meant about twelve seconds of unusable
+  /// button. Two things fix that without redrawing the layout: Kotlin's own
+  /// `LENGTH_LONG` (2750 ms, not Flutter's 4 s), and dismissing the snackbar
+  /// the moment the learner changes their answer — which is the action that
+  /// always precedes the next press.
+  void _showRetryPrompt(ScaffoldMessengerState messenger, String message) {
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(milliseconds: 2750),
+      ),
+    );
+  }
+
+  void _clearFeedback() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).clearSnackBars();
   }
 
   /// `btn_submit` on the last question — `onClick`
@@ -437,9 +505,7 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
     final messenger = ScaffoldMessenger.of(context);
     final question = _questions[_currentIndex];
     if (!_isAnswered(question)) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.pleaseAnswerToContinue)),
-      );
+      _showRetryPrompt(messenger, l10n.pleaseAnswerToContinue);
       return;
     }
 
@@ -453,7 +519,7 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
     if (!mounted) return;
     if (correct != true) {
       if (correct == false) {
-        messenger.showSnackBar(SnackBar(content: Text(l10n.incorrectAnswer)));
+        _showRetryPrompt(messenger, l10n.incorrectAnswer);
       }
       return;
     }
@@ -464,16 +530,22 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
 
     setState(() => _isSubmitting = true);
     try {
+      // The attempt is already written and already `requires grading` by this
+      // point, so a session that has since resolved to null (a logout mid-exam)
+      // must not be reported as a failed save. The photo and the queueing are
+      // what need a user; the record does not.
       final user = await ref.read(sessionProvider.future);
-      await _captureVerificationPhoto(submissionId, exam, user!.id);
       final config = ref.read(serverConfigProvider);
-      if (config != null) {
-        await ref
-            .read(submissionsUploaderProvider)
-            .queuePending(config: config, userId: user.id);
-        await ref
-            .read(submitPhotosUploaderProvider)
-            .queuePending(config: config);
+      if (user != null) {
+        await _captureVerificationPhoto(submissionId, exam, user.id);
+        if (config != null) {
+          await ref
+              .read(submissionsUploaderProvider)
+              .queuePending(config: config, userId: user.id);
+          await ref
+              .read(submitPhotosUploaderProvider)
+              .queuePending(config: config);
+        }
       }
       if (!mounted) return;
       await _showResult();

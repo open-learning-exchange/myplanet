@@ -77,6 +77,130 @@ void main() {
     expect(find.text('exam'), findsNothing);
   });
 
+  /// `saveExamAnswer` gives a **finished exam** the status `requires grading`
+  /// — `complete` is the survey value, and an exam is not complete until
+  /// somebody marks it. Without it on `_isComplete`'s list a just-submitted
+  /// exam would file under Pending until its upload landed, which is the
+  /// opposite of what the learner just did.
+  testWidgets('a submitted exam awaiting grading counts as complete', (
+    tester,
+  ) async {
+    const submitted = SubmissionRow(
+      id: 'awaiting',
+      type: 'exam',
+      startTime: 0,
+      lastUpdateTime: 2,
+      grade: 0,
+      status: 'requires grading',
+      // Not yet on the wire, so `uploaded` cannot be what carries it.
+      uploaded: false,
+      isUpdated: true,
+    );
+    const pending = SubmissionRow(
+      id: 'in-progress',
+      type: 'exam',
+      startTime: 0,
+      lastUpdateTime: 1,
+      grade: 0,
+      status: 'pending',
+      uploaded: false,
+      isUpdated: false,
+    );
+    await tester.pumpWidget(
+      wrapScreen(
+        const SubmissionsScreen(),
+        overrides: [
+          submissionsProvider.overrideWith(
+            (ref) => Stream.value([submitted, pending]),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Complete'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('requires grading'), findsOneWidget);
+    expect(find.textContaining('pending'), findsNothing);
+
+    await tester.tap(find.text('Pending'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('pending'), findsOneWidget);
+    expect(find.textContaining('requires grading'), findsNothing);
+  });
+
+  /// The per-answer `grade` is `1` for **every** exam answer, right or wrong —
+  /// `saveExamAnswer`'s "worth one mark" marker, not a score. A badge reading
+  /// it would say "1" on every row and mean nothing, and
+  /// `QuestionAnswerAdapter.bind` renders it nowhere. This pins the absence,
+  /// because the temptation to restore the mark later is real and a comment
+  /// alone will not stop it.
+  testWidgets('an answer shows no mark of its own', (tester) async {
+    const row = SubmissionRow(
+      id: 'submission-5',
+      userId: 'user-1',
+      type: 'exam',
+      startTime: 0,
+      lastUpdateTime: 0,
+      grade: 0,
+      status: 'requires grading',
+      uploaded: false,
+      isUpdated: true,
+    );
+    await tester.pumpWidget(
+      wrapScreen(
+        const SubmissionDetailScreen(submissionId: 'submission-5'),
+        overrides: [
+          submissionProvider(
+            'submission-5',
+          ).overrideWith((ref) => Stream.value(row)),
+          submissionAnswersProvider('submission-5').overrideWith(
+            (ref) => Stream.value([
+              const SubmissionAnswerRow(
+                id: 'submission-5:q-1',
+                submissionId: 'submission-5',
+                questionId: 'q-1',
+                value: 'Paris',
+                valueChoices: [],
+                mistakes: 3,
+                isPassed: true,
+                grade: 1,
+              ),
+            ]),
+          ),
+          submissionQuestionsProvider('submission-5').overrideWith(
+            (ref) => Stream.value([
+              const SubmissionQuestionRow(
+                id: 'submission-5:q-1',
+                submissionId: 'submission-5',
+                header: 'Capital city',
+                correctChoices: ['paris'],
+                choices: [],
+                position: 0,
+              ),
+            ]),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The body is a `ListView(children: [...])`: it builds its children
+    // eagerly but only *mounts* those in the viewport, and `find.text` walks
+    // the element tree — so the answer card sits below the 600px test fold
+    // until it is scrolled to. Asserting the badge's absence without scrolling
+    // would pass because nothing is mounted, not because nothing is drawn.
+    await tester.scrollUntilVisible(find.text('Capital city'), 200);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Paris'), findsOneWidget);
+    expect(
+      find.text('1'),
+      findsNothing,
+      reason: 'the marker is not a score and is not rendered',
+    );
+  });
+
   testWidgets('renders submission details from the offline cache', (
     tester,
   ) async {
