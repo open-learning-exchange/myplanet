@@ -44,6 +44,19 @@ class ChatRepositoryImpl implements ChatRepository {
   /// page size works well.
   static const int initialBatchSize = 100;
 
+  /// The CouchDB write receipt inside a chat response.
+  ///
+  /// The key is `couchDBResponse`. That is not a guess: `model/ChatResponse.kt`
+  /// declares the field as `@SerializedName("couchDBResponse")`, and the Gson
+  /// mapping is the only authority on what the endpoint puts on the wire.
+  /// Reading it as `couchdb` found nothing on every single response — so a new
+  /// chat always reported "saved without a document id" and stored no row, and
+  /// a continuation always kept its old `_rev` and hit a conflict on the turn
+  /// after. Both halves had tests; both were written against this same wrong
+  /// key, so both passed.
+  static Map<String, dynamic>? _couchResponse(Map<String, dynamic> response) =>
+      response['couchDBResponse'] as Map<String, dynamic>?;
+
   @override
   Future<Map<String, bool>?> fetchAiProviders() async {
     final url = '$serverUrl/checkProviders/';
@@ -88,7 +101,7 @@ class ChatRepositoryImpl implements ChatRepository {
       }
 
       final chatResponse = response['chat'] as String? ?? '';
-      final couchResponse = response['couchdb'] as Map<String, dynamic>?;
+      final couchResponse = _couchResponse(response);
       final rev = couchResponse?['rev'] as String? ?? '';
       // The server creates the CouchDB document and assigns its `_id`; the id
       // must come back from that response, as `couchDBResponse.id` does in the
@@ -120,7 +133,6 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
-  @override
   Future<String> savePendingChat({
     required String user,
     required String query,
@@ -132,8 +144,13 @@ class ChatRepositoryImpl implements ChatRepository {
     // outbox drains, `ChatDao.markUploaded` replaces `docId`/`rev` with the
     // server's. That is not true of the success path, which must use the id
     // the server assigned.
-    final id =
-        existingId ?? 'local-chat-\${DateTime.now().microsecondsSinceEpoch}';
+    //
+    // The timestamp has to actually interpolate. Written as '...\$…' inside
+    // single quotes it was an escaped dollar, so every queued chat shared one
+    // literal primary key and `upsertAll` replaced its predecessor: queue two
+    // messages offline and only the second still existed to drain.
+    final now = DateTime.now();
+    final id = existingId ?? 'local-chat-${now.microsecondsSinceEpoch}';
     final existing = existingId == null
         ? null
         : await chatDao.findByDocId(existingId);
@@ -141,6 +158,7 @@ class ChatRepositoryImpl implements ChatRepository {
       ...ChatMapper.parseConversations(existing?.conversations),
       const ChatConversation().copyWith(query: query, response: ''),
     ];
+    final timestamp = now.millisecondsSinceEpoch;
     await chatDao.upsertAll([
       ChatEntriesCompanion(
         id: Value(id),
@@ -150,7 +168,14 @@ class ChatRepositoryImpl implements ChatRepository {
         aiProvider: Value(aiProvider.name),
         title: Value(existing?.title ?? query),
         conversations: Value(ChatMapper.encodeConversations(conversations)),
-        lastUsed: Value(DateTime.now().millisecondsSinceEpoch),
+        // `sortChatsByRecency` scores a row by the newest of these two, so a
+        // row without them lands at 0 — the message the user just typed sorted
+        // below every conversation they had ever had. A continuation keeps the
+        // created date it already has and only moves its updated date, which
+        // is what `addConversation` does in the Kotlin.
+        createdDate: Value(existing?.createdDate ?? '$timestamp'),
+        updatedDate: Value('$timestamp'),
+        lastUsed: Value(timestamp),
         isUploaded: const Value(false),
       ),
     ]);
@@ -178,17 +203,28 @@ class ChatRepositoryImpl implements ChatRepository {
       };
 
       final response = await _postChat(request);
+      // Kotlin's `sendContinueChatRequest` calls
+      // `continueConversation(id, message, "", rev)` on its non-success branch
+      // as well as its `catch`. Only the `catch` had been ported, and
+      // `_postChat` turns a network failure into `null` rather than throwing —
+      // so the offline send, the one case this behaviour exists for, took the
+      // unported path and discarded the user's question outright. The row
+      // written here is also what `_insertChatsInternal` protects from being
+      // overwritten by a later sync, so without it that guard had nothing to
+      // guard.
       if (response == null) {
+        await _continueConversation(id, query, '', rev);
         return const ChatError('Request failed');
       }
 
       final status = response['status'] as String?;
       if (status != 'Success') {
+        await _continueConversation(id, query, '', rev);
         return ChatError(response['message'] as String? ?? 'Request failed');
       }
 
       final chatResponse = response['chat'] as String? ?? '';
-      final newRev = response['couchdb']?['rev'] as String? ?? rev;
+      final newRev = _couchResponse(response)?['rev'] as String? ?? rev;
 
       // Update local database
       await _continueConversation(id, query, chatResponse, newRev);
@@ -305,7 +341,12 @@ class ChatRepositoryImpl implements ChatRepository {
       id,
       ChatMapper.encodeConversations(newConversations),
       updatedDate,
-      rev,
+      // Kotlin's `addConversation` assigns `_rev` only
+      // `if (!newRev.isNullOrEmpty())`. The DAO writes the column
+      // unconditionally, so an empty revision from the server would erase the
+      // handle the next upload needs — and `ChatDao.deleteNotIn` reads a
+      // revision-less row as one the server never confirmed.
+      rev.isEmpty ? (existing.rev ?? '') : rev,
     );
   }
 

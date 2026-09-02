@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/chat_provider.dart';
 import 'package:myplanet/ui/chat/chat_history_screen.dart';
@@ -20,7 +21,22 @@ ChatRow _chat({
   isUploaded: false,
 );
 
-const _conversations = '[{"query":"hi","response":"hello there"}]';
+// `ChatHistoryAdapter` names a row by its first query and falls back to the
+// stored title, so a fixture that means to exercise the title keeps the two in
+// agreement. The two tests at the bottom of this file are the ones that make
+// them disagree on purpose.
+/// The tap handler calls `loadChat`, which reaches `chatRepositoryProvider`
+/// and through it `planetPrefsProvider` — `UnimplementedError` under a widget
+/// test. Only the navigation is under test here, so the notifier is stubbed.
+class _StubChatNotifier extends ChatConversationNotifier {
+  @override
+  ChatConversationState build() => const ChatConversationState();
+
+  @override
+  Future<void> loadChat(String chatId) async {}
+}
+
+const _conversations = '[{"query":"Math help","response":"hello there"}]';
 
 void main() {
   testWidgets('shows the empty state when there is no chat history', (
@@ -165,12 +181,12 @@ void main() {
       _chat(
         id: 'c1',
         title: 'greetings',
-        conversations: '[{"query":"hi","response":"hello there"}]',
+        conversations: '[{"query":"greetings","response":"hello there"}]',
       ),
       _chat(
         id: 'c2',
         title: 'science',
-        conversations: '[{"query":"why","response":"because"}]',
+        conversations: '[{"query":"science","response":"because"}]',
       ),
     ];
 
@@ -194,5 +210,94 @@ void main() {
 
     expect(find.text('science'), findsOneWidget);
     expect(find.text('greetings'), findsNothing);
+  });
+  testWidgets('tapping a chat opens that conversation', (tester) async {
+    // The tap built its path from `Routes.chat`, which is already the
+    // *template* `/life/chat/:chatId`, so it pushed
+    // `/life/chat/:chatId/<id>` — three segments where the router defines
+    // two. No route matched, and every conversation in the list opened
+    // go_router's error page instead. The list one route down, feedback,
+    // shows the convention: build the child path from the list's own route.
+    await tester.pumpWidget(
+      wrapScreen(
+        const ChatHistoryScreen(),
+        overrides: [
+          chatHistoryProvider.overrideWith(
+            (ref) async => [
+              _chat(
+                id: 'c1',
+                title: 'Math help',
+                conversations: _conversations,
+              ),
+            ],
+          ),
+          chatConversationProvider.overrideWith(_StubChatNotifier.new),
+        ],
+        pushTargets: {
+          '/life/chat/:chatId': (context) => Text(
+            'detail:${GoRouterState.of(context).pathParameters['chatId']}',
+          ),
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Math help'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('detail:c1'), findsOneWidget);
+  });
+
+  testWidgets('a chat with no title is named by its first question', (
+    tester,
+  ) async {
+    // `ChatHistoryAdapter` prefers `conversations[0].query` and only falls
+    // back to `title`. A synced document need not carry a title at all — the
+    // port showed those rows as "Untitled chat" with a "?" avatar even though
+    // the question was right there in the conversation.
+    await tester.pumpWidget(
+      wrapScreen(
+        const ChatHistoryScreen(),
+        overrides: [
+          chatHistoryProvider.overrideWith(
+            (ref) async => [
+              _chat(
+                id: 'c1',
+                conversations:
+                    '[{"query":"How do I plant maize?","response":"Deeply."}]',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('How do I plant maize?'), findsOneWidget);
+    expect(find.text('Untitled chat'), findsNothing);
+    expect(find.text('H'), findsOneWidget);
+  });
+
+  testWidgets('the first question outranks a stored title', (tester) async {
+    await tester.pumpWidget(
+      wrapScreen(
+        const ChatHistoryScreen(),
+        overrides: [
+          chatHistoryProvider.overrideWith(
+            (ref) async => [
+              _chat(
+                id: 'c1',
+                title: 'stale title',
+                conversations: '[{"query":"the real question","response":"x"}]',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('the real question'), findsOneWidget);
+    expect(find.text('stale title'), findsNothing);
   });
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/sync_state.dart';
@@ -139,18 +140,19 @@ class ChatHistoryScreen extends ConsumerWidget {
                     final conversations = chat.conversations;
                     final lastMessage = _extractLastMessage(conversations);
                     final timestamp = _formatTimestamp(chat.updatedDate, l10n);
+                    final heading = _heading(chat);
 
                     return Card(
                       child: ListTile(
                         leading: CircleAvatar(
                           child: Text(
-                            chat.title?.isNotEmpty == true
-                                ? chat.title![0].toUpperCase()
+                            heading?.isNotEmpty == true
+                                ? heading![0].toUpperCase()
                                 : '?',
                           ),
                         ),
                         title: Text(
-                          chat.title ?? l10n.untitledChat,
+                          heading ?? l10n.untitledChat,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -174,7 +176,13 @@ class ChatHistoryScreen extends ConsumerWidget {
                           ref
                               .read(chatConversationProvider.notifier)
                               .loadChat(chat.id);
-                          context.push('${Routes.chat}/${chat.id}');
+                          // Built from the list's own route, not from
+                          // [Routes.chat] — that constant is already the
+                          // template `/life/chat/:chatId`, so appending an id
+                          // produced a three-segment path the router has no
+                          // route for and every tap landed on go_router's
+                          // error page.
+                          context.push('${Routes.chatHistory}/${chat.id}');
                         },
                       ),
                     );
@@ -186,6 +194,32 @@ class ChatHistoryScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// The name this conversation goes by in the list.
+  ///
+  /// `ChatHistoryAdapter.onBindViewHolder` uses `conversations[0].query` and
+  /// falls back to the stored `title` only when there is no first query. That
+  /// order matters: a synced document need not carry a `title` at all, and
+  /// those rows were showing as "Untitled chat" behind a "?" avatar with the
+  /// question sitting unread in the conversation.
+  String? _heading(ChatRow chat) {
+    final conversationsJson = chat.conversations;
+    if (conversationsJson != null && conversationsJson.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(conversationsJson);
+        if (decoded is List && decoded.isNotEmpty) {
+          final first = decoded.first;
+          if (first is Map) {
+            final query = first['query'];
+            if (query is String) return query;
+          }
+        }
+      } catch (_) {
+        // Fall through to the stored title.
+      }
+    }
+    return chat.title;
   }
 
   /// Last turn of the stored conversation, for the list subtitle.

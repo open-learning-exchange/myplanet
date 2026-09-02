@@ -220,7 +220,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   }
 
   Future<void> _sendMessage() async {
-    final message = _messageController.text.trim();
+    // `ChatDetailFragment.kt` flattens the field before sending:
+    // `"${binding.editGchatMessage.text}".replace("\n", " ")`. The field here
+    // is `maxLines: 4`, so a pasted or soft-keyboard newline survived into the
+    // request body where the Kotlin would have sent a space.
+    final message = _messageController.text.replaceAll('\n', ' ').trim();
     if (message.isEmpty) return;
 
     setState(() => _isSending = true);
@@ -228,13 +232,29 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
     await ref.read(chatConversationProvider.notifier).sendMessage(message);
 
-    if (mounted) {
-      setState(() => _isSending = false);
+    if (!mounted) return;
+    setState(() => _isSending = false);
+    _scrollToBottom();
+  }
+
+  /// Scrolls the thread to the newest message once the frame that renders it
+  /// has been laid out.
+  ///
+  /// [ScrollController.position] asserts when nothing is attached, and nothing
+  /// is: the message list is replaced by an empty-state [Column] until there
+  /// is at least one message, and a rebuild is a frame away rather than an
+  /// `await` away. So a send that resolved without adding a bubble — the
+  /// notifier declining it, which is exactly what happens when `onSubmitted`
+  /// fires with no session and bypasses the disabled button — took the whole
+  /// screen down on a keystroke.
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
-    }
+    });
   }
 }
