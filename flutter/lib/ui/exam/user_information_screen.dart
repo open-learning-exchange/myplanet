@@ -13,6 +13,16 @@ import '../../providers/session_provider.dart';
 /// Collects user profile information (name, email, phone, DOB, gender, level)
 /// and saves it to the submission. Shown after completing team surveys.
 ///
+/// Nothing here is prefilled from the signed-in profile, which is deliberate:
+/// `initViews` sets no text on any field and the gender radios ship unchecked,
+/// so `createUserProfile` reports only what the respondent typed. The port did
+/// carry a prefill, but it was dead — it read `sessionProvider` with
+/// `valueOrNull` from `initState`, where that provider is still loading — and
+/// waking it up is worse than leaving it: `sessionProvider` restores the last
+/// account that logged in on the device, so a public-survey link opened by a
+/// stranger would have filed the device owner's name, email, phone, birth date,
+/// language, level and gender as the respondent's own answers.
+///
 /// [showAdditionalFields] is the negation of the Kotlin's `shouldHideElements`,
 /// and the two modes are worth stating because they are easy to invert:
 ///
@@ -27,7 +37,7 @@ class UserInformationScreen extends ConsumerStatefulWidget {
   const UserInformationScreen({
     required this.submissionId,
     this.teamId,
-    this.showAdditionalFields = true,
+    this.showAdditionalFields = false,
     super.key,
   });
 
@@ -63,47 +73,6 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
   void initState() {
     super.initState();
     _showAdditionalFields = widget.showAdditionalFields;
-    _loadUserData();
-  }
-
-  /// Prefills from the signed-in profile.
-  ///
-  /// The user has to come from `sessionProvider`'s **future**: this screen
-  /// never watches that provider, and a provider a screen only reads is still
-  /// loading the first time it is touched — `valueOrNull` was null here and
-  /// nothing was ever prefilled.
-  Future<void> _loadUserData() async {
-    try {
-      final user = await ref.read(sessionProvider.future);
-      if (user == null || !mounted) return;
-      setState(() {
-        _fnameController.text = user.firstName ?? '';
-        _mnameController.text = user.middleName ?? '';
-        _lnameController.text = user.lastName ?? '';
-        _emailController.text = user.email ?? '';
-        _phoneController.text = user.phoneNumber ?? '';
-        // Only a value the spinner actually offers: a profile can carry
-        // anything the web app or an older build stored, and a
-        // `DropdownButtonFormField` whose value is not among its items
-        // asserts out of `build` and takes the screen down. Falling back to
-        // item 0 is what the Kotlin spinner shows anyway.
-        _selectedLanguage = memberLanguages.contains(user.language)
-            ? user.language
-            : memberLanguages.first;
-        _selectedLevel = memberLevels.contains(user.level)
-            ? user.level
-            : memberLevels.first;
-        _selectedGender = user.gender;
-        if (user.dob?.isNotEmpty == true) {
-          try {
-            _dateOfBirth = DateTime.parse(user.dob!);
-          } catch (_) {}
-        }
-      });
-    } catch (_) {
-      // A session that cannot resolve just leaves the form empty; the
-      // respondent fills it in by hand.
-    }
   }
 
   @override
@@ -373,8 +342,11 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
     }
   }
 
+  /// Pops `false`: `PublicSurveyActivity.uploadCompletedSubmission` looks for
+  /// a submission the dialog marked `complete`, so a cancel leaves Kotlin with
+  /// nothing to POST.
   Future<void> _cancel(BuildContext context) async {
-    Navigator.of(context).pop();
+    Navigator.of(context).pop(false);
   }
 
   Future<void> _submit(BuildContext context) async {
@@ -414,7 +386,7 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(l10n.thankYouForTakingSurvey)));
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (context.mounted) {

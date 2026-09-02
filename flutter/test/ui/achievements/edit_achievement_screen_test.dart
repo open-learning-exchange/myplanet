@@ -475,6 +475,27 @@ void main() {
       expect(picker.lastDate.day, today.day);
     });
 
+    testWidgets('the entry row names the resources it carries', (tester) async {
+      // `showAchievementAndInfo` inflates a chip per attached resource into
+      // the row's flexbox; the port's row showed the title only, so there was
+      // no way to see what an entry carried without reopening the dialog.
+      await seedLedger(
+        const AchievementInput(
+          achievementsJson:
+              '[{"title":"First summit","resources":[{"title":"Water cycle"}]}]',
+        ),
+      );
+      await pumpScreen(tester, session: userRow(dob: '1990-05-02'));
+
+      expect(
+        find.descendant(
+          of: find.widgetWithText(ListTile, 'First summit'),
+          matching: find.widgetWithText(Chip, 'Water cycle'),
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('an attached resource keeps its whole document', (
       tester,
     ) async {
@@ -533,7 +554,11 @@ void main() {
 
       await tester.tap(find.widgetWithText(OutlinedButton, 'Choose File'));
       await settle(tester, rounds: 3);
-      expect(find.text('Current CV/Resume: my resume.pdf'), findsOneWidget);
+      // `tvCvFilename` names the pending pick, and the picker callback hides
+      // `llCurrentCv` — the View/Delete row — because a fresh pick has no
+      // bytes on disk until `computeCvFilename` copies them at save time.
+      expect(find.text('my resume.pdf'), findsOneWidget);
+      expect(find.textContaining('Current CV/Resume:'), findsNothing);
 
       // The only test here that waits on a real file write, so it needs the
       // most wall-clock time: `Directory.create` + `writeAsBytes(flush: true)`

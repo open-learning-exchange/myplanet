@@ -65,9 +65,12 @@ class _TestServerConfig extends ServerConfigNotifier {
 /// A pushed route is also what lets the screen's `Navigator.pop()` land
 /// somewhere instead of emptying the tree.
 class _PushOnce extends StatefulWidget {
-  const _PushOnce({required this.child});
+  const _PushOnce({required this.child, required this.onPopped});
 
   final Widget child;
+
+  /// Records what the pushed screen popped with.
+  final void Function(bool?) onPopped;
 
   @override
   State<_PushOnce> createState() => _PushOnceState();
@@ -81,9 +84,9 @@ class _PushOnceState extends State<_PushOnce> {
     if (!_pushed) {
       _pushed = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute<void>(builder: (_) => widget.child));
+        Navigator.of(context)
+            .push<bool>(MaterialPageRoute<bool>(builder: (_) => widget.child))
+            .then(widget.onPopped);
       });
     }
     return const Scaffold(body: Text('ROOT_PAGE'));
@@ -103,6 +106,7 @@ void main() {
   const submissionId = 'submission-1';
 
   late AppDatabase db;
+  final popResults = <bool?>[];
 
   final user = UserRow(
     id: 'user-1',
@@ -123,6 +127,7 @@ void main() {
   );
 
   setUp(() async {
+    popResults.clear();
     db = AppDatabase.memory();
     await db.submissionDao.upsertAll([
       SubmissionsCompanion.insert(
@@ -165,6 +170,7 @@ void main() {
     await tester.pumpWidget(
       wrapScreen(
         _PushOnce(
+          onPopped: popResults.add,
           child: UserInformationScreen(
             submissionId: submissionId,
             teamId: teamId,
@@ -259,6 +265,16 @@ void main() {
       // second state to toggle into.
       expect(find.text('Show additional fields'), findsNothing);
       expect(find.text('Hide additional fields'), findsNothing);
+    });
+
+    testWidgets('the collapsed mode is the default', (tester) async {
+      // The only Kotlin caller that opens the full form
+      // (`BaseDashboardFragment:89`) passes an *empty* `sub_id`, so no caller
+      // carrying a submission id uses that mode.
+      expect(
+        const UserInformationScreen(submissionId: 'x').showAdditionalFields,
+        isFalse,
+      );
     });
 
     testWidgets('gender is offered in both modes', (tester) async {
@@ -440,29 +456,83 @@ void main() {
       expect(row?.status, 'pending');
       expect(find.text('ROOT_PAGE'), findsOneWidget);
     });
-  });
 
-  group('the session the form prefills from', () {
-    testWidgets('the signed-in profile fills the extra blocks', (tester) async {
-      await pumpScreen(tester, showAdditionalFields: true);
+    testWidgets('cancel pops false', (tester) async {
+      // `public_survey_screen` reads this to decide whether to POST the answer
+      // sheet: `PublicSurveyActivity.uploadCompletedSubmission` finds no
+      // `complete` submission when the dialog is cancelled, so a cancel has to
+      // send nothing.
+      await pumpScreen(tester);
 
-      // `_loadUserData` runs from `initState`, before anything has resolved
-      // `sessionProvider` — a provider a screen reads but never watches is
-      // still loading there, so the fields have to come from its future.
-      expect(find.text('Ada'), findsOneWidget);
-      expect(find.text('Lovelace'), findsOneWidget);
-      expect(find.text('ada@example.org'), findsOneWidget);
-      expect(find.text('555-0100'), findsOneWidget);
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(popResults, [false]);
     });
 
-    testWidgets('an off-vocabulary level does not take the screen down', (
+    testWidgets('a saved profile pops true', (tester) async {
+      await pumpScreen(tester);
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Year of birth'),
+        '1990',
+      );
+      await tapSave(tester);
+
+      expect(popResults, [true]);
+    });
+  });
+
+  group('the signed-in profile is not a respondent profile', () {
+    testWidgets('a session prefills nothing', (tester) async {
+      // `initViews` sets no text on any field and the gender radios ship
+      // unchecked, so `createUserProfile` reports only what was typed. The
+      // port's prefill was dead code — `valueOrNull` from `initState` — and
+      // waking it up would have filed the device owner's demographics as the
+      // respondent's: `sessionProvider` restores the last account that logged
+      // in on this device, which for a public-survey link is not the person
+      // answering.
+      await pumpScreen(tester, showAdditionalFields: true);
+
+      expect(find.text('Ada'), findsNothing);
+      expect(find.text('Lovelace'), findsNothing);
+      expect(find.text('ada@example.org'), findsNothing);
+      expect(find.text('555-0100'), findsNothing);
+      // The two spinners still open on item 0, not on the profile's values.
+      expect(find.text('English'), findsOneWidget);
+      expect(find.text('Beginner'), findsOneWidget);
+      expect(find.text('नेपाली'), findsNothing);
+      expect(find.text('Expert'), findsNothing);
+    });
+
+    testWidgets('the stored document carries only what was typed', (
       tester,
     ) async {
-      // A profile can carry any `level`/`language` the web app stored — and
-      // this screen's own earlier build wrote `College`. A
+      await pumpScreen(tester, showAdditionalFields: true);
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'First name'),
+        'Grace',
+      );
+      await tapSave(tester);
+
+      // No `middleName`/`lastName`/`email`/`phoneNumber` from the session, and
+      // no `gender` — the respondent tapped neither radio.
+      expect(await savedProfile(), <String, dynamic>{
+        'firstName': 'Grace',
+        'language': 'English',
+        'level': 'Beginner',
+        'betaEnabled': false,
+      });
+    });
+
+    testWidgets('an off-vocabulary level cannot take the screen down', (
+      tester,
+    ) async {
+      // A regression guard rather than a live bug now: a
       // `DropdownButtonFormField` whose value is not among its items asserts
-      // out of `build`, so the prefill has to fall back to the first entry,
-      // which is what the Kotlin spinner shows regardless of the profile.
+      // out of `build`, which is what a profile carrying `College` (this
+      // screen's own earlier writes) would have done to any prefill.
       await pumpScreen(
         tester,
         showAdditionalFields: true,
@@ -476,7 +546,6 @@ void main() {
       );
 
       expect(tester.takeException(), isNull);
-      expect(find.text('Mo'), findsOneWidget);
       expect(find.text('English'), findsOneWidget);
       expect(find.text('Beginner'), findsOneWidget);
     });

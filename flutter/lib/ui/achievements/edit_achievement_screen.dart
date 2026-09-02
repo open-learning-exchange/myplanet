@@ -226,14 +226,13 @@ class _EditAchievementScreenState extends ConsumerState<EditAchievementScreen> {
     });
   }
 
+  /// The stored resume only. A fresh pick has no bytes on disk yet — the
+  /// Kotlin picker callback hides `llCurrentCv` outright and
+  /// `computeCvFilename` copies the file at save time — and writing them here
+  /// to have something to show left a file under `<base>/ole/cv/` that no row
+  /// names when the edit was then cancelled.
   Future<void> _viewCv() async {
-    if (_pickedCvBytes != null && _pickedCvName != null) {
-      await AchievementFiles.write(
-        resumeFileName: _pickedCvName!,
-        bytes: _pickedCvBytes!,
-      );
-    }
-    final name = _pickedCvName ?? _resumeFileName;
+    final name = _resumeFileName;
     if (name.isEmpty) return;
     if (!await AchievementFiles.hasResume(name)) {
       // `btnViewCvEdit`'s else branch: the Kotlin says so rather than doing
@@ -253,7 +252,11 @@ class _EditAchievementScreenState extends ConsumerState<EditAchievementScreen> {
     if (!_initialized && entry.valueOrNull != null) {
       _initialize();
     }
-    final currentCv = _deleteCv ? '' : (_pickedCvName ?? _resumeFileName);
+    // `tvCvFilename` names whatever is pending; `llCurrentCv` — the row
+    // carrying View/Delete — is for the stored resume, and the pick callback
+    // hides it (`EditAchievementFragment:92`).
+    final pendingCvName = _deleteCv ? '' : (_pickedCvName ?? _resumeFileName);
+    final storedCv = _deleteCv || _pickedCvName != null ? '' : _resumeFileName;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.editAchievement)),
@@ -333,6 +336,25 @@ class _EditAchievementScreenState extends ConsumerState<EditAchievementScreen> {
                     ListTile(
                       dense: true,
                       title: Text('${entry['title'] ?? ''}'),
+                      // `showAchievementAndInfo` inflates a chip per attached
+                      // resource into the row's flexbox, so the card says what
+                      // the entry carries without reopening the dialog.
+                      subtitle: () {
+                        final attached = AchievementsRepository.resourcesOf(
+                          entry,
+                        );
+                        if (attached.isEmpty) return null;
+                        return Wrap(
+                          spacing: 4,
+                          children: [
+                            for (final resource in attached)
+                              Chip(
+                                label: Text('${resource['title'] ?? ''}'),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                          ],
+                        );
+                      }(),
                       trailing: Wrap(
                         children: [
                           IconButton(
@@ -391,10 +413,10 @@ class _EditAchievementScreenState extends ConsumerState<EditAchievementScreen> {
                   const Divider(),
                   Text(l10n.uploadCvLabel),
                   const SizedBox(height: 8),
-                  if (currentCv.isNotEmpty)
+                  if (storedCv.isNotEmpty)
                     ListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: Text(l10n.currentCv(currentCv)),
+                      title: Text(l10n.currentCv(storedCv)),
                       trailing: Wrap(
                         children: [
                           TextButton(
@@ -412,7 +434,9 @@ class _EditAchievementScreenState extends ConsumerState<EditAchievementScreen> {
                         ],
                       ),
                     ),
-                  Text(currentCv.isEmpty ? l10n.noFileChosen : currentCv),
+                  Text(
+                    pendingCvName.isEmpty ? l10n.noFileChosen : pendingCvName,
+                  ),
                   OutlinedButton.icon(
                     icon: const Icon(Icons.upload_file),
                     label: Text(l10n.chooseFile),
