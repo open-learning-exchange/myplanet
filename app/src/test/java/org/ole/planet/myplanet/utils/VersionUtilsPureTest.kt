@@ -74,6 +74,24 @@ class VersionUtilsPureTest {
     }
 
     @Test
+    fun compareVersions_should_compare_multi_digit_segments_numerically_not_lexicographically() {
+        // Guards against a regression to lexicographic comparison: "10" must outrank "9".
+        assertTrue(VersionUtils.compareVersions("10.0.0", "9.0.0") > 0)
+        assertTrue(VersionUtils.compareVersions("9.0.0", "10.0.0") < 0)
+        assertTrue(VersionUtils.compareVersions("0.63.42", "0.63.41") > 0)
+        assertTrue(VersionUtils.compareVersions("0.63.41", "0.63.42") < 0)
+        assertEquals(0, VersionUtils.compareVersions("12.345.6", "12.345.6"))
+    }
+
+    @Test
+    fun compareVersions_should_order_by_segment_count_when_prefix_matches() {
+        assertTrue(VersionUtils.compareVersions("1.2.3.4", "1.2.3") > 0)
+        assertTrue(VersionUtils.compareVersions("1.2.3", "1.2.3.4") < 0)
+        assertTrue(VersionUtils.compareVersions("1.2.3.0", "1.2.3.0.0") < 0)
+        assertEquals(0, VersionUtils.compareVersions("1.2.3", "1.2.3"))
+    }
+
+    @Test
     fun isVersionAllowed_should_return_true_if_current_version_is_newer_or_equal() {
         assertTrue(VersionUtils.isVersionAllowed("1.0.0", "1.0.0"))
         assertTrue(VersionUtils.isVersionAllowed("2.0.0", "1.0.0"))
