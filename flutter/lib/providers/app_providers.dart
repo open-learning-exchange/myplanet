@@ -559,6 +559,8 @@ final coursesRepositoryProvider = Provider<CoursesRepository>(
     ref.watch(planetApiProvider),
     ref.watch(courseDaoProvider),
     ref.watch(removedLogDaoProvider),
+    ref.watch(examDaoProvider),
+    ref.watch(surveyDaoProvider),
   ),
 );
 

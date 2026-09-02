@@ -184,10 +184,17 @@ class _StepTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    // A step's exam is the only way into `TakeExamScreen`, exactly as
-    // `TakeCourseFragment` is in the Kotlin. Without this the exam screen was
-    // routable but unreachable.
-    final exam = ref.watch(examForStepProvider(step.id));
+    // **A port addition, not a port of anything.** Kotlin's
+    // `CourseDetailFragment` has no per-step exam button — page 0 of its pager
+    // shows an exam *count* (`CourseDetailFragment.kt:86-88`,
+    // `countByCourseIdAndType(courseId, "courses")`) and the button itself
+    // lives on `CourseStepFragment`, which the port reaches through
+    // `take_course_screen`. An earlier comment here claimed this was "exactly
+    // as `TakeCourseFragment` is in the Kotlin"; it is a second, more direct
+    // entry the port offers. Note it therefore carries none of
+    // `CourseStepFragment`'s gating — no `userHasCourse`, no already-submitted
+    // relabelling.
+    final exam = ref.watch(stepExamProvider(step.id));
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -222,14 +229,6 @@ class _StepTile extends ConsumerWidget {
     );
   }
 }
-
-/// The graded exam attached to a course step, if the sync brought one down.
-final examForStepProvider = FutureProvider.family<ExamRow?, String>((
-  ref,
-  stepId,
-) async {
-  return ref.watch(examDaoProvider).getByStepId(stepId);
-});
 
 /// The cover banner on the course detail screen — port of
 /// `CourseDetailFragment.setCourseCover`.

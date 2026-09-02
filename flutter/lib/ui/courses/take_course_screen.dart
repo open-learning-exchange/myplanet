@@ -147,6 +147,7 @@ class _CourseContent extends ConsumerWidget {
               step: steps[index],
               stepNumber: index + 1,
               totalSteps: steps.length,
+              isMyCourse: isMyCourse,
             ),
           ),
         ),
@@ -166,13 +167,24 @@ class _CourseContent extends ConsumerWidget {
     );
   }
 
-  /// Port of `TakeCourseFragment.onPageSelected` — landing on a step records a
-  /// `course_progress` row (passed=null: an exam grades it later) and queues
-  /// it for upload. The row is keyed by `(courseId, userId, stepNum)`, so a
-  /// re-visit upserts in place rather than creating duplicates.
+  /// Port of `CourseStepFragment.saveCourseProgress` — landing on a step
+  /// records a `course_progress` row and queues it for upload. The row is keyed
+  /// by `(courseId, userId, stepNum)`, so a re-visit upserts in place rather
+  /// than creating duplicates.
+  ///
+  /// `passed` is `if (stepExams.isEmpty()) true else null`
+  /// (`CourseStepFragment.kt:97`): a step with no test is passed by reaching
+  /// it, and a step with one waits for the exam to grade it. The port passed
+  /// `null` unconditionally, because until Phase 113 nothing could tell the two
+  /// apart — `stepExams` is `getByStepIdAndType(stepId, "courses")`, the join
+  /// that did not exist. A course with no tests could therefore never complete.
+  /// Surveys are deliberately not consulted: Kotlin reads `stepExams` here, not
+  /// `stepSurvey`.
   Future<void> _recordProgress(WidgetRef ref, int index) async {
     final userId = this.userId;
     if (userId == null) return;
+
+    final exam = await ref.read(stepExamProvider(steps[index].id).future);
 
     await ref
         .read(progressRepositoryProvider)
@@ -181,6 +193,7 @@ class _CourseContent extends ConsumerWidget {
           courseId: course.id,
           userId: userId,
           stepNum: index + 1,
+          passed: exam == null ? true : null,
         );
     final config = ref.read(serverConfigProvider);
     if (config != null) {
@@ -313,18 +326,29 @@ class _StepContent extends ConsumerWidget {
     required this.step,
     required this.stepNumber,
     required this.totalSteps,
+    required this.isMyCourse,
   });
 
   final CourseStepRow step;
   final int stepNumber;
   final int totalSteps;
 
+  /// `CourseStepFragment.onViewCreated` hides **both** assessment buttons when
+  /// the user has not joined the course, after `hideTestIfNoQuestion` has shown
+  /// them. Without this the port offered a test on a course the learner is only
+  /// browsing.
+  final bool isMyCourse;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final exam = ref.watch(stepExamProvider(step.id)).valueOrNull;
-    final surveys = ref.watch(stepSurveysProvider(step.id)).valueOrNull;
+    final exam = isMyCourse
+        ? ref.watch(stepExamProvider(step.id)).valueOrNull
+        : null;
+    final surveys = isMyCourse
+        ? ref.watch(stepSurveysProvider(step.id)).valueOrNull
+        : null;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -370,7 +394,16 @@ class _StepContent extends ConsumerWidget {
                 leading: const Icon(Icons.quiz_outlined),
                 title: Text(l10n.takeTest),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push('${Routes.exam}/${exam.id}'),
+                // `Routes.exam` is the *pattern* `/courses/exam/:examId`;
+                // appending the id to it produced
+                // `/courses/exam/:examId/<id>`, which matches no route and
+                // dropped the learner on go_router's error page. The exam
+                // screen wants the step and course as query parameters, as
+                // `CourseStepFragment` passes `stepId`/`stepNum`.
+                onTap: () => context.push(
+                  '/courses/exam/${exam.id}'
+                  '?stepId=${step.id}&courseId=${step.courseId ?? ''}',
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -382,9 +415,16 @@ class _StepContent extends ConsumerWidget {
                 leading: const Icon(Icons.assignment_outlined),
                 title: Text(l10n.recordSurvey),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.push(
-                  '${Routes.publicSurvey}/${surveys.first.teamId ?? ''}/${surveys.first.id}',
-                ),
+                // Kotlin's `btnTakeSurvey` calls
+                // `SubmissionsAdapter.openSurvey(…, stepSurvey[0].id, …)`,
+                // which opens `ExamTakingFragment` against the signed-in
+                // user's own submission — not the anonymous public-survey
+                // path. `Routes.publicSurvey` was both the wrong screen and,
+                // being a pattern rather than a base, an unmatchable route: a
+                // course-step survey has no `teamId`, so the interpolation
+                // left an empty segment too.
+                onTap: () =>
+                    context.push('${Routes.surveys}/${surveys.first.id}'),
               ),
             ),
           ],

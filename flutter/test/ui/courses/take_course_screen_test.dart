@@ -4,6 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/data/local/course_mapper.dart';
+import 'package:myplanet/data/local/exam_mapper.dart';
+import 'package:myplanet/data/local/survey_mapper.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/courses_providers.dart';
 import 'package:myplanet/providers/ratings_provider.dart';
@@ -42,6 +45,7 @@ void main() {
   Future<void> pumpScreen(
     WidgetTester tester, {
     List<Override> overrides = const [],
+    Map<String, WidgetBuilder> extraTargets = const {},
   }) async {
     await tester.pumpWidget(
       wrapScreen(
@@ -63,6 +67,7 @@ void main() {
         ),
         pushTargets: {
           '/take': (context) => const TakeCourseScreen(courseId: 'course-1'),
+          ...extraTargets,
         },
         overrides: [
           sessionProvider.overrideWith(() => _TestSessionNotifier(_user())),
@@ -268,5 +273,146 @@ void main() {
       findsOneWidget,
     );
     expect(find.byType(AlertDialog), findsNothing);
+  });
+
+  /// Fills an in-memory database from a real-shaped course document through
+  /// the real mappers, so the `exams.stepId == course_steps.id` join is what
+  /// the test exercises rather than a hand-faked row.
+  Future<AppDatabase> seedStepAssessments() async {
+    final db = AppDatabase.memory();
+    const doc = {
+      '_id': 'course-1',
+      'courseTitle': 'Algebra',
+      'steps': [
+        {
+          'stepTitle': 'First',
+          'exam': {
+            '_id': 'exam-1',
+            'type': 'courses',
+            'name': 'Step test',
+            'questions': [
+              {'id': 'q1', 'title': 'One?', 'type': 'input'},
+            ],
+          },
+          'survey': {
+            '_id': 'survey-1',
+            'type': 'surveys',
+            'name': 'Step survey',
+            'questions': [
+              {'id': 's1', 'title': 'How was it?', 'type': 'input'},
+            ],
+          },
+        },
+      ],
+    };
+    final parsed = CourseMapper.fromDoc(doc)!;
+    await db.courseDao.upsertAll([parsed.course], parsed.steps);
+    for (final mapping in ExamMapper.fromCourseDoc(
+      doc,
+      stepIdFor: CourseMapper.stepIdFor,
+    )) {
+      await db.examDao.upsertAll(
+        [mapping.exam],
+        {mapping.exam.id.value: mapping.questions},
+      );
+    }
+    for (final mapping in SurveyMapper.fromCourseDoc(
+      doc,
+      stepIdFor: CourseMapper.stepIdFor,
+    )) {
+      await db.surveyDao.upsertAll(
+        [mapping.survey],
+        {mapping.survey.id.value: mapping.questions},
+      );
+    }
+    return db;
+  }
+
+  Future<void> pumpSeededStep(
+    WidgetTester tester, {
+    required bool joined,
+  }) async {
+    final db = await seedStepAssessments();
+    addTearDown(db.close);
+    final steps = await db.courseDao.getSteps('course-1');
+    await pumpScreen(
+      tester,
+      // Sentinels rather than the real screens: what is under test is that the
+      // push matches a route at all, and both destinations need a provider
+      // graph of their own.
+      extraTargets: {
+        '/courses/exam/:examId': (context) => Scaffold(
+          body: Text(
+            'EXAM_ROUTE ${GoRouterState.of(context).pathParameters['examId']}',
+          ),
+        ),
+        '/life/surveys/:surveyId': (context) => Scaffold(
+          body: Text(
+            'SURVEY_ROUTE '
+            '${GoRouterState.of(context).pathParameters['surveyId']}',
+          ),
+        ),
+      },
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        courseProvider('course-1').overrideWith(
+          (ref) => Stream.value(
+            buildCourseRow(
+              id: 'course-1',
+              courseTitle: 'Algebra',
+              userId: joined ? const ['user-1'] : const [],
+            ),
+          ),
+        ),
+        courseStepsProvider(
+          'course-1',
+        ).overrideWith((ref) => Stream.value(steps)),
+      ],
+    );
+  }
+
+  testWidgets(
+    'the step view offers Take test and Take survey for an embedded pair',
+    (tester) async {
+      // Phase 113. Same reachability proof as `course_detail_screen_test`, on
+      // the other entry into `TakeExamScreen`. Neither `stepExamProvider` nor
+      // `stepSurveysProvider` is overridden: both do their own lookup against
+      // a database filled by the mappers the courses walk now runs.
+      await pumpSeededStep(tester, joined: true);
+
+      expect(find.text('Take test'), findsOneWidget);
+      expect(find.text('Record survey'), findsOneWidget);
+
+      // **Rendering is not reachability**, which is what the first cut of this
+      // test asserted and all it asserted. Both buttons concatenated the route
+      // *pattern* — `Routes.exam` is `/courses/exam/:examId`, so the push was
+      // `/courses/exam/:examId/exam-1` — which matches no route and drops the
+      // learner on go_router's error page.
+      await tester.tap(find.text('Take test'));
+      await tester.pumpAndSettle();
+      expect(find.text('EXAM_ROUTE exam-1'), findsOneWidget);
+    },
+  );
+
+  testWidgets('Record survey opens the signed-in survey screen', (
+    tester,
+  ) async {
+    // Kotlin's `btnTakeSurvey` opens `ExamTakingFragment` against the user's
+    // own submission (`SubmissionsAdapter.openSurvey`). The port aimed at the
+    // anonymous public-survey screen, on a route that could not match anyway.
+    await pumpSeededStep(tester, joined: true);
+    await tester.tap(find.text('Record survey'));
+    await tester.pumpAndSettle();
+    expect(find.text('SURVEY_ROUTE survey-1'), findsOneWidget);
+  });
+
+  testWidgets('a course the learner has not joined offers neither', (
+    tester,
+  ) async {
+    // `CourseStepFragment.onViewCreated` hides both after
+    // `hideTestIfNoQuestion` has shown them, when `!userHasCourse`.
+    await pumpSeededStep(tester, joined: false);
+    expect(find.text('Take test'), findsNothing);
+    expect(find.text('Record survey'), findsNothing);
   });
 }

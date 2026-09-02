@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/data/local/course_mapper.dart';
+import 'package:myplanet/data/local/exam_mapper.dart';
 import 'package:myplanet/repository/progress_repository.dart';
 
 class _MockPlanetApi extends Mock implements PlanetApi {}
@@ -221,6 +223,70 @@ void main() {
       expect(gap['course-gap']?.current, 0);
     },
   );
+
+  test('a step exam written by the courses walk carries its question count and '
+      'mistakes into the progress grid', () async {
+    // Phase 113. `courseProgress` joins `exams.stepId` to `course_steps.id`.
+    // Nothing in the port used to write that join, so `questionCount` was 0
+    // and `totalMistakes` 0 for every step regardless of what the learner
+    // had done. The exam row here comes from the mapper the `courses` walk
+    // now runs, not from a hand-faked `stepId`.
+    final mapped = ExamMapper.fromCourseDoc({
+      '_id': 'course-1',
+      'steps': [
+        {'stepTitle': 'Intro'},
+        {
+          'stepTitle': 'Assessment',
+          'exam': {
+            '_id': 'exam-1',
+            'type': 'courses',
+            'questions': [
+              {'id': 'q1', 'title': 'One?', 'type': 'input'},
+              {'id': 'q2', 'title': 'Two?', 'type': 'input'},
+            ],
+          },
+        },
+      ],
+    }, stepIdFor: CourseMapper.stepIdFor);
+    expect(mapped.single.exam.stepId.value, 'course-1:1');
+    await database.examDao.upsertAll(
+      [mapped.single.exam],
+      {'exam-1': mapped.single.questions},
+    );
+
+    // One attempt with two mistakes. `parentId` is `"$examId@$courseId"`,
+    // the shape Phase 110 restored.
+    await database.submissionDao.upsertAll(
+      [
+        SubmissionsCompanion.insert(
+          id: 'sub-1',
+          parentId: const Value('exam-1@course-1'),
+          userId: const Value('user-1'),
+          type: const Value('exam'),
+          status: const Value('requires grading'),
+        ),
+      ],
+      answers: {
+        'sub-1': [
+          SubmissionAnswersCompanion.insert(
+            id: 'sub-1:q1',
+            submissionId: 'sub-1',
+            examId: const Value('exam-1'),
+            questionId: const Value('q1'),
+            mistakes: const Value(2),
+          ),
+        ],
+      },
+    );
+
+    final grid = await repository.courseProgress('course-1', 'user-1');
+    expect(grid, hasLength(3));
+    expect(grid[1].questionCount, 2);
+    expect(grid[1].totalMistakes, 2);
+    // A step with no exam is untouched.
+    expect(grid[0].questionCount, 0);
+    expect(grid[0].totalMistakes, 0);
+  });
 }
 
 /// Seeds a course with [stepCount] steps, mirroring the `course_steps` shape

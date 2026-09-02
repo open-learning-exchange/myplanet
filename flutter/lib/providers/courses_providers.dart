@@ -265,23 +265,38 @@ final courseStepsProvider = StreamProvider.family<List<CourseStepRow>, String>((
 });
 
 /// The exam attached to a course step, or null if the step has none. Drives
-/// the "Take test" button on the step content view.
-final stepExamProvider = FutureProvider.family<ExamRow?, String>((
+/// the "Take test" button on the step content view and on the course detail
+/// screen — both entries into `TakeExamScreen`.
+///
+/// **`autoDispose`, and that is load-bearing.** A plain `FutureProvider.family`
+/// is cached for the container's lifetime and nothing invalidates these, so a
+/// step opened before the sync wrote its exam answered `null` for the rest of
+/// the process — the one gate on a feature that had just been made to work.
+/// Kotlin re-reads in `CourseStepFragment.onViewCreated`, i.e. on every
+/// fragment creation; disposing when the last listener goes is the closest
+/// equivalent.
+///
+/// Port of `ExamDao.getFirstByStepId`, which is `… WHERE stepId = :stepId
+/// LIMIT 1`. Deliberately **not** `ExamDao.getByStepId`, whose
+/// `getSingleOrNull` throws when two rows share a step id: the `courses` walk
+/// writes one exam per step, but a standalone `exams` document is free to carry
+/// a `stepId` key naming the same step, and a screen that throws out of `build`
+/// is worse than one that takes the first row, which is what the Kotlin does.
+final stepExamProvider = FutureProvider.autoDispose.family<ExamRow?, String>((
   ref,
   stepId,
 ) async {
   final db = ref.watch(appDatabaseProvider);
-  return db.examDao.getByStepId(stepId);
+  final rows = await db.examDao.getByStepIds([stepId]);
+  return rows.isEmpty ? null : rows.first;
 });
 
 /// The surveys attached to a course step. Drives the "Take survey" button.
-final stepSurveysProvider = FutureProvider.family<List<SurveyRow>, String>((
-  ref,
-  stepId,
-) async {
-  final db = ref.watch(appDatabaseProvider);
-  return db.surveyDao.getByStepId(stepId);
-});
+final stepSurveysProvider = FutureProvider.autoDispose
+    .family<List<SurveyRow>, String>((ref, stepId) async {
+      final db = ref.watch(appDatabaseProvider);
+      return db.surveyDao.getByStepId(stepId);
+    });
 
 /// Distinct grade levels present locally, for the filter spinner.
 ///

@@ -2320,6 +2320,28 @@ class SurveyDao extends DatabaseAccessor<AppDatabase> with _$SurveyDaoMixin {
             ..orderBy([(row) => OrderingTerm(expression: row.position)]))
           .get();
 
+  /// The survey half of [ExamDao.releaseStepJoinsForCourse]; see it for why
+  /// positional step ids make this necessary.
+  Future<void> releaseStepJoinsForCourse(
+    String courseId,
+    Set<String> keepIds,
+  ) async {
+    final stale =
+        await (selectOnly(surveys)
+              ..addColumns([surveys.id])
+              ..where(
+                surveys.courseId.equals(courseId) & surveys.stepId.isNotNull(),
+              ))
+            .map((row) => row.read(surveys.id)!)
+            .get();
+    final drop = stale.where((id) => !keepIds.contains(id)).toList();
+    for (final chunk in _chunked(drop, _sqliteVariableChunk)) {
+      await (update(surveys)..where((row) => row.id.isIn(chunk))).write(
+        const SurveysCompanion(stepId: Value(null), courseId: Value(null)),
+      );
+    }
+  }
+
   Future<void> upsertAll(
     List<SurveysCompanion> rows,
     Map<String, List<SurveyQuestionsCompanion>> questions,
@@ -2332,18 +2354,30 @@ class SurveyDao extends DatabaseAccessor<AppDatabase> with _$SurveyDaoMixin {
         surveyQuestions,
       )..where((row) => row.surveyId.equals(entry.key))).go();
       if (entry.value.isNotEmpty) {
-        await batch((batch) => batch.insertAll(surveyQuestions, entry.value));
+        // See `ExamDao.upsertAll`. Survey question ids are namespaced by their
+        // survey (`'$surveyId:$remoteId'`) so they cannot collide across
+        // surveys, but the positional fallback can still collide within one —
+        // and matching Kotlin's `@Upsert` costs nothing.
+        await batch(
+          (batch) =>
+              batch.insertAllOnConflictUpdate(surveyQuestions, entry.value),
+        );
       }
     }
   });
 
   /// See [MeetupDao.deleteNotIn] for why the difference is taken in Dart and
-  /// the deletes are chunked.
+  /// the deletes are chunked. Rows with a `stepId` are spared for the reason
+  /// [ExamDao.deleteNotIn] gives: since Phase 113 a course step's survey is
+  /// written by the *courses* walk and cannot be in this walk's keep set.
   Future<int> deleteNotIn(List<String> ids) => transaction(() async {
     final keep = ids.toSet();
-    final all = await (selectOnly(
-      surveys,
-    )..addColumns([surveys.id])).map((row) => row.read(surveys.id)!).get();
+    final all =
+        await (selectOnly(surveys)
+              ..addColumns([surveys.id])
+              ..where(surveys.stepId.isNull()))
+            .map((row) => row.read(surveys.id)!)
+            .get();
     final stale = all.where((id) => !keep.contains(id)).toList(growable: false);
     var deleted = 0;
     for (final chunk in _chunked(stale, _sqliteVariableChunk)) {
@@ -2434,13 +2468,31 @@ class ExamDao extends DatabaseAccessor<AppDatabase> with _$ExamDaoMixin {
       into(examQuestions).insertOnConflictUpdate(row);
 
   /// See [MeetupDao.deleteNotIn] for why the difference is taken in Dart and
-  /// the deletes are chunked. Exams are a pure server cache — every row is
-  /// restorable by the next sync — so nothing here needs sparing.
+  /// the deletes are chunked.
+  ///
+  /// **Rows with a `stepId` are spared.** This prune belongs to the `exams`
+  /// database walk, but since Phase 113 it is no longer that walk's table
+  /// alone: a course step's test is written by the *courses* walk, from the
+  /// copy embedded in the course document, and that is the only walk that
+  /// knows the step. Ids it minted itself (Kotlin's
+  /// `ifBlank { "$courseId-$stepId-$examKey" }` fallback), or that name a
+  /// document this satellite has not replicated, are structurally absent from
+  /// the exams walk's keep set — so without this the courses area would write
+  /// a step exam and the surveys area would delete it minutes later, in the
+  /// same sync pass. Kotlin has no delete-except-ids on this table at all, so
+  /// sparing is if anything the closer behaviour.
+  ///
+  /// A spared row is not immortal: [releaseStepJoinsForCourse] nulls the
+  /// `stepId` of any row the course document no longer claims, which hands it
+  /// back to this prune.
   Future<int> deleteNotIn(List<String> ids) => transaction(() async {
     final keep = ids.toSet();
-    final all = await (selectOnly(
-      exams,
-    )..addColumns([exams.id])).map((row) => row.read(exams.id)!).get();
+    final all =
+        await (selectOnly(exams)
+              ..addColumns([exams.id])
+              ..where(exams.stepId.isNull()))
+            .map((row) => row.read(exams.id)!)
+            .get();
     final stale = all.where((id) => !keep.contains(id)).toList(growable: false);
     var deleted = 0;
     for (final chunk in _chunked(stale, _sqliteVariableChunk)) {
@@ -2451,6 +2503,36 @@ class ExamDao extends DatabaseAccessor<AppDatabase> with _$ExamDaoMixin {
     }
     return deleted;
   });
+
+  /// Detaches every exam of [courseId] that [keepIds] does not name.
+  ///
+  /// The courses walk owns the `stepId`/`courseId` join and is the only writer
+  /// that can retire it. It has to, because the port's step id is positional
+  /// (`CourseMapper.stepIdFor`, `'$courseId:$index'`): deleting a step shifts
+  /// every later step's id down one, so an exam left attached to `c1:0` would
+  /// silently reappear under whatever step took that slot. Kotlin cannot reach
+  /// that — its step ids are a hash of the step's own JSON — and its exams walk
+  /// nulls a stale `stepId` wholesale on the next pull anyway, which the port
+  /// deliberately no longer does.
+  Future<void> releaseStepJoinsForCourse(
+    String courseId,
+    Set<String> keepIds,
+  ) async {
+    final stale =
+        await (selectOnly(exams)
+              ..addColumns([exams.id])
+              ..where(
+                exams.courseId.equals(courseId) & exams.stepId.isNotNull(),
+              ))
+            .map((row) => row.read(exams.id)!)
+            .get();
+    final drop = stale.where((id) => !keepIds.contains(id)).toList();
+    for (final chunk in _chunked(drop, _sqliteVariableChunk)) {
+      await (update(exams)..where((row) => row.id.isIn(chunk))).write(
+        const ExamsCompanion(stepId: Value(null), courseId: Value(null)),
+      );
+    }
+  }
 
   Future<void> upsertAll(
     List<ExamsCompanion> rows,
@@ -2464,7 +2546,18 @@ class ExamDao extends DatabaseAccessor<AppDatabase> with _$ExamDaoMixin {
         examQuestions,
       )..where((row) => row.examId.equals(entry.key))).go();
       if (entry.value.isNotEmpty) {
-        await batch((batch) => batch.insertAll(examQuestions, entry.value));
+        // `insertAllOnConflictUpdate`, not `insertAll`: `exam_questions.id` is
+        // the question's own document id, which Planet only makes unique
+        // *within* an exam, so two exams in one batch can carry the same one.
+        // Kotlin's `questionDao.upsertAll` is `@Upsert` and lets the later row
+        // win; a plain insert raises `UNIQUE constraint failed` instead, and
+        // neither `CoursesRepository.sync` nor `SurveysRepository.sync` catches
+        // it — so one such pair aborted the whole walk, skipped its remaining
+        // pages and its cleanup, and failed the sync area.
+        await batch(
+          (batch) =>
+              batch.insertAllOnConflictUpdate(examQuestions, entry.value),
+        );
       }
     }
   });

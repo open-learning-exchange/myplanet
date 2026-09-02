@@ -7,6 +7,8 @@ import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
 import '../data/local/course_mapper.dart';
+import '../data/local/exam_mapper.dart';
+import '../data/local/survey_mapper.dart';
 import 'shelf_repository.dart';
 
 /// Port of the courses read/sync surface of
@@ -22,7 +24,13 @@ import 'shelf_repository.dart';
 /// SQLite and never touch the network; [sync] refills the table and Drift pushes
 /// the change into any open stream.
 class CoursesRepository {
-  CoursesRepository(this._api, this._dao, this._removedLogDao);
+  CoursesRepository(
+    this._api,
+    this._dao,
+    this._removedLogDao,
+    this._examDao,
+    this._surveyDao,
+  );
 
   /// Courses carry embedded steps, so documents are much larger than resource
   /// documents — a smaller starting page keeps the first batch responsive on a
@@ -32,6 +40,13 @@ class CoursesRepository {
   final PlanetApi _api;
   final CourseDao _dao;
   final RemovedLogDao _removedLogDao;
+
+  /// A course document carries its steps' tests and surveys inline, so the
+  /// `courses` walk writes the exams and surveys tables too — see
+  /// [ExamMapper.fromCourseDoc]. Kotlin's `upsertRoomCoursesFromSync` does the
+  /// same, through `examDao`/`questionDao` (`CoursesRepositoryImpl.kt:650-651`).
+  final ExamDao _examDao;
+  final SurveyDao _surveyDao;
 
   /// Reactive, offline-first course list.
   Stream<List<CourseRow>> watchCourses({
@@ -171,6 +186,14 @@ class CoursesRepository {
 
       final courseRows = <CoursesCompanion>[];
       final stepRows = <CourseStepsCompanion>[];
+      final examRows = <ExamsCompanion>[];
+      final examQuestionRows = <String, List<ExamQuestionsCompanion>>{};
+      final surveyRows = <SurveysCompanion>[];
+      final surveyQuestionRows = <String, List<SurveyQuestionsCompanion>>{};
+      // Per course, the assessments its document still claims — anything else
+      // attached to it is a step the author has removed.
+      final examIdsByCourse = <String, Set<String>>{};
+      final surveyIdsByCourse = <String, Set<String>>{};
 
       // Preserve shelf membership already recorded for these courses. Fetched
       // once per page rather than once per row — a large sync would otherwise
@@ -203,10 +226,67 @@ class CoursesRepository {
         courseRows.add(parsed.course);
         stepRows.addAll(parsed.steps);
         savedIds.add(parsed.course.id.value);
+
+        // A question map entry is written only when the embedded object
+        // actually carried questions. `ExamDao.upsertAll` deletes an exam's
+        // questions before reinserting the entry's list, so passing an empty
+        // one for an embedded object with no `questions` array would wipe the
+        // questions the `exams` database walk had written for the same exam —
+        // leaving it openable with nothing in it. Kotlin's `questionDao` never
+        // deletes, so skipping is the faithful half as well as the safe one.
+        for (final mapping in ExamMapper.fromCourseDoc(
+          doc,
+          stepIdFor: CourseMapper.stepIdFor,
+        )) {
+          examRows.add(mapping.exam);
+          examIdsByCourse
+              .putIfAbsent(courseId, () => <String>{})
+              .add(mapping.exam.id.value);
+          if (mapping.questions.isNotEmpty) {
+            examQuestionRows[mapping.exam.id.value] = mapping.questions;
+          }
+        }
+        for (final mapping in SurveyMapper.fromCourseDoc(
+          doc,
+          stepIdFor: CourseMapper.stepIdFor,
+        )) {
+          surveyRows.add(mapping.survey);
+          surveyIdsByCourse
+              .putIfAbsent(courseId, () => <String>{})
+              .add(mapping.survey.id.value);
+          if (mapping.questions.isNotEmpty) {
+            surveyQuestionRows[mapping.survey.id.value] = mapping.questions;
+          }
+        }
       }
 
       if (courseRows.isNotEmpty) {
         await _dao.upsertAll(courseRows, stepRows);
+      }
+      // Written after the courses, so a step row always exists by the time an
+      // exam claims to belong to it. Neither table is pruned here: the `exams`
+      // database walk owns their `deleteNotIn`, and a course test is a document
+      // of that database too, so it is in that walk's keep set.
+      if (examRows.isNotEmpty) {
+        await _examDao.upsertAll(examRows, examQuestionRows);
+      }
+      if (surveyRows.isNotEmpty) {
+        await _surveyDao.upsertAll(surveyRows, surveyQuestionRows);
+      }
+      // Retire the joins this page's course documents no longer claim. Runs
+      // for every course on the page, not only those that still have an
+      // assessment, so removing the last test from a course clears it too.
+      for (final doc in docs) {
+        final courseId = JsonUtils.getString('_id', doc);
+        if (courseId.isEmpty) continue;
+        await _examDao.releaseStepJoinsForCourse(
+          courseId,
+          examIdsByCourse[courseId] ?? const <String>{},
+        );
+        await _surveyDao.releaseStepJoinsForCourse(
+          courseId,
+          surveyIdsByCourse[courseId] ?? const <String>{},
+        );
       }
 
       skip += rows.length;
