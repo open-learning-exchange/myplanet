@@ -198,9 +198,32 @@ final teamFinancesActionsProvider = Provider<TeamFinancesActions>(
   TeamFinancesActions.new,
 );
 
+/// Whether a membership row the server has never seen — no `_rev` — should
+/// have a tombstone uploaded for it.
+///
+/// `markMembershipsForLeave` (`TeamsRepositoryImpl.kt:1323-1337`) branches on
+/// exactly this: `if (membership._rev.isNullOrBlank())` the row is deleted
+/// locally and **nothing** is uploaded; only a revision-bearing row becomes a
+/// `{_id, _rev, _deleted: true}` document. Enqueueing regardless sent
+/// `"_rev": null`, which CouchDB rejects 4xx — and the outbox's retryable
+/// rule is `code >= 500`, so the row failed out permanently for a document
+/// the server never had.
+bool _serverKnowsRow(String? rev) => rev != null && rev.trim().isNotEmpty;
+
 class TeamMembershipActions {
   TeamMembershipActions(this.ref);
   final Ref ref;
+
+  /// `TeamMembershipActions` is a plain `Provider`, so its `ref` never
+  /// *watches* `sessionProvider` — `ref.read(sessionProvider).valueOrNull` is
+  /// null until something else resolves it, and every action below then took
+  /// its `return false` branch silently. Latent in the app only because the
+  /// router holds a `ref.listen`; not a guarantee this class can rely on.
+  /// Callers keep the await inside their own `try`/error path, because a
+  /// future can reject where `valueOrNull` could not.
+  Future<UserRow?> _session() => ref.read(sessionProvider.future);
+
+  Future<String?> _userId() async => (await _session())?.id;
 
   String? get _endpoint {
     final config = ref.read(serverConfigProvider);
@@ -210,7 +233,7 @@ class TeamMembershipActions {
   }
 
   Future<bool> requestToJoin(TeamRow team) async {
-    final user = ref.read(sessionProvider).valueOrNull;
+    final user = await _session();
     final endpoint = _endpoint;
     if (user == null || endpoint == null) return false;
     final row = await ref
@@ -235,20 +258,22 @@ class TeamMembershipActions {
   }
 
   Future<bool> leave(String teamId) async {
-    final user = ref.read(sessionProvider).valueOrNull;
+    final user = await _session();
     final endpoint = _endpoint;
     if (user == null || endpoint == null) return false;
     final row = await ref.read(teamsRepositoryProvider).leave(teamId, user.id);
     if (row == null) return false;
-    await ref
-        .read(outboxRepositoryProvider)
-        .enqueue(
-          uploadType: 'teamMembership',
-          itemId: row.id,
-          endpoint: endpoint,
-          payload: {'_id': row.id, '_rev': row.rev, '_deleted': true},
-          userId: user.id,
-        );
+    if (_serverKnowsRow(row.rev)) {
+      await ref
+          .read(outboxRepositoryProvider)
+          .enqueue(
+            uploadType: 'teamMembership',
+            itemId: row.id,
+            endpoint: endpoint,
+            payload: {'_id': row.id, '_rev': row.rev, '_deleted': true},
+            userId: user.id,
+          );
+    }
     return true;
   }
 
@@ -257,21 +282,23 @@ class TeamMembershipActions {
   /// a tombstone is enqueued, exactly as [leave] does for the current user.
   Future<bool> removeMember(String teamId, String userId) async {
     final endpoint = _endpoint;
-    final currentUser = ref.read(sessionProvider).valueOrNull;
+    final currentUser = await _session();
     if (endpoint == null || currentUser == null) return false;
     final row = await ref
         .read(teamsRepositoryProvider)
         .removeMember(teamId, userId);
     if (row == null) return false;
-    await ref
-        .read(outboxRepositoryProvider)
-        .enqueue(
-          uploadType: 'teamMembership',
-          itemId: row.id,
-          endpoint: endpoint,
-          payload: {'_id': row.id, '_rev': row.rev, '_deleted': true},
-          userId: currentUser.id,
-        );
+    if (_serverKnowsRow(row.rev)) {
+      await ref
+          .read(outboxRepositoryProvider)
+          .enqueue(
+            uploadType: 'teamMembership',
+            itemId: row.id,
+            endpoint: endpoint,
+            payload: {'_id': row.id, '_rev': row.rev, '_deleted': true},
+            userId: currentUser.id,
+          );
+    }
     return true;
   }
 
@@ -280,7 +307,7 @@ class TeamMembershipActions {
   /// rest) and enqueues each changed row for upload.
   Future<bool> makeLeader(String teamId, String newLeaderId) async {
     final endpoint = _endpoint;
-    final currentUser = ref.read(sessionProvider).valueOrNull;
+    final currentUser = await _session();
     if (endpoint == null || currentUser == null) return false;
     final changed = await ref
         .read(teamsRepositoryProvider)
@@ -309,17 +336,20 @@ class TeamMembershipActions {
         .read(teamsRepositoryProvider)
         .respondToRequest(requestId, accept: accept);
     if (updated == null) return false;
-    await ref
-        .read(outboxRepositoryProvider)
-        .enqueue(
-          uploadType: 'teamMembership',
-          itemId: original.id,
-          endpoint: endpoint,
-          payload: accept
-              ? TeamsRepository.serializeTeamDocument(updated)
-              : {'_id': original.id, '_rev': original.rev, '_deleted': true},
-          userId: ref.read(sessionProvider).valueOrNull?.id,
-        );
+    // A declined request the server never saw needs no tombstone either.
+    if (accept || _serverKnowsRow(original.rev)) {
+      await ref
+          .read(outboxRepositoryProvider)
+          .enqueue(
+            uploadType: 'teamMembership',
+            itemId: original.id,
+            endpoint: endpoint,
+            payload: accept
+                ? TeamsRepository.serializeTeamDocument(updated)
+                : {'_id': original.id, '_rev': original.rev, '_deleted': true},
+            userId: await _userId(),
+          );
+    }
     return true;
   }
 }
@@ -474,6 +504,9 @@ final teamMembershipActionsProvider = Provider<TeamMembershipActions>(
 );
 
 final teamsProvider = StreamProvider<List<TeamRow>>((ref) async* {
+  // Trimmed, deliberately: `TeamViewModel.applyFilters` does not trim, so a
+  // trailing space in Kotlin hides the whole catalog. Every other rule below
+  // follows the Kotlin exactly.
   final search = ref.watch(teamsSearchProvider).trim().toLowerCase();
   final type = ref.watch(teamsTypeProvider);
   final userId = ref.watch(sessionProvider).valueOrNull?.id;
@@ -481,10 +514,13 @@ final teamsProvider = StreamProvider<List<TeamRow>>((ref) async* {
   await for (final rows in repo.watchCatalog(type: type)) {
     final filtered = rows
         .where(
+          // `TeamViewModel.applyFilters` (TeamViewModel.kt:112-118) is a flat,
+          // case-insensitive `contains` on **`name` only** — not the ranked
+          // `ResourcesSearchUtils` algorithm Phases 96/97 ported for resources
+          // and surveys, and not the description. Matching the description
+          // surfaced teams whose name the query does not appear in at all.
           (row) =>
-              search.isEmpty ||
-              (row.name ?? '').toLowerCase().contains(search) ||
-              (row.description ?? '').toLowerCase().contains(search),
+              search.isEmpty || (row.name ?? '').toLowerCase().contains(search),
         )
         .toList();
     // Port of `TeamsRepositoryImpl.mapToTeamDetails`'s sort: leader > member

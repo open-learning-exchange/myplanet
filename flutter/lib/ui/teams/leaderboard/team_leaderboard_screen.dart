@@ -5,6 +5,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../providers/app_providers.dart';
 import '../../../providers/session_provider.dart';
 import '../../../providers/teams_provider.dart';
+import '../../components/profile_avatar.dart';
 import '../../../repository/progress_repository.dart'
     show CourseProgressSummary;
 import 'team_leaderboard_calculator.dart';
@@ -28,6 +29,12 @@ class _TeamLeaderboardScreenState extends ConsumerState<TeamLeaderboardScreen> {
   _Period _period = _Period.allTime;
   List<TeamLeaderboardEntry>? _entries;
   bool _loading = false;
+  bool _failed = false;
+
+  /// Bumped on every [_load]. A load whose token is stale when it finishes
+  /// must not write its result — the period toggle starts a second load
+  /// without cancelling the first, and either can complete last.
+  int _loadToken = 0;
 
   @override
   void initState() {
@@ -36,12 +43,35 @@ class _TeamLeaderboardScreenState extends ConsumerState<TeamLeaderboardScreen> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    final token = ++_loadToken;
+    setState(() {
+      _loading = true;
+      _failed = false;
+    });
+    try {
+      await _gather(token);
+    } catch (_) {
+      // Without this the exception escaped, `_loading` stayed true, and the
+      // screen sat on an indefinite spinner with no way out.
+      if (mounted && token == _loadToken) {
+        setState(() {
+          _entries = null;
+          _loading = false;
+          _failed = true;
+        });
+      }
+    }
+  }
+
+  Future<void> _gather(int token) async {
     final db = ref.read(appDatabaseProvider);
     final teamsRepo = ref.read(teamsRepositoryProvider);
     final progressRepo = ref.read(progressRepositoryProvider);
     final surveysRepo = ref.read(surveysRepositoryProvider);
-    final currentUser = ref.read(sessionProvider).valueOrNull;
+    // `sessionProvider` is read here but never watched, and `_load` runs from
+    // `initState` — so `.valueOrNull` was null on every load and the current
+    // user was never highlighted. Awaiting the future resolves it.
+    final currentUser = await ref.read(sessionProvider.future);
 
     // Get team courses
     final courses = await ref.read(teamCoursesProvider(widget.teamId).future);
@@ -59,20 +89,17 @@ class _TeamLeaderboardScreenState extends ConsumerState<TeamLeaderboardScreen> {
     for (final userId in memberUserIds) {
       final user = await db.userDao.getById(userId);
       if (user != null) {
-        final fullName = [
-          user.firstName,
-          user.lastName,
-        ].where((p) => p != null && p.trim().isNotEmpty).join(' ');
-        final displayName = fullName.isNotEmpty
-            ? fullName
-            : (user.name ?? userId);
+        // `profile_avatar.dart`'s `displayName` is the port's single source
+        // for a user's name: it includes the middle name and trims, which the
+        // local copy this replaces did neither of.
+        final memberName = displayName(user);
         final visits = await teamsRepo.teamVisitsForUsers(widget.teamId, [
           user.name ?? '',
         ]);
         members.add(
           MemberWithProgress(
             userId: userId,
-            displayName: displayName,
+            displayName: memberName,
             visitCount: visits.length,
             userImage: user.userImage,
           ),
@@ -123,7 +150,7 @@ class _TeamLeaderboardScreenState extends ConsumerState<TeamLeaderboardScreen> {
       periodStart: periodStart,
     );
 
-    if (mounted) {
+    if (mounted && token == _loadToken) {
       setState(() {
         _entries = entries;
         _loading = false;
@@ -161,6 +188,8 @@ class _TeamLeaderboardScreenState extends ConsumerState<TeamLeaderboardScreen> {
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
+                : _failed
+                ? Center(child: Text(l10n.leaderboardUnavailable))
                 : _entries == null || _entries!.isEmpty
                 ? Center(child: Text(l10n.noDataAvailable))
                 : ListView.builder(
@@ -245,7 +274,11 @@ class _LeaderboardCard extends StatelessWidget {
                       if (entry.visitCount > 0)
                         _Stat(
                           icon: Icons.visibility_outlined,
-                          label: l10n.numberOfVisits,
+                          // `numberOfVisits` is a bare label — it is right in
+                          // `member_detail_screen`, where a value sits beside
+                          // it, but here it was the whole stat and the count
+                          // never reached the screen.
+                          label: l10n.visitsCount(entry.visitCount),
                         ),
                     ],
                   ),

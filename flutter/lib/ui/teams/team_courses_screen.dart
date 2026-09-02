@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/courses_providers.dart';
+import '../../providers/session_provider.dart';
 import '../../providers/teams_provider.dart';
 
 class TeamCoursesScreen extends ConsumerWidget {
@@ -14,9 +15,23 @@ class TeamCoursesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final courses = ref.watch(teamCoursesProvider(teamId));
-    final canManage =
-        ref.watch(teamMembershipsProvider).valueOrNull?[teamId]?.isLeader ??
-        false;
+    final membership = ref.watch(teamMembershipsProvider).valueOrNull?[teamId];
+    // Kotlin's add has no gate in `TeamCoursesFragment` at all — it is driven
+    // by `btnAddDoc`, which `setupMyTeamButtons` shows to any **member**
+    // (`TeamDetailFragment.kt:286-289`).
+    final canAdd = membership != null;
+    // `canRemove = currentUserId.equals(teamCreator, ignoreCase = true)`
+    // (`TeamCoursesFragment.kt:44-46`), where `getTeamCreator` is the team
+    // row's `userId` (`TeamsRepositoryImpl.kt:1120-1123`) — the **creator**,
+    // not the leader. The port gated it on `isLeader`, which both offered the
+    // unlink to a leader who did not create the team and withheld it from a
+    // creator who is not the leader.
+    final creatorId = ref.watch(teamProvider(teamId)).valueOrNull?.userId;
+    final currentUserId = ref.watch(sessionProvider).valueOrNull?.id;
+    final canRemove =
+        creatorId != null &&
+        currentUserId != null &&
+        creatorId.toLowerCase() == currentUserId.toLowerCase();
     return Scaffold(
       appBar: AppBar(title: Text(l10n.teamCourses)),
       body: courses.when(
@@ -33,7 +48,7 @@ class TeamCoursesScreen extends ConsumerWidget {
                     leading: const Icon(Icons.school_outlined),
                     title: Text(rows[index].courseTitle ?? l10n.untitledCourse),
                     subtitle: Text(rows[index].description ?? ''),
-                    trailing: canManage
+                    trailing: canRemove
                         ? IconButton(
                             tooltip: l10n.removeFromTeam,
                             icon: const Icon(Icons.link_off),
@@ -46,7 +61,7 @@ class TeamCoursesScreen extends ConsumerWidget {
                 ),
               ),
       ),
-      floatingActionButton: canManage
+      floatingActionButton: canAdd
           ? FloatingActionButton.extended(
               onPressed: () => _chooseCourse(context, ref),
               icon: const Icon(Icons.playlist_add),

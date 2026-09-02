@@ -76,7 +76,16 @@ class TeamLeaderboardCalculator {
     entries.sort((a, b) {
       final byCourses = b.coursesCompleted.compareTo(a.coursesCompleted);
       if (byCourses != 0) return byCourses;
-      return b.surveysCompleted.compareTo(a.surveysCompleted);
+      final bySurveys = b.surveysCompleted.compareTo(a.surveysCompleted);
+      if (bySurveys != 0) return bySurveys;
+      // Members arrive through a `Set` and `List.sort` is not stable, so
+      // without a total order two members with identical scores could swap
+      // rank between two loads of unchanged data. Name then id, so the
+      // ranking is reproducible.
+      final byName = a.displayName.toLowerCase().compareTo(
+        b.displayName.toLowerCase(),
+      );
+      return byName != 0 ? byName : a.userId.compareTo(b.userId);
     });
     return entries;
   }
