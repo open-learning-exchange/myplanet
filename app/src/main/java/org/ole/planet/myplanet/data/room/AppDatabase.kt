@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.data.room
 
 import androidx.room.Database
-import org.ole.planet.myplanet.model.RatingPrompt
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import org.ole.planet.myplanet.data.room.dao.AchievementDao
@@ -65,6 +64,7 @@ import org.ole.planet.myplanet.model.NewsLog
 import org.ole.planet.myplanet.model.OfflineActivity
 import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.model.Rating
+import org.ole.planet.myplanet.model.RatingPrompt
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.ResourceActivity
 import org.ole.planet.myplanet.model.RetryOperation
