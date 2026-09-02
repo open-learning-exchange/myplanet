@@ -7,19 +7,19 @@ import android.os.Environment
 import android.util.Log
 import android.util.Rational
 import android.view.MenuItem
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import java.io.File
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.databinding.ActivityResourceViewerBinding
 import org.ole.planet.myplanet.ui.ratings.RatingsFragment
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
-import androidx.activity.OnBackPressedCallback
-import androidx.activity.viewModels
-import javax.inject.Inject
-import org.ole.planet.myplanet.repository.UserRepository
 
 @AndroidEntryPoint
 class ResourceViewerActivity : AppCompatActivity() {
