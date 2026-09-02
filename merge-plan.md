@@ -1,70 +1,75 @@
 # Merge plan — open-learning-exchange/myplanet
 
-**BASE** `master` @ `6c0db183fbcf214574bc988f29c4815fa42b8fbe`  
-**PR heads fetched** 2026-09-02T14:08:41Z  
-**Labels this run** MERGE=`merge` (6) · PRIORITY=`priority` (0) · READY=`ready` (8) · QUEUE=`automerge` (0) · `conflict` (0)
+**BASE** `master` @ `f172c7913c3da9ef9016c031f9cebf2efdfd5fba`  
+**PR heads fetched** 2026-09-02T22:22:02Z  
+**Labels this run** MERGE=`merge` (10) · PRIORITY=`priority` (1) · READY=`ready` (2) · QUEUE=`automerge` (0) · `conflict` (0)
 
 Re-run if BASE moves for any reason other than executing it.
-
-## The labelling experiment closed the loop
-
-The five stalled PRs were labelled `conflict` at 07:41Z. **All five were rebased clean by 13:56Z** — within about six hours, after sitting untouched for roughly sixteen.
-
-| # | before labelling | after |
-|---|---|---|
-| [16096](https://github.com/open-learning-exchange/myplanet/pull/16096) | 22 commits behind, untouched since 09-01 | rebased 13:47Z, **1 behind, clean** |
-| [16398](https://github.com/open-learning-exchange/myplanet/pull/16398) | 18 commits behind, untouched since 09-01 | rebased 13:23Z, **1 behind, clean** |
-| [16441](https://github.com/open-learning-exchange/myplanet/pull/16441) | 18 commits behind, untouched since 09-01 | rebased 13:27Z, **1 behind, clean** |
-| [16503](https://github.com/open-learning-exchange/myplanet/pull/16503) | 18 commits behind, untouched since 09-01 | rebased 13:28Z, **1 behind, clean** |
-| [16600](https://github.com/open-learning-exchange/myplanet/pull/16600) | 30 commits behind, untouched since 09-01 | rebased 13:56Z, **1 behind, clean** |
-
-This is a controlled before/after on the same five PRs: unlabelled they sat for a day; labelled they were fixed the same morning. Combined with the earlier 17-for-17 and the 4-for-4 held-PR decay, the mechanism is no longer in question.
-
-**All five are now in wave 1.** `conflict` is back to 0 and this time that is correct — nothing in the merge set is broken.
 
 ## Previous plan — how far it got
 
 | wave | n | merged | still open | closed unmerged |
 |---|---|---|---|---|
-| 1 | 2 | **1** | 1 | 0 |
-| 3 (broken) | 6 | 0 | 6 | 0 |
+| 1 | 6 | **5** | 1 | 0 |
+| 3 (broken) | 1 | 0 | 1 | 0 |
 
-2 commits landed: [16397](https://github.com/open-learning-exchange/myplanet/pull/16397) from wave 1, and [16666](https://github.com/open-learning-exchange/myplanet/pull/16666), a PR opened and merged inside the interval.
+5 commits landed and **all 5 were the PRs labelled `conflict` the previous morning**: #16096, #16398, #16441, #16503, #16600.
 
-## Wave 1 — 6 PRs
+### The full cycle, end to end, in about 24 hours
 
-Verified: all 6 chained cumulatively onto BASE with **zero** merge failures. 1450 changed lines. **Zero conflict edges**, nothing held, and no two PRs share a file.
+| stage | when | state |
+|---|---|---|
+| stalled, unlabelled | 09-01, ~16h | 18–30 commits behind, untouched |
+| labelled `conflict` | 09-02 07:41Z | — |
+| rebased clean | 09-02 by 13:56Z | 1 commit behind |
+| entered wave 1 | 09-02 14:08Z | all 5 clean |
+| **merged** | 09-02 by 22:22Z | all 5 landed |
+
+Label to merged in roughly fifteen hours, for five PRs that had not moved in a day. Nothing else in this plan's history has produced that.
+
+## Wave 1 — 9 PRs
+
+Verified: all 9 chained cumulatively onto BASE with **zero** merge failures. 2570 changed lines. **Zero conflict edges**, nothing held.
 
 | # | diff | labels | title |
 |---|---|---|---|
-| [16096](https://github.com/open-learning-exchange/myplanet/pull/16096) | 239 |  | life: smoother life layout list loading (fixes #16089) |
-| [16398](https://github.com/open-learning-exchange/myplanet/pull/16398) | 15 |  | sync: smoother url utils base64 handling (fixes #16372) |
-| [16441](https://github.com/open-learning-exchange/myplanet/pull/16441) | 49 |  | all: smoother file utils url path resolving (fixes #16409) |
-| [16503](https://github.com/open-learning-exchange/myplanet/pull/16503) | 41 |  | all: smoother version utils comparing (fixes #16500) |
 | [16585](https://github.com/open-learning-exchange/myplanet/pull/16585) | 1060 | `experiment` | all: smoother dictionary teams achievement view modelling (fixes #16576) |
-| [16600](https://github.com/open-learning-exchange/myplanet/pull/16600) | 46 |  | all: smoother notifications task date caching (fixes #16414) |
+| [16592](https://github.com/open-learning-exchange/myplanet/pull/16592) | 270 |  | resources: smoother library filter state preserving (fixes #16269) |
+| [16625](https://github.com/open-learning-exchange/myplanet/pull/16625) | 268 |  | resources: smoother media playback progress saving (fixes #16614) |
+| [16660](https://github.com/open-learning-exchange/myplanet/pull/16660) | 330 |  | teams: smoother submission stamping (fixes #16664) |
+| [16662](https://github.com/open-learning-exchange/myplanet/pull/16662) | 245 |  | teams: smoother survey team detail landscape handling (fixes #16633) |
+| [16675](https://github.com/open-learning-exchange/myplanet/pull/16675) | 92 | `priority` | sync: smoother courses resources uploading (fixes #16670) |
+| [16678](https://github.com/open-learning-exchange/myplanet/pull/16678) | 15 |  | sync: smoother submit photos dao batch updating (fixes #16685) |
+| [16679](https://github.com/open-learning-exchange/myplanet/pull/16679) | 172 |  | all: smoother file utils uri path resolving (fixes #16651) |
+| [16684](https://github.com/open-learning-exchange/myplanet/pull/16684) | 118 |  | all: smoother repositories sync documents mapping (fixes #16643) |
 
 ## Wave 2 — empty
 
-No held PRs. No candidate pair shares a file.
+No held PRs. One candidate pair shares a file and merges clean.
 
 ## Wave 3 — 1 broken against BASE
 
-[16661](https://github.com/open-learning-exchange/myplanet/pull/16661) (`ready`, `enormous`, 12 files) — the only broken PR left, and the only in-play PR without a `conflict` label that has one coming. It is `ready`-only, so this plan never merges it; it was deliberately excluded from the labelling.
+[16663](https://github.com/open-learning-exchange/myplanet/pull/16663) — **44 commits behind**, the stalest head in the set. It moved from `ready` to `merge` during this interval, so it is a merge candidate for the first time, and it arrives already broken and unlabelled.
 
-**13 of the 14 in-play PRs are clean against BASE** — the healthiest state in the tracked history of this plan.
+## Priority — 1 PR, protection free for the seventh run
 
-## Priority
-
-No open PR carries `priority`. Protection has cost 0 PRs in every run where it applied.
+[16675](https://github.com/open-learning-exchange/myplanet/pull/16675) (`priority` `merge`, 92 lines) is clean and conflicts with nothing, so greedy MIS is 9 with or without protection — cost **0 PRs**. It merges inside wave 1.
 
 ## `ready` impact (report only — never merged by this plan)
 
-7 `ready`-only PRs are clean. Landing wave 1 breaks **none** of them.
+2 `ready`-only PRs. Landing wave 1 breaks **1**: [15699](https://github.com/open-learning-exchange/myplanet/pull/15699).
+
+[16661](https://github.com/open-learning-exchange/myplanet/pull/16661), broken in the previous plan, moved from `ready` to `change` and is out of play entirely — it is no longer this plan's concern.
 
 ## Caveats
 
-- Conflict detection is **textual**. A clean merge is not a passing build. Two runs ago #16595 was queued and then pulled for a `failing` label nine minutes later, which is what that looks like in practice.
-- [16585](https://github.com/open-learning-exchange/myplanet/pull/16585) is 1060 of the 1450 lines in this wave — more than the other five combined — and still carries **`experiment`**, a label with no description in the repo. Fourth run awaiting a merge-or-hold decision. This plan does not gate on it.
-- The five freshly rebased PRs are all 1 commit behind BASE, so they are as current as they will ever be; if the wave is going to be executed, now is the cheapest moment.
+- Conflict detection is **textual**. A clean merge is not a passing build.
+- One same-file overlap: `SubmissionsRepositoryImpl.kt` — [16660](https://github.com/open-learning-exchange/myplanet/pull/16660) and [16684](https://github.com/open-learning-exchange/myplanet/pull/16684). They merge clean but land together, so test mid-wave.
+- Six of the nine wave-1 PRs are `enormous`, and the wave totals 2570 lines. This is a heavier wave than its PR count suggests.
 - Every wave-1 title is house style, so nothing to hand off.
+
+## On #16585
+
+[16585](https://github.com/open-learning-exchange/myplanet/pull/16585) (1060 lines) got `experiment` at 2026-09-01 18:00, one minute after its `conflict` label was removed, and **nothing has happened on it since** — no push, no comment, no label change in over 28 hours, while it drifted to 25 commits behind. Read plainly, `experiment` looks like a park rather than a gate.
+
+It still carries `merge`, and `merge` is this plan's gate, so it stays in wave 1 and is listed above. This plan will stop flagging it as an open question; if it should be excluded, drop the `merge` label and it leaves the wave automatically.
