@@ -2,7 +2,8 @@
 
 Two of the port's largest hand-written surfaces had no tests at all:
 `ui/achievements/edit_achievement_screen.dart` (634 lines) and
-`ui/exam/user_information_screen.dart` (415 lines). 39 new tests (1559 pass),
+`ui/exam/user_information_screen.dart` (415 lines). 39 tests in two new files
+plus 2 net in the achievements repository/uploader files (1518 → 1559 pass),
 and they found **thirteen** defects. Every fix below was demonstrated failing
 against the pre-fix code first, one defect at a time.
 
