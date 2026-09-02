@@ -179,13 +179,14 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
   /// deep link opens this screen as the first route on the stack, so there is
   /// nothing to pop and `maybePop` left the respondent staring at the failure
   /// card. Fall through to the same destination the submit path uses.
-  void _leave() {
+  Future<void> _leave() async {
     final navigator = Navigator.of(context);
     if (navigator.canPop()) {
       navigator.pop();
       return;
     }
-    final session = ref.read(sessionProvider).valueOrNull;
+    final session = await ref.read(sessionProvider.future);
+    if (!mounted) return;
     context.go(session != null ? Routes.resources : Routes.login);
   }
 
@@ -253,8 +254,8 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
           );
 
       if (!mounted) return;
-      final saved = await Navigator.of(context).push<bool>(
-        MaterialPageRoute<bool>(
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
           builder: (_) => UserInformationScreen(
             submissionId: submissionId,
             teamId: widget.teamId,
@@ -263,12 +264,16 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
         ),
       );
 
-      // A cancelled profile step sends nothing, the way
-      // `PublicSurveyActivity.uploadCompletedSubmission` finds no `complete`
-      // submission to POST when the dialog is dismissed without saving. The
-      // answers stay on the device. (The port marks the draft `complete` on
-      // creation, so the status alone cannot carry this.)
-      if (!mounted || saved != true) return;
+      // Declining the profile step still posts the answers.
+      // `PublicSurveyActivity` uploads from `onFragmentDetached`
+      // (:74-80) with no save-vs-cancel test, and the sheet was already
+      // `status = "complete"` before the dialog opened — `saveExamAnswer`
+      // marks it on the last question (`SubmissionsRepositoryImpl.kt:550`),
+      // not the dialog. The `lastUpdateTime < launchTime` check at
+      // `PublicSurveyActivity.kt:123` is a staleness filter for a previous
+      // run of the same survey, not a cancellation gate. Declining only
+      // omits the `user` object from the body.
+      if (!mounted) return;
       final success = await ref
           .read(surveysRepositoryProvider)
           .submitPublicSurvey(
@@ -317,7 +322,7 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
       // either on the server or durably queued, and re-submitting it would post
       // a second copy.
       if (success || queued) {
-        final session = ref.read(sessionProvider).valueOrNull;
+        final session = await ref.read(sessionProvider.future);
         if (mounted) {
           context.go(session != null ? Routes.resources : Routes.login);
         }
