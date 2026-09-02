@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.voices
 
 import android.app.Application
 import android.content.Context
-import android.widget.LinearLayout
 import androidx.test.core.app.ApplicationProvider
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -15,7 +14,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
-import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.VoicesEditActions
 import org.robolectric.RobolectricTestRunner

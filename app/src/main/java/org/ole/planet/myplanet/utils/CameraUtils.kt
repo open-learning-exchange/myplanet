@@ -30,6 +30,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.context
 
 object CameraUtils {
+    private const val TAG = "CameraUtils"
     private const val IMAGE_WIDTH = 640
     private const val IMAGE_HEIGHT = 480
 
@@ -113,7 +114,7 @@ object CameraUtils {
                     callback.onImageCapture(mainPicture.absolutePath)
                 }
             } catch (error: Exception) {
-                error.printStackTrace()
+                Log.e(TAG, "Failed to save captured picture", error)
             }
         }
     }
@@ -139,7 +140,7 @@ object CameraUtils {
                 }
             }, null)
         } catch (e: CameraAccessException) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to open camera", e)
         }
     }
 
@@ -160,12 +161,12 @@ object CameraUtils {
                             captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
                             captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, mainHandler)
                         } catch (e: CameraAccessException) {
-                            e.printStackTrace()
+                            Log.e(TAG, "Failed to start repeating capture request", e)
                         }
                     }
 
                     override fun onConfigureFailed(session: CameraCaptureSession) {
-                        Log.e("CameraUtils", "Camera configuration failed")
+                        Log.e(TAG, "Camera configuration failed")
                         closeCamera()
                     }
                 }
@@ -183,12 +184,12 @@ object CameraUtils {
                             captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
                             captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, mainHandler)
                         } catch (e: CameraAccessException) {
-                            e.printStackTrace()
+                            Log.e(TAG, "Failed to start repeating capture request", e)
                         }
                     }
 
                     override fun onConfigureFailed(session: CameraCaptureSession) {
-                        Log.e("CameraUtils", "Camera configuration failed")
+                        Log.e(TAG, "Camera configuration failed")
                         closeCamera()
                     }
                 },
@@ -196,7 +197,7 @@ object CameraUtils {
                 )
             }
         } catch (e: CameraAccessException) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to create camera preview", e)
         }
     }
 

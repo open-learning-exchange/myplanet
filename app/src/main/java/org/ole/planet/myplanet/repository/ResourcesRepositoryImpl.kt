@@ -7,6 +7,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
+import java.io.IOException
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
@@ -231,7 +232,29 @@ class ResourcesRepositoryImpl @Inject constructor(
             return Result.failure(Exception("Resource title already exists"))
         }
 
+        val sourceFile = request.resourceUrl?.let { File(it) }
+        if (sourceFile == null || !sourceFile.exists()) {
+            return Result.failure(Exception("Resource file not found"))
+        }
+
+        val externalFilesDir = FileUtils.getExternalFilesDir(context)
+            ?: return Result.failure(Exception("Storage unavailable"))
+
         val id = UUID.randomUUID().toString()
+        val filename = sourceFile.name
+        val destinationFile = FileUtils.getLibraryFile(externalFilesDir, id, filename)
+
+        try {
+            withContext(dispatcherProvider.io) {
+                destinationFile.parentFile?.mkdirs()
+                sourceFile.copyTo(destinationFile, overwrite = true)
+            }
+        } catch (e: IOException) {
+            return Result.failure(e)
+        } catch (e: SecurityException) {
+            return Result.failure(e)
+        }
+
         val resource = MyLibrary().apply {
             this.id = id
             this.title = title
@@ -252,9 +275,9 @@ class ResourcesRepositoryImpl @Inject constructor(
             this.level = request.levels?.toList() ?: emptyList()
             this.createdDate = Calendar.getInstance().timeInMillis
             this.resourceFor = request.resourceFor?.toList() ?: emptyList()
-            this.resourceLocalAddress = request.resourceUrl
+            this.resourceLocalAddress = filename
             this.resourceOffline = true
-            this.filename = request.resourceUrl?.let { it.substring(it.lastIndexOf("/")) }
+            this.filename = filename
             this.isPrivate = request.isPrivateTeamResource
             this.privateFor = if (request.isPrivateTeamResource) request.teamId else null
 
@@ -263,7 +286,12 @@ class ResourcesRepositoryImpl @Inject constructor(
             }
         }
 
-        saveLibraryItem(resource)
+        try {
+            saveLibraryItem(resource)
+        } catch (e: Exception) {
+            destinationFile.delete()
+            return Result.failure(e)
+        }
 
         if (!request.isPrivateTeamResource) {
             markResourceAdded(request.userId, resource.id)

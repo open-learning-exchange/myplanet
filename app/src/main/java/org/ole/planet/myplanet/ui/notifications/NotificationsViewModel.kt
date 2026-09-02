@@ -8,6 +8,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Locale
 import java.util.regex.Pattern
 import javax.inject.Inject
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -84,33 +86,59 @@ class NotificationsViewModel @Inject constructor(
             val taskIds = taskNotifications
                 .mapNotNull { it.relatedId }
                 .distinct()
-            val taskTeamNames = notificationsRepository.getTaskTeamNamesByTaskIds(taskIds).toMutableMap()
 
             val taskTitles = taskNotifications
-                .filter { it.relatedId.isNullOrEmpty() || !taskTeamNames.containsKey(it.relatedId) }
                 .mapNotNull { parseTaskDate(it.message)?.first }
                 .distinct()
-            if (taskTitles.isNotEmpty()) {
-                val teamNamesByTitle = notificationsRepository.getTaskTeamNamesByTaskTitles(taskTitles)
-                taskTeamNames.putAll(teamNamesByTitle)
-            }
 
             val joinRequestIds = joinRequestNotifications
                 .mapNotNull { it.relatedId }
                 .distinct()
-            val joinRequestDetails = notificationsRepository.getJoinRequestDetailsBatch(joinRequestIds).toMutableMap()
 
             val joinRequestsWithoutRelatedId = joinRequestNotifications
                 .filter { it.relatedId.isNullOrEmpty() }
-            if (joinRequestsWithoutRelatedId.isNotEmpty()) {
-                val fallbackDetail = notificationsRepository.getJoinRequestDetails(null)
-                joinRequestDetails[""] = fallbackDetail
+
+            val (taskTeamNames, joinRequestDetails, unreadCount) = coroutineScope {
+                val taskTeamNamesByIdsDeferred = async {
+                    notificationsRepository.getTaskTeamNamesByTaskIds(taskIds)
+                }
+
+                val taskTeamNamesByTitlesDeferred = async {
+                    if (taskTitles.isNotEmpty()) {
+                        notificationsRepository.getTaskTeamNamesByTaskTitles(taskTitles)
+                    } else {
+                        emptyMap()
+                    }
+                }
+
+                val joinRequestDetailsDeferred = async {
+                    val details = notificationsRepository.getJoinRequestDetailsBatch(joinRequestIds).toMutableMap()
+                    if (joinRequestsWithoutRelatedId.isNotEmpty()) {
+                        val fallbackDetail = notificationsRepository.getJoinRequestDetails(null)
+                        details[""] = fallbackDetail
+                    }
+                    details
+                }
+
+                val unreadCountDeferred = async {
+                    notificationsRepository.getUnreadCount(userId, isAdmin)
+                }
+
+                val combinedTaskTeamNames = taskTeamNamesByTitlesDeferred.await().toMutableMap().apply {
+                    putAll(taskTeamNamesByIdsDeferred.await())
+                }
+
+                Triple(
+                    combinedTaskTeamNames,
+                    joinRequestDetailsDeferred.await(),
+                    unreadCountDeferred.await()
+                )
             }
 
             _notifications.value = payloadNotifications.map {
                 formatNotification(it, taskTeamNames, joinRequestDetails)
             }
-            _unreadCount.value = notificationsRepository.getUnreadCount(userId, isAdmin)
+            _unreadCount.value = unreadCount
         }
     }
 

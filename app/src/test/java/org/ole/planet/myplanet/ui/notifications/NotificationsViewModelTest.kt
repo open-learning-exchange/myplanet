@@ -188,6 +188,31 @@ class NotificationsViewModelTest {
     }
 
     @Test
+    fun testLoadNotificationsParallelLookups() = runTest(testDispatcher) {
+        val taskWithId = notification(id = "t1", type = "task", isRead = false, message = "Task By Id Mon 12, Jan 2024").copy(relatedId = "rel_task_1")
+        val taskWithTitleOnly = notification(id = "t2", type = "task", isRead = false, message = "Task By Title Mon 12, Jan 2024").copy(relatedId = null)
+        val joinReq = notification(id = "j1", type = "join_request", isRead = false, message = "Join Req").copy(relatedId = "rel_join_1")
+
+        coEvery { repository.getNotifications(USER_ID, FILTER_ALL, false) } returns listOf(taskWithId, taskWithTitleOnly, joinReq)
+        coEvery { repository.getTaskTeamNamesByTaskIds(listOf("rel_task_1")) } returns mapOf("rel_task_1" to "Alpha Team")
+        coEvery { repository.getTaskTeamNamesByTaskTitles(listOf("Task By Id", "Task By Title")) } returns mapOf("Task By Title" to "Beta Team")
+        coEvery { repository.getJoinRequestDetailsBatch(listOf("rel_join_1")) } returns mapOf("rel_join_1" to Pair("Alice", "Gamma Team"))
+        coEvery { repository.getUnreadCount(USER_ID, false) } returns 3
+
+        viewModel.loadNotifications(USER_ID, FILTER_ALL)
+        advanceUntilIdle()
+
+        assertEquals(3, viewModel.unreadCount.value)
+        val notifications = viewModel.notifications.value
+        assertEquals(3, notifications.size)
+
+        coVerify { repository.getTaskTeamNamesByTaskIds(listOf("rel_task_1")) }
+        coVerify { repository.getTaskTeamNamesByTaskTitles(listOf("Task By Id", "Task By Title")) }
+        coVerify { repository.getJoinRequestDetailsBatch(listOf("rel_join_1")) }
+        coVerify { repository.getUnreadCount(USER_ID, false) }
+    }
+
+    @Test
     fun testToggleSelectionUpdatesSelectionStateOnListItems() = runTest(testDispatcher) {
         loadNotifications(unreadTask)
 
