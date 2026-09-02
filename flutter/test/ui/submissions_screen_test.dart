@@ -199,4 +199,69 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Water, Power'), findsOneWidget);
   });
+
+  testWidgets('a choice answer is marked correct by its choice id', (
+    tester,
+  ) async {
+    // The tile's own correctness check compares the stored answer against the
+    // question's `correctChoices`, which are choice **ids**
+    // (`ExamMapper._parseCorrectChoices`, and the `correctChoice` array a
+    // synced question carries). A stored answer entry is the whole
+    // `{id, text}` object, so comparing the entries verbatim could only ever
+    // match the exam path's bare ids — and once both paths store objects, as
+    // Kotlin's `saveExamAnswer` does, it matched nothing at all.
+    const row = SubmissionRow(
+      id: 'submission-4',
+      userId: 'user-1',
+      type: 'exam',
+      startTime: 0,
+      lastUpdateTime: 0,
+      grade: 0,
+      status: 'complete',
+      uploaded: false,
+      isUpdated: true,
+    );
+    await tester.pumpWidget(
+      wrapScreen(
+        const SubmissionDetailScreen(submissionId: 'submission-4'),
+        overrides: [
+          submissionProvider(
+            'submission-4',
+          ).overrideWith((ref) => Stream.value(row)),
+          submissionAnswersProvider('submission-4').overrideWith(
+            (ref) => Stream.value([
+              const SubmissionAnswerRow(
+                id: 'submission-4:q-1',
+                submissionId: 'submission-4',
+                questionId: 'q-1',
+                valueChoices: ['{"id":"paris","text":"Paris"}'],
+                mistakes: 0,
+                // Not pre-graded — the tile's own check is what is under test.
+                isPassed: false,
+                grade: 0,
+              ),
+            ]),
+          ),
+          submissionQuestionsProvider('submission-4').overrideWith(
+            (ref) => Stream.value([
+              const SubmissionQuestionRow(
+                id: 'submission-4:q-1',
+                submissionId: 'submission-4',
+                header: 'Capital city',
+                type: 'select',
+                correctChoices: ['paris'],
+                choices: ['Paris', 'Rome'],
+                position: 0,
+              ),
+            ]),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(ListView), const Offset(0, -500));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.check_circle), findsOneWidget);
+  });
 }

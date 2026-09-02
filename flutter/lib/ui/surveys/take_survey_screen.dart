@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -63,13 +61,21 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
         }
       }
       if (question == null) continue;
-      if (answer.value?.isNotEmpty == true) {
+      // Only a question that offers no choices has a text field to seed. A
+      // choice answer's `value` is now the picked choice's display text (the
+      // one `saveExamAnswer` derives), and seeding it would put that label in
+      // a controller the card never renders for such a question. No symptom
+      // is reachable today — a radio group cannot be cleared, so `_submit`'s
+      // answered-everything guard cannot be fooled by the leftover text, and
+      // a `selectMultiple` answer's `value` is empty — but seeding a field
+      // that is not on screen is how that guard would come apart later.
+      if (question.choices.isEmpty && answer.value?.isNotEmpty == true) {
         textAnswers[question.id]?.text = answer.value!;
       }
       if (answer.valueChoices.isNotEmpty) {
         choiceAnswers[question.id]?.addAll(
           answer.valueChoices
-              .map(_decodeChoice)
+              .map(ExamChoice.decode)
               .whereType<ExamChoice>()
               // Only a choice the question still offers can be re-selected;
               // `ExamChoice` is a value type, so this is set membership.
@@ -81,17 +87,6 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
   }
 
   static String _rawId(SurveyQuestionRow q) => q.questionId ?? q.id;
-
-  /// A stored answer choice is the choice object as a JSON string; a row
-  /// written before that was fixed carries a bare label instead, which
-  /// [ExamChoice.fromJson] keeps as its own id.
-  static ExamChoice? _decodeChoice(String raw) {
-    try {
-      return ExamChoice.fromJson(jsonDecode(raw));
-    } on FormatException {
-      return ExamChoice.fromJson(raw);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -172,7 +167,7 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
           questionId: question.id,
           value: textAnswers[question.id]!.text.trim(),
           choices: choiceAnswers[question.id]!
-              .map((choice) => jsonEncode(choice.toJson()))
+              .map((choice) => choice.encode())
               .toList(growable: false),
         ),
     };

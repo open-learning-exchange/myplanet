@@ -242,10 +242,110 @@ void main() {
       final answers = await database.submissionDao.answersFor(id);
       expect(answers, hasLength(2));
       final byQuestion = {for (final a in answers) a.questionId: a};
-      expect(byQuestion['q1']!.valueChoices, ['c1']);
+      expect(byQuestion['q1']!.valueChoices, ['{"id":"c1","text":"Paris"}']);
       expect(byQuestion['q1']!.isPassed, isTrue);
       expect(byQuestion['q2']!.value, 'blue');
       expect(byQuestion['q2']!.examId, 'exam-1');
+    });
+
+    test(
+      'a select answer is stored as the choice object, not its id',
+      () async {
+        // `SubmissionsRepositoryImpl.saveExamAnswer` writes
+        // `listOf("""{"id":"$ans","text":"$ansForCheck"}""")` for a `select`
+        // question and sets `value` to `ansForCheck`, the choice's display text
+        // via `ExamAnswerUtils.getChoiceTextById`. The port stored the bare id
+        // and left `value` null.
+        final exam = await seedExam();
+        final id = await submissions.createExamDraft(
+          exam: exam,
+          questions: twoQuestions(),
+          userId: 'ada',
+          answers: const {
+            'q1': ExamDraftAnswer(choiceIds: ['c1'], isCorrect: true),
+          },
+        );
+        final answers = await database.submissionDao.answersFor(id);
+        final q1 = answers.firstWhere((a) => a.questionId == 'q1');
+        expect(q1.valueChoices, ['{"id":"c1","text":"Paris"}']);
+        expect(q1.value, 'Paris');
+      },
+    );
+
+    test('a selectMultiple answer stores objects and an empty value', () async {
+      // Kotlin's `selectMultiple` branch sets `value = ""` and maps `listAns`
+      // (text -> id) to `{"id":"$id","text":"$text"}` per entry.
+      final exam = await seedExam();
+      final questions = [
+        ExamQuestionRow(
+          id: 'q1',
+          examId: 'exam-1',
+          type: 'selectMultiple',
+          correctChoices: const ['c1', 'c2'],
+          choices: const [
+            ExamChoice(id: 'c1', text: 'Paris'),
+            ExamChoice(id: 'c2', text: 'Lyon'),
+          ],
+          hasOtherOption: false,
+          scaleMax: 9,
+          position: 0,
+        ),
+      ];
+      final id = await submissions.createExamDraft(
+        exam: exam,
+        questions: questions,
+        userId: 'ada',
+        answers: const {
+          'q1': ExamDraftAnswer(choiceIds: ['c1', 'c2'], isCorrect: true),
+        },
+      );
+      final answers = await database.submissionDao.answersFor(id);
+      expect(answers.single.valueChoices, [
+        '{"id":"c1","text":"Paris"}',
+        '{"id":"c2","text":"Lyon"}',
+      ]);
+      expect(answers.single.value, '');
+    });
+
+    test('an unknown choice id falls back to the id as its text', () async {
+      // `getChoiceTextById` returns `map[id] ?: id`.
+      final exam = await seedExam();
+      final id = await submissions.createExamDraft(
+        exam: exam,
+        questions: twoQuestions(),
+        userId: 'ada',
+        answers: const {
+          'q1': ExamDraftAnswer(choiceIds: ['ghost']),
+        },
+      );
+      final answers = await database.submissionDao.answersFor(id);
+      final q1 = answers.firstWhere((a) => a.questionId == 'q1');
+      expect(q1.valueChoices, ['{"id":"ghost","text":"ghost"}']);
+      expect(q1.value, 'ghost');
+    });
+
+    test('a select answer uploads its display text, as Kotlin does', () async {
+      // `Answer.createObject` sends `value` whenever it is non-empty and only
+      // falls back to `valueChoicesArray` when it is not — so a `select`
+      // answer reaches Planet as a bare string, and `valueChoicesArray` is
+      // reached only for `selectMultiple` (and an unanswered select).
+      final exam = await seedExam();
+      final id = await submissions.createExamDraft(
+        exam: exam,
+        questions: twoQuestions(),
+        userId: 'ada',
+        answers: const {
+          'q1': ExamDraftAnswer(choiceIds: ['c1'], isCorrect: true),
+        },
+      );
+      final payload = await submissions.serialize(
+        (await submissions.getById(id))!,
+      );
+      final byQuestion = {
+        for (final answer in payload['answers'] as List)
+          (answer as Map)['questionId']: answer['value'],
+      };
+      expect(byQuestion['q1'], 'Paris');
     });
 
     test('an unanswered exam scores zero rather than failing', () async {
