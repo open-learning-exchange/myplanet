@@ -336,6 +336,22 @@ failing, which is most of the argument for taking it.
   half is missing, so a non-member cannot post on a public team.
 * **`team_members_screen.dart:203-225` omits `RequestsAdapter.kt:63-67`'s
   `isRequester` disable.**
+* **`take_exam_screen_test`'s verification-photo case is a wall-clock race with
+  a hardcoded round count**, and it is worth naming because it cost this lane
+  a full diagnostic cycle. `settleExam(tester, rounds: 40)` waits a fixed
+  number of `runAsync` rounds for `Directory.create` + `writeAsBytes` + the
+  drift row that follows — the count is hand-tuned, and its own comment says
+  so. It failed once here on a busy machine and passed on two subsequent full
+  runs, in isolation, and on the base tree; my diff shares no import with
+  `take_exam_screen.dart`. So it is not this lane's defect, but it is a real
+  fragility that any branch adding test files can trip. The fix is to poll
+  until the row exists (with a deadline) instead of counting rounds. Lane B's
+  file, so reported rather than edited.
+
+  Reducing the pressure *this* lane adds was in scope and is done:
+  `guest_predicate_parity_test` now reads asynchronously with a whole-file
+  pre-filter instead of `readAsLinesSync` over ~400 files, so its isolate no
+  longer starves its neighbours.
 
 ## For the integrator
 

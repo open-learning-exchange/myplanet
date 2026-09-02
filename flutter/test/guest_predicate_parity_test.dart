@@ -23,13 +23,20 @@ import 'package:flutter_test/flutter_test.dart';
 /// `UserMapper.isGuest(row)` for a `UserRow`, or `UserMapper.isGuestId(id)`
 /// for a bare id string.
 void main() {
-  test('the guest prefix is written down exactly once in lib/', () {
+  test('the guest prefix is written down exactly once in lib/', () async {
     // `UserMapper` is the one definition, so the literal lives there.
     const owner = 'lib/data/local/user_mapper.dart';
     final pattern = RegExp(r'''["']guest''');
 
     final offenders = <String>[];
-    for (final entity in Directory('lib').listSync(recursive: true)) {
+    // Async reads with a cheap whole-file pre-filter, rather than
+    // `readAsLinesSync` over ~400 files: `flutter test` runs each test file in
+    // its own isolate concurrently, and one isolate blocking on several
+    // hundred synchronous reads starves the others. At least one neighbouring
+    // test waits on a real `dart:io` write against a hand-tuned round count
+    // (`take_exam_screen_test`'s verification photo), so this file makes a
+    // point of not competing with it.
+    await for (final entity in Directory('lib').list(recursive: true)) {
       if (entity is! File || !entity.path.endsWith('.dart')) continue;
       // Generated sources are gitignored and rebuilt; they carry no rules.
       if (entity.path.endsWith('.g.dart')) continue;
@@ -45,7 +52,10 @@ void main() {
       // `UserMapper.isGuestId`.
       if (entity.path == 'lib/data/local/app_database.dart') continue;
 
-      final lines = entity.readAsLinesSync();
+      final text = await entity.readAsString();
+      if (!pattern.hasMatch(text)) continue;
+
+      final lines = text.split('\n');
       for (var i = 0; i < lines.length; i++) {
         final line = lines[i];
         // Comments and doc comments may quote the Kotlin freely.
