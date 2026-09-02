@@ -13,20 +13,14 @@
   "@serverUrlHint": {
     "x-mt": true
   },
-  "serverPinLabel": "Code PIN du serveur",
-  "@serverPinLabel": {
-    "x-mt": true
-  },
+  "serverPinLabel": "Code serveur",
   "connect": "Connecter",
   "@connect": {
     "x-mt": true
   },
   "serverUrlNotConfigured": "URL du serveur non configurée",
-  "deviceCouldNotReachLocalServer": "l'appareil n'a pas pu atteindre le serveur. vérifiez si vous êtes connecté au bon réseau Wi-Fi pour le serveur local (communauté).",
-  "@deviceCouldNotReachLocalServer": {
-    "x-mt": true
-  },
-  "deviceCouldNotReachNationServer": "l\\'appareil n\\'a pas pu atteindre le serveur. vérifiez si vous êtes connecté à Internet et réessayez.",
+  "deviceCouldNotReachLocalServer": "l'appareil n'a pas pu atteindre le serveur. vérifiez si vous êtes connecté au réseau Wi-Fi correct pour le serveur local (communauté).",
+  "deviceCouldNotReachNationServer": "l'appareil n'a pas pu atteindre le serveur. vérifiez si vous êtes connecté à Internet et réessayez.",
   "connectionFailed": "Échec de la connexion !",
   "connectedToCommunity": "Connecté à {code}",
   "@connectedToCommunity": {
@@ -158,14 +152,8 @@
   "@appTheme": {
     "x-mt": true
   },
-  "aiChat": "Chat IA",
-  "@aiChat": {
-    "x-mt": true
-  },
-  "syncNow": "Synchronisez maintenant",
-  "@syncNow": {
-    "x-mt": true
-  },
+  "aiChat": "AI Chat",
+  "syncNow": "Synchroniser maintenant",
   "syncCenter": "Centre de synchronisation",
   "@syncCenter": {
     "x-mt": true
@@ -277,7 +265,7 @@
     "x-mt": true
   },
   "neverSynced": "jamais synchronisé",
-  "justNow": "À l\\'instant",
+  "justNow": "À l'instant",
   "minutesAgo": "{count, plural, =1{1 minute ago} other{{count} minutes ago}}",
   "@minutesAgo": {
     "x-mt": true
@@ -587,8 +575,8 @@
     "x-mt": true
   },
   "tasks": "Tâches",
-  "notifGroupJoinRequests": "Demandes d\\'adhésion",
-  "notifGroupTeamUpdates": "Mises à jour de l\\'équipe",
+  "notifGroupJoinRequests": "Demandes d'adhésion",
+  "notifGroupTeamUpdates": "Mises à jour de l'équipe",
   "notifGroupNewVoices": "Nouvelles voix",
   "notifGroupVoiceReplies": "Réponses vocales",
   "notificationGroupSystem": "Système",
@@ -661,10 +649,7 @@
   "@refresh": {
     "x-mt": true
   },
-  "complete": "Complet",
-  "@complete": {
-    "x-mt": true
-  },
+  "complete": "Complète",
   "noMatchingSubmissions": "Aucune soumission ne correspond à ce filtre",
   "@noMatchingSubmissions": {
     "x-mt": true
@@ -685,14 +670,8 @@
   "@unknown": {
     "x-mt": true
   },
-  "nA": "N / A",
-  "@nA": {
-    "x-mt": true
-  },
-  "otherDiagnosis": "Autre diagnostic",
-  "@otherDiagnosis": {
-    "x-mt": true
-  },
+  "nA": "N/A",
+  "otherDiagnosis": "Autres diagnostics",
   "add": "Ajouter",
   "@add": {
     "x-mt": true
@@ -740,10 +719,7 @@
   "@newSubmission": {
     "x-mt": true
   },
-  "answer": "Répondre",
-  "@answer": {
-    "x-mt": true
-  },
+  "answer": "Réponse",
   "availableChoices": "Choix",
   "@availableChoices": {
     "x-mt": true
@@ -774,10 +750,7 @@
     "x-mt": true
   },
   "maps": "Cartes",
-  "englishDictionary": "dictionnaire anglais",
-  "@englishDictionary": {
-    "x-mt": true
-  },
+  "englishDictionary": "Dictionnaire anglais",
   "offlineMapsComingSoon": "Les cartes hors ligne ne sont pas encore portées",
   "@offlineMapsComingSoon": {
     "x-mt": true
@@ -885,7 +858,7 @@
   "welcomeToMyPlanet": "Bienvenue sur myPlanet",
   "learnOffline": "Apprendre hors ligne",
   "openLearning": "Apprentissage ouvert",
-  "unleashLearningPower": "Libérer le pouvoir d\\'apprendre",
+  "unleashLearningPower": "Libérer le pouvoir d'apprendre",
   "onboardingWelcomeDescription": "Votre passerelle vers un apprentissage illimité",
   "onboardingOfflineDescription": "Téléchargez des ressources pour l'apprentissage hors ligne.\nAccédez aux connaissances en déplacement.",
   "@onboardingOfflineDescription": {
@@ -899,10 +872,7 @@
   "@onboardingPowerDescription": {
     "x-mt": true
   },
-  "onboardingServerPrepHint": "Avant de vous connecter, vous aurez besoin de votre adresse de serveur Planet et de votre code PIN. Demandez à votre administrateur de communauté si vous ne les avez pas encore.",
-  "@onboardingServerPrepHint": {
-    "x-mt": true
-  },
+  "onboardingServerPrepHint": "Avant de vous connecter, vous aurez besoin de l'adresse du serveur Planet et du code PIN. Demandez à l'administrateur de votre communauté si vous ne les avez pas encore.",
   "pageProgress": "Page {current} de {total}",
   "@pageProgress": {
     "x-mt": true
@@ -969,10 +939,7 @@
   "@joinMeetup": {
     "x-mt": true
   },
-  "editMeetup": "Modifier la rencontre",
-  "@editMeetup": {
-    "x-mt": true
-  },
+  "editMeetup": "Modifier la réunion",
   "startTime": "Heure de début",
   "@startTime": {
     "x-mt": true
@@ -1139,10 +1106,7 @@
   "@sendSurveyTo": {
     "x-mt": true
   },
-  "sendSurvey": "Envoyer le sondage",
-  "@sendSurvey": {
-    "x-mt": true
-  },
+  "sendSurvey": "Envoyer l'enquête",
   "surveySentToUsers": "Survey sent to selected users",
   "@surveySentToUsers": {
     "x-mt": true
@@ -1197,22 +1161,10 @@
   "@leader": {
     "x-mt": true
   },
-  "leave": "Partir",
-  "@leave": {
-    "x-mt": true
-  },
-  "remove": "Retirer",
-  "@remove": {
-    "x-mt": true
-  },
-  "makeLeader": "Faire un leader",
-  "@makeLeader": {
-    "x-mt": true
-  },
-  "leftTeam": "Équipe de gauche",
-  "@leftTeam": {
-    "x-mt": true
-  },
+  "leave": "Quitter",
+  "remove": "Supprimer",
+  "makeLeader": "Faire de lui un leader",
+  "leftTeam": "A quitté l'équipe",
   "memberRemoved": "Membre supprimé",
   "@memberRemoved": {
     "x-mt": true
@@ -1364,10 +1316,7 @@
   "@levelIsRequired": {
     "x-mt": true
   },
-  "subjectIsRequired": "Le sujet est obligatoire",
-  "@subjectIsRequired": {
-    "x-mt": true
-  },
+  "subjectIsRequired": "Le sujet est requis",
   "selectFile": "Sélectionnez un fichier",
   "@selectFile": {
     "x-mt": true
@@ -1445,10 +1394,7 @@
     "x-mt": true
   },
   "archiveReport": "Archiver",
-  "beginningBalance": "Solde d'ouverture",
-  "@beginningBalance": {
-    "x-mt": true
-  },
+  "beginningBalance": "Solde de départ",
   "sales": "Ventes",
   "otherIncome": "Autres revenus",
   "@otherIncome": {
@@ -1491,10 +1437,7 @@
     "x-mt": true
   },
   "chat": "Discussion",
-  "newChat": "Nouvelle discussion",
-  "@newChat": {
-    "x-mt": true
-  },
+  "newChat": "Nouveau chat",
   "searchChats": "Rechercher des discussions",
   "@searchChats": {
     "x-mt": true
@@ -1511,10 +1454,7 @@
   "@untitledChat": {
     "x-mt": true
   },
-  "fullConversationResponse": "Réponse complète à la conversation",
-  "@fullConversationResponse": {
-    "x-mt": true
-  },
+  "fullConversationResponse": "Réponse complète de la conversation",
   "response": "Réponse",
   "@response": {
     "x-mt": true
@@ -1551,15 +1491,12 @@
   "@aiProviderUnavailable": {
     "x-mt": true
   },
-  "feedback": "Retour d\\'information",
+  "feedback": "Retour d'information",
   "feedbackNotFound": "Commentaires introuvables",
   "@feedbackNotFound": {
     "x-mt": true
   },
-  "feedbackSaved": "Commentaires enregistrés",
-  "@feedbackSaved": {
-    "x-mt": true
-  },
+  "feedbackSaved": "Commentaire enregistré",
   "isUrgent": "Est-ce urgent ?",
   "@isUrgent": {
     "x-mt": true
@@ -1604,10 +1541,7 @@
   "@takeTest": {
     "x-mt": true
   },
-  "recordSurvey": "Enquête record",
-  "@recordSurvey": {
-    "x-mt": true
-  },
+  "recordSurvey": "Enregistrer l'enquête",
   "react": "Réagir",
   "@react": {
     "x-mt": true
@@ -1705,14 +1639,8 @@
     "x-mt": true
   },
   "date": "Date",
-  "fromDate": "À partir du jour",
-  "@fromDate": {
-    "x-mt": true
-  },
-  "toDate": "À ce jour",
-  "@toDate": {
-    "x-mt": true
-  },
+  "fromDate": "Date de début",
+  "toDate": "Date de fin",
   "reset": "Réinitialiser",
   "@reset": {
     "x-mt": true
@@ -1781,10 +1709,7 @@
   "@correctAnswers": {
     "x-mt": true
   },
-  "yourAnswer": "Votre Réponse",
-  "@yourAnswer": {
-    "x-mt": true
-  },
+  "yourAnswer": "Votre réponse",
   "previous": "Précédent",
   "finish": "Terminer",
   "exitExam": "Examen de sortie ?",
@@ -1797,14 +1722,8 @@
   },
   "exit": "Quitter",
   "download": "Télécharger",
-  "downloading": "Téléchargement…",
-  "@downloading": {
-    "x-mt": true
-  },
-  "downloadFailed": "Le téléchargement a échoué.",
-  "@downloadFailed": {
-    "x-mt": true
-  },
+  "downloading": "Téléchargement....",
+  "downloadFailed": "Échec du téléchargement.",
   "resourceNotDownloaded": "Cette ressource n'est pas encore sur votre appareil.",
   "@resourceNotDownloaded": {
     "x-mt": true
@@ -1841,18 +1760,9 @@
   "@birthDate": {
     "x-mt": true
   },
-  "selectDate": "Sélectionnez une date",
-  "@selectDate": {
-    "x-mt": true
-  },
-  "male": "Mâle",
-  "@male": {
-    "x-mt": true
-  },
-  "female": "Femelle",
-  "@female": {
-    "x-mt": true
-  },
+  "selectDate": "Sélectionner une date",
+  "male": "Homme",
+  "female": "Femme",
   "yearOfBirth": "Année de naissance",
   "yearOfBirthRequired": "L'année de naissance est obligatoire",
   "@yearOfBirthRequired": {
@@ -1866,10 +1776,7 @@
   "@yearBetween": {
     "x-mt": true
   },
-  "thankYouForTakingSurvey": "Merci d'avoir répondu à cette enquête",
-  "@thankYouForTakingSurvey": {
-    "x-mt": true
-  },
+  "thankYouForTakingSurvey": "Merci d'avoir participé à cette enquête",
   "errorSavingProfile": "Erreur lors de l'enregistrement du profil",
   "@errorSavingProfile": {
     "x-mt": true
@@ -1904,10 +1811,7 @@
   "@resourceUnavailable": {
     "x-mt": true
   },
-  "healthRecordNotAvailable": "Carnet de santé non disponible",
-  "@healthRecordNotAvailable": {
-    "x-mt": true
-  },
+  "healthRecordNotAvailable": "Dossier de santé non disponible",
   "updateHealth": "Mettre à jour la santé",
   "@updateHealth": {
     "x-mt": true
@@ -1928,10 +1832,7 @@
   "@otherNeeds": {
     "x-mt": true
   },
-  "emergencyContact": "Personne à contacter en cas d'urgence",
-  "@emergencyContact": {
-    "x-mt": true
-  },
+  "emergencyContact": "Contact d'urgence",
   "contactNumber": "Numéro de contact",
   "@contactNumber": {
     "x-mt": true
@@ -2001,20 +1902,14 @@
   "allergies": "Allergies",
   "diagnosis": "Diagnostic",
   "medications": "Médicaments",
-  "immunizations": "Vaccinations",
-  "@immunizations": {
-    "x-mt": true
-  },
+  "immunizations": "Vaccins",
   "treatments": "Traitements",
   "observations": "Observations",
   "@observations": {
     "x-mt": true
   },
   "referrals": "Références",
-  "labTests": "Tests de laboratoire",
-  "@labTests": {
-    "x-mt": true
-  },
+  "labTests": "Analyses de laboratoire",
   "xrays": "Radiographies",
   "conditions": "Conditions",
   "@conditions": {
@@ -2086,10 +1981,7 @@
   "@bloodPressureRangeError": {
     "x-mt": true
   },
-  "bloodPressureNotNumbers": "Systolique et diastolique doivent être des nombres",
-  "@bloodPressureNotNumbers": {
-    "x-mt": true
-  },
+  "bloodPressureNotNumbers": "La systolique et la diastolique doivent être des nombres",
   "temp": "Température",
   "@temp": {
     "x-mt": true
@@ -2133,10 +2025,10 @@
     "x-mt": true
   },
   "areYouSure": "Êtes-vous sûr ?",
-  "cancelAddingExamination": "Are you sure you want to cancel adding examination? The data will be lost.",
-  "yesIWantToExit": "Yes, I want to exit.",
-  "inactiveMessage": "User not activated, please contact administrator or manager to activate your account.",
-  "submitFeedback": "Submit Feedback",
+  "cancelAddingExamination": "Voulez-vous vraiment annuler l'ajout de l'examen? Les données seront perdues.",
+  "yesIWantToExit": "Oui, je veux quitter.",
+  "inactiveMessage": "Utilisateur non activé, veuillez contacter l'administrateur ou le responsable pour activer votre compte.",
+  "submitFeedback": "Envoyer un commentaire",
   "failedToDelete": "Échec de la suppression : {error}",
   "@failedToDelete": {
     "x-mt": true
@@ -2185,10 +2077,7 @@
   "@freeUpSpaceFailed": {
     "x-mt": true
   },
-  "enterUsername": "Entrez le nom d'utilisateur",
-  "@enterUsername": {
-    "x-mt": true
-  },
+  "enterUsername": "Entrer le nom d'utilisateur",
   "enterPassword": "Entrez le mot de passe",
   "@enterPassword": {
     "x-mt": true
@@ -2199,10 +2088,7 @@
   },
   "becomeMember": "devenir membre",
   "toAccessThisFeatureBecomeAMember": "vous êtes actuellement un utilisateur invité. pour accéder à cette fonctionnalité, devenez membre.",
-  "creatingMember": "Création d'un compte membre...",
-  "@creatingMember": {
-    "x-mt": true
-  },
+  "creatingMember": "Création du compte membre...",
   "passwordsDoNotMatch": "Les mots de passe ne correspondent pas",
   "pleaseSelectGender": "Veuillez sélectionner le genre",
   "pleaseEnterPassword": "Veuillez entrer un mot de passe",
@@ -2210,14 +2096,14 @@
   "@usernameAlreadyExists": {
     "x-mt": true
   },
-  "usernameCannotBeEmpty": "Le nom d\\'utilisateur ne peut pas être vide",
-  "invalidUsername": "Nom d\\'utilisateur invalide",
+  "usernameCannotBeEmpty": "Le nom d'utilisateur ne peut pas être vide",
+  "invalidUsername": "Nom d'utilisateur invalide",
   "usernameMustStartWithLetterOrNumber": "Doit commencer par une lettre ou un chiffre",
   "usernameOnlyLettersNumbers": "Seules les lettres a à z, les chiffres et \"_\", \".\", \"-\" sont autorisés",
   "@usernameOnlyLettersNumbers": {
     "x-mt": true
   },
-  "usernameTaken": "Nom d\\'utilisateur déjà pris",
+  "usernameTaken": "Nom d'utilisateur déjà pris",
   "memberCreatedOffline": "Compte membre créé hors ligne",
   "@memberCreatedOffline": {
     "x-mt": true
@@ -2244,15 +2130,12 @@
   "@syncCompletedChallenge": {
     "x-mt": true
   },
-  "rememberSync": "N\\'oubliez pas de synchroniser l\\'application mobile.",
+  "rememberSync": "N'oubliez pas de synchroniser l'application mobile.",
   "challengeDialogTitle": "Défi quotidien",
   "@challengeDialogTitle": {
     "x-mt": true
   },
-  "start": "Commencer",
-  "@start": {
-    "x-mt": true
-  },
+  "start": "Démarrer",
   "continuation": "Continuer",
   "@continuation": {
     "x-mt": true
@@ -2260,25 +2143,16 @@
   "plan": "Plan",
   "mission": "Mission et Services",
   "editPlan": "Modifier le plan",
-  "teamPlan": "Quel est le projet de votre équipe ?",
-  "@teamPlan": {
-    "x-mt": true
-  },
-  "entMission": "Quelle est la Mission de votre entreprise ?",
-  "@entMission": {
-    "x-mt": true
-  },
+  "teamPlan": "Quel est le plan de votre équipe ?",
+  "entMission": "Quelle est la mission de votre entreprise ?",
   "entServices": "Quels sont les services fournis par votre entreprise ?",
   "entRules": "Quelles sont les règles de votre entreprise ?",
-  "noMissionDefined": "L\\'entreprise n\\'a pas de mission et de services.",
+  "noMissionDefined": "L'entreprise n'a pas de mission et de services.",
   "noPlanDefined": "Cette équipe n'a pas de plan défini.",
   "@noPlanDefined": {
     "x-mt": true
   },
-  "noDescriptionDefined": "Cette équipe n'a pas de description définie.",
-  "@noDescriptionDefined": {
-    "x-mt": true
-  },
+  "noDescriptionDefined": "Cette équipe n'a aucune description définie.",
   "enterpriseName": "Nom de l'entreprise",
   "@enterpriseName": {
     "x-mt": true
@@ -2440,7 +2314,7 @@
   "@filterResources": {
     "x-mt": true
   },
-  "teamSurveys": "Enquêtes d\\'équipe",
+  "teamSurveys": "Enquêtes d'équipe",
   "adoptableSurveys": "Enquêtes disponibles à adopter",
   "@adoptableSurveys": {
     "x-mt": true
@@ -2485,10 +2359,7 @@
   "@activitySummary": {
     "x-mt": true
   },
-  "lastLogin": "Dernière connexion",
-  "@lastLogin": {
-    "x-mt": true
-  },
+  "lastLogin": "Dernière Connexion",
   "memberDetail": "Détail du membre",
   "@memberDetail": {
     "x-mt": true
@@ -2501,18 +2372,9 @@
   "@noLogoutRecord": {
     "x-mt": true
   },
-  "totalVisits": "Visites totales",
-  "@totalVisits": {
-    "x-mt": true
-  },
-  "mostOpenedResource": "Ressource la plus ouverte",
-  "@mostOpenedResource": {
-    "x-mt": true
-  },
-  "numberOfResourcesOpened": "Nombre de ressources ouvertes",
-  "@numberOfResourcesOpened": {
-    "x-mt": true
-  },
+  "totalVisits": "Total des Visites",
+  "mostOpenedResource": "Ressource La Plus Consultée",
+  "numberOfResourcesOpened": "Nombre de Ressources Ouvertes",
   "resourceOpenedTimes": "{title} ouvert {count} fois",
   "@resourceOpenedTimes": {
     "x-mt": true
@@ -2571,8 +2433,8 @@
   "selectResources": "Sélectionner des ressources: ",
   "myGoals": "Mes Objectifs",
   "myPurpose": "Mon But",
-  "noGoalAdded": "Aucun objectif n\\'a encore été défini",
-  "noPurposeAdded": "Aucun objectif n\\'a été ajouté",
+  "noGoalAdded": "Aucun objectif n'a encore été défini",
+  "noPurposeAdded": "Aucun objectif n'a été ajouté",
   "noAchievementAdded": "Résumé des réalisations",
   "noReferencesAdded": "Aucune référence ajoutée",
   "sendToNation": "Autorisez la partage de vos réalisations avec la nation",
@@ -2606,10 +2468,7 @@
   "@textSize": {
     "x-mt": true
   },
-  "selectTextSize": "Sélectionnez la taille du texte",
-  "@selectTextSize": {
-    "x-mt": true
-  },
+  "selectTextSize": "Sélectionner la taille du texte",
   "textSizeSmall": "Petit",
   "@textSizeSmall": {
     "x-mt": true
@@ -2626,10 +2485,7 @@
   "@resetApp": {
     "x-mt": true
   },
-  "clearAllDataConfirm": "Êtes-vous sûr de vouloir effacer toutes les données ?",
-  "@clearAllDataConfirm": {
-    "x-mt": true
-  },
+  "clearAllDataConfirm": "Êtes-vous sûr de vouloir effacer toutes les données ?",
   "dataCleared": "Toutes les données effacées",
   "@dataCleared": {
     "x-mt": true
@@ -2639,5 +2495,10 @@
     "x-mt": true
   },
   "resourceTitleAlreadyExists": "Une ressource avec ce titre existe déjà",
-  "failedToUpdateResource": "Échec de la mise à jour de la ressource"
+  "failedToUpdateResource": "Échec de la mise à jour de la ressource",
+  "unableToAddHealthRecord": "Impossible d'ajouter un dossier de santé.",
+  "summaryOfAchievements": "Résumé des réalisations - Résumez brièvement votre réalisation et ajoutez les documents associés ci-dessous",
+  "myGoalsDescription": "Mes Objectifs - Quels sont vos objectifs pour les 10 prochaines années ?",
+  "myPurposeDescription": "Mon But - Quelles sont vos ambitions éducatives et professionnelles ?",
+  "pleaseAnswerToContinue": "Veuillez sélectionner/écrire votre réponse pour continuer"
 }

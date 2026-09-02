@@ -13,19 +13,13 @@
   "@serverUrlHint": {
     "x-mt": true
   },
-  "serverPinLabel": "[Nepali] Server PIN",
-  "@serverPinLabel": {
-    "x-mt": true
-  },
+  "serverPinLabel": "सर्भर पिन",
   "connect": "[Nepali] Connect",
   "@connect": {
     "x-mt": true
   },
   "serverUrlNotConfigured": "सर्भर URL कन्फिगर गरिएको छैन",
-  "deviceCouldNotReachLocalServer": "[Nepali] device couldn't reach the server. check if you are connected to the correct Wi-Fi network for the local server (community).",
-  "@deviceCouldNotReachLocalServer": {
-    "x-mt": true
-  },
+  "deviceCouldNotReachLocalServer": "डिभाइसले सर्भरसम्म पुग्न सकेन। स्थानीय सर्भर (समुदाय) को लागि तपाईं सही Wi-Fi नेटवर्कमा जडित हुनुहुन्छ कि छैन जाँच गर्नुहोस्।",
   "deviceCouldNotReachNationServer": "डिभाइसले सर्भरसम्म पुग्न सकेन। इन्टरनेटमा जडित हुनुहुन्छ कि छैन जाँच गर्नुहोस् र पुन: प्रयास गर्नुहोस्।",
   "connectionFailed": "जडान असफल भयो!",
   "connectedToCommunity": "[Nepali] Connected to {code}",
@@ -77,10 +71,7 @@
   },
   "resources": "स्रोतहरू",
   "search": "खोज्नुहोस्",
-  "sync": "[Nepali] Sync",
-  "@sync": {
-    "x-mt": true
-  },
+  "sync": "सिंक",
   "cancel": "रद्द गर्नुहोस्",
   "settings": "सेटिङ्स",
   "backgroundSync": "[Nepali] Background sync",
@@ -154,18 +145,9 @@
   "@moreOptions": {
     "x-mt": true
   },
-  "appTheme": "[Nepali] App theme",
-  "@appTheme": {
-    "x-mt": true
-  },
-  "aiChat": "[Nepali] AI chat",
-  "@aiChat": {
-    "x-mt": true
-  },
-  "syncNow": "[Nepali] Sync now",
-  "@syncNow": {
-    "x-mt": true
-  },
+  "appTheme": "एप थिम",
+  "aiChat": "AI Chat",
+  "syncNow": "अहिले सिङ्क गर्नुहोस्",
   "syncCenter": "[Nepali] Sync center",
   "@syncCenter": {
     "x-mt": true
@@ -307,10 +289,7 @@
     "x-mt": true
   },
   "courses": "पाठ्यक्रमहरू",
-  "myCourses": "[Nepali] My courses",
-  "@myCourses": {
-    "x-mt": true
-  },
+  "myCourses": "मेरो पाठ्यक्रमहरू",
   "allCourses": "[Nepali] All courses",
   "@allCourses": {
     "x-mt": true
@@ -327,10 +306,7 @@
   "@resourcesInStep": {
     "x-mt": true
   },
-  "gradeLevel": "[Nepali] Grade level",
-  "@gradeLevel": {
-    "x-mt": true
-  },
+  "gradeLevel": "ग्रेड स्तर",
   "subjectLevel": "[Nepali] Subject",
   "@subjectLevel": {
     "x-mt": true
@@ -362,19 +338,13 @@
   "@profileUnavailable": {
     "x-mt": true
   },
-  "username": "[Nepali] Username",
-  "@username": {
-    "x-mt": true
-  },
+  "username": "प्रयोगकर्तानाम",
   "email": "ईमेल",
   "phone": "[Nepali] Phone",
   "@phone": {
     "x-mt": true
   },
-  "level": "[Nepali] Level",
-  "@level": {
-    "x-mt": true
-  },
+  "level": "स्तर",
   "levels": "[Nepali] Levels",
   "@levels": {
     "x-mt": true
@@ -382,10 +352,7 @@
   "language": "भाषा",
   "languages": "भाषाहरू",
   "gender": "लिङ्ग",
-  "dateOfBirth": "[Nepali] Date of birth",
-  "@dateOfBirth": {
-    "x-mt": true
-  },
+  "dateOfBirth": "जन्म मिति",
   "planetCode": "[Nepali] Planet code",
   "@planetCode": {
     "x-mt": true
@@ -402,10 +369,7 @@
   "@profilePhotoFor": {
     "x-mt": true
   },
-  "editProfile": "[Nepali] Edit profile",
-  "@editProfile": {
-    "x-mt": true
-  },
+  "editProfile": "प्रोफाइल सम्पादन गर्नुहोस्",
   "changePhoto": "[Nepali] Change profile photo",
   "@changePhoto": {
     "x-mt": true
@@ -418,18 +382,9 @@
   "@photoUpdateFailed": {
     "x-mt": true
   },
-  "firstName": "[Nepali] First name",
-  "@firstName": {
-    "x-mt": true
-  },
-  "middleName": "[Nepali] Middle name",
-  "@middleName": {
-    "x-mt": true
-  },
-  "lastName": "[Nepali] Last name",
-  "@lastName": {
-    "x-mt": true
-  },
+  "firstName": "नाम",
+  "middleName": "विचारको नाम",
+  "lastName": "थर",
   "save": "सुरक्षित गर्नुहोस्",
   "profileSaved": "[Nepali] Profile saved on this device",
   "@profileSaved": {
@@ -578,10 +533,7 @@
   "@storageNotification": {
     "x-mt": true
   },
-  "joinRequestNotification": "[Nepali] Join request",
-  "@joinRequestNotification": {
-    "x-mt": true
-  },
+  "joinRequestNotification": "सामेल हुने अनुरोध",
   "teamNotification": "[Nepali] Team update",
   "@teamNotification": {
     "x-mt": true
@@ -661,10 +613,7 @@
   "@refresh": {
     "x-mt": true
   },
-  "complete": "[Nepali] Complete",
-  "@complete": {
-    "x-mt": true
-  },
+  "complete": "समाप्त",
   "noMatchingSubmissions": "[Nepali] No submissions match this filter",
   "@noMatchingSubmissions": {
     "x-mt": true
@@ -685,18 +634,9 @@
   "@unknown": {
     "x-mt": true
   },
-  "nA": "[Nepali] N/A",
-  "@nA": {
-    "x-mt": true
-  },
-  "otherDiagnosis": "[Nepali] Other diagnosis",
-  "@otherDiagnosis": {
-    "x-mt": true
-  },
-  "add": "[Nepali] Add",
-  "@add": {
-    "x-mt": true
-  },
+  "nA": "N/A",
+  "otherDiagnosis": "अन्य निदानहरू",
+  "add": "थप्नुहोस्",
   "status": "स्थिति",
   "lastUpdated": "[Nepali] Last updated",
   "@lastUpdated": {
@@ -740,10 +680,7 @@
   "@newSubmission": {
     "x-mt": true
   },
-  "answer": "[Nepali] Answer",
-  "@answer": {
-    "x-mt": true
-  },
+  "answer": "उत्तर",
   "availableChoices": "[Nepali] Choices",
   "@availableChoices": {
     "x-mt": true
@@ -774,10 +711,7 @@
     "x-mt": true
   },
   "maps": "नक्सा",
-  "englishDictionary": "[Nepali] English dictionary",
-  "@englishDictionary": {
-    "x-mt": true
-  },
+  "englishDictionary": "अंग्रेजी शब्दकोश",
   "offlineMapsComingSoon": "[Nepali] Offline maps are not ported yet",
   "@offlineMapsComingSoon": {
     "x-mt": true
@@ -877,10 +811,7 @@
     "x-mt": true
   },
   "skip": "छोड्नुहोस्",
-  "next": "[Nepali] Next",
-  "@next": {
-    "x-mt": true
-  },
+  "next": "अर्को",
   "getStarted": "सुरु गर्नुहोस्",
   "welcomeToMyPlanet": "मेरो प्ल्यानेटमा स्वागत छ",
   "learnOffline": "अफलाइनमा सिक्नुहोस्",
@@ -899,10 +830,7 @@
   "@onboardingPowerDescription": {
     "x-mt": true
   },
-  "onboardingServerPrepHint": "[Nepali] Before you sign in, you'll need your Planet server address and PIN. Ask your community administrator if you don't have them yet.",
-  "@onboardingServerPrepHint": {
-    "x-mt": true
-  },
+  "onboardingServerPrepHint": "साइन इन गर्नु अघि, तपाईंलाई आफ्नो Planet सर्भर ठेगाना र PIN आवश्यक पर्नेछ। यदि तपाईंसँग अझै छैन भने आफ्नो सामुदायिक प्रशासकलाई सोध्नुहोस्।",
   "pageProgress": "[Nepali] Page {current} of {total}",
   "@pageProgress": {
     "x-mt": true
@@ -931,10 +859,7 @@
   "@untitledMeetup": {
     "x-mt": true
   },
-  "addMeetup": "[Nepali] Add meetup",
-  "@addMeetup": {
-    "x-mt": true
-  },
+  "addMeetup": "भेटघाट थप्नुहोस्",
   "meetupDetails": "[Nepali] Meetup details",
   "@meetupDetails": {
     "x-mt": true
@@ -943,24 +868,15 @@
   "@meetupNotFound": {
     "x-mt": true
   },
-  "createdBy": "[Nepali] Created by",
-  "@createdBy": {
-    "x-mt": true
-  },
+  "createdBy": "बनाएको",
   "category": "[Nepali] Category",
   "@category": {
     "x-mt": true
   },
   "location": "स्थान",
   "link": "लिङ्क",
-  "recurring": "[Nepali] Recurring",
-  "@recurring": {
-    "x-mt": true
-  },
-  "description": "[Nepali] Description",
-  "@description": {
-    "x-mt": true
-  },
+  "recurring": "आवर्तमान",
+  "description": "वर्णन",
   "leaveMeetup": "[Nepali] Leave meetup",
   "@leaveMeetup": {
     "x-mt": true
@@ -969,18 +885,9 @@
   "@joinMeetup": {
     "x-mt": true
   },
-  "editMeetup": "[Nepali] Edit meetup",
-  "@editMeetup": {
-    "x-mt": true
-  },
-  "startTime": "[Nepali] Start time",
-  "@startTime": {
-    "x-mt": true
-  },
-  "endTime": "[Nepali] End time",
-  "@endTime": {
-    "x-mt": true
-  },
+  "editMeetup": "भेटघाट सम्पादन गर्नुहोस्",
+  "startTime": "सुरु समय",
+  "endTime": "अन्त समय",
   "none": "कुनै पनि होइन",
   "daily": "दैनिक",
   "weekly": "साप्ताहिक",
@@ -1016,14 +923,8 @@
   "@titleDescending": {
     "x-mt": true
   },
-  "startDate": "[Nepali] Start date",
-  "@startDate": {
-    "x-mt": true
-  },
-  "endDate": "[Nepali] End date",
-  "@endDate": {
-    "x-mt": true
-  },
+  "startDate": "सुरु मिति",
+  "endDate": "अन्त मिति",
   "timeNotSet": "[Nepali] Time not set",
   "@timeNotSet": {
     "x-mt": true
@@ -1052,10 +953,7 @@
   "@untitledSurvey": {
     "x-mt": true
   },
-  "takeSurvey": "[Nepali] Take survey",
-  "@takeSurvey": {
-    "x-mt": true
-  },
+  "takeSurvey": "सर्वेक्षण लिनुहोस्",
   "surveyLoadFailed": "[Nepali] Survey could not be loaded",
   "@surveyLoadFailed": {
     "x-mt": true
@@ -1139,10 +1037,7 @@
   "@sendSurveyTo": {
     "x-mt": true
   },
-  "sendSurvey": "[Nepali] Send survey",
-  "@sendSurvey": {
-    "x-mt": true
-  },
+  "sendSurvey": "सर्वेक्षण पठाउनुहोस्",
   "surveySentToUsers": "Survey sent to selected users",
   "@surveySentToUsers": {
     "x-mt": true
@@ -1197,22 +1092,10 @@
   "@leader": {
     "x-mt": true
   },
-  "leave": "[Nepali] Leave",
-  "@leave": {
-    "x-mt": true
-  },
-  "remove": "[Nepali] Remove",
-  "@remove": {
-    "x-mt": true
-  },
-  "makeLeader": "[Nepali] Make leader",
-  "@makeLeader": {
-    "x-mt": true
-  },
-  "leftTeam": "[Nepali] Left team",
-  "@leftTeam": {
-    "x-mt": true
-  },
+  "leave": "छोड्नुहोस्",
+  "remove": "हटाउनुहोस्",
+  "makeLeader": "नेता बनाउनुहोस्",
+  "leftTeam": "टोलीबाट बाहिर गएको",
   "memberRemoved": "[Nepali] Member removed",
   "@memberRemoved": {
     "x-mt": true
@@ -1263,10 +1146,7 @@
   "@untitledTask": {
     "x-mt": true
   },
-  "addTask": "[Nepali] Add task",
-  "@addTask": {
-    "x-mt": true
-  },
+  "addTask": "काम थप्नुहोस्",
   "editTask": "[Nepali] Edit task",
   "@editTask": {
     "x-mt": true
@@ -1344,30 +1224,12 @@
   "@addResource": {
     "x-mt": true
   },
-  "editResource": "[Nepali] Edit resource",
-  "@editResource": {
-    "x-mt": true
-  },
-  "resourceUpdated": "[Nepali] Resource updated",
-  "@resourceUpdated": {
-    "x-mt": true
-  },
-  "resourceAddedToTeam": "[Nepali] Resource added to team",
-  "@resourceAddedToTeam": {
-    "x-mt": true
-  },
-  "descriptionIsRequired": "[Nepali] Description is required",
-  "@descriptionIsRequired": {
-    "x-mt": true
-  },
-  "levelIsRequired": "[Nepali] Level is required",
-  "@levelIsRequired": {
-    "x-mt": true
-  },
-  "subjectIsRequired": "[Nepali] Subject is required",
-  "@subjectIsRequired": {
-    "x-mt": true
-  },
+  "editResource": "स्रोत सम्पादन गर्नुहोस्",
+  "resourceUpdated": "स्रोत अद्यावधिक गरियो",
+  "resourceAddedToTeam": "स्रोत टोलीमा थपियो",
+  "descriptionIsRequired": "विवरण आवश्यक छ",
+  "levelIsRequired": "स्तर आवश्यक छ",
+  "subjectIsRequired": "विषय आवश्यक छ",
   "selectFile": "[Nepali] Select a file",
   "@selectFile": {
     "x-mt": true
@@ -1380,10 +1242,7 @@
   "@privateResource": {
     "x-mt": true
   },
-  "saveChanges": "[Nepali] Save changes",
-  "@saveChanges": {
-    "x-mt": true
-  },
+  "saveChanges": "परिवर्तनहरू सुरक्षित गर्नुहोस्",
   "selectOpenWith": "[Nepali] Select open with",
   "@selectOpenWith": {
     "x-mt": true
@@ -1396,10 +1255,7 @@
   "@selectResourceType": {
     "x-mt": true
   },
-  "linkToLicense": "[Nepali] Link to license",
-  "@linkToLicense": {
-    "x-mt": true
-  },
+  "linkToLicense": "लाइसेन्समा लिङ्क",
   "noResourcesToAdd": "[Nepali] All available resources are already linked",
   "@noResourcesToAdd": {
     "x-mt": true
@@ -1412,10 +1268,7 @@
   "@noTeamCourses": {
     "x-mt": true
   },
-  "untitledCourse": "[Nepali] Untitled course",
-  "@untitledCourse": {
-    "x-mt": true
-  },
+  "untitledCourse": "शीर्षक नभएको पाठ्यक्रम",
   "addCourse": "[Nepali] Add course",
   "@addCourse": {
     "x-mt": true
@@ -1436,24 +1289,15 @@
   "@noReports": {
     "x-mt": true
   },
-  "addReport": "[Nepali] Add report",
-  "@addReport": {
-    "x-mt": true
-  },
+  "addReport": "रिपोर्ट थप्नुहोस्",
   "editReport": "[Nepali] Edit report",
   "@editReport": {
     "x-mt": true
   },
   "archiveReport": "आर्काइभ",
-  "beginningBalance": "[Nepali] Beginning balance",
-  "@beginningBalance": {
-    "x-mt": true
-  },
+  "beginningBalance": "प्रारम्भिक मौज्दात",
   "sales": "बिक्री",
-  "otherIncome": "[Nepali] Other income",
-  "@otherIncome": {
-    "x-mt": true
-  },
+  "otherIncome": "अन्य आय",
   "wages": "[Nepali] Wages",
   "@wages": {
     "x-mt": true
@@ -1462,26 +1306,14 @@
   "@otherExpenses": {
     "x-mt": true
   },
-  "totalIncome": "[Nepali] Total income",
-  "@totalIncome": {
-    "x-mt": true
-  },
-  "totalExpenses": "[Nepali] Total expenses",
-  "@totalExpenses": {
-    "x-mt": true
-  },
+  "totalIncome": "कुल आय",
+  "totalExpenses": "कुल खर्च",
   "profitLoss": "[Nepali] Profit / loss",
   "@profitLoss": {
     "x-mt": true
   },
-  "endingBalance": "[Nepali] Ending balance",
-  "@endingBalance": {
-    "x-mt": true
-  },
-  "negativeBalance": "[Nepali] The current balance is negative!",
-  "@negativeBalance": {
-    "x-mt": true
-  },
+  "endingBalance": "अन्तिम मौज्दात",
+  "negativeBalance": "हालको शेष श्रेणी नकारात्मक छ!",
   "reportDateDetails": "[Nepali] Report created on: {created} | Updated on: {updated}",
   "@reportDateDetails": {
     "x-mt": true
@@ -1491,10 +1323,7 @@
     "x-mt": true
   },
   "chat": "च्याट",
-  "newChat": "[Nepali] New chat",
-  "@newChat": {
-    "x-mt": true
-  },
+  "newChat": "नयाँ च्याट",
   "searchChats": "[Nepali] Search chats",
   "@searchChats": {
     "x-mt": true
@@ -1511,14 +1340,8 @@
   "@untitledChat": {
     "x-mt": true
   },
-  "fullConversationResponse": "[Nepali] Full conversation response",
-  "@fullConversationResponse": {
-    "x-mt": true
-  },
-  "response": "[Nepali] Response",
-  "@response": {
-    "x-mt": true
-  },
+  "fullConversationResponse": "पूर्ण वार्तालाप उत्तर",
+  "response": "उत्तर",
   "chatConversation": "[Nepali] Conversation",
   "@chatConversation": {
     "x-mt": true
@@ -1556,10 +1379,7 @@
   "@feedbackNotFound": {
     "x-mt": true
   },
-  "feedbackSaved": "[Nepali] Feedback saved",
-  "@feedbackSaved": {
-    "x-mt": true
-  },
+  "feedbackSaved": "प्रतिक्रिया सुरक्षित गरियो",
   "isUrgent": "[Nepali] Is this urgent?",
   "@isUrgent": {
     "x-mt": true
@@ -1584,10 +1404,7 @@
   "bug": "बग",
   "suggestion": "सुझाव",
   "priority": "प्राथमिकता",
-  "openDate": "[Nepali] Open date",
-  "@openDate": {
-    "x-mt": true
-  },
+  "openDate": "खोल्ने मिति",
   "replies": "[Nepali] Replies",
   "@replies": {
     "x-mt": true
@@ -1604,10 +1421,7 @@
   "@takeTest": {
     "x-mt": true
   },
-  "recordSurvey": "[Nepali] Record survey",
-  "@recordSurvey": {
-    "x-mt": true
-  },
+  "recordSurvey": "सर्वेक्षण रेकर्ड गर्नुहोस्",
   "react": "[Nepali] React",
   "@react": {
     "x-mt": true
@@ -1673,14 +1487,8 @@
   },
   "community": "समुदाय",
   "communityLeaders": "सामुदायिक नेताहरू",
-  "nationLeaders": "[Nepali] Nation Leaders",
-  "@nationLeaders": {
-    "x-mt": true
-  },
-  "ourVoices": "[Nepali] Our Voices",
-  "@ourVoices": {
-    "x-mt": true
-  },
+  "nationLeaders": "राष्ट्रका नेता",
+  "ourVoices": "हाम्रो आवाजहरू",
   "finances": "वित्त",
   "reports": "रिपोर्टहरू",
   "transaction": "[Nepali] Transaction",
@@ -1705,14 +1513,8 @@
     "x-mt": true
   },
   "date": "मिति",
-  "fromDate": "[Nepali] From date",
-  "@fromDate": {
-    "x-mt": true
-  },
-  "toDate": "[Nepali] To date",
-  "@toDate": {
-    "x-mt": true
-  },
+  "fromDate": "मिति देखि",
+  "toDate": "मिति सम्म",
   "reset": "[Nepali] Reset",
   "@reset": {
     "x-mt": true
@@ -1781,10 +1583,7 @@
   "@correctAnswers": {
     "x-mt": true
   },
-  "yourAnswer": "[Nepali] Your answer",
-  "@yourAnswer": {
-    "x-mt": true
-  },
+  "yourAnswer": "तपाईंको उत्तर",
   "previous": "अघिल्लो",
   "finish": "समाप्त",
   "exitExam": "[Nepali] Exit exam?",
@@ -1797,14 +1596,8 @@
   },
   "exit": "बाहिर निस्कनुस्",
   "download": "डाउनलोड गर्नुहोस्",
-  "downloading": "[Nepali] Downloading…",
-  "@downloading": {
-    "x-mt": true
-  },
-  "downloadFailed": "[Nepali] Download failed.",
-  "@downloadFailed": {
-    "x-mt": true
-  },
+  "downloading": "डाउनलोड गर्दै…",
+  "downloadFailed": "डाउनलोड असफल भयो",
   "resourceNotDownloaded": "[Nepali] This resource is not on your device yet.",
   "@resourceNotDownloaded": {
     "x-mt": true
@@ -1825,34 +1618,13 @@
   "@yourInformation": {
     "x-mt": true
   },
-  "showAdditionalFields": "[Nepali] Show additional fields",
-  "@showAdditionalFields": {
-    "x-mt": true
-  },
-  "hideAdditionalFields": "[Nepali] Hide additional fields",
-  "@hideAdditionalFields": {
-    "x-mt": true
-  },
-  "phoneNumber": "[Nepali] Phone number",
-  "@phoneNumber": {
-    "x-mt": true
-  },
-  "birthDate": "[Nepali] Birth date",
-  "@birthDate": {
-    "x-mt": true
-  },
-  "selectDate": "[Nepali] Select date",
-  "@selectDate": {
-    "x-mt": true
-  },
-  "male": "[Nepali] Male",
-  "@male": {
-    "x-mt": true
-  },
-  "female": "[Nepali] Female",
-  "@female": {
-    "x-mt": true
-  },
+  "showAdditionalFields": "थप क्षेत्रहरू देखाउनुहोस्",
+  "hideAdditionalFields": "थप क्षेत्रहरू लुकाउनुहोस्",
+  "phoneNumber": "फोन नम्बर",
+  "birthDate": "जन्म मिति",
+  "selectDate": "मिति छान्नुहोस्",
+  "male": "पुरुष",
+  "female": "महिला",
   "yearOfBirth": "जन्म वर्ष",
   "yearOfBirthRequired": "[Nepali] Year of birth is required",
   "@yearOfBirthRequired": {
@@ -1866,18 +1638,12 @@
   "@yearBetween": {
     "x-mt": true
   },
-  "thankYouForTakingSurvey": "[Nepali] Thank you for taking this survey",
-  "@thankYouForTakingSurvey": {
-    "x-mt": true
-  },
+  "thankYouForTakingSurvey": "यो सर्वेक्षण लिनको लागि धन्यवाद।",
   "errorSavingProfile": "[Nepali] Error saving profile",
   "@errorSavingProfile": {
     "x-mt": true
   },
-  "videoPlayer": "[Nepali] Video player",
-  "@videoPlayer": {
-    "x-mt": true
-  },
+  "videoPlayer": "भिडियो प्लेयर",
   "audioPlayer": "[Nepali] Audio player",
   "@audioPlayer": {
     "x-mt": true
@@ -1896,18 +1662,12 @@
   "htmlEntryNotFound": "HTML प्रविष्टि फाइल फेला परेन",
   "errorOccurred": "त्रुटि: {error}",
   "openingResource": "खोल्दै: {title}",
-  "loadingMedia": "[Nepali] Loading...",
-  "@loadingMedia": {
-    "x-mt": true
-  },
+  "loadingMedia": "लोड हुँदैछ...",
   "resourceUnavailable": "[Nepali] This resource is not available for offline viewing",
   "@resourceUnavailable": {
     "x-mt": true
   },
-  "healthRecordNotAvailable": "[Nepali] Health record not available",
-  "@healthRecordNotAvailable": {
-    "x-mt": true
-  },
+  "healthRecordNotAvailable": "स्वास्थ्य रेकर्ड उपलब्ध छैन।",
   "updateHealth": "[Nepali] Update health",
   "@updateHealth": {
     "x-mt": true
@@ -1920,18 +1680,9 @@
   "@healthProfile": {
     "x-mt": true
   },
-  "specialNeeds": "[Nepali] Special needs",
-  "@specialNeeds": {
-    "x-mt": true
-  },
-  "otherNeeds": "[Nepali] Other needs",
-  "@otherNeeds": {
-    "x-mt": true
-  },
-  "emergencyContact": "[Nepali] Emergency contact",
-  "@emergencyContact": {
-    "x-mt": true
-  },
+  "specialNeeds": "विशेष आवश्यकता",
+  "otherNeeds": "अन्य आवश्यकता",
+  "emergencyContact": "आपतकालीन सम्पर्क",
   "contactNumber": "[Nepali] Contact number",
   "@contactNumber": {
     "x-mt": true
@@ -1970,10 +1721,7 @@
   "@personalInformation": {
     "x-mt": true
   },
-  "birthPlace": "[Nepali] Birth place",
-  "@birthPlace": {
-    "x-mt": true
-  },
+  "birthPlace": "जन्मस्थान",
   "contactName": "[Nepali] Contact name",
   "@contactName": {
     "x-mt": true
@@ -2001,20 +1749,14 @@
   "allergies": "एलर्जीहरू",
   "diagnosis": "निदान",
   "medications": "औषधि",
-  "immunizations": "[Nepali] Immunizations",
-  "@immunizations": {
-    "x-mt": true
-  },
+  "immunizations": "प्रतिरक्षात्मक टिकाकरण",
   "treatments": "उपचारहरू",
   "observations": "[Nepali] Observations",
   "@observations": {
     "x-mt": true
   },
   "referrals": "रेफरल",
-  "labTests": "[Nepali] Lab tests",
-  "@labTests": {
-    "x-mt": true
-  },
+  "labTests": "प्रयोगशालामा परीक्षण",
   "xrays": "एक्सरे",
   "conditions": "[Nepali] Conditions",
   "@conditions": {
@@ -2028,10 +1770,7 @@
   "@healthRecordAdded": {
     "x-mt": true
   },
-  "selectHealthMember": "[Nepali] Select member",
-  "@selectHealthMember": {
-    "x-mt": true
-  },
+  "selectHealthMember": "सदस्य छान्नुहोस्",
   "newPatient": "[Nepali] New patient",
   "@newPatient": {
     "x-mt": true
@@ -2078,18 +1817,12 @@
   "@weightRangeError": {
     "x-mt": true
   },
-  "bloodPressureFormatError": "[Nepali] Blood pressure should be systolic/diastolic",
-  "@bloodPressureFormatError": {
-    "x-mt": true
-  },
+  "bloodPressureFormatError": "रक्तचाप सिस्टोलिक/डायस्टोलिक हुनुपर्छ",
   "bloodPressureRangeError": "[Nepali] Blood pressure must be between 60/40 and 300/200",
   "@bloodPressureRangeError": {
     "x-mt": true
   },
-  "bloodPressureNotNumbers": "[Nepali] Systolic and diastolic must be numbers",
-  "@bloodPressureNotNumbers": {
-    "x-mt": true
-  },
+  "bloodPressureNotNumbers": "सिस्टोलिक र डायस्टोलिक अंशांकीय हुनुपर्छ",
   "temp": "[Nepali] Temp",
   "@temp": {
     "x-mt": true
@@ -2114,10 +1847,7 @@
   "@storageManagement": {
     "x-mt": true
   },
-  "storageTotalDownloaded": "[Nepali] Total Downloaded",
-  "@storageTotalDownloaded": {
-    "x-mt": true
-  },
+  "storageTotalDownloaded": "कुल डाउनलोड",
   "storageVideos": "भिडियोहरू",
   "storageAudio": "अडियो",
   "storagePdfs": "PDF हरू",
@@ -2128,15 +1858,12 @@
   "@fileCountMany": {
     "x-mt": true
   },
-  "storageUnknownResource": "[Nepali] Unknown resource",
-  "@storageUnknownResource": {
-    "x-mt": true
-  },
+  "storageUnknownResource": "अज्ञात स्रोत",
   "areYouSure": "के तपाईं निश्चित हुनुहुन्छ?",
-  "cancelAddingExamination": "Are you sure you want to cancel adding examination? The data will be lost.",
-  "yesIWantToExit": "Yes, I want to exit.",
-  "inactiveMessage": "User not activated, please contact administrator or manager to activate your account.",
-  "submitFeedback": "Submit Feedback",
+  "cancelAddingExamination": "के तपाईं स्वास्थ्य परीक्षण थप्ने कार्य रद्द गर्न चाहनुहुन्छ? डेटा हराउनेछ।",
+  "yesIWantToExit": "हो, म बाहिर निस्कन चाहन्छु।",
+  "inactiveMessage": "प्रयोगकर्ता सक्रिय गरिएको छैन, कृपया प्रशासक वा प्रबन्धकलाई सम्पर्क गर्नुहोस् तपाईंको खाता सक्रिय गर्नको लागि।",
+  "submitFeedback": "प्रतिक्रिया पेश गर्नुहोस्",
   "failedToDelete": "[Nepali] Failed to delete: {error}",
   "@failedToDelete": {
     "x-mt": true
@@ -2165,10 +1892,7 @@
   "@noStorageUsed": {
     "x-mt": true
   },
-  "availableSpace": "[Nepali] Available space",
-  "@availableSpace": {
-    "x-mt": true
-  },
+  "availableSpace": "उपलब्ध ठाउँ",
   "freeUpSpace": "[Nepali] Free up space",
   "@freeUpSpace": {
     "x-mt": true
@@ -2185,10 +1909,7 @@
   "@freeUpSpaceFailed": {
     "x-mt": true
   },
-  "enterUsername": "[Nepali] Enter username",
-  "@enterUsername": {
-    "x-mt": true
-  },
+  "enterUsername": "प्रयोगकर्तानाम प्रविष्ट गर्नुहोस्",
   "enterPassword": "[Nepali] Enter password",
   "@enterPassword": {
     "x-mt": true
@@ -2199,10 +1920,7 @@
   },
   "becomeMember": "सदस्य बन्नुहोस्",
   "toAccessThisFeatureBecomeAMember": "तपाईं हाल अतिथि प्रयोगकर्ता हुनुहुन्छ। यो सुविधा प्रयोग गर्न, सदस्य बन्नुहोस्।",
-  "creatingMember": "[Nepali] Creating member account...",
-  "@creatingMember": {
-    "x-mt": true
-  },
+  "creatingMember": "सदस्य खाता सिर्जना गर्दै",
   "passwordsDoNotMatch": "पासवर्डहरू मिलेनन्",
   "pleaseSelectGender": "कृपया लिङ्ग चयन गर्नुहोस्",
   "pleaseEnterPassword": "कृपया पासवर्ड लेख्नुहोस्",
@@ -2240,34 +1958,19 @@
   "@courseNotStarted": {
     "x-mt": true
   },
-  "syncCompletedChallenge": "[Nepali] Sync completed",
-  "@syncCompletedChallenge": {
-    "x-mt": true
-  },
+  "syncCompletedChallenge": "सिंक सम्पन्न भयो",
   "rememberSync": "मोबाइल एप्लिकेसनलाई समक्रमण गर्न सम्झनुहोस्।",
   "challengeDialogTitle": "[Nepali] Daily Challenge",
   "@challengeDialogTitle": {
     "x-mt": true
   },
-  "start": "[Nepali] Start",
-  "@start": {
-    "x-mt": true
-  },
-  "continuation": "[Nepali] Continue",
-  "@continuation": {
-    "x-mt": true
-  },
+  "start": "सुरु गर्नुहोस्",
+  "continuation": "जारी राख्नुहोस्",
   "plan": "योजना",
   "mission": "मिशन र सेवाहरू",
   "editPlan": "योजना सम्पादन गर्नुहोस्",
-  "teamPlan": "[Nepali] What is your team's plan?",
-  "@teamPlan": {
-    "x-mt": true
-  },
-  "entMission": "[Nepali] What is your enterprise's Mission?",
-  "@entMission": {
-    "x-mt": true
-  },
+  "teamPlan": "तपाईंको टोलीको योजना के हो?",
+  "entMission": "तपाईंको एन्टरप्राइजको मिशन के हो?",
   "entServices": "तपाईंको एन्टरप्राइजले के सेवाहरू प्रदान गर्दछ?",
   "entRules": "तपाईंको एन्टरप्राइजको नियमहरू के हुन्छन्?",
   "noMissionDefined": "एन्टरप्राइजमा मिशन र सेवाहरू छैनन्।",
@@ -2275,10 +1978,7 @@
   "@noPlanDefined": {
     "x-mt": true
   },
-  "noDescriptionDefined": "[Nepali] This team has no description defined.",
-  "@noDescriptionDefined": {
-    "x-mt": true
-  },
+  "noDescriptionDefined": "यस टिमको कुनै विवरण परिभाषित गरिएको छैन.",
   "enterpriseName": "[Nepali] Enterprise name",
   "@enterpriseName": {
     "x-mt": true
@@ -2298,10 +1998,7 @@
   "isPublic": "सार्वजनिक",
   "nameRequired": "नाम आवश्यक छ",
   "nameIsRequired": "कृपया नाम लेख्नुहोस्",
-  "createdOn": "[Nepali] Created on",
-  "@createdOn": {
-    "x-mt": true
-  },
+  "createdOn": "मा सिर्जना गरिएको",
   "courseDetails": "[Nepali] Course Details",
   "@courseDetails": {
     "x-mt": true
@@ -2347,27 +2044,15 @@
     "x-mt": true
   },
   "mistakes": "गल्तीहरू",
-  "step": "[Nepali] Step",
-  "@step": {
-    "x-mt": true
-  },
+  "step": "चरण",
   "untitledResourceTitle": "[Nepali] Untitled Resource",
   "@untitledResourceTitle": {
     "x-mt": true
   },
-  "author": "[Nepali] Author",
-  "@author": {
-    "x-mt": true
-  },
+  "author": "लेखक",
   "publisher": "प्रकाशक",
-  "license": "[Nepali] License",
-  "@license": {
-    "x-mt": true
-  },
-  "addedBy": "[Nepali] Added by",
-  "@addedBy": {
-    "x-mt": true
-  },
+  "license": "लाइसेन्स",
+  "addedBy": "थपिएको",
   "resourceInformation": "[Nepali] Resource Information",
   "@resourceInformation": {
     "x-mt": true
@@ -2380,10 +2065,7 @@
   "@mediaType": {
     "x-mt": true
   },
-  "resourceType": "[Nepali] Resource Type",
-  "@resourceType": {
-    "x-mt": true
-  },
+  "resourceType": "स्रोत प्रकार",
   "subject": "[Nepali] Subject",
   "@subject": {
     "x-mt": true
@@ -2488,34 +2170,19 @@
   "@activitySummary": {
     "x-mt": true
   },
-  "lastLogin": "[Nepali] Last login",
-  "@lastLogin": {
-    "x-mt": true
-  },
+  "lastLogin": "अन्तिम लगइन",
   "memberDetail": "[Nepali] Member detail",
   "@memberDetail": {
     "x-mt": true
   },
-  "numberOfVisits": "[Nepali] Number of visits",
-  "@numberOfVisits": {
-    "x-mt": true
-  },
+  "numberOfVisits": "भ्रमण संख्या",
   "noLogoutRecord": "[Nepali] No logout record found",
   "@noLogoutRecord": {
     "x-mt": true
   },
-  "totalVisits": "[Nepali] Total visits",
-  "@totalVisits": {
-    "x-mt": true
-  },
-  "mostOpenedResource": "[Nepali] Most opened resource",
-  "@mostOpenedResource": {
-    "x-mt": true
-  },
-  "numberOfResourcesOpened": "[Nepali] Number of resources opened",
-  "@numberOfResourcesOpened": {
-    "x-mt": true
-  },
+  "totalVisits": "कुल भ्रमण",
+  "mostOpenedResource": "सबैभन्दा धेरै खोलेको स्रोत",
+  "numberOfResourcesOpened": "खोलिएका स्रोतहरूको संख्या",
   "resourceOpenedTimes": "[Nepali] {title} opened {count} times",
   "@resourceOpenedTimes": {
     "x-mt": true
@@ -2532,10 +2199,7 @@
   "@serverUnreachable": {
     "x-mt": true
   },
-  "serverChecking": "[Nepali] Checking server",
-  "@serverChecking": {
-    "x-mt": true
-  },
+  "serverChecking": "सर्भर जाँच गर्दै",
   "gridView": "ग्रिड दृश्य",
   "listView": "सूची दृश्य",
   "disclaimer": "अस्वीकरण",
@@ -2605,34 +2269,13 @@
       }
     }
   },
-  "textSize": "[Nepali] Text size",
-  "@textSize": {
-    "x-mt": true
-  },
-  "selectTextSize": "[Nepali] Select text size",
-  "@selectTextSize": {
-    "x-mt": true
-  },
-  "textSizeSmall": "[Nepali] Small",
-  "@textSizeSmall": {
-    "x-mt": true
-  },
-  "textSizeMedium": "[Nepali] Medium",
-  "@textSizeMedium": {
-    "x-mt": true
-  },
-  "textSizeLarge": "[Nepali] Large",
-  "@textSizeLarge": {
-    "x-mt": true
-  },
-  "resetApp": "[Nepali] Reset app",
-  "@resetApp": {
-    "x-mt": true
-  },
-  "clearAllDataConfirm": "[Nepali] Are you sure you want to clear all data?",
-  "@clearAllDataConfirm": {
-    "x-mt": true
-  },
+  "textSize": "पाठको आकार",
+  "selectTextSize": "पाठको आकार छान्नुहोस्",
+  "textSizeSmall": "सानो",
+  "textSizeMedium": "मध्यम",
+  "textSizeLarge": "ठूलो",
+  "resetApp": "अनुप्रयोग रिसेट गर्नुहोस्",
+  "clearAllDataConfirm": "के तपाईं सबै डाटा हटाउन निश्चित हुनुहुन्छ?",
   "dataCleared": "[Nepali] All data cleared",
   "@dataCleared": {
     "x-mt": true
@@ -2642,5 +2285,10 @@
     "x-mt": true
   },
   "resourceTitleAlreadyExists": "यस शीर्षकको स्रोत पहिले नै अवस्थित छ",
-  "failedToUpdateResource": "स्रोत अद्यावधिक गर्न असफल भयो"
+  "failedToUpdateResource": "स्रोत अद्यावधिक गर्न असफल भयो",
+  "unableToAddHealthRecord": "स्वास्थ्य रेकर्ड थप्न सकिएन।",
+  "summaryOfAchievements": "उपलब्धिहरूको सारांश - आफ्नो उपलब्धि संक्षेपमा दिनुहोस् र सम्बन्धित सामग्री तल थप्नुहोस्",
+  "myGoalsDescription": "मेरा लक्ष्यहरू - आगामी १० वर्षका लागि तपाईँका लक्ष्यहरू के हुन्?",
+  "myPurposeDescription": "मेरो उद्देश्य - तपाईका शैक्षिक र व्यावसायिक महत्वाकांक्षा के हुन्?",
+  "pleaseAnswerToContinue": "कृपया जारी राख्नका लागि आफ्नो उत्तर चयन गर्नुहोस् / लेख्नुहोस्"
 }
