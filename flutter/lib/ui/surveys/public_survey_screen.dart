@@ -101,10 +101,7 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
               children: [
                 Text(l10n.surveyLoadFailed),
                 const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: () => Navigator.of(context).maybePop(),
-                  child: Text(l10n.close),
-                ),
+                FilledButton(onPressed: _leave, child: Text(l10n.close)),
               ],
             ),
           ),
@@ -154,14 +151,33 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
     );
   }
 
+  /// `PublicSurveyActivity` calls `finish()` when the survey will not load. A
+  /// deep link opens this screen as the first route on the stack, so there is
+  /// nothing to pop and `maybePop` left the respondent staring at the failure
+  /// card. Fall through to the same destination the submit path uses.
+  void _leave() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+    final session = ref.read(sessionProvider).valueOrNull;
+    context.go(session != null ? Routes.resources : Routes.login);
+  }
+
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context);
+    // `ExamTakingFragment` has no notion of an optional question: `btnNext` is
+    // hidden until the current one is answered, and submitting with a blank
+    // answer toasts `please_select_write_your_answer_to_continue`
+    // (`isQuestionAnswered`). The guard used to key on a `required` flag read
+    // off the document, but Planet never writes one — so it was false for every
+    // question of every real survey and an untouched answer sheet went to the
+    // server as a row of empty strings.
     final missing = _questions.any(
-      (question) =>
-          question.required &&
-          (question.choices.isEmpty
-              ? _textControllers[question.id]!.text.trim().isEmpty
-              : _choiceAnswers[question.id]!.isEmpty),
+      (question) => question.choices.isEmpty
+          ? _textControllers[question.id]!.text.trim().isEmpty
+          : _choiceAnswers[question.id]!.isEmpty,
     );
     if (missing) {
       ScaffoldMessenger.of(
@@ -179,7 +195,7 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
           questionId: question.remoteId,
           value: _textControllers[question.id]!.text.trim(),
         );
-      } else if (question.type == 'selectMultiple') {
+      } else if (_isSelectMultiple(question.type)) {
         final selected = _choiceAnswers[question.id]!;
         answers[question.id] = SubmissionDraftAnswer(
           questionId: question.remoteId,
@@ -312,7 +328,6 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
           body: body.isNotEmpty ? body : (header.isNotEmpty ? header : title),
           type: JsonUtils.getString('type', raw),
           choices: _parseChoices(raw['choices']),
-          required: JsonUtils.getBool('required', raw),
           position: index,
         ),
       );
@@ -326,6 +341,14 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
   }
 }
 
+/// `ExamTakingFragment.startExam` compares the question type with
+/// `equals("selectMultiple", ignoreCase = true)`, and so does this port's own
+/// `SurveysRepository._buildPublicAnswers`. Matching case-sensitively here put
+/// the two halves out of step: a document spelling it `selectmultiple` drew
+/// radio buttons, so the respondent could pick exactly one, and everything else
+/// they meant to say was gone before the payload was built.
+bool _isSelectMultiple(String? type) => type?.toLowerCase() == 'selectmultiple';
+
 class _PublicQuestion {
   _PublicQuestion({
     required this.id,
@@ -333,7 +356,6 @@ class _PublicQuestion {
     required this.body,
     required this.type,
     required this.choices,
-    required this.required,
     required this.position,
   });
 
@@ -342,7 +364,6 @@ class _PublicQuestion {
   final String body;
   final String type;
   final List<ExamChoice> choices;
-  final bool required;
   final int position;
 }
 
@@ -363,7 +384,7 @@ class _QuestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final multiple = question.type == 'selectMultiple';
+    final multiple = _isSelectMultiple(question.type);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -372,7 +393,7 @@ class _QuestionCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '$number. ${question.body}${question.required ? ' *' : ''}',
+              '$number. ${question.body}',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
