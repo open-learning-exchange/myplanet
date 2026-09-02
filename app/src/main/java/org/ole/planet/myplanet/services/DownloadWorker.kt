@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.SystemClock
+import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
@@ -69,7 +70,7 @@ class DownloadWorker @AssistedInject constructor(
                     showProgressNotification(completedCount - 1, urls.size, context.getString(R.string.downloaded_files, "$completedCount", "${urls.size}"), 100)
                     sendDownloadUpdate(url, success, completedCount >= urls.size, fromSync)
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Failed to download $url", e)
                     results.add(false)
                     completedCount++
                 }
@@ -78,7 +79,7 @@ class DownloadWorker @AssistedInject constructor(
             showCompletionNotification(completedCount, urls.size, results.any { !it })
             Result.success()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Download worker failed", e)
             Result.failure()
         }
     }
@@ -88,7 +89,7 @@ class DownloadWorker @AssistedInject constructor(
             try {
                 resourcesRepository.markResourceOfflineByUrl(url)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to mark existing resource offline: $url", e)
             }
             return true
         }
@@ -104,7 +105,7 @@ class DownloadWorker @AssistedInject constructor(
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to download file: $url", e)
             false
         }
     }
@@ -140,7 +141,7 @@ class DownloadWorker @AssistedInject constructor(
         try {
             resourcesRepository.markResourceOfflineByUrl(url)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to mark downloaded resource offline: $url", e)
         }
     }
 
@@ -184,6 +185,7 @@ class DownloadWorker @AssistedInject constructor(
     }
 
     companion object {
+        private const val TAG = "DownloadWorker"
         const val WORKER_NOTIFICATION_ID = 3
         const val COMPLETION_NOTIFICATION_ID = 4
         private const val NOTIFICATION_UPDATE_INTERVAL_MS = 500L
