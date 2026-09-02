@@ -80,8 +80,17 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen>
       const CalendarScreen(),
       if (!widget.fromLogin) ...[
         const ServicesScreen(),
-        TeamFinancesScreen(teamId: widget.communityId ?? ''),
-        TeamReportsScreen(teamId: widget.communityId ?? ''),
+        // `CommunityPagerAdapter` puts `fromCommunity = true` in the arguments
+        // of both fragments, which switches their manage gate from team
+        // membership to the manager role.
+        TeamFinancesScreen(
+          teamId: widget.communityId ?? '',
+          fromCommunity: true,
+        ),
+        TeamReportsScreen(
+          teamId: widget.communityId ?? '',
+          fromCommunity: true,
+        ),
       ],
     ];
 

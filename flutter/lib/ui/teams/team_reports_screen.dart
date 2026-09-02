@@ -10,22 +10,39 @@ import 'package:path/path.dart' as p;
 
 import '../../core/files/team_attachments.dart';
 import '../../data/local/app_database.dart';
+import '../../data/local/user_mapper.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/session_provider.dart';
 import '../../providers/teams_provider.dart';
 import '../../repository/teams_repository.dart';
 
 class TeamReportsScreen extends ConsumerWidget {
-  const TeamReportsScreen({required this.teamId, super.key});
+  const TeamReportsScreen({
+    required this.teamId,
+    this.fromCommunity = false,
+    super.key,
+  });
   final String teamId;
+
+  /// Mirrors the `"fromCommunity"` fragment argument
+  /// `EnterprisesReportsFragment` reads: the community tabs host the same
+  /// screen against a community document rather than a team the user can be a
+  /// member of, and there the manage gate is the manager role instead.
+  final bool fromCommunity;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final reports = ref.watch(teamReportsProvider(teamId));
-    final canManage =
-        ref.watch(teamMembershipsProvider).valueOrNull?[teamId]?.isLeader ??
-        false;
+    // Port of `EnterprisesReportsFragment.onViewCreated`:
+    //   val canManage = if (fromCommunity) user?.isManager() == true else isMember
+    // `isMemberFlow` is `TeamsRepositoryImpl.isMember` — plain membership, not
+    // leadership. Kotlin has a separate `isTeamLeader` it deliberately does not
+    // use here, so any member of an enterprise may add and edit its reports.
+    final canManage = fromCommunity
+        ? _isManager(ref)
+        : ref.watch(teamMembershipsProvider).valueOrNull?[teamId] != null;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.financialReports)),
       body: reports.when(
@@ -87,6 +104,14 @@ class TeamReportsScreen extends ConsumerWidget {
     );
   }
 
+  /// `user?.isManager()` — the `manager` role or the admin flag. Only read on
+  /// the community path, so the team path never builds [sessionProvider] (and
+  /// the team screen tests need no session override).
+  bool _isManager(WidgetRef ref) {
+    final session = ref.watch(sessionProvider).valueOrNull;
+    return session != null && UserMapper.isManager(session) == true;
+  }
+
   Future<void> _exportCsv(
     BuildContext context,
     WidgetRef ref,
@@ -97,7 +122,7 @@ class TeamReportsScreen extends ConsumerWidget {
     final team = await repo.getById(teamId);
     final teamName = (team?.name ?? '').replaceAll(' ', '_');
     final csv = repo.exportReportsAsCsv(rows, team?.name ?? '');
-    final formattedDate = _formatDateForFilename(DateTime.now());
+    final formattedDate = reportExportDateSuffix(DateTime.now());
     final defaultName =
         'Report_of_${teamName}_Financial_Report_Summary_on_$formattedDate.csv';
     if (!context.mounted) return;
@@ -120,30 +145,6 @@ class TeamReportsScreen extends ConsumerWidget {
     } on Exception {
       messenger.showSnackBar(SnackBar(content: Text(l10n.failedToSaveCsvFile)));
     }
-  }
-
-  /// `LocalDate.now().format(dateFormatter)` in the Kotlin source, where
-  /// `dateFormatter` is `"EEE_MMM_dd_yyyy"` (e.g. `Wed_Aug_20_2026`).
-  String _formatDateForFilename(DateTime dt) {
-    final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    final weekday = weekdays[dt.weekday - 1];
-    final month = months[dt.month - 1];
-    final day = dt.day.toString().padLeft(2, '0');
-    return '${weekday}_$month}_${day}_${dt.year}';
   }
 
   Future<void> _editReport(
@@ -341,13 +342,41 @@ class _ReportCard extends StatelessWidget {
             if (report.imageName?.isNotEmpty == true)
               _ReportReceiptThumb(report: report),
             const Divider(),
+            // The nine value rows `EnterprisesReportsAdapter.onBindViewHolder`
+            // binds, in the order `report_list_item.xml` lays them out: the
+            // five figures the report was authored from, each followed by the
+            // total it feeds. Showing only the totals (as this card used to)
+            // leaves a reader unable to see where a profit or loss came from.
+            _Total(
+              label: l10n.beginningBalance,
+              value: report.beginningBalance,
+            ),
+            _Total(label: l10n.sales, value: report.sales),
+            _Total(label: l10n.otherIncome, value: report.otherIncome),
             _Total(label: l10n.totalIncome, value: report.totalIncome),
+            _Total(label: l10n.wages, value: report.wages),
+            _Total(label: l10n.otherExpenses, value: report.otherExpenses),
             _Total(label: l10n.totalExpenses, value: report.totalExpenses),
             _Total(label: l10n.profitLoss, value: report.profitLoss),
             _Total(
               label: l10n.endingBalance,
               value: report.endingBalance,
               bold: true,
+            ),
+            // `createUpdate` in the Kotlin adapter (R.string.report_date_details).
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                l10n.reportDateDetails(
+                  MaterialLocalizations.of(context).formatShortDate(
+                    DateTime.fromMillisecondsSinceEpoch(report.createdDate),
+                  ),
+                  MaterialLocalizations.of(context).formatShortDate(
+                    DateTime.fromMillisecondsSinceEpoch(report.updatedDate),
+                  ),
+                ),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
             ),
             if (canManage)
               Row(
@@ -501,4 +530,32 @@ class _DateField extends StatelessWidget {
       if (date != null) onChanged(date.millisecondsSinceEpoch);
     },
   );
+}
+
+/// The date suffix of the exported CSV's default filename.
+///
+/// `LocalDate.now().format(dateFormatter)` in the Kotlin source, where
+/// `dateFormatter` is `"EEE_MMM_dd_yyyy"` (e.g. `Wed_Aug_20_2026`). Top-level
+/// and public so the format is pinned by a test rather than only reachable
+/// through the platform save-file picker.
+String reportExportDateSuffix(DateTime dt) {
+  final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  final months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  final weekday = weekdays[dt.weekday - 1];
+  final month = months[dt.month - 1];
+  final day = dt.day.toString().padLeft(2, '0');
+  return '${weekday}_${month}_${day}_${dt.year}';
 }

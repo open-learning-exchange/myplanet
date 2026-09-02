@@ -7,16 +7,27 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 
 import '../../core/files/team_attachments.dart';
+import '../../data/local/user_mapper.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/session_provider.dart';
 import '../../providers/teams_provider.dart';
+import 'team_reports_screen.dart';
 
 /// Port of `ui/enterprises/EnterprisesFinancesFragment.kt`.
 ///
 /// Displays a list of financial transactions (debits and credits) for a team,
 /// with the ability to add new transactions.
 class TeamFinancesScreen extends ConsumerStatefulWidget {
-  const TeamFinancesScreen({required this.teamId, super.key});
+  const TeamFinancesScreen({
+    required this.teamId,
+    this.fromCommunity = false,
+    super.key,
+  });
   final String teamId;
+
+  /// Mirrors the `"fromCommunity"` fragment argument
+  /// `EnterprisesFinancesFragment` reads — see [TeamReportsScreen].
+  final bool fromCommunity;
 
   @override
   ConsumerState<TeamFinancesScreen> createState() => _TeamFinancesScreenState();
@@ -37,12 +48,15 @@ class _TeamFinancesScreenState extends ConsumerState<TeamFinancesScreen> {
       ascending: _ascending,
     );
     final transactions = ref.watch(teamTransactionsProvider(params));
-    final canManage =
-        ref
-            .watch(teamMembershipsProvider)
-            .valueOrNull?[widget.teamId]
-            ?.isLeader ??
-        false;
+    // Port of `EnterprisesFinancesFragment.onViewCreated`:
+    //   val canManage = if (fromCommunity) user?.isManager() == true else isMember
+    // `isMemberFlow` is `TeamsRepositoryImpl.isMember` — plain membership, not
+    // leadership. Kotlin has a separate `isTeamLeader` it deliberately does not
+    // use here, so any member of an enterprise may add a transaction.
+    final canManage = widget.fromCommunity
+        ? _isManager()
+        : ref.watch(teamMembershipsProvider).valueOrNull?[widget.teamId] !=
+              null;
 
     return Scaffold(
       appBar: AppBar(
@@ -140,6 +154,13 @@ class _TeamFinancesScreenState extends ConsumerState<TeamFinancesScreen> {
             )
           : null,
     );
+  }
+
+  /// `user?.isManager()` — the `manager` role or the admin flag. Only read on
+  /// the community path, so the team path never builds [sessionProvider].
+  bool _isManager() {
+    final session = ref.watch(sessionProvider).valueOrNull;
+    return session != null && UserMapper.isManager(session) == true;
   }
 
   Future<void> _selectDate(
@@ -369,12 +390,26 @@ class _FinanceSummary extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      child: Column(
         children: [
-          _SummaryItem(label: l10n.debit, value: debit),
-          _SummaryItem(label: l10n.credit, value: credit),
-          _SummaryItem(label: l10n.balance, value: balance, bold: true),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _SummaryItem(label: l10n.debit, value: debit),
+              _SummaryItem(label: l10n.credit, value: credit),
+              _SummaryItem(label: l10n.balance, value: balance, bold: true),
+            ],
+          ),
+          // `balance_caution` in `header_finance.xml`, shown when
+          // `FinanceHeaderState.isCautionVisible` — i.e. `total < 0`.
+          if (balance < 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                l10n.negativeBalance,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
         ],
       ),
     );

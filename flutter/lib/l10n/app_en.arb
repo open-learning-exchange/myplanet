@@ -748,6 +748,18 @@
   "totalExpenses": "Total expenses",
   "profitLoss": "Profit / loss",
   "endingBalance": "Ending balance",
+  "negativeBalance": "The current balance is negative!",
+  "reportDateDetails": "Report created on: {created} | Updated on: {updated}",
+  "@reportDateDetails": {
+    "placeholders": {
+      "created": {
+        "type": "String"
+      },
+      "updated": {
+        "type": "String"
+      }
+    }
+  },
   "chatHistory": "Chat History",
   "chat": "Chat",
   "newChat": "New chat",

@@ -9,13 +9,13 @@ import '../support/widget_harness.dart';
 
 class _MockTeamReportActions extends Mock implements TeamReportActions {}
 
-TeamRow _leaderMembership(String teamId) => TeamRow(
+TeamRow _membership(String teamId, {bool isLeader = false}) => TeamRow(
   id: teamId,
   courses: const [],
   createdDate: 0,
   limit: 0,
   isPublic: false,
-  isLeader: true,
+  isLeader: isLeader,
   beginningBalance: 0,
   sales: 0,
   otherIncome: 0,
@@ -143,7 +143,7 @@ void main() {
         endDate: end,
       ),
     ];
-    final memberships = {'team-1': _leaderMembership('team-1')};
+    final memberships = {'team-1': _membership('team-1', isLeader: true)};
     final actions = _MockTeamReportActions();
     when(() => actions.archive(any())).thenAnswer((_) async => true);
 
@@ -171,5 +171,103 @@ void main() {
     await tester.pump();
 
     verify(() => actions.archive('r1')).called(1);
+  });
+
+  // `EnterprisesReportsAdapter.onBindViewHolder` binds nine value rows, not
+  // four: the five figures a report is authored from, each followed by the
+  // total it feeds, plus the created/updated footer.
+  testWidgets('a report card shows the authored figures, not just the totals', (
+    tester,
+  ) async {
+    final reports = [
+      _report(
+        id: 'r1',
+        beginningBalance: 100,
+        sales: 50,
+        otherIncome: 10,
+        wages: 20,
+        otherExpenses: 5,
+        startDate: DateTime(2026, 1, 1).millisecondsSinceEpoch,
+        endDate: DateTime(2026, 1, 31).millisecondsSinceEpoch,
+      ),
+    ];
+
+    await tester.pumpWidget(
+      wrapScreen(
+        const TeamReportsScreen(teamId: 'team-1'),
+        overrides: [
+          teamReportsProvider(
+            'team-1',
+          ).overrideWith((ref) => Stream.value(reports)),
+          teamMembershipsProvider.overrideWith(
+            (ref) => Stream.value(const <String, TeamRow>{}),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    for (final label in const [
+      'Beginning balance',
+      'Sales',
+      'Other income',
+      'Total income',
+      'Wages',
+      'Other expenses',
+      'Total expenses',
+      'Profit / loss',
+      'Ending balance',
+    ]) {
+      expect(find.text(label), findsOneWidget, reason: 'missing row: $label');
+    }
+    // The five authored figures, alongside the four totals the card already had.
+    expect(find.text('100'), findsOneWidget);
+    expect(find.text('50'), findsOneWidget);
+    expect(find.text('10'), findsOneWidget);
+    expect(find.text('20'), findsOneWidget);
+    expect(find.text('5'), findsOneWidget);
+    expect(
+      find.textContaining('Report created on:'),
+      findsOneWidget,
+      reason: 'the createUpdate footer is missing',
+    );
+  });
+
+  // `canManage` is `isMemberFlow` on the team path — `isMember`, not
+  // `isTeamLeader`.
+  testWidgets('a plain member may add and edit reports', (tester) async {
+    final reports = [
+      _report(
+        id: 'r1',
+        description: 'January summary',
+        startDate: DateTime(2026, 1, 1).millisecondsSinceEpoch,
+        endDate: DateTime(2026, 1, 31).millisecondsSinceEpoch,
+      ),
+    ];
+
+    await tester.pumpWidget(
+      wrapScreen(
+        const TeamReportsScreen(teamId: 'team-1'),
+        overrides: [
+          teamReportsProvider(
+            'team-1',
+          ).overrideWith((ref) => Stream.value(reports)),
+          teamMembershipsProvider.overrideWith(
+            (ref) => Stream.value({'team-1': _membership('team-1')}),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Add report'), findsOneWidget);
+    expect(find.text('Archive'), findsOneWidget);
+  });
+
+  // The Kotlin filename pattern is `EEE_MMM_dd_yyyy`.
+  test('reportExportDateSuffix matches the Kotlin filename pattern', () {
+    expect(reportExportDateSuffix(DateTime(2026, 8, 20)), 'Thu_Aug_20_2026');
+    // Single-digit days are zero-padded by `dd`.
+    expect(reportExportDateSuffix(DateTime(2026, 1, 4)), 'Sun_Jan_04_2026');
   });
 }

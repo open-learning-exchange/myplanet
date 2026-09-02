@@ -19,7 +19,7 @@
 
 ### Flutter port (in progress)
 A Flutter/Dart port lives in **`flutter/`**, alongside — not replacing — the Kotlin app. `app/`
-is unchanged and remains the shipping app. **27 of 28 UI packages** have a screen, plus a durable
+is unchanged and remains the shipping app. **All 28 UI packages** have a screen, plus a durable
 write-back path. The first vertical slice ran server configuration → login → resources list;
 since then the dashboard shell, courses, calendar, first-launch onboarding, the offline user
 profile, appearance settings, the dictionary, notifications, My life, references, personals, and
@@ -134,6 +134,52 @@ only re-select by `is_read = 1`, which matches everything the user has
 *ever* read — one "mark all read" tap re-queued the whole history and the
 next sync PUT every document back. **A two-part read-then-flag over the
 same rows needs one statement, or the ids captured first.**
+
+This phase retires the long-standing **"27 of 28 UI packages have a
+screen"** claim, whose one gap was named as `ui/enterprises/`. The claim was
+wrong, and had been for a while: **`ui/enterprises/` is not a screen the port
+lacks, it is two screens the port files under `ui/teams/`.** Enterprises are
+not a separate feature — they are a team *type*. `TeamDetailFragment.buildPages`
+computes `isEnterprise = team?.type == "enterprise"` and swaps tabs on it
+(`MissionPage`/`PlanPage`, `FinancesPage`/`CoursesPage`, `DocumentsPage`/
+`ResourcesPage`, plus `ReportsPage` only for enterprises); the two fragments
+themselves carry **no** type branching at all, and neither does
+`BaseTeamFragment`, which only resolves the team and the user's membership.
+So `EnterprisesFinancesFragment` → `team_finances_screen.dart` and
+`EnterprisesReportsFragment` → `team_reports_screen.dart` is the whole
+mapping, and it already existed. Counting the package as missing was counting
+a Kotlin directory name rather than a screen.
+
+Auditing it field by field did surface four real gaps, all now closed.
+**The manage gate was wrong in both screens**: Kotlin's
+`canManage = if (fromCommunity) user?.isManager() == true else isMember`
+reads `isMemberFlow`, which is `TeamsRepositoryImpl.isMember` — plain
+membership. The port required `?.isLeader`, so a rank-and-file member of an
+enterprise saw no add-transaction or add-report button where the Kotlin gives
+them one; Kotlin has a separate `isTeamLeader` it deliberately does not use
+here. The `fromCommunity` branch ported alongside it (the community tabs pass
+it, and there the gate is the manager role), read only on that path so the
+team path never builds `sessionProvider`. **The report card showed 4 of the
+9 value rows** `EnterprisesReportsAdapter` binds — only the derived totals,
+none of the five figures the report was authored from
+(beginningBalance/sales/otherIncome/wages/otherExpenses), and not the
+created/updated footer; every field was already on `TeamRow`, so this was
+display-only, no schema change. **The finances summary had no
+negative-balance caution** (`balance_caution`, shown when
+`FinanceHeaderState.isCautionVisible`, i.e. `total < 0`). And the CSV
+export's default filename carried a **stray brace** —
+`'${weekday}_$month}_...'` interpolates the bare `$month` and leaves the `}`
+as literal text, so the picker offered `Thu_Aug}_20_2026` against Kotlin's
+`EEE_MMM_dd_yyyy`; the formatter is now the top-level
+`reportExportDateSuffix`, pinned by a test rather than reachable only through
+the platform save-file dialog. Two differences were found and deliberately
+**not** changed: the port's team detail lists a Finances entry gated on
+membership where Kotlin gates it on `type == "enterprise"` (a surplus, not a
+gap, and the port's detail screen is a link list rather than Kotlin's tab
+pager, so its gating is not a line-for-line port anyway); and the report
+card's `%s Financial Report` title, which needs a `teamProvider` watch — the
+Phase 75 harness trap, since `teamsRepositoryProvider` transitively reaches
+`planetPrefsProvider`.
 
 Phase 47 localised the other four languages: `tool/arb_from_strings_xml.dart` derives `app_ar.arb`,
 `app_fr.arb`, `app_ne.arb` and `app_so.arb` from the Kotlin `values-*/strings.xml` (195–196 of 727
