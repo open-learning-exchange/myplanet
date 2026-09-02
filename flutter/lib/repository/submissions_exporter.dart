@@ -9,6 +9,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../data/local/app_database.dart';
+import '../data/local/converters.dart';
 import 'submissions_repository.dart';
 
 /// Dart port of `SubmissionsRepositoryExporter` using the cross-platform PDF
@@ -156,9 +157,12 @@ class SubmissionsExporter {
         'Q${index + 1}: ${answer.questionId ?? ''}\nA: ${_answerValue(answer)}',
   );
 
+  /// Port of `SubmissionsRepositoryExporter.formatAnswer`: each stored choice
+  /// is the `{id, text}` object as a JSON string, so the label has to be
+  /// decoded out of it — joining the entries verbatim printed raw JSON.
   String _answerValue(SubmissionAnswerRow answer) =>
       answer.valueChoices.isNotEmpty
-      ? answer.valueChoices.join(', ')
+      ? ExamChoice.labelsFor(answer.valueChoices)
       : answer.value ?? 'No answer';
 
   /// Recovers the raw question id from the `submissionId:rawQuestionId` row id.

@@ -2,9 +2,13 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/app_providers.dart';
 import 'package:myplanet/providers/session_provider.dart';
+import 'package:myplanet/repository/local_resource_request.dart';
+import 'package:myplanet/repository/resources_repository.dart';
 import 'package:myplanet/ui/resources/add_resource_screen.dart';
 
 import '../support/widget_harness.dart';
@@ -41,6 +45,7 @@ void main() {
     String? teamId,
     String? editResourceId,
     UserRow? user,
+    LocalResourceError? failWith,
   }) async {
     // The form is one long `SingleChildScrollView`. It builds every child
     // eagerly, so `find.text` locates widgets below the fold but `tap` misses
@@ -76,6 +81,19 @@ void main() {
             return db;
           }),
           sessionProvider.overrideWith(() => _StubSession(user)),
+          // `saveLocalResource` can only fail on the title today: the file
+          // copy `AddResourceActivity` relies on is still an open gap, so its
+          // three other failure modes are unreachable from here. A stub is
+          // the only way to drive the message the screen picks for them.
+          if (failWith != null)
+            resourcesRepositoryProvider.overrideWith(
+              (ref) => _FailingResources(
+                _MockPlanetApi(),
+                ref.watch(myLibraryDaoProvider),
+                ref.watch(removedLogDaoProvider),
+                failWith,
+              ),
+            ),
         ],
       ),
     );
@@ -259,6 +277,86 @@ void main() {
     expect((await db.select(db.myLibraryTable).get()).length, 1);
   });
 
+  testWidgets('a duplicate title is named on the title field', (tester) async {
+    await db
+        .into(db.myLibraryTable)
+        .insert(
+          MyLibraryTableCompanion.insert(
+            id: 'existing',
+            title: const Value('Kihu'),
+            titleNormal: const Value('kihu'),
+          ),
+        );
+
+    await pumpScreen(
+      tester,
+      user: buildUserRow(id: 'user-a', name: 'jane'),
+    );
+    await fillValidForm(tester);
+    await tapSubmit(tester, 'Submit');
+
+    expect(
+      find.text('A resource with this title already exists'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('any other create failure is named on the title field too', (
+    tester,
+  ) async {
+    // `AddResourceActivity` branches on the mode, not on the failure: **any**
+    // failed create sets `tlTitle.error = resource_title_already_exists`
+    // (:204-207), the file-missing and storage failures included. Keying the
+    // message on the error kind instead read correctly only for the duplicate.
+    await pumpScreen(
+      tester,
+      user: buildUserRow(id: 'user-a', name: 'jane'),
+      failWith: LocalResourceError.titleMissing,
+    );
+    await fillValidForm(tester);
+    await tapSubmit(tester, 'Submit');
+
+    expect(
+      find.text('A resource with this title already exists'),
+      findsOneWidget,
+    );
+    expect(find.text('Title is required'), findsNothing);
+  });
+
+  testWidgets('a failed edit is toasted, never put on the title field', (
+    tester,
+  ) async {
+    // The edit path's other half: `AddResourceActivity` toasts
+    // `failed_to_update_resource` (:164-167) for every failure, so a title
+    // problem on an edit must not annotate the field.
+    await db
+        .into(db.myLibraryTable)
+        .insert(
+          MyLibraryTableCompanion.insert(
+            id: 'resource-1',
+            title: const Value('Kihu'),
+            titleNormal: const Value('kihu'),
+            description: const Value('A description'),
+            level: const Value(['Lower Primary']),
+            subject: const Value(['Agriculture']),
+          ),
+        );
+
+    await pumpScreen(
+      tester,
+      editResourceId: 'resource-1',
+      user: buildUserRow(id: 'user-a', name: 'jane'),
+      failWith: LocalResourceError.titleAlreadyExists,
+    );
+    await tapSubmit(tester, 'Save changes');
+
+    expect(find.text('Failed to update resource'), findsOneWidget);
+    expect(
+      find.text('A resource with this title already exists'),
+      findsNothing,
+    );
+  });
+
   testWidgets('a team resource is private to that team', (tester) async {
     await pumpScreen(
       tester,
@@ -347,6 +445,33 @@ void main() {
       },
     );
   });
+}
+
+class _MockPlanetApi extends Mock implements PlanetApi {}
+
+/// Real reads (the edit-mode prefill runs against the database), stubbed
+/// writes.
+class _FailingResources extends ResourcesRepository {
+  _FailingResources(super.api, super.dao, super.removedLogDao, this.error);
+  final LocalResourceError error;
+
+  @override
+  Future<LocalResourceError?> saveLocalResource(
+    LocalResourceRequest request,
+  ) async => error;
+
+  @override
+  Future<LocalResourceError?> updateLocalResource({
+    required String resourceId,
+    required String title,
+    String? author,
+    String? year,
+    String? description,
+    String? publisher,
+    String? linkToLicense,
+    List<String>? subjects,
+    List<String>? levels,
+  }) async => error;
 }
 
 class _StubSession extends SessionNotifier {

@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../core/utils/json_utils.dart';
 import 'app_database.dart';
+import 'converters.dart';
 
 /// Port of `StepExam.insertCourseStepsExams` and
 /// `ExamQuestion.insertExamQuestions` for survey documents.
@@ -28,10 +29,25 @@ class SurveyMapper {
             id: remoteId.isEmpty ? '$id:$index' : '$id:$remoteId',
             surveyId: id,
             questionId: Value(remoteId.isEmpty ? null : remoteId),
-            header: Value(JsonUtils.getStringOrNull('header', question)),
+            // `ExamQuestion.insertExamQuestions` — which is what
+            // `StepExam.insertCourseStepsExams` runs for a survey document too
+            // — reads `title` here, not `header`. Reading only `header` left
+            // every question of every real survey unlabelled, the defect
+            // `ExamMapper` already carries a note about; `header` stays as a
+            // fallback because the port's own public-survey screen read it.
+            header: Value(
+              JsonUtils.getStringOrNull('title', question) ??
+                  JsonUtils.getStringOrNull('header', question),
+            ),
             body: Value(JsonUtils.getStringOrNull('body', question)),
             type: Value(JsonUtils.getStringOrNull('type', question)),
-            choices: Value(JsonUtils.getStringList('choices', question)),
+            // Kotlin keeps the choices array verbatim
+            // (`gson.toJson(getJsonArray("choices", question))`) and every
+            // consumer parses it back. `JsonUtils.getStringList` instead called
+            // `toString()` on each choice object, so `{"id":"water"...}` was
+            // stored as the Dart literal `{id: water, text: Water}` — no id to
+            // answer with and a label nobody would write.
+            choices: Value(ExamChoice.listFromJson(question['choices'])),
             required: Value(JsonUtils.getBool('required', question)),
             position: index,
           ),

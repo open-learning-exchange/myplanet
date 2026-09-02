@@ -26,7 +26,7 @@ class ExamMapper {
         final questionId = JsonUtils.getString('id', question);
         // `$examId-$index`, matching `ExamQuestion.insertExamQuestions`.
         final questionIdValue = questionId.isEmpty ? '$id-$index' : questionId;
-        final choices = _parseChoices(question['choices']);
+        final choices = ExamChoice.listFromJson(question['choices']);
         questions.add(
           ExamQuestionsCompanion.insert(
             id: questionIdValue,
@@ -75,14 +75,6 @@ class ExamMapper {
       ),
       questions: questions,
     );
-  }
-
-  static List<ExamChoice> _parseChoices(Object? raw) {
-    if (raw is! List) return const [];
-    return raw
-        .map(ExamChoice.fromJson)
-        .whereType<ExamChoice>()
-        .toList(growable: false);
   }
 
   /// The lowercased choice **ids** that count as correct.

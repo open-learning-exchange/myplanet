@@ -96,7 +96,14 @@ void main() {
       'What do you need?',
       'Choose topics',
     ]);
-    expect(questions.last.choices, ['Water', 'Health']);
+    // Bare-string choices keep the text as their own id, which is how
+    // `ExamTakingFragment.addRadioButton` treats them; a `{id, text}` object
+    // keeps both halves. Either way the column is no longer a flattened
+    // `toString()` of the document's choice.
+    expect(questions.last.choices, const [
+      ExamChoice(id: 'Water', text: 'Water'),
+      ExamChoice(id: 'Health', text: 'Health'),
+    ]);
   });
 
   test('completed offline response becomes an uploadable submission', () async {
