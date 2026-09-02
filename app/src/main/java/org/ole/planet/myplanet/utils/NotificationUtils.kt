@@ -19,7 +19,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.services.NotificationActionReceiver
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.utils.TimeProvider
 
 data class NotificationConfig(
     val id: String,

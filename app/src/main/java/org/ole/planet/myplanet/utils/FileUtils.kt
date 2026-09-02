@@ -26,7 +26,6 @@ import java.nio.charset.StandardCharsets
 import java.util.Locale
 import java.util.UUID
 import kotlin.math.roundToLong
-import org.ole.planet.myplanet.utils.TimeProvider
 
 object FileUtils {
     private const val TAG = "FileUtils"
