@@ -598,6 +598,19 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun deleteCoursesProgress(courseIds: List<String>) {
+        if (courseIds.isEmpty()) return
+        val examIds = examDao.getByCourseIds(courseIds).map { it.id }
+        if (examIds.isNotEmpty()) {
+            val submissions = submissionDao.getUnuploadedNonSurveyByParentIds(examIds)
+            val submissionIds = submissions.map { it.id }
+            if (submissionIds.isNotEmpty()) {
+                answerDao.deleteBySubmissionIds(submissionIds)
+                submissionDao.deleteByIds(submissionIds)
+            }
+        }
+    }
+
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
         val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
