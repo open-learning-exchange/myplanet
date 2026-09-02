@@ -13,19 +13,13 @@
   "@serverUrlHint": {
     "x-mt": true
   },
-  "serverPinLabel": "رقم التعريف الشخصي للخادم",
-  "@serverPinLabel": {
-    "x-mt": true
-  },
+  "serverPinLabel": "رمز الخادم",
   "connect": "يتصل",
   "@connect": {
     "x-mt": true
   },
   "serverUrlNotConfigured": "لم يتم تكوين عنوان URL للخادم",
-  "deviceCouldNotReachLocalServer": "تعذر على الجهاز الوصول إلى الخادم. تحقق مما إذا كنت متصلاً بشبكة Wi-Fi الصحيحة للخادم المحلي (المجتمع).",
-  "@deviceCouldNotReachLocalServer": {
-    "x-mt": true
-  },
+  "deviceCouldNotReachLocalServer": "لم يتمكن الجهاز من الوصول إلى الخادم. تحقق مما إذا كنت متصلاً بشبكة Wi-Fi الصحيحة للخادم المحلي (المجتمع).",
   "deviceCouldNotReachNationServer": "لم يتمكن الجهاز من الوصول إلى الخادم. تحقق مما إذا كنت متصلاً بالإنترنت وحاول مرة أخرى.",
   "connectionFailed": "فشل الاتصال!",
   "changeServer": "تغيير الخادم",
@@ -146,14 +140,8 @@
   "@moreOptions": {
     "x-mt": true
   },
-  "appTheme": "موضوع التطبيق",
-  "@appTheme": {
-    "x-mt": true
-  },
-  "aiChat": "دردشة الذكاء الاصطناعي",
-  "@aiChat": {
-    "x-mt": true
-  },
+  "appTheme": "سمة التطبيق",
+  "aiChat": "AI Chat",
   "syncNow": "مزامنة الآن",
   "@syncNow": {
     "x-mt": true
@@ -386,10 +374,7 @@
   "@middleName": {
     "x-mt": true
   },
-  "lastName": "اسم العائلة",
-  "@lastName": {
-    "x-mt": true
-  },
+  "lastName": "الاسم الأخير",
   "save": "حفظ",
   "profileSaved": "تم حفظ الملف الشخصي على هذا الجهاز",
   "@profileSaved": {
@@ -597,10 +582,7 @@
   "@refresh": {
     "x-mt": true
   },
-  "complete": "مكتمل",
-  "@complete": {
-    "x-mt": true
-  },
+  "complete": "اكتمل",
   "noMatchingSubmissions": "لا توجد عمليات إرسال تتطابق مع هذا الفلتر",
   "@noMatchingSubmissions": {
     "x-mt": true
@@ -621,18 +603,9 @@
   "@unknown": {
     "x-mt": true
   },
-  "nA": "لا يوجد",
-  "@nA": {
-    "x-mt": true
-  },
-  "otherDiagnosis": "تشخيص آخر",
-  "@otherDiagnosis": {
-    "x-mt": true
-  },
-  "add": "يضيف",
-  "@add": {
-    "x-mt": true
-  },
+  "nA": "N/A",
+  "otherDiagnosis": "تشخيصات أخرى",
+  "add": "إضافة",
   "status": "الحالة",
   "lastUpdated": "آخر تحديث",
   "@lastUpdated": {
@@ -672,10 +645,7 @@
   "@newSubmission": {
     "x-mt": true
   },
-  "answer": "إجابة",
-  "@answer": {
-    "x-mt": true
-  },
+  "answer": "الإجابة",
   "availableChoices": "الاختيارات",
   "@availableChoices": {
     "x-mt": true
@@ -702,10 +672,7 @@
     "x-mt": true
   },
   "maps": "الخرائط",
-  "englishDictionary": "قاموس اللغة الإنجليزية",
-  "@englishDictionary": {
-    "x-mt": true
-  },
+  "englishDictionary": "قاموس الإنجليزية",
   "offlineMapsComingSoon": "لم يتم نقل الخرائط غير المتصلة بالإنترنت حتى الآن",
   "@offlineMapsComingSoon": {
     "x-mt": true
@@ -807,10 +774,7 @@
   "@onboardingPowerDescription": {
     "x-mt": true
   },
-  "onboardingServerPrepHint": "قبل تسجيل الدخول، ستحتاج إلى عنوان خادم Planet ورقم التعريف الشخصي (PIN). اسأل مسؤول مجتمعك إذا لم تكن لديك هذه الميزات بعد.",
-  "@onboardingServerPrepHint": {
-    "x-mt": true
-  },
+  "onboardingServerPrepHint": "قبل تسجيل الدخول، ستحتاج إلى عنوان خادم Planet ورقم التعريف الشخصي (PIN). اسأل مسؤول مجتمعك إذا لم تكن تملكهما بعد.",
   "meetups": "لقاءات",
   "@meetups": {
     "x-mt": true
@@ -847,24 +811,15 @@
   "@meetupNotFound": {
     "x-mt": true
   },
-  "createdBy": "تم إنشاؤها بواسطة",
-  "@createdBy": {
-    "x-mt": true
-  },
+  "createdBy": "تم إنشاؤه بواسطة",
   "category": "فئة",
   "@category": {
     "x-mt": true
   },
   "location": "الموقع",
   "link": "الرابط",
-  "recurring": "يتكرر",
-  "@recurring": {
-    "x-mt": true
-  },
-  "description": "وصف",
-  "@description": {
-    "x-mt": true
-  },
+  "recurring": "متكرر",
+  "description": "الوصف",
   "leaveMeetup": "مغادرة اللقاء",
   "@leaveMeetup": {
     "x-mt": true
@@ -873,10 +828,7 @@
   "@joinMeetup": {
     "x-mt": true
   },
-  "editMeetup": "تحرير اللقاء",
-  "@editMeetup": {
-    "x-mt": true
-  },
+  "editMeetup": "تعديل الاجتماع",
   "startTime": "وقت البدء",
   "@startTime": {
     "x-mt": true
@@ -956,10 +908,7 @@
   "@untitledSurvey": {
     "x-mt": true
   },
-  "takeSurvey": "خذ الاستطلاع",
-  "@takeSurvey": {
-    "x-mt": true
-  },
+  "takeSurvey": "أداء الاستبيان",
   "surveyLoadFailed": "لا يمكن تحميل الاستطلاع",
   "@surveyLoadFailed": {
     "x-mt": true
@@ -1043,10 +992,7 @@
   "@sendSurveyTo": {
     "x-mt": true
   },
-  "sendSurvey": "إرسال المسح",
-  "@sendSurvey": {
-    "x-mt": true
-  },
+  "sendSurvey": "إرسال الاستبيان",
   "surveySentToUsers": "Survey sent to selected users",
   "@surveySentToUsers": {
     "x-mt": true
@@ -1101,22 +1047,10 @@
   "@leader": {
     "x-mt": true
   },
-  "leave": "يترك",
-  "@leave": {
-    "x-mt": true
-  },
-  "remove": "يزيل",
-  "@remove": {
-    "x-mt": true
-  },
-  "makeLeader": "اصنع قائدا",
-  "@makeLeader": {
-    "x-mt": true
-  },
-  "leftTeam": "الفريق الأيسر",
-  "@leftTeam": {
-    "x-mt": true
-  },
+  "leave": "مغادرة",
+  "remove": "إزالة",
+  "makeLeader": "جعله قائدًا",
+  "leftTeam": "غادر الفريق",
   "memberRemoved": "تمت إزالة العضو",
   "@memberRemoved": {
     "x-mt": true
@@ -1167,10 +1101,7 @@
   "@untitledTask": {
     "x-mt": true
   },
-  "addTask": "أضف مهمة",
-  "@addTask": {
-    "x-mt": true
-  },
+  "addTask": "إضافة مهمة",
   "editTask": "تحرير المهمة",
   "@editTask": {
     "x-mt": true
@@ -1248,10 +1179,7 @@
   "@addResource": {
     "x-mt": true
   },
-  "editResource": "تحرير المورد",
-  "@editResource": {
-    "x-mt": true
-  },
+  "editResource": "تعديل المورد",
   "resourceUpdated": "تم تحديث المورد",
   "@resourceUpdated": {
     "x-mt": true
@@ -1349,10 +1277,7 @@
     "x-mt": true
   },
   "archiveReport": "الأرشيف",
-  "beginningBalance": "رصيد البداية",
-  "@beginningBalance": {
-    "x-mt": true
-  },
+  "beginningBalance": "الرصيد الافتتاحي",
   "sales": "المبيعات",
   "otherIncome": "دخل آخر",
   "@otherIncome": {
@@ -1370,31 +1295,19 @@
   "@totalIncome": {
     "x-mt": true
   },
-  "totalExpenses": "إجمالي النفقات",
-  "@totalExpenses": {
-    "x-mt": true
-  },
+  "totalExpenses": "إجمالي المصروفات",
   "profitLoss": "الربح / الخسارة",
   "@profitLoss": {
     "x-mt": true
   },
-  "endingBalance": "رصيد النهاية",
-  "@endingBalance": {
-    "x-mt": true
-  },
-  "negativeBalance": "الرصيد الحالي سلبي!",
-  "@negativeBalance": {
-    "x-mt": true
-  },
+  "endingBalance": "الرصيد النهائي",
+  "negativeBalance": "الرصيد الحالي سالب!",
   "chatHistory": "تاريخ الدردشة",
   "@chatHistory": {
     "x-mt": true
   },
   "chat": "الدردشة",
-  "newChat": "دردشة جديدة",
-  "@newChat": {
-    "x-mt": true
-  },
+  "newChat": "محادثة جديدة",
   "searchChats": "بحث في الدردشات",
   "@searchChats": {
     "x-mt": true
@@ -1411,14 +1324,8 @@
   "@untitledChat": {
     "x-mt": true
   },
-  "fullConversationResponse": "الرد الكامل على المحادثة",
-  "@fullConversationResponse": {
-    "x-mt": true
-  },
-  "response": "إجابة",
-  "@response": {
-    "x-mt": true
-  },
+  "fullConversationResponse": "استجابة المحادثة الكاملة",
+  "response": "استجابة",
   "chatConversation": "محادثة",
   "@chatConversation": {
     "x-mt": true
@@ -1476,10 +1383,7 @@
   "bug": "خطأ",
   "suggestion": "اقتراح",
   "priority": "الأولوية",
-  "openDate": "تاريخ مفتوح",
-  "@openDate": {
-    "x-mt": true
-  },
+  "openDate": "تاريخ الافتتاح",
   "replies": "الردود",
   "@replies": {
     "x-mt": true
@@ -1496,10 +1400,7 @@
   "@takeTest": {
     "x-mt": true
   },
-  "recordSurvey": "سجل المسح",
-  "@recordSurvey": {
-    "x-mt": true
-  },
+  "recordSurvey": "تسجيل الاستبيان",
   "react": "رد فعل",
   "@react": {
     "x-mt": true
@@ -1593,10 +1494,7 @@
   "@fromDate": {
     "x-mt": true
   },
-  "toDate": "حتى الآن",
-  "@toDate": {
-    "x-mt": true
-  },
+  "toDate": "إلى تاريخ",
   "reset": "إعادة ضبط",
   "@reset": {
     "x-mt": true
@@ -1660,10 +1558,7 @@
   "@submitExam": {
     "x-mt": true
   },
-  "incorrectAnswer": "إجابة غير صحيحة",
-  "@incorrectAnswer": {
-    "x-mt": true
-  },
+  "incorrectAnswer": "إجابة غير صحيحة، يرجى المحاولة مرة أخرى",
   "correctAnswers": "صحيح",
   "@correctAnswers": {
     "x-mt": true
@@ -1712,26 +1607,17 @@
   "@yourInformation": {
     "x-mt": true
   },
-  "showAdditionalFields": "إظهار الحقول الإضافية",
-  "@showAdditionalFields": {
-    "x-mt": true
-  },
+  "showAdditionalFields": "عرض الحقول الإضافية",
   "hideAdditionalFields": "إخفاء الحقول الإضافية",
   "@hideAdditionalFields": {
     "x-mt": true
   },
-  "phoneNumber": "رقم التليفون",
-  "@phoneNumber": {
-    "x-mt": true
-  },
+  "phoneNumber": "رقم الهاتف",
   "birthDate": "تاريخ الميلاد",
   "@birthDate": {
     "x-mt": true
   },
-  "selectDate": "اختر التاريخ",
-  "@selectDate": {
-    "x-mt": true
-  },
+  "selectDate": "حدد التاريخ",
   "male": "ذكر",
   "@male": {
     "x-mt": true
@@ -1749,18 +1635,12 @@
   "@invalidYear": {
     "x-mt": true
   },
-  "thankYouForTakingSurvey": "شكرا لك على أخذ هذا الاستطلاع",
-  "@thankYouForTakingSurvey": {
-    "x-mt": true
-  },
+  "thankYouForTakingSurvey": "شكرًا لك على إجراء هذا الاستبيان",
   "errorSavingProfile": "حدث خطأ أثناء حفظ الملف الشخصي",
   "@errorSavingProfile": {
     "x-mt": true
   },
-  "videoPlayer": "مشغل فيديو",
-  "@videoPlayer": {
-    "x-mt": true
-  },
+  "videoPlayer": "مشغل الفيديو",
   "audioPlayer": "مشغل الصوت",
   "@audioPlayer": {
     "x-mt": true
@@ -1779,18 +1659,12 @@
   "htmlEntryNotFound": "ملف إدخال HTML غير موجود",
   "errorOccurred": "خطأ: {error}",
   "openingResource": "فتح: {title}",
-  "loadingMedia": "تحميل...",
-  "@loadingMedia": {
-    "x-mt": true
-  },
+  "loadingMedia": "جار التحميل...",
   "resourceUnavailable": "هذا المورد غير متاح للعرض في وضع عدم الاتصال",
   "@resourceUnavailable": {
     "x-mt": true
   },
-  "healthRecordNotAvailable": "السجل الصحي غير متوفر",
-  "@healthRecordNotAvailable": {
-    "x-mt": true
-  },
+  "healthRecordNotAvailable": "سجل الصحة غير متاح",
   "updateHealth": "تحديث الصحة",
   "@updateHealth": {
     "x-mt": true
@@ -1811,10 +1685,7 @@
   "@otherNeeds": {
     "x-mt": true
   },
-  "emergencyContact": "الاتصال في حالات الطوارئ",
-  "@emergencyContact": {
-    "x-mt": true
-  },
+  "emergencyContact": "جهة الاتصال في حالات الطوارئ",
   "contactNumber": "رقم الاتصال",
   "@contactNumber": {
     "x-mt": true
@@ -1894,10 +1765,7 @@
     "x-mt": true
   },
   "referrals": "الإحالات",
-  "labTests": "الاختبارات المعملية",
-  "@labTests": {
-    "x-mt": true
-  },
+  "labTests": "اختبارات المختبر",
   "xrays": "الأشعة السينية",
   "conditions": "شروط",
   "@conditions": {
@@ -1911,10 +1779,7 @@
   "@healthRecordAdded": {
     "x-mt": true
   },
-  "selectHealthMember": "اختر عضوا",
-  "@selectHealthMember": {
-    "x-mt": true
-  },
+  "selectHealthMember": "اختر عضو الفريق",
   "newPatient": "مريض جديد",
   "@newPatient": {
     "x-mt": true
@@ -1961,18 +1826,12 @@
   "@weightRangeError": {
     "x-mt": true
   },
-  "bloodPressureFormatError": "يجب أن يكون ضغط الدم الانقباضي / الانبساطي",
-  "@bloodPressureFormatError": {
-    "x-mt": true
-  },
+  "bloodPressureFormatError": "يجب أن يكون ضغط الدم عبارة عن نبضي/انبساطي",
   "bloodPressureRangeError": "يجب أن يكون ضغط الدم بين 60/40 و300/200",
   "@bloodPressureRangeError": {
     "x-mt": true
   },
-  "bloodPressureNotNumbers": "يجب أن يكون الضغط الانقباضي والانبساطي أرقامًا",
-  "@bloodPressureNotNumbers": {
-    "x-mt": true
-  },
+  "bloodPressureNotNumbers": "يجب أن تكون القيم النبضية والانبساطية أرقام",
   "temp": "درجة حرارة",
   "@temp": {
     "x-mt": true
@@ -2012,10 +1871,10 @@
     "x-mt": true
   },
   "areYouSure": "هل أنت متأكد؟",
-  "cancelAddingExamination": "Are you sure you want to cancel adding examination? The data will be lost.",
-  "yesIWantToExit": "Yes, I want to exit.",
-  "inactiveMessage": "User not activated, please contact administrator or manager to activate your account.",
-  "submitFeedback": "Submit Feedback",
+  "cancelAddingExamination": "هل أنت متأكد من إلغاء إضافة الامتحان؟ سيتم فقدان البيانات",
+  "yesIWantToExit": "نعم، أرغب في الخروج.",
+  "inactiveMessage": "المستخدم غير مفعل، يرجى التواصل مع المسؤول أو المدير لتفعيل حسابك.",
+  "submitFeedback": "إرسال ملاحظات",
   "storageDeleteSelectedConfirm": "Delete {count} selected items?",
   "@storageDeleteSelectedConfirm": {
     "x-mt": true
@@ -2066,10 +1925,7 @@
   },
   "becomeMember": "أصبح عضوًا",
   "toAccessThisFeatureBecomeAMember": "أنت حاليًا مستخدم ضيف. للوصول إلى هذه الميزة، كن عضوًا.",
-  "creatingMember": "جارٍ إنشاء حساب العضو...",
-  "@creatingMember": {
-    "x-mt": true
-  },
+  "creatingMember": "إنشاء حساب العضو...",
   "passwordsDoNotMatch": "كلمتا المرور غير متطابقتين",
   "pleaseSelectGender": "يرجى تحديد الجنس",
   "pleaseEnterPassword": "يرجى إدخال كلمة المرور",
@@ -2108,25 +1964,13 @@
   "@challengeDialogTitle": {
     "x-mt": true
   },
-  "start": "يبدأ",
-  "@start": {
-    "x-mt": true
-  },
-  "continuation": "يكمل",
-  "@continuation": {
-    "x-mt": true
-  },
+  "start": "ابدأ",
+  "continuation": "استمر",
   "plan": "خطة",
   "mission": "المهمة والخدمات",
   "editPlan": "تعديل الخطة",
-  "teamPlan": "ما هي خطة فريقك؟",
-  "@teamPlan": {
-    "x-mt": true
-  },
-  "entMission": "ما هي مهمة مؤسستك؟",
-  "@entMission": {
-    "x-mt": true
-  },
+  "teamPlan": "ما هو خطة فريقك؟",
+  "entMission": "ما هي مهمة المؤسسة الخاصة بك؟",
   "entServices": "ما هي الخدمات التي تقدمها المؤسسة الخاصة بك؟",
   "entRules": "ما هي قواعد المؤسسة الخاصة بك؟",
   "noMissionDefined": "لا يوجد لدى المؤسسة مهمة وخدمات.",
@@ -2157,10 +2001,7 @@
   "isPublic": "عام",
   "nameRequired": "الاسم مطلوب",
   "nameIsRequired": "يرجى إدخال الاسم",
-  "createdOn": "تم الإنشاء بتاريخ",
-  "@createdOn": {
-    "x-mt": true
-  },
+  "createdOn": "تم الإنشاء في",
   "courseDetails": "تفاصيل الدورة",
   "@courseDetails": {
     "x-mt": true
@@ -2214,19 +2055,10 @@
   "@untitledResourceTitle": {
     "x-mt": true
   },
-  "author": "مؤلف",
-  "@author": {
-    "x-mt": true
-  },
+  "author": "المؤلف",
   "publisher": "الناشر",
-  "license": "رخصة",
-  "@license": {
-    "x-mt": true
-  },
-  "addedBy": "تمت الإضافة بواسطة",
-  "@addedBy": {
-    "x-mt": true
-  },
+  "license": "الترخيص",
+  "addedBy": "أُضيف بواسطة",
   "resourceInformation": "معلومات الموارد",
   "@resourceInformation": {
     "x-mt": true
@@ -2363,10 +2195,7 @@
   "@totalVisits": {
     "x-mt": true
   },
-  "mostOpenedResource": "الموارد الأكثر فتحا",
-  "@mostOpenedResource": {
-    "x-mt": true
-  },
+  "mostOpenedResource": "أكثر مورد تم فتحه",
   "numberOfResourcesOpened": "عدد الموارد المفتوحة",
   "@numberOfResourcesOpened": {
     "x-mt": true
@@ -2387,10 +2216,7 @@
   "@serverUnreachable": {
     "x-mt": true
   },
-  "serverChecking": "فحص الخادم",
-  "@serverChecking": {
-    "x-mt": true
-  },
+  "serverChecking": "جارٍ فحص الخادم",
   "gridView": "عرض شبكي",
   "listView": "عرض قائمة",
   "disclaimer": "تنصل",
@@ -2426,7 +2252,7 @@
   "addAnAchievement": "إضافة إنجاز",
   "addReference": "إضافة مرجع",
   "addAReference": "إضافة مرجع",
-  "selectResources": "اختر الموارد:",
+  "selectResources": "اختر الموارد: ",
   "myGoals": "أهدافي",
   "myPurpose": "هدفي",
   "noGoalAdded": "لم يتم تحديد أي أهداف بعد",
@@ -2460,18 +2286,12 @@
   "@textSize": {
     "x-mt": true
   },
-  "selectTextSize": "حدد حجم النص",
-  "@selectTextSize": {
-    "x-mt": true
-  },
+  "selectTextSize": "اختر حجم النص",
   "textSizeSmall": "صغير",
   "@textSizeSmall": {
     "x-mt": true
   },
-  "textSizeMedium": "واسطة",
-  "@textSizeMedium": {
-    "x-mt": true
-  },
+  "textSizeMedium": "متوسط",
   "textSizeLarge": "كبير",
   "@textSizeLarge": {
     "x-mt": true
@@ -2480,10 +2300,7 @@
   "@resetApp": {
     "x-mt": true
   },
-  "clearAllDataConfirm": "هل أنت متأكد أنك تريد مسح كافة البيانات؟",
-  "@clearAllDataConfirm": {
-    "x-mt": true
-  },
+  "clearAllDataConfirm": "هل أنت متأكد أنك تريد مسح جميع البيانات؟",
   "dataCleared": "تم مسح كافة البيانات",
   "@dataCleared": {
     "x-mt": true
@@ -2493,5 +2310,10 @@
     "x-mt": true
   },
   "resourceTitleAlreadyExists": "يوجد مورد بهذا العنوان بالفعل",
-  "failedToUpdateResource": "فشل تحديث المورد"
+  "failedToUpdateResource": "فشل تحديث المورد",
+  "unableToAddHealthRecord": "غير قادر على إضافة سجل صحي",
+  "summaryOfAchievements": "ملخص الإنجازات - قم بتلخيص إنجازاتك بإيجاز وأضف المواد ذات الصلة أدناه",
+  "myGoalsDescription": "أهدافي - ما هي أهدافك للعشر سنوات القادمة؟",
+  "myPurposeDescription": "هدفي - ما هي طموحاتك التعليمية والمهنية؟",
+  "pleaseAnswerToContinue": "يرجى تحديد / كتابة إجابتك للمتابعة"
 }

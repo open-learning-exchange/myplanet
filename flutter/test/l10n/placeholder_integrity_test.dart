@@ -145,6 +145,65 @@ void main() {
     }
   });
 
+  test('no locale value carries an Android escape', () {
+    // Android escapes an apostrophe in `strings.xml` as `\'`, because the
+    // platform's own string reader would otherwise treat it as quoting. The
+    // backslash belongs to Android, not to the sentence — but XML parsing
+    // leaves it alone (it is not XML syntax) and JSON has no objection to it
+    // either, so `tool/arb_from_strings_xml.dart` carried it into the locale
+    // files before it learned to strip it.
+    //
+    // Fourteen French strings and one Somali one shipped that way, rendering a
+    // literal backslash on screen: `Demandes d\'adhésion`, `Su\'aal`. Nothing
+    // could see it — the value is well-formed JSON, `gen-l10n` compiles it, and
+    // no analyzer looks inside a string. Only a reader of French would notice.
+    final defects = <String>[];
+    for (final code in locales) {
+      final arb = _readArb(code);
+      for (final key in _messageKeys(arb)) {
+        final value = arb[key] as String;
+        if (RegExp("""\\\\['\\"]""").hasMatch(value)) {
+          defects.add('$code:$key — "$value"');
+        }
+      }
+    }
+
+    expect(
+      defects,
+      isEmpty,
+      reason:
+          '${defects.length} value(s) carry an Android escape that the Kotlin '
+          'XML needed and the ARB does not:\n${defects.join("\n")}\n'
+          'Run `dart tool/arb_from_strings_xml.dart --adopt`, which repairs '
+          'them.',
+    );
+  });
+
+  test('the incorrect-answer retry hint is the Kotlin string, everywhere', () {
+    // The instance this recovery pass started from, pinned so a regeneration
+    // cannot quietly take it back.
+    //
+    // The port minted its own "Incorrect answer" and had it machine-translated
+    // five ways, while Kotlin has shipped `incorrect_ans` — "Incorrect answer,
+    // please try again" — with a real translation in every locale for years.
+    // Under the exam retry gate this snackbar is the only thing telling a
+    // learner to try again, so the hint is the string, not a flourish.
+    //
+    // The Kotlin XML is read rather than the six strings copied here: the point
+    // is that the ARB tracks Kotlin, and a hardcoded expectation would pass
+    // just as happily against a stale value.
+    for (final code in [...locales, 'en']) {
+      final kotlin = _kotlinString(code == 'en' ? 'values' : 'values-$code');
+      expect(
+        _readArb(code)['incorrectAnswer'],
+        kotlin,
+        reason:
+            'app_$code.arb has drifted from `incorrect_ans` in '
+            'app/src/main/res/values${code == 'en' ? '' : '-$code'}/strings.xml',
+      );
+    }
+  });
+
   test('the template declares no review state of its own', () {
     // `app_en.arb` is the source text, not a translation of anything. An
     // `x-mt` flag there would mean the English itself is machine output.
@@ -162,11 +221,11 @@ void main() {
     // the map and say in the commit message who reviewed it. Adding an
     // unreviewed one means flagging it `x-mt`, which leaves them alone.
     const humanReviewed = {
-      'ar': 259,
-      'es': 234,
-      'fr': 260,
-      'ne': 259,
-      'so': 259,
+      'ar': 325,
+      'es': 321,
+      'fr': 314,
+      'ne': 384,
+      'so': 383,
     };
 
     for (final code in locales) {
@@ -246,3 +305,18 @@ Iterable<String> _machineTranslatedKeys(Map<String, Object?> arb) => arb.keys
 /// ICU and appears in the wild.
 bool _usesPlaceholder(String value, String name) =>
     RegExp('\\{\\s*${RegExp.escape(name)}\\s*[,}]').hasMatch(value);
+
+/// `incorrect_ans` as the Kotlin app ships it for one `values*` directory.
+///
+/// A regex rather than an XML parser: the test needs one string, `strings.xml`
+/// writes it on one line, and pulling a parser into the test tree to read it
+/// would be the larger dependency.
+String _kotlinString(String valuesDir) {
+  final xml = File(
+    '../app/src/main/res/$valuesDir/strings.xml',
+  ).readAsStringSync();
+  final match = RegExp(
+    r'<string name="incorrect_ans">(.*?)</string>',
+  ).firstMatch(xml);
+  return match!.group(1)!;
+}

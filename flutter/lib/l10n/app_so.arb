@@ -13,19 +13,13 @@
   "@serverUrlHint": {
     "x-mt": true
   },
-  "serverPinLabel": "[Somali] Server PIN",
-  "@serverPinLabel": {
-    "x-mt": true
-  },
+  "serverPinLabel": "Pin-ka adeegsiga",
   "connect": "[Somali] Connect",
   "@connect": {
     "x-mt": true
   },
   "serverUrlNotConfigured": "URL-ka server-ka lama dejin",
-  "deviceCouldNotReachLocalServer": "[Somali] device couldn't reach the server. check if you are connected to the correct Wi-Fi network for the local server (community).",
-  "@deviceCouldNotReachLocalServer": {
-    "x-mt": true
-  },
+  "deviceCouldNotReachLocalServer": "qalabku ma uusan gaari karin server-ka. hubi inaad ku xiran tahay shabakadda Wi-Fi-ga saxda ah ee server-ka maxalliga ah (bulshada).",
   "deviceCouldNotReachNationServer": "qalabku ma uusan gaari karin server-ka. hubi inaad ku xiran tahay internetka oo dib isku day.",
   "connectionFailed": "Xiriirku wuu fashilmay!",
   "connectedToCommunity": "[Somali] Connected to {code}",
@@ -77,10 +71,7 @@
   },
   "resources": "Vifijo",
   "search": "Raadi",
-  "sync": "[Somali] Sync",
-  "@sync": {
-    "x-mt": true
-  },
+  "sync": "Dib u hagrees",
   "cancel": "burin",
   "settings": "Settings",
   "backgroundSync": "[Somali] Background sync",
@@ -154,18 +145,9 @@
   "@moreOptions": {
     "x-mt": true
   },
-  "appTheme": "[Somali] App theme",
-  "@appTheme": {
-    "x-mt": true
-  },
-  "aiChat": "[Somali] AI chat",
-  "@aiChat": {
-    "x-mt": true
-  },
-  "syncNow": "[Somali] Sync now",
-  "@syncNow": {
-    "x-mt": true
-  },
+  "appTheme": "Mawduuca app-ka",
+  "aiChat": "AI Chat",
+  "syncNow": "Isku-dar hadda",
   "syncCenter": "[Somali] Sync center",
   "@syncCenter": {
     "x-mt": true
@@ -307,10 +289,7 @@
     "x-mt": true
   },
   "courses": "Koorsooyin",
-  "myCourses": "[Somali] My courses",
-  "@myCourses": {
-    "x-mt": true
-  },
+  "myCourses": "Korasyadayda",
   "allCourses": "[Somali] All courses",
   "@allCourses": {
     "x-mt": true
@@ -327,10 +306,7 @@
   "@resourcesInStep": {
     "x-mt": true
   },
-  "gradeLevel": "[Somali] Grade level",
-  "@gradeLevel": {
-    "x-mt": true
-  },
+  "gradeLevel": "Darajo Loo qoondeeyey",
   "subjectLevel": "[Somali] Subject",
   "@subjectLevel": {
     "x-mt": true
@@ -362,19 +338,13 @@
   "@profileUnavailable": {
     "x-mt": true
   },
-  "username": "[Somali] Username",
-  "@username": {
-    "x-mt": true
-  },
+  "username": "Magaca isticmaalaha",
   "email": "iimayl",
   "phone": "[Somali] Phone",
   "@phone": {
     "x-mt": true
   },
-  "level": "[Somali] Level",
-  "@level": {
-    "x-mt": true
-  },
+  "level": "Heerka",
   "levels": "[Somali] Levels",
   "@levels": {
     "x-mt": true
@@ -382,10 +352,7 @@
   "language": "Luuqad",
   "languages": "Luqadaha",
   "gender": "Jinsi",
-  "dateOfBirth": "[Somali] Date of birth",
-  "@dateOfBirth": {
-    "x-mt": true
-  },
+  "dateOfBirth": "Taariikhda dhalashada",
   "planetCode": "[Somali] Planet code",
   "@planetCode": {
     "x-mt": true
@@ -402,10 +369,7 @@
   "@profilePhotoFor": {
     "x-mt": true
   },
-  "editProfile": "[Somali] Edit profile",
-  "@editProfile": {
-    "x-mt": true
-  },
+  "editProfile": "Wax ka beddel xogta",
   "changePhoto": "[Somali] Change profile photo",
   "@changePhoto": {
     "x-mt": true
@@ -418,18 +382,9 @@
   "@photoUpdateFailed": {
     "x-mt": true
   },
-  "firstName": "[Somali] First name",
-  "@firstName": {
-    "x-mt": true
-  },
-  "middleName": "[Somali] Middle name",
-  "@middleName": {
-    "x-mt": true
-  },
-  "lastName": "[Somali] Last name",
-  "@lastName": {
-    "x-mt": true
-  },
+  "firstName": "Magaca koowaad",
+  "middleName": "Magaca Dhexe",
+  "lastName": "Magaca Dambe",
   "save": "Keyd",
   "profileSaved": "[Somali] Profile saved on this device",
   "@profileSaved": {
@@ -578,10 +533,7 @@
   "@storageNotification": {
     "x-mt": true
   },
-  "joinRequestNotification": "[Somali] Join request",
-  "@joinRequestNotification": {
-    "x-mt": true
-  },
+  "joinRequestNotification": "Codsi ku biirid",
   "teamNotification": "[Somali] Team update",
   "@teamNotification": {
     "x-mt": true
@@ -661,10 +613,7 @@
   "@refresh": {
     "x-mt": true
   },
-  "complete": "[Somali] Complete",
-  "@complete": {
-    "x-mt": true
-  },
+  "complete": "Buuxi",
   "noMatchingSubmissions": "[Somali] No submissions match this filter",
   "@noMatchingSubmissions": {
     "x-mt": true
@@ -685,18 +634,9 @@
   "@unknown": {
     "x-mt": true
   },
-  "nA": "[Somali] N/A",
-  "@nA": {
-    "x-mt": true
-  },
-  "otherDiagnosis": "[Somali] Other diagnosis",
-  "@otherDiagnosis": {
-    "x-mt": true
-  },
-  "add": "[Somali] Add",
-  "@add": {
-    "x-mt": true
-  },
+  "nA": "N/A",
+  "otherDiagnosis": "Xeerka Kale",
+  "add": "Ku dar",
   "status": "xaalad",
   "lastUpdated": "[Somali] Last updated",
   "@lastUpdated": {
@@ -740,10 +680,7 @@
   "@newSubmission": {
     "x-mt": true
   },
-  "answer": "[Somali] Answer",
-  "@answer": {
-    "x-mt": true
-  },
+  "answer": "Jawaab",
   "availableChoices": "[Somali] Choices",
   "@availableChoices": {
     "x-mt": true
@@ -774,10 +711,7 @@
     "x-mt": true
   },
   "maps": "Maps",
-  "englishDictionary": "[Somali] English dictionary",
-  "@englishDictionary": {
-    "x-mt": true
-  },
+  "englishDictionary": "Qaamuuska Af Ingiriiska",
   "offlineMapsComingSoon": "[Somali] Offline maps are not ported yet",
   "@offlineMapsComingSoon": {
     "x-mt": true
@@ -877,10 +811,7 @@
     "x-mt": true
   },
   "skip": "Ka gudub",
-  "next": "[Somali] Next",
-  "@next": {
-    "x-mt": true
-  },
+  "next": "Ku Xus",
   "getStarted": "BILAAB",
   "welcomeToMyPlanet": "Soo dhawoow myPlanet",
   "learnOffline": "Baro horumarinta",
@@ -899,10 +830,7 @@
   "@onboardingPowerDescription": {
     "x-mt": true
   },
-  "onboardingServerPrepHint": "[Somali] Before you sign in, you'll need your Planet server address and PIN. Ask your community administrator if you don't have them yet.",
-  "@onboardingServerPrepHint": {
-    "x-mt": true
-  },
+  "onboardingServerPrepHint": "Ka hor inta aadan gelin, waxaad u baahan doontaa cinwaanka server-ka Planet iyo PIN-ka. Weydii maamulaha bulshadaada haddii aadan weli haysan.",
   "pageProgress": "[Somali] Page {current} of {total}",
   "@pageProgress": {
     "x-mt": true
@@ -931,10 +859,7 @@
   "@untitledMeetup": {
     "x-mt": true
   },
-  "addMeetup": "[Somali] Add meetup",
-  "@addMeetup": {
-    "x-mt": true
-  },
+  "addMeetup": "Ku dar kulan",
   "meetupDetails": "[Somali] Meetup details",
   "@meetupDetails": {
     "x-mt": true
@@ -943,24 +868,15 @@
   "@meetupNotFound": {
     "x-mt": true
   },
-  "createdBy": "[Somali] Created by",
-  "@createdBy": {
-    "x-mt": true
-  },
+  "createdBy": "Lagu sameeyay",
   "category": "[Somali] Category",
   "@category": {
     "x-mt": true
   },
   "location": "Goobta",
   "link": "Xiriirka",
-  "recurring": "[Somali] Recurring",
-  "@recurring": {
-    "x-mt": true
-  },
-  "description": "[Somali] Description",
-  "@description": {
-    "x-mt": true
-  },
+  "recurring": "Ku dhaqan",
+  "description": "Sharaxaad",
   "leaveMeetup": "[Somali] Leave meetup",
   "@leaveMeetup": {
     "x-mt": true
@@ -969,18 +885,9 @@
   "@joinMeetup": {
     "x-mt": true
   },
-  "editMeetup": "[Somali] Edit meetup",
-  "@editMeetup": {
-    "x-mt": true
-  },
-  "startTime": "[Somali] Start time",
-  "@startTime": {
-    "x-mt": true
-  },
-  "endTime": "[Somali] End time",
-  "@endTime": {
-    "x-mt": true
-  },
+  "editMeetup": "Wax ka beddel kulanka",
+  "startTime": "Bilowga Waqtiga",
+  "endTime": "Dhamaadka Waqtiga",
   "none": "Midna",
   "daily": "Maalinle",
   "weekly": "Toddobaad",
@@ -1016,14 +923,8 @@
   "@titleDescending": {
     "x-mt": true
   },
-  "startDate": "[Somali] Start date",
-  "@startDate": {
-    "x-mt": true
-  },
-  "endDate": "[Somali] End date",
-  "@endDate": {
-    "x-mt": true
-  },
+  "startDate": "Bilowga Dhibaatada",
+  "endDate": "Dhamaadka Dhibaatada",
   "timeNotSet": "[Somali] Time not set",
   "@timeNotSet": {
     "x-mt": true
@@ -1052,10 +953,7 @@
   "@untitledSurvey": {
     "x-mt": true
   },
-  "takeSurvey": "[Somali] Take survey",
-  "@takeSurvey": {
-    "x-mt": true
-  },
+  "takeSurvey": "Ku Dar Survey",
   "surveyLoadFailed": "[Somali] Survey could not be loaded",
   "@surveyLoadFailed": {
     "x-mt": true
@@ -1139,10 +1037,7 @@
   "@sendSurveyTo": {
     "x-mt": true
   },
-  "sendSurvey": "[Somali] Send survey",
-  "@sendSurvey": {
-    "x-mt": true
-  },
+  "sendSurvey": "Dir Survey",
   "surveySentToUsers": "Survey sent to selected users",
   "@surveySentToUsers": {
     "x-mt": true
@@ -1197,22 +1092,10 @@
   "@leader": {
     "x-mt": true
   },
-  "leave": "[Somali] Leave",
-  "@leave": {
-    "x-mt": true
-  },
-  "remove": "[Somali] Remove",
-  "@remove": {
-    "x-mt": true
-  },
-  "makeLeader": "[Somali] Make leader",
-  "@makeLeader": {
-    "x-mt": true
-  },
-  "leftTeam": "[Somali] Left team",
-  "@leftTeam": {
-    "x-mt": true
-  },
+  "leave": "Ka Dib",
+  "remove": "Ka saar",
+  "makeLeader": "Gacan-siin",
+  "leftTeam": "Kooxda iska saaray",
   "memberRemoved": "[Somali] Member removed",
   "@memberRemoved": {
     "x-mt": true
@@ -1263,10 +1146,7 @@
   "@untitledTask": {
     "x-mt": true
   },
-  "addTask": "[Somali] Add task",
-  "@addTask": {
-    "x-mt": true
-  },
+  "addTask": "Ku dar xog",
   "editTask": "[Somali] Edit task",
   "@editTask": {
     "x-mt": true
@@ -1344,30 +1224,15 @@
   "@addResource": {
     "x-mt": true
   },
-  "editResource": "[Somali] Edit resource",
-  "@editResource": {
-    "x-mt": true
-  },
-  "resourceUpdated": "[Somali] Resource updated",
-  "@resourceUpdated": {
-    "x-mt": true
-  },
-  "resourceAddedToTeam": "[Somali] Resource added to team",
-  "@resourceAddedToTeam": {
-    "x-mt": true
-  },
+  "editResource": "Wax ka beddel kheyraadka",
+  "resourceUpdated": "Kheyraadka waa la cusboonaysiiyay",
+  "resourceAddedToTeam": "Khayraadka waxaa lagu daray kooxda",
   "descriptionIsRequired": "[Somali] Description is required",
   "@descriptionIsRequired": {
     "x-mt": true
   },
-  "levelIsRequired": "[Somali] Level is required",
-  "@levelIsRequired": {
-    "x-mt": true
-  },
-  "subjectIsRequired": "[Somali] Subject is required",
-  "@subjectIsRequired": {
-    "x-mt": true
-  },
+  "levelIsRequired": "Heerka waa loo baahan yahay",
+  "subjectIsRequired": "Mawduuca waa loo baahan yahay",
   "selectFile": "[Somali] Select a file",
   "@selectFile": {
     "x-mt": true
@@ -1380,10 +1245,7 @@
   "@privateResource": {
     "x-mt": true
   },
-  "saveChanges": "[Somali] Save changes",
-  "@saveChanges": {
-    "x-mt": true
-  },
+  "saveChanges": "Kaydi isbedelada",
   "selectOpenWith": "[Somali] Select open with",
   "@selectOpenWith": {
     "x-mt": true
@@ -1396,10 +1258,7 @@
   "@selectResourceType": {
     "x-mt": true
   },
-  "linkToLicense": "[Somali] Link to license",
-  "@linkToLicense": {
-    "x-mt": true
-  },
+  "linkToLicense": "Link to shatiga",
   "noResourcesToAdd": "[Somali] All available resources are already linked",
   "@noResourcesToAdd": {
     "x-mt": true
@@ -1412,10 +1271,7 @@
   "@noTeamCourses": {
     "x-mt": true
   },
-  "untitledCourse": "[Somali] Untitled course",
-  "@untitledCourse": {
-    "x-mt": true
-  },
+  "untitledCourse": "Koorso Aan Magac Lahayn",
   "addCourse": "[Somali] Add course",
   "@addCourse": {
     "x-mt": true
@@ -1436,24 +1292,15 @@
   "@noReports": {
     "x-mt": true
   },
-  "addReport": "[Somali] Add report",
-  "@addReport": {
-    "x-mt": true
-  },
+  "addReport": "Ku dar warbixin",
   "editReport": "[Somali] Edit report",
   "@editReport": {
     "x-mt": true
   },
   "archiveReport": "Arsiif",
-  "beginningBalance": "[Somali] Beginning balance",
-  "@beginningBalance": {
-    "x-mt": true
-  },
+  "beginningBalance": "Hadhsiga bilowga",
   "sales": "Iibka",
-  "otherIncome": "[Somali] Other income",
-  "@otherIncome": {
-    "x-mt": true
-  },
+  "otherIncome": "Dakhliga kale",
   "wages": "[Somali] Wages",
   "@wages": {
     "x-mt": true
@@ -1462,26 +1309,14 @@
   "@otherExpenses": {
     "x-mt": true
   },
-  "totalIncome": "[Somali] Total income",
-  "@totalIncome": {
-    "x-mt": true
-  },
-  "totalExpenses": "[Somali] Total expenses",
-  "@totalExpenses": {
-    "x-mt": true
-  },
+  "totalIncome": "Dakhliga Guud",
+  "totalExpenses": "Kharashaadka Guud",
   "profitLoss": "[Somali] Profit / loss",
   "@profitLoss": {
     "x-mt": true
   },
-  "endingBalance": "[Somali] Ending balance",
-  "@endingBalance": {
-    "x-mt": true
-  },
-  "negativeBalance": "[Somali] The current balance is negative!",
-  "@negativeBalance": {
-    "x-mt": true
-  },
+  "endingBalance": "Hadhsiga dhammaadka",
+  "negativeBalance": "Xalinta hanaanka hadda waa ka baxa!",
   "reportDateDetails": "[Somali] Report created on: {created} | Updated on: {updated}",
   "@reportDateDetails": {
     "x-mt": true
@@ -1491,10 +1326,7 @@
     "x-mt": true
   },
   "chat": "Sawir",
-  "newChat": "[Somali] New chat",
-  "@newChat": {
-    "x-mt": true
-  },
+  "newChat": "Wadahadal cusub",
   "searchChats": "[Somali] Search chats",
   "@searchChats": {
     "x-mt": true
@@ -1511,14 +1343,8 @@
   "@untitledChat": {
     "x-mt": true
   },
-  "fullConversationResponse": "[Somali] Full conversation response",
-  "@fullConversationResponse": {
-    "x-mt": true
-  },
-  "response": "[Somali] Response",
-  "@response": {
-    "x-mt": true
-  },
+  "fullConversationResponse": "Jawaabta wada hadalka oo dhameystiran",
+  "response": "Jawaab",
   "chatConversation": "[Somali] Conversation",
   "@chatConversation": {
     "x-mt": true
@@ -1556,10 +1382,7 @@
   "@feedbackNotFound": {
     "x-mt": true
   },
-  "feedbackSaved": "[Somali] Feedback saved",
-  "@feedbackSaved": {
-    "x-mt": true
-  },
+  "feedbackSaved": "Warbixinta lagu kayd geliyay",
   "isUrgent": "[Somali] Is this urgent?",
   "@isUrgent": {
     "x-mt": true
@@ -1580,14 +1403,11 @@
   "@pleaseEnterFeedback": {
     "x-mt": true
   },
-  "question": "Su\\'aal",
+  "question": "Su'aal",
   "bug": "Bug",
   "suggestion": "talo soo jeedin",
   "priority": "mudnaanta",
-  "openDate": "[Somali] Open date",
-  "@openDate": {
-    "x-mt": true
-  },
+  "openDate": "Taariikhda Furan",
   "replies": "[Somali] Replies",
   "@replies": {
     "x-mt": true
@@ -1604,10 +1424,7 @@
   "@takeTest": {
     "x-mt": true
   },
-  "recordSurvey": "[Somali] Record survey",
-  "@recordSurvey": {
-    "x-mt": true
-  },
+  "recordSurvey": "Gali suuragal",
   "react": "[Somali] React",
   "@react": {
     "x-mt": true
@@ -1673,14 +1490,8 @@
   },
   "community": "Bulshada",
   "communityLeaders": "Hogaamiyayaasha bulshada",
-  "nationLeaders": "[Somali] Nation Leaders",
-  "@nationLeaders": {
-    "x-mt": true
-  },
-  "ourVoices": "[Somali] Our Voices",
-  "@ourVoices": {
-    "x-mt": true
-  },
+  "nationLeaders": "Hoggaamiyeyaasha qaranka",
+  "ourVoices": "Codadkeena",
   "finances": "Maaliyadda",
   "reports": "warbixino",
   "transaction": "[Somali] Transaction",
@@ -1705,14 +1516,8 @@
     "x-mt": true
   },
   "date": "Taariikhda",
-  "fromDate": "[Somali] From date",
-  "@fromDate": {
-    "x-mt": true
-  },
-  "toDate": "[Somali] To date",
-  "@toDate": {
-    "x-mt": true
-  },
+  "fromDate": "Ka bilaabata taariikhda",
+  "toDate": "Ku egtahay taariikhda",
   "reset": "[Somali] Reset",
   "@reset": {
     "x-mt": true
@@ -1776,18 +1581,12 @@
   "@submitExam": {
     "x-mt": true
   },
-  "incorrectAnswer": "[Somali] Incorrect answer",
-  "@incorrectAnswer": {
-    "x-mt": true
-  },
+  "incorrectAnswer": "Jawaab aan sax ahayn, fadlan isku day",
   "correctAnswers": "[Somali] Correct",
   "@correctAnswers": {
     "x-mt": true
   },
-  "yourAnswer": "[Somali] Your answer",
-  "@yourAnswer": {
-    "x-mt": true
-  },
+  "yourAnswer": "Jawaabtaada",
   "previous": "Hore",
   "finish": "Dhammaad",
   "exitExam": "[Somali] Exit exam?",
@@ -1800,14 +1599,8 @@
   },
   "exit": "Ka Bax",
   "download": "Download",
-  "downloading": "[Somali] Downloading…",
-  "@downloading": {
-    "x-mt": true
-  },
-  "downloadFailed": "[Somali] Download failed.",
-  "@downloadFailed": {
-    "x-mt": true
-  },
+  "downloading": "Soo degsado.... \"",
+  "downloadFailed": "Soo dejintu way fashilantay.",
   "resourceNotDownloaded": "[Somali] This resource is not on your device yet.",
   "@resourceNotDownloaded": {
     "x-mt": true
@@ -1828,34 +1621,13 @@
   "@yourInformation": {
     "x-mt": true
   },
-  "showAdditionalFields": "[Somali] Show additional fields",
-  "@showAdditionalFields": {
-    "x-mt": true
-  },
-  "hideAdditionalFields": "[Somali] Hide additional fields",
-  "@hideAdditionalFields": {
-    "x-mt": true
-  },
-  "phoneNumber": "[Somali] Phone number",
-  "@phoneNumber": {
-    "x-mt": true
-  },
-  "birthDate": "[Somali] Birth date",
-  "@birthDate": {
-    "x-mt": true
-  },
-  "selectDate": "[Somali] Select date",
-  "@selectDate": {
-    "x-mt": true
-  },
-  "male": "[Somali] Male",
-  "@male": {
-    "x-mt": true
-  },
-  "female": "[Somali] Female",
-  "@female": {
-    "x-mt": true
-  },
+  "showAdditionalFields": "Muuji beeraha dheeraadka ah",
+  "hideAdditionalFields": "Qari beeraha dheeraadka ah",
+  "phoneNumber": "Telefoon Number",
+  "birthDate": "Taariikhda Dhalashada",
+  "selectDate": "Xulo Taariikhda",
+  "male": "Lab",
+  "female": "Naag",
   "yearOfBirth": "Sannadka dhalashada",
   "yearOfBirthRequired": "[Somali] Year of birth is required",
   "@yearOfBirthRequired": {
@@ -1869,18 +1641,12 @@
   "@yearBetween": {
     "x-mt": true
   },
-  "thankYouForTakingSurvey": "[Somali] Thank you for taking this survey",
-  "@thankYouForTakingSurvey": {
-    "x-mt": true
-  },
+  "thankYouForTakingSurvey": "Mahadsanid in aad iska soo qaatay suuragal",
   "errorSavingProfile": "[Somali] Error saving profile",
   "@errorSavingProfile": {
     "x-mt": true
   },
-  "videoPlayer": "[Somali] Video player",
-  "@videoPlayer": {
-    "x-mt": true
-  },
+  "videoPlayer": "Qalabka fiidyowga",
   "audioPlayer": "[Somali] Audio player",
   "@audioPlayer": {
     "x-mt": true
@@ -1899,18 +1665,12 @@
   "htmlEntryNotFound": "Faylka gelinta HTML lama helin",
   "errorOccurred": "Khalad: {error}",
   "openingResource": "Furaya: {title}",
-  "loadingMedia": "[Somali] Loading...",
-  "@loadingMedia": {
-    "x-mt": true
-  },
+  "loadingMedia": "Soo dejinta...",
   "resourceUnavailable": "[Somali] This resource is not available for offline viewing",
   "@resourceUnavailable": {
     "x-mt": true
   },
-  "healthRecordNotAvailable": "[Somali] Health record not available",
-  "@healthRecordNotAvailable": {
-    "x-mt": true
-  },
+  "healthRecordNotAvailable": "Diiwaanada Caafimaadka ma helayo",
   "updateHealth": "[Somali] Update health",
   "@updateHealth": {
     "x-mt": true
@@ -1923,18 +1683,9 @@
   "@healthProfile": {
     "x-mt": true
   },
-  "specialNeeds": "[Somali] Special needs",
-  "@specialNeeds": {
-    "x-mt": true
-  },
-  "otherNeeds": "[Somali] Other needs",
-  "@otherNeeds": {
-    "x-mt": true
-  },
-  "emergencyContact": "[Somali] Emergency contact",
-  "@emergencyContact": {
-    "x-mt": true
-  },
+  "specialNeeds": "Dib-u-xuso",
+  "otherNeeds": "Dib-u-heshiisi kale",
+  "emergencyContact": "Xiriirka Degdegga ah",
   "contactNumber": "[Somali] Contact number",
   "@contactNumber": {
     "x-mt": true
@@ -1973,10 +1724,7 @@
   "@personalInformation": {
     "x-mt": true
   },
-  "birthPlace": "[Somali] Birth place",
-  "@birthPlace": {
-    "x-mt": true
-  },
+  "birthPlace": "Meesha dhalashada",
   "contactName": "[Somali] Contact name",
   "@contactName": {
     "x-mt": true
@@ -2004,20 +1752,14 @@
   "allergies": "Alargada",
   "diagnosis": "Baaris",
   "medications": "Daaweynaha",
-  "immunizations": "[Somali] Immunizations",
-  "@immunizations": {
-    "x-mt": true
-  },
+  "immunizations": "Xallinta daryeelka",
   "treatments": "Dib u dhiska",
   "observations": "[Somali] Observations",
   "@observations": {
     "x-mt": true
   },
   "referrals": "Dabaqyo",
-  "labTests": "[Somali] Lab tests",
-  "@labTests": {
-    "x-mt": true
-  },
+  "labTests": "Baarista labada",
   "xrays": "X-ray",
   "conditions": "[Somali] Conditions",
   "@conditions": {
@@ -2031,10 +1773,7 @@
   "@healthRecordAdded": {
     "x-mt": true
   },
-  "selectHealthMember": "[Somali] Select member",
-  "@selectHealthMember": {
-    "x-mt": true
-  },
+  "selectHealthMember": "Dooro Xubin",
   "newPatient": "[Somali] New patient",
   "@newPatient": {
     "x-mt": true
@@ -2081,18 +1820,12 @@
   "@weightRangeError": {
     "x-mt": true
   },
-  "bloodPressureFormatError": "[Somali] Blood pressure should be systolic/diastolic",
-  "@bloodPressureFormatError": {
-    "x-mt": true
-  },
+  "bloodPressureFormatError": "Dhacdo dheecaanka waa in uu noocan yahay (systolic/diastolic)",
   "bloodPressureRangeError": "[Somali] Blood pressure must be between 60/40 and 300/200",
   "@bloodPressureRangeError": {
     "x-mt": true
   },
-  "bloodPressureNotNumbers": "[Somali] Systolic and diastolic must be numbers",
-  "@bloodPressureNotNumbers": {
-    "x-mt": true
-  },
+  "bloodPressureNotNumbers": "Dhacdo dheecaanka iyo dheecaanku waa in ay yihiin lambarka",
   "temp": "[Somali] Temp",
   "@temp": {
     "x-mt": true
@@ -2117,10 +1850,7 @@
   "@storageManagement": {
     "x-mt": true
   },
-  "storageTotalDownloaded": "[Somali] Total Downloaded",
-  "@storageTotalDownloaded": {
-    "x-mt": true
-  },
+  "storageTotalDownloaded": "Wadarta la soo dejiyay",
   "storageVideos": "Fiidiyowyada",
   "storageAudio": "Codka",
   "storagePdfs": "Dukumentiyada PDF",
@@ -2131,15 +1861,12 @@
   "@fileCountMany": {
     "x-mt": true
   },
-  "storageUnknownResource": "[Somali] Unknown resource",
-  "@storageUnknownResource": {
-    "x-mt": true
-  },
+  "storageUnknownResource": "Agabka Aan La Garanayn",
   "areYouSure": "Ma hubtaa?",
-  "cancelAddingExamination": "Are you sure you want to cancel adding examination? The data will be lost.",
-  "yesIWantToExit": "Yes, I want to exit.",
-  "inactiveMessage": "User not activated, please contact administrator or manager to activate your account.",
-  "submitFeedback": "Submit Feedback",
+  "cancelAddingExamination": "Ma hubtaa inaad rabto inaad tirtirto ku-darka imtixaanka? Xogtu way lumin doontaa.",
+  "yesIWantToExit": "Haa, waxaan rabaa inaan ka cabsado.",
+  "inactiveMessage": "Isticmalahu ma hawlgelin, fadlan la xidhiidh maamulaha ama maareeyaha si aad u hawlgeliso akoonkaaga.",
+  "submitFeedback": "Rajayn Qoraalka",
   "failedToDelete": "[Somali] Failed to delete: {error}",
   "@failedToDelete": {
     "x-mt": true
@@ -2168,10 +1895,7 @@
   "@noStorageUsed": {
     "x-mt": true
   },
-  "availableSpace": "[Somali] Available space",
-  "@availableSpace": {
-    "x-mt": true
-  },
+  "availableSpace": "Boos la heli karo",
   "freeUpSpace": "[Somali] Free up space",
   "@freeUpSpace": {
     "x-mt": true
@@ -2188,10 +1912,7 @@
   "@freeUpSpaceFailed": {
     "x-mt": true
   },
-  "enterUsername": "[Somali] Enter username",
-  "@enterUsername": {
-    "x-mt": true
-  },
+  "enterUsername": "Geli Magaca isticmaalaha",
   "enterPassword": "[Somali] Enter password",
   "@enterPassword": {
     "x-mt": true
@@ -2202,10 +1923,7 @@
   },
   "becomeMember": "noqo xubin",
   "toAccessThisFeatureBecomeAMember": "hadda waxaad tahay isticmaale marti ah. si aad u hesho helitaanka astaamahan, noqo xubin.",
-  "creatingMember": "[Somali] Creating member account...",
-  "@creatingMember": {
-    "x-mt": true
-  },
+  "creatingMember": "Abuuraya akoonka xubnaha...",
   "passwordsDoNotMatch": "Furayaasha sirta isma waafaqsana",
   "pleaseSelectGender": "Fadlan xulo jinsiga",
   "pleaseEnterPassword": "Fadlan geli ereyga sirta ah",
@@ -2243,34 +1961,19 @@
   "@courseNotStarted": {
     "x-mt": true
   },
-  "syncCompletedChallenge": "[Somali] Sync completed",
-  "@syncCompletedChallenge": {
-    "x-mt": true
-  },
+  "syncCompletedChallenge": "Dib-u-hagreeska la kahadsanayaa",
   "rememberSync": "Xusuusnow inaad la socodsiiso codsiga mobilka.",
   "challengeDialogTitle": "[Somali] Daily Challenge",
   "@challengeDialogTitle": {
     "x-mt": true
   },
-  "start": "[Somali] Start",
-  "@start": {
-    "x-mt": true
-  },
-  "continuation": "[Somali] Continue",
-  "@continuation": {
-    "x-mt": true
-  },
+  "start": "Bilow",
+  "continuation": "Sii wad",
   "plan": "Qorshe",
   "mission": "Mission & Adeegyada",
   "editPlan": "Wax ka beddel qorshaha",
-  "teamPlan": "[Somali] What is your team's plan?",
-  "@teamPlan": {
-    "x-mt": true
-  },
-  "entMission": "[Somali] What is your enterprise's Mission?",
-  "@entMission": {
-    "x-mt": true
-  },
+  "teamPlan": "Ninka kooxdaada waa maxay qorsheheeda?",
+  "entMission": "Nabadgelyada Beelahaada waa maxay?",
   "entServices": "Xidhiidhka Beelahaada waxay bixisaa?",
   "entRules": "Qawaanada Beelahaada waa maxay?",
   "noMissionDefined": "Beelaha waa maxay & adeegyadooda ma jirto.",
@@ -2278,10 +1981,7 @@
   "@noPlanDefined": {
     "x-mt": true
   },
-  "noDescriptionDefined": "[Somali] This team has no description defined.",
-  "@noDescriptionDefined": {
-    "x-mt": true
-  },
+  "noDescriptionDefined": "Kooxdani ma laha sharaxaad la cayimay.",
   "enterpriseName": "[Somali] Enterprise name",
   "@enterpriseName": {
     "x-mt": true
@@ -2301,10 +2001,7 @@
   "isPublic": "Ciidamo",
   "nameRequired": "Magacu waa loo baahan yahay",
   "nameIsRequired": "Fadlan geli magac",
-  "createdOn": "[Somali] Created on",
-  "@createdOn": {
-    "x-mt": true
-  },
+  "createdOn": "Lagu sameeyey",
   "courseDetails": "[Somali] Course Details",
   "@courseDetails": {
     "x-mt": true
@@ -2350,27 +2047,15 @@
     "x-mt": true
   },
   "mistakes": "Khalad",
-  "step": "[Somali] Step",
-  "@step": {
-    "x-mt": true
-  },
+  "step": "Tallaabo",
   "untitledResourceTitle": "[Somali] Untitled Resource",
   "@untitledResourceTitle": {
     "x-mt": true
   },
-  "author": "[Somali] Author",
-  "@author": {
-    "x-mt": true
-  },
+  "author": "Qoraaga",
   "publisher": "Daabace",
-  "license": "[Somali] License",
-  "@license": {
-    "x-mt": true
-  },
-  "addedBy": "[Somali] Added by",
-  "@addedBy": {
-    "x-mt": true
-  },
+  "license": "Shatiga",
+  "addedBy": "Waxaa ku daray",
   "resourceInformation": "[Somali] Resource Information",
   "@resourceInformation": {
     "x-mt": true
@@ -2383,10 +2068,7 @@
   "@mediaType": {
     "x-mt": true
   },
-  "resourceType": "[Somali] Resource Type",
-  "@resourceType": {
-    "x-mt": true
-  },
+  "resourceType": "Nooca Kheyraadka",
   "subject": "[Somali] Subject",
   "@subject": {
     "x-mt": true
@@ -2491,34 +2173,19 @@
   "@activitySummary": {
     "x-mt": true
   },
-  "lastLogin": "[Somali] Last login",
-  "@lastLogin": {
-    "x-mt": true
-  },
+  "lastLogin": "Gelitaankii Ugu Dambeeyay",
   "memberDetail": "[Somali] Member detail",
   "@memberDetail": {
     "x-mt": true
   },
-  "numberOfVisits": "[Somali] Number of visits",
-  "@numberOfVisits": {
-    "x-mt": true
-  },
+  "numberOfVisits": "Tirada booqashooyinka",
   "noLogoutRecord": "[Somali] No logout record found",
   "@noLogoutRecord": {
     "x-mt": true
   },
-  "totalVisits": "[Somali] Total visits",
-  "@totalVisits": {
-    "x-mt": true
-  },
-  "mostOpenedResource": "[Somali] Most opened resource",
-  "@mostOpenedResource": {
-    "x-mt": true
-  },
-  "numberOfResourcesOpened": "[Somali] Number of resources opened",
-  "@numberOfResourcesOpened": {
-    "x-mt": true
-  },
+  "totalVisits": "Tirada Booqashooyinka",
+  "mostOpenedResource": "Kheyraadka Ugu Badan ee La Furay",
+  "numberOfResourcesOpened": "Tirada Kheyraadka La Furay",
   "resourceOpenedTimes": "[Somali] {title} opened {count} times",
   "@resourceOpenedTimes": {
     "x-mt": true
@@ -2535,10 +2202,7 @@
   "@serverUnreachable": {
     "x-mt": true
   },
-  "serverChecking": "[Somali] Checking server",
-  "@serverChecking": {
-    "x-mt": true
-  },
+  "serverChecking": "Hubinta server-ka",
   "gridView": "Muuqaal shabag",
   "listView": "Muuqaal liis",
   "disclaimer": "soo Celinta",
@@ -2608,34 +2272,13 @@
       }
     }
   },
-  "textSize": "[Somali] Text size",
-  "@textSize": {
-    "x-mt": true
-  },
-  "selectTextSize": "[Somali] Select text size",
-  "@selectTextSize": {
-    "x-mt": true
-  },
-  "textSizeSmall": "[Somali] Small",
-  "@textSizeSmall": {
-    "x-mt": true
-  },
-  "textSizeMedium": "[Somali] Medium",
-  "@textSizeMedium": {
-    "x-mt": true
-  },
-  "textSizeLarge": "[Somali] Large",
-  "@textSizeLarge": {
-    "x-mt": true
-  },
-  "resetApp": "[Somali] Reset app",
-  "@resetApp": {
-    "x-mt": true
-  },
-  "clearAllDataConfirm": "[Somali] Are you sure you want to clear all data?",
-  "@clearAllDataConfirm": {
-    "x-mt": true
-  },
+  "textSize": "Cabbirka qoraalka",
+  "selectTextSize": "Dooro Cabbirka Qoraalka",
+  "textSizeSmall": "Yar",
+  "textSizeMedium": "Dhexdhexaad",
+  "textSizeLarge": "Weyn",
+  "resetApp": "Isku day App-ka",
+  "clearAllDataConfirm": "Ma hubtaa inaad diiwaangelisid dhammaan xogta?",
   "dataCleared": "[Somali] All data cleared",
   "@dataCleared": {
     "x-mt": true
@@ -2645,5 +2288,10 @@
     "x-mt": true
   },
   "resourceTitleAlreadyExists": "Kheyraad leh cinwaankan hore ayuu u jiray",
-  "failedToUpdateResource": "Cusbooneysiin kheyraadka waxay ku guuldareysatay"
+  "failedToUpdateResource": "Cusbooneysiin kheyraadka waxay ku guuldareysatay",
+  "unableToAddHealthRecord": "Lama helayno diiwaan caafimaad",
+  "summaryOfAchievements": "Dulmar guulo - Si kooban u soo koob guushaada oo hoos ku dar agabka la xiriira",
+  "myGoalsDescription": "Hadafyadayda - Waa maxay yoolalkaaga 10-ka sano ee soo socda?",
+  "myPurposeDescription": "Ujeedadayda - Waa maxay himilooyinkaaga waxbarasho iyo kuwa xirfadeed?",
+  "pleaseAnswerToContinue": "Fadlan dooro / qor jawaabtaada si aad u sii wadato"
 }
