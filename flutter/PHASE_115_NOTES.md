@@ -428,3 +428,10 @@ New keys in `app_en.arb` only, each with its `@` placeholder block where it
 takes one: `commentsUnavailable`, `visitsCount` (`{count}`),
 `leaderboardUnavailable`, `confirmLeaveTeam`, `teamDocuments`. The five locale
 files are Lane B's.
+
+## 12. Gate
+
+`dart format --output=none --set-exit-if-changed lib test` clean.
+`flutter analyze` — no issues.
+`flutter test` — **1860 pass**, against 1801 at the branch base: exactly the 59
+new tests, no regressions.
