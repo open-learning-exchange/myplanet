@@ -23,13 +23,11 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
-import androidx.lifecycle.lifecycleScope
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewFeature
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
 import java.net.URLConnection
@@ -37,7 +35,6 @@ import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityWebViewBinding
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.ui.ratings.RatingsFragment
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ServerConfigUtils
@@ -50,7 +47,9 @@ class WebViewActivity : AppCompatActivity() {
     @Inject
     lateinit var userRepository: UserRepository
     private val viewModel: ResourceViewerViewModel by viewModels()
-    private var backNavigationHandled = false
+    private val ratingPrompter by lazy {
+        ResourceRatingPrompter(this, userRepository, viewModel)
+    }
     private lateinit var link: String
     private val trustedHosts by lazy {
         ServerConfigUtils.getTrustedServerHosts()
@@ -158,36 +157,12 @@ class WebViewActivity : AppCompatActivity() {
     }
 
     private fun handleBackNavigation() {
-        if (backNavigationHandled) return
-        val resourceId = intent.getStringExtra("RESOURCE_ID")
-        val title = activityWebViewBinding.contentWebView.webTitle.text.toString().ifBlank {
-            intent.getStringExtra("title") ?: ""
-        }
-
-        if (!resourceId.isNullOrBlank()) {
-            lifecycleScope.launch {
-                val userId = userRepository.getUserModel()?.id?.takeIf { it.isNotBlank() }
-                if (userId == null) {
-                    finish()
-                    return@launch
-                }
-
-                if (backNavigationHandled) return@launch
-                backNavigationHandled = true
-
-                val showDialog = viewModel.shouldShowResourceRatingDialog(userId, resourceId)
-                if (showDialog && !supportFragmentManager.isStateSaved) {
-                    val dialog = RatingsFragment.newInstance("resource", resourceId, title)
-                    dialog.setOnDismissListener { finish() }
-                    viewModel.setRatingPrompted(userId, resourceId)
-                    dialog.show(supportFragmentManager, RatingsFragment.TAG)
-                } else {
-                    finish()
-                }
-            }
-        } else {
-            finish()
-        }
+        ratingPrompter.handleBackNavigation(
+            resourceId = intent.getStringExtra("RESOURCE_ID"),
+            title = activityWebViewBinding.contentWebView.webTitle.text.toString().ifBlank {
+                intent.getStringExtra("title") ?: ""
+            },
+        )
     }
 
     private fun setWebClient() {

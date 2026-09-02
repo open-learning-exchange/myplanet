@@ -9,6 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
 import org.ole.planet.myplanet.model.MyLibrary
@@ -37,6 +38,8 @@ class ResourceViewerViewModel @Inject constructor(
         val hasRated = try {
             val summary = ratingsRepository.getRatingSummary("resource", resourceId, userId)
             summary.userRating != null || summary.existingRating != null
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             false
         }
