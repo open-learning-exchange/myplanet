@@ -171,9 +171,21 @@ Map<String, String> _readStringsXml(String path) {
     final name = element.getAttribute('name');
     if (name == null) continue;
     if (element.getAttribute('translatable') == 'false') continue;
-    result[name] = element.innerText;
+    result[name] = _unquote(element.innerText);
   }
   return result;
+}
+
+/// Strips Android's whitespace-preserving quoting.
+///
+/// `<string name="x">"Select resources: "</string>` is the XML way to keep a
+/// trailing space; the quotes are not part of the value. Reading `innerText`
+/// verbatim carried them into the `.arb`, and the app then displayed them.
+String _unquote(String raw) {
+  if (raw.length > 1 && raw.startsWith('"') && raw.endsWith('"')) {
+    return raw.substring(1, raw.length - 1);
+  }
+  return raw;
 }
 
 String _camelCase(String snakeCase) {

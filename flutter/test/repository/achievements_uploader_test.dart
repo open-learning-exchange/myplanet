@@ -184,19 +184,48 @@ void main() {
     },
   );
 
-  test('handler abandons when the ledger has no couch id', () async {
+  test('handler PUTs a never-synced ledger to its derived id', () async {
+    // The state the edit screen actually produces: `getOrInitialize` creates
+    // the row with an empty couch id, and nothing fills it in before the
+    // first upload. Kotlin's `_id` is the derived id, so this is the PUT that
+    // creates the document — it used to be rejected as carrying no id, which
+    // meant a first-time achievement never reached the server.
     await repository.update(
       'ada@earth',
-      const AchievementInput(achievementsJson: '[]'),
+      const AchievementInput(achievementsJson: '[{"title":"First"}]'),
     );
+
+    stubPut(const NetworkSuccess({'id': 'ada@earth', 'rev': '1-r'}));
 
     await uploader.queuePending(config: config);
     final outcomes = await drainer().drain();
-    expect(outcomes, [OutboxOutcome.abandoned]);
-    expect(
-      (await database.achievementDao.getById('ada@earth'))?.uploaded,
-      isFalse,
+
+    expect(outcomes, [OutboxOutcome.completed]);
+    verify(
+      () => api.putJsonObject(
+        '${AchievementsUploader.endpointFor(config)}/achievements/ada@earth',
+        any(),
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).called(1);
+    final row = await database.achievementDao.getById('ada@earth');
+    expect(row?.uploaded, isTrue);
+    expect(row?.couchId, 'ada@earth');
+    expect(row?.rev, '1-r');
+  });
+
+  test('handler abandons a payload that names no document', () async {
+    // The guard still matters for a row an older build left in the outbox
+    // with an empty `_id`.
+    await outbox.enqueue(
+      uploadType: AchievementsUploader.type,
+      itemId: 'ada@earth',
+      endpoint: AchievementsUploader.endpointFor(config),
+      payload: const {'_id': ''},
     );
+
+    final outcomes = await drainer().drain();
+    expect(outcomes, [OutboxOutcome.abandoned]);
   });
 
   test('handler surfaces failure when the ledger PUT fails', () async {
