@@ -141,7 +141,7 @@ class SyncManager @Inject constructor(
         try {
 
             initializeSync()
-            
+
             syncTimeLogger.startProcess("shelf_push")
             pushCurrentUserShelf()
             syncTimeLogger.endProcess("shelf_push")
