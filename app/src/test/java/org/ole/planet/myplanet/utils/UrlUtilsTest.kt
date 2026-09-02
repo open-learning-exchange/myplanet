@@ -296,6 +296,48 @@ class UrlUtilsTest {
     }
 
     @Test
+    fun testGetUserInfo_nullInput() {
+        val (user, pass) = UrlUtils.getUserInfo(null)
+        assertEquals("", user)
+        assertEquals("", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_emptyInput() {
+        val (user, pass) = UrlUtils.getUserInfo("")
+        assertEquals("", user)
+        assertEquals("", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_validUsernameAndPassword() {
+        val (user, pass) = UrlUtils.getUserInfo("admin:secret")
+        assertEquals("admin", user)
+        assertEquals("secret", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_noColon() {
+        val (user, pass) = UrlUtils.getUserInfo("admin")
+        assertEquals("", user)
+        assertEquals("", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_colonWithoutPassword() {
+        val (user, pass) = UrlUtils.getUserInfo("admin:")
+        assertEquals("", user)
+        assertEquals("", pass)
+    }
+
+    @Test
+    fun testGetUserInfo_multipleColons() {
+        val (user, pass) = UrlUtils.getUserInfo("admin:secret:extra")
+        assertEquals("admin", user)
+        assertEquals("secret", pass)
+    }
+
+    @Test
     fun `header memoizes basic auth header and invalidates when requested`() {
         every { mockSpm.getUrlUser() } returns "user1"
         every { mockSpm.getUrlPwd() } returns "pass1"

@@ -16,8 +16,8 @@ import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
-import java.lang.reflect.Field
-import javax.inject.Provider
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -109,10 +109,15 @@ class DownloadServiceOnDownloadCompleteTest {
         every { mockBuilder.build() } returns mockk()
         setDeclaredField("notificationBuilder", service, mockBuilder)
 
-        // Act
-        val method = DownloadService::class.java.getDeclaredMethod("onDownloadComplete", String::class.java)
+        val method = DownloadService::class.java.getDeclaredMethod(
+            "onDownloadComplete", String::class.java, Continuation::class.java
+        )
         method.isAccessible = true
-        method.invoke(service, url)
+        val completion = object : Continuation<Any?> {
+            override val context = EmptyCoroutineContext
+            override fun resumeWith(result: Result<Any?>) {}
+        }
+        method.invoke(service, url, completion)
 
         // PRIORITY_DOWNLOADS_KEY should be read exactly once (used for both remainingPriority
         // and the priority portion of getRemainingCount, rather than twice).

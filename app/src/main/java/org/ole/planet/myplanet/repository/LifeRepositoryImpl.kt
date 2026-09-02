@@ -35,7 +35,7 @@ class LifeRepositoryImpl @Inject constructor(
         val managedLives = myLifeDao.getByIds(listOf(myLifeId))
         val rawUserId = managedLives.firstOrNull()?.userId ?: sharedPrefManager.getUserId()
         val effectiveUserId = normalizeUserId(rawUserId)
-        val updatedLives = getMyLifeByUserId(effectiveUserId, ensureLatest = true)
+        val updatedLives = getMyLifeByUserId(effectiveUserId)
         cacheMyLifeItems(effectiveUserId ?: "--", updatedLives)
     }
 
@@ -65,7 +65,7 @@ class LifeRepositoryImpl @Inject constructor(
         if (changed.isNotEmpty()) {
             myLifeDao.update(changed)
         }
-        val updatedLives = getMyLifeByUserId(effectiveUserId, ensureLatest = true)
+        val updatedLives = getMyLifeByUserId(effectiveUserId)
         cacheMyLifeItems(effectiveUserId ?: "--", updatedLives)
     }
 
@@ -76,8 +76,13 @@ class LifeRepositoryImpl @Inject constructor(
             ?: listOf(userId, isVisible, weight)
     }
 
-    override suspend fun getMyLifeByUserId(userId: String?, ensureLatest: Boolean): List<MyLife> {
+    override suspend fun getMyLifeByUserId(userId: String?, defaultItems: List<MyLife>): List<MyLife> {
         val effectiveUserId = normalizeUserId(userId)
+        val items = myLifeDao.getByUserId(effectiveUserId).distinctBy { it.dedupKey() }.sortedBy { it.weight }
+        if (items.isNotEmpty() || defaultItems.isEmpty()) {
+            return items
+        }
+        seedMyLifeIfEmpty(effectiveUserId, defaultItems)
         return myLifeDao.getByUserId(effectiveUserId).distinctBy { it.dedupKey() }.sortedBy { it.weight }
     }
 
@@ -106,17 +111,21 @@ class LifeRepositoryImpl @Inject constructor(
                 null
             }
             if (cached != null) {
-                return cached.filter { it.isVisible }.map { item ->
-                    MyLife(item.imageId, effectiveUserId, item.title).apply {
-                        isVisible = item.isVisible
-                        weight = item.weight
+                return cached.mapNotNull { item ->
+                    if (item.isVisible) {
+                        MyLife(item.imageId, effectiveUserId, item.title).apply {
+                            isVisible = item.isVisible
+                            weight = item.weight
+                        }
+                    } else {
+                        null
                     }
                 }.sortedBy { it.weight }
             }
         }
 
         seedMyLifeIfEmpty(effectiveUserId, seedBase)
-        val seeded = getMyLifeByUserId(effectiveUserId, ensureLatest = true)
+        val seeded = getMyLifeByUserId(effectiveUserId)
         cacheMyLifeItems(cacheKey, seeded)
         return seeded.filter { it.isVisible }.sortedBy { it.weight }
     }

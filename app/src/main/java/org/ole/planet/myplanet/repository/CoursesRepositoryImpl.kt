@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.util.Base64
+import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Calendar
@@ -52,6 +53,7 @@ class CoursesRepositoryImpl @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val tagsRepository: TagsRepository,
     private val ratingsRepository: RatingsRepository,
+    private val resourcesRepository: ResourcesRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val certificationDao: CertificationDao,
     private val courseDao: CourseDao,
@@ -810,7 +812,7 @@ class CoursesRepositoryImpl @Inject constructor(
         }
 
         val correctChoiceArray = JsonUtils.getJsonArray("correctChoice", questionJson)
-        return if (correctChoiceArray.size() > 0) {
+        return if (!correctChoiceArray.isEmpty()) {
             correctChoiceArray.map { resolveChoiceValue(it.asString) }
         } else {
             val correctChoice = JsonUtils.getString("correctChoice", questionJson)
@@ -851,6 +853,16 @@ class CoursesRepositoryImpl @Inject constructor(
         }
         if (libraries.isNotEmpty()) {
             myLibraryDao.upsertAll(libraries)
+            libraries.forEach { library ->
+                if (library.mediaType == "HTML" && library.resourceLocalAddress.isNullOrBlank()) {
+                    val resourceId = library.resourceId ?: return@forEach
+                    try {
+                        resourcesRepository.reconcileHtmlResourceOffline(resourceId)
+                    } catch (e: Exception) {
+                        Log.w("CoursesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
+                    }
+                }
+            }
         }
     }
 

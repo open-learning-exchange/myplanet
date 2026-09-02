@@ -1,11 +1,13 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import android.util.Log
 import androidx.sqlite.db.SimpleSQLiteQuery
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
+import java.io.IOException
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
@@ -230,7 +232,29 @@ class ResourcesRepositoryImpl @Inject constructor(
             return Result.failure(Exception("Resource title already exists"))
         }
 
+        val sourceFile = request.resourceUrl?.let { File(it) }
+        if (sourceFile == null || !sourceFile.exists()) {
+            return Result.failure(Exception("Resource file not found"))
+        }
+
+        val externalFilesDir = FileUtils.getExternalFilesDir(context)
+            ?: return Result.failure(Exception("Storage unavailable"))
+
         val id = UUID.randomUUID().toString()
+        val filename = sourceFile.name
+        val destinationFile = FileUtils.getLibraryFile(externalFilesDir, id, filename)
+
+        try {
+            withContext(dispatcherProvider.io) {
+                destinationFile.parentFile?.mkdirs()
+                sourceFile.copyTo(destinationFile, overwrite = true)
+            }
+        } catch (e: IOException) {
+            return Result.failure(e)
+        } catch (e: SecurityException) {
+            return Result.failure(e)
+        }
+
         val resource = MyLibrary().apply {
             this.id = id
             this.title = title
@@ -251,9 +275,9 @@ class ResourcesRepositoryImpl @Inject constructor(
             this.level = request.levels?.toList() ?: emptyList()
             this.createdDate = Calendar.getInstance().timeInMillis
             this.resourceFor = request.resourceFor?.toList() ?: emptyList()
-            this.resourceLocalAddress = request.resourceUrl
+            this.resourceLocalAddress = filename
             this.resourceOffline = true
-            this.filename = request.resourceUrl?.let { it.substring(it.lastIndexOf("/")) }
+            this.filename = filename
             this.isPrivate = request.isPrivateTeamResource
             this.privateFor = if (request.isPrivateTeamResource) request.teamId else null
 
@@ -262,7 +286,12 @@ class ResourcesRepositoryImpl @Inject constructor(
             }
         }
 
-        saveLibraryItem(resource)
+        try {
+            saveLibraryItem(resource)
+        } catch (e: Exception) {
+            destinationFile.delete()
+            return Result.failure(e)
+        }
 
         if (!request.isPrivateTeamResource) {
             markResourceAdded(request.userId, resource.id)
@@ -321,8 +350,15 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun markResourceOfflineByUrl(url: String) {
         val localAddress = FileUtils.getFileNameFromUrl(url)
+        val resourceId = FileUtils.getIdFromUrl(url)
+        val relativePath = FileUtils.getResourceRelativePathFromUrl(url)
+
         if (localAddress.isNotBlank()) {
             markResourceOfflineByLocalAddress(localAddress)
+        }
+
+        if (resourceId.isNotBlank()) {
+            markResourceOfflineByResourceId(resourceId, relativePath)
         }
     }
 
@@ -335,6 +371,41 @@ class ResourcesRepositoryImpl @Inject constructor(
         if (results.isNotEmpty()) {
             myLibraryDao.upsertAll(results)
         }
+    }
+
+    override suspend fun reconcileHtmlResourceOffline(resourceId: String) {
+        val library = myLibraryDao.getByResourceId(resourceId) ?: return
+        if (library.isResourceOffline()) {
+            return
+        }
+        val entryFile = library.openWhichFile?.takeIf { it.isNotBlank() } ?: "index.html"
+        val directory = File(MainApplication.context.getExternalFilesDir(null), "ole/$resourceId")
+        val entryExists = withContext(dispatcherProvider.io) {
+            FileUtils.resolveHtmlEntryFile(directory, entryFile)?.exists() == true
+        }
+        if (!entryExists) {
+            return
+        }
+        library.resourceOffline = true
+        library.downloadedRev = library._rev
+        if (library.resourceLocalAddress.isNullOrBlank()) {
+            library.resourceLocalAddress = entryFile
+        }
+        myLibraryDao.upsert(library)
+    }
+
+    private suspend fun markResourceOfflineByResourceId(resourceId: String, relativePath: String) {
+        val library = myLibraryDao.getByResourceId(resourceId) ?: return
+        val entryFile = library.openWhichFile?.takeIf { it.isNotBlank() } ?: "index.html"
+        if (relativePath != entryFile) {
+            return
+        }
+        library.resourceOffline = true
+        library.downloadedRev = library._rev
+        if (library.resourceLocalAddress.isNullOrBlank()) {
+            library.resourceLocalAddress = relativePath
+        }
+        myLibraryDao.upsert(library)
     }
 
     override fun getRecentResources(userId: String): Flow<List<MyLibrary>> {
@@ -586,6 +657,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
         if (librariesToUpsert.isNotEmpty()) {
             myLibraryDao.upsertAll(librariesToUpsert)
+            reconcileHtmlLibraries(librariesToUpsert)
         }
         return processedCount
     }
@@ -628,8 +700,23 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
         if (librariesToUpsert.isNotEmpty()) {
             myLibraryDao.upsertAll(librariesToUpsert)
+            reconcileHtmlLibraries(librariesToUpsert)
         }
         return savedIds
+    }
+
+    // Detects HTML resources already present on disk from a prior install/sync that never got a resourceLocalAddress.
+    private suspend fun reconcileHtmlLibraries(libraries: List<MyLibrary>) {
+        libraries.forEach { library ->
+            if (library.mediaType == "HTML" && library.resourceLocalAddress.isNullOrBlank()) {
+                val resourceId = library.resourceId ?: return@forEach
+                try {
+                    reconcileHtmlResourceOffline(resourceId)
+                } catch (e: Exception) {
+                    Log.w("ResourcesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
+                }
+            }
+        }
     }
 
     private suspend fun getResourceRatingsBulk(ids: List<String>, userId: String?): Map<String?, JsonObject> {

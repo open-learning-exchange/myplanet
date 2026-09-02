@@ -37,12 +37,7 @@ class LifeViewModel @Inject constructor(
         viewModelScope.launch {
             val list = withContext(dispatcherProvider.io) {
                 val userId = resolveUserId()
-                var myLifeList = lifeRepository.getMyLifeByUserId(userId)
-                if (myLifeList.isEmpty()) {
-                    lifeRepository.seedMyLifeIfEmpty(userId, MyLife.defaultItems(userId, context::getString))
-                    myLifeList = lifeRepository.getMyLifeByUserId(userId)
-                }
-                myLifeList
+                lifeRepository.getMyLifeByUserId(userId, MyLife.defaultItems(userId, context::getString))
             }
             _myLifeList.value = list
         }

@@ -502,6 +502,171 @@ class NotificationsRepositoryImplTest {
     }
 
     @Test
+    fun `getTaskTeamNamesByTaskIds maps task ids to team names and skips empty team ids`() = runTest {
+        val tasks = listOf(
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task1"
+                title = "Task One"
+                teamId = "teamA"
+            },
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task2"
+                title = "Task Two"
+                teamId = "teamB"
+            },
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task3"
+                title = "Task Three"
+                teamId = ""
+            },
+        )
+        coEvery { teamTaskDao.getByIds(listOf("task1", "task2", "task3")) } returns tasks
+        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf(
+            "teamA" to "Alpha Team",
+            "teamB" to "Beta Team",
+        )
+
+        val result = repository.getTaskTeamNamesByTaskIds(listOf("task1", "task2", "task3"))
+
+        assertEquals("Alpha Team", result["task1"])
+        assertEquals("Beta Team", result["task2"])
+        assertFalse(result.containsKey("task3"))
+    }
+
+    @Test
+    fun `getTaskTeamNamesByTaskIds deduplicates team ids passed to repository`() = runTest {
+        val tasks = listOf(
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task1"
+                title = "Task One"
+                teamId = "teamA"
+            },
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task2"
+                title = "Task Two"
+                teamId = "teamA"
+            },
+        )
+        coEvery { teamTaskDao.getByIds(listOf("task1", "task2")) } returns tasks
+        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf("teamA" to "Alpha Team")
+
+        repository.getTaskTeamNamesByTaskIds(listOf("task1", "task2"))
+
+        coVerify { teamsRepository.get().getTeamNamesByIds(listOf("teamA")) }
+    }
+
+    @Test
+    fun `getTaskTeamNamesByTaskTitles maps task titles to team names and deduplicates team ids`() = runTest {
+        val tasks = listOf(
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task1"
+                title = "Task One"
+                teamId = "teamA"
+            },
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task2"
+                title = "Task Two"
+                teamId = "teamA"
+            },
+            org.ole.planet.myplanet.model.TeamTask().apply {
+                id = "task3"
+                title = "Task Three"
+                teamId = null
+            },
+        )
+        coEvery { teamTaskDao.getByTitles(listOf("Task One", "Task Two", "Task Three")) } returns tasks
+        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf("teamA" to "Alpha Team")
+
+        val result = repository.getTaskTeamNamesByTaskTitles(listOf("Task One", "Task Two", "Task Three"))
+
+        assertEquals("Alpha Team", result["Task One"])
+        assertEquals("Alpha Team", result["Task Two"])
+        assertFalse(result.containsKey("Task Three"))
+        coVerify { teamsRepository.get().getTeamNamesByIds(listOf("teamA")) }
+    }
+
+    @Test
+    fun `getJoinRequestDetailsBatch maps related ids to requester and team names`() = runTest {
+        val joinRequests = listOf(
+            JoinRequestInfo("jr1", "teamA", "user1"),
+            JoinRequestInfo("jr2", "teamB", "user2"),
+        )
+        coEvery { teamsRepository.get().getJoinRequestsInfo(listOf("jr1", "jr2")) } returns joinRequests
+        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf(
+            "teamA" to "Alpha Team",
+            "teamB" to "Beta Team",
+        )
+        val users = listOf(
+            org.ole.planet.myplanet.model.UserEntity(id = "user1", name = "Alice"),
+            org.ole.planet.myplanet.model.UserEntity(id = "user2", name = "Bob"),
+        )
+        coEvery { userRepository.get().getUsersByIds(any()) } returns users
+
+        val result = repository.getJoinRequestDetailsBatch(listOf("jr1", "jr2"))
+
+        assertEquals(Pair("Alice", "Alpha Team"), result["jr1"])
+        assertEquals(Pair("Bob", "Beta Team"), result["jr2"])
+    }
+
+    @Test
+    fun `getJoinRequestDetailsBatch falls back to Unknown for missing user and team`() = runTest {
+        val joinRequests = listOf(
+            JoinRequestInfo("jr1", "", ""),
+            JoinRequestInfo("jr2", "teamB", "user2"),
+        )
+        coEvery { teamsRepository.get().getJoinRequestsInfo(listOf("jr1", "jr2")) } returns joinRequests
+        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf("teamB" to "Beta Team")
+        coEvery { userRepository.get().getUsersByIds(any()) } returns emptyList()
+
+        val result = repository.getJoinRequestDetailsBatch(listOf("jr1", "jr2"))
+
+        assertEquals(Pair("Unknown User", "Unknown Team"), result["jr1"])
+        assertEquals(Pair("Unknown User", "Beta Team"), result["jr2"])
+    }
+
+    @Test
+    fun `getJoinRequestDetailsBatch deduplicates user ids and team ids`() = runTest {
+        val joinRequests = listOf(
+            JoinRequestInfo("jr1", "teamA", "user1"),
+            JoinRequestInfo("jr2", "teamA", "user1"),
+        )
+        coEvery { teamsRepository.get().getJoinRequestsInfo(listOf("jr1", "jr2")) } returns joinRequests
+        coEvery { teamsRepository.get().getTeamNamesByIds(any()) } returns mapOf("teamA" to "Alpha Team")
+        coEvery { userRepository.get().getUsersByIds(any()) } returns listOf(
+            org.ole.planet.myplanet.model.UserEntity(id = "user1", name = "Alice"),
+        )
+
+        repository.getJoinRequestDetailsBatch(listOf("jr1", "jr2"))
+
+        coVerify { teamsRepository.get().getTeamNamesByIds(listOf("teamA")) }
+        coVerify { userRepository.get().getUsersByIds(listOf("user1")) }
+    }
+
+    @Test
+    fun `getJoinRequestDetailsBatch with empty list returns empty map`() = runTest {
+        val result = repository.getJoinRequestDetailsBatch(emptyList())
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { teamsRepository.get().getJoinRequestsInfo(any()) }
+    }
+
+    @Test
+    fun `getTaskTeamNamesByTaskIds with empty list returns empty map`() = runTest {
+        val result = repository.getTaskTeamNamesByTaskIds(emptyList())
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { teamTaskDao.getByIds(any()) }
+    }
+
+    @Test
+    fun `getTaskTeamNamesByTaskTitles with empty list returns empty map`() = runTest {
+        val result = repository.getTaskTeamNamesByTaskTitles(emptyList())
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { teamTaskDao.getByTitles(any()) }
+    }
+
+    @Test
     fun `resolveType passes through known types lowercased`() {
         assertEquals("join_request", repository.resolveType("join_request", "anything", null))
         assertEquals("task", repository.resolveType("Task", "anything", null))
@@ -527,6 +692,22 @@ class NotificationsRepositoryImplTest {
     @Test
     fun `resolveType classifies raw team type as join request via subType regardless of message language`() {
         assertEquals("join_request", repository.resolveType("team", "غير معروف", "join_request"))
+    }
+
+    @Test
+    fun `resolveType lowercases subType`() {
+        assertEquals("join_request", repository.resolveType("team", "غير معروف", "Join_Request"))
+    }
+
+    @Test
+    fun `resolveType classifies raw team type case insensitively`() {
+        assertEquals("team_join", repository.resolveType("Team", "Has sido eliminado de \"test GT\" team.", null))
+    }
+
+    @Test
+    fun `resolveType classifies raw newTask and newResource types case insensitively`() {
+        assertEquals("task", repository.resolveType("NEWTASK", "¿qué?", null))
+        assertEquals("resource", repository.resolveType("newresource", "¿qué?", null))
     }
 
     @Test
