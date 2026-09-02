@@ -17,15 +17,17 @@ void main() {
       expect(mapping.survey.stepId.value, 'step-2');
     });
 
-    test('leaves courseId null when absent', () {
+    test('leaves courseId and stepId out of the write when absent', () {
       final mapping = SurveyMapper.fromDoc({
         '_id': 'survey-1',
         'type': 'surveys',
         'name': 'Standalone survey',
       });
       expect(mapping, isNotNull);
-      expect(mapping!.survey.courseId.value, isNull);
-      expect(mapping.survey.stepId.value, isNull);
+      // `Value.absent()`, so an upsert of the standalone document does not
+      // clear a join written by the `courses` walk — see the fromDoc note.
+      expect(mapping!.survey.courseId.present, isFalse);
+      expect(mapping.survey.stepId.present, isFalse);
     });
 
     test('returns null for non-survey documents', () {
@@ -96,6 +98,69 @@ void main() {
       });
 
       expect(mapping!.questions.single.header.value, 'Which service?');
+    });
+  });
+
+  group('SurveyMapper.fromCourseDoc', () {
+    String stepIdFor(String courseId, int index) => '$courseId:$index';
+
+    // Phase 113. A survey attached to a course step arrives embedded in the
+    // course document, exactly as a test does — `collectRoomExam(stepJson,
+    // "survey", …)`. The port had no counterpart, so `SurveyDao.getByStepId`
+    // could never match and the step view's Take Survey button was dead.
+    test('attaches the step survey to the step id the course mapper mints', () {
+      final mapped = SurveyMapper.fromCourseDoc({
+        '_id': 'course-1',
+        'steps': [
+          {
+            'stepTitle': 'Step one',
+            'survey': {
+              '_id': 'survey-1',
+              'type': 'surveys',
+              'name': 'How was it?',
+              'questions': [
+                {'id': 's1', 'title': 'Rate the step', 'type': 'input'},
+              ],
+            },
+          },
+        ],
+      }, stepIdFor: stepIdFor);
+
+      expect(mapped, hasLength(1));
+      expect(mapped.single.survey.id.value, 'survey-1');
+      expect(mapped.single.survey.stepId.value, 'course-1:0');
+      expect(mapped.single.survey.courseId.value, 'course-1');
+      expect(mapped.single.questions.single.surveyId.value, 'survey-1');
+      expect(mapped.single.questions.single.header.value, 'Rate the step');
+    });
+
+    test('files a type-less step survey as a survey', () {
+      // Kotlin types it `"survey"` — singular — and then only queries for
+      // `"surveys"`, so such a row is reachable from neither button. See the
+      // divergence note on `fromCourseDoc`.
+      final mapped = SurveyMapper.fromCourseDoc({
+        '_id': 'course-1',
+        'steps': [
+          {
+            'survey': {'_id': 'survey-1', 'name': 'How was it?'},
+          },
+        ],
+      }, stepIdFor: stepIdFor);
+      expect(mapped, hasLength(1));
+      expect(mapped.single.survey.stepId.value, 'course-1:0');
+    });
+  });
+
+  group('SurveyMapper.fromDoc, step columns', () {
+    test('records stepId and courseId when the document has them', () {
+      final mapped = SurveyMapper.fromDoc({
+        '_id': 'survey-1',
+        'type': 'surveys',
+        'courseId': 'course-1',
+        'stepId': 'step-1',
+      })!;
+      expect(mapped.survey.stepId.value, 'step-1');
+      expect(mapped.survey.courseId.value, 'course-1');
     });
   });
 }

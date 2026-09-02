@@ -187,7 +187,7 @@ class _StepTile extends ConsumerWidget {
     // A step's exam is the only way into `TakeExamScreen`, exactly as
     // `TakeCourseFragment` is in the Kotlin. Without this the exam screen was
     // routable but unreachable.
-    final exam = ref.watch(examForStepProvider(step.id));
+    final exam = ref.watch(stepExamProvider(step.id));
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -222,14 +222,6 @@ class _StepTile extends ConsumerWidget {
     );
   }
 }
-
-/// The graded exam attached to a course step, if the sync brought one down.
-final examForStepProvider = FutureProvider.family<ExamRow?, String>((
-  ref,
-  stepId,
-) async {
-  return ref.watch(examDaoProvider).getByStepId(stepId);
-});
 
 /// The cover banner on the course detail screen — port of
 /// `CourseDetailFragment.setCourseCover`.

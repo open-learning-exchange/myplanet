@@ -265,13 +265,22 @@ final courseStepsProvider = StreamProvider.family<List<CourseStepRow>, String>((
 });
 
 /// The exam attached to a course step, or null if the step has none. Drives
-/// the "Take test" button on the step content view.
+/// the "Take test" button on the step content view and on the course detail
+/// screen — both entries into `TakeExamScreen`.
+///
+/// Port of `ExamDao.getFirstByStepId`, which is `… WHERE stepId = :stepId
+/// LIMIT 1`. Deliberately **not** `ExamDao.getByStepId`, whose
+/// `getSingleOrNull` throws when two rows share a step id: the `courses` walk
+/// writes one exam per step, but a standalone `exams` document is free to carry
+/// a `stepId` key naming the same step, and a screen that throws out of `build`
+/// is worse than one that takes the first row, which is what the Kotlin does.
 final stepExamProvider = FutureProvider.family<ExamRow?, String>((
   ref,
   stepId,
 ) async {
   final db = ref.watch(appDatabaseProvider);
-  return db.examDao.getByStepId(stepId);
+  final rows = await db.examDao.getByStepIds([stepId]);
+  return rows.isEmpty ? null : rows.first;
 });
 
 /// The surveys attached to a course step. Drives the "Take survey" button.

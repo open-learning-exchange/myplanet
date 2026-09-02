@@ -154,4 +154,120 @@ void main() {
     expect(converter.fromSql(converter.toSql(choices)), choices);
     expect(converter.fromSql(''), isEmpty);
   });
+
+  group('the exams-database walk', () {
+    // Phase 113. The rule is Kotlin's: `bulkInsertExamsFromSync` parses every
+    // document of that database, and the split between a survey and a test is
+    // made later by `type`. Requiring `type == 'exam'` dropped every real
+    // course test, which carries `type: "courses"`
+    // (`CoursesRepositoryImpl.kt:196`, `:530`).
+    test('accepts a course test, which is typed "courses" and not "exam"', () {
+      final mapped = ExamMapper.fromDoc({
+        '_id': 'exam-1',
+        'type': 'courses',
+        'name': 'Unit 1 test',
+      });
+      expect(mapped, isNotNull);
+      expect(mapped!.exam.id.value, 'exam-1');
+    });
+
+    test('accepts a document with no type at all', () {
+      expect(ExamMapper.fromDoc({'_id': 'exam-1'}), isNotNull);
+    });
+
+    test('leaves stepId and courseId absent when the document omits them', () {
+      // Not `Value(null)`: this walk is called with a blank step and course id
+      // (`SurveysRepositoryImpl.kt:387`), so writing null would erase the join
+      // the `courses` walk owns on the next re-pull.
+      final mapped = ExamMapper.fromDoc({'_id': 'exam-1', 'type': 'courses'})!;
+      expect(mapped.exam.stepId.present, isFalse);
+      expect(mapped.exam.courseId.present, isFalse);
+    });
+
+    test('still records stepId and courseId when the document has them', () {
+      final mapped = ExamMapper.fromDoc(examDoc())!;
+      expect(mapped.exam.stepId.value, 'step-1');
+      expect(mapped.exam.courseId.value, 'course-1');
+    });
+  });
+
+  group('ExamMapper.fromCourseDoc', () {
+    String stepIdFor(String courseId, int index) => '$courseId:$index';
+
+    Map<String, dynamic> courseDoc({
+      Map<String, dynamic>? exam,
+      int steps = 1,
+    }) => {
+      '_id': 'course-1',
+      'courseTitle': 'Water',
+      'steps': [
+        for (var i = 0; i < steps; i++)
+          {'stepTitle': 'Step $i', if (i == 0 && exam != null) 'exam': exam},
+      ],
+    };
+
+    test('attaches the step exam to the step id the course mapper mints', () {
+      final mapped = ExamMapper.fromCourseDoc(
+        courseDoc(
+          exam: {
+            '_id': 'exam-1',
+            'type': 'courses',
+            'name': 'Step test',
+            'questions': [
+              {'id': 'q1', 'title': 'Which is wet?', 'type': 'input'},
+            ],
+          },
+        ),
+        stepIdFor: stepIdFor,
+      );
+
+      expect(mapped, hasLength(1));
+      expect(mapped.single.exam.id.value, 'exam-1');
+      expect(mapped.single.exam.stepId.value, 'course-1:0');
+      expect(mapped.single.exam.courseId.value, 'course-1');
+      expect(mapped.single.exam.noOfQuestions.value, 1);
+      expect(mapped.single.questions.single.examId.value, 'exam-1');
+    });
+
+    test('falls back to a derived id when the embedded exam has none', () {
+      final mapped = ExamMapper.fromCourseDoc(
+        courseDoc(exam: {'name': 'Step test'}),
+        stepIdFor: stepIdFor,
+      );
+      expect(mapped.single.exam.id.value, 'course-1-course-1:0-exam');
+    });
+
+    test("a question's body falls back to its title", () {
+      // `collectRoomExam` does this; `insertExamQuestions` does not.
+      final mapped = ExamMapper.fromCourseDoc(
+        courseDoc(
+          exam: {
+            '_id': 'exam-1',
+            'questions': [
+              {'id': 'q1', 'title': 'Which is wet?', 'type': 'input'},
+            ],
+          },
+        ),
+        stepIdFor: stepIdFor,
+      );
+      expect(mapped.single.questions.single.body.value, 'Which is wet?');
+    });
+
+    test('leaves a step exam that declares itself a survey alone', () {
+      expect(
+        ExamMapper.fromCourseDoc(
+          courseDoc(exam: {'_id': 's-1', 'type': 'surveys'}),
+          stepIdFor: stepIdFor,
+        ),
+        isEmpty,
+      );
+    });
+
+    test('a step with no exam produces nothing', () {
+      expect(
+        ExamMapper.fromCourseDoc(courseDoc(steps: 3), stepIdFor: stepIdFor),
+        isEmpty,
+      );
+    });
+  });
 }

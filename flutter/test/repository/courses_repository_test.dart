@@ -5,6 +5,8 @@ import 'package:myplanet/core/network/network_result.dart';
 import 'package:myplanet/core/sync/sync_result.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/data/local/course_mapper.dart';
+import 'package:myplanet/data/local/exam_mapper.dart';
 import 'package:myplanet/repository/courses_repository.dart';
 
 class MockPlanetApi extends Mock implements PlanetApi {}
@@ -25,7 +27,13 @@ void main() {
   setUp(() {
     db = AppDatabase.memory();
     api = MockPlanetApi();
-    repository = CoursesRepository(api, db.courseDao, db.removedLogDao);
+    repository = CoursesRepository(
+      api,
+      db.courseDao,
+      db.removedLogDao,
+      db.examDao,
+      db.surveyDao,
+    );
   });
 
   tearDown(() => db.close());
@@ -455,6 +463,139 @@ void main() {
       await repository.sync(config: config);
 
       expect(await repository.gradeLevels(), ['Primary']);
+    });
+  });
+
+  group('step exams and surveys (Phase 113)', () {
+    // A course document shaped the way Planet writes one: the step's test and
+    // survey are embedded under `steps[i].exam` / `steps[i].survey`, and the
+    // test carries `type: "courses"`. Nothing in the port used to read them,
+    // so nothing ever wrote an `exams.stepId` equal to a `course_steps.id` and
+    // both entries into the exam screen were dead.
+    Map<String, dynamic> courseWithStepAssessments() => {
+      '_id': 'course-1',
+      'courseTitle': 'Water',
+      'steps': [
+        {'stepTitle': 'Intro'},
+        {
+          'stepTitle': 'Assessment',
+          'exam': {
+            '_id': 'exam-1',
+            'type': 'courses',
+            'name': 'Step two test',
+            'totalMarks': 10,
+            'questions': [
+              {
+                'id': 'q1',
+                'title': 'Which is wet?',
+                'type': 'select',
+                'choices': [
+                  {'id': 'water', 'text': 'Water'},
+                  {'id': 'sand', 'text': 'Sand'},
+                ],
+                'correctChoice': 'water',
+              },
+            ],
+          },
+          'survey': {
+            '_id': 'survey-1',
+            'type': 'surveys',
+            'name': 'Step two survey',
+            'questions': [
+              {'id': 's1', 'title': 'How was it?', 'type': 'input'},
+            ],
+          },
+        },
+      ],
+    };
+
+    test('the courses walk makes the step exam reachable by step id', () async {
+      stubCount(1);
+      stubPage(0, 50, [
+        {'id': 'course-1', 'doc': courseWithStepAssessments()},
+      ]);
+
+      final result = await repository.sync(config: config);
+      expect(result, isA<SyncComplete>());
+
+      final stepId = CourseMapper.stepIdFor('course-1', 1);
+      final exam = await db.examDao.getByStepId(stepId);
+      expect(exam, isNotNull);
+      expect(exam!.id, 'exam-1');
+      expect(exam.courseId, 'course-1');
+      expect(exam.totalMarks, 10);
+      expect(await db.examDao.questionsFor('exam-1'), hasLength(1));
+
+      // The join `ProgressRepository.courseProgress` builds is the same one.
+      final byStepIds = await db.examDao.getByStepIds([
+        for (final step in await db.courseDao.getSteps('course-1')) step.id,
+      ]);
+      expect(byStepIds.single.id, 'exam-1');
+    });
+
+    test('the courses walk makes the step survey reachable too', () async {
+      stubCount(1);
+      stubPage(0, 50, [
+        {'id': 'course-1', 'doc': courseWithStepAssessments()},
+      ]);
+
+      await repository.sync(config: config);
+
+      final stepId = CourseMapper.stepIdFor('course-1', 1);
+      final surveys = await db.surveyDao.getByStepId(stepId);
+      expect(surveys, hasLength(1));
+      expect(surveys.single.id, 'survey-1');
+      expect(await db.surveyDao.questionsFor('survey-1'), hasLength(1));
+      // The step's test must not have landed in the surveys table.
+      expect(await db.surveyDao.getById('exam-1'), isNull);
+      expect(await db.examDao.getById('survey-1'), isNull);
+    });
+
+    test(
+      're-pulling the standalone exam document keeps the step join',
+      () async {
+        // The two walks write the same row: the `courses` walk knows the step,
+        // the `exams` walk does not. Kotlin's `@Upsert` is a full-row replace,
+        // so whichever landed last decided whether the exam still knew its
+        // step. Writing the columns absent removes the race.
+        stubCount(1);
+        stubPage(0, 50, [
+          {'id': 'course-1', 'doc': courseWithStepAssessments()},
+        ]);
+        await repository.sync(config: config);
+
+        final mapped = ExamMapper.fromDoc({
+          '_id': 'exam-1',
+          '_rev': '2-b',
+          'type': 'courses',
+          'name': 'Step two test',
+        })!;
+        await db.examDao.upsertAll([mapped.exam], {'exam-1': mapped.questions});
+
+        final exam = await db.examDao.getByStepId(
+          CourseMapper.stepIdFor('course-1', 1),
+        );
+        expect(exam, isNotNull);
+        expect(exam!.rev, '2-b', reason: 'the re-pull still updates the row');
+      },
+    );
+
+    test('a step with no assessments writes no exam or survey', () async {
+      stubCount(1);
+      stubPage(0, 50, [
+        row(
+          'course-1',
+          'Water',
+          steps: [
+            {'stepTitle': 'Intro'},
+          ],
+        ),
+      ]);
+
+      await repository.sync(config: config);
+
+      expect(await db.examDao.getByStepIds(['course-1:0']), isEmpty);
+      expect(await db.surveyDao.getByStepId('course-1:0'), isEmpty);
     });
   });
 }

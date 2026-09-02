@@ -7,6 +7,8 @@ import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
 import '../data/local/course_mapper.dart';
+import '../data/local/exam_mapper.dart';
+import '../data/local/survey_mapper.dart';
 import 'shelf_repository.dart';
 
 /// Port of the courses read/sync surface of
@@ -22,7 +24,13 @@ import 'shelf_repository.dart';
 /// SQLite and never touch the network; [sync] refills the table and Drift pushes
 /// the change into any open stream.
 class CoursesRepository {
-  CoursesRepository(this._api, this._dao, this._removedLogDao);
+  CoursesRepository(
+    this._api,
+    this._dao,
+    this._removedLogDao,
+    this._examDao,
+    this._surveyDao,
+  );
 
   /// Courses carry embedded steps, so documents are much larger than resource
   /// documents — a smaller starting page keeps the first batch responsive on a
@@ -32,6 +40,13 @@ class CoursesRepository {
   final PlanetApi _api;
   final CourseDao _dao;
   final RemovedLogDao _removedLogDao;
+
+  /// A course document carries its steps' tests and surveys inline, so the
+  /// `courses` walk writes the exams and surveys tables too — see
+  /// [ExamMapper.fromCourseDoc]. Kotlin's `upsertRoomCoursesFromSync` does the
+  /// same, through `examDao`/`questionDao` (`CoursesRepositoryImpl.kt:650-651`).
+  final ExamDao _examDao;
+  final SurveyDao _surveyDao;
 
   /// Reactive, offline-first course list.
   Stream<List<CourseRow>> watchCourses({
@@ -171,6 +186,10 @@ class CoursesRepository {
 
       final courseRows = <CoursesCompanion>[];
       final stepRows = <CourseStepsCompanion>[];
+      final examRows = <ExamsCompanion>[];
+      final examQuestionRows = <String, List<ExamQuestionsCompanion>>{};
+      final surveyRows = <SurveysCompanion>[];
+      final surveyQuestionRows = <String, List<SurveyQuestionsCompanion>>{};
 
       // Preserve shelf membership already recorded for these courses. Fetched
       // once per page rather than once per row — a large sync would otherwise
@@ -203,10 +222,35 @@ class CoursesRepository {
         courseRows.add(parsed.course);
         stepRows.addAll(parsed.steps);
         savedIds.add(parsed.course.id.value);
+
+        for (final mapping in ExamMapper.fromCourseDoc(
+          doc,
+          stepIdFor: CourseMapper.stepIdFor,
+        )) {
+          examRows.add(mapping.exam);
+          examQuestionRows[mapping.exam.id.value] = mapping.questions;
+        }
+        for (final mapping in SurveyMapper.fromCourseDoc(
+          doc,
+          stepIdFor: CourseMapper.stepIdFor,
+        )) {
+          surveyRows.add(mapping.survey);
+          surveyQuestionRows[mapping.survey.id.value] = mapping.questions;
+        }
       }
 
       if (courseRows.isNotEmpty) {
         await _dao.upsertAll(courseRows, stepRows);
+      }
+      // Written after the courses, so a step row always exists by the time an
+      // exam claims to belong to it. Neither table is pruned here: the `exams`
+      // database walk owns their `deleteNotIn`, and a course test is a document
+      // of that database too, so it is in that walk's keep set.
+      if (examRows.isNotEmpty) {
+        await _examDao.upsertAll(examRows, examQuestionRows);
+      }
+      if (surveyRows.isNotEmpty) {
+        await _surveyDao.upsertAll(surveyRows, surveyQuestionRows);
       }
 
       skip += rows.length;
