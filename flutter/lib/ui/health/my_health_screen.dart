@@ -10,6 +10,7 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/health_provider.dart';
 import '../../providers/sync_state.dart';
+import '../../repository/personals_uploader.dart';
 import '../components/profile_avatar.dart';
 import '../router.dart';
 
@@ -101,7 +102,16 @@ class MyHealthScreen extends ConsumerWidget {
     final user = detail.user;
     final record = detail.record;
     if (user == null) {
-      return Center(child: Text(l10n.healthRecordNotAvailable));
+      // The banner rides above this branch as well: a record the server refused
+      // is a device-level fact, and "no patient resolves" is exactly the state
+      // a clinician might be in while wondering where a reading went.
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const _RejectedUploadsBanner(),
+          Center(child: Text(l10n.healthRecordNotAvailable)),
+        ],
+      );
     }
     final data = HealthData(
       user: user,
@@ -143,10 +153,16 @@ class _HealthContent extends ConsumerWidget {
       // gesture is the port's own addition — which is why its handler was
       // left empty, advertising a refresh that did nothing. Re-reading the
       // selected patient is what the affordance already promises.
-      onRefresh: () => ref.read(patientDetailProvider.notifier).refresh(),
+      onRefresh: () async {
+        // The banner is a `FutureProvider`, so the pull that re-reads the
+        // patient is also what re-reads whether anything is still stranded.
+        ref.invalidate(rejectedHealthRecordCountProvider);
+        await ref.read(patientDetailProvider.notifier).refresh();
+      },
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          const _RejectedUploadsBanner(),
           // User profile card
           Card(
             child: Padding(
@@ -385,6 +401,67 @@ String resolveCreatorName(String createdBy, Map<String, UserRow> userMap) {
     return createdBy.substring(colonIndex + 1).trim();
   }
   return createdBy;
+}
+
+/// Says so when the server has permanently refused a health record.
+///
+/// The port's own addition — Kotlin has no counterpart, because it has no
+/// permanent-failure state to report: `uploadHealthData` swallows the response
+/// and leaves `isUpdated` set, so the next sync tries again forever. The outbox
+/// classifies a 409 as permanent instead, which is a better model of what a
+/// conflict means and a worse one to keep silent about. A reading that never
+/// reached the server, on a screen that shows it as recorded, is the failure
+/// this app can least afford.
+class _RejectedUploadsBanner extends ConsumerWidget {
+  const _RejectedUploadsBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final count = ref.watch(rejectedHealthRecordCountProvider).valueOrNull ?? 0;
+    if (count == 0) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    return Card(
+      color: theme.colorScheme.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Icon(Icons.cloud_off, color: theme.colorScheme.onErrorContainer),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                l10n.healthRecordsRejected(count),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onErrorContainer,
+                ),
+              ),
+            ),
+            // Without this the banner names a problem and offers nothing to do
+            // about it. Kotlin re-attempts every failed health upload on every
+            // sync (`UploadToShelfService.uploadHealth`, run from
+            // `AutoSyncWorker`); the port re-queues only from the examination
+            // form's own save, so a stranded record has no other way back onto
+            // the wire. `enqueue` ignores the abandoned row and writes a fresh
+            // pending one, so this is a real retry rather than a nudge.
+            TextButton(onPressed: () => _retry(ref), child: Text(l10n.retry)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _retry(WidgetRef ref) async {
+    await ref.read(healthQueueProvider).queuePending();
+    final config = ref.read(serverConfigProvider);
+    if (config != null) {
+      await ref
+          .read(outboxDrainerProvider)
+          .drain(authHeader: PersonalsUploader.authHeaderFor(config));
+    }
+    ref.invalidate(rejectedHealthRecordCountProvider);
+  }
 }
 
 class _InfoRow extends StatelessWidget {

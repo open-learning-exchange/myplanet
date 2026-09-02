@@ -150,6 +150,14 @@ class OutboxRepository {
   /// succeeded carried the superseded body.
   Future<void> markCompleted(String id) => _dao.deleteIfInProgress(id);
 
+  /// Forgets the permanent failures recorded against one item.
+  ///
+  /// Called when a later attempt succeeds: [enqueue] never reuses an abandoned
+  /// row and [cleanup] has no caller, so the record of a refusal outlives the
+  /// refusal itself unless something withdraws it.
+  Future<int> clearAbandoned(String uploadType, String itemId) =>
+      _dao.clearAbandonedFor(uploadType, itemId);
+
   /// Records a failed attempt and schedules the next one.
   ///
   /// Returns `true` if the operation was abandoned — attempts exhausted, or the

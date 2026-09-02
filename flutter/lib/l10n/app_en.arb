@@ -956,6 +956,14 @@
   "loadingMedia": "Loading...",
   "resourceUnavailable": "This resource is not available for offline viewing",
   "healthRecordNotAvailable": "Health record not available",
+  "healthRecordsRejected": "{count, plural, =1{1 health record could not be sent to the server. It is still stored on this device.} other{{count} health records could not be sent to the server. They are still stored on this device.}}",
+  "@healthRecordsRejected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "updateHealth": "Update health",
   "addHealthRecord": "Add health record",
   "healthProfile": "Health profile",
