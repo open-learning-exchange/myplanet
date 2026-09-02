@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/utils/constants.dart';
+import '../../core/utils/time_utils.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/session_provider.dart';
@@ -10,11 +12,32 @@ import '../../providers/session_provider.dart';
 ///
 /// Collects user profile information (name, email, phone, DOB, gender, level)
 /// and saves it to the submission. Shown after completing team surveys.
+///
+/// Nothing here is prefilled from the signed-in profile, which is deliberate:
+/// `initViews` sets no text on any field and the gender radios ship unchecked,
+/// so `createUserProfile` reports only what the respondent typed. The port did
+/// carry a prefill, but it was dead — it read `sessionProvider` with
+/// `valueOrNull` from `initState`, where that provider is still loading — and
+/// waking it up is worse than leaving it: `sessionProvider` restores the last
+/// account that logged in on the device, so a public-survey link opened by a
+/// stranger would have filed the device owner's name, email, phone, birth date,
+/// language, level and gender as the respondent's own answers.
+///
+/// [showAdditionalFields] is the negation of the Kotlin's `shouldHideElements`,
+/// and the two modes are worth stating because they are easy to invert:
+///
+///  * `false` (Kotlin `shouldHideElements = true`, which is what
+///    `BaseExamFragment` passes for every survey that is not from the nation)
+///    opens on the **year of birth** with the four extra blocks hidden, and
+///    offers the `btnAdditionalFields` toggle so the respondent can open them.
+///  * `true` opens on the full profile form, and the toggle is **gone** —
+///    `initViews`'s else branch hides it outright, because that mode has no
+///    second state to toggle into.
 class UserInformationScreen extends ConsumerStatefulWidget {
   const UserInformationScreen({
     required this.submissionId,
     this.teamId,
-    this.showAdditionalFields = true,
+    this.showAdditionalFields = false,
     super.key,
   });
 
@@ -36,53 +59,20 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
   final _phoneController = TextEditingController();
   final _yobController = TextEditingController();
 
-  String? _selectedLanguage;
-  String? _selectedLevel;
+  /// The Kotlin spinners have no empty entry, so `selectedItem` is item 0
+  /// until the respondent picks another — which is why `createUserProfile`
+  /// always carries a language and a level in full-fields mode.
+  String? _selectedLanguage = memberLanguages.first;
+  String? _selectedLevel = memberLevels.first;
   String? _selectedGender;
   DateTime? _dateOfBirth;
   bool _showAdditionalFields = false;
   bool _isSubmitting = false;
 
-  static const _languages = [
-    'English',
-    'Spanish',
-    'French',
-    'Arabic',
-    'Nepali',
-    'Somali',
-  ];
-  static const _levels = [
-    'Primary',
-    'Secondary',
-    'High School',
-    'College',
-    'University',
-  ];
-
   @override
   void initState() {
     super.initState();
     _showAdditionalFields = widget.showAdditionalFields;
-    _loadUserData();
-  }
-
-  void _loadUserData() {
-    final user = ref.read(sessionProvider).valueOrNull;
-    if (user != null) {
-      _fnameController.text = user.firstName ?? '';
-      _mnameController.text = user.middleName ?? '';
-      _lnameController.text = user.lastName ?? '';
-      _emailController.text = user.email ?? '';
-      _phoneController.text = user.phoneNumber ?? '';
-      _selectedLanguage = user.language;
-      _selectedLevel = user.level;
-      _selectedGender = user.gender;
-      if (user.dob?.isNotEmpty == true) {
-        try {
-          _dateOfBirth = DateTime.parse(user.dob!);
-        } catch (_) {}
-      }
-    }
   }
 
   @override
@@ -107,7 +97,7 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            if (widget.showAdditionalFields) ...[
+            if (!widget.showAdditionalFields) ...[
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: OutlinedButton(
@@ -137,11 +127,12 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
 
             // Year of birth (simplified mode)
             if (_showAdditionalFields) ...[
+              // No validator: `createUserProfile` requires nothing but the
+              // year of birth, so a respondent who gives no name still
+              // completes the survey.
               _buildTextField(
                 controller: _fnameController,
                 label: l10n.firstName,
-                validator: (v) =>
-                    v?.isEmpty == true ? l10n.fieldRequired : null,
               ),
               _buildTextField(
                 controller: _mnameController,
@@ -159,7 +150,7 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
               _buildDropdown(
                 value: _selectedLanguage,
                 label: l10n.language,
-                items: _languages,
+                items: memberLanguages,
                 onChanged: (v) => setState(() => _selectedLanguage = v),
               ),
               _buildTextField(
@@ -217,7 +208,7 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
               _buildDropdown(
                 value: _selectedLevel,
                 label: l10n.level,
-                items: _levels,
+                items: memberLevels,
                 onChanged: (v) => setState(() => _selectedLevel = v),
               ),
             ],
@@ -284,6 +275,9 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: DropdownButtonFormField<String>(
+        // `initialValue` is read once per form-field state, so the prefill
+        // arriving after the first build needs a fresh key to show up.
+        key: ValueKey('$label:$value'),
         initialValue: value,
         decoration: InputDecoration(
           labelText: label,
@@ -348,8 +342,11 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
     }
   }
 
+  /// Pops `false`: `PublicSurveyActivity.uploadCompletedSubmission` looks for
+  /// a submission the dialog marked `complete`, so a cancel leaves Kotlin with
+  /// nothing to POST.
   Future<void> _cancel(BuildContext context) async {
-    Navigator.of(context).pop();
+    Navigator.of(context).pop(false);
   }
 
   Future<void> _submit(BuildContext context) async {
@@ -361,24 +358,21 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
 
     setState(() => _isSubmitting = true);
 
-    // Build the user profile JSON
-    final profile = {
-      if (_showAdditionalFields) ...{
-        'firstName': _fnameController.text.trim(),
-        'middleName': _mnameController.text.trim(),
-        'lastName': _lnameController.text.trim(),
-        'email': _emailController.text.trim(),
-        'phoneNumber': _phoneController.text.trim(),
-        'language': _selectedLanguage ?? '',
-        'level': _selectedLevel ?? '',
-        if (_dateOfBirth != null)
-          'dob':
-              '${_dateOfBirth!.year}-${_dateOfBirth!.month.toString().padLeft(2, '0')}-${_dateOfBirth!.day.toString().padLeft(2, '0')}',
-      } else ...{
-        'birthYear': _yobController.text.trim(),
-      },
-      'gender': _selectedGender ?? '',
-    };
+    // `createUserProfile` reads a field only while its block is on screen.
+    final profile = userSurveyProfileJson(
+      fname: _showAdditionalFields ? _fnameController.text.trim() : '',
+      mName: _showAdditionalFields ? _mnameController.text.trim() : '',
+      lname: _showAdditionalFields ? _lnameController.text.trim() : '',
+      email: _showAdditionalFields ? _emailController.text.trim() : '',
+      language: _showAdditionalFields ? (_selectedLanguage ?? '') : '',
+      phone: _showAdditionalFields ? _phoneController.text.trim() : '',
+      dob: _showAdditionalFields && _dateOfBirth != null
+          ? _isoDay(_dateOfBirth!)
+          : '',
+      yob: _showAdditionalFields ? '' : _yobController.text.trim(),
+      level: _showAdditionalFields ? (_selectedLevel ?? '') : '',
+      gender: _selectedGender ?? '',
+    );
 
     try {
       // Mirrors `saveSubmission` → `markSubmissionComplete` in the Kotlin.
@@ -387,18 +381,12 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
       await ref
           .read(submissionsRepositoryProvider)
           .markSubmissionComplete(widget.submissionId, profile);
-      final config = ref.read(serverConfigProvider);
-      final user = ref.read(sessionProvider).valueOrNull;
-      if (config != null && user != null) {
-        await ref
-            .read(submissionsUploaderProvider)
-            .queuePending(config: config, userId: user.id);
-      }
+      await _queueUpload();
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(l10n.thankYouForTakingSurvey)));
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (context.mounted) {
@@ -412,4 +400,70 @@ class _UserInformationScreenState extends ConsumerState<UserInformationScreen> {
       }
     }
   }
+
+  /// The Kotlin's `onDismiss` hands a team survey to
+  /// `submissionsUploader.checkAvailableServer`; here the outbox carries it.
+  ///
+  /// Swallowed on purpose, and awaited on the session's **future** rather than
+  /// its `valueOrNull`: a screen that only reads `sessionProvider` sees it
+  /// still loading, and a failure to queue is not a failure to save — the
+  /// submission is already complete, and the next sync picks it up.
+  Future<void> _queueUpload() async {
+    try {
+      final config = ref.read(serverConfigProvider);
+      if (config == null) return;
+      final user = await ref.read(sessionProvider.future);
+      if (user == null) return;
+      await ref
+          .read(submissionsUploaderProvider)
+          .queuePending(config: config, userId: user.id);
+    } catch (_) {
+      // See above.
+    }
+  }
+
+  static String _isoDay(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
+}
+
+/// Port of `model/UserSurveyProfile.kt`'s `toJson()` — the document the Kotlin
+/// stores on the submission, and what `SubmissionsRepository.serialize` hands
+/// to CouchDB verbatim.
+///
+/// Three rules are easy to lose, and were: an empty field is **omitted**
+/// rather than sent as `""`; a birth date travels as `birthDate` in ISO-8601
+/// (not as the bare `dob` the picker produces) while a year of birth travels
+/// as an `age` in years (not as `birthYear`); and `betaEnabled` is always
+/// present.
+Map<String, dynamic> userSurveyProfileJson({
+  String fname = '',
+  String mName = '',
+  String lname = '',
+  String email = '',
+  String phone = '',
+  String dob = '',
+  String yob = '',
+  String level = '',
+  String gender = '',
+  String language = '',
+  DateTime? now,
+}) {
+  final user = <String, dynamic>{};
+  if (fname.isNotEmpty) user['firstName'] = fname;
+  if (mName.isNotEmpty) user['middleName'] = mName;
+  if (lname.isNotEmpty) user['lastName'] = lname;
+  if (email.isNotEmpty) user['email'] = email;
+  if (language.isNotEmpty) user['language'] = language;
+  if (phone.isNotEmpty) user['phoneNumber'] = phone;
+  if (dob.isNotEmpty) user['birthDate'] = TimeUtils.convertToISO8601(dob);
+  final birthYear = int.tryParse(yob);
+  if (birthYear != null) {
+    user['age'] = '${(now ?? DateTime.now()).year - birthYear}';
+  }
+  if (level.isNotEmpty) user['level'] = level;
+  if (gender.isNotEmpty) user['gender'] = gender;
+  user['betaEnabled'] = false;
+  return user;
 }

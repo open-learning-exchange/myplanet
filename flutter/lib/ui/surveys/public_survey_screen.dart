@@ -229,8 +229,8 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
           );
 
       if (!mounted) return;
-      await Navigator.of(context).push(
-        MaterialPageRoute<void>(
+      final saved = await Navigator.of(context).push<bool>(
+        MaterialPageRoute<bool>(
           builder: (_) => UserInformationScreen(
             submissionId: submissionId,
             teamId: widget.teamId,
@@ -239,7 +239,12 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
         ),
       );
 
-      if (!mounted) return;
+      // A cancelled profile step sends nothing, the way
+      // `PublicSurveyActivity.uploadCompletedSubmission` finds no `complete`
+      // submission to POST when the dialog is dismissed without saving. The
+      // answers stay on the device. (The port marks the draft `complete` on
+      // creation, so the status alone cannot carry this.)
+      if (!mounted || saved != true) return;
       final success = await ref
           .read(surveysRepositoryProvider)
           .submitPublicSurvey(

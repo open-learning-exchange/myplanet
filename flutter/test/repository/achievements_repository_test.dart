@@ -107,6 +107,36 @@ void main() {
     expect(doc['resumeFileName'], 'cv.pdf');
   });
 
+  test('serialize falls back to the derived id before the first sync', () {
+    // Kotlin's `Achievement._id` *is* the primary key — the derived
+    // `"$userId@$planetCode"` — so `serialize` always names a document and
+    // the first PUT creates `achievements/<that id>`. A ledger the user has
+    // just edited here has no couch id yet, and reading `couchId` alone
+    // emitted `'_id': ''`, which the outbox handler rejects.
+    final row = AchievementRow(
+      id: 'ada@earth',
+      purpose: '',
+      goals: '',
+      achievementsHeader: '',
+      sendToNation: false,
+      achievementsJson: '[]',
+      referencesJson: '[]',
+      linksJson: '[]',
+      otherInfoJson: '[]',
+      dateSortOrder: '',
+      createdOn: 'earth',
+      username: 'ada',
+      parentCode: 'earth',
+      couchId: '',
+      rev: '',
+      uploaded: false,
+      resumeFileName: '',
+    );
+    final doc = AchievementsRepository.serialize(row);
+    expect(doc['_id'], 'ada@earth');
+    expect(doc.containsKey('_rev'), isFalse);
+  });
+
   test('pendingUploads is the non-guest upload backlog', () async {
     await repository.update('a@earth', const AchievementInput());
     await repository.update('b@earth', const AchievementInput());
