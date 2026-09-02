@@ -257,5 +257,7 @@
   "selectManyCollections": "Seleccionar varias colecciones",
   "selected": "Seleccionado: ",
   "view": "ver",
-  "linkNotAvailable": "Enlace no disponible"
+  "linkNotAvailable": "Enlace no disponible",
+  "resourceTitleAlreadyExists": "Ya existe un recurso con este título",
+  "failedToUpdateResource": "Error al actualizar el recurso"
 }

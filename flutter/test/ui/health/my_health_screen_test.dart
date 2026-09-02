@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
@@ -52,6 +53,7 @@ void main() {
   Future<UserRow> seedPatient(
     AppDatabase db, {
     String id = 'user-a',
+    String? couchId,
     String? name = 'alice',
     String? firstName = 'Alice',
     String? lastName = 'Smith',
@@ -62,7 +64,9 @@ void main() {
     await db.userDao.upsert(
       UsersCompanion.insert(
         id: id,
-        couchId: Value(id),
+        // A member registered on this device keeps its local id and gains a
+        // `couchId` when the upload lands, so the two are not always equal.
+        couchId: Value(couchId ?? id),
         name: Value(name),
         firstName: Value(firstName),
         lastName: Value(lastName),
@@ -133,7 +137,12 @@ void main() {
           id: examId,
           userId: Value(examId),
           profileId: Value(userId),
-          creatorId: Value(exam['createdBy'] as String?),
+          // `saveData` sets `creatorId` to the patient's `health.userKey`,
+          // which `seedHealthRecord` keys as the patient id — the examiner
+          // lives in the encrypted `data`, not here. A test can override it.
+          creatorId: Value(
+            exam['creatorId'] as String? ?? exam['createdBy'] as String?,
+          ),
           temperature: Value((exam['temperature'] as num?)?.toDouble() ?? 37.0),
           pulse: Value(exam['pulse'] as int? ?? 72),
           height: const Value(170),
@@ -181,9 +190,16 @@ void main() {
           healthRepositoryProvider.overrideWith((ref) => repoFor(db)),
         ],
         pushTargets: {
-          '/health/add': (_) => const Scaffold(body: Text('add-health')),
-          '/health/examination': (_) =>
-              const Scaffold(body: Text('add-examination')),
+          // The query is rendered so a test can assert which patient the
+          // editors were handed.
+          '/health/add': (context) => Scaffold(
+            body: Text('add-health?${GoRouterState.of(context).uri.query}'),
+          ),
+          '/health/examination': (context) => Scaffold(
+            body: Text(
+              'add-examination?${GoRouterState.of(context).uri.query}',
+            ),
+          ),
         },
       ),
     );
@@ -345,6 +361,38 @@ void main() {
       expect(find.text('provider-1'), findsOneWidget);
     });
 
+    /// The examiner is `getString("createdBy", encrypted)` in
+    /// `submitExaminations` — inside the record's encrypted `data`. The
+    /// `creatorId` column is not it: `saveData` sets it to the patient's
+    /// `health.userKey`, so reading the examiner off the column named a cipher
+    /// key when it differed from the patient id, and reported a provider's
+    /// examination as a self-examination when it equalled it.
+    testWidgets('reads the examiner from the decrypted record', (tester) async {
+      final db = AppDatabase.memory();
+      final user = await seedPatient(db);
+      await seedHealthRecord(
+        db,
+        repoFor(db),
+        examinations: [
+          {
+            'temperature': 38.2,
+            'pulse': 88,
+            'createdBy': 'org.couchdb.user:provider-1',
+            // What the column actually carries: the patient's profile key.
+            'creatorId': 'user-a',
+          },
+        ],
+      );
+      await pumpScreen(tester, session: user, database: db);
+
+      // Reading the column instead would have made this card a
+      // self-examination and rendered no name at all. (The strip also carries
+      // a self-examination card for the profile row, which `seedHealthRecord`
+      // gives a `profileId` — the app's own profile row has none.)
+      await scrollTo(tester, find.text('provider-1'));
+      expect(find.text('provider-1'), findsOneWidget);
+    });
+
     /// Regression: the history strip was 140px tall, 8px short of a card
     /// carrying date, examiner, temperature, pulse, blood pressure and the
     /// has-info icon together — a `RenderFlex` overflow, which renders as the
@@ -408,6 +456,74 @@ void main() {
   });
 
   group('actions', () {
+    /// `showAlert`'s Edit is `putExtra("userId", mh._id)` — the profile row's
+    /// own id, the one that row was created under. The *user* row's `id` is
+    /// not interchangeable with it: for a member registered on this device the
+    /// two differ, and handing over the user id makes the form miss the
+    /// profile row, mint a second one under a new key, and drop the
+    /// examination it is editing out of the patient's record.
+    testWidgets('editing an examination carries the profile row id', (
+      tester,
+    ) async {
+      final db = AppDatabase.memory();
+      final user = await seedPatient(
+        db,
+        id: '1750000000000',
+        couchId: 'org.couchdb.user:jane',
+      );
+      await seedHealthRecord(
+        db,
+        repoFor(db),
+        userId: 'org.couchdb.user:jane',
+        examinations: [
+          {'temperature': 38.2, 'pulse': 88},
+        ],
+      );
+      await pumpScreen(tester, session: user, database: db);
+
+      // A tall surface rather than `scrollTo`: dragging the body far enough
+      // to reach the history strip pulls the `RefreshIndicator`, whose reload
+      // swaps the whole body for a spinner mid-drag and leaves
+      // `dragUntilVisible` with no scrollable to hold on to.
+      tester.view.physicalSize = const Size(1200, 4000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpAndSettle();
+
+      // The card labels its vitals (`Temp: 38.2°C`), so this is a substring.
+      await tester.tap(find.textContaining('38.2°C'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Edit'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('userId=org.couchdb.user%3Ajane'),
+        findsOneWidget,
+      );
+    });
+
+    /// `updateHealth` is `putExtra("userId", userId)`, the selected patient —
+    /// the port sent nobody and the editor fell back to the signed-in user.
+    testWidgets('the profile editor carries the selected patient', (
+      tester,
+    ) async {
+      final db = AppDatabase.memory();
+      final user = await seedPatient(
+        db,
+        id: '1750000000000',
+        couchId: 'org.couchdb.user:jane',
+      );
+      await pumpScreen(tester, session: user, database: db);
+
+      await tester.tap(find.byIcon(Icons.edit));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('userId=org.couchdb.user%3Ajane'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('offers add-record to a user without the health role', (
       tester,
     ) async {
@@ -419,14 +535,17 @@ void main() {
       expect(find.text('New patient'), findsNothing);
     });
 
-    testWidgets('offers the patient picker to a health provider', (
-      tester,
-    ) async {
+    testWidgets('offers a health provider both buttons', (tester) async {
+      // The layout carries `btnnewPatient` *and* `addNewRecord`, and
+      // `setupButtons` hides only the first from a non-provider. Offering one
+      // or the other left the health role — whose whole purpose is recording
+      // other people's examinations — with no way to record one.
       final db = AppDatabase.memory();
       final user = await seedPatient(db, roles: const ['health']);
       await pumpScreen(tester, session: user, database: db);
 
       expect(find.text('New patient'), findsOneWidget);
+      expect(find.text('Add health record'), findsOneWidget);
 
       await tester.tap(find.text('New patient'));
       await tester.pumpAndSettle();

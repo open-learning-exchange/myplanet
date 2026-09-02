@@ -233,7 +233,7 @@
   "addAnAchievement": "साधारणता थप्नुहोस्",
   "addReference": "संदर्भ थप्नुहोस्",
   "addAReference": "सन्दर्भ थप्नुहोस्",
-  "selectResources": "\"स्रोतहरू छान्नुहोस्: \"",
+  "selectResources": "स्रोतहरू छान्नुहोस्: ",
   "myGoals": "मेरा लक्ष्यहरू",
   "myPurpose": "मेरो उद्देश्य",
   "noGoalAdded": "अहिलेसम्म कुनै लक्ष्य तय गरिएको छैन",
@@ -264,5 +264,7 @@
   },
   "update": "अद्यावधिक गर्नुहोस्",
   "view": "हेर्नु",
-  "linkNotAvailable": "लिंक उपलब्ध छैन"
+  "linkNotAvailable": "लिंक उपलब्ध छैन",
+  "resourceTitleAlreadyExists": "यस शीर्षकको स्रोत पहिले नै अवस्थित छ",
+  "failedToUpdateResource": "स्रोत अद्यावधिक गर्न असफल भयो"
 }

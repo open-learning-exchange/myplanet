@@ -18,6 +18,15 @@ import '../data/local/offline_resource_item.dart';
 import 'local_resource_request.dart';
 import 'shelf_repository.dart';
 
+/// Why the add-resource form failed to save. The repository used to return a
+/// raw English sentence that `AddResourceScreen` dropped straight into the
+/// title field's `errorText`, so a localized app showed English there. Kotlin
+/// keeps these as `strings.xml` resources and picks the message at the call
+/// site (`AddResourceActivity.kt:164-167`, `:204-207`), which is why the
+/// destination differs per case: a title problem annotates the field, a
+/// missing row is a snackbar.
+enum LocalResourceError { titleMissing, titleAlreadyExists, notFound }
+
 /// Port of the resources phase of `services/sync/SyncManager.kt` (phase 2) plus
 /// the read side of `repository/ResourcesRepositoryImpl.kt`.
 ///
@@ -68,11 +77,13 @@ class ResourcesRepository {
   /// `my_library` row from the form fields and a picked file path, marks it
   /// offline-available, and adds it to the user's shelf unless it is a
   /// private team resource. Returns `null` on success or an error message.
-  Future<String?> saveLocalResource(LocalResourceRequest request) async {
+  Future<LocalResourceError?> saveLocalResource(
+    LocalResourceRequest request,
+  ) async {
     final title = request.title?.trim() ?? '';
-    if (title.isEmpty) return 'Title is missing';
+    if (title.isEmpty) return LocalResourceError.titleMissing;
     if (await resourceTitleExists(title)) {
-      return 'Resource title already exists';
+      return LocalResourceError.titleAlreadyExists;
     }
     final id = _randomResourceId();
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -100,8 +111,14 @@ class ResourcesRepository {
       filename: Value(request.resourceUrl?.split('/').last),
       isPrivate: Value(request.isPrivateTeamResource),
       privateFor: Value(request.isPrivateTeamResource ? request.teamId : null),
+      // `MyLibrary.setUserId` returns early on a null or blank id, so the
+      // shelf list stays empty. A `[""]` entry is not a harmless placeholder:
+      // it fails the My Library predicate and passes the catalog one, putting
+      // the row everywhere except the library of the user who made it.
       userId: Value(
-        request.isPrivateTeamResource ? const [] : [request.userId ?? ''],
+        request.isPrivateTeamResource || (request.userId ?? '').isEmpty
+            ? const []
+            : [request.userId!],
       ),
     );
     await _dao.upsertAll([companion]);
@@ -111,7 +128,7 @@ class ResourcesRepository {
   /// Port of `ResourcesRepositoryImpl.updateLocalResource` — edits the
   /// metadata of an existing row. Returns `null` on success or an error
   /// message.
-  Future<String?> updateLocalResource({
+  Future<LocalResourceError?> updateLocalResource({
     required String resourceId,
     required String title,
     String? author,
@@ -123,7 +140,7 @@ class ResourcesRepository {
     List<String>? levels,
   }) async {
     final row = await _dao.getById(resourceId);
-    if (row == null) return 'Resource not found';
+    if (row == null) return LocalResourceError.notFound;
     await _dao.upsertAll([
       row
           .toCompanion(false)

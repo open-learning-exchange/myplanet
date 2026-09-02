@@ -90,8 +90,18 @@ class AchievementsRepository {
   /// lists as JSON-in-a-string through Room's `Converters`; the document it
   /// emits re-parses those into real arrays, so the preserved JSON columns
   /// serialize straight through.
+  ///
+  /// `_id` falls back to the row's own id, which is the derived
+  /// `"$userId@$planetCode"` [idFor] builds. Kotlin has one field: an
+  /// `Achievement`'s `_id` *is* its primary key, set by
+  /// `initializeAchievement`, so the first PUT creates
+  /// `achievements/<that id>`. The port splits the local id from the couch
+  /// id, and nothing fills the couch id in until an upload succeeds — so
+  /// reading `couchId` alone emitted `'_id': ''` for every ledger the user
+  /// had just authored, the outbox handler rejected it as naming no
+  /// document, and a first-time achievement could never reach the server.
   static Map<String, dynamic> serialize(AchievementRow row) => {
-    '_id': row.couchId,
+    '_id': row.couchId.isEmpty ? row.id : row.couchId,
     if (row.rev.isNotEmpty) '_rev': row.rev,
     'goals': row.goals,
     'purpose': row.purpose,

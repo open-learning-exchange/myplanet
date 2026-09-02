@@ -610,12 +610,17 @@ final routerProvider = Provider<GoRouter>((ref) {
                     routes: [
                       GoRoute(
                         path: 'add',
-                        builder: (context, state) => const AddHealthScreen(),
+                        // `userId` is the patient the record belongs to,
+                        // which the Kotlin passes as an intent extra.
+                        builder: (context, state) => AddHealthScreen(
+                          userId: state.uri.queryParameters['userId'],
+                        ),
                       ),
                       GoRoute(
                         path: 'examination',
                         builder: (context, state) => AddExaminationScreen(
                           examinationId: state.uri.queryParameters['id'],
+                          userId: state.uri.queryParameters['userId'],
                         ),
                       ),
                     ],

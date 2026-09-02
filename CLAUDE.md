@@ -8,7 +8,7 @@
 - **Primary Language**: Kotlin (100% — no Java sources remain)
 - **Min SDK**: 26 (Android 8.0)
 - **Target SDK**: 36 (Android 16); **Compile SDK**: 37
-- **Current Version**: 0.67.14 (versionCode: 6714)
+- **Current Version**: 0.69.18 (versionCode: 6918)
 - **Build System**: Gradle 9.6.1 with Android Gradle Plugin 9.3.1
 - **Local Database**: Room (AndroidX) 2.8.4 — the only local persistence store
 - **License**: AGPL v3
@@ -18,6 +18,25 @@
 - **lite**: Lightweight version with reduced features (removes `REQUEST_INSTALL_PACKAGES`; `-lite` version-name suffix)
 
 ### Flutter port (in progress)
+
+**Migration progress: ≈79/100.** Report this figure whenever you report on the
+port; it is the whole migration effort on a 1-to-100 scale, not a phase count.
+The basis, so it can be argued with rather than repeated:
+
+| Dimension | State | Est. |
+|---|---|---|
+| Feature breadth | all 28 UI packages have screens (enterprises is a team *type*, not a gap — Phase 99) | ~95 |
+| Behavioural parity | the limiter, and the lowest-confidence row: audits still find real defects at 7–18 per screen pair | ~70 |
+| Test coverage | 1675 tests / 160 test files vs 231 Kotlin test files; `teams_provider`, `courses_providers`, `app_providers` still untested | ~72 |
+| Localisation | 231–256 of 858 keys per locale; the largest measurable hole, delegated externally | ~30 |
+| Background work | WorkManager gaps closed through Phase 94, platform channels in-tree | ~95 |
+
+Breadth is measurable and depth is not — 245 hand-written Dart files against 543
+Kotlin sources mostly reflects Dart folding Fragment + ViewModel + Adapter + XML
+into one screen file, so it says little about parity. Depth is only ever revealed
+by auditing, and **every audit so far has found something**, which is why the
+parity row is an estimate rather than a measurement.
+
 A Flutter/Dart port lives in **`flutter/`**, alongside — not replacing — the Kotlin app. `app/`
 is unchanged and remains the shipping app. **All 28 UI packages** have a screen, plus a durable
 write-back path. The first vertical slice ran server configuration → login → resources list;
@@ -188,6 +207,21 @@ real — they had been setting a locale with no `.arb` to resolve to. Somali nee
 `framework_fallback_delegates.dart`, because `flutter_localizations` does not translate it and the
 locale would otherwise resolve with no `MaterialLocalizations` and crash. Directional padding and
 alignment are done; a visual RTL review in Arabic is not.
+
+**Current l10n state, and one open decision.** The template `app_en.arb` has
+grown to 858 keys while the five locale files sit at 231–256, so ~600 keys per
+locale fall back to English. Those Phase 47 derivations came from the Kotlin
+`strings.xml` — real human translations already shipping in the Android app —
+but the ~600 outstanding keys are port-specific and have **no Kotlin
+counterpart to derive from**, so the choice is machine translation or English
+fallback. Filling them is in progress externally, using Google Translate via
+`deep_translator`. If that lands, the "nothing machine-translated" claim above
+stops being true and the files become a silent mix of human and machine
+strings; whether to mark the machine-translated ones (an `@key` note, or an
+`x-mt` flag) so a later human pass can find them is **not yet decided**. Note
+that a confidently wrong translation can mislead a learner where an English
+fallback merely inconveniences them — which is why this is a judgement about
+users, not a mechanical gap to close.
 
 Phase 48 fixed the team-finance summary so it is derived from the filtered transaction stream.
 Phase 49 made notification rows actionable rather than read-only: resources and storage warnings
@@ -527,6 +561,120 @@ provider a screen reads but never watches is null; await its `.future`.** On
 harvest that fix needed amending: the `await` sat outside the method's `try`,
 and a future can reject where `valueOrNull` could not, so a rejecting session
 reproduced the same silence from a new trigger.
+
+Phases 102–105 ran as **parallel lanes**: sibling sessions on their own
+branches, merged by an integrator session. The pattern works — 33 defects in one
+round — but read *Running parallel lanes* below before starting one, because two
+of this round's four problems were caused by the parallelism rather than found by
+it.
+
+Phase 102 gives `add_resource_screen` and `public_survey_screen` their first
+tests (33) and closes seven defects. **The edit screen crashed on ordinary
+server data**: `_loadExistingResource` prefilled `_language`/`_openWith`/
+`_mediaType`/`_resourceType` and handed them to `DropdownButtonFormField`, which
+asserts a non-null value matches **exactly one** item — but the option lists are
+the fixed `strings.xml` arrays while a synced row carries whatever the server
+wrote (a lowercase `mediaType`, an ISO language code). Debug: a hard assertion
+out of `build`; release: the assert is stripped and the spinner silently shows
+its hint. `_DropdownField` now drops an unknown value, as `setupHintSpinner`
+does. Also: `saveLocalResource` wrote `userId: [""]` where `MyLibrary.setUserId`
+leaves the list empty, and `[""]` fails the My Library predicate *and* passes
+the catalog one — so a just-created resource appeared in the public catalog and
+nowhere in the user's own library, the inverse of both Kotlin views. And the
+add-resource button was gated on `!_selecting && !shelfOnly` where
+`ResourcesFragment` uses `isMyCourseLib`, which *is* `shelfOnly` — the
+affordance was missing from My Library and offered in the catalog.
+
+Phase 103 gives `edit_achievement_screen` and `user_information_screen` their
+first tests (44) and closes eighteen defects. **The respondent profile used keys
+Planet does not read**: `UserSurveyProfile.toJson()` omits an empty field rather
+than sending `""`, sends a picked date as `birthDate` and a year as an `age`,
+and always includes `betaEnabled`; the port wrote `dob`, `birthYear`, empty
+strings and no `betaEnabled`, so a team survey uploaded a profile the server
+cannot parse. The public path had been *partly* rescued by a `_sanitizeRespondent`
+coercion at send time — **a sanitizer on one of two upload paths is evidence the
+producer is wrong, not that the paths differ.** Also: the additional-fields
+toggle was gated on a negated parameter read directly, so the one live caller
+rendered the year-of-birth form with no way to reach the other fields —
+**a negated parameter negates every rule that reads it, not just the one
+obviously about initial state.**
+
+Phase 104 fixes `SurveyMapper.choices`, which put choice objects through
+`JsonUtils.getStringList` and stored the Dart literal `{id: water, text: Water}`
+— losing the id an answer records *and* the label, for every consumer.
+`take_survey_screen` drew that literal as its checkbox label and stored it as
+the answer. `SurveyQuestions.choices` now uses the port's own
+`ExamChoiceListConverter`, as `ExamQuestions.choices` already did. **A Drift
+converter swap needs no schema bump** — the generated column is byte-identical,
+so there is no migration step to write; `tables.dart` documents this at the
+column. Rows an older build wrote decode as a choice whose text is that literal
+until the next sync rewrites them.
+
+Phase 105 ports the three achievement hints Kotlin shows (the port had labelled
+them `noAchievementAdded`, a *different* string, losing the guiding questions),
+gives `health_provider` its first tests, and logs the identity defect Phase 107
+takes on.
+
+**Phase 106's regression is the one to learn from.** Phase 103 gated the
+public-survey POST on the profile screen popping `true`, reasoning that Kotlin
+has nothing `complete` to upload when that dialog is cancelled. Both halves of
+that premise are false: `saveExamAnswer` marks the sheet `complete` on the last
+question *before* the dialog opens (`SubmissionsRepositoryImpl.kt:550`), Cancel
+writes nothing (`UserInformationFragment.kt:112-118`), and
+`PublicSurveyActivity` uploads from `onFragmentDetached` (`:74-80`) with no
+save-vs-cancel test. The `lastUpdateTime < launchTime` check (`:123`) is a
+**staleness filter** for an earlier run of the same survey, not a cancellation
+gate; declining only omits the `user` object from the body. The gate lost the
+answers permanently — `PublicSurveyUploader.queue` had that one caller and
+nothing rescans unsent submissions. Reverted, and both rationales that read
+`pop(false)` as "do not post" are corrected in place so the mistake is not
+re-seeded. **A Kotlin citation is not a Kotlin reading**: this one named the
+right function and misread what it does, and only a `parity-auditor` pass at
+`effort: max` caught it.
+
+**The `sessionProvider` shape is now a rule, not an anecdote.** Four independent
+instances across unrelated files — `take_exam_screen` (Phase 100),
+`add_resource_screen` (102), `public_survey_screen`'s `_submit` and `_leave`,
+and `take_survey_screen` (104/105, found separately by two lanes in one round).
+Every one: a screen calls `ref.read(someProvider).valueOrNull` without ever
+watching it, gets `null` while it loads, and silently takes a failure branch —
+latent in the app only because the router holds a `ref.listen`. **A provider a
+screen reads but never watches is null. Await its `.future`, and put the
+`await` inside the enclosing `try`, because a future can reject where
+`valueOrNull` could not.** When you touch a screen, grep it for
+`.valueOrNull` before anything else.
+
+### Running parallel lanes
+
+Sibling sessions on their own branches, merged by an integrator. What this round
+established, at the cost of a regression and five failing tests:
+
+- **One file, one owner.** Three rounds running, two lanes edited
+  `public_survey_screen.dart`. Git merged them cleanly every time, because the
+  hunks were textually disjoint — and once, one lane had added a *precondition*
+  to the code path the other's tests drove. **Hunk positions are not evidence
+  that two changes compose.** Partition by file, name the other lanes' files in
+  each brief, and tell a lane to stop and report rather than reach outside its
+  set.
+- **Front-load the brief.** Everything that went wrong was something learned
+  *after* spawning, and there is no session-to-session messaging here:
+  `SendMessage` cannot address these sessions and `ListAgents` lists only
+  in-process subagents. The only inbound channel is a comment on a PR the lane
+  subscribed itself to, so have each lane open a draft PR and call
+  `subscribe_pr_activity` as its first action.
+- **Pin the SDK.** `.claude/hooks/session-start.sh` provisions Flutter 3.44.8 —
+  the version `flutter.yml` pins — and regenerates the gitignored sources. Two
+  red CI runs came from a session formatting with 3.47.2, whose `dart format`
+  reformats code 3.44.8 leaves alone; `--set-exit-if-changed` then rejects a
+  change that looked correct locally. Never install or upgrade a lane's SDK.
+- **Re-run codegen after merging a Drift change.** Generated sources are
+  gitignored, so a merge that alters a table or converter leaves them stale and
+  `flutter analyze` reports type errors that are artefacts, not defects — 14 of
+  them, in one case. `dart run build_runner build` *then* analyze.
+- **Integration is the bottleneck, not lane capacity.** Each merge is codegen
+  plus the full suite plus diff review, serially, and collision pairs grow
+  quadratically. Verify a candidate lane's import graph is disjoint before
+  adding it.
 
 ### Documentation Map
 
@@ -883,6 +1031,34 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 # Install and run on a device/emulator
 ./gradlew installDefaultDebug && adb shell am start -n org.ole.planet.myplanet/.ui.onboarding.OnboardingActivity
 ```
+
+### Flutter port toolchain
+
+`.claude/hooks/session-start.sh` (a `SessionStart` hook, registered in
+`.claude/settings.json`) provisions `flutter/` on remote sessions: Flutter
+**3.44.8** — kept in step with `flutter-version:` in
+`.github/workflows/flutter.yml` — then `flutter pub get`,
+`dart run build_runner build` and `flutter gen-l10n`.
+
+Both halves matter. **The version is load-bearing**: `dart format` output
+differs between Dart releases and CI gates on `--set-exit-if-changed`, so a
+session running a newer SDK produces a diff CI rejects even though the code
+looks right locally. **And generated sources are gitignored**, so a fresh
+checkout cannot `analyze` or `test` at all until codegen has run. The hook
+reuses an SDK the image already carries before spending a clone (disk is a
+fixed per-session allowance) and retargets an existing checkout to the tag
+rather than re-downloading. It exits immediately unless `CLAUDE_CODE_REMOTE`
+is set, so local checkouts keep their own toolchain.
+
+```bash
+cd flutter
+dart format --output=none --set-exit-if-changed lib test   # the gate CI runs
+flutter analyze
+flutter test
+```
+
+If a version bump is ever needed, change it in `flutter.yml` **and** the hook;
+nothing yet pins the two together automatically.
 
 ### Branch Strategy
 
@@ -1257,6 +1433,6 @@ Note: SYSTEM_ALERT_WINDOW is **not** declared (removed at some point; older docs
 
 ---
 
-**Last Updated**: 2026-08-26
-**Version**: 0.67.14
+**Last Updated**: 2026-09-02
+**Version**: 0.69.18
 **Maintainer**: Open Learning Exchange

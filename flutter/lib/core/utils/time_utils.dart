@@ -3,6 +3,47 @@
 /// Date conversion helpers used by the health profile editor and any screen
 /// that round-trips dates through the ISO-8601 form the CouchDB server stores.
 class TimeUtils {
+  /// Whole years between [date] and today.
+  ///
+  /// Port of `TimeUtils.getAge`: the `T` and `.000Z` are stripped, the rest is
+  /// parsed as a local date-time and then as a bare date, and anything that
+  /// will not parse — a blank string included — is 0. Like the Kotlin's
+  /// `Period.between(dob, today).years` a future date gives a negative age
+  /// rather than 0.
+  static int getAge(String? date) {
+    if (date == null || date.trim().isEmpty) return 0;
+    final cleaned = date.replaceAll('T', ' ').replaceAll('.000Z', '').trim();
+    // The Kotlin parses the cleaned string with `yyyy-MM-dd HH:mm:ss` and then
+    // with `yyyy-MM-dd`, and returns 0 for anything else. `DateTime.tryParse`
+    // is looser — it takes `19900615`, and any trailing text a fixed pattern
+    // would reject — so the shape is checked first.
+    if (!RegExp(
+      r'^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?$',
+    ).hasMatch(cleaned)) {
+      return 0;
+    }
+    final dob = DateTime.tryParse(cleaned);
+    if (dob == null) return 0;
+    final today = DateTime.now();
+    // `Period.between` truncates toward zero, so a future date of birth gives
+    // the negation of the years to it — not one year further from zero, which
+    // is what the same before-the-anniversary decrement produces on a negative
+    // difference.
+    final dobDay = DateTime(dob.year, dob.month, dob.day);
+    final todayDay = DateTime(today.year, today.month, today.day);
+    return dobDay.isAfter(todayDay)
+        ? -_wholeYears(todayDay, dobDay)
+        : _wholeYears(dobDay, todayDay);
+  }
+
+  /// Whole years from [from] to [to], where [to] is not before [from].
+  static int _wholeYears(DateTime from, DateTime to) {
+    var years = to.year - from.year;
+    final beforeAnniversary =
+        to.month < from.month || (to.month == from.month && to.day < from.day);
+    return beforeAnniversary ? years - 1 : years;
+  }
+
   /// Formats an ISO-8601 date string (`yyyy-MM-dd` or
   /// `yyyy-MM-ddTHH:mm:ss.SSSZ`) as `dd-MM-yyyy` for display.
   ///

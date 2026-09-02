@@ -529,8 +529,16 @@ class SurveyQuestions extends Table {
   TextColumn get header => text().nullable()();
   TextColumn get body => text().nullable()();
   TextColumn get type => text().nullable()();
+
+  /// The `{id, text}` pairs as CouchDB stores them — see [ExamChoice]. This
+  /// used to be a [StringListConverter], which put every choice object through
+  /// `toString()` and stored the Dart literal `{id: water, text: Water}`: the
+  /// label was unusable and the id was gone. The SQL column is unchanged
+  /// (`TEXT NOT NULL DEFAULT '[]'`), so the swap needs no schema bump; a row
+  /// written by an earlier build decodes as a choice whose text is that
+  /// literal, until the next surveys sync rewrites it.
   TextColumn get choices => text()
-      .map(const StringListConverter())
+      .map(const ExamChoiceListConverter())
       .withDefault(const Constant('[]'))();
   BoolColumn get required => boolean().withDefault(const Constant(false))();
   IntColumn get position => integer()();

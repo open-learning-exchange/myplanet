@@ -58,6 +58,44 @@ class ExamChoice {
 
   Map<String, dynamic> toJson() => {'id': id, 'text': text};
 
+  /// Parses a document's `choices` array. Anything that is neither an object
+  /// nor a non-empty string is dropped, matching `ExamTakingFragment`, which
+  /// renders a compound button per object and a radio per bare string and has
+  /// no branch for anything else.
+  static List<ExamChoice> listFromJson(Object? raw) {
+    if (raw is! List) return const [];
+    return raw
+        .map(ExamChoice.fromJson)
+        .whereType<ExamChoice>()
+        .toList(growable: false);
+  }
+
+  /// The label to show for one stored answer choice.
+  ///
+  /// Port of `SubmissionsRepositoryExporter.formatAnswer`, which does
+  /// `JSONObject(choice).optString("text", choice)` per entry: an answer
+  /// records the whole `{"id":…,"text":…}` object as a JSON string
+  /// (`Answer.valueChoicesArray` parses it straight back), so displaying the
+  /// entry verbatim would put raw JSON in front of the user. An entry that is
+  /// not a choice object — the exam path stores bare choice ids — is shown as
+  /// it stands.
+  static String labelFor(String raw) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        final text = decoded['text'];
+        if (text is String && text.isNotEmpty) return text;
+      }
+    } on FormatException {
+      // Not JSON — the entry is already the label (or an id).
+    }
+    return raw;
+  }
+
+  /// [labelFor] applied to a whole answer, joined the way both Kotlin display
+  /// paths join it.
+  static String labelsFor(Iterable<String> raw) => raw.map(labelFor).join(', ');
+
   @override
   bool operator ==(Object other) =>
       other is ExamChoice && other.id == id && other.text == text;

@@ -916,7 +916,15 @@
   "errorSavingProfile": "Error saving profile",
   "videoPlayer": "Video player",
   "audioPlayer": "Audio player",
-  "fileNotFound": "File not found locally",
+  "fileNotFound": "File not found: {fileName}",
+  "@fileNotFound": {
+    "description": "Port of the Kotlin file_not_found, which names the file.",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
   "videoFileNotFound": "Video file not found locally",
   "unableToLoadVideo": "Unable to load video",
   "audioFileNotFound": "Audio file not found locally",
@@ -984,6 +992,7 @@
   "conditions": "Conditions",
   "selfExamination": "Self-examination",
   "healthRecordAdded": "Health record added successfully",
+  "unableToAddHealthRecord": "Unable to add health record.",
   "selectHealthMember": "Select member",
   "newPatient": "New patient",
   "sortJoinDateDesc": "Newest first",
@@ -1347,9 +1356,12 @@
   "addAnAchievement": "Add an Achievement",
   "addReference": "Add Reference",
   "addAReference": "Add a Reference",
-  "selectResources": "\"Select resources: \"",
+  "selectResources": "Select resources: ",
   "myGoals": "My Goals",
   "myPurpose": "My Purpose",
+  "summaryOfAchievements": "Summary of achievements - Briefly summarize your achievements",
+  "myGoalsDescription": "My Goals - What are your goals for the next 10 years?",
+  "myPurposeDescription": "My Purpose - What are your educational and professional ambitions?",
   "noGoalAdded": "No goals set yet",
   "noPurposeAdded": "No purpose added",
   "noAchievementAdded": "Summary of achievements",
@@ -1393,5 +1405,7 @@
   "resetApp": "Reset app",
   "clearAllDataConfirm": "Are you sure you want to clear all data?",
   "dataCleared": "All data cleared",
-  "dataManagement": "Data management"
+  "dataManagement": "Data management",
+  "resourceTitleAlreadyExists": "A resource with this title already exists",
+  "failedToUpdateResource": "Failed to update resource"
 }

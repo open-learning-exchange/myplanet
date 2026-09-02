@@ -793,8 +793,7 @@ void main() {
           userId: 'user-1',
         ),
       );
-      expect(error, isNotNull);
-      expect(error, contains('already exists'));
+      expect(error, LocalResourceError.titleAlreadyExists);
     });
 
     test(

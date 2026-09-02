@@ -1,17 +1,18 @@
 import 'dart:convert';
-import 'dart:io';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/files/achievement_files.dart';
+import '../../core/system/file_pick.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/achievements_provider.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/session_provider.dart';
 import '../../repository/achievements_repository.dart';
+import '../../repository/resources_repository.dart';
 import 'cv_viewer_dialog.dart';
 
 /// Port of `EditAchievementFragment`.
@@ -108,13 +109,12 @@ class _EditAchievementScreenState extends ConsumerState<EditAchievementScreen> {
   }
 
   Future<void> _pickCv(AppLocalizations l10n) async {
-    final result = await FilePicker.pickFiles(
-      type: FileType.any,
-      allowMultiple: false,
-    );
-    if (result == null || result.files.isEmpty) return;
-    final file = result.files.single;
-    if (file.extension?.toLowerCase() != 'pdf') {
+    final file = await FilePick.instance.pickSingle();
+    if (file == null) return;
+    // Kotlin checks the display name's suffix before it reads a byte, so a
+    // wrong pick costs nothing.
+    if (file.extension?.toLowerCase() != 'pdf' &&
+        !file.name.toLowerCase().endsWith('.pdf')) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -122,9 +122,8 @@ class _EditAchievementScreenState extends ConsumerState<EditAchievementScreen> {
       }
       return;
     }
-    final path = file.path;
-    if (path == null) return;
-    final bytes = await File(path).readAsBytes();
+    final bytes = await file.readBytes();
+    if (!mounted) return;
     setState(() {
       _pickedCvName = file.name;
       _pickedCvBytes = bytes;
@@ -169,9 +168,11 @@ class _EditAchievementScreenState extends ConsumerState<EditAchievementScreen> {
           .read(achievementActionsProvider)
           .save(
             input: AchievementInput(
-              purpose: _purpose.text,
-              goals: _goals.text,
-              achievementsHeader: _achievementsHeader.text,
+              // `btnUpdate` trims the header, goals and purpose too, not just
+              // the name fields.
+              purpose: _purpose.text.trim(),
+              goals: _goals.text.trim(),
+              achievementsHeader: _achievementsHeader.text.trim(),
               sendToNation: _sendToNation,
               achievementsJson: jsonEncode(_achievementEntries),
               referencesJson: jsonEncode(_referenceEntries),
@@ -225,15 +226,20 @@ class _EditAchievementScreenState extends ConsumerState<EditAchievementScreen> {
     });
   }
 
+  /// The stored resume only. A fresh pick has no bytes on disk yet — the
+  /// Kotlin picker callback hides `llCurrentCv` outright and
+  /// `computeCvFilename` copies the file at save time — and writing them here
+  /// to have something to show left a file under `<base>/ole/cv/` that no row
+  /// names when the edit was then cancelled.
   Future<void> _viewCv() async {
-    if (_pickedCvBytes != null && _pickedCvName != null) {
-      await AchievementFiles.write(
-        resumeFileName: _pickedCvName!,
-        bytes: _pickedCvBytes!,
-      );
+    final name = _resumeFileName;
+    if (name.isEmpty) return;
+    if (!await AchievementFiles.hasResume(name)) {
+      // `btnViewCvEdit`'s else branch: the Kotlin says so rather than doing
+      // nothing, and its string names the file.
+      if (mounted) _toast(AppLocalizations.of(context).fileNotFound(name));
+      return;
     }
-    final name = _pickedCvName ?? _resumeFileName;
-    if (name.isEmpty || !await AchievementFiles.hasResume(name)) return;
     if (!mounted) return;
     await showCvViewerDialog(context, name);
   }
@@ -245,7 +251,11 @@ class _EditAchievementScreenState extends ConsumerState<EditAchievementScreen> {
     if (!_initialized && entry.valueOrNull != null) {
       _initialize();
     }
-    final currentCv = _deleteCv ? '' : (_pickedCvName ?? _resumeFileName);
+    // `tvCvFilename` names whatever is pending; `llCurrentCv` — the row
+    // carrying View/Delete — is for the stored resume, and the pick callback
+    // hides it (`EditAchievementFragment:92`).
+    final pendingCvName = _deleteCv ? '' : (_pickedCvName ?? _resumeFileName);
+    final storedCv = _deleteCv || _pickedCvName != null ? '' : _resumeFileName;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.editAchievement)),
@@ -279,7 +289,9 @@ class _EditAchievementScreenState extends ConsumerState<EditAchievementScreen> {
                   const SizedBox(height: 8),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: Text(_dobIso ?? l10n.birthDate),
+                    title: Text(
+                      achievementBirthDate(_dobIso) ?? l10n.birthDate,
+                    ),
                     trailing: const Icon(Icons.calendar_month),
                     onTap: _pickDob,
                   ),
@@ -291,19 +303,23 @@ class _EditAchievementScreenState extends ConsumerState<EditAchievementScreen> {
                   TextFormField(
                     controller: _achievementsHeader,
                     decoration: InputDecoration(
-                      labelText: l10n.noAchievementAdded,
+                      labelText: l10n.summaryOfAchievements,
                       prefixIcon: const Icon(Icons.star_border),
                     ),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _purpose,
-                    decoration: InputDecoration(labelText: l10n.myPurpose),
+                    decoration: InputDecoration(
+                      labelText: l10n.myPurposeDescription,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _goals,
-                    decoration: InputDecoration(labelText: l10n.myGoals),
+                    decoration: InputDecoration(
+                      labelText: l10n.myGoalsDescription,
+                    ),
                   ),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
@@ -323,10 +339,45 @@ class _EditAchievementScreenState extends ConsumerState<EditAchievementScreen> {
                     ListTile(
                       dense: true,
                       title: Text('${entry['title'] ?? ''}'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.edit),
-                        tooltip: l10n.edit,
-                        onPressed: () => _addAchievement(entry),
+                      // `showAchievementAndInfo` inflates a chip per attached
+                      // resource into the row's flexbox, so the card says what
+                      // the entry carries without reopening the dialog.
+                      subtitle: () {
+                        final attached = AchievementsRepository.resourcesOf(
+                          entry,
+                        );
+                        if (attached.isEmpty) return null;
+                        return Wrap(
+                          spacing: 4,
+                          children: [
+                            for (final resource in attached)
+                              Chip(
+                                label: Text('${resource['title'] ?? ''}'),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                          ],
+                        );
+                      }(),
+                      trailing: Wrap(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit),
+                            tooltip: l10n.edit,
+                            onPressed: () => _addAchievement(entry),
+                          ),
+                          // `EditAttachementBinding.ivDelete` — without it an
+                          // entry added by mistake can never be removed.
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            tooltip: l10n.delete,
+                            onPressed: () => setState(() {
+                              _achievementEntries = [
+                                for (final other in _achievementEntries)
+                                  if (!identical(other, entry)) other,
+                              ];
+                            }),
+                          ),
+                        ],
                       ),
                     ),
                   const Divider(),
@@ -341,19 +392,34 @@ class _EditAchievementScreenState extends ConsumerState<EditAchievementScreen> {
                     ListTile(
                       dense: true,
                       title: Text('${entry['name'] ?? ''}'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.edit),
-                        tooltip: l10n.edit,
-                        onPressed: () => _addReference(entry),
+                      trailing: Wrap(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit),
+                            tooltip: l10n.edit,
+                            onPressed: () => _addReference(entry),
+                          ),
+                          // `EditOtherInfoBinding.ivDelete`.
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            tooltip: l10n.delete,
+                            onPressed: () => setState(() {
+                              _referenceEntries = [
+                                for (final other in _referenceEntries)
+                                  if (!identical(other, entry)) other,
+                              ];
+                            }),
+                          ),
+                        ],
                       ),
                     ),
                   const Divider(),
                   Text(l10n.uploadCvLabel),
                   const SizedBox(height: 8),
-                  if (currentCv.isNotEmpty)
+                  if (storedCv.isNotEmpty)
                     ListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: Text(l10n.currentCv(currentCv)),
+                      title: Text(l10n.currentCv(storedCv)),
                       trailing: Wrap(
                         children: [
                           TextButton(
@@ -371,7 +437,9 @@ class _EditAchievementScreenState extends ConsumerState<EditAchievementScreen> {
                         ],
                       ),
                     ),
-                  Text(currentCv.isEmpty ? l10n.noFileChosen : currentCv),
+                  Text(
+                    pendingCvName.isEmpty ? l10n.noFileChosen : pendingCvName,
+                  ),
                   OutlinedButton.icon(
                     icon: const Icon(Icons.upload_file),
                     label: Text(l10n.chooseFile),
@@ -412,9 +480,11 @@ Future<Map<String, dynamic>?> showAchievementDialog(
   );
   final link = TextEditingController(text: '${existing?['link'] ?? ''}');
   var date = existing?['date'] as String? ?? '';
+  // Kotlin's `resourceArray` holds `list[ii].serializeResource()` — the whole
+  // resource document, not just its title, which is what the achievement
+  // document carries to the server.
   final resources = [
-    for (final r in AchievementsRepository.resourcesOf(existing ?? const {}))
-      '${r['title'] ?? ''}',
+    ...AchievementsRepository.resourcesOf(existing ?? const {}),
   ];
   return showDialog<Map<String, dynamic>>(
     context: context,
@@ -426,7 +496,9 @@ Future<Map<String, dynamic>?> showAchievementDialog(
             context: context,
             initialDate: now,
             firstDate: DateTime(1900),
-            lastDate: DateTime(2100),
+            // `dpd.datePicker.maxDate = now.timeInMillis` — an achievement is
+            // something that already happened.
+            lastDate: now,
           );
           if (picked == null) return;
           setDialogState(() {
@@ -446,7 +518,9 @@ Future<Map<String, dynamic>?> showAchievementDialog(
           final selected = await showDialog<List<String>>(
             context: context,
             builder: (context) {
-              final checked = {...resources};
+              final checked = {
+                for (final resource in resources) '${resource['title'] ?? ''}',
+              };
               return StatefulBuilder(
                 builder: (context, setInner) => AlertDialog(
                   title: Text(l10n.selectResources),
@@ -485,10 +559,16 @@ Future<Map<String, dynamic>?> showAchievementDialog(
             },
           );
           if (selected != null) {
+            // Rebuilt from the library rows, like `showResourceListDialog`'s
+            // positive button — anything no longer in the list is dropped.
             setDialogState(() {
               resources
                 ..clear()
-                ..addAll(selected);
+                ..addAll([
+                  for (final lib in list)
+                    if (selected.contains(lib.title ?? ''))
+                      ResourcesRepository.serializeResource(lib),
+                ]);
             });
           }
         }
@@ -524,11 +604,11 @@ Future<Map<String, dynamic>?> showAchievementDialog(
                 Wrap(
                   spacing: 4,
                   children: [
-                    for (final name in resources)
+                    for (final resource in resources)
                       InputChip(
-                        label: Text(name),
+                        label: Text('${resource['title'] ?? ''}'),
                         onDeleted: () =>
-                            setDialogState(() => resources.remove(name)),
+                            setDialogState(() => resources.remove(resource)),
                       ),
                   ],
                 ),
@@ -549,13 +629,11 @@ Future<Map<String, dynamic>?> showAchievementDialog(
                   return;
                 }
                 Navigator.pop(dialogContext, <String, dynamic>{
-                  'title': title.text,
-                  'description': description.text,
+                  'title': title.text.trim(),
+                  'description': description.text.trim(),
                   'date': date,
-                  'link': link.text,
-                  'resources': [
-                    for (final name in resources) {'title': name},
-                  ],
+                  'link': link.text.trim(),
+                  'resources': [...resources],
                 });
               },
               child: Text(l10n.submit),
@@ -620,7 +698,7 @@ Future<Map<String, dynamic>?> showReferenceDialog(
               return;
             }
             Navigator.pop(dialogContext, <String, dynamic>{
-              'name': name.text,
+              'name': name.text.trim(),
               'phone': phone.text,
               'relationship': relationship.text,
               'email': email.text,
@@ -631,4 +709,24 @@ Future<Map<String, dynamic>?> showReferenceDialog(
       ],
     ),
   );
+}
+
+/// The birth-date row's label.
+///
+/// Port of `getFormattedDate(user?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")`,
+/// which runs the stored value through `TimeUtils`'s default formatter
+/// (`EEEE, MMM dd, yyyy`). The row used to print the column verbatim, so a
+/// synced profile showed `1990-05-02T00:00:00.000Z` in the field.
+///
+/// Returns null when nothing is stored — the caller shows the `birth_date`
+/// placeholder there, as `populateAchievementData` does — and the Kotlin's
+/// `"N/A"` for a value that will not parse.
+String? achievementBirthDate(String? stored) {
+  if (stored == null || stored.trim().isEmpty) return null;
+  final parsed = DateTime.tryParse(stored.trim());
+  if (parsed == null) return 'N/A';
+  // No zone conversion: `DateFormat` reads the instant's own field values, and
+  // a `...Z` value parses to UTC, so the day the server stored is the day
+  // shown.
+  return DateFormat('EEEE, MMM dd, yyyy').format(parsed);
 }

@@ -457,10 +457,11 @@ class SurveysRepository {
     return null;
   }
 
-  /// The public API validates `age` as an integer, but the profile collected
-  /// by `UserInformationScreen` stores a birth year or date. Coerce `birthYear`
-  /// to `age`, leave a pre-existing `dob` as `birthDate`, and remove any
-  /// non-numeric `age` so the submission is not rejected.
+  /// The public API validates `age` as an integer, while the profile carries
+  /// it as the string `UserSurveyProfile.toJson` writes. Coerce it, and coerce
+  /// the `birthYear`/`dob` pair a submission stored by an earlier build still
+  /// carries — the screen writes `age`/`birthDate` now, but a row completed
+  /// before that fix can still be waiting in the outbox.
   void _sanitizeRespondent(Map<String, dynamic>? user) {
     if (user == null) return;
     final age = _computeAge(user);

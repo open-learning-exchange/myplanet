@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/local/app_database.dart';
+import '../../data/local/converters.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/session_provider.dart';
@@ -27,7 +30,11 @@ class TakeSurveyScreen extends ConsumerStatefulWidget {
 
 class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
   final textAnswers = <String, TextEditingController>{};
-  final choiceAnswers = <String, Set<String>>{};
+
+  /// Selections are held as [ExamChoice] objects, not labels: an answer
+  /// records the whole `{id, text}` object (`Answer.valueChoicesArray`), so
+  /// the id has to survive from the tap to the payload.
+  final choiceAnswers = <String, Set<ExamChoice>>{};
   bool submitting = false;
   bool _loaded = false;
 
@@ -60,13 +67,31 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
         textAnswers[question.id]?.text = answer.value!;
       }
       if (answer.valueChoices.isNotEmpty) {
-        choiceAnswers[question.id]?.addAll(answer.valueChoices);
+        choiceAnswers[question.id]?.addAll(
+          answer.valueChoices
+              .map(_decodeChoice)
+              .whereType<ExamChoice>()
+              // Only a choice the question still offers can be re-selected;
+              // `ExamChoice` is a value type, so this is set membership.
+              .where(question.choices.contains),
+        );
       }
     }
     if (mounted) setState(() {});
   }
 
   static String _rawId(SurveyQuestionRow q) => q.questionId ?? q.id;
+
+  /// A stored answer choice is the choice object as a JSON string; a row
+  /// written before that was fixed carries a bare label instead, which
+  /// [ExamChoice.fromJson] keeps as its own id.
+  static ExamChoice? _decodeChoice(String raw) {
+    try {
+      return ExamChoice.fromJson(jsonDecode(raw));
+    } on FormatException {
+      return ExamChoice.fromJson(raw);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,7 +129,7 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
                         ),
                         selected: choiceAnswers.putIfAbsent(
                           rows[index].id,
-                          () => <String>{},
+                          () => <ExamChoice>{},
                         ),
                         onChanged: () => setState(() {}),
                       ),
@@ -140,15 +165,15 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
       ).showSnackBar(SnackBar(content: Text(l10n.answerRequiredQuestions)));
       return;
     }
-    final user = ref.read(sessionProvider).valueOrNull;
-    if (user == null) return;
     setState(() => submitting = true);
     final answers = {
       for (final question in questions)
         question.id: SubmissionDraftAnswer(
           questionId: question.id,
           value: textAnswers[question.id]!.text.trim(),
-          choices: choiceAnswers[question.id]!.toList(growable: false),
+          choices: choiceAnswers[question.id]!
+              .map((choice) => jsonEncode(choice.toJson()))
+              .toList(growable: false),
         ),
     };
     // `submitting` disables the button, so anything that escapes here leaves
@@ -156,6 +181,17 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
     // still on screen but there is no way to send them.
     String? id;
     try {
+      // `ref.read(sessionProvider).valueOrNull` is null until something else
+      // resolves that provider, and this screen never watches it: the early
+      // `if (user == null) return` then dropped the answered sheet with no
+      // dialog, no snackbar and no row — the Phase 100 shape, latent in the
+      // app only because the router holds a `ref.listen` on the session.
+      // Awaiting the future is what `ExamTakingFragment` does, which resolves
+      // its own `userSessionManager.getUserModel()` before the survey is
+      // usable. The await sits inside the `try` so a rejecting session takes
+      // the failure path rather than reintroducing the silence.
+      final user = await ref.read(sessionProvider.future);
+      if (user == null) throw StateError('no signed-in user');
       final repo = ref.read(surveysRepositoryProvider);
       id = widget.submissionId != null
           ? await repo.updateSurveyResponse(
@@ -194,7 +230,7 @@ class _QuestionCard extends StatelessWidget {
   final int number;
   final SurveyQuestionRow question;
   final TextEditingController controller;
-  final Set<String> selected;
+  final Set<ExamChoice> selected;
   final VoidCallback onChanged;
 
   @override
@@ -202,7 +238,12 @@ class _QuestionCard extends StatelessWidget {
     final prompt = question.body?.isNotEmpty == true
         ? question.body!
         : question.header ?? '';
-    final multiple = question.type == 'selectMultiple';
+    // `ExamTakingFragment.startExam` compares the type with
+    // `equals("selectMultiple", ignoreCase = true)`. Matching case-sensitively
+    // drew radio buttons for a document spelling it `selectmultiple`, so the
+    // respondent could pick exactly one of several intended answers — the same
+    // defect Phase 102 fixed in the public-survey screen.
+    final multiple = question.type?.toLowerCase() == 'selectmultiple';
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -222,7 +263,7 @@ class _QuestionCard extends StatelessWidget {
                 CheckboxListTile(
                   contentPadding: EdgeInsets.zero,
                   value: selected.contains(choice),
-                  title: Text(choice),
+                  title: Text(choice.text),
                   onChanged: (checked) {
                     checked == true
                         ? selected.add(choice)
@@ -231,7 +272,7 @@ class _QuestionCard extends StatelessWidget {
                   },
                 )
             else
-              RadioGroup<String>(
+              RadioGroup<ExamChoice?>(
                 groupValue: selected.firstOrNull,
                 onChanged: (value) {
                   selected
@@ -242,10 +283,10 @@ class _QuestionCard extends StatelessWidget {
                 child: Column(
                   children: [
                     for (final choice in question.choices)
-                      RadioListTile<String>(
+                      RadioListTile<ExamChoice?>(
                         contentPadding: EdgeInsets.zero,
                         value: choice,
-                        title: Text(choice),
+                        title: Text(choice.text),
                       ),
                   ],
                 ),

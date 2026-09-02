@@ -196,6 +196,81 @@ void main() {
     },
   );
 
+  test('caches a synced question choice by its display label', () async {
+    // `ExamAnswerUtils.choiceDisplayValue` is `text` first and `res` only as
+    // a fallback. Reading only `res` left the label empty for an ordinary
+    // choice object, so the detail screen's "Choices:" row was commas.
+    await repository.upsertDocuments([
+      {
+        '_id': 'report-1',
+        'userId': 'user-1',
+        'status': 'complete',
+        'parent': {
+          'name': 'Needs survey',
+          'questions': [
+            {
+              'id': 'q-1',
+              'title': 'Which service?',
+              'choices': [
+                {'id': 'water', 'text': 'Water'},
+                {'id': 'power', 'res': 'Power'},
+                'Other',
+              ],
+            },
+          ],
+        },
+      },
+    ]);
+
+    final questions = await database.select(database.submissionQuestions).get();
+    expect(questions.single.choices, ['Water', 'Power', 'Other']);
+  });
+
+  test('serializes an answer choice as the object it was stored as', () async {
+    // Port of `Answer.valueChoicesArray`, which sends each entry back through
+    // `gson.fromJson(choice, JsonObject::class.java)`: Planet expects
+    // `answers[].value` to be `{id, text}` objects for a choice question. The
+    // port sent the stored JSON *strings*, so a choice answer reached the
+    // server as a quoted blob rather than an object.
+    final id = await repository.createDraft(
+      userId: 'user-1',
+      type: 'survey',
+      title: 'Offline survey',
+      answers: const [
+        SubmissionDraftAnswer(
+          questionId: 'q-1',
+          choices: ['{"id":"water","text":"Water"}'],
+        ),
+      ],
+      now: DateTime.fromMillisecondsSinceEpoch(1000),
+    );
+
+    final payload = await repository.serialize((await repository.getById(id))!);
+    final answer = (payload['answers'] as List).single as Map;
+    expect(answer['value'], [
+      {'id': 'water', 'text': 'Water'},
+    ]);
+  });
+
+  test('serializes a bare choice id untouched', () async {
+    // The exam path stores plain choice ids in `valueChoices`; Kotlin has no
+    // such entries and `gson.fromJson` would throw on one, so they are passed
+    // through rather than dropped.
+    final id = await repository.createDraft(
+      userId: 'user-1',
+      type: 'exam',
+      title: 'Offline exam',
+      answers: const [
+        SubmissionDraftAnswer(questionId: 'q-1', choices: ['choice-a']),
+      ],
+      now: DateTime.fromMillisecondsSinceEpoch(1000),
+    );
+
+    final payload = await repository.serialize((await repository.getById(id))!);
+    final answer = (payload['answers'] as List).single as Map;
+    expect(answer['value'], ['choice-a']);
+  });
+
   test(
     'empty server sync does not delete an un-uploaded local draft',
     () async {

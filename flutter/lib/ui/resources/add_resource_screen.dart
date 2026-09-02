@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/session_provider.dart';
 import '../../repository/local_resource_request.dart';
+import '../../repository/resources_repository.dart';
 
 /// Port of `ui/resources/AddResourceActivity.kt` (the metadata form) and the
 /// file-pick half of `AddResourceFragment` (the bottom sheet that picks a
@@ -83,7 +85,10 @@ class _AddResourceScreenState extends ConsumerState<AddResourceScreen> {
       setState(() {
         _titleController.text = row.title ?? '';
         _authorController.text = row.author ?? '';
-        _yearController.text = row.year ?? DateTime.now().year.toString();
+        // `prefillFields` sets the field to the stored year verbatim
+        // (AddResourceActivity.kt:126). Falling back to this year here would
+        // restamp a row whose year the server never carried.
+        _yearController.text = row.year ?? '';
         _descriptionController.text = row.description ?? '';
         _publisherController.text = row.publisher ?? '';
         _licenseController.text = row.linkToLicense ?? '';
@@ -125,9 +130,21 @@ class _AddResourceScreenState extends ConsumerState<AddResourceScreen> {
     });
 
     final repo = ref.read(resourcesRepositoryProvider);
-    final user = ref.read(sessionProvider).valueOrNull;
+    // `ref.read(sessionProvider).valueOrNull` is null until something else
+    // resolves the provider, and this screen never watches it — in the app the
+    // router's `ref.listen` happens to keep it resolved, so the loss was
+    // invisible. Awaiting the future is what `AddResourceActivity` does
+    // (`userSessionManager.getUserModel()` in onCreate). A rejecting session
+    // costs the attribution, never the resource.
+    UserRow? user;
+    try {
+      user = await ref.read(sessionProvider.future);
+    } catch (_) {
+      user = null;
+    }
+    if (!mounted) return;
 
-    String? error;
+    LocalResourceError? error;
     if (_isEditMode) {
       error = await repo.updateLocalResource(
         resourceId: widget.editResourceId!,
@@ -168,7 +185,24 @@ class _AddResourceScreenState extends ConsumerState<AddResourceScreen> {
     setState(() => _saving = false);
 
     if (error != null) {
-      setState(() => _titleError = error);
+      final l10n = AppLocalizations.of(context);
+      // `AddResourceActivity` branches on the *mode*, not on what went wrong:
+      // a failed edit is toasted `failed_to_update_resource` (:164-167) and
+      // **any** failed create annotates the title field with
+      // `resource_title_already_exists` (:204-207) — including the ones that
+      // have nothing to do with the title, since `saveLocalResource` also
+      // fails when the picked file is missing, when storage is unavailable and
+      // on an IO or security error during the copy. Keying the message on the
+      // error kind instead read correctly for the one failure the port can
+      // currently produce and would have quietly diverged for every failure
+      // the file-copy path still owes.
+      if (_isEditMode) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.failedToUpdateResource)));
+      } else {
+        setState(() => _titleError = l10n.resourceTitleAlreadyExists);
+      }
     } else {
       final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -470,12 +504,18 @@ class _DropdownField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // A synced row carries whatever the server wrote — `mediaType: "HTML"`,
+    // an ISO language code — and `DropdownButton` asserts that a non-null
+    // value matches exactly one item. The Kotlin spinner simply stays on its
+    // hint for a value it does not know (`setupHintSpinner`), so drop the
+    // unknown one rather than taking the screen down with it.
+    final known = options.contains(value) ? value : null;
     return DropdownButtonFormField<String>(
       decoration: InputDecoration(
         labelText: label,
         border: const OutlineInputBorder(),
       ),
-      initialValue: value,
+      initialValue: known,
       items: [
         for (final option in options)
           DropdownMenuItem(value: option, child: Text(option)),
