@@ -55,7 +55,7 @@ Future<bool> executeBackgroundTask(String taskName) async {
     }
     final drainer = container.read(outboxDrainerProvider);
     bool completed(SyncResult result) => result is SyncComplete;
-    return BackgroundTaskRunner(
+    return await BackgroundTaskRunner(
       configured: config != null,
       autoSyncEnabled: prefs.autoSyncEnabled,
       autoSyncInterval: prefs.autoSyncInterval,

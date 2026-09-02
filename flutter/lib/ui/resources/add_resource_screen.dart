@@ -194,9 +194,9 @@ class _AddResourceScreenState extends ConsumerState<AddResourceScreen> {
         case LocalResourceError.titleAlreadyExists:
           setState(() => _titleError = l10n.resourceTitleAlreadyExists);
         case LocalResourceError.notFound:
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.failedToUpdateResource)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.failedToUpdateResource)));
       }
     } else {
       final l10n = AppLocalizations.of(context);
