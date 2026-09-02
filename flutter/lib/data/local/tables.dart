@@ -39,8 +39,20 @@ class Users extends Table {
   TextColumn get birthPlace => text().nullable()();
   TextColumn get userImage => text().nullable()();
 
-  /// Only ever set for guest users, which have an empty `_id` and are compared
-  /// in plaintext (see `UserRepositoryImpl.authenticateUser`).
+  /// Set for an account with **no server identity** — a member registered
+  /// offline, whose `createMember` document carries no `_id`, so
+  /// `applyJsonToUser` takes the plaintext password it typed
+  /// (`UserRepositoryImpl.kt:261`, read after `_id = newId`) and
+  /// `authenticateUser` compares it directly (`:862`).
+  ///
+  /// Not guests, which this comment used to say: `buildGuestUserJson` keys a
+  /// guest row `guest_<username>`, so its `_id` is non-empty, its password
+  /// stays null, and it is never authenticated here at all — guest re-entry
+  /// goes back through `showGuestLoginDialog`. Anything that creates a guest
+  /// row must leave this column alone and set `couchId` to
+  /// `UserMapper.guestIdPrefix + username`, or the row lands in
+  /// `UserDao.pendingSyncUsers` and gets POSTed to `_users`, which Kotlin
+  /// never does.
   TextColumn get password => text().nullable()();
 
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();

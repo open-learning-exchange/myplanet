@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../data/local/app_database.dart';
+import '../../data/local/user_mapper.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/session_provider.dart';
@@ -27,6 +29,14 @@ class SettingsScreen extends ConsumerWidget {
     final versionInfo = ref.watch(appVersionInfoProvider).valueOrNull;
     final textScale = ref.watch(textScaleProvider);
     final clearState = ref.watch(clearDataProvider);
+    // Watched, not read. Both guest gates below used to call
+    // `ref.read(sessionProvider).valueOrNull` from inside their `onTap`, and
+    // this screen watches `sessionProvider` nowhere else — so the session was
+    // `null` until something outside the screen resolved it, the gate fell
+    // through, and a guest reached the reset-app confirmation. Latent in the
+    // shipping app only because the router holds a `ref.listen` on the same
+    // provider; the fifth instance of that shape in this port.
+    final session = ref.watch(sessionProvider).valueOrNull;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settings)),
@@ -171,8 +181,7 @@ class SettingsScreen extends ConsumerWidget {
             // Guest-gated, matching `SettingsActivity`: a guest is offered
             // membership instead of the storage tools.
             onTap: () {
-              final session = ref.read(sessionProvider).valueOrNull;
-              if (session != null && session.id.startsWith('guest')) {
+              if (session != null && UserMapper.isGuest(session)) {
                 showGuestDialog(context);
                 return;
               }
@@ -198,7 +207,7 @@ class SettingsScreen extends ConsumerWidget {
             title: Text(l10n.resetApp),
             subtitle: Text(l10n.clearAllDataConfirm),
             enabled: !clearState.isLoading,
-            onTap: () => _confirmClearData(context, l10n, ref),
+            onTap: () => _confirmClearData(context, l10n, ref, session),
           ),
         ],
       ),
@@ -329,9 +338,9 @@ Future<void> _confirmClearData(
   BuildContext context,
   AppLocalizations l10n,
   WidgetRef ref,
+  UserRow? session,
 ) async {
-  final session = ref.read(sessionProvider).valueOrNull;
-  if (session != null && session.id.startsWith('guest')) {
+  if (session != null && UserMapper.isGuest(session)) {
     showGuestDialog(context);
     return;
   }

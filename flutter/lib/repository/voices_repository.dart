@@ -11,6 +11,7 @@ import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
 import '../data/local/news_mapper.dart';
+import '../data/local/user_mapper.dart';
 
 /// Port of `repository/VoicesRepositoryImpl.kt` — the voices/discussion feed.
 class VoicesRepository {
@@ -534,7 +535,7 @@ class VoicesRepository {
   Future<List<NewsRow>> pendingUploads() async {
     final rows = await _dao.getAll();
     return rows
-        .where((row) => !(row.userId ?? '').startsWith('guest'))
+        .where((row) => !UserMapper.isGuestId(row.userId))
         .where((row) => row.docId == null || row.docId!.isEmpty || row.isEdited)
         .toList(growable: false);
   }

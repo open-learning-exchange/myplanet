@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/utils/json_utils.dart';
 import '../../data/local/app_database.dart';
+import '../../data/local/user_mapper.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/session_provider.dart';
@@ -110,11 +111,13 @@ class VoiceCard extends ConsumerWidget {
 
     // The Kotlin gates run on `VoicesAdapter.canEdit/canDelete/canShare`; the
     // moderator and shared-by widenings it allows are not ported, so an author
-    // check is the honest subset.
-    final isAuthor = user != null && row.userId == (user.couchId ?? user.id);
+    // check is the honest subset. The check itself is
+    // `matchesCurrentUser` — an *or* over both id columns, not a preference
+    // between them; see `UserMapper.matchesUser`.
+    final isAuthor = user != null && UserMapper.matchesUser(user, row.userId);
     final canShare =
         user != null &&
-        !user.id.startsWith('guest') &&
+        !UserMapper.isGuest(user) &&
         !VoicesRepository.isCommunityNews(row);
 
     return Card(
@@ -189,7 +192,7 @@ class VoiceCard extends ConsumerWidget {
                   ],
                 ),
               ],
-              if (user != null && !user.id.startsWith('guest'))
+              if (user != null && !UserMapper.isGuest(user))
                 _ReactionRow(row: row, userId: user.id),
               const SizedBox(height: 4),
               Align(

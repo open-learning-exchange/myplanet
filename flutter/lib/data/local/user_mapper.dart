@@ -121,8 +121,14 @@ class UserMapper {
       salt: Value(JsonUtils.getStringOrNull('salt', doc)),
       // `if (_id?.isEmpty() == true) password = getString("password", jsonDoc)`
       // — and that reads `_id` *after* `_id = newId`, so the plaintext
-      // password is taken only for a document with no `_id`, which is the
-      // guest shape. Everyone else is verified against `derived_key`/`salt`.
+      // password is taken only for a document with no `_id`. That is **not**
+      // the guest shape, which this comment used to claim: `createGuestUser`
+      // supplies `_id = "guest_<username>"` (`buildGuestUserJson`), so a guest
+      // row's password stays null and a guest is never verified by comparison.
+      // The shape it is for is a member registered **offline**, whose
+      // `createMember` document carries no `_id` at all
+      // (`UserRepositoryImpl.kt:570-579`). Everyone else is verified against
+      // `derived_key`/`salt`.
       password: couchId.isEmpty
           ? Value(JsonUtils.getStringOrNull('password', doc))
           : const Value.absent(),
@@ -276,4 +282,92 @@ class UserMapper {
   static bool isManager(UserRow user) =>
       user.userAdmin ||
       user.rolesList.any((role) => role.toLowerCase() == 'manager');
+
+  /// The prefix `createGuestUser` keys a guest row on.
+  ///
+  /// `buildGuestUserJson` (`UserRepositoryImpl.kt:146-153`) mints
+  /// `{"_id": "guest_$username", "name": username, "firstName": username,
+  /// "roles": ["guest"]}` and hands it to `saveUser(jsonDoc)`, so
+  /// `applyJsonToUser` writes **both** the row key (`id`, from `_id` because
+  /// the fresh entity's is blank) and the `_id` column as `guest_<username>`.
+  /// That equality is why Kotlin can spell the check five different ways —
+  /// `_id?.startsWith("guest_")` (`UserEntity.isGuest`, `migrateGuestUser`,
+  /// `cleanupDuplicateUsers`, `insertUsersFromSync`),
+  /// `SUBSTR(_id, 1, 6) = 'guest_'` (`UserDao.getGuestUserByName`),
+  /// `_id.orEmpty().startsWith("guest")` (`validateUsername`),
+  /// `id.startsWith("guest")` (every UI gate, `getSyncedUserByName`) and
+  /// `SUBSTR(id, 1, 5) != 'guest'` (`UserDao.getSyncedUsers`) — and still get
+  /// one answer.
+  ///
+  /// Anything a guest row is created by must use this constant, so the
+  /// equality holds here too.
+  static const String guestIdPrefix = 'guest_';
+
+  /// The guest rule, applied to one id string.
+  ///
+  /// **A deliberate deviation, recorded rather than hidden.** Six characters,
+  /// not five — and five is what the Kotlin sites this replaced use
+  /// (`user.id.startsWith("guest")` at every UI gate,
+  /// `_id.orEmpty().startsWith("guest")` in `validateUsername`). `guest_` is
+  /// what Kotlin's *authoritative* spellings use (the list above), and the
+  /// five-character ones cannot disagree with it for any id either app
+  /// writes: those are `guest_<username>` (the username is validated
+  /// non-empty), `org.couchdb.user:<name>`, and a millisecond timestamp, so
+  /// no id starts `guest` without starting `guest_`.
+  ///
+  /// The two error directions are not symmetric, which is why the tighter
+  /// rule wins. A false positive — some future id that merely begins `guest`,
+  /// a server document called `guestbook` — would gate a real member out of
+  /// features they are entitled to. A false negative needs an id that starts
+  /// `guest` and not `guest_`, which only a guest-creator that ignores this
+  /// constant could mint; that is what exporting the constant prevents.
+  static bool isGuestId(String? id) => id?.startsWith(guestIdPrefix) ?? false;
+
+  /// Whether [user] is the local guest row — the single predicate every guest
+  /// gate in the port reads.
+  ///
+  /// Both id columns are tested, and that is a deliberate widening of any one
+  /// Kotlin spelling. Kotlin's spellings are interchangeable only because of
+  /// the `id == _id` equality [guestIdPrefix] describes, and the port cannot
+  /// yet enforce that equality: **nothing in the port creates a guest row at
+  /// all** (see `PHASE_112_NOTES.md`). Reading one column would leave a future
+  /// `createGuestUser` free to satisfy this predicate at some call sites and
+  /// not others — which is exactly the state Phase 107 found and this helper
+  /// exists to make unrepresentable. On every row Kotlin can produce the two
+  /// columns agree, so the widening changes no answer; where they disagree it
+  /// errs towards "guest", which withholds a privilege rather than granting
+  /// one.
+  ///
+  /// **Not** a port of `UserEntity.isGuest()`, which is this rule *or* a
+  /// `guest` role without a `learner` role. That role clause is unported
+  /// because every gate the port has is a counterpart of Kotlin's narrower
+  /// `user.id.startsWith("guest")` family; the gates that read the role clause
+  /// (`TeamFragment:235`, `CoursesFragment:135`, `TakeCourseFragment:212`)
+  /// have no port counterpart yet. When they land, the role clause belongs
+  /// here as a second predicate beside this one — not folded into it, or the
+  /// settings and voices gates silently widen past their Kotlin counterparts.
+  static bool isGuest(UserRow user) =>
+      isGuestId(user.id) || isGuestId(user.couchId);
+
+  /// Port of `VoicesAdapter.matchesCurrentUser` (`VoicesAdapter.kt:666-669`):
+  ///
+  /// ```kotlin
+  /// if (id.isNullOrEmpty()) return false
+  /// return id == currentUser?._id || id == currentUser?.id
+  /// ```
+  ///
+  /// An **or** over both id columns, and the same rule as
+  /// `UserDao.getById`'s `WHERE id = :id OR _id = :id`, for the reason
+  /// Phase 107 established: a member registered on this device authors rows
+  /// under the locally-minted `'<millis>'` key and gains a `couchId` only once
+  /// the upload lands. Preferring one column over the other makes the
+  /// account's own earlier rows stop being its own the moment it uploads.
+  ///
+  /// The empty-or-null guard comes first in the Kotlin and is load-bearing:
+  /// without it a row with no author would match a session that has no
+  /// `couchId`.
+  static bool matchesUser(UserRow user, String? id) {
+    if (id == null || id.isEmpty) return false;
+    return id == user.couchId || id == user.id;
+  }
 }

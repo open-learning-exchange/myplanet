@@ -471,4 +471,118 @@ void main() {
       expect(UserMapper.docIsManager({'name': 'ada'}), isFalse);
     });
   });
+
+  /// Phase 112. `UserEntity.isGuest()`, `UserDao.getGuestUserByName`,
+  /// `validateUsername` and every Kotlin UI gate spell this check differently
+  /// and still agree, because `createGuestUser` writes the same string to both
+  /// id columns. The port had three of those spellings and no path that
+  /// creates a guest row, so nothing held them together.
+  group('UserMapper.isGuest', () {
+    UserRow user({
+      String id = '1700000000000',
+      String? couchId,
+      List<String> roles = const ['learner'],
+    }) => UserRow(
+      id: id,
+      couchId: couchId,
+      name: 'ada',
+      rolesList: roles,
+      userAdmin: false,
+      joinDate: 0,
+      isArchived: false,
+      isUpdated: false,
+    );
+
+    /// The row `createGuestUser('ada')` actually produces.
+    test('the row createGuestUser writes reads as a guest', () {
+      // Built through the production mapper from Kotlin's own
+      // `buildGuestUserJson` output, so the shape is not asserted by hand.
+      final companion = UserMapper.fromDoc({
+        '_id': 'guest_ada',
+        'name': 'ada',
+        'firstName': 'ada',
+        'roles': ['guest'],
+      });
+      expect(companion.id.value, 'guest_ada');
+      expect(companion.couchId.value, 'guest_ada');
+      expect(
+        UserMapper.isGuest(user(id: 'guest_ada', couchId: 'guest_ada')),
+        isTrue,
+      );
+    });
+
+    test('a member is not a guest by either column', () {
+      expect(
+        UserMapper.isGuest(user(couchId: 'org.couchdb.user:ada')),
+        isFalse,
+      );
+      // A member registered on this device, before their upload lands.
+      expect(UserMapper.isGuest(user()), isFalse);
+    });
+
+    /// This is the row the three pre-unification spellings disagreed on, and
+    /// the port's *own* code produces it: `_cacheUserDoc` resolves the row a
+    /// document belongs to and `fromDoc` keeps that row's `id`, so caching a
+    /// guest document against a member registered offline on this device
+    /// leaves the guest prefix in `_id` alone.
+    test('a row with the prefix in only one column still reads as a guest', () {
+      final companion = UserMapper.fromDoc({
+        '_id': 'guest_ada',
+        'name': 'ada',
+        'roles': ['guest'],
+      }, existing: user(id: '1700000000000'));
+      // Produced, not asserted: the key stays local, the couch id is the
+      // guest one.
+      expect(companion.id.value, '1700000000000');
+      expect(companion.couchId.value, 'guest_ada');
+
+      // The two spellings this phase replaced would split on it — the screens
+      // read `id` ("not a guest", so reset-app and voice posting are open),
+      // `validateUsername` reads `_id` ("a guest", so the name is
+      // re-takeable). One row, two answers.
+      const row = ('1700000000000', 'guest_ada');
+      expect(row.$1.startsWith('guest'), isFalse);
+      expect(row.$2.startsWith('guest'), isTrue);
+
+      // The unified rule gives one answer, and it is the safe one: a
+      // privilege withheld, never granted.
+      expect(UserMapper.isGuest(user(id: row.$1, couchId: row.$2)), isTrue);
+      expect(UserMapper.isGuest(user(id: 'guest_ada', couchId: null)), isTrue);
+    });
+
+    /// Six characters, not five. Every id either app writes is
+    /// `guest_<username>`, `org.couchdb.user:<name>` or a millisecond
+    /// timestamp, so this narrowing changes no producible row — but it does
+    /// mean a fixture has to spell the prefix the way `createGuestUser` does.
+    test('the prefix is guest_, not guest', () {
+      expect(UserMapper.guestIdPrefix, 'guest_');
+      expect(UserMapper.isGuestId('guest_ada'), isTrue);
+      expect(UserMapper.isGuestId('guest-ada'), isFalse);
+      expect(UserMapper.isGuestId('guestbook'), isFalse);
+      expect(UserMapper.isGuestId(null), isFalse);
+      expect(UserMapper.isGuestId(''), isFalse);
+    });
+
+    /// The half of `UserEntity.isGuest()` this helper deliberately does not
+    /// carry. Kotlin returns true for a `guest` role without a `learner` role
+    /// (`UserEntity.kt:177-181`), and the gates that read it — `TeamFragment`,
+    /// `CoursesFragment`, `TakeCourseFragment` — have no port counterpart, so
+    /// porting the clause here would widen the settings and voices gates past
+    /// their Kotlin originals. Pinned so the omission is visible rather than
+    /// forgotten.
+    test('a role-only guest is not caught: isGuest() role clause unported', () {
+      final roleOnly = user(
+        id: 'org.couchdb.user:ada',
+        couchId: 'org.couchdb.user:ada',
+        roles: const ['guest'],
+      );
+      expect(UserMapper.isGuest(roleOnly), isFalse);
+      // What Kotlin's `isGuest()` would answer for the same row.
+      expect(
+        roleOnly.rolesList.any((r) => r.toLowerCase() == 'guest') &&
+            !roleOnly.rolesList.any((r) => r.toLowerCase() == 'learner'),
+        isTrue,
+      );
+    });
+  });
 }

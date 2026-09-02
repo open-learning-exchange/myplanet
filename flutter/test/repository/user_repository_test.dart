@@ -326,22 +326,53 @@ void main() {
       expect((result as LoginFailure).reason, LoginFailureReason.userNotFound);
     });
 
-    /// Guest accounts have an empty `_id` and a plaintext password.
-    test('authenticates a guest against the plaintext password', () async {
+    /// This case was called "authenticates a guest" and seeded
+    /// `id: 'guest-1'` with no `couchId` — a row `createGuestUser` cannot
+    /// produce, because it writes `guest_<username>` to *both* id columns. The
+    /// branch it exercises is `if (it._id?.isEmpty() == true)`
+    /// (`UserRepositoryImpl.kt:862`), which selects an account with no server
+    /// identity, not a guest. Renamed and re-seeded to the row that branch is
+    /// actually for; the guest row gets its own case below.
+    test('authenticates an offline-registered member against the plaintext '
+        'password', () async {
       await db.userDao.upsert(
         UsersCompanion.insert(
-          id: 'guest-1',
-          name: const Value('guest'),
+          id: '1700000000000',
+          name: const Value('ada'),
           password: const Value('letmein'),
         ),
       );
 
       expect(
-        await repository.loginOffline(username: 'guest', password: 'letmein'),
+        await repository.loginOffline(username: 'ada', password: 'letmein'),
         isA<LoginSuccess>(),
       );
       expect(
-        await repository.loginOffline(username: 'guest', password: 'nope'),
+        await repository.loginOffline(username: 'ada', password: 'nope'),
+        isA<LoginFailure>(),
+      );
+    });
+
+    /// And the row that *is* a guest does not take that branch, matching
+    /// Kotlin. A guest row carries no password — `applyJsonToUser` reads one
+    /// only for a document with no `_id`, and `buildGuestUserJson` supplies
+    /// `guest_<username>` — so were the plaintext branch taken, `null ==
+    /// null` would sign a guest in on an empty password.
+    test('a guest row is not authenticated by the plaintext branch', () async {
+      await db.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'guest_ada',
+          couchId: const Value('guest_ada'),
+          name: const Value('ada'),
+        ),
+      );
+
+      expect(
+        await repository.loginOffline(username: 'ada', password: ''),
+        isA<LoginFailure>(),
+      );
+      expect(
+        await repository.loginOffline(username: 'ada', password: 'anything'),
         isA<LoginFailure>(),
       );
     });

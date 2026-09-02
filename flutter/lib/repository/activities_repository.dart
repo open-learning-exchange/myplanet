@@ -9,6 +9,7 @@ import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
 import '../data/local/offline_activity_mapper.dart';
+import '../data/local/user_mapper.dart';
 
 /// One resource and how many times it was opened — the pair
 /// `getMostOpenedResource` returns.
@@ -439,6 +440,5 @@ class ActivitiesRepository {
   }
 
   /// `UserSessionManager`'s test: a `guest`-prefixed id, case-sensitively.
-  static bool _isGuest(String? userId) =>
-      userId != null && userId.startsWith('guest');
+  static bool _isGuest(String? userId) => UserMapper.isGuestId(userId);
 }
