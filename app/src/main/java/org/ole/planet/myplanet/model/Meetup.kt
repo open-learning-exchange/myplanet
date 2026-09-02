@@ -8,6 +8,7 @@ import com.google.gson.JsonObject
 import org.json.JSONArray
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.addAppIdentity
 
 /**
  * Room replacement for the former `Meetup` model. Meetups are both synced (pulled from
@@ -146,6 +147,7 @@ open class Meetup {
                 `object`.add("link", linksJson)
             }
 
+            `object`.addAppIdentity()
             return `object`
         }
     }
