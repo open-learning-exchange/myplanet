@@ -15,7 +15,12 @@ import '../../providers/session_provider.dart';
 /// profile (encrypted `data` blob on the examination row) and the user's
 /// personal fields, and persists both via [HealthRepository.saveHealthProfile].
 class AddHealthScreen extends ConsumerStatefulWidget {
-  const AddHealthScreen({super.key});
+  const AddHealthScreen({super.key, this.userId});
+
+  /// The patient whose profile is being edited — `AddHealthActivity`'s
+  /// `"userId"` intent extra, which `MyHealthFragment` fills with the
+  /// *selected* patient. Null falls back to the signed-in user.
+  final String? userId;
 
   @override
   ConsumerState<AddHealthScreen> createState() => _AddHealthScreenState();
@@ -37,6 +42,7 @@ class _AddHealthScreenState extends ConsumerState<AddHealthScreen> {
   int _contactTypeIndex = 0;
 
   bool _isSaving = false;
+  String? _patientId;
 
   /// Matches `R.array.contact_type` — the Kotlin spinner source.
   final List<String> _contactTypes = ['Phone', 'Email'];
@@ -48,11 +54,21 @@ class _AddHealthScreenState extends ConsumerState<AddHealthScreen> {
   }
 
   Future<void> _loadUserData() async {
-    final user = await ref.read(sessionProvider.future);
-    if (user == null) return;
+    // `viewModel.loadHealthData(userId)` is keyed by the *patient*, so a
+    // health provider editing the record they selected no longer loads — and
+    // no longer saves over — their own profile.
+    final session = await ref.read(sessionProvider.future);
+    // `patientIdOf`, not `session.id` — see `patientIdOf`: `_id` wins, and
+    // that is the id the record is stored under.
+    final patientId =
+        widget.userId ?? (session == null ? null : patientIdOf(session));
+    if (patientId == null || patientId.isEmpty) return;
+    if (mounted) setState(() => _patientId = patientId);
 
-    final repo = ref.read(healthRepositoryProvider);
-    final health = await repo.getHealthProfile(user.id);
+    final data = await ref.read(healthDataProvider(patientId).future);
+    final user = data?.user;
+    if (user == null) return;
+    final health = data?.myHealth;
 
     if (!mounted) return;
     setState(() {
@@ -274,14 +290,21 @@ class _AddHealthScreenState extends ConsumerState<AddHealthScreen> {
   Future<void> _saveHealthData() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final user = await ref.read(sessionProvider.future);
-    if (user == null) return;
+    // The patient resolved when the form loaded; the signed-in user is only
+    // its fallback, and `createMyHealth`'s `userId?.let { ... }` saves nothing
+    // without one.
+    final session = await ref.read(sessionProvider.future);
+    final patientId =
+        _patientId ??
+        widget.userId ??
+        (session == null ? null : patientIdOf(session));
+    if (patientId == null || patientId.isEmpty) return;
 
     setState(() => _isSaving = true);
 
     try {
       final repo = ref.read(healthRepositoryProvider);
-      await repo.saveHealthProfile(user.id, {
+      await repo.saveHealthProfile(patientId, {
         'firstName': _fnameController.text,
         'middleName': _mnameController.text,
         'lastName': _lnameController.text,
@@ -296,8 +319,13 @@ class _AddHealthScreenState extends ConsumerState<AddHealthScreen> {
         'notes': _otherNeedsController.text,
       });
 
-      // Refresh the health data provider so MyHealthScreen reflects the edit.
-      ref.invalidate(healthDataProvider);
+      // `MyHealthFragment.onResume` re-selects the patient when the editor
+      // finishes, which is what puts the edit on screen. Invalidating
+      // `healthDataProvider` alone did nothing for it: nothing watches that
+      // provider — the screen renders `patientDetailProvider` — so the saved
+      // profile stayed invisible until the next sync.
+      ref.invalidate(healthDataProvider(patientId));
+      await ref.read(patientDetailProvider.notifier).refresh();
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

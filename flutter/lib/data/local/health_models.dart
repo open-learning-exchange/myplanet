@@ -282,11 +282,23 @@ class HealthRecord {
   final List<HealthExaminationRow> examinations;
   final Map<String, UserRow> userMap;
 
+  /// The examiner each examination names, by examination id.
+  ///
+  /// This is `getString("createdBy", encrypted)` in
+  /// `HealthExaminationAdapter.submitExaminations`, precomputed off the UI
+  /// thread there for the same reason it is precomputed here: the value lives
+  /// inside the record's *encrypted* `data`, not in a column. The `creatorId`
+  /// column is not it — `saveData` sets both `profileId` and `creatorId` to
+  /// the patient's `health.userKey`, so reading the examiner off it names a
+  /// cipher key.
+  final Map<String, String> createdByOf;
+
   HealthRecord({
     required this.healthPojo,
     required this.healthProfile,
     required this.examinations,
     required this.userMap,
+    this.createdByOf = const {},
   });
 }
 

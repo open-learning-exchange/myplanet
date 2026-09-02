@@ -157,6 +157,58 @@ void main() {
     expect(row?.isUpdated, isTrue);
   });
 
+  test('conditions cross the wire as a nested object', () async {
+    // `serialize` is `addJson(object, "conditions", gson.fromJson(...))` — the
+    // map as a nested JSON *object*, omitted when empty. Sending the stored
+    // string put a primitive where `getJsonObject` expects an object, so a
+    // Kotlin reader saw no conditions at all and its next save overwrote them.
+    final repository = createRepository();
+    final id = await repository.createExamination(
+      temperature: 37,
+      pulse: 72,
+      height: 170,
+      weight: 65,
+      conditions: jsonEncode({'Malaria': true, 'Anaemia': false}),
+    );
+
+    final payload = HealthRepository.serialize((await repository.getById(id))!);
+    expect(payload['conditions'], {'Malaria': true, 'Anaemia': false});
+
+    // And an empty map is left out, as `addJson` leaves it out.
+    final empty = await repository.createExamination(
+      temperature: 37,
+      pulse: 72,
+      height: 170,
+      weight: 65,
+      conditions: jsonEncode(<String, bool>{}),
+    );
+    expect(
+      HealthRepository.serialize((await repository.getById(empty))!),
+      isNot(contains('conditions')),
+    );
+  });
+
+  test('a synced document conditions object is stored as JSON', () async {
+    // `conditions = gson.toJson(getJsonObject("conditions", act))`. Calling
+    // `toString()` on the decoded map yields `{Malaria: true}`, which is not
+    // JSON: `parseConditions` threw, the record read as having no conditions,
+    // and saving that edit wrote the empty map back over them.
+    final repository = createRepository();
+    await repository.cacheDocuments([
+      {
+        '_id': 'health-1',
+        'temperature': 37.0,
+        'conditions': {'Malaria': true, 'Anaemia': false},
+      },
+    ]);
+
+    final row = await repository.getById('health-1');
+    expect(repository.parseConditions(row?.conditions), {
+      'Malaria': true,
+      'Anaemia': false,
+    });
+  });
+
   test('serializes examination for upload', () async {
     final repository = createRepository();
     await repository.cacheDocuments([

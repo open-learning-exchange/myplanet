@@ -236,9 +236,8 @@ class _EditAchievementScreenState extends ConsumerState<EditAchievementScreen> {
     if (name.isEmpty) return;
     if (!await AchievementFiles.hasResume(name)) {
       // `btnViewCvEdit`'s else branch: the Kotlin says so rather than doing
-      // nothing. Its string names the file (`file_not_found` takes a `%s`);
-      // the port's key has no placeholder.
-      if (mounted) _toast(AppLocalizations.of(context).fileNotFound);
+      // nothing, and its string names the file.
+      if (mounted) _toast(AppLocalizations.of(context).fileNotFound(name));
       return;
     }
     if (!mounted) return;
@@ -304,19 +303,23 @@ class _EditAchievementScreenState extends ConsumerState<EditAchievementScreen> {
                   TextFormField(
                     controller: _achievementsHeader,
                     decoration: InputDecoration(
-                      labelText: l10n.noAchievementAdded,
+                      labelText: l10n.summaryOfAchievements,
                       prefixIcon: const Icon(Icons.star_border),
                     ),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _purpose,
-                    decoration: InputDecoration(labelText: l10n.myPurpose),
+                    decoration: InputDecoration(
+                      labelText: l10n.myPurposeDescription,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _goals,
-                    decoration: InputDecoration(labelText: l10n.myGoals),
+                    decoration: InputDecoration(
+                      labelText: l10n.myGoalsDescription,
+                    ),
                   ),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
