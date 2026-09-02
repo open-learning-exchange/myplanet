@@ -1,0 +1,1 @@
+sed -i 's/private val realtimeSyncManager: RealtimeSyncManager/private val realtimeSyncManager: RealtimeSyncManager,\n    private val appDatabase: org.ole.planet.myplanet.data.room.AppDatabase/' app/src/main/java/org/ole/planet/myplanet/repository/CoursesRepositoryImpl.kt

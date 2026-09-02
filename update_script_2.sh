@@ -1,0 +1,2 @@
+sed -i 's/import androidx.room.withTransaction/import androidx.room.withTransaction/' app/src/main/java/org/ole/planet/myplanet/repository/CoursesRepositoryImpl.kt
+grep -q "import androidx.room.withTransaction" app/src/main/java/org/ole/planet/myplanet/repository/CoursesRepositoryImpl.kt || sed -i '12i import androidx.room.withTransaction' app/src/main/java/org/ole/planet/myplanet/repository/CoursesRepositoryImpl.kt
