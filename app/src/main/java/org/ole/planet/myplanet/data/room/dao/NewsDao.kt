@@ -24,8 +24,6 @@ interface NewsDao {
     @Query("SELECT * FROM news WHERE id IN (:ids)")
     suspend fun getByIds(ids: List<String>): List<News>
 
-    // Top-level posts (no reply parent), newest first. Team/community visibility is filtered
-    // in-memory by the repository (mirrors the isVisibleToUser approach).
     @Query("SELECT * FROM news WHERE replyTo IS NULL OR replyTo = '' ORDER BY time DESC")
     suspend fun getTopLevel(): List<News>
 
@@ -38,17 +36,10 @@ interface NewsDao {
     @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND ((viewableBy = 'teams' COLLATE NOCASE AND viewableId = :teamId COLLATE NOCASE) OR viewIn LIKE :teamPattern ESCAPE '\\') ORDER BY time DESC")
     fun getTopLevelByTeamFlow(teamId: String, teamPattern: String): Flow<List<News>>
 
-    // Top-level "message" posts (community feed source).
-    @Query(
-        "SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') " +
-            "AND docType = 'message' COLLATE NOCASE ORDER BY time DESC"
-    )
+    @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND docType = 'message' COLLATE NOCASE ORDER BY time DESC")
     suspend fun getTopLevelMessages(): List<News>
 
-    @Query(
-        "SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') " +
-            "AND docType = 'message' COLLATE NOCASE ORDER BY time DESC"
-    )
+    @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND docType = 'message' COLLATE NOCASE ORDER BY time DESC")
     fun getTopLevelMessagesFlow(): Flow<List<News>>
 
     @Query("SELECT * FROM news WHERE replyTo = :newsId COLLATE NOCASE ORDER BY time DESC")
@@ -63,17 +54,22 @@ interface NewsDao {
     @Query("WITH RECURSIVE thread(id) AS (SELECT :newsId UNION SELECT news.id FROM news JOIN thread ON news.replyTo = thread.id) SELECT id FROM thread")
     suspend fun getNewsAndRepliesIds(newsId: String): List<String>
 
-    @Query(
-        "SELECT * FROM news WHERE docType = 'message' COLLATE NOCASE " +
-            "AND createdOn = :planetCode COLLATE NOCASE"
-    )
+    @Query("SELECT * FROM news WHERE docType = 'message' COLLATE NOCASE AND createdOn = :planetCode COLLATE NOCASE")
     suspend fun getPlanetMessages(planetCode: String): List<News>
 
-    @Query("SELECT * FROM news WHERE time >= :startTime AND time <= :endTime")
-    suspend fun getInTimeRange(startTime: Long, endTime: Long): List<News>
+    @Query(
+        "SELECT COUNT(*) FROM (SELECT DISTINCT strftime('%Y-%m-%d', time / 1000, 'unixepoch', 'localtime') " +
+            "FROM news WHERE time >= :startTime AND time <= :endTime " +
+            "AND viewIn LIKE '%\"section\":\"community\"%')"
+    )
+    suspend fun countDistinctCommunityVoiceDates(startTime: Long, endTime: Long): Int
 
-    @Query("SELECT * FROM news WHERE time >= :startTime AND time <= :endTime AND userId = :userId")
-    suspend fun getInTimeRangeForUser(startTime: Long, endTime: Long, userId: String): List<News>
+    @Query(
+        "SELECT COUNT(*) FROM (SELECT DISTINCT strftime('%Y-%m-%d', time / 1000, 'unixepoch', 'localtime') " +
+            "FROM news WHERE time >= :startTime AND time <= :endTime AND userId = :userId " +
+            "AND viewIn LIKE '%\"section\":\"community\"%')"
+    )
+    suspend fun countDistinctCommunityVoiceDatesForUser(startTime: Long, endTime: Long, userId: String): Int
 
     @Query("SELECT * FROM news WHERE newsId = :chatId")
     suspend fun getByNewsId(chatId: String): List<News>
@@ -81,8 +77,8 @@ interface NewsDao {
     @Query("SELECT COUNT(*) FROM news WHERE viewableBy = 'teams' AND viewableId = :teamId")
     suspend fun countTeamChats(teamId: String): Long
 
-    @Query("SELECT viewableId FROM news WHERE viewableBy = 'teams' AND viewableId IN (:teamIds)")
-    suspend fun getTeamChatViewableIds(teamIds: List<String>): List<String>
+    @Query("SELECT COUNT(*) FROM news WHERE (replyTo IS NULL OR replyTo = '') AND ((viewableBy = 'teams' COLLATE NOCASE AND viewableId = :teamId COLLATE NOCASE) OR viewIn LIKE :teamPattern ESCAPE '\\')")
+    suspend fun countTopLevelByTeam(teamId: String, teamPattern: String): Long
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(news: News)

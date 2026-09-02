@@ -10,38 +10,18 @@ on:
     types: [playstore]
   workflow_dispatch:
     inputs:
-      track:
-        description: 'playstore track to keep current'
-        required: false
-        default: 'internal'
-        type: string
-      daily_limit:
-        description: 'saves playstore allows per day (only used to estimate the next free slot)'
-        required: false
-        default: '50'
-        type: string
-      force:
-        description: 'check the track even when the last release run reported a successful publish'
-        required: false
-        default: false
-        type: boolean
       resume_automerge:
-        description: 'dispatch the automerge drain once the pending release is published'
+        description: '🚀 resume the automerge drain'
         required: false
-        default: false
+        default: true
         type: boolean
       wait_minutes:
-        description: 'how long this run may wait on a runner for the next save slot (0 = try right away)'
+        description: '⏳ wait up to N min for a slot'
         required: false
         default: '0'
         type: string
-      retry_minutes:
-        description: 'after a refusal, how long this run may wait for the next slot and try once more (0 = do not retry)'
-        required: false
-        default: '15'
-        type: string
       dry_run:
-        description: 'report what would be published, upload nothing'
+        description: '🧪 dry run — upload nothing'
         required: false
         default: false
         type: boolean
@@ -63,11 +43,10 @@ jobs:
       REPO: ${{ github.repository }}
       BASE: master
       PLAYSTORE_PACKAGE_NAME: org.ole.planet.myplanet
-      PLAYSTORE_TRACK: ${{ inputs.track || 'internal' }}
-      PLAYSTORE_DAILY_LIMIT: ${{ inputs.daily_limit || '50' }}
-      PLAYSTORE_FORCE: ${{ inputs.force || false }}
+      PLAYSTORE_TRACK: internal                  # 🛤️ the track kept current
+      PLAYSTORE_DAILY_LIMIT: '50'                # 📊 saves per day, only to estimate the next slot
+      RETRY_MINUTES: '15'                        # 🔁 after a refusal, wait this long and try once more
       WAIT_MINUTES: ${{ inputs.wait_minutes || '0' }}
-      RETRY_MINUTES: ${{ inputs.retry_minutes || '15' }}
       DRY_RUN: ${{ inputs.dry_run || false }}
       WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/workflows/playstore.yml
 
@@ -244,7 +223,7 @@ jobs:
           exit 1
 
       - name: resume the automerge drain
-        if: (steps.confirm.outputs.published == 'true' || steps.confirm_retry.outputs.published == 'true') && (inputs.resume_automerge || false)
+        if: (inputs.resume_automerge || false) && env.DRY_RUN != 'true'
         env:
           GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
         run: |

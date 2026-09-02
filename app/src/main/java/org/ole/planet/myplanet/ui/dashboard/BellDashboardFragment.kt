@@ -13,7 +13,9 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
@@ -47,6 +49,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private var _binding: FragmentHomeBellBinding? = null
     private val binding get() = _binding!!
     private var networkStatusJob: Job? = null
+    private var lastSyncStatusJob: Job? = null
     private val viewModel: BellDashboardViewModel by viewModels()
     var user: UserEntity? = null
     private var surveyListDialog: AlertDialog? = null
@@ -67,6 +70,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         super.onViewCreated(view, savedInstanceState)
         initView(view)
         setupNetworkStatusMonitoring()
+        startLastSyncStatusTicker()
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         observeCompletedCourses()
         observeSurveyReminders()
@@ -371,6 +375,18 @@ class BellDashboardFragment : BaseDashboardFragment() {
         railSyncStatus.text = getString(R.string.dashboard_sync_status, timeText)
     }
 
+    private fun startLastSyncStatusTicker() {
+        lastSyncStatusJob?.cancel()
+        lastSyncStatusJob = viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                while (true) {
+                    delay(LAST_SYNC_STATUS_REFRESH_INTERVAL_MS)
+                    updateRailSyncStatus()
+                }
+            }
+        }
+    }
+
     private fun openHelperFragment(f: Fragment) {
         val b = Bundle()
         b.putBoolean("isMyCourseLib", true)
@@ -398,6 +414,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         surveyListDialog?.dismiss()
         surveyListDialog = null
         networkStatusJob?.cancel()
+        lastSyncStatusJob?.cancel()
         super.onDestroyView()
         _binding = null
     }
@@ -421,5 +438,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
         } else {
             super.handleClick(id, title, f, v)
         }
+    }
+
+    companion object {
+        private const val LAST_SYNC_STATUS_REFRESH_INTERVAL_MS = 60_000L
     }
 }

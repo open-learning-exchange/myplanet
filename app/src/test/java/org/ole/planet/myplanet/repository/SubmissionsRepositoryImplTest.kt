@@ -14,8 +14,11 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import javax.inject.Provider
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -28,6 +31,7 @@ import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
+import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao.UploadedPhoto
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.ExamQuestion
@@ -106,79 +110,52 @@ class SubmissionsRepositoryImplTest {
         assertEquals(1, result.size)
     }
 
-    @Test
-    fun `getSubmissionsFlow suppresses equivalent emissions`() = runTest {
-        val subList = listOf(Submission(id = "1", lastUpdateTime = 100L))
-        val subListDup = listOf(Submission(id = "1", lastUpdateTime = 100L))
-
-        val flowEmitter = kotlinx.coroutines.flow.MutableSharedFlow<List<Submission>>(replay = 1)
+    private suspend fun TestScope.countEmissionsFor(
+        first: List<Submission>,
+        second: List<Submission>,
+    ): Int {
+        val flowEmitter = MutableSharedFlow<List<Submission>>(replay = 1)
         every { submissionDao.observeByUserId("user_123") } returns flowEmitter
 
         var emissions = 0
-        val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
-            repository.getSubmissionsFlow("user_123").collect {
-                emissions++
-            }
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            repository.getSubmissionsFlow("user_123").collect { emissions++ }
         }
 
-        flowEmitter.emit(subList)
-        assertEquals(1, emissions)
+        flowEmitter.emit(first)
+        assertEquals("the first emission always reaches the collector", 1, emissions)
+        flowEmitter.emit(second)
+        return emissions
+    }
 
-        // Equivalent list should be suppressed
-        flowEmitter.emit(subListDup)
+    @Test
+    fun `getSubmissionsFlow suppresses equivalent emissions`() = runTest {
+        val emissions = countEmissionsFor(
+            listOf(Submission(id = "1", lastUpdateTime = 100L)),
+            listOf(Submission(id = "1", lastUpdateTime = 100L)),
+        )
+        // equivalent list is suppressed
         assertEquals(1, emissions)
-
-        job.cancel()
     }
 
     @Test
     fun `getSubmissionsFlow does not suppress when size changes`() = runTest {
-        val subList = listOf(Submission(id = "1", lastUpdateTime = 100L))
-        val subListDiffSize = listOf(Submission(id = "1", lastUpdateTime = 100L), Submission(id = "2", lastUpdateTime = 100L))
-
-        val flowEmitter = kotlinx.coroutines.flow.MutableSharedFlow<List<Submission>>(replay = 1)
-        every { submissionDao.observeByUserId("user_123") } returns flowEmitter
-
-        var emissions = 0
-        val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
-            repository.getSubmissionsFlow("user_123").collect {
-                emissions++
-            }
-        }
-
-        flowEmitter.emit(subList)
-        assertEquals(1, emissions)
-
-        // Different size list should not be suppressed
-        flowEmitter.emit(subListDiffSize)
+        val emissions = countEmissionsFor(
+            listOf(Submission(id = "1", lastUpdateTime = 100L)),
+            listOf(Submission(id = "1", lastUpdateTime = 100L), Submission(id = "2", lastUpdateTime = 100L)),
+        )
+        // different size is not suppressed
         assertEquals(2, emissions)
-
-        job.cancel()
     }
 
     @Test
     fun `getSubmissionsFlow does not suppress when lastUpdateTime changes`() = runTest {
-        val subList = listOf(Submission(id = "1", lastUpdateTime = 100L))
-        val subListDiffTime = listOf(Submission(id = "1", lastUpdateTime = 101L))
-
-        val flowEmitter = kotlinx.coroutines.flow.MutableSharedFlow<List<Submission>>(replay = 1)
-        every { submissionDao.observeByUserId("user_123") } returns flowEmitter
-
-        var emissions = 0
-        val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
-            repository.getSubmissionsFlow("user_123").collect {
-                emissions++
-            }
-        }
-
-        flowEmitter.emit(subList)
-        assertEquals(1, emissions)
-
-        // Same size but different lastUpdateTime should not be suppressed
-        flowEmitter.emit(subListDiffTime)
+        val emissions = countEmissionsFor(
+            listOf(Submission(id = "1", lastUpdateTime = 100L)),
+            listOf(Submission(id = "1", lastUpdateTime = 101L)),
+        )
+        // same size, different lastUpdateTime is not suppressed
         assertEquals(2, emissions)
-
-        job.cancel()
     }
 
     @Test
@@ -639,5 +616,34 @@ class SubmissionsRepositoryImplTest {
         }
         val result = repository.getNormalizedSubmitterName(submission)
         assertNull(result)
+    }
+
+    @Test
+    fun `markPhotoUploaded delegates single photo to dao`() = runTest {
+        repository.markPhotoUploaded("photo1", "rev1", "remote1")
+        coVerify { submitPhotosDao.markUploaded("photo1", "rev1", "remote1") }
+    }
+
+    @Test
+    fun `markPhotoUploaded ignores null photo id`() = runTest {
+        repository.markPhotoUploaded(null, "rev1", "remote1")
+        coVerify(exactly = 0) { submitPhotosDao.markUploaded(any(), any(), any()) }
+    }
+
+    @Test
+    fun `markPhotosUploadedBatch delegates batch to dao in one call`() = runTest {
+        val uploads = listOf(
+            UploadedPhoto("photo1", "rev1", "remote1"),
+            UploadedPhoto("photo2", "rev2", "remote2"),
+            UploadedPhoto("photo3", "rev3", "remote3")
+        )
+        repository.markPhotosUploadedBatch(uploads)
+        coVerify(exactly = 1) { submitPhotosDao.markUploadedBatch(uploads) }
+    }
+
+    @Test
+    fun `markPhotosUploadedBatch does not call dao for empty batch`() = runTest {
+        repository.markPhotosUploadedBatch(emptyList())
+        coVerify(exactly = 0) { submitPhotosDao.markUploadedBatch(any()) }
     }
 }

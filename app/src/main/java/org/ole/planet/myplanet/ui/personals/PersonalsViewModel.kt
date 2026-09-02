@@ -13,8 +13,9 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.Personal
+import org.ole.planet.myplanet.repository.PersonalUpdate
 import org.ole.planet.myplanet.repository.PersonalsRepository
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.repository.UserRepository
 
 sealed class UploadState {
     object Idle : UploadState()
@@ -26,11 +27,11 @@ sealed class UploadState {
 @HiltViewModel
 class PersonalsViewModel @Inject constructor(
     private val personalsRepository: PersonalsRepository,
-    private val userSessionManager: UserSessionManager
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     val personals: StateFlow<List<Personal>> = flow {
-        val user = userSessionManager.getUserModel()
+        val user = userRepository.getUserModel()
         emitAll(personalsRepository.getPersonalResources(user?.id))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -53,9 +54,9 @@ class PersonalsViewModel @Inject constructor(
         _uploadState.value = UploadState.Idle
     }
 
-    fun updatePersonalResource(id: String, updater: (Personal) -> Unit) {
+    fun updatePersonalResource(id: String, update: PersonalUpdate) {
         viewModelScope.launch {
-            personalsRepository.updatePersonalResource(id, updater)
+            personalsRepository.updatePersonalResource(id, update)
         }
     }
 

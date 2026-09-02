@@ -13,6 +13,7 @@ import android.os.storage.StorageManager
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.text.format.Formatter
+import android.util.Log
 import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.core.content.FileProvider
@@ -25,9 +26,10 @@ import java.nio.charset.StandardCharsets
 import java.util.Locale
 import java.util.UUID
 import kotlin.math.roundToLong
-import org.ole.planet.myplanet.utils.TimeProvider
 
 object FileUtils {
+    private const val TAG = "FileUtils"
+
     @Volatile private var cachedExternalFilesDir: File? = null
 
     fun warmUp(context: Context) {
@@ -48,45 +50,35 @@ object FileUtils {
         return File(externalFilesDir, "ole/$libraryId/$address")
     }
 
-    private fun createFilePath(context: Context, folder: String, filename: String): File {
+    private fun resolveFilePath(context: Context, folder: String, filename: String): File {
         val baseDirectory = File(getExternalFilesDir(context), folder)
 
-        if (filename.contains("/")) {
+        return if (filename.contains("/")) {
             val subDirPath = filename.substring(0, filename.lastIndexOf('/'))
             val fullDir = File(baseDirectory, subDirPath)
-
-            try {
-                if (!fullDir.exists() && !fullDir.mkdirs()) {
-                    throw IOException("Failed to create directory: ${fullDir.absolutePath}")
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
-                throw RuntimeException("Failed to create directory: ${fullDir.absolutePath}", e)
-            }
-
             val actualFilename = filename.substring(filename.lastIndexOf('/') + 1)
-            return File(fullDir, actualFilename)
+            File(fullDir, actualFilename)
         } else {
-            try {
-                if (!baseDirectory.exists() && !baseDirectory.mkdirs()) {
-                    throw IOException("Failed to create directory: ${baseDirectory.absolutePath}")
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
-                throw RuntimeException("Failed to create directory: ${baseDirectory.absolutePath}", e)
-            }
-            return File(baseDirectory, filename)
+            File(baseDirectory, filename)
         }
     }
 
     fun getSDPathFromUrl(context: Context, url: String?): File {
-        val segments = try {
+        val segments = parseUrlSegments(url)
+        return resolveFilePath(context, "/ole/${getIdFromSegments(segments)}", getResourceRelativePathFromSegments(segments))
+    }
+
+    fun getResourceRelativePathFromUrl(url: String?): String {
+        return getResourceRelativePathFromSegments(parseUrlSegments(url))
+    }
+
+    private fun parseUrlSegments(url: String?): List<String>? {
+        return try {
             url?.toUri()?.pathSegments
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to parse path segments from url", e)
             null
         }
-        return createFilePath(context, "/ole/${getIdFromSegments(segments)}", getResourceRelativePathFromSegments(segments))
     }
 
     private fun getIdFromSegments(segments: List<String>?): String {
@@ -107,7 +99,7 @@ object FileUtils {
                 getFileNameFromSegments(segments)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to resolve resource relative path from url", e)
             getFileNameFromSegments(segments)
         }
     }
@@ -117,7 +109,7 @@ object FileUtils {
         return try {
             URLDecoder.decode(lastSegment, StandardCharsets.UTF_8.name())
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to decode file name from url segment", e)
             ""
         }
     }
@@ -141,9 +133,24 @@ object FileUtils {
                 null
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to resolve HTML entry file", e)
             null
         }
+    }
+
+    private val previewImageExtensions = setOf("png", "jpg", "jpeg", "gif", "webp")
+    private val previewImageNameHints = listOf("cover", "thumbnail", "thumb", "screenshot", "poster")
+
+    fun findHtmlCoverImage(resourceDir: File): File? {
+        if (!resourceDir.isDirectory) return null
+        val images = resourceDir.walkTopDown()
+            .maxDepth(4)
+            .filter { it.isFile && it.extension.lowercase() in previewImageExtensions }
+            .toList()
+        if (images.isEmpty()) return null
+        return images.firstOrNull { image ->
+            previewImageNameHints.any { image.nameWithoutExtension.lowercase().contains(it) }
+        } ?: images.maxByOrNull { it.length() }
     }
 
     fun checkFileExist(context: Context, url: String?): Boolean {
@@ -162,7 +169,7 @@ object FileUtils {
             val segments = url?.toUri()?.pathSegments
             getFileNameFromSegments(segments)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to extract file name from url", e)
             ""
         }
     }
@@ -172,7 +179,7 @@ object FileUtils {
             val segments = url?.toUri()?.pathSegments
             getIdFromSegments(segments)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to extract resource id from url", e)
             ""
         }
     }
@@ -198,7 +205,7 @@ object FileUtils {
             session.commit(intentSender)
             session.close()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to install APK", e)
         }
     }
 
@@ -324,7 +331,7 @@ object FileUtils {
             }
             null
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to get image path from uri", e)
             null
         }
     }
@@ -364,14 +371,12 @@ object FileUtils {
     fun totalAvailableMemory(context: Context): Long = getStorageStats(context).second
 
     fun totalAvailableMemoryRatio(context: Context): Long {
-        val total = totalMemoryCapacity(context)
-        val available = totalAvailableMemory(context)
+        val (total, available) = getStorageStats(context)
         return (available.toDouble() / total.toDouble() * 100).roundToLong()
     }
 
     fun availableOverTotalMemoryFormattedString(context: Context): String {
-        val available = totalAvailableMemory(context)
-        val total = totalMemoryCapacity(context)
+        val (total, available) = getStorageStats(context)
         return formatSize(context, available) + "/" + formatSize(context, total)
     }
 
@@ -408,7 +413,7 @@ object FileUtils {
             }
             context.startActivity(intent)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to open PDF", e)
             Toast.makeText(context, "Could not open PDF. File saved at: ${file.absolutePath}", Toast.LENGTH_LONG).show()
         }
     }

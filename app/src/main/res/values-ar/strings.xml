@@ -740,6 +740,7 @@
     <string name="sync_step_of">الخطوة %1$d من %2$d</string>
     <string name="sync_items_of">%1$d / %2$d</string>
     <string name="sync_table_progress">%1$s  ·  %2$d / %3$d جداول</string>
+    <string name="sync_in_progress_wait">المزامنة قيد التقدم. يرجى الانتظار حتى تنتهي.</string>
     <string name="sync_shelves_progress">%1$d / %2$d أرفف</string>
     <string name="team_leader">قائد الفريق</string>
     <string name="select_resource">اختر المصدر:</string>

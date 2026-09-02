@@ -70,17 +70,25 @@ class AndroidDecrypter {
                 // Invariant: New-format encrypted data prepends the IV to the ciphertext.
                 // We check if the payload starts with the provided IV to decide whether to strip it.
                 // This maintains backward compatibility with legacy data containing only the ciphertext.
-                val actualEncryptedBytes = if (encryptedBytes.size >= ivBytes.size && ivBytes.contentEquals(encryptedBytes.sliceArray(0 until ivBytes.size))) {
-                    encryptedBytes.sliceArray(ivBytes.size until encryptedBytes.size)
+                val hasIvPrefix = startsWith(encryptedBytes, ivBytes)
+                val original = if (hasIvPrefix) {
+                    cipher.doFinal(encryptedBytes, ivBytes.size, encryptedBytes.size - ivBytes.size)
                 } else {
-                    encryptedBytes
+                    cipher.doFinal(encryptedBytes)
                 }
-                val original = cipher.doFinal(actualEncryptedBytes)
                 return String(original)
             } catch (ex: Exception) {
                 ex.printStackTrace()
             }
             return null
+        }
+
+        private fun startsWith(array: ByteArray, prefix: ByteArray): Boolean {
+            if (array.size < prefix.size) return false
+            for (i in prefix.indices) {
+                if (array[i] != prefix[i]) return false
+            }
+            return true
         }
 
         fun androidDecrypter(usrId: String?, usrRawPwd: String?, dbPwdKeyValue: String?, dbSalt: String?): Boolean {

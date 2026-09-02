@@ -741,6 +741,7 @@
     <string name="sync_step_of">Step %1$d of %2$d</string>
     <string name="sync_items_of">%1$d / %2$d</string>
     <string name="sync_table_progress">%1$s  ·  %2$d / %3$d tables</string>
+    <string name="sync_in_progress_wait">Sync in progress. Please wait for it to finish.</string>
     <string name="sync_shelves_progress">%1$d / %2$d shelves</string>
     <string name="team_leader">Team Leader</string>
     <string name="select_resource">"Select Resource: "</string>

@@ -13,7 +13,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.model.StepExam
@@ -35,7 +34,6 @@ class UploadRepositoryImplTest {
     private lateinit var apiInterface: ApiInterface
     private lateinit var examDao: ExamDao
     private lateinit var submissionDao: SubmissionDao
-    private lateinit var answerDao: AnswerDao
     private lateinit var repository: UploadRepositoryImpl
 
     @Before
@@ -43,8 +41,7 @@ class UploadRepositoryImplTest {
         apiInterface = mockk(relaxed = true)
         examDao = mockk(relaxed = true)
         submissionDao = mockk(relaxed = true)
-        answerDao = mockk(relaxed = true)
-        repository = UploadRepositoryImpl(apiInterface, examDao, submissionDao, answerDao, dispatcherProvider)
+        repository = UploadRepositoryImpl(apiInterface, examDao, submissionDao, dispatcherProvider)
 
         val spm = mockk<org.ole.planet.myplanet.services.SharedPrefManager>(relaxed = true)
         every { spm.getUrlUser() } returns "user"
@@ -57,59 +54,6 @@ class UploadRepositoryImplTest {
     @After
     fun tearDown() {
         io.mockk.unmockkAll()
-    }
-
-    @Test
-    fun `queryPending returns adopted surveys from exam dao`() = runTest {
-        coEvery { examDao.getPendingAdoptedSurveys() } returns listOf(
-            StepExam(id = "exam-1", sourceSurveyId = "source-1", type = "surveys")
-        )
-
-        val result: List<StepExam> = repository.queryPending(
-            UploadQueryContract(UploadQueryType.AdoptedSurveys)
-        )
-
-        assertEquals(listOf("exam-1"), result.map { it.id })
-    }
-
-    @Test
-    fun `queryPending returns exam results and hydrates submissions`() = runTest {
-        val submission = org.ole.planet.myplanet.model.Submission(id = "sub-1", teamId = "team-1")
-        val answer = org.ole.planet.myplanet.model.Answer(id = "ans-1", submissionId = "sub-1")
-
-        coEvery { submissionDao.getPendingExamResults() } returns listOf(submission)
-        coEvery { answerDao.getBySubmissionIds(listOf("sub-1")) } returns listOf(answer)
-
-        val result: List<org.ole.planet.myplanet.model.Submission> = repository.queryPending(
-            UploadQueryContract(UploadQueryType.ExamResults)
-        )
-
-        assertEquals(1, result.size)
-        val res = result.first()
-        assertEquals("sub-1", res.id)
-        assertEquals(1, res.answers?.size)
-        assertEquals("ans-1", res.answers?.first()?.id)
-        assertEquals("team-1", res.membershipDoc?.teamId)
-    }
-
-    @Test
-    fun `queryPending returns completed submissions and hydrates submissions`() = runTest {
-        val submission = org.ole.planet.myplanet.model.Submission(id = "sub-2") // no teamId
-        val answer = org.ole.planet.myplanet.model.Answer(id = "ans-2", submissionId = "sub-2")
-
-        coEvery { submissionDao.getPendingSubmissions() } returns listOf(submission)
-        coEvery { answerDao.getBySubmissionIds(listOf("sub-2")) } returns listOf(answer)
-
-        val result: List<org.ole.planet.myplanet.model.Submission> = repository.queryPending(
-            UploadQueryContract(UploadQueryType.CompletedSubmissions)
-        )
-
-        assertEquals(1, result.size)
-        val res = result.first()
-        assertEquals("sub-2", res.id)
-        assertEquals(1, res.answers?.size)
-        assertEquals("ans-2", res.answers?.first()?.id)
-        assertEquals(null, res.membershipDoc)
     }
 
     @Test

@@ -1,12 +1,9 @@
 package org.ole.planet.myplanet.repository
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
-import io.mockk.mockkObject
-import io.mockk.runs
-import io.mockk.unmockkObject
 import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
@@ -15,29 +12,26 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import okhttp3.ResponseBody.Companion.toResponseBody
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TestTimeProvider
 import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DownloadRepositoryImplTest {
 
+    private lateinit var timeProvider: TestTimeProvider
+    private lateinit var diagnosticsRepository: DiagnosticsRepository
+
     @Before
     fun setup() {
-        mockkObject(MainApplication)
-        every { MainApplication.createLog(any(), any()) } just runs
-    }
-
-    @After
-    fun teardown() {
-        unmockkObject(MainApplication)
+        timeProvider = TestTimeProvider(currentTime = 123456789L)
+        diagnosticsRepository = mockk(relaxed = true)
     }
 
     @Test
@@ -55,7 +49,7 @@ class DownloadRepositoryImplTest {
 
         coEvery { mockApiInterface.downloadFile(authHeader, url) } returns mockResponse
 
-        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider)
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
 
         val result = repository.downloadFileResponse(url, authHeader)
 
@@ -78,7 +72,7 @@ class DownloadRepositoryImplTest {
 
         coEvery { mockApiInterface.downloadFile(authHeader, url) } returns mockResponse
 
-        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider)
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
         val result = repository.downloadFileResponse(url, authHeader)
 
         assertTrue(result is DownloadResult.Error)
@@ -92,7 +86,7 @@ class DownloadRepositoryImplTest {
             every { io } returns testDispatcher
         }
         val mockApiInterface = mockk<ApiInterface>()
-        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider)
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
 
         val url = "http://example.com/file"
         val authHeader = "auth"
@@ -131,7 +125,7 @@ class DownloadRepositoryImplTest {
             every { io } returns testDispatcher
         }
         val mockApiInterface = mockk<ApiInterface>()
-        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider)
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
 
         val url = "http://example.com/file"
         val authHeader = "auth"
@@ -159,7 +153,7 @@ class DownloadRepositoryImplTest {
             every { io } returns testDispatcher
         }
         val mockApiInterface = mockk<ApiInterface>()
-        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider)
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
 
         val url = "http://example.com/file"
         val authHeader = "auth"
@@ -179,7 +173,7 @@ class DownloadRepositoryImplTest {
             every { io } returns testDispatcher
         }
         val mockApiInterface = mockk<ApiInterface>()
-        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider)
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
 
         val url = "http://example.com/file"
         val authHeader = "auth"
@@ -199,7 +193,7 @@ class DownloadRepositoryImplTest {
             every { io } returns testDispatcher
         }
         val mockApiInterface = mockk<ApiInterface>()
-        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider)
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
 
         val url = "http://example.com/file"
         val authHeader = "auth"
@@ -219,7 +213,7 @@ class DownloadRepositoryImplTest {
             every { io } returns testDispatcher
         }
         val mockApiInterface = mockk<ApiInterface>()
-        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider)
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
 
         val url = "http://example.com/file"
         val authHeader = "auth"
@@ -239,7 +233,7 @@ class DownloadRepositoryImplTest {
             every { io } returns testDispatcher
         }
         val mockApiInterface = mockk<ApiInterface>()
-        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider)
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
 
         val url = "http://example.com/file"
         val authHeader = "auth"
@@ -254,7 +248,7 @@ class DownloadRepositoryImplTest {
         val result = repository.downloadFileResponse(url, authHeader)
 
         assertTrue(result is DownloadResult.Error)
-        io.mockk.verify { MainApplication.createLog("File Not Found", url) }
+        coVerify { diagnosticsRepository.saveLogToRoom("File Not Found", url, "123456789") }
     }
 
     @Test
@@ -264,7 +258,7 @@ class DownloadRepositoryImplTest {
             every { io } returns testDispatcher
         }
         val mockApiInterface = mockk<ApiInterface>()
-        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider)
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
 
         val url = "http://example.com/file"
         val authHeader = "auth"
@@ -279,6 +273,6 @@ class DownloadRepositoryImplTest {
         val result = repository.downloadFileResponse(url, authHeader)
 
         assertTrue(result is DownloadResult.Error)
-        io.mockk.verify { MainApplication.createLog("File Not Found", "http://example.com/extractedUrl") }
+        coVerify { diagnosticsRepository.saveLogToRoom("File Not Found", "http://example.com/extractedUrl", "123456789") }
     }
 }

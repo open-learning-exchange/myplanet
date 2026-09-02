@@ -698,7 +698,7 @@ Branches follow the `{prefix}/{slug}` pattern, where the slug is kebab-case deri
 | AI agent (Copilot) | `copilot/` | `copilot/fix-notification-badge-count` |
 | Human contributor | `{number}-{description}` | `13755-add-ability-to-edit-meetups` |
 
-(The full field guide to summoning AI agents on PRs — reviewers vs doers, incantations, side effects — lives in `docs/AGENT_SPELLBOOK.md`; the Laws of Summoning live in `CLAUDE.md` → "The Agent Spellbook".)
+(The full field guide to summoning AI agents on PRs — reviewers vs doers, incantations, side effects, and the Laws of Summoning — is the `agents-summoning` skill: `.agents/skills/agents-summoning/SKILL.md`, or the `agents-summoning@summoning` plugin in a Claude Code session.)
 
 **Push flag:** Always use `-u` on the first push: `git push -u origin <branch-name>`.
 
@@ -731,7 +731,7 @@ Before opening a PR:
 
 ### PR Reviews
 
-Besides a human reviewer and a Claude session, several bots can review a PR — the full roster and their side effects are in `docs/AGENT_SPELLBOOK.md`. **CodeRabbit** is the default reviewer, but it is opt-in here: label a PR `review` and it reviews every push after that, drafts included. On an unlabelled PR `@coderabbitai review` still summons one by hand. It's the token-cheap shortcut — an incremental automated review without spending a human's time or a Claude session's context.
+Besides a human reviewer and a Claude session, several bots can review a PR — the full roster and their side effects are in the `agents-summoning` skill (`.agents/skills/agents-summoning/SKILL.md`). **CodeRabbit** is the default reviewer, but it is opt-in here: label a PR `review` and it reviews every push after that, drafts included. On an unlabelled PR `@coderabbitai review` still summons one by hand. It's the token-cheap shortcut — an incremental automated review without spending a human's time or a Claude session's context.
 
 Useful commands (as PR comments):
 

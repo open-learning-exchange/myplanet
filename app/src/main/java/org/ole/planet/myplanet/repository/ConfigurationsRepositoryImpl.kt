@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import android.util.Log
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.google.gson.Gson
@@ -54,6 +55,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 ) : ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
+    companion object {
+        private const val TAG = "ConfigurationsRepository"
+    }
+
     override suspend fun checkHealth(): String {
         return try {
             val healthUrl = UrlUtils.getHealthAccessUrl(sharedPrefManager)
@@ -74,7 +79,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     else -> "Server error: ${response.code()}"
                 }
             } catch (t: Exception) {
-                t.printStackTrace()
+                Log.e(TAG, "Health access request failed", t)
                 when (t) {
                     is UnknownHostException -> "Server not reachable"
                     is SocketTimeoutException -> "Connection timeout"
@@ -84,7 +89,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Health access initialization failed", e)
             "Health access initialization failed"
         }
     }
@@ -113,7 +118,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                         handleVersionEvaluation(cachedInfo, cachedApkVersion, callback)
                         return@launch
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.e(TAG, "Failed to parse cached version detail", e)
                     }
                 }
             }
@@ -153,7 +158,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
                 handleVersionEvaluation(planetInfo, apkVersion, callback)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Version check failed", e)
                 withContext(dispatcherProvider.main) {
                     callback.onError(context.getString(R.string.connection_failed), true)
                 }
@@ -212,8 +217,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             val code = response.code()
             if (response.isSuccessful) {
                 val ss = withContext(dispatcherProvider.io) { response.body()?.string() }
-                val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
-                val dbCount = myList?.size ?: 0
+                val dbCount = countCommaEntries(ss)
                 dbCount >= 8
             } else {
                 code == 401
@@ -221,6 +225,18 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         } catch (_: Exception) {
             false
         }
+    }
+
+    private fun countCommaEntries(body: String?): Int {
+        if (body == null) return 0
+        var end = body.length
+        while (end > 0 && body[end - 1] == ',') end--
+        if (end == 0) return 0
+        var commaCount = 0
+        for (i in 0 until end) {
+            if (body[i] == ',') commaCount++
+        }
+        return commaCount + 1
     }
 
     override suspend fun checkCheckSum(path: String): Boolean {
@@ -234,13 +250,17 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                         val sha256 = withContext(dispatcherProvider.io) {
                             Sha256Utils().getCheckSumFromFile(f)
                         }
+                        if (sha256 == null) {
+                            Log.w(TAG, "Could not compute checksum for $path")
+                            return false
+                        }
                         return checksum.contains(sha256)
                     }
                 }
             }
             false
         } catch (e: IOException) {
-            e.printStackTrace()
+            Log.e(TAG, "Checksum check failed", e)
             false
         }
     }
@@ -260,7 +280,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     ?: allResults.firstOrNull()
                     ?: UrlCheckResult.Failure(url)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Configuration URL check failed", e)
                 UrlCheckResult.Failure(url)
             }
 
@@ -279,7 +299,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "getMinApk failed", e)
             ConfigurationsRepository.ConfigurationResult.Failure(context.getString(R.string.device_couldn_t_reach_local_server), url)
         }
     }
@@ -307,10 +327,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
             UrlCheckResult.Failure(currentUrl)
         } catch (e: TimeoutCancellationException) {
-            e.printStackTrace()
+            Log.e(TAG, "Configuration URL check timed out", e)
             UrlCheckResult.Failure(currentUrl)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Configuration URL check failed", e)
             UrlCheckResult.Failure(currentUrl)
         }
     }
@@ -325,7 +345,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             if (configResponse.isSuccessful) {
                 val rows = configResponse.body()?.getAsJsonArray("rows")
 
-                if (rows != null && rows.size() > 0) {
+                if (rows != null && !rows.isEmpty()) {
                     val firstRow = rows[0].asJsonObject
                     val id = firstRow.getAsJsonPrimitive("id").asString
                     val doc = firstRow.getAsJsonObject("doc")
@@ -336,10 +356,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
             null
         } catch (e: TimeoutCancellationException) {
-            e.printStackTrace()
+            Log.e(TAG, "Fetch configuration timed out", e)
             null
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Fetch configuration failed", e)
             null
         }
     }
@@ -371,6 +391,22 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
     override fun getPlanetType(): String? {
         return sharedPrefManager.getRawString("planetType")
+    }
+
+    override fun getParentCode(): String {
+        return sharedPrefManager.getParentCode()
+    }
+
+    override fun getCommunityName(): String {
+        return sharedPrefManager.getCommunityName()
+    }
+
+    override fun getCommunityLeaders(): String {
+        return sharedPrefManager.getCommunityLeaders()
+    }
+
+    override fun clearPreferences() {
+        sharedPrefManager.clearPreferences()
     }
 
     override suspend fun clearFirstRunStorageAndSetFlag(hasWritePermission: Boolean) {

@@ -21,6 +21,7 @@ import android.widget.RadioGroup
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
@@ -31,10 +32,13 @@ import com.afollestad.materialdialogs.MaterialDialog
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Date
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
@@ -73,9 +77,9 @@ import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
-import kotlin.time.Duration.Companion.milliseconds
 
 @AndroidEntryPoint
+@OptIn(FlowPreview::class)
 abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepository.CheckVersionCallback {
     private var serverDialogBinding: DialogServerUrlBinding? = null
     private lateinit var syncDate: TextView
@@ -121,6 +125,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     var serverListAddresses: List<ServerAddress> = emptyList()
     private var isProgressDialogShowing = false
     private var lastSyncStatus: SyncManager.SyncStatus? = null
+    private var progressDialogBackPressedCallback: OnBackPressedCallback? = null
     @Inject
     lateinit var configurationsRepository: ConfigurationsRepository
 
@@ -146,7 +151,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initSyncConfigurationCoordinator()
-        collectWhenStarted(syncManager.syncStatus) { status ->
+        collectWhenStarted(syncManager.syncStatus.sample(SYNC_STATUS_SAMPLE_MS)) { status ->
             if (status == lastSyncStatus) return@collectWhenStarted
             lastSyncStatus = status
             when (status) {
@@ -206,10 +211,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 override fun showProgressDialog() {
                     customProgressDialog.setText(getString(R.string.check_apk_version))
                     customProgressDialog.show()
+                    guardBackPressWhileDialogShowing()
                 }
 
                 override fun dismissProgressDialog() {
                     customProgressDialog.dismiss()
+                    releaseBackPressGuard()
                 }
 
                 override fun setSyncFailed(failed: Boolean) {
@@ -271,6 +278,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     try {
                         customProgressDialog.setText(getString(R.string.clearing_data))
                         customProgressDialog.show()
+                        guardBackPressWhileDialogShowing()
 
                         configurationsRepository.clearAllData()
                         prefData.setManualConfig(config)
@@ -281,6 +289,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     } catch (e: Exception) {
                         e.printStackTrace()
                         customProgressDialog.dismiss()
+                        releaseBackPressGuard()
                         dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = true
                         dialog.getButton(AlertDialog.BUTTON_NEGATIVE).isEnabled = true
                     }
@@ -344,6 +353,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             else -> ""
         }
         customProgressDialog.dismiss()
+        releaseBackPressGuard()
         alertDialogOkay(errorMessage)
         return false
     }
@@ -446,11 +456,28 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         return if (isUrlValid(url)) setUrlParts(url, pin) else ""
     }
 
+    private fun guardBackPressWhileDialogShowing() {
+        if (progressDialogBackPressedCallback != null) return
+        val callback = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                Toast.makeText(this@SyncActivity, getString(R.string.sync_in_progress_wait), Toast.LENGTH_SHORT).show()
+            }
+        }
+        onBackPressedDispatcher.addCallback(this, callback)
+        progressDialogBackPressedCallback = callback
+    }
+
+    private fun releaseBackPressGuard() {
+        progressDialogBackPressedCallback?.remove()
+        progressDialogBackPressedCallback = null
+    }
+
     private suspend fun onSyncStarted() {
         withContext(dispatcherProvider.main) {
             customProgressDialog.resetSyncProgress()
             customProgressDialog.setText(getString(R.string.syncing_data_please_wait))
             customProgressDialog.show()
+            guardBackPressWhileDialogShowing()
             isProgressDialogShowing = true
             txtSyncState?.text = getString(R.string.sync_chip_syncing)
             dotSync?.backgroundTintList = ColorStateList.valueOf(0xFFF59E0B.toInt())
@@ -462,6 +489,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             if (isProgressDialogShowing) {
                 customProgressDialog.dismiss()
             }
+            releaseBackPressGuard()
             if (::syncIconDrawable.isInitialized) {
                 syncIconDrawable = syncIcon.drawable as AnimationDrawable
                 syncIconDrawable.stop()
@@ -502,6 +530,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     }
 
                     customProgressDialog.dismiss()
+                    releaseBackPressGuard()
 
                     if (::syncIconDrawable.isInitialized) {
                         syncIconDrawable = syncIcon.drawable as AnimationDrawable
@@ -717,6 +746,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     override fun onSuccess(success: String?) {
         if (customProgressDialog.isShowing() && success?.contains("Crash") == true) {
             customProgressDialog.dismiss()
+            releaseBackPressGuard()
         }
         if (::btnSignIn.isInitialized) {
             showSnack(btnSignIn, success)
@@ -762,6 +792,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             if (customProgressDialog.isShowing()) {
                 customProgressDialog.dismiss()
             }
+            releaseBackPressGuard()
             if (!blockSync) {
                 continueSyncProcess()
             } else {
@@ -793,6 +824,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         super.onDestroy()
     }
     companion object {
+        private const val SYNC_STATUS_SAMPLE_MS = 150L
         private val secondsAgoRegex by lazy { Regex("^\\d{1,2} seconds ago$") }
         private val urlProtocolRegex by lazy { Regex("^https?://") }
         fun restartApp() {

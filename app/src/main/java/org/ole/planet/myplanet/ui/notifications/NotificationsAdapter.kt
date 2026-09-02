@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.notifications
 
+import android.text.Html
+import android.util.LruCache
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -36,6 +38,7 @@ class NotificationsAdapter(
 
     private var dateFormatter: DateTimeFormatter? = null
     private var lastLocale: Locale? = null
+    private val parsedHtmlCache = LruCache<String, CharSequence>(100)
 
     private fun getDateFormatter(): DateTimeFormatter {
         val currentLocale = Locale.getDefault()
@@ -110,7 +113,16 @@ class NotificationsAdapter(
 
         fun bind(item: NotificationListItem.Item) {
             val notification = item.notification
-            binding.title.text = item.parsedText
+            val rawText = notification.formattedText.toString()
+            var titleText = parsedHtmlCache.get(rawText)
+            if (titleText == null) {
+                titleText = Html.fromHtml(
+                    rawText,
+                    Html.FROM_HTML_MODE_LEGACY
+                )
+                parsedHtmlCache.put(rawText, titleText)
+            }
+            binding.title.text = titleText
             binding.timestamp.text = formatRelativeTime(notification.createdAt)
             binding.root.alpha = if (notification.isRead) 0.6f else 1.0f
 
