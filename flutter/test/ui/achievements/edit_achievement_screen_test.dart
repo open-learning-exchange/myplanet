@@ -318,7 +318,10 @@ void main() {
       await pumpScreen(tester, session: userRow(dob: '1990-05-02'));
 
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'My Goals'),
+        find.widgetWithText(
+          TextFormField,
+          'My Goals - What are your goals for the next 10 years?',
+        ),
         'run a marathon',
       );
       await tester.enterText(
@@ -346,15 +349,24 @@ void main() {
       await pumpScreen(tester, session: userRow(dob: '1990-05-02'));
 
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Summary of achievements'),
+        find.widgetWithText(
+          TextFormField,
+          'Summary of achievements - Briefly summarize your achievements',
+        ),
         '  a decade of teaching  ',
       );
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'My Goals'),
+        find.widgetWithText(
+          TextFormField,
+          'My Goals - What are your goals for the next 10 years?',
+        ),
         '  run a marathon  ',
       );
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'My Purpose'),
+        find.widgetWithText(
+          TextFormField,
+          'My Purpose - What are your educational and professional ambitions?',
+        ),
         '  to teach  ',
       );
       await tapUpdate(tester);
@@ -631,7 +643,8 @@ void main() {
       await tester.tap(find.widgetWithText(TextButton, 'View CV/Resume'));
       await settle(tester, rounds: 3);
 
-      expect(find.text('File not found locally'), findsOneWidget);
+      // `file_not_found` takes a `%s` and names the file.
+      expect(find.text('File not found: old.pdf'), findsOneWidget);
     });
   });
 

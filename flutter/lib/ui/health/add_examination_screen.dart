@@ -11,9 +11,15 @@ import '../../providers/session_provider.dart';
 /// Form for adding or editing a health examination record with vital signs
 /// and examination details.
 class AddExaminationScreen extends ConsumerStatefulWidget {
-  const AddExaminationScreen({super.key, this.examinationId});
+  const AddExaminationScreen({super.key, this.examinationId, this.userId});
 
   final String? examinationId;
+
+  /// The patient this record belongs to — `HealthExaminationActivity`'s
+  /// `"userId"` intent extra, which `MyHealthFragment` fills with the
+  /// *selected* patient. Null falls back to the signed-in user, the only
+  /// patient a learner has.
+  final String? userId;
 
   @override
   ConsumerState<AddExaminationScreen> createState() =>
@@ -52,6 +58,14 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
 
   bool _selfExamination = false;
   bool _isSaving = false;
+
+  /// The resolved patient id, and whether the notifier's initial load has
+  /// arrived. Both are read where the screen used to reach for
+  /// `sessionProvider.valueOrNull` on every build: that changed identity as
+  /// the session resolved, so the form and the save could address two
+  /// different notifiers.
+  String? _patientId;
+  bool _loaded = false;
 
   // Conditions checkboxes — port of Kotlin's R.array.diagnosis_list.
   static const List<String> _conditionOptions = [
@@ -133,13 +147,36 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
   }
 
   Future<void> _loadExistingData() async {
-    final session = ref.read(sessionProvider);
-    final user = session.valueOrNull;
-    if (user == null) return;
+    // `intent.getStringExtra("userId")` first, and the session only as the
+    // fallback — awaited inside the try, because a screen that never watches
+    // `sessionProvider` reads `AsyncLoading` and `valueOrNull` is null there.
+    late final ExaminationState state;
+    try {
+      final session = await ref.read(sessionProvider.future);
+      // `patientIdOf`, not `session.id`: that is the id the health screens
+      // key a record by (`_id` in preference to `id`), and mixing the two
+      // would file a locally-registered member's records under two profiles.
+      final patientId =
+          widget.userId ?? (session == null ? null : patientIdOf(session));
+      if (!mounted) return;
+      setState(() => _patientId = patientId);
 
-    final params = (userId: user.id, examId: widget.examinationId);
-
-    final state = ref.read(examinationNotifierProvider(params));
+      final provider = examinationNotifierProvider((
+        userId: patientId,
+        examId: widget.examinationId,
+      ));
+      // `viewModel.state.first { !it.isLoading }`. Reading the state straight
+      // after creating the notifier — which is what this did — always read
+      // the `isLoading: true` state with nothing in it, so editing an
+      // examination opened a blank form and saving it wrote a second record
+      // instead of updating the one being edited.
+      await ref.read(provider.notifier).loaded;
+      if (!mounted) return;
+      state = ref.read(provider);
+    } catch (_) {
+      if (mounted) setState(() => _loaded = true);
+      return;
+    }
 
     if (state.examination != null) {
       final exam = state.examination!;
@@ -183,6 +220,9 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
         setState(() => _customDiagnoses.add(entry.key));
       }
     }
+
+    // Kotlin enables `btnSave` only once the loaded state has arrived.
+    if (mounted) setState(() => _loaded = true);
   }
 
   @override
@@ -210,10 +250,7 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final session = ref.watch(sessionProvider);
-    final user = session.valueOrNull;
-
-    final params = (userId: user?.id, examId: widget.examinationId);
+    final params = (userId: _patientId, examId: widget.examinationId);
 
     final examState = ref.watch(examinationNotifierProvider(params));
 
@@ -476,7 +513,9 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
                     const SizedBox(height: 32),
 
                     FilledButton(
-                      onPressed: _isSaving ? null : _saveExamination,
+                      onPressed: _isSaving || !_loaded
+                          ? null
+                          : _saveExamination,
                       child: _isSaving
                           ? const SizedBox(
                               height: 20,
@@ -559,11 +598,10 @@ class _AddExaminationScreenState extends ConsumerState<AddExaminationScreen> {
     setState(() => _isSaving = true);
 
     try {
-      final session = ref.read(sessionProvider);
-      final user = session.valueOrNull;
-      if (user == null) return;
+      final patientId = _patientId;
+      if (patientId == null) return;
 
-      final params = (userId: user.id, examId: widget.examinationId);
+      final params = (userId: patientId, examId: widget.examinationId);
 
       final temperature = double.tryParse(_temperatureController.text) ?? 0;
       final pulse = int.tryParse(_pulseController.text) ?? 0;

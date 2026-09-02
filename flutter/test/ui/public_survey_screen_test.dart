@@ -299,15 +299,35 @@ void main() {
   group('submitting', () {
     /// Answers the one text question, submits, and dismisses the respondent
     /// information screen the way a respondent who declines it would.
+    /// Answers the one question, submits, and completes the respondent
+    /// profile step the way a respondent does.
+    ///
+    /// The profile step has to be *saved*, not backed out of: a dismissed
+    /// dialog leaves `uploadCompletedSubmission` nothing to POST, which is why
+    /// the screen returns early on anything but a `true` pop. Backing out —
+    /// which this helper used to do — therefore stopped sending the answer
+    /// sheet at all, and the five tests that go through here have been failing
+    /// on it. Never `pumpAndSettle` after Save: the button holds a
+    /// `CircularProgressIndicator` while it works.
+    Future<void> completeProfileStep(WidgetTester tester) async {
+      expect(find.text('Your information'), findsOneWidget);
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Year of birth'),
+        '1990',
+      );
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      for (var i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+
     Future<void> answerAndSubmit(WidgetTester tester) async {
       await tester.enterText(find.byType(TextField), 'Clean water');
       await tester.pump();
       await tapSubmit(tester);
-
-      expect(find.text('Your information'), findsOneWidget);
-      await tester.pageBack();
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
+      await completeProfileStep(tester);
     }
 
     testWidgets('a delivered answer sheet is thanked for and marked sent', (
@@ -332,6 +352,13 @@ void main() {
       await pumpScreen(tester);
 
       await answerAndSubmit(tester);
+      // The profile step shows its own snackbar and this one is *queued*
+      // behind it, so it cannot appear until that one's four seconds are up.
+      for (var i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.text('Saved offline — pending upload'), findsOneWidget);
       expect(await submissionCount(), 1);
@@ -354,11 +381,7 @@ void main() {
         await tester.tap(find.widgetWithText(CheckboxListTile, 'Power'));
         await tester.pump();
         await tapSubmit(tester);
-
-        expect(find.text('Your information'), findsOneWidget);
-        await tester.pageBack();
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
+        await completeProfileStep(tester);
 
         final body =
             verify(
@@ -380,8 +403,8 @@ void main() {
     ) async {
       // `navigateOnwardAndFinish` branches on `prefData.isLoggedIn()`. The
       // screen never watches `sessionProvider`, so reading it with
-      // `.valueOrNull` yields null and sends a signed-in respondent to the
-      // login screen — the Phase 100 shape again.
+      // `.valueOrNull` yielded null and sent a signed-in respondent to the
+      // login screen — the Phase 100 shape again, now awaited.
       stubPost(succeeds: true);
       stubFetch(surveyDoc([textQuestion('q1', 'What do you need?')]));
       await pumpScreen(

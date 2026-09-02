@@ -651,8 +651,20 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
             ..limit(1))
           .getSingleOrNull();
 
+  /// `UserDao.getById` is
+  /// `SELECT * FROM users WHERE id = :id OR _id = :id LIMIT 1`, and the
+  /// `_id` half is load-bearing: a member registered on this device keeps its
+  /// local `id` (`'<millis>'`) and gains a `couchId` only once the upload
+  /// succeeds, while every caller that resolves a user from a document — the
+  /// health screens' `patientIdOf` among them — hands over the `_id` in
+  /// preference to it. Matching `id` alone left those accounts unfindable.
+  /// `limit(1)` keeps `getSingleOrNull` from throwing where both halves match
+  /// different rows, exactly as the Kotlin's `LIMIT 1` does.
   Future<UserRow?> getById(String id) =>
-      (select(users)..where((u) => u.id.equals(id))).getSingleOrNull();
+      (select(users)
+            ..where((u) => u.id.equals(id) | u.couchId.equals(id))
+            ..limit(1))
+          .getSingleOrNull();
 
   /// Port of `UserRepositoryImpl.getSavedUsers` — the account picker on the
   /// login screen.
@@ -712,13 +724,18 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
     final user = await getById(id);
     if (user == null) return null;
     if (user.key != null && user.iv != null) return user;
-    await (update(users)..where((u) => u.id.equals(id))).write(
+    // Keyed on the row that was found, not on the id that found it:
+    // `ensureUserSecurityKeys` upserts the entity it resolved, and [getById]
+    // resolves a `_id` as readily as an `id`, so writing back by the argument
+    // silently updated nothing for a locally-registered member addressed by
+    // their CouchDB id.
+    await (update(users)..where((u) => u.id.equals(user.id))).write(
       UsersCompanion(
         key: Value(user.key ?? (createKey ?? HealthCipher.generateKey)()),
         iv: Value(user.iv ?? (createIv ?? HealthCipher.generateIv)()),
       ),
     );
-    return getById(id);
+    return getById(user.id);
   }
 
   Future<int> count() async {

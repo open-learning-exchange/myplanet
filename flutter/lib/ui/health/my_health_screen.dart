@@ -27,6 +27,13 @@ class MyHealthScreen extends ConsumerWidget {
     final syncState = ref.watch(healthSyncProvider);
     final isHealthProvider =
         ref.watch(isHealthProviderProvider).valueOrNull ?? false;
+    // Both editors take the *selected* patient, as `MyHealthFragment` passes
+    // it (`putExtra("userId", userId)`); without it they fell back to the
+    // signed-in user, so a health provider read and wrote their own record.
+    final patientId = detail.user == null ? null : patientIdOf(detail.user!);
+    final patientQuery = patientId == null || patientId.isEmpty
+        ? ''
+        : '?userId=${Uri.encodeQueryComponent(patientId)}';
 
     return Scaffold(
       appBar: AppBar(
@@ -48,24 +55,40 @@ class MyHealthScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.edit),
             tooltip: l10n.updateHealth,
-            onPressed: () => context.push(Routes.addHealth),
+            onPressed: () => context.push('${Routes.addHealth}$patientQuery'),
           ),
         ],
       ),
       body: detail.isLoading
           ? const Center(child: CircularProgressIndicator())
           : _buildBody(context, ref, detail, l10n),
-      floatingActionButton: isHealthProvider
-          ? FloatingActionButton.extended(
+      // `btnnewPatient` is the health provider's own button and `addNewRecord`
+      // is everyone's — the layout carries both, so a provider who has just
+      // picked a patient can record an examination for them. Offering one
+      // *or* the other left the health role, whose whole purpose is recording
+      // other people's examinations, with no way to record one.
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (isHealthProvider) ...[
+            FloatingActionButton.extended(
+              heroTag: 'health-new-patient',
               onPressed: () => _showPatientPicker(context),
               icon: const Icon(Icons.person_search),
               label: Text(l10n.newPatient),
-            )
-          : FloatingActionButton.extended(
-              onPressed: () => context.push(Routes.addExamination),
-              icon: const Icon(Icons.add),
-              label: Text(l10n.addHealthRecord),
             ),
+            const SizedBox(height: 12),
+          ],
+          FloatingActionButton.extended(
+            heroTag: 'health-add-record',
+            onPressed: () =>
+                context.push('${Routes.addExamination}$patientQuery'),
+            icon: const Icon(Icons.add),
+            label: Text(l10n.addHealthRecord),
+          ),
+        ],
+      ),
     );
   }
 
@@ -86,6 +109,7 @@ class MyHealthScreen extends ConsumerWidget {
       myHealth: record?.healthProfile,
       examinations: record?.examinations ?? const [],
       userMap: record?.userMap ?? const {},
+      createdByOf: record?.createdByOf ?? const {},
     );
     return _HealthContent(data: data);
   }
@@ -320,6 +344,7 @@ class _HealthContent extends ConsumerWidget {
                             exam: exam,
                             userId: data.user?.id ?? '',
                             userMap: data.userMap,
+                            createdBy: data.createdByOf[exam.id],
                           );
                         },
                       ),
@@ -435,10 +460,15 @@ class _ExaminationCard extends ConsumerWidget {
     required this.exam,
     required this.userId,
     required this.userMap,
+    this.createdBy,
   });
   final HealthExaminationRow exam;
   final String userId;
   final Map<String, UserRow> userMap;
+
+  /// The examiner from the record's decrypted `data`, not the `creatorId`
+  /// column — see [HealthRecord.createdByOf].
+  final String? createdBy;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -447,12 +477,11 @@ class _ExaminationCard extends ConsumerWidget {
         ? DateTime.fromMillisecondsSinceEpoch(exam.date)
         : null;
 
-    final createdBy = exam.creatorId;
     final isSelfExam =
-        createdBy == null || createdBy.isEmpty || createdBy == userId;
+        createdBy == null || createdBy!.isEmpty || createdBy == userId;
     final creatorName = isSelfExam
         ? l10n.selfExamination
-        : resolveCreatorName(createdBy, userMap);
+        : resolveCreatorName(createdBy!, userMap);
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final selfColor = isDark
@@ -534,6 +563,7 @@ class _ExaminationCard extends ConsumerWidget {
         exam: exam,
         userId: userId,
         userMap: userMap,
+        createdBy: createdBy,
       ),
     );
   }
@@ -550,10 +580,14 @@ class _ExaminationDetailDialog extends ConsumerWidget {
     required this.exam,
     required this.userId,
     required this.userMap,
+    this.createdBy,
   });
   final HealthExaminationRow exam;
   final String userId;
   final Map<String, UserRow> userMap;
+
+  /// See [HealthRecord.createdByOf].
+  final String? createdBy;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -565,12 +599,11 @@ class _ExaminationDetailDialog extends ConsumerWidget {
         ? '${date.day}/${date.month}/${date.year}'
         : l10n.unknown;
 
-    final createdBy = exam.creatorId;
     final isSelfExam =
-        createdBy == null || createdBy.isEmpty || createdBy == userId;
+        createdBy == null || createdBy!.isEmpty || createdBy == userId;
     final creatorName = isSelfExam
         ? l10n.selfExamination
-        : resolveCreatorName(createdBy, userMap);
+        : resolveCreatorName(createdBy!, userMap);
 
     final title = '$dateText — $creatorName';
 
@@ -659,7 +692,10 @@ class _ExaminationDetailDialog extends ConsumerWidget {
         TextButton(
           onPressed: () {
             Navigator.of(context).pop();
-            context.push('${Routes.addExamination}?id=${exam.id}');
+            context.push(
+              '${Routes.addExamination}?id=${Uri.encodeQueryComponent(exam.id)}'
+              '&userId=${Uri.encodeQueryComponent(userId)}',
+            );
           },
           child: Text(l10n.edit),
         ),

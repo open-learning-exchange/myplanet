@@ -808,7 +808,9 @@ class _TextViewerState extends State<_TextViewer> {
     }
 
     if (_fileMissing) {
-      return Center(child: Text(l10n.fileNotFound));
+      return Center(
+        child: Text(l10n.fileNotFound(widget.resource.filename ?? '')),
+      );
     }
 
     final isCsv =
@@ -913,7 +915,9 @@ class _MarkdownViewerState extends State<_MarkdownViewer> {
     }
 
     if (_fileMissing) {
-      return Center(child: Text(l10n.fileNotFound));
+      return Center(
+        child: Text(l10n.fileNotFound(widget.resource.filename ?? '')),
+      );
     }
 
     if (_content == null) {

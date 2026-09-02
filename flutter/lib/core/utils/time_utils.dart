@@ -3,6 +3,27 @@
 /// Date conversion helpers used by the health profile editor and any screen
 /// that round-trips dates through the ISO-8601 form the CouchDB server stores.
 class TimeUtils {
+  /// Whole years between [date] and today.
+  ///
+  /// Port of `TimeUtils.getAge`: the `T` and `.000Z` are stripped, the rest is
+  /// parsed as a local date-time and then as a bare date, and anything that
+  /// will not parse — a blank string included — is 0. Like the Kotlin's
+  /// `Period.between(dob, today).years` a future date gives a negative age
+  /// rather than 0.
+  static int getAge(String? date) {
+    if (date == null || date.trim().isEmpty) return 0;
+    final cleaned = date.replaceAll('T', ' ').replaceAll('.000Z', '').trim();
+    final dob = DateTime.tryParse(cleaned);
+    if (dob == null) return 0;
+    final today = DateTime.now();
+    var years = today.year - dob.year;
+    final beforeBirthday =
+        today.month < dob.month ||
+        (today.month == dob.month && today.day < dob.day);
+    if (beforeBirthday) years -= 1;
+    return years;
+  }
+
   /// Formats an ISO-8601 date string (`yyyy-MM-dd` or
   /// `yyyy-MM-ddTHH:mm:ss.SSSZ`) as `dd-MM-yyyy` for display.
   ///

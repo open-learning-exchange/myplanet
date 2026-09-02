@@ -65,9 +65,18 @@ class HealthRepository {
       _dao.getUpdatedForUser(userId);
 
   /// Create a new health examination.
+  ///
+  /// [userId] defaults to the row's own generated id, which is the invariant
+  /// `_docToCompanion` maintains for every synced row (`userId: doc['_id']`)
+  /// and what `HealthExaminationActivity.saveData` writes for a new one
+  /// (`_id` and `userId` are both the same `generateIv()`). A patient's
+  /// examinations are found through [profileId], never through `userId`, so
+  /// giving two of them the patient's id makes `getByIdOrUserId`'s
+  /// `getSingleOrNull` throw.
   Future<String> createExamination({
-    required String userId,
+    String? userId,
     String? profileId,
+    String? creatorId,
     required double temperature,
     required int pulse,
     String? bp,
@@ -88,7 +97,7 @@ class HealthRepository {
     await _dao.upsert(
       HealthExaminationsCompanion.insert(
         id: id,
-        userId: Value(userId),
+        userId: Value(userId ?? id),
         temperature: Value(temperature),
         pulse: Value(pulse),
         bp: Value(bp),
@@ -101,6 +110,7 @@ class HealthRepository {
         planetCode: Value(planetCode),
         hasInfo: Value(hasInfo),
         profileId: Value(profileId),
+        creatorId: Value(creatorId),
         gender: Value(gender),
         age: Value(age ?? 0),
         date: Value(now),
@@ -124,6 +134,13 @@ class HealthRepository {
     String? conditions,
     String? data,
     bool? hasInfo,
+    String? profileId,
+    String? creatorId,
+    String? gender,
+    int? age,
+    String? planetCode,
+    bool? selfExamination,
+    int? date,
   }) async {
     final existing = await _dao.getById(id);
     if (existing == null) return;
@@ -142,6 +159,13 @@ class HealthRepository {
             conditions: Value(conditions ?? existing.conditions),
             data: Value(data ?? existing.data),
             hasInfo: Value(hasInfo ?? existing.hasInfo),
+            profileId: Value(profileId ?? existing.profileId),
+            creatorId: Value(creatorId ?? existing.creatorId),
+            gender: Value(gender ?? existing.gender),
+            age: Value(age ?? existing.age),
+            planetCode: Value(planetCode ?? existing.planetCode),
+            selfExamination: Value(selfExamination ?? existing.selfExamination),
+            date: Value(date ?? existing.date),
             isUpdated: const Value(true),
           ),
     );
@@ -228,6 +252,52 @@ class HealthRepository {
     } catch (_) {
       return null;
     }
+  }
+
+  /// Port of `HealthRepositoryImpl.initHealth` — a fresh profile carrying the
+  /// `userKey` every one of the patient's examinations points back to through
+  /// `profileId`.
+  static MyHealth initHealth() => MyHealth(
+    profile: MyHealthProfile(),
+    userKey: HealthCipher.generateKey(),
+    lastExamination: DateTime.now().millisecondsSinceEpoch,
+  );
+
+  /// Writes [health] to the patient's profile row, creating the row when the
+  /// patient has none.
+  ///
+  /// Port of `HealthExaminationActivity.createPojo` plus the `pojo` half of
+  /// `HealthRepositoryImpl.saveExamination`: the row's id is the patient's own
+  /// id and its `data` is the encrypted [MyHealth]. Returns the row as stored,
+  /// whose id `isSelfExamination` compares the signed-in user against.
+  Future<HealthExaminationRow?> saveHealthProfileBlob(
+    String userId,
+    MyHealth health,
+  ) async {
+    final encrypted = await encryptData(userId, jsonEncode(health.toJson()));
+    final existing = await _dao.getByIdOrUserId(userId);
+    if (existing == null) {
+      final user = await _userDao.getById(userId);
+      await _dao.upsert(
+        HealthExaminationsCompanion(
+          id: Value(userId),
+          userId: Value(user?.couchId ?? userId),
+          data: Value(encrypted),
+          isUpdated: const Value(true),
+          date: Value(DateTime.now().millisecondsSinceEpoch),
+        ),
+      );
+    } else {
+      await _dao.upsert(
+        HealthExaminationsCompanion(
+          id: Value(existing.id),
+          userId: Value(existing.userId),
+          data: Value(encrypted),
+          isUpdated: const Value(true),
+        ),
+      );
+    }
+    return _dao.getByIdOrUserId(userId);
   }
 
   /// Updates the user's health profile: writes the user fields (firstName,
@@ -482,8 +552,11 @@ class HealthRepository {
       );
     }
 
-    // Collect the distinct creator IDs from each examination's encrypted data.
+    // Collect the distinct creator IDs from each examination's encrypted data,
+    // and keep which record named which — `submitExaminations` resolves the
+    // examiner from this same decrypted `createdBy`, never from a column.
     final userIds = <String>{};
+    final createdByOf = <String, String>{};
     for (final exam in list) {
       final plain = await _decryptForUser(exam.data, currentUser);
       if (plain != null && plain.isNotEmpty) {
@@ -493,6 +566,7 @@ class HealthRepository {
             final createdBy = decoded['createdBy']?.toString();
             if (createdBy != null && createdBy.isNotEmpty) {
               userIds.add(createdBy);
+              createdByOf[exam.id] = createdBy;
             }
           }
         } catch (_) {}
@@ -514,6 +588,7 @@ class HealthRepository {
       healthProfile: mm,
       examinations: list,
       userMap: userMap,
+      createdByOf: createdByOf,
     );
   }
 

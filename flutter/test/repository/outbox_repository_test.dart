@@ -79,9 +79,11 @@ void main() {
       );
       final due = await repository.due();
       expect(due, hasLength(1));
-      expect(jsonDecode(due.single.payload), {
-        'title': 'Edited',
-      }, reason: 'an edit between failure and retry must be what gets sent');
+      expect(
+        jsonDecode(due.single.payload),
+        {'title': 'Edited'},
+        reason: 'an edit between failure and retry must be what gets sent',
+      );
     },
   );
 

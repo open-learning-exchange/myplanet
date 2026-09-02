@@ -133,7 +133,12 @@ void main() {
           id: examId,
           userId: Value(examId),
           profileId: Value(userId),
-          creatorId: Value(exam['createdBy'] as String?),
+          // `saveData` sets `creatorId` to the patient's `health.userKey`,
+          // which `seedHealthRecord` keys as the patient id — the examiner
+          // lives in the encrypted `data`, not here. A test can override it.
+          creatorId: Value(
+            exam['creatorId'] as String? ?? exam['createdBy'] as String?,
+          ),
           temperature: Value((exam['temperature'] as num?)?.toDouble() ?? 37.0),
           pulse: Value(exam['pulse'] as int? ?? 72),
           height: const Value(170),
@@ -345,6 +350,38 @@ void main() {
       expect(find.text('provider-1'), findsOneWidget);
     });
 
+    /// The examiner is `getString("createdBy", encrypted)` in
+    /// `submitExaminations` — inside the record's encrypted `data`. The
+    /// `creatorId` column is not it: `saveData` sets it to the patient's
+    /// `health.userKey`, so reading the examiner off the column named a cipher
+    /// key when it differed from the patient id, and reported a provider's
+    /// examination as a self-examination when it equalled it.
+    testWidgets('reads the examiner from the decrypted record', (tester) async {
+      final db = AppDatabase.memory();
+      final user = await seedPatient(db);
+      await seedHealthRecord(
+        db,
+        repoFor(db),
+        examinations: [
+          {
+            'temperature': 38.2,
+            'pulse': 88,
+            'createdBy': 'org.couchdb.user:provider-1',
+            // What the column actually carries: the patient's profile key.
+            'creatorId': 'user-a',
+          },
+        ],
+      );
+      await pumpScreen(tester, session: user, database: db);
+
+      // Reading the column instead would have made this card a
+      // self-examination and rendered no name at all. (The strip also carries
+      // a self-examination card for the profile row, which `seedHealthRecord`
+      // gives a `profileId` — the app's own profile row has none.)
+      await scrollTo(tester, find.text('provider-1'));
+      expect(find.text('provider-1'), findsOneWidget);
+    });
+
     /// Regression: the history strip was 140px tall, 8px short of a card
     /// carrying date, examiner, temperature, pulse, blood pressure and the
     /// has-info icon together — a `RenderFlex` overflow, which renders as the
@@ -419,14 +456,17 @@ void main() {
       expect(find.text('New patient'), findsNothing);
     });
 
-    testWidgets('offers the patient picker to a health provider', (
-      tester,
-    ) async {
+    testWidgets('offers a health provider both buttons', (tester) async {
+      // The layout carries `btnnewPatient` *and* `addNewRecord`, and
+      // `setupButtons` hides only the first from a non-provider. Offering one
+      // or the other left the health role — whose whole purpose is recording
+      // other people's examinations — with no way to record one.
       final db = AppDatabase.memory();
       final user = await seedPatient(db, roles: const ['health']);
       await pumpScreen(tester, session: user, database: db);
 
       expect(find.text('New patient'), findsOneWidget);
+      expect(find.text('Add health record'), findsOneWidget);
 
       await tester.tap(find.text('New patient'));
       await tester.pumpAndSettle();

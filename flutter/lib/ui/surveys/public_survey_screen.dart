@@ -293,7 +293,13 @@ class _PublicSurveyScreenState extends ConsumerState<PublicSurveyScreen> {
       // either on the server or durably queued, and re-submitting it would post
       // a second copy.
       if (success || queued) {
-        final session = ref.read(sessionProvider).valueOrNull;
+        // `navigateOnwardAndFinish` branches on `prefData.isLoggedIn()`.
+        // Nothing on this screen watches `sessionProvider`, so the
+        // synchronous read was `AsyncLoading` and its `valueOrNull` null —
+        // every signed-in respondent was sent to the login screen. Awaited
+        // inside this `try`, because a future can reject where `valueOrNull`
+        // could not. The Phase 100 shape, for the fourth time.
+        final session = await ref.read(sessionProvider.future);
         if (mounted) {
           context.go(session != null ? Routes.resources : Routes.login);
         }
