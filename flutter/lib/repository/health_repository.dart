@@ -809,9 +809,25 @@ class HealthRepository {
   }
 
   /// Serialize a row to JSON for upload.
+  ///
+  /// The document is keyed on `userId`, not on the row's own id:
+  /// `if (!health.userId.isNullOrEmpty()) object.addProperty("_id", health.userId)`
+  /// (`HealthExamination.kt:96`). The two differ for the profile row of a
+  /// member registered on this device — `createPojo` writes `_id` = the
+  /// patient id the screen was opened with and `userId` = the patient's
+  /// CouchDB id, which `app_providers`' `updateUserId` fills in once the
+  /// account uploads — and `userId` is the id the sync-in direction would key
+  /// the row on (`_docToCompanion`: `userId: doc['_id']`), so it is the
+  /// document's identity in both directions.
+  ///
+  /// A blank `userId` omits `_id` entirely, which would make CouchDB mint a
+  /// fresh document on every drain. That branch is unreachable from the
+  /// upload path because [HealthExaminationDao.getUpdated] excludes those rows
+  /// — `userId != ''` — and the two rules only work as a pair.
   static Map<String, dynamic> serialize(HealthExaminationRow row) {
+    final docId = row.userId ?? '';
     return {
-      if (row.id.isNotEmpty) '_id': row.id,
+      if (docId.isNotEmpty) '_id': docId,
       if (row.rev != null && row.rev!.isNotEmpty) '_rev': row.rev,
       if (row.data != null) 'data': row.data,
       'temperature': row.temperature,

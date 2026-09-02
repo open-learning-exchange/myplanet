@@ -2750,9 +2750,21 @@ class HealthExaminationDao extends DatabaseAccessor<AppDatabase>
   )..where((h) => h.id.equals(id))).getSingleOrNull();
 
   /// Get all updated examinations that need syncing.
-  Future<List<HealthExaminationRow>> getUpdated() => (select(
-    healthExaminations,
-  )..where((h) => h.isUpdated.equals(true) & h.userId.isNotNull())).get();
+  ///
+  /// `WHERE isUpdated = 1 AND userId != ''`, and the second half is not
+  /// `IS NOT NULL`: in SQL `userId != ''` is false for NULL as well, so Kotlin
+  /// excludes a blank `userId` along with a missing one. That is what keeps
+  /// `HealthRepository.serialize`'s omit-`_id` branch off the upload path —
+  /// a POST with no `_id` makes CouchDB mint a fresh document every drain, so
+  /// one examination would become a new record on every sync.
+  Future<List<HealthExaminationRow>> getUpdated() =>
+      (select(healthExaminations)..where(
+            (h) =>
+                h.isUpdated.equals(true) &
+                h.userId.isNotNull() &
+                h.userId.equals('').not(),
+          ))
+          .get();
 
   /// Get updated examinations for a specific user.
   Future<List<HealthExaminationRow>> getUpdatedForUser(String userId) =>

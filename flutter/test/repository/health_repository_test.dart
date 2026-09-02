@@ -9,6 +9,7 @@ import 'package:myplanet/core/sync/sync_result.dart';
 import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/health_repository.dart';
+import 'package:myplanet/repository/user_repository.dart';
 
 void main() {
   late AppDatabase database;
@@ -865,6 +866,181 @@ void main() {
         'nonexistent',
       );
       expect(exam, isNull);
+    });
+  });
+  group('a member registered offline who later signs in online', () {
+    // The transition Phase 107 is about, end to end: the account is created on
+    // this device with a local id, health records are encrypted with the
+    // `key`/`iv` minted on that row, the upload records the server-assigned
+    // `couchId`, and only then does the member sign in online. From that point
+    // the health screens address them by `patientIdOf` — the CouchDB id — so
+    // everything below depends on that id resolving to the one row that holds
+    // their key.
+    const localId = '1700000000000';
+    const couchId = 'org.couchdb.user:ada';
+
+    // Generated independently with Python's `hashlib.pbkdf2_hmac` using the
+    // parameters `AndroidDecrypter` pins (SHA1, 10 iterations, 20 bytes).
+    const password = 'correct-horse';
+    const salt = 'a3f1c9d2e5b74806a1c2d3e4f5061728';
+    const derivedKey = 'ddb696f6f34c21547a45f8034c6e41daf63b3ce3';
+
+    test('their examinations are still readable afterwards', () async {
+      final health = createRepository();
+
+      // 1. `become_member_screen`: a local id, no couchId.
+      await database.userDao.upsert(
+        const UsersCompanion(id: Value(localId), name: Value('ada')),
+      );
+
+      // 2. An examination recorded offline, encrypted with the key
+      //    `ensureSecurityKeys` mints on that row.
+      final blob = await health.encryptData(localId, '{"allergies":"peanuts"}');
+      expect(blob, isNotNull);
+      final examId = await health.createExamination(
+        profileId: 'profile-key',
+        temperature: 37,
+        pulse: 72,
+        height: 170,
+        weight: 65,
+        data: blob,
+      );
+
+      // 3. The upload lands and the row gains its server id.
+      await database.userDao.updateUserSecurityData(
+        localId: localId,
+        couchId: couchId,
+        rev: '1-abc',
+        passwordScheme: 'pbkdf2',
+        derivedKey: derivedKey,
+        salt: salt,
+        iterations: '10',
+      );
+
+      // 4. The member signs in online for the first time.
+      final loginApi = MockPlanetApi();
+      const config = ServerConfig(
+        serverUrl: 'https://planet.example.org',
+        pin: '1234',
+        couchDbUrl: 'https://satellite:1234@planet.example.org:443',
+      );
+      when(
+        () =>
+            loginApi.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer(
+        (_) async => NetworkSuccess<Map<String, dynamic>>({
+          '_id': couchId,
+          '_rev': '1-abc',
+          'name': 'ada',
+          'derived_key': derivedKey,
+          'salt': salt,
+          'password_scheme': 'pbkdf2',
+          'iterations': '10',
+        }),
+      );
+      final login = await UserRepository(
+        loginApi,
+        database.userDao,
+      ).loginOnline(config: config, username: 'ada', password: password);
+      expect(login, isA<LoginSuccess>());
+
+      // 5. One row, and the CouchDB id the health screens use resolves to it.
+      expect(await database.userDao.getAllUsers(), hasLength(1));
+      final patient = await database.userDao.getById(couchId);
+      expect(patient?.id, localId);
+
+      // 6. Which is what keeps the record readable.
+      final row = await health.getById(examId);
+      final plain = await health.decryptData(couchId, row!.data);
+      expect(plain, '{"allergies":"peanuts"}');
+    });
+  });
+  group('the upload keys documents the way Kotlin keys them', () {
+    // `HealthExamination.serialize` is
+    // `if (!health.userId.isNullOrEmpty()) object.addProperty("_id", health.userId)`
+    // (`HealthExamination.kt:96`) — the document is keyed on `userId`, not on
+    // the row's own id, and carries no `_id` at all while `userId` is empty.
+    //
+    // `HealthExaminationDao.getUpdated()` is
+    // `WHERE isUpdated = 1 AND userId != ''`, and in SQL `userId != ''` is
+    // false for NULL too, so Kotlin excludes both. The two halves are one
+    // rule: the guard is what makes serialize's omit-`_id` branch unreachable
+    // from the upload path. Porting either half alone is what creates the
+    // hazard — a POST with no `_id` makes CouchDB mint a fresh document on
+    // every drain, so one examination becomes a new record each sync.
+
+    test('the document is keyed on userId, not on the row id', () async {
+      final repository = createRepository();
+      // `createPojo` writes the profile row with `_id` = the patient id the
+      // screen was opened with and `userId` = the patient's CouchDB id, and
+      // `app_providers`' `updateUserId` rewrites that `userId` once the
+      // account uploads. So the two genuinely differ for a member registered
+      // on this device, and Kotlin uploads under the CouchDB id.
+      final id = await repository.createExamination(
+        userId: 'org.couchdb.user:ada',
+        temperature: 37,
+        pulse: 72,
+        height: 170,
+        weight: 65,
+      );
+
+      final payload = HealthRepository.serialize(
+        (await repository.getById(id))!,
+      );
+      expect(payload['_id'], 'org.couchdb.user:ada');
+    });
+
+    test('a row with no userId carries no _id', () async {
+      final repository = createRepository();
+      await repository.createExamination(
+        temperature: 37,
+        pulse: 72,
+        height: 170,
+        weight: 65,
+      );
+      // The row above gets `userId` = its own id; blank it the way an older
+      // build's row would have been.
+      await database.healthExaminationDao.updateUserId('health-local-1', '');
+
+      final row = await repository.getById('health-local-1');
+      expect(
+        HealthRepository.serialize(row!),
+        isNot(contains('_id')),
+        reason: 'addProperty is guarded by !userId.isNullOrEmpty()',
+      );
+    });
+
+    test('getUpdated skips a row whose userId is blank', () async {
+      final repository = createRepository();
+      await repository.createExamination(
+        temperature: 37,
+        pulse: 72,
+        height: 170,
+        weight: 65,
+      );
+      await repository.createExamination(
+        temperature: 38,
+        pulse: 80,
+        height: 170,
+        weight: 65,
+      );
+      await database.healthExaminationDao.updateUserId('health-local-1', '');
+
+      // `userId != ''` excludes the blank row, which is exactly the row
+      // serialize would have POSTed without an `_id`.
+      final pending = await repository.getUpdated();
+      expect(pending.map((r) => r.id), ['health-local-2']);
+    });
+
+    test('getUpdated skips a row whose userId is null', () async {
+      final repository = createRepository();
+      await database.healthExaminationDao.upsert(
+        HealthExaminationsCompanion.insert(
+          id: 'legacy-1',
+          isUpdated: const Value(true),
+        ),
+      );
+      expect(await repository.getUpdated(), isEmpty);
     });
   });
 }

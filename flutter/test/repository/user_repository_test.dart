@@ -1321,4 +1321,219 @@ void main() {
       expect(user?.key, isNull);
     });
   });
+  group('one member, one row', () {
+    // `become_member_screen` writes the account with a locally-minted
+    // `'<millis>'` id and no `couchId`; the health screens mint `key`/`iv` on
+    // that row; the user uploader then records the server-assigned `couchId`
+    // on the same row (`UserDao.updateUserSecurityData`). Every test here
+    // starts from that state and then signs the member in online, which is
+    // the transition `buildUserFromJson`'s identity rule exists to survive.
+    const localId = '1700000000000';
+
+    Future<void> seedLocallyRegisteredMember({
+      String? firstName = 'Ada',
+      String? userImage,
+      bool isUpdated = false,
+    }) async {
+      await db.userDao.upsert(
+        UsersCompanion(
+          id: const Value(localId),
+          name: const Value('ada'),
+          firstName: Value(firstName),
+          lastName: const Value('Lovelace'),
+          phoneNumber: const Value('555-0100'),
+          level: const Value('intermediate'),
+          language: const Value('en'),
+          birthPlace: const Value('London'),
+          joinDate: const Value(1600000000000),
+          userImage: Value(userImage),
+          isUpdated: Value(isUpdated),
+          key: const Value('the-key'),
+          iv: const Value('the-iv'),
+        ),
+      );
+      await db.userDao.updateUserSecurityData(
+        localId: localId,
+        couchId: 'org.couchdb.user:ada',
+        rev: '1-abc',
+        passwordScheme: 'pbkdf2',
+        derivedKey: _derivedKey,
+        salt: _salt,
+        iterations: '10',
+      );
+    }
+
+    void serverReturns(Map<String, dynamic> doc) {
+      when(
+        () =>
+            api.getJsonObject(userDocUrl, authHeader: any(named: 'authHeader')),
+      ).thenAnswer((_) async => NetworkSuccess<Map<String, dynamic>>(doc));
+    }
+
+    Future<LoginResult> signIn() => repository.loginOnline(
+      config: config,
+      username: 'ada',
+      password: _password,
+    );
+
+    test(
+      'the online login reuses the local row instead of adding one',
+      () async {
+        await seedLocallyRegisteredMember();
+        serverReturns(userDoc());
+
+        expect(await signIn(), isA<LoginSuccess>());
+
+        // `buildUserFromJson` resolves the row through `getUserByAnyId(_id)` —
+        // `WHERE id = :id OR _id = :id` — and `applyJsonToUser` reassigns `id`
+        // only when it is blank, so the member keeps the one row they had.
+        final rows = await db.userDao.getAllUsers();
+        expect(
+          rows,
+          hasLength(1),
+          reason:
+              'the CouchDB _id already resolves to this member through '
+              'their couchId; keying a second row on it duplicates the member',
+        );
+        expect(rows.single.id, localId);
+        expect(rows.single.couchId, 'org.couchdb.user:ada');
+        // The deterministic, user-visible half: every list built from the users
+        // table — the login account picker, the health patient picker, the
+        // survey recipient list — showed the member twice.
+        expect(await db.userDao.getSavedUsers(), hasLength(1));
+      },
+    );
+
+    test('the health key and iv survive the transition', () async {
+      await seedLocallyRegisteredMember();
+      serverReturns(userDoc());
+
+      await signIn();
+
+      // The consequence that makes this more than a duplicate name: health
+      // records are encrypted with the row's `key`/`iv`, which live only on
+      // this device. A row keyed on the CouchDB `_id` carries neither, and
+      // `getById(couchId)` matches it as readily as the real one.
+      for (final row in await db.userDao.getAllUsers()) {
+        expect(
+          row.key,
+          'the-key',
+          reason:
+              'a row that answers to this member carries no health key, '
+              'so the records it encrypted cannot be decrypted',
+        );
+        expect(row.iv, 'the-iv');
+      }
+      final resolved = await db.userDao.getById('org.couchdb.user:ada');
+      expect(resolved?.id, localId);
+      expect(resolved?.key, 'the-key');
+    });
+
+    test('the session is the row the member already had', () async {
+      await seedLocallyRegisteredMember();
+      serverReturns(userDoc());
+
+      final result = await signIn();
+
+      // `upsertUser` returns `userDao.getById(entity.id)`, so the signed-in
+      // user is the row the document was applied to. Re-reading by name is
+      // scan-ordered and picks by luck once two rows carry the name.
+      expect((result as LoginSuccess).user.id, localId);
+      expect(result.user.key, 'the-key');
+    });
+
+    test('a field the document omits keeps its stored value', () async {
+      await seedLocallyRegisteredMember();
+      // `applyJsonToUser` guards these with
+      // `if (new.isNotEmpty() || old.isNullOrEmpty()) field = new`, so a
+      // document that omits one leaves the stored value alone. Writing every
+      // field unconditionally nulls a profile the member filled in offline.
+      final doc = userDoc()
+        ..remove('firstName')
+        ..remove('lastName')
+        ..remove('phoneNumber')
+        ..remove('level')
+        ..remove('language')
+        ..remove('birthPlace')
+        ..remove('joinDate');
+      serverReturns(doc);
+
+      await signIn();
+
+      final row = (await db.userDao.getAllUsers()).single;
+      expect(row.firstName, 'Ada');
+      expect(row.lastName, 'Lovelace');
+      expect(row.phoneNumber, '555-0100');
+      expect(row.level, 'intermediate');
+      expect(row.language, 'en');
+      expect(row.birthPlace, 'London');
+      expect(row.joinDate, 1600000000000);
+    });
+
+    test('a non-empty document field still wins', () async {
+      await seedLocallyRegisteredMember();
+      serverReturns(
+        userDoc()
+          ..['firstName'] = 'Augusta'
+          ..['joinDate'] = 1700000000001,
+      );
+
+      await signIn();
+
+      final row = (await db.userDao.getAllUsers()).single;
+      expect(row.firstName, 'Augusta');
+      expect(row.joinDate, 1700000000001);
+    });
+
+    test(
+      'an unsynced profile photo survives a document without attachments',
+      () async {
+        await seedLocallyRegisteredMember(
+          userImage: '/tmp/queued-photo.jpg',
+          isUpdated: true,
+        );
+        serverReturns(userDoc());
+
+        await signIn();
+
+        // `addImageUrl` only touches `userImage` when the document carries a
+        // non-empty `_attachments`. The photo here is a local path the user
+        // uploader has not sent yet; nulling it loses the photo outright.
+        final row = (await db.userDao.getAllUsers()).single;
+        expect(row.userImage, '/tmp/queued-photo.jpg');
+      },
+    );
+
+    test(
+      'an attachment in the document does replace the stored name',
+      () async {
+        await seedLocallyRegisteredMember(userImage: 'old.jpg');
+        serverReturns(
+          userDoc()
+            ..['_attachments'] = {
+              'img': {'content_type': 'image/jpeg'},
+            },
+        );
+
+        await signIn();
+
+        expect((await db.userDao.getAllUsers()).single.userImage, 'img');
+      },
+    );
+
+    test('a first sign-in still keys the row on the document id', () async {
+      // No local row: `buildUserFromJson` falls through to
+      // `UserEntity().apply { this.id = id }`, so the CouchDB `_id` is the
+      // row's id. This is the case the pre-fix mapper handled correctly and
+      // it has to keep working.
+      serverReturns(userDoc());
+
+      final result = await signIn();
+
+      final rows = await db.userDao.getAllUsers();
+      expect(rows, hasLength(1));
+      expect(rows.single.id, 'org.couchdb.user:ada');
+      expect((result as LoginSuccess).user.id, 'org.couchdb.user:ada');
+    });
+  });
 }

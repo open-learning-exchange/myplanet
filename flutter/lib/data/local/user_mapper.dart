@@ -13,44 +13,160 @@ import 'app_database.dart';
 class UserMapper {
   const UserMapper._();
 
-  static UsersCompanion fromDoc(Map<String, dynamic> doc) {
+  /// Port of `buildUserFromJson` + `applyJsonToUser`
+  /// (`UserRepositoryImpl.kt:292-316` and `:180-276`).
+  ///
+  /// [existing] is the row the document already belongs to — Kotlin resolves
+  /// it with `getUserByAnyId(_id)`, which is
+  /// `SELECT * FROM users WHERE id = :id OR _id = :id LIMIT 1`, so a document
+  /// finds a row through its `_id` column as readily as through its key. Pass
+  /// it and the row **keeps its own `id`**: `applyJsonToUser` reassigns `id`
+  /// only when it is blank.
+  ///
+  /// That is the whole identity rule, and it is load-bearing. A member
+  /// registered on this device keeps a locally-minted `'<millis>'` id and
+  /// gains a `couchId` only when the upload lands, so keying the cached row on
+  /// the document `_id` gave that member a *second* row the moment they first
+  /// signed in online — one carrying no `key`/`iv`, which
+  /// `UserDao.getById(couchId)` matches as readily as the real one. Since the
+  /// health records are encrypted with those two values and nothing else on
+  /// the device or the server can reproduce them, resolving the member to the
+  /// wrong row does not merely duplicate a name: it makes their medical
+  /// records undecryptable.
+  ///
+  /// [generateLocalId] supplies the key for a document with no `_id` at all —
+  /// Kotlin's `UUID.randomUUID()` fallback. It is only reachable for a
+  /// malformed document; a real `_users` doc is always keyed
+  /// `org.couchdb.user:<name>`.
+  static UsersCompanion fromDoc(
+    Map<String, dynamic> doc, {
+    UserRow? existing,
+    String Function()? generateLocalId,
+  }) {
     final couchId = JsonUtils.getString('_id', doc);
+    final rowId = (existing?.id.isNotEmpty ?? false)
+        ? existing!.id
+        : (couchId.isNotEmpty
+              ? couchId
+              : (generateLocalId ?? _defaultLocalId)());
+
     return UsersCompanion(
-      // The Kotlin keys the row on the document `_id` when there is one, so a
-      // re-login updates the existing row instead of duplicating it.
-      id: Value(couchId),
+      id: Value(rowId),
       couchId: Value(couchId.isEmpty ? null : couchId),
       rev: Value(JsonUtils.getStringOrNull('_rev', doc)),
       name: Value(JsonUtils.getStringOrNull('name', doc)),
       rolesList: Value(JsonUtils.getStringList('roles', doc)),
       userAdmin: Value(JsonUtils.getBool('isUserAdmin', doc)),
-      joinDate: Value(JsonUtils.getLong('joinDate', doc)),
-      firstName: Value(JsonUtils.getStringOrNull('firstName', doc)),
-      lastName: Value(JsonUtils.getStringOrNull('lastName', doc)),
-      middleName: Value(JsonUtils.getStringOrNull('middleName', doc)),
-      email: Value(JsonUtils.getStringOrNull('email', doc)),
+      // Guarded, `if (newJoinDate != 0L || joinDate == 0L)`: a document
+      // without a join date leaves a recorded one alone.
+      joinDate: _keepingStoredInt(
+        JsonUtils.getLong('joinDate', doc),
+        existing?.joinDate,
+      ),
+      // The eleven guarded string fields, in Kotlin's order. Each is
+      // `if (new.isNotEmpty() || old.isNullOrEmpty()) field = new` — a
+      // document that omits one keeps what the row already holds, which is
+      // what stops a re-login wiping a profile the member filled in offline.
+      firstName: _keepingStored(
+        JsonUtils.getStringOrNull('firstName', doc),
+        existing?.firstName,
+      ),
+      lastName: _keepingStored(
+        JsonUtils.getStringOrNull('lastName', doc),
+        existing?.lastName,
+      ),
+      middleName: _keepingStored(
+        JsonUtils.getStringOrNull('middleName', doc),
+        existing?.middleName,
+      ),
+      email: _keepingStored(
+        JsonUtils.getStringOrNull('email', doc),
+        existing?.email,
+      ),
+      phoneNumber: _keepingStored(
+        JsonUtils.getStringOrNull('phoneNumber', doc),
+        existing?.phoneNumber,
+      ),
+      level: _keepingStored(
+        JsonUtils.getStringOrNull('level', doc),
+        existing?.level,
+      ),
+      language: _keepingStored(
+        JsonUtils.getStringOrNull('language', doc),
+        existing?.language,
+      ),
+      gender: _keepingStored(
+        JsonUtils.getStringOrNull('gender', doc),
+        existing?.gender,
+      ),
+      dob: _keepingStored(
+        JsonUtils.getStringOrNull('birthDate', doc),
+        existing?.dob,
+      ),
+      birthPlace: _keepingStored(
+        JsonUtils.getStringOrNull('birthPlace', doc),
+        existing?.birthPlace,
+      ),
+      age: _keepingStored(JsonUtils.getStringOrNull('age', doc), existing?.age),
+      // Unguarded in the Kotlin, and deliberately so: these four are the
+      // credentials PBKDF2 verification reads, and the document is their
+      // authority. (`updateUserSecurityData` is the path that must *not*
+      // overwrite them with null — see `aa24dfa6c`/#15836 — but that is a
+      // response to a POST, not the account document.)
       planetCode: Value(JsonUtils.getStringOrNull('planetCode', doc)),
       parentCode: Value(JsonUtils.getStringOrNull('parentCode', doc)),
-      phoneNumber: Value(JsonUtils.getStringOrNull('phoneNumber', doc)),
       passwordScheme: Value(JsonUtils.getStringOrNull('password_scheme', doc)),
       iterations: Value(JsonUtils.getStringOrNull('iterations', doc)),
       derivedKey: Value(JsonUtils.getStringOrNull('derived_key', doc)),
       salt: Value(JsonUtils.getStringOrNull('salt', doc)),
-      level: Value(JsonUtils.getStringOrNull('level', doc)),
-      language: Value(JsonUtils.getStringOrNull('language', doc)),
-      gender: Value(JsonUtils.getStringOrNull('gender', doc)),
-      dob: Value(JsonUtils.getStringOrNull('birthDate', doc)),
-      age: Value(JsonUtils.getStringOrNull('age', doc)),
-      birthPlace: Value(JsonUtils.getStringOrNull('birthPlace', doc)),
+      // `if (_id?.isEmpty() == true) password = getString("password", jsonDoc)`
+      // — and that reads `_id` *after* `_id = newId`, so the plaintext
+      // password is taken only for a document with no `_id`, which is the
+      // guest shape. Everyone else is verified against `derived_key`/`salt`.
+      password: couchId.isEmpty
+          ? Value(JsonUtils.getStringOrNull('password', doc))
+          : const Value.absent(),
       // Port of `UserEntity.addImageUrl`: a `_users` document stores the
       // profile photo as a CouchDB attachment under `_attachments`, not as a
       // top-level `userImage` field (the Kotlin doc never has one). We store
       // the attachment *name* here and build the full URL at display time via
       // `UrlUtils.userImageUrl`, so the persisted value carries no server
       // credentials and survives a server URL change.
-      userImage: Value(_attachmentName(doc)),
+      //
+      // `addImageUrl` writes nothing when the document has no non-empty
+      // `_attachments`, and the stored value it leaves alone can be a local
+      // file path a queued photo upload has not sent yet — so an absent
+      // attachment must not null the column.
+      userImage: _imageName(doc),
       isArchived: Value(JsonUtils.getBool('isArchived', doc)),
     );
+  }
+
+  static String _defaultLocalId() => '${DateTime.now().microsecondsSinceEpoch}';
+
+  /// `if (new.isNotEmpty() || old.isNullOrEmpty()) field = new`.
+  ///
+  /// An absent [Value] is what "leave the stored one alone" means to
+  /// `insertOnConflictUpdate`: the column stays out of the `DO UPDATE SET`
+  /// list. On an insert there is no stored value to keep, so [stored] is null
+  /// and the incoming one is written either way.
+  static Value<String?> _keepingStored(String? incoming, String? stored) {
+    if (incoming != null && incoming.isNotEmpty) return Value(incoming);
+    if (stored == null || stored.isEmpty) return Value(incoming);
+    return const Value.absent();
+  }
+
+  /// The `joinDate` variant: `0` is the empty value rather than `null`.
+  static Value<int> _keepingStoredInt(int incoming, int? stored) {
+    if (incoming != 0 || (stored ?? 0) == 0) return Value(incoming);
+    return const Value.absent();
+  }
+
+  /// The attachment name to store, or an absent [Value] where `addImageUrl`
+  /// writes nothing.
+  static Value<String?> _imageName(Map<String, dynamic> doc) {
+    final name = _attachmentName(doc);
+    return name == null ? const Value.absent() : Value(name);
   }
 
   /// The first `_attachments` key in [doc], or `null` - the slot Kotlin takes

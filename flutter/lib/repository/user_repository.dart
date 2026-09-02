@@ -131,9 +131,7 @@ class UserRepository {
 
     // Port of `checkManagerAndInsert`: cache the account so the next sign-in
     // works offline.
-    await _userDao.upsert(UserMapper.fromDoc(doc));
-
-    final stored = await _userDao.getByName(username);
+    final stored = await _cacheUserDoc(doc);
     if (stored == null) {
       return const LoginFailure(LoginFailureReason.userNotFound);
     }
@@ -141,6 +139,32 @@ class UserRepository {
       return const LoginFailure(LoginFailureReason.notAManager);
     }
     return LoginSuccess(stored);
+  }
+
+  /// Port of `buildUserFromJson` + `upsertUser`
+  /// (`UserRepositoryImpl.kt:292-322`).
+  ///
+  /// Resolves the row the document belongs to *before* writing it, so a
+  /// document whose `_id` already sits in some row's `couchId` updates that
+  /// row instead of adding a second one keyed on the id. See
+  /// [UserMapper.fromDoc] for why a duplicate here costs a member their health
+  /// records.
+  ///
+  /// The lookup is skipped for a document with no `_id`, matching Kotlin:
+  /// there the id it searches by is a freshly minted UUID, which can never
+  /// match a stored row.
+  ///
+  /// Returns the stored row, re-read by the key it was written under —
+  /// `upsertUser` ends in `userDao.getById(entity.id)`. Re-reading by *name*
+  /// is what this used to do, and a name carries no unique constraint: two
+  /// planets can hold an `ada`, and `LIMIT 1` then picks the session user by
+  /// scan order.
+  Future<UserRow?> _cacheUserDoc(Map<String, dynamic> doc) async {
+    final couchId = JsonUtils.getString('_id', doc);
+    final existing = couchId.isEmpty ? null : await _userDao.getById(couchId);
+    final companion = UserMapper.fromDoc(doc, existing: existing);
+    await _userDao.upsert(companion);
+    return _userDao.getById(companion.id.value);
   }
 
   /// Port of `UserRepositoryImpl.authenticateUser`.
